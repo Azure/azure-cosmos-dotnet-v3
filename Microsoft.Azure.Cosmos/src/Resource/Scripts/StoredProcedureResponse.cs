@@ -28,11 +28,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal StoredProcedureResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosStoredProcedureProperties cosmosStoredProcedureSettings)
+           CosmosStoredProcedureProperties cosmosStoredProcedureProperties)
             : base(
                httpStatusCode,
                headers,
-               cosmosStoredProcedureSettings)
+               cosmosStoredProcedureProperties)
         {
         }
 

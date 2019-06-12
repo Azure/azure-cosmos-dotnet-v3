@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
-    internal class DocumentServiceLeaseStoreManagerSettings
+    internal class DocumentServiceLeaseStoreManagerOptions
     {
         private const string PartitionLeasePrefixSeparator = "..";
 

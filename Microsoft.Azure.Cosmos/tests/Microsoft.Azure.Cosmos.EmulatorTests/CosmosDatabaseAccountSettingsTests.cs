@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task GetCosmosDatabaseAccountSettings()
         {
-            CosmosAccountSettings settings = await this.cosmosClient.GetAccountSettingsAsync();
+            CosmosAccountProperties settings = await this.cosmosClient.GetAccountPropertiesAsync();
             Assert.IsNotNull(settings);
             Assert.IsNotNull(settings.Id);
             Assert.IsNotNull(settings.ReadableLocations);

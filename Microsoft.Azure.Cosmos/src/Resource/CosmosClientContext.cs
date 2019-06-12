@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosJsonSerializer CosmosSerializer { get; }
 
-        internal abstract CosmosJsonSerializer SettingsSerializer { get; }
+        internal abstract CosmosJsonSerializer PropertiesSerializer { get; }
 
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 

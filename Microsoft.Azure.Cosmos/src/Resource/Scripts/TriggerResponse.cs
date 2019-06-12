@@ -26,11 +26,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal TriggerResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosTriggerProperties cosmosTriggerSettings)
+           CosmosTriggerProperties cosmosTriggerProperties)
             : base(
                httpStatusCode,
                headers,
-               cosmosTriggerSettings)
+               cosmosTriggerProperties)
         {
         }
 

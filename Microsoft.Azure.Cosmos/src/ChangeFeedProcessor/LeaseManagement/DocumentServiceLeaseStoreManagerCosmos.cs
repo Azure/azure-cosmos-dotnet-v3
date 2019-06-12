@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly DocumentServiceLeaseContainer leaseContainer;
 
         public DocumentServiceLeaseStoreManagerCosmos(
-            DocumentServiceLeaseStoreManagerSettings settings,
+            DocumentServiceLeaseStoreManagerOptions options,
             CosmosContainer leaseContainer,
             RequestOptionsFactory requestOptionsFactory)
-            : this(settings, leaseContainer, requestOptionsFactory, new DocumentServiceLeaseUpdaterCosmos(leaseContainer))
+            : this(options, leaseContainer, requestOptionsFactory, new DocumentServiceLeaseUpdaterCosmos(leaseContainer))
         {
         }
 
@@ -37,27 +37,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Internal only for testing purposes, otherwise would be private.
         /// </remarks>
         internal DocumentServiceLeaseStoreManagerCosmos(
-            DocumentServiceLeaseStoreManagerSettings settings,
+            DocumentServiceLeaseStoreManagerOptions options,
             CosmosContainer container,
             RequestOptionsFactory requestOptionsFactory,
             DocumentServiceLeaseUpdater leaseUpdater) // For testing purposes only.
         {
-            if (settings == null) throw new ArgumentNullException(nameof(settings));
-            if (settings.ContainerNamePrefix == null) throw new ArgumentNullException(nameof(settings.ContainerNamePrefix));
-            if (string.IsNullOrEmpty(settings.HostName)) throw new ArgumentNullException(nameof(settings.HostName));
+            if (options == null) throw new ArgumentNullException(nameof(options));
+            if (options.ContainerNamePrefix == null) throw new ArgumentNullException(nameof(options.ContainerNamePrefix));
+            if (string.IsNullOrEmpty(options.HostName)) throw new ArgumentNullException(nameof(options.HostName));
             if (container == null) throw new ArgumentNullException(nameof(container));
             if (requestOptionsFactory == null) throw new ArgumentException(nameof(requestOptionsFactory));
             if (leaseUpdater == null) throw new ArgumentException(nameof(leaseUpdater));
 
             this.leaseStore = new DocumentServiceLeaseStoreCosmos(
                 container,
-                settings.ContainerNamePrefix,
+                options.ContainerNamePrefix,
                 requestOptionsFactory);
 
             this.leaseManager = new DocumentServiceLeaseManagerCosmos(
                 container,
                 leaseUpdater,
-                settings,
+                options,
                 requestOptionsFactory);
 
             this.leaseCheckpointer = new DocumentServiceLeaseCheckpointerCore(
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             this.leaseContainer = new DocumentServiceLeaseContainerCosmos(
                 container,
-                settings);
+                options);
         }
 
         public override DocumentServiceLeaseStore LeaseStore => this.leaseStore;

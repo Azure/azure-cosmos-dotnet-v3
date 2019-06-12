@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class FeedProcessorCoreTests
     {
-        private static ProcessorSettings DefaultSettings = new ProcessorSettings() {
+        private static ProcessorOptions DefaultSettings = new ProcessorOptions() {
             FeedPollDelay = TimeSpan.FromSeconds(0)
         };
 

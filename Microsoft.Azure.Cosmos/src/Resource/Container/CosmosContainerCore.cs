@@ -72,18 +72,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ContainerResponse> ReplaceAsync(
-            CosmosContainerProperties containerSettings,
+            CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (containerSettings == null)
+            if (containerProperties == null)
             {
-                throw new ArgumentNullException(nameof(containerSettings));
+                throw new ArgumentNullException(nameof(containerProperties));
             }
 
-            this.ClientContext.ValidateResource(containerSettings.Id);
+            this.ClientContext.ValidateResource(containerProperties.Id);
             Task<CosmosResponseMessage> response = this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -147,18 +147,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> ReplaceStreamAsync(
-            CosmosContainerProperties containerSettings,
+            CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (containerSettings == null)
+            if (containerProperties == null)
             {
-                throw new ArgumentNullException(nameof(containerSettings));
+                throw new ArgumentNullException(nameof(containerProperties));
             }
 
-            this.ClientContext.ValidateResource(containerSettings.Id);
+            this.ClientContext.ValidateResource(containerProperties.Id);
             return this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -191,12 +191,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the container's settings by using the internal cache.
+        /// Gets the container's Properties by using the internal cache.
         /// In case the cache does not have information about this container, it may end up making a server call to fetch the data.
         /// </summary>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="CosmosContainerProperties"/> for this container.</returns>
-        internal async Task<CosmosContainerProperties> GetCachedContainerSettingsAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<CosmosContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
             return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
@@ -205,14 +205,14 @@ namespace Microsoft.Azure.Cosmos
         // Name based look-up, needs re-computation and can't be cached
         internal Task<string> GetRIDAsync(CancellationToken cancellationToken)
         {
-            return this.GetCachedContainerSettingsAsync(cancellationToken)
-                            .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.ResourceId, cancellationToken);
+            return this.GetCachedContainerPropertiesAsync(cancellationToken)
+                            .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.ResourceId, cancellationToken);
         }
 
         internal Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.GetCachedContainerSettingsAsync(cancellationToken)
-                            .ContinueWith(containerSettingsTask => containerSettingsTask.Result?.PartitionKey, cancellationToken);
+            return this.GetCachedContainerPropertiesAsync(cancellationToken)
+                            .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
         }
 
         /// <summary>
@@ -222,18 +222,18 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns the partition key path</returns>
         internal virtual async Task<string[]> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosContainerProperties containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
-            if (containerSettings == null)
+            CosmosContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
+            if (containerProperties == null)
             {
                 throw new ArgumentOutOfRangeException($"Container {this.LinkUri.ToString()} not found");
             }
             
-            if (containerSettings.PartitionKey?.Paths == null)
+            if (containerProperties.PartitionKey?.Paths == null)
             {
                 throw new ArgumentOutOfRangeException($"Partition key not defined for container {this.LinkUri.ToString()}");
             }
 
-            return containerSettings.PartitionKeyPathTokens;
+            return containerProperties.PartitionKeyPathTokens;
         }
 
         /// <summary>
@@ -248,8 +248,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal async Task<PartitionKeyInternal> GetNonePartitionKeyValueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosContainerProperties containerSettings = await this.GetCachedContainerSettingsAsync(cancellationToken);
-            return containerSettings.GetNoneValue();
+            CosmosContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(cancellationToken);
+            return containerProperties.GetNoneValue();
         }
 
         internal Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseContainerCosmosTests
     {
-        private static DocumentServiceLeaseStoreManagerSettings leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerSettings()
+        private static DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
         {
             ContainerNamePrefix = "prefix",
             HostName = "host"

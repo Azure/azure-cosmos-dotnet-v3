@@ -94,14 +94,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (documentServiceLeaseStoreManager == null)
             {
                 ContainerResponse cosmosContainerResponse = await leaseContainer.ReadAsync().ConfigureAwait(false);
-                CosmosContainerProperties containerSettings = cosmosContainerResponse.Resource;
+                CosmosContainerProperties containerProperties = cosmosContainerResponse.Resource;
 
                 bool isPartitioned =
-                    containerSettings.PartitionKey != null &&
-                    containerSettings.PartitionKey.Paths != null &&
-                    containerSettings.PartitionKey.Paths.Count > 0;
+                    containerProperties.PartitionKey != null &&
+                    containerProperties.PartitionKey.Paths != null &&
+                    containerProperties.PartitionKey.Paths.Count > 0;
                 if (isPartitioned &&
-                    (containerSettings.PartitionKey.Paths.Count != 1 || containerSettings.PartitionKey.Paths[0] != "/id"))
+                    (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
                 {
                     throw new ArgumentException("The lease collection, if partitioned, must have partition key equal to id.");
                 }

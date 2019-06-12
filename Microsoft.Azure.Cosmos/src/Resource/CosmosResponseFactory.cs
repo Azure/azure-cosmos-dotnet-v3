@@ -19,13 +19,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// This is used for all meta data types
         /// </summary>
-        private readonly CosmosJsonSerializer settingsSerializer;
+        private readonly CosmosJsonSerializer propertiesSerializer;
 
         internal CosmosResponseFactory(
             CosmosJsonSerializer defaultJsonSerializer,
             CosmosJsonSerializer userJsonSerializer)
         {
-            this.settingsSerializer = defaultJsonSerializer;
+            this.propertiesSerializer = defaultJsonSerializer;
             this.cosmosSerializer = userJsonSerializer;
         }
 
@@ -56,11 +56,11 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosContainerProperties settings = this.ToObjectInternal<CosmosContainerProperties>(cosmosResponseMessage, this.settingsSerializer);
+                CosmosContainerProperties containerProperties = this.ToObjectInternal<CosmosContainerProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
+                    containerProperties,
                     container);
             });
         }
@@ -71,11 +71,11 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosDatabaseProperties settings = this.ToObjectInternal<CosmosDatabaseProperties>(cosmosResponseMessage, this.settingsSerializer);
+                CosmosDatabaseProperties databaseProperties = this.ToObjectInternal<CosmosDatabaseProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
+                    databaseProperties,
                     database);
             });
         }
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosStoredProcedureProperties cosmosStoredProcedure = this.ToObjectInternal<CosmosStoredProcedureProperties>(cosmosResponseMessage, this.settingsSerializer);
+                CosmosStoredProcedureProperties cosmosStoredProcedure = this.ToObjectInternal<CosmosStoredProcedureProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new StoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -108,11 +108,11 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosTriggerProperties settings = this.ToObjectInternal<CosmosTriggerProperties>(cosmosResponseMessage, this.settingsSerializer);
+                CosmosTriggerProperties triggerProperties = this.ToObjectInternal<CosmosTriggerProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings);
+                    triggerProperties);
             });
         }
 
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosUserDefinedFunctionProperties settings = this.ToObjectInternal<CosmosUserDefinedFunctionProperties>(cosmosResponseMessage, this.settingsSerializer);
+                CosmosUserDefinedFunctionProperties settings = this.ToObjectInternal<CosmosUserDefinedFunctionProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,

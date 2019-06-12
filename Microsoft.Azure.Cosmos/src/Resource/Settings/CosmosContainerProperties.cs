@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
     /// <code language="c#">
     /// <![CDATA[
     ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
-    ///     CosmosContainerSettings containerSettings = container.Resource;
+    ///     CosmosContainerProperties containerProperties = container.Resource;
     /// ]]>
     /// </code>
     /// </example>
@@ -34,13 +34,12 @@ namespace Microsoft.Azure.Cosmos
     /// The example below creates a new container with a custom indexing policy.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainerSettings collectionsettings = new CosmosContainerSettings("MyCollection", "/country");
-    ///     collectionsettings.IndexingPolicy.Automatic = true;
-    ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
+    ///     CosmosContainerProperties containerProperties = new CosmosContainerProperties("MyCollection", "/country");
+    ///     containerProperties.IndexingPolicy.Automatic = true;
+    ///     containerProperties.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
     ///     
-    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync(collectionsettings);
-    /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync(containerSettings, 50000);
-    /// CosmosContainerSettings createdContainerSettings = containerCreateResponse.Container;
+    ///     CosmosContainerResponse containerCreateResponse = await client.GetDatabase("dbName"].CreateContainerAsync(containerProperties, 50000);
+    ///     CosmosContainerProperties createdContainerProperties = containerCreateResponse.Container;
     /// ]]>
     /// </code>
     /// </example>

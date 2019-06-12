@@ -111,25 +111,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
-                    CosmosContainerProperties containerSettings,
+                    CosmosContainerProperties containerProperties,
                     int? requestUnitsPerSecond = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (containerSettings == null)
+            if (containerProperties == null)
             {
-                throw new ArgumentNullException(nameof(containerSettings));
+                throw new ArgumentNullException(nameof(containerProperties));
             }
 
-            this.ValidateContainerSettings(containerSettings);
+            this.ValidateContainerProperties(containerProperties);
 
             Task<CosmosResponseMessage> response = this.CreateContainerStreamInternalAsync(
-                streamPayload: this.ClientContext.SettingsSerializer.ToStream(containerSettings),
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
                 requestUnitsPerSecond: requestUnitsPerSecond,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerSettings.Id), response);
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response);
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -149,36 +149,36 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            CosmosContainerProperties settings = new CosmosContainerProperties(id, partitionKeyPath);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id, partitionKeyPath);
 
             return this.CreateContainerAsync(
-                settings,
+                containerProperties,
                 requestUnitsPerSecond,
                 requestOptions,
                 cancellationToken);
         }
 
         public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
-            CosmosContainerProperties containerSettings,
+            CosmosContainerProperties containerProperties,
             int? requestUnitsPerSecond = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (containerSettings == null)
+            if (containerProperties == null)
             {
-                throw new ArgumentNullException(nameof(containerSettings));
+                throw new ArgumentNullException(nameof(containerProperties));
             }
 
-            this.ValidateContainerSettings(containerSettings);
+            this.ValidateContainerProperties(containerProperties);
 
-            CosmosContainer cosmosContainer = this.GetContainer(containerSettings.Id);
+            CosmosContainer cosmosContainer = this.GetContainer(containerProperties.Id);
             ContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
             {
                 return cosmosContainerResponse;
             }
 
-            cosmosContainerResponse = await this.CreateContainerAsync(containerSettings, requestUnitsPerSecond, requestOptions, cancellationToken: cancellationToken);
+            cosmosContainerResponse = await this.CreateContainerAsync(containerProperties, requestUnitsPerSecond, requestOptions, cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return cosmosContainerResponse;
@@ -206,8 +206,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            CosmosContainerProperties settings = new CosmosContainerProperties(id, partitionKeyPath);
-            return this.CreateContainerIfNotExistsAsync(settings, requestUnitsPerSecond, requestOptions, cancellationToken);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id, partitionKeyPath);
+            return this.CreateContainerIfNotExistsAsync(containerProperties, requestUnitsPerSecond, requestOptions, cancellationToken);
         }
 
         public override FeedIterator<CosmosContainerProperties> GetContainersIterator(
@@ -235,19 +235,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> CreateContainerStreamAsync(
-            CosmosContainerProperties containerSettings,
+            CosmosContainerProperties containerProperties,
             int? requestUnitsPerSecond = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (containerSettings == null)
+            if (containerProperties == null)
             {
-                throw new ArgumentNullException(nameof(containerSettings));
+                throw new ArgumentNullException(nameof(containerProperties));
             }
 
-            this.ValidateContainerSettings(containerSettings);
+            this.ValidateContainerProperties(containerProperties);
 
-            Stream streamPayload = this.ClientContext.SettingsSerializer.ToStream(containerSettings);
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(containerProperties);
             return this.CreateContainerStreamInternalAsync(streamPayload,
                 requestUnitsPerSecond,
                 requestOptions,
@@ -283,10 +283,10 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosContainerFluentDefinitionForCreate(this, name, partitionKeyPath);
         }
 
-        internal void ValidateContainerSettings(CosmosContainerProperties containerSettings)
+        internal void ValidateContainerProperties(CosmosContainerProperties containerProperties)
         {
-            containerSettings.ValidateRequiredProperties();
-            this.ClientContext.ValidateResource(containerSettings.Id);
+            containerProperties.ValidateRequiredProperties();
+            this.ClientContext.ValidateResource(containerProperties.Id);
         }
 
         internal Task<CosmosResponseMessage> ProcessCollectionCreateAsync(
