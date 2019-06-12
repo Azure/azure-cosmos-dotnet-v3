@@ -108,6 +108,7 @@
             CosmosContainerSettings containerSettings = new CosmosContainerSettings(
                 id: "SampleContainerWithCustomIndexPolicy",
                 partitionKeyPath: partitionKey);
+            // DO NOT USE LAZY INDEXING IN PRODUCTION
             containerSettings.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
 
             CosmosContainer containerWithLazyIndexing = await database.CreateContainerIfNotExistsAsync(
