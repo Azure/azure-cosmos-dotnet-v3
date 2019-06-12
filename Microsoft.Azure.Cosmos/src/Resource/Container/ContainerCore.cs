@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal partial class ContainerCore : Container
     {
-        private readonly CosmosConflictsCore conflicts;
+        private readonly ConflictsCore conflicts;
 
         /// <summary>
         /// Only used for unit testing
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                 id: containerId);
 
             this.Database = database;
-            this.conflicts = new CosmosConflictsCore(this.ClientContext, this);
+            this.conflicts = new ConflictsCore(this.ClientContext, this);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
         }
