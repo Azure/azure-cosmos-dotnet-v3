@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKey = null)
         {
             // create
-            CosmosStoredProcedureSettings storedProcedure = new CosmosStoredProcedureSettings
+            CosmosStoredProcedureProperties storedProcedure = new CosmosStoredProcedureProperties
             {
                 Id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = transientProcedure
