@@ -11,12 +11,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal sealed class CosmosScriptsCore : Scripts
+    internal sealed class ScriptsCore : Scripts
     {
         private readonly ContainerCore container;
         private readonly CosmosClientContext clientContext;
 
-        internal CosmosScriptsCore(
+        internal ScriptsCore(
             ContainerCore container, 
             CosmosClientContext clientContext)
         {

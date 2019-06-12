@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public static Scripts GetScripts(this Container container)
         {
             ContainerCore cosmosContainerCore = (ContainerCore)container;
-            return new CosmosScriptsCore(cosmosContainerCore, cosmosContainerCore.ClientContext);
+            return new ScriptsCore(cosmosContainerCore, cosmosContainerCore.ClientContext);
         }
     }
 }
