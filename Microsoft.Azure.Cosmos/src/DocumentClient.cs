@@ -1120,7 +1120,7 @@ namespace Microsoft.Azure.Cosmos
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
-                CosmosContainerSettings resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                CosmosContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 resolvedCollection.ResourceId,
                 new Range<string>(
@@ -6603,7 +6603,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            CosmosContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
@@ -6626,7 +6626,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            CosmosContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             // For backward compatibility, if collection doesn't have partition key defined, we assume all documents

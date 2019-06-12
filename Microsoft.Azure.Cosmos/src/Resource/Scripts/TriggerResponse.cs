@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <summary>
     /// The cosmos trigger response
     /// </summary>
-    public class TriggerResponse : Response<CosmosTriggerSettings>
+    public class TriggerResponse : Response<CosmosTriggerProperties>
     {
         /// <summary>
         /// Create a <see cref="TriggerResponse"/> as a no-op for mock testing
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal TriggerResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosTriggerSettings cosmosTriggerSettings)
+           CosmosTriggerProperties cosmosTriggerSettings)
             : base(
                httpStatusCode,
                headers,
@@ -35,10 +35,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         /// <summary>
-        /// Get <see cref="CosmosTriggerSettings"/> implictly from <see cref="TriggerResponse"/>
+        /// Get <see cref="CosmosTriggerProperties"/> implictly from <see cref="TriggerResponse"/>
         /// </summary>
         /// <param name="response">CosmosUserDefinedFunctionResponse</param>
-        public static implicit operator CosmosTriggerSettings(TriggerResponse response)
+        public static implicit operator CosmosTriggerProperties(TriggerResponse response)
         {
             return response.Resource;
         }

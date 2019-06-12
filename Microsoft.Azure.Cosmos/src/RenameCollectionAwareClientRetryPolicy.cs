@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        CosmosContainerSettings collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                        CosmosContainerProperties collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
 
                         if (collectionInfo == null)
                         {

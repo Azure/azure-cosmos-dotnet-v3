@@ -19,10 +19,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="conflict">The conflict to delete.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
-        /// <seealso cref="CosmosConflictSettings"/>
+        /// <seealso cref="CosmosConflictProperties"/>
         public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
             PartitionKey partitionKey,
-            CosmosConflictSettings conflict,
+            CosmosConflictProperties conflict,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The current state of the item associated with the conflict.</returns>
-        /// <seealso cref="CosmosConflictSettings"/>
+        /// <seealso cref="CosmosConflictProperties"/>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
             PartitionKey partitionKey,
-            CosmosConflictSettings cosmosConflict,
+            CosmosConflictProperties cosmosConflict,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cosmosConflict">The conflict for which we want to read the content of.</param>
         /// <returns>The content of the conflict.</returns>
-        /// <seealso cref="CosmosConflictSettings"/>
+        /// <seealso cref="CosmosConflictProperties"/>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
@@ -74,10 +74,10 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract T ReadConflictContent<T>(CosmosConflictSettings cosmosConflict);
+        public abstract T ReadConflictContent<T>(CosmosConflictProperties cosmosConflict);
 
         /// <summary>
-        /// Obtains an iterator to go through the <see cref="CosmosConflictSettings"/> on an Azure Cosmos container.
+        /// Obtains an iterator to go through the <see cref="CosmosConflictProperties"/> on an Azure Cosmos container.
         /// </summary>
         /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<CosmosConflictSettings> GetConflictsIterator(
+        public abstract FeedIterator<CosmosConflictProperties> GetConflictsIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 

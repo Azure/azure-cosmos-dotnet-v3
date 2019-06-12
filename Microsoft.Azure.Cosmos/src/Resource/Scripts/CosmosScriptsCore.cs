@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-                    CosmosStoredProcedureSettings storedProcedureSettings,
+                    CosmosStoredProcedureProperties storedProcedureSettings,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -37,11 +37,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosStoredProcedureSettings> GetStoredProceduresIterator(
+        public override FeedIterator<CosmosStoredProcedureProperties> GetStoredProceduresIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosStoredProcedureSettings>(
+            return new FeedIteratorCore<CosmosStoredProcedureProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            CosmosStoredProcedureSettings storedProcedureSettings,
+            CosmosStoredProcedureProperties storedProcedureSettings,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
-            CosmosTriggerSettings triggerSettings, 
+            CosmosTriggerProperties triggerSettings, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -181,11 +181,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosTriggerSettings> GetTriggersIterator(
+        public override FeedIterator<CosmosTriggerProperties> GetTriggersIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosTriggerSettings>(
+            return new FeedIteratorCore<CosmosTriggerProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
-            CosmosTriggerSettings triggerSettings, 
+            CosmosTriggerProperties triggerSettings, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionSettings userDefinedFunctionSettings, 
+            CosmosUserDefinedFunctionProperties userDefinedFunctionSettings, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -284,11 +284,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosUserDefinedFunctionSettings> GetUserDefinedFunctionsIterator(
+        public override FeedIterator<CosmosUserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosUserDefinedFunctionSettings>(
+            return new FeedIteratorCore<CosmosUserDefinedFunctionProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionSettings userDefinedFunctionSettings, 
+            CosmosUserDefinedFunctionProperties userDefinedFunctionSettings, 
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -359,14 +359,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosTriggerSettings>> ContainerFeedRequestExecutorAsync(
+        private Task<FeedResponse<CosmosTriggerProperties>> ContainerFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosTriggerSettings>(
+            return this.GetIteratorAsync<CosmosTriggerProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,
@@ -375,14 +375,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosStoredProcedureSettings>> StoredProcedureFeedRequestExecutorAsync(
+        private Task<FeedResponse<CosmosStoredProcedureProperties>> StoredProcedureFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosStoredProcedureSettings>(
+            return this.GetIteratorAsync<CosmosStoredProcedureProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,
@@ -391,14 +391,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosUserDefinedFunctionSettings>> UserDefinedFunctionFeedRequestExecutorAsync(
+        private Task<FeedResponse<CosmosUserDefinedFunctionProperties>> UserDefinedFunctionFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosUserDefinedFunctionSettings>(
+            return this.GetIteratorAsync<CosmosUserDefinedFunctionProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,

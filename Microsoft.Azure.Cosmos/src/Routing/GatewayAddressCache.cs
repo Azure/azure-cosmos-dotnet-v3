@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]
         public async Task OpenAsync(
             string databaseName,
-            CosmosContainerSettings collection,
+            CosmosContainerProperties collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
             CancellationToken cancellationToken)
         {
