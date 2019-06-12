@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentOutOfRangeException($"Container {this.LinkUri.ToString()} not found");
             }
-
+            
             if (containerProperties.PartitionKey?.Paths == null)
             {
                 throw new ArgumentOutOfRangeException($"Partition key not defined for container {this.LinkUri.ToString()}");
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
                 })
                 .Unwrap();
         }
-
+        
         private Task<CosmosResponseMessage> ReplaceStreamInternalAsync(
             Stream streamPayload,
             ContainerRequestOptions requestOptions = null,
