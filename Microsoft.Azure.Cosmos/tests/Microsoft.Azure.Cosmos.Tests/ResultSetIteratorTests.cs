@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (cosmosClientBuilder) => cosmosClientBuilder.WithConnectionModeDirect());
 
             CosmosContainer container = mockClient.GetContainer("database", "container");
-            FeedIterator<CosmosConflictProperties> feedIterator = container.GetConflicts().GetConflictsIterator();
+            FeedIterator<ConflictProperties> feedIterator = container.GetConflicts().GetConflictsIterator();
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -111,11 +111,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            FeedResponse<CosmosConflictProperties> response = await feedIterator.FetchNextSetAsync();
+            FeedResponse<ConflictProperties> response = await feedIterator.FetchNextSetAsync();
 
             Assert.AreEqual(1, response.Count());
 
-            CosmosConflictProperties responseSettings = response.FirstOrDefault();
+            ConflictProperties responseSettings = response.FirstOrDefault();
             Assert.IsNotNull(responseSettings);
 
             Assert.AreEqual("Conflict1", responseSettings.Id);
@@ -156,11 +156,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockClient.RequestHandler.InnerHandler = testHandler;
             CosmosResponseMessage streamResponse = await feedIterator.FetchNextSetAsync();
 
-            Collection<CosmosConflictProperties> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<CosmosConflictProperties>>(streamResponse.Content).Data;
+            Collection<ConflictProperties> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<ConflictProperties>>(streamResponse.Content).Data;
 
             Assert.AreEqual(1, response.Count());
 
-            CosmosConflictProperties responseSettings = response.FirstOrDefault();
+            ConflictProperties responseSettings = response.FirstOrDefault();
             Assert.IsNotNull(responseSettings);
 
             Assert.AreEqual("Conflict1", responseSettings.Id);
