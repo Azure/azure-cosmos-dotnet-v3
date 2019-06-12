@@ -22,14 +22,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void DatabaseSettingsDefaults()
         {
-            CosmosDatabaseProperties dbSettings = new CosmosDatabaseProperties();
+            DatabaseProperties dbSettings = new DatabaseProperties();
 
             Assert.IsNull(dbSettings.LastModified);
             Assert.IsNull(dbSettings.ResourceId);
             Assert.IsNull(dbSettings.Id);
             Assert.IsNull(dbSettings.ETag);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosDatabaseProperties), "Id");
+            SettingsContractTests.TypeAccessorGuard(typeof(DatabaseProperties), "Id");
         }
 
         [TestMethod]
@@ -87,8 +87,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_etag\":\"" + etag
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
-            CosmosDatabaseProperties deserializedPayload = 
-                JsonConvert.DeserializeObject<CosmosDatabaseProperties>(testPyaload);
+            DatabaseProperties deserializedPayload = 
+                JsonConvert.DeserializeObject<DatabaseProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string id = Guid.NewGuid().ToString();
 
-            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties()
+            DatabaseProperties databaseSettings = new DatabaseProperties()
             {
                 Id = id
             };
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(db);
 
             // Swap de-serialize and validate 
-            CosmosDatabaseProperties dbDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosDatabaseProperties>(directSerialized);
+            DatabaseProperties dbDeserSettings = SettingsContractTests.CosmosDeserialize<DatabaseProperties>(directSerialized);
             Database dbDeser = SettingsContractTests.DirectDeSerialize<Database>(cosmosSerialized);
 
             Assert.AreEqual(dbDeserSettings.Id, dbDeser.Id);
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 _etag: '00002000-0000-0000-0000-5b3ad0ab0000'
                 }";
 
-            CosmosDatabaseProperties databaseSettings = SettingsContractTests.CosmosDeserialize<CosmosDatabaseProperties>(dbResponsePayload);
+            DatabaseProperties databaseSettings = SettingsContractTests.CosmosDeserialize<DatabaseProperties>(dbResponsePayload);
             Database db = SettingsContractTests.DirectDeSerialize<Database>(dbResponsePayload);
 
             // Not all are exposed in CosmosDatabaseSettings

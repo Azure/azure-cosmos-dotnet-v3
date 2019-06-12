@@ -299,11 +299,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<CosmosDatabaseProperties> allDatabases = client.GetDatabasesIterator();
+            FeedIterator<DatabaseProperties> allDatabases = client.GetDatabasesIterator();
 
             while (allDatabases.HasMoreResults)
             {
-                foreach (CosmosDatabaseProperties db in await allDatabases.FetchNextSetAsync())
+                foreach (DatabaseProperties db in await allDatabases.FetchNextSetAsync())
                 {
                     await client.GetDatabase(db.Id).DeleteAsync();
                 }
