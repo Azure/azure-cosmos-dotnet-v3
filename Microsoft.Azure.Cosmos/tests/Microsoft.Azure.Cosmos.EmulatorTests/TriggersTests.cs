@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Create a user defined function 
             TriggerResponse createResponse = await this.scripts.CreateTriggerAsync(
-                triggerSettings: settings,
+                triggerProperties: settings,
                 cancellationToken: this.cancellationToken);
 
             ValidateTriggerSettings(settings, createResponse);

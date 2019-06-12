@@ -36,13 +36,13 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosConflictSettings> conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
+        /// FeedIterator<CosmosConflictProperties> conflictIterator = await cosmosConflicts.GetConflictsIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosConflictSettings item in await conflictIterator.FetchNextSetAsync())
+        ///     foreach(CosmosConflictProperties item in await conflictIterator.FetchNextSetAsync())
         ///     {
-        ///         MyClass intendedChanges = cosmosContainer.Conflicts.ReadConflictContent<MyClass>(item);
-        ///         ItemResponse<MyClass> currentState = await cosmosContainer.Conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///         MyClass intendedChanges = CosmosConflicts.ReadConflictContent<MyClass>(item);
+        ///         ItemResponse<MyClass> currentState = await CosmosConflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
         ///     }
         /// }
         /// ]]>
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
         /// FeedIterator<CosmosConflictSettings> conflictIterator = await cosmosContainer.Conflicts.GetConflictsIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosConflictSettings item in await conflictIterator.FetchNextSetAsync())
+        ///     foreach(CosmosConflictProperties item in await conflictIterator.FetchNextSetAsync())
         ///     {
         ///     }
         /// }

@@ -17,13 +17,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         private readonly CosmosContainer leaseContainer;
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
-        private readonly DocumentServiceLeaseStoreManagerSettings settings;
+        private readonly DocumentServiceLeaseStoreManagerOptions settings;
         private readonly RequestOptionsFactory requestOptionsFactory;
 
         public DocumentServiceLeaseManagerCosmos(
             CosmosContainer leaseContainer,
             DocumentServiceLeaseUpdater leaseUpdater,
-            DocumentServiceLeaseStoreManagerSettings settings,
+            DocumentServiceLeaseStoreManagerOptions settings,
             RequestOptionsFactory requestOptionsFactory)
         {
             this.leaseContainer = leaseContainer;

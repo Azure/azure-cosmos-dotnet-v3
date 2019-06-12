@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosContainer cosmosContainer = this.database.GetContainer("containerId");
-        /// CosmosContainerSettings settings = cosmosContainer.ReadAsync();
+        /// CosmosContainerProperties settings = cosmosContainer.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Replace a <see cref="CosmosContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="containerSettings">The <see cref="CosmosContainerProperties"/> object.</param>
+        /// <param name="containerProperties">The <see cref="CosmosContainerProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -101,15 +101,15 @@ namespace Microsoft.Azure.Cosmos
         /// Update the cosmosContainer to disable automatic indexing
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerSettings setting = containerReadResponse;
+        /// ContainerProperties containerProperties = containerReadResponse;
         /// setting.IndexingPolicy.Automatic = false;
-        /// ContainerResponse response = cosmosContainer.ReplaceAsync(setting);
-        /// ContainerSettings settings = response;
+        /// ContainerResponse response = cosmosContainer.ReplaceAsync(containerProperties);
+        /// ContainerProperties replacedProperties = response;
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> ReplaceAsync(
-            CosmosContainerProperties containerSettings,
+            CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -204,14 +204,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Replace a <see cref="CosmosContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="containerSettings">The <see cref="CosmosContainerProperties"/>.</param>
+        /// <param name="containerProperties">The <see cref="CosmosContainerProperties"/>.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the replace resource record.
         /// </returns>
         public abstract Task<CosmosResponseMessage> ReplaceStreamAsync(
-            CosmosContainerProperties containerSettings,
+            CosmosContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

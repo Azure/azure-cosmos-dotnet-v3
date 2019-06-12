@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal class DocumentServiceLeaseStoreManagerBuilder
     {
-        private DocumentServiceLeaseStoreManagerSettings settings = new DocumentServiceLeaseStoreManagerSettings();
+        private DocumentServiceLeaseStoreManagerOptions settings = new DocumentServiceLeaseStoreManagerOptions();
         private CosmosContainer container;
         private RequestOptionsFactory requestOptionsFactory;
 

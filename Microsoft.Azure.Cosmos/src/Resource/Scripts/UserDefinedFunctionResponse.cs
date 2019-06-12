@@ -26,11 +26,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal UserDefinedFunctionResponse(
           HttpStatusCode httpStatusCode,
           CosmosResponseMessageHeaders headers,
-          CosmosUserDefinedFunctionProperties cosmosUserDefinedFunctionSettings)
+          CosmosUserDefinedFunctionProperties cosmosUserDefinedFunctionProperties)
             : base(
               httpStatusCode,
               headers,
-              cosmosUserDefinedFunctionSettings)
+              cosmosUserDefinedFunctionProperties)
         {
         }
 

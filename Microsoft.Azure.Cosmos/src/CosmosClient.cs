@@ -231,12 +231,12 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClientContext ClientContext { get; private set; }
 
         /// <summary>
-        /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="CosmosAccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public virtual Task<CosmosAccountSettings> GetAccountSettingsAsync()
+        public virtual Task<CosmosAccountProperties> GetAccountPropertiesAsync()
         {
             return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.EndPoint);
         }
@@ -315,9 +315,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            CosmosDatabaseProperties databaseSettings = this.PrepareCosmosDatabaseSettings(id);
+            CosmosDatabaseProperties databaseProperties = this.PrepareCosmosDatabaseProperties(id);
             return this.CreateDatabaseAsync(
-                databaseSettings: databaseSettings,
+                databaseProperties: databaseProperties,
                 requestUnitsPerSecond: requestUnitsPerSecond,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -382,11 +382,11 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the database under the cosmos account
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosDatabaseSettings> feedIterator = this.cosmosClient.GetDatabasesIterator();
+        /// FeedIterator<CosmosDatabaseProperties> feedIterator = this.cosmosClient.GetDatabasesIterator();
         /// {
-        ///     foreach (CosmosDatabaseSettings databaseSettings in  await feedIterator.FetchNextSetAsync())
+        ///     foreach (CosmosDatabaseProperties databaseProperties in  await feedIterator.FetchNextSetAsync())
         ///     {
-        ///         Console.WriteLine(setting.Id); 
+        ///         Console.WriteLine(databaseProperties.Id); 
         ///     }
         /// }
         /// ]]>
@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos
         /// documents. Since databases are an administrative resource, the Service Master Key will be
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
-        /// <param name="databaseSettings">The database settings</param>
+        /// <param name="databaseProperties">The database properties</param>
         /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -424,18 +424,18 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public virtual Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
-                CosmosDatabaseProperties databaseSettings,
+                CosmosDatabaseProperties databaseProperties,
                 int? requestUnitsPerSecond = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (databaseSettings == null)
+            if (databaseProperties == null)
             {
-                throw new ArgumentNullException(nameof(databaseSettings));
+                throw new ArgumentNullException(nameof(databaseProperties));
             }
 
-            this.ClientContext.ValidateResource(databaseSettings.Id);
-            Stream streamPayload = this.ClientContext.SettingsSerializer.ToStream<CosmosDatabaseProperties>(databaseSettings);
+            this.ClientContext.ValidateResource(databaseProperties.Id);
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream<CosmosDatabaseProperties>(databaseProperties);
 
             return this.CreateDatabaseStreamInternalAsync(streamPayload, requestUnitsPerSecond, requestOptions, cancellationToken);
         }
@@ -468,14 +468,14 @@ namespace Microsoft.Azure.Cosmos
             this.RequestHandler = clientPipelineBuilder.Build();
 
             this.ResponseFactory = new CosmosResponseFactory(
-                defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
+                defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
 
             this.ClientContext = new CosmosClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
-                defaultJsonSerializer: this.ClientOptions.SettingsSerializer,
+                defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
@@ -484,35 +484,35 @@ namespace Microsoft.Azure.Cosmos
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 
-        internal CosmosDatabaseProperties PrepareCosmosDatabaseSettings(string id)
+        internal CosmosDatabaseProperties PrepareCosmosDatabaseProperties(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentNullException(nameof(id));
             }
 
-            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties()
+            CosmosDatabaseProperties databaseProperties = new CosmosDatabaseProperties()
             {
                 Id = id
             };
 
-            this.ClientContext.ValidateResource(databaseSettings.Id);
-            return databaseSettings;
+            this.ClientContext.ValidateResource(databaseProperties.Id);
+            return databaseProperties;
         }
 
         internal Task<DatabaseResponse> CreateDatabaseAsync(
-                    CosmosDatabaseProperties databaseSettings,
+                    CosmosDatabaseProperties databaseProperties,
                     int? requestUnitsPerSecond = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
-                streamPayload: this.ClientContext.SettingsSerializer.ToStream<CosmosDatabaseProperties>(databaseSettings),
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream<CosmosDatabaseProperties>(databaseProperties),
                 requestUnitsPerSecond: requestUnitsPerSecond,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseSettings.Id), response);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
         }
 
         private Task<CosmosResponseMessage> CreateDatabaseStreamInternalAsync(

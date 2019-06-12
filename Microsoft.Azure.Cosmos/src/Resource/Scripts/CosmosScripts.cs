@@ -20,11 +20,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="storedProcedureSettings">The Stored Procedure to create</param>
+        /// <param name="storedProcedureProperties">The Stored Procedure to create</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="CosmosStoredProcedureProperties"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureSettings"/> is not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureProperties"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///    }";
         ///    
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosStoredProcedureSettings storedProcedure = new CosmosStoredProcedureSettings(id, sprocBody);
+        /// CosmosStoredProcedureProperties storedProcedure = new CosmosStoredProcedureProperties(id, sprocBody);
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(storedProcedure);
         /// 
         /// // Execute the stored procedure
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-                    CosmosStoredProcedureProperties storedProcedureSettings,
+                    CosmosStoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -150,13 +150,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Replaces a <see cref="CosmosStoredProcedureProperties"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="storedProcedureSettings">The Stored Procedure to replace</param>
+        /// <param name="storedProcedureProperties">The Stored Procedure to replace</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureProperties"/>.
         /// </returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureSettings"/> is not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureProperties"/> is not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
         ///     <listheader>
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            CosmosStoredProcedureProperties storedProcedureSettings,
+            CosmosStoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -338,11 +338,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="triggerSettings">The <see cref="CosmosTriggerProperties"/> object.</param>
+        /// <param name="triggerProperties">The <see cref="CosmosTriggerProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="triggerSettings"/> is not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="triggerProperties"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
         /// CosmosTrigger cosmosTrigger = await scripts.CreateTriggerAsync(
-        ///     new CosmosTriggerSettings
+        ///     new CosmosTriggerProperties
         ///     {
         ///         Id = "addTax",
         ///         Body = @"function AddTax() {
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<TriggerResponse> CreateTriggerAsync(
-            CosmosTriggerProperties triggerSettings,
+            CosmosTriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -412,12 +412,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosResultSetIterator<CosmosTriggerSettings> setIterator = scripts.Triggers.GetTriggerIterator();
+        /// CosmosResultSetIterator<CosmosTriggerProperties> setIterator = scripts.Triggers.GetTriggerIterator();
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosTriggerSettings settings in await setIterator.FetchNextSetAsync())
+        ///     foreach(CosmosTriggerProperties triggerProperties in await setIterator.FetchNextSetAsync())
         ///     {
-        ///          Console.WriteLine(settings.Id); 
+        ///          Console.WriteLine(triggerProperties.Id); 
         ///     }
         /// }
         /// ]]>
@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
         /// TriggerResponse response = await scripts.ReadTriggerAsync("ExistingId");
-        /// CosmosTriggerSettings settings = response;
+        /// CosmosTriggerProperties triggerProperties = response;
         /// ]]>
         /// </code>
         /// </example>
@@ -464,19 +464,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Replaces a <see cref="CosmosTriggerProperties"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="triggerSettings">The <see cref="CosmosTriggerProperties"/> object.</param>
+        /// <param name="triggerProperties">The <see cref="CosmosTriggerProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="CosmosTriggerProperties"/> containing the updated resource record.
         /// </returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="triggerSettings"/> is not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="triggerProperties"/> is not set.</exception>
         /// <example>
         /// This examples replaces an existing trigger.
         /// <code language="c#">
         /// <![CDATA[
         /// //Updated settings
-        /// CosmosTriggerSettings settings = new CosmosTriggerSettings
+        /// CosmosTriggerProperties triggerProperties = new CosmosTriggerProperties
         /// {
         ///     Id = "testTriggerId",
         ///     Body = @"function AddTax() {
@@ -493,12 +493,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// };
         /// 
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// TriggerResponse response = await scripts.ReplaceTriggerAsync(CosmosTriggerSettings);
+        /// TriggerResponse response = await scripts.ReplaceTriggerAsync(triggerSettigs);
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<TriggerResponse> ReplaceTriggerAsync(
-                    CosmosTriggerProperties triggerSettings,
+                    CosmosTriggerProperties triggerProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -526,11 +526,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="userDefinedFunctionSettings">The <see cref="CosmosUserDefinedFunctionProperties"/> object.</param>
+        /// <param name="userDefinedFunctionProperties">The <see cref="CosmosUserDefinedFunctionProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A task object representing the service response for the asynchronous operation.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="userDefinedFunctionSettings"/> is not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="userDefinedFunctionProperties"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user defined function are:
         /// <list type="table">
@@ -557,7 +557,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
         /// await scripts.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
-        ///     new CosmosUserDefinedFunctionSettings 
+        ///     new CosmosUserDefinedFunctionProperties 
         ///     { 
         ///         Id = "calculateTax", 
         ///         Body = @"function(amt) { return amt * 0.05; }" 
@@ -583,7 +583,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionSettings,
+            CosmosUserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -598,12 +598,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosResultSetIterator<CosmosUserDefinedFunctionSettings> setIterator = scripts.GetUserDefinedFunctionIterator();
+        /// CosmosResultSetIterator<CosmosUserDefinedFunctionProperties> setIterator = scripts.GetUserDefinedFunctionIterator();
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosUserDefinedFunctionSettings settings in await setIterator.FetchNextSetAsync())
+        ///     foreach(CosmosUserDefinedFunctionProperties usdfProperties in await setIterator.FetchNextSetAsync())
         ///     {
-        ///          Console.WriteLine(settings.Id); 
+        ///          Console.WriteLine(udfProperties.Id); 
         ///     }
         /// }
         /// ]]>
@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
         /// UserDefinedFunctionResponse response = await scripts.ReadUserDefinedFunctionAsync("ExistingId");
-        /// CosmosUserDefinedFunctionSettings settings = response;
+        /// CosmosUserDefinedFunctionProperties udfProperties = response;
         /// ]]>
         /// </code>
         /// </example>
@@ -653,7 +653,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Replaces a <see cref="CosmosUserDefinedFunctionProperties"/> in the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="userDefinedFunctionSettings">The <see cref="CosmosUserDefinedFunctionProperties"/> object.</param>
+        /// <param name="userDefinedFunctionProperties">The <see cref="CosmosUserDefinedFunctionProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -665,19 +665,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// CosmosScripts scripts = this.container.GetScripts();
         /// //Updated settings
-        /// CosmosUserDefinedFunctionSettings settings = new CosmosUserDefinedFunctionSettings
+        /// CosmosUserDefinedFunctionProperties udfProperties = new CosmosUserDefinedFunctionProperties
         /// {
         ///     Id = "testUserDefinedFunId",
         ///     Body = "function(amt) { return amt * 0.15; }",
         /// };
         /// 
-        /// UserDefinedFunctionResponse response = await scripts.ReplaceUserDefinedFunctionAsync(settings);
-        /// CosmosUserDefinedFunctionSettings settings = response;
+        /// UserDefinedFunctionResponse response = await scripts.ReplaceUserDefinedFunctionAsync(udfProperties);
+        /// CosmosUserDefinedFunctionProperties udfProperties = response;
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionSettings,
+            CosmosUserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

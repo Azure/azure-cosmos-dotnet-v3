@@ -25,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-                    CosmosStoredProcedureProperties storedProcedureSettings,
+                    CosmosStoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStoredProcedureOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
+                streamPayload: CosmosResource.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -67,14 +67,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            CosmosStoredProcedureProperties storedProcedureSettings,
+            CosmosStoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStoredProcedureOperationAsync(
-                id: storedProcedureSettings.Id,
+                id: storedProcedureProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
+                streamPayload: CosmosResource.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -154,29 +154,29 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
-            CosmosTriggerProperties triggerSettings, 
+            CosmosTriggerProperties triggerProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (triggerSettings == null)
+            if (triggerProperties == null)
             {
-                throw new ArgumentNullException(nameof(triggerSettings));
+                throw new ArgumentNullException(nameof(triggerProperties));
             }
 
-            if (string.IsNullOrEmpty(triggerSettings.Id))
+            if (string.IsNullOrEmpty(triggerProperties.Id))
             {
-                throw new ArgumentNullException(nameof(triggerSettings.Id));
+                throw new ArgumentNullException(nameof(triggerProperties.Id));
             }
 
-            if (string.IsNullOrEmpty(triggerSettings.Body))
+            if (string.IsNullOrEmpty(triggerProperties.Body))
             {
-                throw new ArgumentNullException(nameof(triggerSettings.Body));
+                throw new ArgumentNullException(nameof(triggerProperties.Body));
             }
 
             return this.ProcessTriggerOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(triggerSettings),
+                streamPayload: CosmosResource.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -211,29 +211,29 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
-            CosmosTriggerProperties triggerSettings, 
+            CosmosTriggerProperties triggerProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (triggerSettings == null)
+            if (triggerProperties == null)
             {
-                throw new ArgumentNullException(nameof(triggerSettings));
+                throw new ArgumentNullException(nameof(triggerProperties));
             }
 
-            if (string.IsNullOrEmpty(triggerSettings.Id))
+            if (string.IsNullOrEmpty(triggerProperties.Id))
             {
-                throw new ArgumentNullException(nameof(triggerSettings.Id));
+                throw new ArgumentNullException(nameof(triggerProperties.Id));
             }
 
-            if (string.IsNullOrEmpty(triggerSettings.Body))
+            if (string.IsNullOrEmpty(triggerProperties.Body))
             {
-                throw new ArgumentNullException(nameof(triggerSettings.Body));
+                throw new ArgumentNullException(nameof(triggerProperties.Body));
             }
 
             return this.ProcessTriggerOperationAsync(
-                id: triggerSettings.Id,
+                id: triggerProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(triggerSettings),
+                streamPayload: CosmosResource.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -257,29 +257,29 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionSettings, 
+            CosmosUserDefinedFunctionProperties userDefinedFunctionProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (userDefinedFunctionSettings == null)
+            if (userDefinedFunctionProperties == null)
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties));
             }
 
-            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Id))
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Id))
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Id));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Id));
             }
 
-            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Body))
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Body))
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Body));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
             }
 
             return this.ProcessUserDefinedFunctionOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
+                streamPayload: CosmosResource.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -314,29 +314,29 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionSettings, 
+            CosmosUserDefinedFunctionProperties userDefinedFunctionProperties, 
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (userDefinedFunctionSettings == null)
+            if (userDefinedFunctionProperties == null)
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties));
             }
 
-            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Id))
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Id))
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Id));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Id));
             }
 
-            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Body))
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Body))
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Body));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
             }
 
             return this.ProcessUserDefinedFunctionOperationAsync(
-                id: userDefinedFunctionSettings.Id,
+                id: userDefinedFunctionProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
+                streamPayload: CosmosResource.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

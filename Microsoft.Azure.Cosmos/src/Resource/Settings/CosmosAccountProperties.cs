@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary> 
-    /// Represents a <see cref="CosmosAccountSettings"/>. A DatabaseAccountSettings is the container for databases in the Azure Cosmos DB service.
+    /// Represents a <see cref="CosmosAccountProperties"/>. A DatabaseAccountProperties is the container for databases in the Azure Cosmos DB service.
     /// </summary>
-    public class CosmosAccountSettings
+    public class CosmosAccountProperties
     {
         private Collection<CosmosAccountLocation> readLocations;
         private Collection<CosmosAccountLocation> writeLocations;
@@ -22,9 +22,9 @@ namespace Microsoft.Azure.Cosmos
         internal readonly Lazy<IDictionary<string, object>> QueryEngineConfiurationInternal;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosAccountSettings"/> class.
+        /// Initializes a new instance of the <see cref="CosmosAccountProperties"/> class.
         /// </summary>
-        internal CosmosAccountSettings()
+        internal CosmosAccountProperties()
         {
             this.QueryEngineConfiurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
         internal string AddressesLink { get; set; }
 
         /// <summary>
-        /// Gets the ReplicationPolicy settings
+        /// Gets the ReplicationPolicy properties
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.UserReplicationPolicy)]
         internal ReplicationPolicy ReplicationPolicy { get; set; }

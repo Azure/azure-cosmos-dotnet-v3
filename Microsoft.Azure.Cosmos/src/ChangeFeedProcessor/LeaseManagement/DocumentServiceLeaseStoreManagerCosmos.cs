@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private readonly DocumentServiceLeaseContainer leaseContainer;
 
         public DocumentServiceLeaseStoreManagerCosmos(
-            DocumentServiceLeaseStoreManagerSettings settings,
+            DocumentServiceLeaseStoreManagerOptions settings,
             CosmosContainer leaseContainer,
             RequestOptionsFactory requestOptionsFactory)
             : this(settings, leaseContainer, requestOptionsFactory, new DocumentServiceLeaseUpdaterCosmos(leaseContainer))
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Internal only for testing purposes, otherwise would be private.
         /// </remarks>
         internal DocumentServiceLeaseStoreManagerCosmos(
-            DocumentServiceLeaseStoreManagerSettings settings,
+            DocumentServiceLeaseStoreManagerOptions settings,
             CosmosContainer container,
             RequestOptionsFactory requestOptionsFactory,
             DocumentServiceLeaseUpdater leaseUpdater) // For testing purposes only.
