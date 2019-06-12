@@ -278,6 +278,51 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
+        /// </summary>
+        /// <value>
+        /// By default, idle connections are kept open indefinitely. Value must be greater than or equal to 10 minutes. Recommended values are between 20 minutes and 24 hours.
+        /// </value>
+        /// <remarks>
+        /// Mainly useful for sparse infrequent access to a large database account.
+        /// </remarks>
+        public virtual TimeSpan? IdleTcpConnectionTimeout { get; set; }      
+
+        /// <summary>
+        /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
+        /// </summary>
+        /// <value>
+        /// The default timeout is 5 seconds. Recommended values are greater than or equal to 5 seconds.
+        /// </value>
+        /// <remarks>
+        /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// </remarks>
+        public virtual TimeSpan? OpenTcpConnectionTimeout { get; set; }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.
+        /// </summary>
+        /// <value>
+        /// The default settings allow 30 simultaneous requests per connection.
+        /// Do not set this value lower than 4 requests per connection or higher than 50-100 requests per connection.       
+        /// The former can lead to a large number of connections to be created. 
+        /// The latter can lead to head of line blocking, high latency and timeouts.
+        /// </value>
+        /// <remarks>
+        /// Applications with a very high degree of parallelism per connection, with large requests or responses, or with very tight latency requirements might get better performance with 8-16 requests per connection.
+        /// </remarks>
+        public virtual int? MaxRequestsPerTcpConnection { get; set; }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the maximum number of TCP connections that may be opened to each Cosmos DB back-end.
+        /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
+        /// </summary>
+        /// <value>
+        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// </value>
+        public virtual int? MaxTcpConnectionsPerEndpoint { get; set; }
+
+        /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
         /// The default serializer is always used for all system owned types like CosmosDatabaseSettings.
         /// The default serializer is used for user types if no UserJsonSerializer is specified
@@ -397,6 +442,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal ConnectionPolicy GetConnectionPolicy()
         {
+            if (this.ConnectionMode == ConnectionMode.Gateway && (this.IdleTcpConnectionTimeout.HasValue 
+                || this.OpenTcpConnectionTimeout.HasValue 
+                || this.MaxRequestsPerTcpConnection.HasValue 
+                || MaxTcpConnectionsPerEndpoint.HasValue))
+            {
+                throw new ArgumentException($"{nameof(this.IdleTcpConnectionTimeout)}, {nameof(this.OpenTcpConnectionTimeout)}, {nameof(MaxRequestsPerTcpConnection)} and {nameof(this.MaxTcpConnectionsPerEndpoint)} require direct mode.");
+            }
+
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -405,6 +458,10 @@ namespace Microsoft.Azure.Cosmos
                 ConnectionProtocol = this.ConnectionProtocol,
                 UserAgentContainer = this.UserAgentContainer,
                 UseMultipleWriteLocations = true,
+                IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
+                OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
+                MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
             };
 
             if (this.ApplicationRegion != null)

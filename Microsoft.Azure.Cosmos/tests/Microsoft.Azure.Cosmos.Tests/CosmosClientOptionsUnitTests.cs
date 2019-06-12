@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
         {
             string endpoint = AccountEndpoint;
+            string key = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
             string region = CosmosRegions.WestCentralUS;
             ConnectionMode connectionMode = ConnectionMode.Gateway;
             TimeSpan requestTimeout = TimeSpan.FromDays(1);
@@ -33,6 +34,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             ApiType apiType = ApiType.Sql;
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
+            TimeSpan idleTcpConnectionTimeout = new TimeSpan(0, 10, 0);
+            TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
+            int maxRequestsPerTcpConnection = 30;
+            int maxTcpConnectionsPerEndpoint = 65535;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndPoint: endpoint,
@@ -59,6 +64,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(Protocol.Tcp, policy.ConnectionProtocol);
             Assert.AreEqual(clientOptions.GatewayModeMaxConnectionLimit, policy.MaxConnectionLimit);
             Assert.AreEqual(clientOptions.RequestTimeout, policy.RequestTimeout);
+            Assert.IsNull(policy.IdleTcpConnectionTimeout);
+            Assert.IsNull(policy.OpenTcpConnectionTimeout);
+            Assert.IsNull(policy.MaxRequestsPerTcpConnection);
+            Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections)
@@ -93,6 +102,33 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.UseMultipleWriteLocations);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
+
+            //Verify Direct Mode settings
+            cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndPoint: endpoint,
+                accountKey: key);
+            cosmosClientBuilder.WithConnectionModeDirect(
+                idleTcpConnectionTimeout,
+                openTcpConnectionTimeout,
+                maxRequestsPerTcpConnection,
+                maxTcpConnectionsPerEndpoint
+            );
+
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            clientOptions = cosmosClient.ClientOptions;
+
+            //Verify all the values are updated
+            Assert.AreEqual(idleTcpConnectionTimeout, clientOptions.IdleTcpConnectionTimeout);
+            Assert.AreEqual(openTcpConnectionTimeout, clientOptions.OpenTcpConnectionTimeout);
+            Assert.AreEqual(maxRequestsPerTcpConnection, clientOptions.MaxRequestsPerTcpConnection);
+            Assert.AreEqual(maxTcpConnectionsPerEndpoint, clientOptions.MaxTcpConnectionsPerEndpoint);
+
+            //Verify GetConnectionPolicy returns the correct values
+            policy = clientOptions.GetConnectionPolicy();
+            Assert.AreEqual(idleTcpConnectionTimeout, policy.IdleTcpConnectionTimeout);
+            Assert.AreEqual(openTcpConnectionTimeout, policy.OpenTcpConnectionTimeout);
+            Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
+            Assert.AreEqual(maxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
         }
 
         [TestMethod]
@@ -169,6 +205,39 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.CosmosSerializer);
             Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
             Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault).InternalJsonSerializer);
+        }
+
+        [TestMethod]
+        public void VerifyGetConnectionPolicyThrowIfDirectModeSettingAreUsedInGatewayMode()
+        {
+            string endpoint = AccountEndpoint;
+            string key = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndPoint: endpoint,
+                accountKey: key);
+
+            TimeSpan idleTcpConnectionTimeout = new TimeSpan(0, 10, 0);
+            TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
+            int maxRequestsPerTcpConnection = 30;
+            int maxTcpConnectionsPerEndpoint = 65535;
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions(endpoint, key)
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                IdleTcpConnectionTimeout = idleTcpConnectionTimeout
+            };
+
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.GetConnectionPolicy(); });
+
+            cosmosClientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout;
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.GetConnectionPolicy(); });
+
+            cosmosClientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection;
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.GetConnectionPolicy(); });
+
+            cosmosClientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint;
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.GetConnectionPolicy(); });
         }
     }
 }
