@@ -7,14 +7,13 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary> 
-    /// Represents a <see cref="CosmosAccountProperties"/>. A DatabaseAccountProperties is the container for databases in the Azure Cosmos DB service.
+    /// Represents a <see cref="AccountProperties"/>. A DatabaseAccountProperties is the container for databases in the Azure Cosmos DB service.
     /// </summary>
-    public class CosmosAccountProperties
+    public class AccountProperties
     {
         private Collection<CosmosAccountLocation> readLocations;
         private Collection<CosmosAccountLocation> writeLocations;
@@ -22,9 +21,9 @@ namespace Microsoft.Azure.Cosmos
         internal readonly Lazy<IDictionary<string, object>> QueryEngineConfiurationInternal;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosAccountProperties"/> class.
+        /// Initializes a new instance of the <see cref="AccountProperties"/> class.
         /// </summary>
-        internal CosmosAccountProperties()
+        internal AccountProperties()
         {
             this.QueryEngineConfiurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }

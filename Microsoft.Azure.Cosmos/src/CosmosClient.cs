@@ -231,12 +231,12 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClientContext ClientContext { get; private set; }
 
         /// <summary>
-        /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public virtual Task<CosmosAccountProperties> GetAccountPropertiesAsync()
+        public virtual Task<AccountProperties> GetAccountPropertiesAsync()
         {
             return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.EndPoint);
         }
