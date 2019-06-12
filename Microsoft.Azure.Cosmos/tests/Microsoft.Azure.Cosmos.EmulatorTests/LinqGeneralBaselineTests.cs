@@ -1694,7 +1694,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public async Task ValidateLinqQueries()
         {
-            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerProperties (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/id" ));
+            CosmosContainer container = await testDb.CreateContainerAsync(new ContainerProperties (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/id" ));
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };
@@ -2176,7 +2176,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public async Task ValidateLinqOnDataDocumentType()
         {
-            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerProperties(id : nameof(ValidateLinqOnDataDocumentType), partitionKeyPath : "/id"));
+            CosmosContainer container = await testDb.CreateContainerAsync(new ContainerProperties(id : nameof(ValidateLinqOnDataDocumentType), partitionKeyPath : "/id"));
 
             DataDocument doc = new DataDocument() { Id = Guid.NewGuid().ToString("N"), Number = 0, TypeName = "Hello" };
             container.CreateItemAsync(doc).Wait();
@@ -2244,7 +2244,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private async Task ValidateServerSideQueryEvalWithPaginationScenario()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/title" }), Kind = PartitionKind.Hash };
-            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties
+            ContainerProperties cosmosContainerSettings = new ContainerProperties
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
