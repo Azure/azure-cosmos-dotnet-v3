@@ -119,6 +119,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return response.Response;
         }
 
+        internal static TValue CreateExecuteAndDeleteCosmosProcedure<TValue>(CosmosContainer collection,
+            string transientProcedure,
+            out StoredProcedureExecuteResponse<TValue> response,
+            string partitionKey = null)
+        {
+            // create
+            CosmosStoredProcedureProperties storedProcedure = new CosmosStoredProcedureProperties
+            {
+                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                Body = transientProcedure
+            };
+            StoredProcedureResponse retrievedStoredProcedure = collection.GetScripts().CreateStoredProcedureAsync(storedProcedure).Result;
+            Assert.IsNotNull(retrievedStoredProcedure);
+            Assert.AreEqual(storedProcedure.Id, retrievedStoredProcedure.Resource.Id);
+
+            response = collection.GetScripts().ExecuteStoredProcedureAsync<object, TValue>(new Cosmos.PartitionKey(partitionKey), storedProcedure.Id, null).Result;
+            Assert.IsNotNull(response);
+
+            // delete
+            StoredProcedureResponse deleteResponse = collection.GetScripts().DeleteStoredProcedureAsync(storedProcedure.Id).Result;
+            Assert.IsNotNull(deleteResponse);
+
+            return response;
+        }
+
         internal static TValue GetStoredProcedureExecutionResult<TValue>(DocumentClient client, StoredProcedure storedProcedure, params dynamic[] paramsList)
         {
             return client.ExecuteStoredProcedureAsync<TValue>(storedProcedure, paramsList).Result;

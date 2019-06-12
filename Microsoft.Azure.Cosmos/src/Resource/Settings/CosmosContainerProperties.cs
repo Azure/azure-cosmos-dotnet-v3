@@ -58,13 +58,13 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
-        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private IndexingPolicy indexingPolicyInternal;
 
-        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private UniqueKeyPolicy uniqueKeyPolicyInternal;
 
-        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
         private string[] partitionKeyPathTokens;
@@ -192,8 +192,8 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public string ETag { get; protected set; }
+        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
+        public string ETag { get; private set; }
 
         /// <summary>
         /// Gets the last modified timestamp associated with <see cref="CosmosContainerProperties" /> from the Azure Cosmos DB service.
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive)]
+        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos
         /// resource whether that is a database, a container or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
+        [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
 
         internal string ResourceId { get; private set; }
 

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
         private static readonly JsonSerializer Serializer = new JsonSerializer()
         {
-            NullValueHandling = NullValueHandling.Ignore,
+            NullValueHandling = NullValueHandling.Include //We want to include null in json if user explicitly sets it.
         };
 
         public override T FromStream<T>(Stream stream)

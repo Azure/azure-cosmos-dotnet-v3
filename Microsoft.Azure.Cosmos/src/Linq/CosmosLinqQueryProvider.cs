@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Linq;
     using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary> 
     /// This class serve as LINQ query provider implementing IQueryProvider.
@@ -14,23 +15,26 @@ namespace Microsoft.Azure.Cosmos.Linq
     internal sealed class CosmosLinqQueryProvider : IQueryProvider
     {
         private readonly CosmosContainerCore container;
-        private readonly CosmosQueryClient queryClient;
+        private readonly CosmosQueryClientCore queryClient;
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution;
+        private readonly Action<IQueryable> onExecuteScalarQueryCallback;
 
         public CosmosLinqQueryProvider(
            CosmosContainerCore container,
            CosmosJsonSerializer cosmosJsonSerializer,
-           CosmosQueryClient queryClient,
+           CosmosQueryClientCore queryClient,
            QueryRequestOptions cosmosQueryRequestOptions,
-           bool allowSynchronousQueryExecution)
+           bool allowSynchronousQueryExecution,
+           Action<IQueryable> onExecuteScalarQueryCallback = null)
         {
             this.container = container;
             this.cosmosJsonSerializer = cosmosJsonSerializer;
             this.queryClient = queryClient;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
+            this.onExecuteScalarQueryCallback = onExecuteScalarQueryCallback;
         }
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
@@ -69,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution);
-
+            this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
             return cosmosLINQQuery.ToList().FirstOrDefault();
         }
 
@@ -77,15 +81,15 @@ namespace Microsoft.Azure.Cosmos.Linq
         public object Execute(Expression expression)
         {
             Type cosmosQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(object));
-            CosmosLinqQuery<object> documentQuery = (CosmosLinqQuery<object>)Activator.CreateInstance(
+            CosmosLinqQuery<object> cosmosLINQQuery = (CosmosLinqQuery<object>)Activator.CreateInstance(
                 cosmosQueryType,
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
                 this.cosmosQueryRequestOptions,
                 this.allowSynchronousQueryExecution);
-
-            return documentQuery.ToList().FirstOrDefault();
+            this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
+            return cosmosLINQQuery.ToList().FirstOrDefault();
         }
     }
 }

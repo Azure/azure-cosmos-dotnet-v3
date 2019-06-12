@@ -22,10 +22,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportWrapperTests;
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
-    using Microsoft.Azure.Cosmos.Linq;
     using Newtonsoft.Json.Linq;
 
     [TestClass]

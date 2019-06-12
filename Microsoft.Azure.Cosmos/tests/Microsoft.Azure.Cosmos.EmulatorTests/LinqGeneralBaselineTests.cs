@@ -17,33 +17,33 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Newtonsoft.Json;
     using BaselineTest;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     [TestClass]
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
-        private static DocumentClient client;
-        private static Database testDb;
-        private static DocumentCollection testCollection;
+        private static CosmosClient cosmosClient;
+        private static CosmosDatabase testDb;
+        private static CosmosContainer testContainer;
         private static Func<bool, IQueryable<Family>> getQuery;
 
         [ClassInitialize]
-        public static void Initialize(TestContext textContext)
+        public async static Task Initialize(TestContext textContext)
         {
-            client = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
+            cosmosClient = TestCommon.CreateCosmosClient(true);
             DocumentClientSwitchLinkExtension.Reset("LinqTests");
-            var query = new DocumentQuery<Family>(client, ResourceType.Document, typeof(Document), null, null);
-            CleanUp();
+            await CleanUp();
 
-            testDb = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result;
-            getQuery = LinqTestsCommon.GenerateFamilyData(client, testDb, out testCollection);
+            testDb = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            getQuery = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out testContainer);
         }
 
         [ClassCleanup]
-        public static void CleanUp()
+        public async static Task CleanUp()
         {
             if (testDb != null)
             {
-                client.DeleteDatabaseAsync(testDb.SelfLink).Wait();
+                await testDb.DeleteAsync();
             }
         }
 
@@ -224,7 +224,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Ignore] //TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/330
         public void TestSubquery()
         {
             var inputs = new List<LinqTestInput>();
@@ -498,13 +497,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .OrderBy(f => f.ChildrenCount)
                 .Take(10), 
                 ErrorMessages.OrderbyItemExpressionCouldNotBeMapped));
-                
-            inputs.Add(new LinqTestInput(
-                "Select(new w/ Where) -> Where -> OrderBy -> Take", b => getQuery(b)
-                .Select(f => new { f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => c.Grade > 90) })
-                .Where(f => f.ChildrenCount > 2 && f.SmartChildren.Count() > 1)
-                .OrderBy(f => f.FamilyId)
-                .Take(10)));
+            // TODO https://github.com/Azure/azure-cosmos-dotnet-v3/issues/375
+            //inputs.Add(new LinqTestInput(
+            //    "Select(new w/ Where) -> Where -> OrderBy -> Take", b => getQuery(b)
+            //    .Select(f => new { f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => c.Grade > 90) })
+            //    .Where(f => f.ChildrenCount > 2 && f.SmartChildren.Count() > 1)
+            //    .OrderBy(f => f.FamilyId)
+            //    .Take(10)));
 
             inputs.Add(new LinqTestInput(
                 "Select(new { Select(Select), conditional Count Take }) -> Where -> Select(Select(Any))", b => getQuery(b)
@@ -1383,13 +1382,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        [Ignore]
         public void TestDistinctTranslation()
         {
-            //TODO
-            //V2 using V3 pipeline causing issue on accessing Continuation in CosmosQueryResponseMessageHeaders
-            //This will be fine once we convert these test cases to use V3 pipeline
-
             var inputs = new List<LinqTestInput>();
 
             // Simple distinct
@@ -1698,10 +1692,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void ValidateLinqQueries()
+        public async Task ValidateLinqQueries()
         {
-            DocumentCollection collection = client.CreateDocumentCollectionAsync(
-                testDb.SelfLink, new DocumentCollection { Id = Guid.NewGuid().ToString("N"), PartitionKey = defaultPartitionKeyDefinition }).Result.Resource;
+            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerProperties (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/id" ));
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };
@@ -1713,18 +1706,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 Gender = "female",
                 Grade = 1,
                 Pets = new List<Pet>() { pet, new Pet() { GivenName = "koko" } },
-                Things = new Dictionary<string, string>() { { "A", "B" }, { "C", "D" } }
+                Things = new Dictionary<string, string>() { { "A", "B" }, { "C", "D" } },
             };
 
             Address address = new Address { State = "NY", County = "Manhattan", City = "NY" };
-            Family family = new Family { FamilyId = "WakefieldFamily", Parents = new Parent[] { mother, father }, Children = new Child[] { child }, IsRegistered = false, Int = 3, NullableInt = 5 };
+            Family family = new Family { FamilyId = "WakefieldFamily", Parents = new Parent[] { mother, father }, Children = new Child[] { child }, IsRegistered = false, Int = 3, NullableInt = 5 , Id = "WakefieldFamily"};
 
             List<Family> fList = new List<Family>();
             fList.Add(family);
 
-            client.CreateDocumentAsync(collection.SelfLink, family).Wait();
-            FeedOptions feedOptions = new FeedOptions { EnableCrossPartitionQuery = true };
-            IOrderedQueryable<Family> query = client.CreateDocumentQuery<Family>(collection.DocumentsLink, feedOptions);
+            container.CreateItemAsync<Family>(family).Wait();
+            IOrderedQueryable<Family> query = container.CreateItemQuery<Family>(allowSynchronousQueryExecution : true);
 
             IEnumerable<string> q1 = query.Select(f => f.Parents[0].FamilyName);
             Assert.AreEqual(q1.FirstOrDefault(), family.Parents[0].FamilyName);
@@ -1768,10 +1760,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual(q10.FamilyId, family.FamilyId);
 
             GuidClass guidObject = new GuidClass() { Id = new Guid("098aa945-7ed8-4c50-b7b8-bd99eddb54bc") };
-            client.CreateDocumentAsync(collection.SelfLink, guidObject).Wait();
+            container.CreateItemAsync(guidObject).Wait();
             var guidData = new List<GuidClass>() { guidObject };
 
-            var guid = client.CreateDocumentQuery<GuidClass>(collection.DocumentsLink, feedOptions);
+            var guid = container.CreateItemQuery<GuidClass>(allowSynchronousQueryExecution: true);
 
             IQueryable<GuidClass> q11 = guid.Where(g => g.Id == guidObject.Id);
             Assert.AreEqual(((IEnumerable<GuidClass>)q11).FirstOrDefault().Id, guidObject.Id);
@@ -1780,9 +1772,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual(((IEnumerable<GuidClass>)q12).FirstOrDefault().Id, guidObject.Id);
 
             ListArrayClass arrayObject = new ListArrayClass() { Id = "arrayObject", ArrayField = new int[] { 1, 2, 3 } };
-            client.CreateDocumentAsync(collection.SelfLink, arrayObject).Wait();
+            container.CreateItemAsync(arrayObject).Wait();
 
-            var listArrayQuery = client.CreateDocumentQuery<ListArrayClass>(collection.DocumentsLink, feedOptions);
+            var listArrayQuery = container.CreateItemQuery<ListArrayClass>(allowSynchronousQueryExecution : true);
 
             IEnumerable<dynamic> q13 = listArrayQuery.Where(a => a.ArrayField == arrayObject.ArrayField);
             Assert.AreEqual(q13.FirstOrDefault().Id, arrayObject.Id);
@@ -1792,7 +1784,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.IsNull(q13.FirstOrDefault());
 
             ListArrayClass listObject = new ListArrayClass() { Id = "listObject", ListField = new List<int> { 1, 2, 3 } };
-            client.CreateDocumentAsync(collection.SelfLink, listObject).Wait();
+            container.CreateItemAsync(listObject).Wait();
             var listArrayObjectData = new List<ListArrayClass>() { arrayObject, listObject };
 
             IEnumerable<dynamic> q14 = listArrayQuery.Where(a => a.ListField == listObject.ListField);
@@ -1832,9 +1824,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             string doc1Id = "document1:x:'!@TT){}\"";
             Document doubleQoutesDocument = new Document() { Id = doc1Id };
-            client.CreateDocumentAsync(collection.DocumentsLink, doubleQoutesDocument).Wait();
+            container.CreateItemAsync(doubleQoutesDocument).Wait();
 
-            var docQuery = from book in client.CreateDocumentQuery<Document>(collection.DocumentsLink, feedOptions)
+            var docQuery = from book in container.CreateItemQuery<Document>(allowSynchronousQueryExecution : true)
                            where book.Id == doc1Id
                            select book;
 
@@ -1842,30 +1834,30 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             GreatFamily greatFamily = new GreatFamily() { Family = family };
             GreatGreatFamily greatGreatFamily = new GreatGreatFamily() { GreatFamilyId = Guid.NewGuid().ToString(), GreatFamily = greatFamily };
-            client.CreateDocumentAsync(collection.DocumentsLink, greatGreatFamily).Wait();
+            container.CreateItemAsync(greatGreatFamily).Wait();
             var greatGreatFamilyData = new List<GreatGreatFamily>() { greatGreatFamily };
 
-            IOrderedQueryable<GreatGreatFamily> queryable = client.CreateDocumentQuery<GreatGreatFamily>(collection.DocumentsLink, feedOptions);
+            IOrderedQueryable<GreatGreatFamily> queryable = container.CreateItemQuery<GreatGreatFamily>(allowSynchronousQueryExecution : true);
 
             IEnumerable<GreatGreatFamily> q16 = queryable.SelectMany(gf => gf.GreatFamily.Family.Children.Where(c => c.GivenName == "Jesse").Select(c => gf));
 
             Assert.AreEqual(q16.FirstOrDefault().GreatFamilyId, greatGreatFamily.GreatFamilyId);
 
             Sport sport = new Sport() { SportName = "Tennis", SportType = "Racquet" };
-            client.CreateDocumentAsync(collection.DocumentsLink, sport).Wait();
+            container.CreateItemAsync(sport).Wait();
             var sportData = new List<Sport>() { sport };
 
-            var sportQuery = client.CreateDocumentQuery<Sport>(collection.DocumentsLink, feedOptions);
+            var sportQuery = container.CreateItemQuery<Sport>(allowSynchronousQueryExecution : true);
 
             IEnumerable<Sport> q17 = sportQuery.Where(s => s.SportName == "Tennis");
 
             Assert.AreEqual(sport.SportName, q17.FirstOrDefault().SportName);
 
             Sport2 sport2 = new Sport2() { id = "json" };
-            client.CreateDocumentAsync(collection.DocumentsLink, sport2).Wait();
+            container.CreateItemAsync(sport2).Wait();
             var sport2Data = new List<Sport2>() { sport2 };
 
-            var sport2Query = client.CreateDocumentQuery<Sport2>(collection.DocumentsLink, feedOptions);
+            var sport2Query = container.CreateItemQuery<Sport2>(allowSynchronousQueryExecution: true);
 
             Func<bool, IQueryable<GuidClass>> getGuidQuery = useQuery => useQuery ? guid : guidData.AsQueryable();
             Func<bool, IQueryable<ListArrayClass>> getListArrayQuery = useQuery => useQuery ? listArrayQuery : listArrayObjectData.AsQueryable();
@@ -1944,8 +1936,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private async Task ValidateBasicQueryAsync()
         {
             DocumentClient client = TestCommon.CreateClient(true);
+            Database database = await client.ReadDatabaseAsync(string.Format("dbs/{0}", testDb.Id));
 
-            string databaseName = testDb.Id;
+            string databaseName = database.Id;
 
             List<Database> queryResults = new List<Database>();
             //Simple Equality
@@ -1967,7 +1960,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             //Logical Or 
             dbQuery = from db in client.CreateDatabaseQuery()
-                      where db.Id == databaseName || db.ResourceId == testDb.ResourceId
+                      where db.Id == databaseName || db.ResourceId == database.ResourceId
                       select db;
             documentQuery = dbQuery.AsDocumentQuery();
 
@@ -1992,20 +1985,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
 
             Assert.AreEqual(1, idResults.Count);
-            Assert.AreEqual(testDb.ResourceId, idResults[0]);
+            Assert.AreEqual(database.ResourceId, idResults[0]);
         }
 
         [TestMethod]
-        public void ValidateTransformQuery()
+        public async Task ValidateTransformQuery()
         {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             DocumentCollection collection = new DocumentCollection
             {
                 Id = Guid.NewGuid().ToString("N"),
-                PartitionKey = defaultPartitionKeyDefinition
+                PartitionKey = partitionKeyDefinition
             };
             collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-
-            collection = client.Create<DocumentCollection>(testDb.ResourceId, collection);
+            Database database = await cosmosClient.DocumentClient.ReadDatabaseAsync(string.Format("dbs/{0}", testDb.Id));
+            collection = cosmosClient.DocumentClient.Create<DocumentCollection>(database.ResourceId, collection);
             int documentsToCreate = 100;
             for (int i = 0; i < documentsToCreate; i++)
             {
@@ -2015,14 +2009,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 myDocument.Languages = new Language[] { new Language { Name = "English", Copyright = "London Publication" }, new Language { Name = "French", Copyright = "Paris Publication" } }; //Array Property
                 myDocument.Author = new Author { Name = "Don", Location = "France" }; //Complex Property
                 myDocument.Price = 9.99;
-                myDocument = client.CreateDocumentAsync(collection.DocumentsLink, myDocument).Result;
+                myDocument = await cosmosClient.DocumentClient.CreateDocumentAsync(collection.DocumentsLink, myDocument);
             }
 
             //Read response as dynamic.
-            IQueryable<dynamic> docQuery = client.CreateDocumentQuery(collection.DocumentsLink, @"select * from root r where r.Title=""MyBook""", new FeedOptions { EnableCrossPartitionQuery = true });
+            IQueryable<dynamic> docQuery = cosmosClient.DocumentClient.CreateDocumentQuery(collection.DocumentsLink, @"select * from root r where r.Title=""MyBook""", new FeedOptions { EnableCrossPartitionQuery = true });
 
             IDocumentQuery<dynamic> DocumentQuery = docQuery.AsDocumentQuery();
-            DocumentFeedResponse<dynamic> queryResponse = DocumentQuery.ExecuteNextAsync().Result;
+            DocumentFeedResponse<dynamic> queryResponse = await DocumentQuery.ExecuteNextAsync();
 
             Assert.IsNotNull(queryResponse.ResponseHeaders, "ResponseHeaders is null");
             Assert.IsNotNull(queryResponse.ActivityId, "ActivityId is null");
@@ -2033,14 +2027,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 Assert.AreEqual(myBook.Title.ToString(), "MyBook");
             }
 
-            client.DeleteDocumentCollectionAsync(collection.SelfLink).Wait();
+            cosmosClient.DocumentClient.DeleteDocumentCollectionAsync(collection.SelfLink).Wait();
         }
 
         [TestMethod]
         public void ValidateDynamicDocumentQuery() //Ensure query on custom property of document.
         {
-            DocumentClient client = TestCommon.CreateClient(true);
-
             Book myDocument = new Book();
             myDocument.Id = Guid.NewGuid().ToString();
             myDocument.Title = "My Book"; //Simple Property.
@@ -2061,7 +2053,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             //Unfiltered execution.
-            IOrderedQueryable<Book> bookDocQuery = LinqGeneralBaselineTests.client.CreateDocumentQuery<Book>(testCollection, new FeedOptions { EnableCrossPartitionQuery = true});
+            IOrderedQueryable<Book> bookDocQuery = testContainer.CreateItemQuery<Book>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<Book>> getBookQuery = useQuery => useQuery ? bookDocQuery : new List<Book>().AsQueryable();
 
             var inputs = new List<LinqTestInput>();
@@ -2107,19 +2099,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateDynamicAttachmentQuery() //Ensure query on custom property of attachment.
         {
-            IOrderedQueryable<SpecialAttachment2> attachmentQuery = client.CreateDocumentQuery<SpecialAttachment2>(testCollection, new FeedOptions { EnableCrossPartitionQuery = true});
+            IOrderedQueryable<SpecialAttachment2> attachmentQuery = testContainer.CreateItemQuery<SpecialAttachment2>(allowSynchronousQueryExecution : true);
             var myDocument = new Document();
             Func<bool, IQueryable<SpecialAttachment2>> getAttachmentQuery = useQuery => useQuery ? attachmentQuery : new List<SpecialAttachment2>().AsQueryable();
 
             var inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Filter equality on custom property",
                 b => from attachment in getAttachmentQuery(b)
-                      where attachment.Title == "My Book Title2"
-                      select attachment));
+                     where attachment.Title == "My Book Title2"
+                     select attachment));
             inputs.Add(new LinqTestInput("Filter equality on custom property #2",
                 b => from attachment in getAttachmentQuery(b)
                      where attachment.Title == "My Book Title"
-                      select attachment));
+                     select attachment));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -2165,18 +2157,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         private class QueryHelper
         {
-            private readonly DocumentClient client;
-            private readonly DocumentCollection docCollection;
+            private readonly CosmosContainer container;
 
-            public QueryHelper(DocumentClient client, DocumentCollection docCollection)
+            public QueryHelper(CosmosContainer container)
             {
-                this.client = client;
-                this.docCollection = docCollection;
+                this.container = container;
             }
 
             public IQueryable<T> Query<T>() where T : BaseDocument
             {
-                var query = this.client.CreateDocumentQuery<T>(this.docCollection.DocumentsLink, new FeedOptions { EnableCrossPartitionQuery = true})
+                var query = this.container.CreateItemQuery<T>(allowSynchronousQueryExecution : true)
                                        .Where(d => d.TypeName == "Hello");
                 var queryString = query.ToString();
                 return query;
@@ -2184,15 +2174,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void ValidateLinqOnDataDocumentType()
+        public async Task ValidateLinqOnDataDocumentType()
         {
-            DocumentCollection collection = client.CreateDocumentCollectionAsync(
-                testDb.SelfLink, new DocumentCollection { Id = nameof(ValidateLinqOnDataDocumentType), PartitionKey = defaultPartitionKeyDefinition }).Result.Resource;
+            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerProperties(id : nameof(ValidateLinqOnDataDocumentType), partitionKeyPath : "/id"));
 
             DataDocument doc = new DataDocument() { Id = Guid.NewGuid().ToString("N"), Number = 0, TypeName = "Hello" };
-            client.CreateDocumentAsync(collection, doc).Wait();
+            container.CreateItemAsync(doc).Wait();
 
-            QueryHelper queryHelper = new QueryHelper(client, collection);
+            QueryHelper queryHelper = new QueryHelper(container);
             IEnumerable<BaseDocument> result = queryHelper.Query<BaseDocument>();
             Assert.AreEqual(1, result.Count());
 
@@ -2200,7 +2189,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual(doc.Id, baseDocument.Id);
 
             BaseDocument iDocument = doc;
-            IOrderedQueryable<DataDocument> q = client.CreateDocumentQuery<DataDocument>(collection.DocumentsLink, new FeedOptions { EnableCrossPartitionQuery = true});
+            IOrderedQueryable<DataDocument> q = container.CreateItemQuery<DataDocument>(allowSynchronousQueryExecution : true);
 
             IEnumerable<DataDocument> iresult = from f in q
                                                 where f.Id == iDocument.Id
@@ -2247,24 +2236,22 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void ValidateServerSideQueryEvalWithPagination()
+        public async Task ValidateServerSideQueryEvalWithPagination()
         {
-            this.ValidateServerSideQueryEvalWithPaginationScenario().Wait();
+            await this.ValidateServerSideQueryEvalWithPaginationScenario();
         }
 
         private async Task ValidateServerSideQueryEvalWithPaginationScenario()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/title" }), Kind = PartitionKind.Hash };
-            DocumentCollection collection = new DocumentCollection
+            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
             };
-            collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
+            cosmosContainerSettings.IndexingPolicy.IndexingMode = Microsoft.Azure.Cosmos.IndexingMode.Consistent;
 
-            collection = client.Create<DocumentCollection>(
-                testDb.ResourceId,
-                collection);
+            CosmosContainer collection = await testDb.CreateContainerAsync(cosmosContainerSettings);
 
             //Do script post to insert as many document as we could in a tight loop.
             string script = @"function() {
@@ -2279,53 +2266,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 };
                 client.createDocument(client.getSelfLink(), { id: 'testDoc' + output, title : 'My Book'}, {}, callback); }";
 
+            StoredProcedureExecuteResponse<int> scriptResponse = null;
+            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteCosmosProcedure(collection, script, out scriptResponse, "My Book");
 
-            StoredProcedureResponse<int> scriptResponse = null;
-            int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteProcedure(client, collection, script, out scriptResponse, "My Book");
-
-            int pageSize = 5;
-            int totalHit = 0;
-            IDocumentQuery<Book> documentQuery =
-                (from book in client.CreateDocumentQuery<Book>(
-                    collection.SelfLink, new FeedOptions { MaxItemCount = pageSize, EnableCrossPartitionQuery = true })
-                 where book.Title == "My Book"
-                 select book).AsDocumentQuery();
-
-            while (documentQuery.HasMoreResults)
-            {
-                DocumentFeedResponse<dynamic> pagedResult = await documentQuery.ExecuteNextAsync();
-                string isUnfiltered = pagedResult.ResponseHeaders[HttpConstants.HttpHeaders.IsFeedUnfiltered];
-                Assert.IsTrue(string.IsNullOrEmpty(isUnfiltered), "Query is evaulated in client");
-                Assert.IsTrue(pagedResult.Count <= pageSize, "Page size is not honored in client site eval");
-
-                if (totalHit != 0 && documentQuery.HasMoreResults)
-                {
-                    //Except first page and last page we should have seen client continuation token.
-                    Assert.IsFalse(pagedResult.ResponseHeaders[HttpConstants.HttpHeaders.Continuation].Contains(HttpConstants.Delimiters.ClientContinuationDelimiter),
-                        "Client continuation is missing from the response continuation");
-                }
-                totalHit += pagedResult.Count;
-            }
+            IOrderedQueryable<Book> linqQueryable = collection.CreateItemQuery<Book>(allowSynchronousQueryExecution : true);
+            int totalHit = linqQueryable.Where(book => book.Title == "My Book").Count();
             Assert.AreEqual(totalHit, totalNumberOfDocuments, "Didnt get all the documents");
 
-            //Do with default pagination.
-            documentQuery =
-                (from book in client.CreateDocumentQuery<Book>(
-                    collection.SelfLink)
-                 where book.Title == "My Book"
-                 select book).AsDocumentQuery();
-
-            totalHit = 0;
-
-            while (documentQuery.HasMoreResults)
-            {
-                DocumentFeedResponse<dynamic> pagedResult = await documentQuery.ExecuteNextAsync();
-                string isUnfiltered = pagedResult.ResponseHeaders[HttpConstants.HttpHeaders.IsFeedUnfiltered];
-                Assert.IsTrue(string.IsNullOrEmpty(isUnfiltered), "Query is evaulated in client");
-                Assert.IsTrue(pagedResult.Count == totalNumberOfDocuments, "Page size is not honored in client site eval");
-                totalHit += pagedResult.Count;
-            }
-            Assert.AreEqual(totalHit, totalNumberOfDocuments, "Didnt get all the documents");
         }
 
         #endregion

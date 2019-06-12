@@ -18,22 +18,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using BaselineTest;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
+    using System.Threading.Tasks;
 
     [TestClass]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
     {
-        private static DocumentClient client;
-        private static Uri databaseUri;
+        private static CosmosClient client;
+        private static CosmosDatabase cosmosDatabase;
         private static Func<bool, IQueryable<Data>> getQuery;
         private static Func<bool, IQueryable<Family>> getQueryFamily;
         private static IQueryable lastExecutedScalarQuery;
 
         [ClassInitialize]
-        public static void Initialize(TestContext textContext)
+        public async static Task Initialize(TestContext textContext)
         {
             try
             {
-                Initialize();
+                await Initialize();
             }
             catch (ServiceUnavailableException serviceUnavailableException)
             {
@@ -48,24 +49,22 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
         }
 
-        private static void Initialize()
+        private async static Task Initialize()
         {
-            client = TestCommon.CreateClient(false, defaultConsistencyLevel: ConsistencyLevel.Session);
-
+            client = TestCommon.CreateCosmosClient(true);
             CleanUp();
 
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
             // to verify the translated LINQ directly as other queries type.
-            client.OnExecuteScalarQueryCallback = q => LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = q;
+            client.DocumentClient.OnExecuteScalarQueryCallback = q => LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = q;
 
             string databaseName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
-            databaseUri = UriFactory.CreateDatabaseUri(databaseName);
-            Database testDb = client.CreateDatabaseAsync(new Database() { Id = databaseName }).Result;
 
-            DocumentCollection collection;
-            getQuery = LinqTestsCommon.GenerateSimpleData(client, testDb, out collection);
-            getQueryFamily = LinqTestsCommon.GenerateFamilyData(client, testDb, out collection);
+            CosmosContainer container;
+            cosmosDatabase = await client.CreateDatabaseAsync(databaseName);
+            getQuery = LinqTestsCommon.GenerateSimpleCosmosData(cosmosDatabase);
+            getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(cosmosDatabase, out container);
         }
 
         [ClassCleanup]
@@ -73,10 +72,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             try
             {
-                List<Database> dbs = client.CreateDatabaseQuery().ToList();
+                List<Database> dbs = client.DocumentClient.CreateDatabaseQuery().ToList();
                 foreach (Database db in dbs)
                 {
-                    client.DeleteDatabaseAsync(db.SelfLink).Wait();
+                    client.DocumentClient.DeleteDatabaseAsync(db.SelfLink).Wait();
                 }
             }
             catch (DocumentClientException e)
@@ -408,53 +407,43 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Any", b => getQuery(b)
-                .Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Filter true flag -> Any", b => getQuery(b)
-                .Where(doc => doc.Flag).Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Where(doc => doc.Flag).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Filter false flag -> Any", b => getQuery(b)
-                .Where(doc => !doc.Flag).Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Where(doc => !doc.Flag).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Any", b => getQuery(b)
-                .Select(doc => doc.Number).Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Number).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select many -> Filter -> Select -> Any", b => getQuery(b)
-                .SelectMany(doc => doc.Multiples.Where(m => m % 3 == 0).Select(m => m)).Any(), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .SelectMany(doc => doc.Multiples.Where(m => m % 3 == 0).Select(m => m)).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Any w/ boolean filter", b => getQuery(b)
-                .Any(doc => doc.Flag), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any(doc => doc.Flag)));
 
             inputs.Add(new LinqAggregateInput(
                 "Any w/ operator filter", b => getQuery(b)
-                .Any(doc => doc.Number < -7), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any(doc => doc.Number < -7)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Any w/ operator filter", b => getQuery(b)
-                .Select(doc => doc.Number).Any(num => num < -13), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Number).Any(num => num < -13)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select(Select) -> Any(Sum)", b => getQuery(b)
-                .Select(doc => doc.Multiples).Any(array => array.Sum() > 5), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Multiples).Any(array => array.Sum() > 5)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select(Where) -> Any(Sum(map))", b => getQueryFamily(b)
-                .Select(f => f.Children.Where(c => c.Pets.Count() > 0)).Any(children => children.Sum(c => c.Grade) > 150), 
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(f => f.Children.Where(c => c.Pets.Count() > 0)).Any(children => children.Sum(c => c.Grade) > 150)));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Any", b => getQueryFamily(b)
