@@ -207,6 +207,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 xmlWriter.WriteEndElement();
             }
         }
+
         public class CustomJsonSerializer : CosmosJsonSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
@@ -215,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             {
                 serializer = JsonSerializer.Create(jsonSerializerSettings);
             }
+
             public override T FromStream<T>(Stream stream)
             {
                 using (stream)

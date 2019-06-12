@@ -1710,7 +1710,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             Address address = new Address { State = "NY", County = "Manhattan", City = "NY" };
-            Family family = new Family { FamilyId = "WakefieldFamily", Parents = new Parent[] { mother, father }, Children = new Child[] { child }, IsRegistered = false, Int = 3, NullableInt = 5 , id = "WakefieldFamily"};
+            Family family = new Family { FamilyId = "WakefieldFamily", Parents = new Parent[] { mother, father }, Children = new Child[] { child }, IsRegistered = false, Int = 3, NullableInt = 5 , Id = "WakefieldFamily"};
 
             List<Family> fList = new List<Family>();
             fList.Add(family);
@@ -1743,8 +1743,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             IEnumerable<Family> q7 = query.Where(f => nullString == f.FamilyId);
             Assert.IsNull(q7.FirstOrDefault());
 
-           // object nullObject = null;
-            q7 = query.Where(f => f.NullObject == null);
+            object nullObject = null;
+            q7 = query.Where(f => f.NullObject == nullObject);
             Assert.AreEqual(q7.FirstOrDefault().FamilyId, family.FamilyId);
 
             q7 = query.Where(f => f.FamilyId == nullString);

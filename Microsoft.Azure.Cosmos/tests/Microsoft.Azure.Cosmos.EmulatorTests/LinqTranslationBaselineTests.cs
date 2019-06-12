@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            testContainer = await testDb.CreateContainerAsync(new CosmosContainerProperties(id : Guid.NewGuid().ToString(),partitionKeyPath : "/pk"));
+            testContainer = await testDb.CreateContainerAsync(new CosmosContainerProperties(id : Guid.NewGuid().ToString(),partitionKeyPath : "/Pk"));
         }
 
         [TestCleanup]
@@ -138,8 +138,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // used by Newtonsoft
             public DateTime DefaultTime;
 
-            public string id;
-            public string pk;
+            [JsonProperty(PropertyName = "id")]
+            public string Id;
+
+            public string Pk;
         }
 
         [TestMethod]
@@ -237,8 +239,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 DataObject obj = new DataObject();
                 obj.NumericField = random.Next(NumAbsMax * 2) - NumAbsMax;
                 obj.StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -269,8 +271,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     obj.NullableEnum2 = (TestEnum)(random.Next(testEnumCount));
                 }
                 obj.EnumNumber = (TestEnum2)(random.Next(testEnum2Count));
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -296,8 +298,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.IsoTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
                 obj.UnixTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
                 obj.DefaultTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -333,8 +335,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         obj.NullableField = random.Next();
                     }
                 }
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -408,8 +410,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 NumericField = 1.0 * random.Next() + random.NextDouble() / 2,
                 DecimalField = (decimal)(1.0 * random.Next() + random.NextDouble()) / 2,
                 IntField = 1.0 * random.Next(),
-                id = Guid.NewGuid().ToString(),
-                pk = "Test"
+                Id = Guid.NewGuid().ToString(),
+                Pk = "Test"
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
@@ -521,8 +523,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 }
                 return new DataObject() {
                     StringField = sb.ToString(),
-                    id = Guid.NewGuid().ToString(),
-                    pk = "Test"
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
             };
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -621,8 +623,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     obj.EnumerableField.Add(random.Next(MaxAbsValue * 2) - MaxAbsValue);
                 }
                 obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -702,8 +704,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 {
                     obj.EnumerableField.Add(random.Next());
                 }
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -734,8 +736,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 {
                     obj.ArrayField[i] = random.Next(MaxAbsValue * 2) - MaxAbsValue;
                 }
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -757,8 +759,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.StringField2 = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.NumericField = random.Next();
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -783,8 +785,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 var obj = new DataObject();
                 obj.StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.StringField2 = random.NextDouble() < 0.5 ? obj.StringField : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -869,8 +871,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 coordinates.Add(random.NextDouble() < 0.5 ? 5 : random.Next(MaxCoordinateValue));
                 coordinates.Add(random.NextDouble() < 0.5 ? 20 : random.Next(MaxCoordinateValue));
                 obj.Point = new Point(new Position(coordinates));
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
             var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -945,8 +947,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 var obj = new DataObject();
                 obj.NumericField = random.Next(NumAbsMax * 2) - NumAbsMax;
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 data.Add(obj);
             }
 
@@ -974,8 +976,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 }
                 obj.NumericField = random.Next(NumAbsMax * 2) - NumAbsMax;
                 obj.StringField = LinqTestsCommon.RandomString(random, random.Next(listSize));
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 return obj;
             };
 

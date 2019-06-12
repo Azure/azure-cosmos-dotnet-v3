@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             // The test collection should have range index on string properties
             // for the orderby tests
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             var newCol = new CosmosContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
@@ -353,8 +353,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     IsRegistered = random.NextDouble() < 0.5,
                     NullableInt = random.NextDouble() < 0.5 ? (int?)random.Next() : null,
                     Int = random.NextDouble() < 0.5 ? 5 : random.Next(),
-                    id = Guid.NewGuid().ToString(),
-                    pk = "Test",
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test",
                     Parents = new Parent[random.Next(2) + 1]
                 };
                 for (int i = 0; i < obj.Parents.Length; ++i)
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
          )
         {
             const int DocumentCount = 10;
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             CosmosContainer cosmosContainer = cosmosDatabase.CreateContainerAsync(new CosmosContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             int seed = DateTime.Now.Millisecond;
@@ -446,10 +446,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     Number = random.Next(-10000, 10000),
                     Flag = index % 2 == 0 ? true : false,
                     Multiples = new int[] { index, index * 2, index * 3, index * 4 },
-                    pk = "Test"
+                    Pk = "Test"
                 };
 
-                Data response = cosmosContainer.CreateItemAsync<Data>(dataEntry, new Cosmos.PartitionKey(dataEntry.pk)).Result;
+                Data response = cosmosContainer.CreateItemAsync<Data>(dataEntry, new Cosmos.PartitionKey(dataEntry.Pk)).Result;
                 testData.Add(dataEntry);
             }
 

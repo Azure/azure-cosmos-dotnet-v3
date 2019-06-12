@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             // The test collection should have range index on string properties
             // for the orderby tests
             var newCol = new CosmosContainerProperties()
@@ -85,8 +85,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Func<Random, Datum> createDataFunc = random =>
             {
                 var obj = new Datum();
-                obj.id = Guid.NewGuid().ToString();
-                obj.pk = "Test";
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
                 obj.JsonProperty = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.JsonPropertyAndDataMember = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.DataMember = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
@@ -127,10 +127,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Default;
 
             [JsonProperty]
-            public string pk;
+            public string Pk;
 
-            [JsonProperty]
-            public string id;
+            [JsonProperty(PropertyName = "id")]
+            public string Id;
 
             /// <summary>
             /// Member of the Datum class that has both a JsonProperty and DataMember attribute.

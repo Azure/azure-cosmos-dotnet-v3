@@ -1013,7 +1013,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
-        /// IQueryable extension method ToSqlQueryText() should be use for asynchronous execution with FeedIterator, please refer example 2.
+        /// IQueryable extension method ToSqlQueryText() should be use for asynchronous execution with FeedIterator, please refer to example 2.
         /// </summary>
         /// <typeparam name="T">The type of object to query.</typeparam>
         /// <param name="partitionKey">(Optional) The partition key to execute the query in a particular partition.</param>
