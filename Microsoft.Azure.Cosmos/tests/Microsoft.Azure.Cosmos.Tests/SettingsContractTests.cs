@@ -115,8 +115,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_etag\":\"" + etag
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
-            CosmosContainerProperties deserializedPayload =
-                JsonConvert.DeserializeObject<CosmosContainerProperties>(testPyaload);
+            ContainerProperties deserializedPayload =
+                JsonConvert.DeserializeObject<ContainerProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string pkPath = "/partitionKey";
 
             // Two equivalent definitions 
-            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties(id, pkPath);
+            ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
             DocumentCollection collection = new DocumentCollection()
             {
                 Id = id,
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(collection);
 
             // Swap de-serialize and validate 
-            CosmosContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosContainerProperties>(directSerialized);
+            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(directSerialized);
             DocumentCollection collectionDeser = SettingsContractTests.DirectDeSerialize<DocumentCollection>(cosmosSerialized);
 
             Assert.AreEqual(collection.Id, containerDeserSettings.Id);
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string pkPath = "/partitionKey";
 
             // Two equivalent definitions 
-            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties(id, pkPath)
+            ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath)
             {
                 ConflictResolutionPolicy = new Cosmos.ConflictResolutionPolicy()
                 {
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(collection);
 
             // Swap de-serialize and validate 
-            CosmosContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosContainerProperties>(directSerialized);
+            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(directSerialized);
             DocumentCollection collectionDeser = SettingsContractTests.DirectDeSerialize<DocumentCollection>(cosmosSerialized);
 
             Assert.AreEqual(cosmosContainerSettings.Id, collectionDeser.Id);
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string pkPath = "/partitionKey";
 
             // Two equivalent definitions 
-            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties(id, pkPath);
+            ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
             cosmosContainerSettings.IndexingPolicy.Automatic = true;
             cosmosContainerSettings.IndexingPolicy.IncludedPaths.Add(new Cosmos.IncludedPath() { Path = "/id1/*" });
 
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(collection);
 
             // Swap de-serialize and validate 
-            CosmosContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosContainerProperties>(directSerialized);
+            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(directSerialized);
             DocumentCollection collectionDeser = SettingsContractTests.DirectDeSerialize<DocumentCollection>(cosmosSerialized);
 
             Assert.AreEqual(collection.Id, containerDeserSettings.Id);
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string id = Guid.NewGuid().ToString();
             string pkPath = "/partitionKey";
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosContainerProperties), 
+            SettingsContractTests.TypeAccessorGuard(typeof(ContainerProperties), 
                 "Id", 
                 "UniqueKeyPolicy", 
                 "DefaultTimeToLive", 
@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ConflictResolutionPolicy");
 
             // Two equivalent definitions 
-            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties(id, pkPath);
+            ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
 
             Assert.AreEqual(id, cosmosContainerSettings.Id);
             Assert.AreEqual(pkPath, cosmosContainerSettings.PartitionKeyPath);

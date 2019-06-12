@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     foreach (var index in Enumerable.Range(1, 3))
                     {
                         string name = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collprefix, index);
-                        CosmosContainerProperties queriedCollections = documentClient.CreateDocumentCollectionQuery(database, @"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<CosmosContainerProperties>();
+                        ContainerProperties queriedCollections = documentClient.CreateDocumentCollectionQuery(database, @"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<ContainerProperties>();
                         Assert.AreEqual(collections[index - 1].ResourceId, queriedCollections.ResourceId, "Expect queried id to match the id with the same name in the created documents");
                     }
                 };

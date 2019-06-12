@@ -981,7 +981,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
                 CosmosContainer container = await database.CreateContainerAsync(
-                    new CosmosContainerProperties
+                    new ContainerProperties
                     {
                         Id = uniqCollectionName,
                         PartitionKey = new PartitionKeyDefinition

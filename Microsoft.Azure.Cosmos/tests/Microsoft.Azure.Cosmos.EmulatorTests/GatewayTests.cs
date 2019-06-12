@@ -1382,7 +1382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-            CosmosContainerProperties inputCollection = new CosmosContainerProperties {
+            ContainerProperties inputCollection = new ContainerProperties {
                 Id = "ValidateExecuteSprocs",
                 PartitionKey = partitionKeyDefinition
 
@@ -1415,7 +1415,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-            CosmosContainerProperties inputCollection = new CosmosContainerProperties
+            ContainerProperties inputCollection = new ContainerProperties
             {
                 Id = "ValidateSprocWithFailedUpdates" + Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition
@@ -1475,7 +1475,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            CosmosContainerProperties collectionSpec = new CosmosContainerProperties
+            ContainerProperties collectionSpec = new ContainerProperties
             {
                 Id = "ValidateSystemSproc" + Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition
@@ -3083,7 +3083,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosDatabase database = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-            CosmosContainer collection = await database.CreateContainerAsync(new CosmosContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
+            CosmosContainer collection = await database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
 
             string guidId = Guid.NewGuid().ToString();
             CustomerPOCO poco = new CustomerPOCO()
@@ -3123,7 +3123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
 
-            CosmosContainer collection = await database.CreateContainerAsync(new CosmosContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
+            CosmosContainer collection = await database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
 
 
             string guidId = Guid.NewGuid().ToString();
@@ -3302,7 +3302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #endif
             CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-            CosmosContainer collection = await database.CreateContainerAsync(new CosmosContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
+            CosmosContainer collection = await database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
 
 
             //Since this test starts with read operation first on fresh session client, it may start with stale reads.

@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <seealso cref="CosmosContainerProperties"/>
+    /// <seealso cref="ContainerProperties"/>
     public class CosmosDatabaseProperties
     {
         private string id;

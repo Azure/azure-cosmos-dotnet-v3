@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
 
 #if DEBUG
             CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
-            CosmosContainerProperties collectionFromCache =
+            ContainerProperties collectionFromCache =
                 await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
             if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
             {
