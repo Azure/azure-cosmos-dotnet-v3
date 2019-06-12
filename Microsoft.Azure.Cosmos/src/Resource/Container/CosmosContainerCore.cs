@@ -101,19 +101,19 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
         }
 
-        public override Task<ThroughputResponse> ReadProvisionedThroughputAsync(
+        internal override async Task<int?> ReadProvisionedThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellationToken);
+            if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
+            {
+                return offerResult.RequestUnitsPerSecond;
+            }
+
+            throw offerResult.CosmosException;
         }
 
-        internal override Task<ThroughputResponse> ReadProvisionedThroughputInternalAsync(bool allowedMinThroughput = false,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            throw new NotImplementedException();
-        }
-
-        public override async Task ReplaceProvisionedThroughputAsync(
+        internal override async Task ReplaceProvisionedThroughputAsync(
             int requestUnitsPerSecond,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -122,6 +122,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw offerResult.CosmosException;
             }
+        }
+
+        public override Task<ThroughputResponse> ReadProvisionedThroughputAsync(RequestOptions options, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<ThroughputResponse> ReplaceProvisionedThroughputAsync(int requestUnitsPerSecond, RequestOptions options, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
         }
 
         public override Task<CosmosResponseMessage> DeleteStreamAsync(
@@ -227,7 +237,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentOutOfRangeException($"Container {this.LinkUri.ToString()} not found");
             }
-            
+
             if (containerProperties.PartitionKey?.Paths == null)
             {
                 throw new ArgumentOutOfRangeException($"Partition key not defined for container {this.LinkUri.ToString()}");
@@ -273,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
                 })
                 .Unwrap();
         }
-        
+
         private Task<CosmosResponseMessage> ReplaceStreamInternalAsync(
             Stream streamPayload,
             ContainerRequestOptions requestOptions = null,

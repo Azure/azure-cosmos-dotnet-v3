@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos throughput response
     /// </summary>
-    public class ThroughputResponse : Response<ThroughputSettings>
+    public class ThroughputResponse : Response<ThroughputProperties>
     {
         /// <summary>
         /// Create a <see cref="ThroughputResponse"/> as a no-op for mock testing
@@ -29,24 +29,24 @@ namespace Microsoft.Azure.Cosmos
         internal ThroughputResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            ThroughputSettings throughputSettings,
-            int? allowedMinThroughput)
+            ThroughputProperties throughputProperties,
+            int? minThroughput)
             : base(
                 httpStatusCode,
                 headers,
-                throughputSettings)
+                throughputProperties)
         {
-            this.AllowedMinThroughput = allowedMinThroughput;
+            this.MinThroughput = minThroughput;
         }
 
         /// <summary>
         /// Gets minimum throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        public int? AllowedMinThroughput;
+        public int? MinThroughput;
 
         /// <summary>
-        /// Gets the error message from backened service if any.
+        /// Gets the status whether offer replace is successful or pending.
         /// </summary>
-        internal string errorMessage;
+        public bool? IsOfferReplacePending;
     }
 }

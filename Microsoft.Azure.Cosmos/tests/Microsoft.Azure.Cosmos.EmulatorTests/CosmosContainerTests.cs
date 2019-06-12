@@ -325,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             HashSet<string> containerIds = new HashSet<string>();
             FeedIterator resultSet = this.cosmosDatabase.GetContainersStreamIterator(
-                    maxItemCount:1,
+                    maxItemCount: 1,
                     requestOptions: new QueryRequestOptions());
             while (resultSet.HasMoreResults)
             {
@@ -359,22 +359,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
         }
 
-        //[TestMethod]
-        //public async Task DefaultThroughputTest()
-        //{
-        //    string containerName = Guid.NewGuid().ToString();
-        //    string partitionKeyPath = "/users";
+        [TestMethod]
+        public async Task DefaultThroughputTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
 
-        //    ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
-        //    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-        //    CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
 
-        //    int? readThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
-        //    Assert.IsNotNull(readThroughput);
+            int? readThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
+            Assert.IsNotNull(readThroughput);
 
-        //    containerResponse = await cosmosContainer.DeleteAsync();
-        //    Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-        //}
+            containerResponse = await cosmosContainer.DeleteAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
 
         [TestMethod]
         public async Task TimeToLiveTest()
@@ -409,40 +409,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
 
-        //[TestMethod]
-        //public async Task ReplaceThroughputTest()
-        //{
-        //    string containerName = Guid.NewGuid().ToString();
-        //    string partitionKeyPath = "/users";
+        [TestMethod]
+        public async Task ReplaceThroughputTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
 
-        //    ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
-        //    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-        //    CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
 
-        //    int? readThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
-        //    Assert.IsNotNull(readThroughput);
+            int? readThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
+            Assert.IsNotNull(readThroughput);
 
-        //    await cosmosContainer.ReplaceProvisionedThroughputAsync(readThroughput.Value + 1000);
-        //    int? replaceThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
-        //    Assert.IsNotNull(replaceThroughput);
-        //    Assert.AreEqual(readThroughput.Value + 1000, replaceThroughput);
+            await cosmosContainer.ReplaceProvisionedThroughputAsync(readThroughput.Value + 1000);
+            int? replaceThroughput = await cosmosContainer.ReadProvisionedThroughputAsync();
+            Assert.IsNotNull(replaceThroughput);
+            Assert.AreEqual(readThroughput.Value + 1000, replaceThroughput);
 
-        //    containerResponse = await cosmosContainer.DeleteAsync();
-        //    Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-        //}
+            containerResponse = await cosmosContainer.DeleteAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
 
-        //[TestMethod]
-        //[ExpectedException(typeof(AggregateException))]
-        //public async Task ThroughputNonExistingTest()
-        //{
-        //    string containerName = Guid.NewGuid().ToString();
-        //    CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
+        [TestMethod]
+        [ExpectedException(typeof(AggregateException))]
+        public async Task ThroughputNonExistingTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            CosmosContainer cosmosContainer = this.cosmosDatabase.GetContainer(containerName);
 
-        //    await cosmosContainer.ReadProvisionedThroughputAsync();
+            await cosmosContainer.ReadProvisionedThroughputAsync();
 
-        //    ContainerResponse containerResponse = await cosmosContainer.DeleteAsync();
-        //    Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
-        //}
+            ContainerResponse containerResponse = await cosmosContainer.DeleteAsync();
+            Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
+        }
 
         [TestMethod]
         public async Task ImplicitConversion()

@@ -142,6 +142,30 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
+        /// Gets provisioned container throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <value>
+        /// The provisioned throughput for this database.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// The following example shows how to get the throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// int? throughput = await this.cosmosContainer.ReadProvisionedThroughputAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The value of the provisioned throughput if any</returns>
+        internal abstract Task<int?> ReadProvisionedThroughputAsync(
+            CancellationToken cancellationToken = default(CancellationToken));
+            
+        /// <summary>
         /// Sets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
         /// <param name="requestUnitsPerSecond">The cosmos container throughput, expressed in Request Units per second.</param>
@@ -161,13 +185,14 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task ReplaceProvisionedThroughputAsync(
+        internal abstract Task ReplaceProvisionedThroughputAsync(
             int requestUnitsPerSecond,
             CancellationToken cancellationToken = default(CancellationToken));
-        
+
         /// <summary>
         /// Gets container throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
+        /// <param name="options">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
         /// The provisioned throughput for this container.
@@ -187,31 +212,33 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>The throughput response</returns>
         public abstract Task<ThroughputResponse> ReadProvisionedThroughputAsync(
+            RequestOptions options,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets container throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Sets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        /// <param name="allowedMinThroughput">(Optional) if this flag is not set , ThroughputResponse won't contain minimum throughput.</param>
+        /// <param name="requestUnitsPerSecond">The cosmos container throughput, expressed in Request Units per second.</param>
+        /// <param name="options">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
         /// The provisioned throughput for this container.
         /// </value>
-        /// <remarks>
-        /// <para>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
-        /// </para>
-        /// </remarks>
         /// <example>
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.cosmosContainer.ReadProvisionedThroughputAsync();
+        /// int? throughput = await this.cosmosContainer.ReplaceProvisionedThroughputAsync(400);
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>The throughput response</returns>
-        internal abstract Task<ThroughputResponse> ReadProvisionedThroughputInternalAsync(bool allowedMinThroughput = false,
+        /// <returns>The throughput response.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
+        public abstract Task<ThroughputResponse> ReplaceProvisionedThroughputAsync(
+            int requestUnitsPerSecond,
+            RequestOptions options,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

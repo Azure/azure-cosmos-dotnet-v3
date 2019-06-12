@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = Guid.NewGuid().ToString()
             };
-            
+
             using (CosmosResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(databaseSettings))
             {
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
@@ -206,44 +206,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, createResponse.StatusCode);
         }
 
-        //[TestMethod]
-        //public async Task NoThroughputTests()
-        //{
-        //    string databaseId = Guid.NewGuid().ToString();
-        //    DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false);
-        //    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+        [TestMethod]
+        public async Task NoThroughputTests()
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false);
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
-        //    CosmosDatabase cosmosDatabase = createResponse;
-        //    int? readThroughput = await cosmosDatabase.ReadProvisionedThroughputAsync();
-        //    Assert.IsNull(readThroughput);
+            CosmosDatabase cosmosDatabase = createResponse;
+            int? readThroughput = await cosmosDatabase.ReadProvisionedThroughputAsync();
+            Assert.IsNull(readThroughput);
 
-        //    await cosmosDatabase.DeleteAsync();
-        //}
+            await cosmosDatabase.DeleteAsync();
+        }
 
-        //[TestMethod]
-        //public async Task SharedThroughputTests()
-        //{
-        //    string databaseId = Guid.NewGuid().ToString();
-        //    int throughput = 10000;
-        //    DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false, throughput: throughput);
-        //    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+        [TestMethod]
+        public async Task SharedThroughputTests()
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            int throughput = 10000;
+            DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false, throughput: throughput);
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
-        //    CosmosDatabase cosmosDatabase = createResponse;
-        //    int? readThroughput = await cosmosDatabase.ReadProvisionedThroughputAsync();
-        //    Assert.AreEqual(throughput, readThroughput);
+            CosmosDatabase cosmosDatabase = createResponse;
+            int? readThroughput = await cosmosDatabase.ReadProvisionedThroughputAsync();
+            Assert.AreEqual(throughput, readThroughput);
 
-        //    string containerId = Guid.NewGuid().ToString();
-        //    string partitionPath = "/users";
-        //    ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
-        //    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            string containerId = Guid.NewGuid().ToString();
+            string partitionPath = "/users";
+            ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
 
-        //    CosmosContainer container = containerResponse;
-        //    readThroughput = await container.ReadProvisionedThroughputAsync();
-        //    Assert.IsNull(readThroughput);
+            CosmosContainer container = containerResponse;
+            readThroughput = await container.ReadProvisionedThroughputAsync();
+            Assert.IsNull(readThroughput);
 
-        //    await container.DeleteAsync();
-        //    await cosmosDatabase.DeleteAsync();
-        //}
+            await container.DeleteAsync();
+            await cosmosDatabase.DeleteAsync();
+        }
 
         [TestMethod]
         public async Task DatabaseIterator()
