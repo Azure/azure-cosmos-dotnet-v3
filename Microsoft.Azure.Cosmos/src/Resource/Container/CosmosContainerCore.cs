@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosClientContext ClientContext { get; }
 
-        public override CosmosConflicts GetConflicts()
+        public override Conflicts GetConflicts()
         {
             return this.conflicts;
         }

@@ -39,8 +39,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Operations for reading/querying all conflicts
         /// </summary>
-        /// <returns>An instance of <see cref="CosmosConflicts"/> to do operations on Conflicts.</returns>
-        public abstract CosmosConflicts GetConflicts();
+        /// <returns>An instance of <see cref="Conflicts"/> to do operations on Conflicts.</returns>
+        public abstract Conflicts GetConflicts();
 
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.

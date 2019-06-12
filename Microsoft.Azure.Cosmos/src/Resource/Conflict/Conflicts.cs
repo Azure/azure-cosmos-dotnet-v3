@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Operations for reading/querying conflicts in a Azure Cosmos container.
     /// </summary>
-    public abstract class CosmosConflicts
+    public abstract class Conflicts
     {
         /// <summary>
         /// Delete a conflict from the Azure Cosmos service as an asynchronous operation.
@@ -36,13 +36,13 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosConflictProperties> conflictIterator = await cosmosConflicts.GetConflictsIterator();
+        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictsIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosConflictProperties item in await conflictIterator.FetchNextSetAsync())
+        ///     foreach(ConflictProperties item in await conflictIterator.FetchNextSetAsync())
         ///     {
-        ///         MyClass intendedChanges = CosmosConflicts.ReadConflictContent<MyClass>(item);
-        ///         ItemResponse<MyClass> currentState = await CosmosConflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///         MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
+        ///         ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
         ///     }
         /// }
         /// ]]>
