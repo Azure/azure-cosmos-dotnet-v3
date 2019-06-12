@@ -1403,7 +1403,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }";
             //Script cannot timeout.
             CosmosScripts cosmosScripts = collection.GetScripts();
-            CosmosStoredProcedureProperties storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureProperties("scriptId", script));
+            StoredProcedureProperties storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
             string result = await cosmosScripts.ExecuteStoredProcedureAsync<object ,string >(storedProcedureId : "scriptId", partitionKey : new Cosmos.PartitionKey(documentDefinition.Id), input : null);
             await database.DeleteAsync();
         }
@@ -1449,7 +1449,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 CosmosScripts cosmosScripts = collection.GetScripts();
-                CosmosStoredProcedureProperties storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new CosmosStoredProcedureProperties("scriptId", script));
+                StoredProcedureProperties storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
                 string result = await cosmosScripts.ExecuteStoredProcedureAsync<object, string>(new Cosmos.PartitionKey(document.Id), "scriptId", input: null);
             }
             catch (DocumentClientException exception)
@@ -1483,7 +1483,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosContainer collection = await database.CreateContainerAsync(collectionSpec);
 
             CosmosScripts cosmosScripts = collection.GetScripts();
-            CosmosStoredProcedureProperties sprocUri = await cosmosScripts.ReadStoredProcedureAsync("__.sys.echo");
+            StoredProcedureProperties sprocUri = await cosmosScripts.ReadStoredProcedureAsync("__.sys.echo");
             string input = "foobar";
 
             string result = string.Empty;

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <summary>
     /// Represents script operations on an Azure Cosmos container.
     /// </summary>
-    /// <seealso cref="CosmosStoredProcedureProperties"/>
+    /// <seealso cref="StoredProcedureProperties"/>
     /// <seealso cref="CosmosTriggerProperties"/>
     /// <seealso cref="CosmosUserDefinedFunctionProperties"/>
     public abstract class CosmosScripts
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="storedProcedureProperties">The Stored Procedure to create</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>The <see cref="CosmosStoredProcedureProperties"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
+        /// <returns>The <see cref="StoredProcedureProperties"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureProperties"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -38,10 +38,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         <term>403</term><description>Forbidden - You have reached your quota of stored procedures for the collection supplied. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosStoredProcedureProperties"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="StoredProcedureProperties"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         ///     <item>
-        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="CosmosStoredProcedureProperties"/> you tried to create was too large.</description>
+        ///         <term>413</term><description>RequestEntityTooLarge - This means the body of the <see cref="StoredProcedureProperties"/> you tried to create was too large.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///    }";
         ///    
         /// CosmosScripts scripts = this.container.GetScripts();
-        /// CosmosStoredProcedureProperties storedProcedure = new CosmosStoredProcedureProperties(id, sprocBody);
+        /// StoredProcedureProperties storedProcedure = new StoredProcedureProperties(id, sprocBody);
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(storedProcedure);
         /// 
         /// // Execute the stored procedure
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-                    CosmosStoredProcedureProperties storedProcedureProperties,
+                    StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -106,18 +106,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<CosmosStoredProcedureProperties> GetStoredProceduresIterator(
+        public abstract FeedIterator<StoredProcedureProperties> GetStoredProceduresIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
         /// <summary>
-        /// Reads a <see cref="CosmosStoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Reads a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to read.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureProperties"/>.
+        /// A <see cref="Task"/> containing a <see cref="StoredProcedureProperties"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -148,13 +148,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Replaces a <see cref="CosmosStoredProcedureProperties"/> in the Azure Cosmos service as an asynchronous operation.
+        /// Replaces a <see cref="StoredProcedureProperties"/> in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="storedProcedureProperties">The Stored Procedure to replace</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosStoredProcedureProperties"/>.
+        /// A <see cref="Task"/> containing a <see cref="StoredProcedureProperties"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureProperties"/> is not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
@@ -188,12 +188,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            CosmosStoredProcedureProperties storedProcedureProperties,
+            StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Delete a <see cref="CosmosStoredProcedureProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="StoredProcedureProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>

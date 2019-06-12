@@ -1524,7 +1524,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.Permission;
             }
-            else if (type == typeof(StoredProcedure) || type == typeof(CosmosStoredProcedureProperties))
+            else if (type == typeof(StoredProcedure) || type == typeof(StoredProcedureProperties))
             {
                 return ResourceType.StoredProcedure;
             }

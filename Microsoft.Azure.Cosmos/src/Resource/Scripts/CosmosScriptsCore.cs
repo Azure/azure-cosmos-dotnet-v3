@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-                    CosmosStoredProcedureProperties storedProcedureProperties,
+                    StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -37,11 +37,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosStoredProcedureProperties> GetStoredProceduresIterator(
+        public override FeedIterator<StoredProcedureProperties> GetStoredProceduresIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosStoredProcedureProperties>(
+            return new FeedIteratorCore<StoredProcedureProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            CosmosStoredProcedureProperties storedProcedureProperties,
+            StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -375,14 +375,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosStoredProcedureProperties>> StoredProcedureFeedRequestExecutorAsync(
+        private Task<FeedResponse<StoredProcedureProperties>> StoredProcedureFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosStoredProcedureProperties>(
+            return this.GetIteratorAsync<StoredProcedureProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,

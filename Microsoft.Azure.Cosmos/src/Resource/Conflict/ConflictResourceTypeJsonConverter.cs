@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeDocument;
             }
-            else if (valueAsType == typeof(CosmosStoredProcedureProperties))
+            else if (valueAsType == typeof(StoredProcedureProperties))
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeStoredProcedure;
             }
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (string.Equals(Documents.Constants.Properties.ResourceTypeStoredProcedure, resourceType, StringComparison.OrdinalIgnoreCase))
             {
-                return typeof(CosmosStoredProcedureProperties);
+                return typeof(StoredProcedureProperties);
             }
             else if (string.Equals(Documents.Constants.Properties.ResourceTypeTrigger, resourceType, StringComparison.OrdinalIgnoreCase))
             {

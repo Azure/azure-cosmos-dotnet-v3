@@ -35,14 +35,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void StoredProecdureSettingsDefaults()
         {
-            CosmosStoredProcedureProperties dbSettings = new CosmosStoredProcedureProperties();
+            StoredProcedureProperties dbSettings = new StoredProcedureProperties();
 
             Assert.IsNull(dbSettings.LastModified);
             Assert.IsNull(dbSettings.ResourceId);
             Assert.IsNull(dbSettings.Id);
             Assert.IsNull(dbSettings.ETag);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosStoredProcedureProperties), "Id", "Body");
+            SettingsContractTests.TypeAccessorGuard(typeof(StoredProcedureProperties), "Id", "Body");
         }
 
         [TestMethod]
@@ -143,8 +143,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_etag\":\"" + etag
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
-            CosmosStoredProcedureProperties deserializedPayload =
-                JsonConvert.DeserializeObject<CosmosStoredProcedureProperties>(testPyaload);
+            StoredProcedureProperties deserializedPayload =
+                JsonConvert.DeserializeObject<StoredProcedureProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Id = id,
                 OperationKind = Cosmos.OperationKind.Create,
-                ResourceType = typeof(CosmosStoredProcedureProperties)
+                ResourceType = typeof(StoredProcedureProperties)
             };
 
             Conflict conflict = new Conflict()
@@ -449,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(conflictDeserSettings.Id, conflictDeser.Id);
             Assert.AreEqual((int)conflictDeserSettings.OperationKind, (int)conflictDeser.OperationKind);
             Assert.AreEqual(typeof(StoredProcedure), conflictDeser.ResourceType);
-            Assert.AreEqual(typeof(CosmosStoredProcedureProperties), conflictDeserSettings.ResourceType);
+            Assert.AreEqual(typeof(StoredProcedureProperties), conflictDeserSettings.ResourceType);
             Assert.AreEqual(conflictDeserSettings.Id, conflict.Id);
         }
 

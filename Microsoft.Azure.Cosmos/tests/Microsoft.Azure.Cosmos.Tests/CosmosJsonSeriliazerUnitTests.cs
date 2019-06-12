@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Id = "mock"
             };
 
-            CosmosStoredProcedureProperties cosmosStoredProcedureSettings = new CosmosStoredProcedureProperties()
+            StoredProcedureProperties cosmosStoredProcedureSettings = new StoredProcedureProperties()
             {
                 Id = "mock"
             };
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             mockDefaultJsonSerializer.Setup(x => x.FromStream<DatabaseProperties>(databaseResponse.Content)).Returns(databaseSettings);
             mockDefaultJsonSerializer.Setup(x => x.FromStream<ContainerProperties>(containerResponse.Content)).Returns(containerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosStoredProcedureProperties>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<StoredProcedureProperties>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
             mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosTriggerProperties>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
             mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosUserDefinedFunctionProperties>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
 
