@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// Reads the item that originated the conflict.
         /// </summary>
         /// <param name="partitionKey">The partition key for the item.</param>
-        /// <param name="cosmosConflict">The conflict for which we want to read the item.</param>
+        /// <param name="conflict">The conflict for which we want to read the item.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The current state of the item associated with the conflict.</returns>
         /// <seealso cref="ConflictProperties"/>
@@ -50,13 +50,13 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
             PartitionKey partitionKey,
-            ConflictProperties cosmosConflict,
+            ConflictProperties conflict,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the content of the Conflict resource in the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="cosmosConflict">The conflict for which we want to read the content of.</param>
+        /// <param name="conflict">The conflict for which we want to read the content of.</param>
         /// <returns>The content of the conflict.</returns>
         /// <seealso cref="ConflictProperties"/>
         /// <example>
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract T ReadConflictContent<T>(ConflictProperties cosmosConflict);
+        public abstract T ReadConflictContent<T>(ConflictProperties conflict);
 
         /// <summary>
         /// Obtains an iterator to go through the <see cref="ConflictProperties"/> on an Azure Cosmos container.
