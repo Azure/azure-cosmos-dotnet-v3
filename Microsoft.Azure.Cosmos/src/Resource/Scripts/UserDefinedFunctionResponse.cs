@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <summary>
     /// The cosmos user defined function response
     /// </summary>
-    public class UserDefinedFunctionResponse : Response<CosmosUserDefinedFunctionSettings>
+    public class UserDefinedFunctionResponse : Response<CosmosUserDefinedFunctionProperties>
     {
         /// <summary>
         /// Create a <see cref="UserDefinedFunctionResponse"/> as a no-op for mock testing
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal UserDefinedFunctionResponse(
           HttpStatusCode httpStatusCode,
           CosmosResponseMessageHeaders headers,
-          CosmosUserDefinedFunctionSettings cosmosUserDefinedFunctionSettings)
+          CosmosUserDefinedFunctionProperties cosmosUserDefinedFunctionSettings)
             : base(
               httpStatusCode,
               headers,
@@ -35,10 +35,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         /// <summary>
-        /// Get <see cref="CosmosUserDefinedFunctionSettings"/> implicitly from <see cref="UserDefinedFunctionResponse"/>
+        /// Get <see cref="CosmosUserDefinedFunctionProperties"/> implicitly from <see cref="UserDefinedFunctionResponse"/>
         /// </summary>
         /// <param name="response">UserDefinedFunctionResponse</param>
-        public static implicit operator CosmosUserDefinedFunctionSettings(UserDefinedFunctionResponse response)
+        public static implicit operator CosmosUserDefinedFunctionProperties(UserDefinedFunctionResponse response)
         {
             return response.Resource;
         }

@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
-    public class CosmosContainerSettings
+    public class CosmosContainerProperties
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
@@ -72,18 +72,18 @@ namespace Microsoft.Azure.Cosmos
         private string id;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
-        public CosmosContainerSettings()
+        public CosmosContainerProperties()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        public CosmosContainerSettings(string id, string partitionKeyPath)
+        public CosmosContainerProperties(string id, string partitionKeyPath)
         {
             this.Id = id;
             this.PartitionKeyPath = partitionKeyPath;
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
         public string ETag { get; private set; }
 
         /// <summary>
-        /// Gets the last modified timestamp associated with <see cref="CosmosContainerSettings" /> from the Azure Cosmos DB service.
+        /// Gets the last modified timestamp associated with <see cref="CosmosContainerProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
@@ -349,26 +349,26 @@ namespace Microsoft.Azure.Cosmos
         /// Only collection cache needs this contract. None are expected to use it. 
         /// </summary>
         /// <param name="resourceId">The resource identifier for the container.</param>
-        /// <returns>An instance of <see cref="CosmosContainerSettings"/>.</returns>
-        internal static CosmosContainerSettings CreateWithResourceId(string resourceId)
+        /// <returns>An instance of <see cref="CosmosContainerProperties"/>.</returns>
+        internal static CosmosContainerProperties CreateWithResourceId(string resourceId)
         {
             if (string.IsNullOrEmpty(resourceId))
             {
                 throw new ArgumentNullException(nameof(resourceId));
             }
 
-            return new CosmosContainerSettings()
+            return new CosmosContainerProperties()
             {
                 ResourceId = resourceId,
             };
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerSettings"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
-        internal CosmosContainerSettings(string id, PartitionKeyDefinition partitionKeyDefinition)
+        internal CosmosContainerProperties(string id, PartitionKeyDefinition partitionKeyDefinition)
         {
             this.Id = id;
             this.PartitionKey = partitionKeyDefinition;
@@ -421,7 +421,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(CosmosContainerSettings.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(CosmosContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
                 return this.partitionKeyPathTokens;
             }
         }

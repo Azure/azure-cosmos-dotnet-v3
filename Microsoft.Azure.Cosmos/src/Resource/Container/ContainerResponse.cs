@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos container response
     /// </summary>
-    public class ContainerResponse : Response<CosmosContainerSettings>
+    public class ContainerResponse : Response<CosmosContainerProperties>
     {
         /// <summary>
         /// Create a <see cref="ContainerResponse"/> as a no-op for mock testing
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         internal ContainerResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            CosmosContainerSettings cosmosContainerSettings,
+            CosmosContainerProperties cosmosContainerSettings,
             CosmosContainer container)
             : base(
                 httpStatusCode,

@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test")));
+                ).Returns(Task.FromResult(CosmosContainerProperties.CreateWithResourceId("test")));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(
