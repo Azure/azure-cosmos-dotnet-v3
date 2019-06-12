@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
-            CosmosTriggerProperties triggerProperties, 
+            TriggerProperties triggerProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -181,11 +181,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosTriggerProperties> GetTriggersIterator(
+        public override FeedIterator<TriggerProperties> GetTriggersIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosTriggerProperties>(
+            return new FeedIteratorCore<TriggerProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
-            CosmosTriggerProperties triggerProperties, 
+            TriggerProperties triggerProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -359,14 +359,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosTriggerProperties>> ContainerFeedRequestExecutorAsync(
+        private Task<FeedResponse<TriggerProperties>> ContainerFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosTriggerProperties>(
+            return this.GetIteratorAsync<TriggerProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,

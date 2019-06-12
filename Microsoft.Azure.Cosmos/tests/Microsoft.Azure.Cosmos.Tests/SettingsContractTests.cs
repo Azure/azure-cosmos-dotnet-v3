@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(conflict.Id, conflictSettings.Id);
             Assert.AreEqual((int)conflictSettings.OperationKind, (int)conflict.OperationKind);
             Assert.AreEqual(typeof(Trigger), conflict.ResourceType);
-            Assert.AreEqual(typeof(CosmosTriggerProperties), conflictSettings.ResourceType);
+            Assert.AreEqual(typeof(TriggerProperties), conflictSettings.ResourceType);
 
             Assert.AreEqual("Conflict1", conflictSettings.Id);
         }

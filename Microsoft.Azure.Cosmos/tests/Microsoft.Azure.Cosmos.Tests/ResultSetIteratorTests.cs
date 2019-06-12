@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual("Conflict1", responseSettings.Id);
             Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
-            Assert.AreEqual(typeof(CosmosTriggerProperties), responseSettings.ResourceType);
+            Assert.AreEqual(typeof(TriggerProperties), responseSettings.ResourceType);
         }
 
         [TestMethod]
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual("Conflict1", responseSettings.Id);
             Assert.AreEqual(Cosmos.OperationKind.Replace, responseSettings.OperationKind);
-            Assert.AreEqual(typeof(CosmosTriggerProperties), responseSettings.ResourceType);
+            Assert.AreEqual(typeof(TriggerProperties), responseSettings.ResourceType);
         }
 
         private Task<CosmosResponseMessage> NextResultSetDelegate(

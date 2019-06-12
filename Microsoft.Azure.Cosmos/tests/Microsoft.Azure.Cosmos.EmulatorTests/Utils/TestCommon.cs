@@ -1528,7 +1528,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.StoredProcedure;
             }
-            else if (type == typeof(Trigger) || type == typeof(CosmosTriggerProperties))
+            else if (type == typeof(Trigger) || type == typeof(TriggerProperties))
             {
                 return ResourceType.Trigger;
             }
