@@ -5,11 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
     /// This class provides extension method for converting a <see cref="System.Linq.IQueryable{T}"/> object to a  SqlQueryText.
     /// </summary>
-    public static class CosmosLinqQueryableExtension
+    public static class CosmosExtensions
     {
         /// <summary>
         /// This method generate query text from LINQ query.
