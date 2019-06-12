@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
             else if (multiByteTypeMarker.Length == 2 && JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedSystemString(multiByteTypeMarker.One))
             {
-                const byte OneByteCount = JsonBinaryEncoding.TypeMarker.SystemString2ByteLengthMax - JsonBinaryEncoding.TypeMarker.SystemString2ByteLengthMin;
+                const byte OneByteCount = JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
                 systemStringId = OneByteCount
                     + multiByteTypeMarker.Two
                     + ((multiByteTypeMarker.One - JsonBinaryEncoding.TypeMarker.SystemString2ByteLengthMin) * 0xFF);
@@ -493,9 +493,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 userStringId = multiByteTypeMarker.One - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
 
             }
-            else if (multiByteTypeMarker.Length == 2 && JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedSystemString(multiByteTypeMarker.One))
+            else if (multiByteTypeMarker.Length == 2 && JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(multiByteTypeMarker.One))
             {
-                const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin;
+                const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
                 userStringId = OneByteCount
                     + multiByteTypeMarker.Two
                     + ((multiByteTypeMarker.One - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin) * 0xFF);

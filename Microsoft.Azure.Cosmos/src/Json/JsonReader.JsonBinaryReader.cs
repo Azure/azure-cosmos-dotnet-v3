@@ -37,12 +37,12 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly ProgressStack progressStack;
 
             public JsonBinaryReader(byte[] buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
-                : this(new JsonBinaryArrayBuffer(buffer))
+                : this(new JsonBinaryArrayBuffer(buffer, jsonStringDictionary))
             {
             }
 
             public JsonBinaryReader(Stream stream, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
-                : this(new JsonBinaryStreamBuffer(stream))
+                : this(new JsonBinaryStreamBuffer(stream, jsonStringDictionary))
             {
             }
 
@@ -980,8 +980,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Initializes a new instance of the JsonBinaryStreamBuffer class.
                 /// </summary>
                 /// <param name="stream">The stream to buffer from.</param>
-                public JsonBinaryStreamBuffer(Stream stream)
-                    : base(stream)
+                /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
+                public JsonBinaryStreamBuffer(Stream stream, JsonStringDictionary jsonStringDictionary = null)
+                    : base(stream, jsonStringDictionary)
                 {
                     if (stream == null)
                     {
