@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Net;
 
     internal class ChangeFeedResultSetIterator<T> : FeedIteratorCore<T>
@@ -12,9 +13,16 @@ namespace Microsoft.Azure.Cosmos
             int? maxItemCount,
             string continuationToken,
             QueryRequestOptions options,
-            NextResultSetDelegate nextDelegate,
+            FeedIteratorCore.NextResultSetDelegate nextDelegate,
+            Func<CosmosResponseMessage, FeedResponse<T>> responseCreator,
             object state = null)
-            : base(maxItemCount, continuationToken, options, nextDelegate, state)
+            : base(
+                  maxItemCount, 
+                  continuationToken, 
+                  options, 
+                  nextDelegate, 
+                  responseCreator, 
+                  state)
         {
         }
     }

@@ -166,13 +166,11 @@ namespace Microsoft.Azure.Cosmos
         private QueryResponse(
             IEnumerable<CosmosElement> cosmosElements,
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
-            bool hasMoreResults,
             CosmosJsonSerializer jsonSerializer,
             CosmosSerializationOptions serializationOptions)
         {
             this.cosmosElements = cosmosElements;
             this.QueryHeaders = responseMessageHeaders;
-            this.HasMoreResults = hasMoreResults;
             this.jsonSerializer = jsonSerializer;
             this.serializationOptions = serializationOptions;
         }
@@ -201,10 +199,6 @@ namespace Microsoft.Azure.Cosmos
         public override int Count { get; }
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
-
-        internal override string InternalContinuationToken => this.QueryHeaders.InternalContinuationToken;
-
-        internal override bool HasMoreResults { get; }
 
         /// <summary>
         /// Get the enumerators to iterate through the results
@@ -241,8 +235,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
-            CosmosJsonSerializer jsonSerializer,
-            bool hasMoreResults)
+            CosmosJsonSerializer jsonSerializer)
         {
             QueryResponse<TInput> queryResponse;
             using (cosmosQueryResponse)
@@ -251,7 +244,6 @@ namespace Microsoft.Azure.Cosmos
                 queryResponse = new QueryResponse<TInput>(
                     cosmosElements: cosmosQueryResponse.CosmosElements,
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
-                    hasMoreResults: hasMoreResults,
                     jsonSerializer: jsonSerializer,
                     serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
             }

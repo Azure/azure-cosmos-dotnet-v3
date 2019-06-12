@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class FeedIteratorCore : FeedIterator
     {
-        internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
+        internal delegate Task<(bool hasMoreResult, string continuationToken, CosmosResponseMessage result)> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
@@ -65,10 +65,16 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosResponseMessage response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken);
-            this.continuationToken = response.Headers.Continuation;
-            this.HasMoreResults = GetHasMoreResults(this.continuationToken, response.StatusCode);
-            return response;
+            (bool hasMoreResult, string continuationToken, CosmosResponseMessage result) response = await this.nextResultSetDelegate(
+                this.MaxItemCount, 
+                this.continuationToken, 
+                this.queryOptions, 
+                this.state, 
+                cancellationToken);
+
+            this.continuationToken = response.continuationToken;
+            this.HasMoreResults = response.hasMoreResult;
+            return response.result;
         }
 
         internal static string GetContinuationToken(CosmosResponseMessage httpResponseMessage)
@@ -91,20 +97,15 @@ namespace Microsoft.Azure.Cosmos
     /// <typeparam name="T">The response object type that can be deserialized</typeparam>
     internal class FeedIteratorCore<T> : FeedIterator<T>
     {
-        internal delegate Task<FeedResponse<T>> NextResultSetDelegate(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken);
-
-        internal readonly NextResultSetDelegate nextResultSetDelegate;
+        private FeedIteratorCore feedIteratorStreamCore;
+        private Func<CosmosResponseMessage, FeedResponse<T>> responseCreator;
 
         internal FeedIteratorCore(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
-            NextResultSetDelegate nextDelegate,
+            FeedIteratorCore.NextResultSetDelegate nextDelegate,
+            Func<CosmosResponseMessage, FeedResponse<T>> responseCreator,
             object state = null)
         {
             if (nextDelegate == null)
@@ -112,33 +113,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(nextDelegate));
             }
 
-            this.nextResultSetDelegate = nextDelegate;
-            this.HasMoreResults = true;
-            this.state = state;
-            this.MaxItemCount = maxItemCount;
-            this.continuationToken = continuationToken;
-            this.queryOptions = options;
+            this.responseCreator = responseCreator;
+
+            this.feedIteratorStreamCore = new FeedIteratorCore(
+                maxItemCount: maxItemCount,
+                continuationToken: continuationToken,
+                options: options,
+                nextDelegate: nextDelegate,
+                state: null);
         }
-
-        /// <summary>
-        /// The query options for the result set
-        /// </summary>
-        protected readonly RequestOptions queryOptions;
-
-        /// <summary>
-        /// The state of the result set.
-        /// </summary>
-        protected readonly object state;
-
-        /// <summary>
-        /// The Continuation Token
-        /// </summary>
-        protected string continuationToken;
-
-        /// <summary>
-        /// The max item count to return as part of the query
-        /// </summary>
-        protected int? MaxItemCount;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -147,12 +130,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            FeedResponse<T> response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken);
-            this.HasMoreResults = response.HasMoreResults;
-            this.continuationToken = response.InternalContinuationToken;
-            return response;
+            CosmosResponseMessage response = await this.feedIteratorStreamCore.FetchNextSetAsync(cancellationToken);
+            return this.responseCreator(response);
 
         }
 

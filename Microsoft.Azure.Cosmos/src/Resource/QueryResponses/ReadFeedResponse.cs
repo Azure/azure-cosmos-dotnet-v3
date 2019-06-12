@@ -11,23 +11,17 @@ namespace Microsoft.Azure.Cosmos
     {
         protected ReadFeedResponse(
             IEnumerable<T> resource,
-            CosmosResponseMessageHeaders responseMessageHeaders,
-            bool hasMoreResults)
+            CosmosResponseMessageHeaders responseMessageHeaders)
             : base(
                 httpStatusCode: HttpStatusCode.Accepted,
                 headers: responseMessageHeaders,
                 resource: resource)
         {
-            this.HasMoreResults = hasMoreResults;
         }
 
         public override int Count { get; }
 
         public override string Continuation => this.Headers.Continuation;
-
-        internal override string InternalContinuationToken => this.Continuation;
-
-        internal override bool HasMoreResults { get; }
 
         public override IEnumerator<T> GetEnumerator()
         {
@@ -46,8 +40,7 @@ namespace Microsoft.Azure.Cosmos
                 IEnumerable<TInput> resources = response.Data;
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     resource: resources,
-                    responseMessageHeaders: responseMessageHeaders,
-                    hasMoreResults: hasMoreResults);
+                    responseMessageHeaders: responseMessageHeaders);
 
                 return readFeedResponse;
             }
@@ -60,8 +53,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                 resource: resources,
-                responseMessageHeaders: responseMessageHeaders,
-                hasMoreResults: hasMoreResults);
+                responseMessageHeaders: responseMessageHeaders);
 
             return readFeedResponse;
         }
