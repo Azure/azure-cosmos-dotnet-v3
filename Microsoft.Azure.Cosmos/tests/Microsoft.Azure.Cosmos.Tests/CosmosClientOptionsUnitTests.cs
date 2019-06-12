@@ -213,10 +213,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             string endpoint = AccountEndpoint;
             string key = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
 
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndPoint: endpoint,
-                accountKey: key);
-
             TimeSpan idleTcpConnectionTimeout = new TimeSpan(0, 10, 0);
             TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
             int maxRequestsPerTcpConnection = 30;
@@ -224,9 +220,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions(endpoint, key)
             {
-                ConnectionMode = ConnectionMode.Gateway
+                ConnectionMode = ConnectionMode.Gateway            
             };
-
+            
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout; });
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout; });
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection; });

@@ -50,6 +50,8 @@ namespace Microsoft.Azure.Cosmos
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
         private int gatewayModeMaxConnectionLimit;
 
+        private ConnectionMode connectionMode;
+        private Protocol connectionProtocol;
         private TimeSpan? idleTcpConnectionTimeout;
         private TimeSpan? openTcpConnectionTimeout;
         private int? maxRequestsPerTcpConnection;
@@ -254,7 +256,15 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
-        public virtual ConnectionMode ConnectionMode { get; set; }
+        public virtual ConnectionMode ConnectionMode
+        {
+            get => this.connectionMode;
+            set
+            {
+                this.ValidateDirectTCPSettings();
+                this.connectionMode = value;
+            }
+        }
 
         /// <summary>
         /// The number of times to retry on throttled requests.
@@ -285,11 +295,8 @@ namespace Microsoft.Azure.Cosmos
             get => this.idleTcpConnectionTimeout;
             set
             {
-                if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
-                {
-                    throw new ArgumentException($"{nameof(this.IdleTcpConnectionTimeout)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");                   
-                }
                 this.idleTcpConnectionTimeout = value;
+                this.ValidateDirectTCPSettings();                
             }
         }      
 
@@ -307,11 +314,8 @@ namespace Microsoft.Azure.Cosmos
             get => this.openTcpConnectionTimeout;
             set
             {
-                if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
-                {
-                    throw new ArgumentException($"{nameof(this.OpenTcpConnectionTimeout)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
-                }
                 this.openTcpConnectionTimeout = value;
+                this.ValidateDirectTCPSettings();                
             }
         }
 
@@ -332,11 +336,8 @@ namespace Microsoft.Azure.Cosmos
             get => this.maxRequestsPerTcpConnection;
             set
             {
-                if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
-                {
-                    throw new ArgumentException($"{nameof(this.MaxRequestsPerTcpConnection)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
-                }
                 this.maxRequestsPerTcpConnection = value;
+                this.ValidateDirectTCPSettings();                
             }
         }
 
@@ -352,11 +353,8 @@ namespace Microsoft.Azure.Cosmos
             get => this.maxTcpConnectionsPerEndpoint;
             set
             {
-                if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
-                {
-                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
-                }
                 this.maxTcpConnectionsPerEndpoint = value;
+                this.ValidateDirectTCPSettings();                
             }
         }
 
@@ -396,7 +394,15 @@ namespace Microsoft.Azure.Cosmos
         /// Gateway mode only supports HTTPS.
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
         /// </remarks>
-        internal Protocol ConnectionProtocol { get; set; }
+        internal Protocol ConnectionProtocol
+        {
+            get => this.connectionProtocol;
+            set
+            {
+                this.ValidateDirectTCPSettings();
+                this.connectionProtocol = value;
+            }
+        }
 
         internal UserAgentContainer UserAgentContainer { get; private set; }
 
@@ -490,7 +496,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal ConnectionPolicy GetConnectionPolicy()
-        {            
+        {
+            this.ValidateDirectTCPSettings();
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -571,6 +578,35 @@ namespace Microsoft.Azure.Cosmos
             }
 
             throw new ArgumentException("The connection string is missing a required property: " + keyName);
+        }
+
+        private void ValidateDirectTCPSettings()
+        {
+            string settingName = string.Empty;
+            if (!(this.ConnectionMode == ConnectionMode.Direct && this.ConnectionProtocol == Protocol.Tcp))
+            {
+                if (this.IdleTcpConnectionTimeout.HasValue)
+                {
+                    settingName = nameof(this.IdleTcpConnectionTimeout);
+                }
+                else if (this.OpenTcpConnectionTimeout.HasValue)
+                {
+                    settingName = nameof(this.OpenTcpConnectionTimeout);
+                }
+                else if (this.MaxRequestsPerTcpConnection.HasValue)
+                {
+                    settingName = nameof(this.MaxRequestsPerTcpConnection);
+                }
+                else if (this.MaxTcpConnectionsPerEndpoint.HasValue)
+                {
+                    settingName = nameof(this.MaxTcpConnectionsPerEndpoint);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(settingName))
+            {
+                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
+            }            
         }
 
         /// <summary>
