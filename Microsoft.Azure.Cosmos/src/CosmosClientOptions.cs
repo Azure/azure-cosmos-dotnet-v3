@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos
 
         private const string ConnectionStringAccountEndpoint = "AccountEndpoint";
         private const string ConnectionStringAccountKey = "AccountKey";
-        private const string RequiresDiretMode = "requires Direct Mode";
 
         private const ApiType DefaultApiType = ApiType.None;
 
@@ -288,7 +287,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
                 {
-                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
+                    throw new ArgumentException($"{nameof(this.IdleTcpConnectionTimeout)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");                   
                 }
                 this.idleTcpConnectionTimeout = value;
             }
@@ -310,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
                 {
-                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
+                    throw new ArgumentException($"{nameof(this.OpenTcpConnectionTimeout)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
                 }
                 this.openTcpConnectionTimeout = value;
             }
@@ -335,7 +334,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
                 {
-                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
+                    throw new ArgumentException($"{nameof(this.MaxRequestsPerTcpConnection)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
                 }
                 this.maxRequestsPerTcpConnection = value;
             }
@@ -355,7 +354,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.ConnectionMode != ConnectionMode.Gateway && this.ConnectionProtocol != Protocol.Tcp)
                 {
-                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} {RequiresDiretMode}");
+                    throw new ArgumentException($"{nameof(this.MaxTcpConnectionsPerEndpoint)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
                 }
                 this.maxTcpConnectionsPerEndpoint = value;
             }
