@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Obtains an accessor to Cosmos Scripts.
         /// </summary>
         /// <param name="container">An existing <see cref="Container"/>.</param>
-        /// <returns>An instance of of <see cref="CosmosScripts"/>.</returns>
-        public static CosmosScripts GetScripts(this Container container)
+        /// <returns>An instance of of <see cref="Scripts"/>.</returns>
+        public static Scripts GetScripts(this Container container)
         {
             CosmosContainerCore cosmosContainerCore = (CosmosContainerCore)container;
             return new CosmosScriptsCore(cosmosContainerCore, cosmosContainerCore.ClientContext);

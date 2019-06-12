@@ -260,19 +260,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Body = "function() {var x = 10;}",
                     };
 
-                    CosmosScripts cosmosScripts = container.GetScripts();
+                    Scripts scripts = container.GetScripts();
 
-                    StoredProcedureProperties storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(new StoredProcedureProperties(myStoredProcedure.Id, myStoredProcedure.Body));
+                    StoredProcedureProperties storedProcedure1 = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(myStoredProcedure.Id, myStoredProcedure.Body));
                     myStoredProcedure.Body = "function() {var x = 5;}";
-                    storedProcedure1 = await cosmosScripts.ReplaceStoredProcedureAsync(new StoredProcedureProperties(myStoredProcedure.Id, myStoredProcedure.Body));
-                    await cosmosScripts.DeleteStoredProcedureAsync(myStoredProcedure.Id);
+                    storedProcedure1 = await scripts.ReplaceStoredProcedureAsync(new StoredProcedureProperties(myStoredProcedure.Id, myStoredProcedure.Body));
+                    await scripts.DeleteStoredProcedureAsync(myStoredProcedure.Id);
 
-                    storedProcedure1 = await cosmosScripts.CreateStoredProcedureAsync(new StoredProcedureProperties(myStoredProcedure.Id, myStoredProcedure.Body));
-                    storedProcedure1 = await cosmosScripts.ReadStoredProcedureAsync(myStoredProcedure.Id);
+                    storedProcedure1 = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(myStoredProcedure.Id, myStoredProcedure.Body));
+                    storedProcedure1 = await scripts.ReadStoredProcedureAsync(myStoredProcedure.Id);
 
                     // 
                     // read databaseCollection feed.
-                    FeedIterator<StoredProcedureProperties> storedProcedureIter = cosmosScripts.GetStoredProceduresIterator();
+                    FeedIterator<StoredProcedureProperties> storedProcedureIter = scripts.GetStoredProceduresIterator();
                     List<StoredProcedureProperties> storedProcedures = new List<StoredProcedureProperties>();
                     while (storedProcedureIter.HasMoreResults)
                     {
@@ -1736,7 +1736,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await database.CreateContainerAsync(new ContainerProperties { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
                 container = client.GetDatabase("db1").GetContainer("coll1");
-                CosmosScripts scripts = container.GetScripts();
+                Scripts scripts = container.GetScripts();
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("sproc1", "function() {return 1}"));
                 for (int i = 0; i < 10; i++)
                 {

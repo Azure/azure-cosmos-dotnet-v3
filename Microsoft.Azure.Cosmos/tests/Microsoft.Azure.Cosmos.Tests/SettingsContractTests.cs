@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TriggerOperationMatchesDirect()
         {
-            AssertEnums<Scripts.TriggerOperation, Documents.TriggerOperation>();
+            AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]

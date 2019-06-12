@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private static CosmosJsonSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
         private Container container = null;
-        private CosmosScripts scripts = null;
+        private Scripts scripts = null;
         private StoredProcedureRequestOptions requestOptions = new StoredProcedureRequestOptions();
 
         [TestInitialize]

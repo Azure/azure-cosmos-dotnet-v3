@@ -1427,9 +1427,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 __.readDocuments(__.getSelfLink(), { pageSize : 1, continuation : ''}, callback);
             }";
             //Script cannot timeout.
-            CosmosScripts cosmosScripts = collection.GetScripts();
-            StoredProcedureProperties storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
-            string result = await cosmosScripts.ExecuteStoredProcedureAsync<object ,string >(storedProcedureId : "scriptId", partitionKey : new Cosmos.PartitionKey(documentDefinition.Id), input : null);
+            Scripts scripts = collection.GetScripts();
+            StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
+            string result = await scripts.ExecuteStoredProcedureAsync<object ,string >(storedProcedureId : "scriptId", partitionKey : new Cosmos.PartitionKey(documentDefinition.Id), input : null);
             await database.DeleteAsync();
         }
 
@@ -1473,9 +1473,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Script cannot timeout.
             try
             {
-                CosmosScripts cosmosScripts = collection.GetScripts();
-                StoredProcedureProperties storedProcedure = await cosmosScripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
-                string result = await cosmosScripts.ExecuteStoredProcedureAsync<object, string>(new Cosmos.PartitionKey(document.Id), "scriptId", input: null);
+                Scripts scripts = collection.GetScripts();
+                StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
+                string result = await scripts.ExecuteStoredProcedureAsync<object, string>(new Cosmos.PartitionKey(document.Id), "scriptId", input: null);
             }
             catch (DocumentClientException exception)
             {
@@ -1507,14 +1507,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             Container collection = await database.CreateContainerAsync(collectionSpec);
 
-            CosmosScripts cosmosScripts = collection.GetScripts();
-            StoredProcedureProperties sprocUri = await cosmosScripts.ReadStoredProcedureAsync("__.sys.echo");
+            Scripts scripts = collection.GetScripts();
+            StoredProcedureProperties sprocUri = await scripts.ReadStoredProcedureAsync("__.sys.echo");
             string input = "foobar";
 
             string result = string.Empty;
             try
             {
-                result = cosmosScripts.ExecuteStoredProcedureAsync<string, string>(new Cosmos.PartitionKey("anyPk"), "__.sys.echo", input).Result;
+                result = scripts.ExecuteStoredProcedureAsync<string, string>(new Cosmos.PartitionKey("anyPk"), "__.sys.echo", input).Result;
             }
             catch (DocumentClientException exception)
             {

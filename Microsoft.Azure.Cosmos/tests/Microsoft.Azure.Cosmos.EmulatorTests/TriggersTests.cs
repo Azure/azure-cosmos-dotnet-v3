@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public sealed class TriggersTests : BaseCosmosClientHelper
     {
         private CosmosContainerCore container = null;
-        private CosmosScripts scripts = null;
+        private Scripts scripts = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -45,8 +45,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = Guid.NewGuid().ToString(),
                 Body = TriggersTests.GetTriggerFunction(".05"),
-                TriggerOperation = Scripts.TriggerOperation.Create,
-                TriggerType = Scripts.TriggerType.Pre
+                TriggerOperation = Cosmos.Scripts.TriggerOperation.Create,
+                TriggerType = Cosmos.Scripts.TriggerType.Pre
             };
 
             TriggerResponse triggerResponse =
@@ -97,8 +97,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = "addTax",
                     Body = TriggersTests.GetTriggerFunction(".20"),
-                    TriggerOperation = Scripts.TriggerOperation.All,
-                    TriggerType = Scripts.TriggerType.Pre
+                    TriggerOperation = Cosmos.Scripts.TriggerOperation.All,
+                    TriggerType = Cosmos.Scripts.TriggerType.Pre
                 });
 
             ItemRequestOptions options = new ItemRequestOptions()
@@ -177,8 +177,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = id,
                 Body = function,
-                TriggerOperation = Scripts.TriggerOperation.Create,
-                TriggerType = Scripts.TriggerType.Pre
+                TriggerOperation = Cosmos.Scripts.TriggerOperation.Create,
+                TriggerType = Cosmos.Scripts.TriggerType.Pre
             };
 
             //Create a user defined function 
