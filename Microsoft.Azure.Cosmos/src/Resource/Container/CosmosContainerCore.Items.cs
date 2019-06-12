@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator CreateItemQueryStream(
-            CosmosSqlQueryDefinition sqlQueryDefinition,
+            QueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             PartitionKey partitionKey = null,
             int? maxItemCount = null,
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQueryStream(
-                new CosmosSqlQueryDefinition(sqlQueryText),
+                new QueryDefinition(sqlQueryText),
                 maxConcurrency,
                 partitionKey,
                 maxItemCount,
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> CreateItemQuery<T>(
-            CosmosSqlQueryDefinition sqlQueryDefinition,
+            QueryDefinition sqlQueryDefinition,
             PartitionKey partitionKey,
             int? maxItemCount = null,
             string continuationToken = null,
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQuery<T>(
-                new CosmosSqlQueryDefinition(sqlQueryText),
+                new QueryDefinition(sqlQueryText),
                 partitionKey,
                 maxItemCount,
                 continuationToken,
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> CreateItemQuery<T>(
-            CosmosSqlQueryDefinition sqlQueryDefinition,
+            QueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQuery<T>(
-                new CosmosSqlQueryDefinition(sqlQueryText),
+                new QueryDefinition(sqlQueryText),
                 maxConcurrency,
                 maxItemCount,
                 continuationToken,

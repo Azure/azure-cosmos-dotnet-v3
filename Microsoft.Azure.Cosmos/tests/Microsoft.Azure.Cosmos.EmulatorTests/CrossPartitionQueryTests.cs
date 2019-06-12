@@ -1184,7 +1184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(Container container, IEnumerable<Document> documents, QueryCrossPartitionWithLargeNumberOfKeysArgs args)
         {
-            CosmosSqlQueryDefinition query = new CosmosSqlQueryDefinition(
+            QueryDefinition query = new QueryDefinition(
                 $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").UseParameter("@keys", args.ExpectedPartitionKeyValues);
 
             HashSet<int> actualPartitionKeyValues = new HashSet<int>();
@@ -2875,7 +2875,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         maxItemCount = null;
                                     }
 
-                                    CosmosSqlQueryDefinition querySpec = new CosmosSqlQueryDefinition(queryText);
+                                    QueryDefinition querySpec = new QueryDefinition(queryText);
                                     SqlParameterCollection parameters = new SqlParameterCollection();
                                     if (isParametrized)
                                     {

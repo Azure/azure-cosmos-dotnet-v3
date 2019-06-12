@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosSqlQueryDefinitionUnitTests
+    public class QueryDefinitionUnitTests
     {
         [TestMethod]
         public void ValidateCreateQueryDefinition()
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string query = "select * from s where s.Account = @account";
             string paramName = "@account";
             string paramValue = "12345";
-            CosmosSqlQueryDefinition sqlQueryDefinition = new CosmosSqlQueryDefinition(query)
+            QueryDefinition sqlQueryDefinition = new QueryDefinition(query)
                 .UseParameter(paramName, paramValue);
 
             SqlQuerySpec sqlQuerySpec = sqlQueryDefinition.ToSqlQuerySpec();
@@ -43,14 +43,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullQueryText()
         {
-            new CosmosSqlQueryDefinition(null);
+            new QueryDefinition(null);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullConnectionString()
         {
-            CosmosSqlQueryDefinition sqlQueryDefinition = new CosmosSqlQueryDefinition("select * from s where s.Account = 1234");
+            QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from s where s.Account = 1234");
             sqlQueryDefinition.UseParameter(null, null);
         }
     }

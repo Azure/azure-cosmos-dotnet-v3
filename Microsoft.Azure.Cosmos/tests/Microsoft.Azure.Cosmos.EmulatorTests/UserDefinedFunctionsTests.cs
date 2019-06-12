@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Body = @"function(amt) { return amt * 0.05; }"
                 });
             
-             CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition(
+             QueryDefinition sqlQuery = new QueryDefinition(
              "SELECT t.id, t.status, t.cost, udf.calculateTax(t.cost) as total FROM toDoActivity t where t.cost > @expensive and t.status = @status")
                  .UseParameter("@expensive", 9000)
                  .UseParameter("@status", "Done");

@@ -536,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = deleteList = await this.CreateRandomItems(pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
             ToDoActivity find = deleteList.First();
 
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
+            QueryDefinition sql = new QueryDefinition("select * from r");
 
             int iterationCount = 0;
             int totalReadItem = 0;
@@ -599,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
 
             ToDoActivity find = deleteList.First();
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
+            QueryDefinition sql = new QueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(300, randomPartitionKey: true);
 
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum ");
+            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum ");
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemMultiplePartitionQueryStream()
         {
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(101, randomPartitionKey: true);
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t");
+            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t");
 
             List<ToDoActivity> resultList = new List<ToDoActivity>();
             double totalRequstCharge = 0;
@@ -710,7 +710,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create 10 items with same pk value
             IList<ToDoActivity> findItems = await this.CreateRandomItems(pkCount: 1, perPKItemCount: 10, randomPartitionKey: false);
 
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t");
+            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t");
 
             string findPkValue = findItems.First().status;
             double totalRequstCharge = 0;
@@ -818,7 +818,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(101, randomPartitionKey: true);
 
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
+            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
             CosmosSerializationOptions options = new CosmosSerializationOptions(
                 ContentSerializationFormat.CosmosBinary.ToString(),
                 (content) => JsonNavigator.Create(content),
@@ -881,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(pkCount: 1, perPKItemCount: 6, randomPartitionKey: false);
 
             ToDoActivity toDoActivity = deleteList.First();
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition(
+            QueryDefinition sql = new QueryDefinition(
                 "select * from toDoActivity t where t.status = @status")
                 .UseParameter("@status", toDoActivity.status);
 
@@ -1032,7 +1032,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(itemWithPK.id, createResponseWithPk.Resource.id);
 
                 //Quering items on fixed container with cross partition enabled.
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
+                QueryDefinition sql = new QueryDefinition("select * from r");
                 FeedIterator<dynamic> feedIterator = fixedContainer
                     .CreateItemQuery<dynamic>(sql, maxConcurrency: 1, maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
@@ -1183,7 +1183,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Query items on the container that have no partition key value
                 int resultsFetched = 0;
-                CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");
+                QueryDefinition sql = new QueryDefinition("select * from r");
                 FeedIterator<ToDoActivity> setIterator = fixedContainer
                     .CreateItemQuery<ToDoActivity>(sql, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue, maxItemCount: 2);
                 while (setIterator.HasMoreResults)

@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // query documents 
                     {
                         bool bFound = false;
-                        CosmosSqlQueryDefinition sqlQueryDefinition = new CosmosSqlQueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
+                        QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
                         FeedIterator<Document> docServiceQuery = container.CreateItemQuery<Document>(
                             sqlQueryDefinition: sqlQueryDefinition,
                             partitionKey: new Cosmos.PartitionKey(doc1.Id));
