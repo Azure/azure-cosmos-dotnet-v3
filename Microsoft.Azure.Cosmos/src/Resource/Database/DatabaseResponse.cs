@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos database response
     /// </summary>
-    public class DatabaseResponse : Response<CosmosDatabaseSettings>
+    public class DatabaseResponse : Response<CosmosDatabaseProperties>
     {
         /// <summary>
         /// Create a <see cref="DatabaseResponse"/> as a no-op for mock testing
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         internal DatabaseResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            CosmosDatabaseSettings cosmosDatabaseSettings,
+            CosmosDatabaseProperties cosmosDatabaseSettings,
             CosmosDatabase database)
             : base(
                 httpStatusCode, 

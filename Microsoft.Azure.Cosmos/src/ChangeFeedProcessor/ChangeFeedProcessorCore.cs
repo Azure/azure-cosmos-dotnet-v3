@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (documentServiceLeaseStoreManager == null)
             {
                 ContainerResponse cosmosContainerResponse = await leaseContainer.ReadAsync().ConfigureAwait(false);
-                CosmosContainerSettings containerSettings = cosmosContainerResponse.Resource;
+                CosmosContainerProperties containerSettings = cosmosContainerResponse.Resource;
 
                 bool isPartitioned =
                     containerSettings.PartitionKey != null &&

@@ -67,16 +67,20 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Creates a JsonWriter that can write in a particular JsonSerializationFormat (utf8 if text)
         /// </summary>
         /// <param name="jsonSerializationFormat">The JsonSerializationFormat of the writer.</param>
+        /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <param name="skipValidation">Whether or not to skip validation</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
-        public static IJsonWriter Create(JsonSerializationFormat jsonSerializationFormat, bool skipValidation = false)
+        public static IJsonWriter Create(
+            JsonSerializationFormat jsonSerializationFormat, 
+            JsonStringDictionary jsonStringDictionary = null, 
+            bool skipValidation = false)
         {
             switch (jsonSerializationFormat)
             {
                 case JsonSerializationFormat.Text:
                     return new JsonTextWriter(Encoding.UTF8, skipValidation);
                 case JsonSerializationFormat.Binary:
-                    return new JsonBinaryWriter(skipValidation, false);
+                    return new JsonBinaryWriter(skipValidation, jsonStringDictionary, serializeCount: false);
                 default:
                     throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, RMResources.UnexpectedJsonSerializationFormat, jsonSerializationFormat));
             }

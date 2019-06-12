@@ -498,7 +498,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-                CosmosContainerSettings containerSetting = new CosmosContainerSettings()
+                CosmosContainerProperties containerSetting = new CosmosContainerProperties()
                 {
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = partitionKeyDefinition
@@ -543,15 +543,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-                var lazyCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
+                var lazyCollection = new CosmosContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 lazyCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Lazy;
                 CosmosContainer lazyContainer = await db.CreateContainerAsync(lazyCollection);
 
-                var consistentCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
+                var consistentCollection = new CosmosContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 consistentCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Consistent;
                 CosmosContainer consistentContainer = await db.CreateContainerAsync(consistentCollection);
 
-                var noneIndexCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
+                var noneIndexCollection = new CosmosContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 noneIndexCollection.IndexingPolicy.Automatic = false;
                 noneIndexCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.None;
                 CosmosContainer noneIndexContainer = await db.CreateContainerAsync(noneIndexCollection);

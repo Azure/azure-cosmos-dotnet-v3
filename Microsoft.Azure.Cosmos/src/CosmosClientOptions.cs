@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
-    using System.Security;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -80,42 +79,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.EndPoint = new Uri(endPoint);
-            this.AccountKey = new StringHMACSHA256Hash(accountKey);
-
-            this.Initialize();
-        }
-
-        /// <summary>
-        /// Initialize a new CosmosClientOptions class that holds all the properties the CosmosClient requires.
-        /// </summary>
-        /// <param name="endPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
-        /// <param name="accountKey">The key to the account.</param>
-        /// <example>
-        /// The example below creates a new <see cref="CosmosClientOptions"/>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosClientOptions clientOptions = new CosmosClientOptions(
-        ///     endPoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey");
-        /// ]]>
-        /// </code>
-        /// </example>
-        public CosmosClientOptions(
-            string endPoint,
-            SecureString accountKey)
-        {
-            if (string.IsNullOrWhiteSpace(endPoint))
-            {
-                throw new ArgumentNullException(nameof(endPoint));
-            }
-
-            if (accountKey == null || accountKey.Length == 0)
-            {
-                throw new ArgumentNullException(nameof(accountKey));
-            }
-
-            this.EndPoint = new Uri(endPoint);
-            this.AccountKey = new SecureStringHMACSHA256Helper(accountKey);
+            this.AccountKey = accountKey;
 
             this.Initialize();
         }
@@ -135,9 +99,7 @@ namespace Microsoft.Azure.Cosmos
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
             this.EndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
                 CosmosClientOptions.ConnectionStringAccountEndpoint));
-
-            string key = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
-            this.AccountKey = new StringHMACSHA256Hash(key); 
+            this.AccountKey = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
 
             this.Initialize();
         }
@@ -157,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The AuthKey used by the client.
         /// </value>
-        internal IComputeHash AccountKey { get; }
+        internal string AccountKey { get; }
 
         /// <summary>
         /// A suffix to be added to the default user-agent for the Azure Cosmos DB service.

@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly FeedOptions feedOptions;
         private readonly string resourceLink;
 
-        private readonly CosmosContainerSettings collection;
+        private readonly CosmosContainerProperties collection;
         private readonly bool isContinuationExpected;
 
         private readonly Guid correlatedActivityId;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Expression expression,
             FeedOptions feedOptions,
             string resourceLink,
-            CosmosContainerSettings collection,
+            CosmosContainerProperties collection,
             bool isContinuationExpected,
             Guid correlatedActivityId)
         {
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query
             FeedOptions feedOptions,
             string resourceLink,
             CancellationToken token,
-            CosmosContainerSettings collection,
+            CosmosContainerProperties collection,
             bool isContinuationExpected,
             Guid correlatedActivityId)
         {

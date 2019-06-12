@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestInit();
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CRUDTest()
         {
-            CosmosTriggerSettings settings = new CosmosTriggerSettings
+            CosmosTriggerProperties settings = new CosmosTriggerProperties
             {
                 Id = Guid.NewGuid().ToString(),
                 Body = TriggersTests.GetTriggerFunction(".05"),
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, triggerResponse.StatusCode);
             TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
-            CosmosTriggerSettings updatedSettings = triggerResponse.Resource;
+            CosmosTriggerProperties updatedSettings = triggerResponse.Resource;
             updatedSettings.Body = TriggersTests.GetTriggerFunction(".42");
 
             TriggerResponse replaceResponse = await this.scripts.ReplaceTriggerAsync(updatedSettings);
@@ -92,8 +92,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 1
             };
 
-            CosmosTriggerSettings cosmosTrigger = await this.scripts.CreateTriggerAsync(
-                new CosmosTriggerSettings
+            CosmosTriggerProperties cosmosTrigger = await this.scripts.CreateTriggerAsync(
+                new CosmosTriggerProperties
                 {
                     Id = "addTax",
                     Body = TriggersTests.GetTriggerFunction(".20"),
@@ -117,13 +117,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TriggersIteratorTest()
         {
-            CosmosTriggerSettings cosmosTrigger = await CreateRandomTrigger();
+            CosmosTriggerProperties cosmosTrigger = await CreateRandomTrigger();
 
             HashSet<string> settings = new HashSet<string>();
-            FeedIterator<CosmosTriggerSettings> iter = this.scripts.GetTriggersIterator(); ;
+            FeedIterator<CosmosTriggerProperties> iter = this.scripts.GetTriggersIterator(); ;
             while (iter.HasMoreResults)
             {
-                foreach (CosmosTriggerSettings storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
+                foreach (CosmosTriggerProperties storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
                 {
                     settings.Add(storedProcedureSettingsEntry.Id);
                 }
@@ -156,9 +156,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }";
         }
 
-        private static void ValidateTriggerSettings(CosmosTriggerSettings triggerSettings, TriggerResponse cosmosResponse)
+        private static void ValidateTriggerSettings(CosmosTriggerProperties triggerSettings, TriggerResponse cosmosResponse)
         {
-            CosmosTriggerSettings settings = cosmosResponse.Resource;
+            CosmosTriggerProperties settings = cosmosResponse.Resource;
             Assert.AreEqual(triggerSettings.Body, settings.Body,
                 "Trigger function do not match");
             Assert.AreEqual(triggerSettings.Id, settings.Id,
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string id = Guid.NewGuid().ToString();
             string function = GetTriggerFunction(".05");
 
-            CosmosTriggerSettings settings = new CosmosTriggerSettings
+            CosmosTriggerProperties settings = new CosmosTriggerProperties
             {
                 Id = id,
                 Body = function,

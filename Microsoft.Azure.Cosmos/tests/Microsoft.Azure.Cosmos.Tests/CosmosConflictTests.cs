@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            CosmosConflictProperties conflictSettings = new CosmosConflictProperties();
             conflictSettings.SourceResourceId = expectedRID;
 
             await container.GetConflicts().ReadCurrentAsync<JObject>(partitionKey, conflictSettings);
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             someJsonObject["id"] = Guid.NewGuid().ToString();
             someJsonObject["someInt"] = 2;
 
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            CosmosConflictProperties conflictSettings = new CosmosConflictProperties();
             conflictSettings.Content = someJsonObject.ToString();
 
             Assert.AreEqual(someJsonObject.ToString(), container.GetConflicts().ReadConflictContent<JObject>(conflictSettings).ToString());
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            CosmosConflictProperties conflictSettings = new CosmosConflictProperties();
             conflictSettings.Id = expectedId;
 
             await container.GetConflicts().DeleteConflictAsync(partitionKey, conflictSettings);

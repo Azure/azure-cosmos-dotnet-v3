@@ -92,32 +92,32 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockUserJsonSerializer.VerifyAll();
 
             // Test the system specified response
-            CosmosContainerSettings containerSettings = new CosmosContainerSettings("mockId", "/pk");
-            CosmosDatabaseSettings databaseSettings = new CosmosDatabaseSettings()
+            CosmosContainerProperties containerSettings = new CosmosContainerProperties("mockId", "/pk");
+            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties()
             {
                 Id = "mock"
             };
 
-            CosmosStoredProcedureSettings cosmosStoredProcedureSettings = new CosmosStoredProcedureSettings()
+            CosmosStoredProcedureProperties cosmosStoredProcedureSettings = new CosmosStoredProcedureProperties()
             {
                 Id = "mock"
             };
 
-            CosmosTriggerSettings cosmosTriggerSettings = new CosmosTriggerSettings()
+            CosmosTriggerProperties cosmosTriggerSettings = new CosmosTriggerProperties()
             {
                 Id = "mock"
             };
 
-            CosmosUserDefinedFunctionSettings cosmosUserDefinedFunctionSettings = new CosmosUserDefinedFunctionSettings()
+            CosmosUserDefinedFunctionProperties cosmosUserDefinedFunctionSettings = new CosmosUserDefinedFunctionProperties()
             {
                 Id = "mock"
             };
 
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosDatabaseSettings>(databaseResponse.Content)).Returns(databaseSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosContainerSettings>(containerResponse.Content)).Returns(containerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosStoredProcedureSettings>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosTriggerSettings>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
-            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosUserDefinedFunctionSettings>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosDatabaseProperties>(databaseResponse.Content)).Returns(databaseSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosContainerProperties>(containerResponse.Content)).Returns(containerSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosStoredProcedureProperties>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosTriggerProperties>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<CosmosUserDefinedFunctionProperties>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
 
             Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
             Mock<CosmosDatabase> mockDatabase = new Mock<CosmosDatabase>();
