@@ -409,8 +409,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
         private void UpdateLocationCache(
-            IEnumerable<CosmosAccountLocation> writeLocations = null,
-            IEnumerable<CosmosAccountLocation> readLocations = null,
+            IEnumerable<AccountLocation> writeLocations = null,
+            IEnumerable<AccountLocation> readLocations = null,
             ReadOnlyCollection<string> preferenceList = null,
             bool? enableMultipleWriteLocations = null)
         {
@@ -519,12 +519,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             return endpoints.AsReadOnly();
         }        
 
-        private ReadOnlyDictionary<string, Uri> GetEndpointByLocation(IEnumerable<CosmosAccountLocation> locations, out ReadOnlyCollection<string> orderedLocations)
+        private ReadOnlyDictionary<string, Uri> GetEndpointByLocation(IEnumerable<AccountLocation> locations, out ReadOnlyCollection<string> orderedLocations)
         {
             Dictionary<string, Uri> endpointsByLocation = new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase);
             List<string> parsedLocations = new List<string>();
 
-            foreach (CosmosAccountLocation location in locations)
+            foreach (AccountLocation location in locations)
             {
                 Uri endpoint;
                 if (!string.IsNullOrEmpty(location.Name)
