@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CosmosAccountSettingsSerializationTest()
         {
-            CosmosAccountSettings cosmosAccountSettings = new CosmosAccountSettings();
+            CosmosAccountProperties cosmosAccountSettings = new CosmosAccountProperties();
             cosmosAccountSettings.Id = "someId";
             cosmosAccountSettings.EnableMultipleWriteLocations = true;
             cosmosAccountSettings.ResourceId = "/uri";
@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string cosmosSerialized = SettingsContractTests.CosmosSerialize(cosmosAccountSettings);
 
-            CosmosAccountSettings accountDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosAccountSettings>(cosmosSerialized);
+            CosmosAccountProperties accountDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosAccountProperties>(cosmosSerialized);
 
             Assert.AreEqual(cosmosAccountSettings.Id, accountDeserSettings.Id);
             Assert.AreEqual(cosmosAccountSettings.EnableMultipleWriteLocations, accountDeserSettings.EnableMultipleWriteLocations);

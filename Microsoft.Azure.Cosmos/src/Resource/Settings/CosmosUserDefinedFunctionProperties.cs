@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <code language="c#">
     /// <![CDATA[
     /// await this.container.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
-    ///     new CosmosUserDefinedFunctionSettings 
+    ///     new CosmosUserDefinedFunctionProperties 
     ///     { 
     ///         Id = "calculateTax", 
     ///         Body = @"function(amt) { return amt * 0.05; }" 

@@ -109,25 +109,25 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>Builds the current Fluent configuration into an instance of <see cref="CosmosContainerProperties"/>.</returns>
         public virtual CosmosContainerProperties Build()
         {
-            CosmosContainerProperties settings = new CosmosContainerProperties(id: this.containerName, partitionKeyPath: this.partitionKeyPath);
+            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id: this.containerName, partitionKeyPath: this.partitionKeyPath);
             if (this.indexingPolicy != null)
             {
-                settings.IndexingPolicy = this.indexingPolicy;
+                containerProperties.IndexingPolicy = this.indexingPolicy;
             }
 
             if (this.defaultTimeToLive.HasValue)
             {
-                settings.DefaultTimeToLive = this.defaultTimeToLive.Value;
+                containerProperties.DefaultTimeToLive = this.defaultTimeToLive.Value;
             }
 
             if (this.timeToLivePropertyPath != null)
             {
-                settings.TimeToLivePropertyPath = timeToLivePropertyPath;
+                containerProperties.TimeToLivePropertyPath = timeToLivePropertyPath;
             }
 
-            settings.ValidateRequiredProperties();
+            containerProperties.ValidateRequiredProperties();
 
-            return settings;
+            return containerProperties;
         }
 
         private void WithIndexingPolicy(IndexingPolicy indexingPolicy)

@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos
         internal ContainerResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            CosmosContainerProperties cosmosContainerSettings,
+            CosmosContainerProperties cosmosContainerProperties,
             CosmosContainer container)
             : base(
                 httpStatusCode,
                 headers,
-                cosmosContainerSettings)
+                cosmosContainerProperties)
         {
             this.Container = container;
         }
