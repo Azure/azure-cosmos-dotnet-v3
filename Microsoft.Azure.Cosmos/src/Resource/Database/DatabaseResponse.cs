@@ -27,12 +27,12 @@ namespace Microsoft.Azure.Cosmos
         internal DatabaseResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            CosmosDatabaseProperties cosmosDatabaseSettings,
+            CosmosDatabaseProperties cosmosDatabaseProperties,
             CosmosDatabase database)
             : base(
                 httpStatusCode, 
                 headers, 
-                cosmosDatabaseSettings)
+                cosmosDatabaseProperties)
         {
             this.Database = database;
         }

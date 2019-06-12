@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            CosmosAccountSettings databaseAccount = new CosmosAccountSettings();
+            CosmosAccountProperties databaseAccount = new CosmosAccountProperties();
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             //Setup mock owner "document client"
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            CosmosAccountSettings databaseAccount = new CosmosAccountSettings();
+            CosmosAccountProperties databaseAccount = new CosmosAccountProperties();
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             //Setup mock owner "document client"

@@ -6254,31 +6254,31 @@ namespace Microsoft.Azure.Cosmos
         #endregion
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="CosmosAccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="CosmosAccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public Task<CosmosAccountSettings> GetDatabaseAccountAsync()
+        public Task<CosmosAccountProperties> GetDatabaseAccountAsync()
         {
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountSettings"/> as an asynchronous operation
+        /// Read the <see cref="CosmosAccountProperties"/> as an asynchronous operation
         /// given a specific reginal endpoint url.
         /// </summary>
         /// <param name="serviceEndpoint">The reginal url of the serice endpoint.</param>
         /// <param name="cancellationToken">The CancellationToken</param>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="CosmosAccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        Task<CosmosAccountSettings> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
+        Task<CosmosAccountProperties> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
         {
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
-        private async Task<CosmosAccountSettings> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<CosmosAccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
         {
             await this.EnsureValidClientAsync();
             GatewayStoreModel gatewayModel = this.gatewayStoreModel as GatewayStoreModel;
@@ -6312,7 +6312,7 @@ namespace Microsoft.Azure.Cosmos
                     request.Method = HttpMethod.Get;
                     request.RequestUri = serviceEndpoint;
 
-                    CosmosAccountSettings databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
+                    CosmosAccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
 
                     this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
 
@@ -6538,10 +6538,10 @@ namespace Microsoft.Azure.Cosmos
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
-            CosmosAccountSettings accountSettings = this.accountServiceConfiguration.AccountSettings;
-            this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountSettings.EnableMultipleWriteLocations;
+            CosmosAccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
+            this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
-            await this.globalEndpointManager.RefreshLocationAsync(accountSettings);
+            await this.globalEndpointManager.RefreshLocationAsync(accountProperties);
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

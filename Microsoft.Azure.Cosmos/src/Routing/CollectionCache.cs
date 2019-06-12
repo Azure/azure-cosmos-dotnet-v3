@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Common
         }
 
         /// <summary>
-        /// Resolve the CosmosContainerSettings object from the cache. If the collection was read before "refreshAfter" Timespan, force a cache refresh by reading from the backend.
+        /// Resolve the CosmosContainerProperties object from the cache. If the collection was read before "refreshAfter" Timespan, force a cache refresh by reading from the backend.
         /// </summary>
         /// <param name="request">Request to resolve.</param>
         /// <param name="refreshAfter"> Time duration to refresh</param>

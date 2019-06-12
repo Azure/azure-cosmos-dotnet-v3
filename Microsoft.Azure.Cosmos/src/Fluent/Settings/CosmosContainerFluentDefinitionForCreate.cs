@@ -63,9 +63,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         public virtual async Task<ContainerResponse> CreateAsync(int? requestUnitsPerSecond = null)
         {
-            CosmosContainerProperties settings = this.Build();
+            CosmosContainerProperties containerProperties = this.Build();
 
-            return await this.cosmosContainers.CreateContainerAsync(settings, requestUnitsPerSecond);
+            return await this.cosmosContainers.CreateContainerAsync(containerProperties, requestUnitsPerSecond);
         }
 
         /// <summary>
@@ -74,19 +74,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>Builds the current Fluent configuration into an instance of <see cref="CosmosContainerProperties"/>.</returns>
         public virtual new CosmosContainerProperties Build()
         {
-            CosmosContainerProperties settings = base.Build();
+            CosmosContainerProperties containerProperties = base.Build();
 
             if (this.uniqueKeyPolicy != null)
             {
-                settings.UniqueKeyPolicy = this.uniqueKeyPolicy;
+                containerProperties.UniqueKeyPolicy = this.uniqueKeyPolicy;
             }
 
             if (this.conflictResolutionPolicy != null)
             {
-                settings.ConflictResolutionPolicy = this.conflictResolutionPolicy;
+                containerProperties.ConflictResolutionPolicy = this.conflictResolutionPolicy;
             }
 
-            return settings;
+            return containerProperties;
         }
 
         private void AddUniqueKey(UniqueKey uniqueKey)
