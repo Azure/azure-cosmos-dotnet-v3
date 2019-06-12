@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 int? maxItemCount,
                 ChangeFeedRequestOptions options) : base(
                     clientContext: container.ClientContext,
-                    cosmosContainer: container,
+                    container: container,
                     continuationToken: continuationToken,
                     maxItemCount: maxItemCount,
                     options: options)

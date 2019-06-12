@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal ChangeFeedProcessorBuilder(
             string processorName, 
-            CosmosContainerCore cosmosContainer, 
+            CosmosContainerCore container, 
             ChangeFeedProcessor changeFeedProcessor,
             Action<DocumentServiceLeaseStoreManager,
                 CosmosContainerCore,
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.changeFeedLeaseOptions = new ChangeFeedLeaseOptions();
             this.changeFeedLeaseOptions.LeasePrefix = processorName;
-            this.monitoredContainer = cosmosContainer;
+            this.monitoredContainer = container;
             this.changeFeedProcessor = changeFeedProcessor;
             this.applyBuilderConfiguration = applyBuilderConfiguration;
         }

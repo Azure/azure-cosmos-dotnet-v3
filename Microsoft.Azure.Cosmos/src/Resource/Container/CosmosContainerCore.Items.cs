@@ -420,7 +420,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
-                cosmosContainer: this,
+                container: this,
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
@@ -443,7 +443,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
-                cosmosContainer: this,
+                container: this,
                 changeFeedProcessor: changeFeedEstimatorCore,
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos
                 clientContext: this.ClientContext,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,
-                cosmosContainer: this,
+                container: this,
                 options: cosmosQueryRequestOptions);
         }
 

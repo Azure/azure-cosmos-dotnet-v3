@@ -22,15 +22,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
-            CosmosContainerCore cosmosContainer,
+            CosmosContainerCore container,
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
-            if (cosmosContainer == null)
+            if (container == null)
             {
-                throw new ArgumentNullException(nameof(cosmosContainer));
+                throw new ArgumentNullException(nameof(container));
             }
 
             if (partitionKeyRangeId == null)
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientContext = clientContext;
-            this.container = cosmosContainer;
+            this.container = container;
             this.changeFeedOptions = options;
             this.MaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;

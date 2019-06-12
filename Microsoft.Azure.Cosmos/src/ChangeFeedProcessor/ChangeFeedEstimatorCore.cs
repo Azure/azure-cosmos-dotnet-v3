@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         partitionKeyRangeId: partitionKeyRangeId,
                         continuationToken: continuationToken,
                         maxItemCount: 1,
-                        cosmosContainer: this.monitoredContainer,
+                        container: this.monitoredContainer,
                         startTime: null,
                         startFromBeginning: string.IsNullOrEmpty(continuationToken));
                 };

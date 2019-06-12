@@ -31,15 +31,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal ChangeFeedResultSetIteratorCore(
             CosmosClientContext clientContext,
-            CosmosContainerCore cosmosContainer,
+            CosmosContainerCore container,
             string continuationToken,
             int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
-            if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
+            if (container == null) throw new ArgumentNullException(nameof(container));
 
             this.clientContext = clientContext;
-            this.container = cosmosContainer;
+            this.container = container;
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
             this.originalMaxItemCount = maxItemCount;

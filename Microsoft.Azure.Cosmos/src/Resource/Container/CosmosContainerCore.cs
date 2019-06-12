@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
-    /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
+    /// Operations for reading, replacing, or deleting a specific, existing container by id.
     /// 
     /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
