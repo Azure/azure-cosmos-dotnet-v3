@@ -7,24 +7,23 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary> 
-    /// Represents a <see cref="CosmosAccountSettings"/>. A DatabaseAccountSettings is the container for databases in the Azure Cosmos DB service.
+    /// Represents a <see cref="AccountProperties"/>. A DatabaseAccountProperties is the container for databases in the Azure Cosmos DB service.
     /// </summary>
-    public class CosmosAccountSettings
+    public class AccountProperties
     {
-        private Collection<CosmosAccountLocation> readLocations;
-        private Collection<CosmosAccountLocation> writeLocations;
+        private Collection<AccountLocation> readLocations;
+        private Collection<AccountLocation> writeLocations;
 
         internal readonly Lazy<IDictionary<string, object>> QueryEngineConfiurationInternal;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosAccountSettings"/> class.
+        /// Initializes a new instance of the <see cref="AccountProperties"/> class.
         /// </summary>
-        internal CosmosAccountSettings()
+        internal AccountProperties()
         {
             this.QueryEngineConfiurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }
@@ -34,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public virtual IEnumerable<CosmosAccountLocation> WritableLocations
+        public virtual IEnumerable<AccountLocation> WritableLocations
         {
             get { return this.WriteLocationsInternal; }
         }
@@ -44,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public virtual IEnumerable<CosmosAccountLocation> ReadableLocations
+        public virtual IEnumerable<AccountLocation> ReadableLocations
         {
             get { return this.ReadLocationsInternal; }
         }
@@ -100,13 +99,13 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]
-        internal Collection<CosmosAccountLocation> WriteLocationsInternal
+        internal Collection<AccountLocation> WriteLocationsInternal
         {
             get
             {
                 if (this.writeLocations == null)
                 {
-                    this.writeLocations = new Collection<CosmosAccountLocation>();
+                    this.writeLocations = new Collection<AccountLocation>();
                 }
                 return this.writeLocations;
             }
@@ -117,13 +116,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [JsonProperty(PropertyName = Constants.Properties.ReadableLocations)]
-        internal Collection<CosmosAccountLocation> ReadLocationsInternal
+        internal Collection<AccountLocation> ReadLocationsInternal
         {
             get
             {
                 if (this.readLocations == null)
                 {
-                    this.readLocations = new Collection<CosmosAccountLocation>();
+                    this.readLocations = new Collection<AccountLocation>();
                 }
                 return this.readLocations;
             }
@@ -204,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
         /// The ConsistencySetting.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.UserConsistencyPolicy)]
-        public virtual CosmosAccountConsistency ConsistencySetting { get; internal set; }
+        public virtual AccountConsistency ConsistencySetting { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount
@@ -213,13 +212,13 @@ namespace Microsoft.Azure.Cosmos
         internal string AddressesLink { get; set; }
 
         /// <summary>
-        /// Gets the ReplicationPolicy settings
+        /// Gets the ReplicationPolicy properties
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.UserReplicationPolicy)]
         internal ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
-        /// Gets the SystemReplicationPolicy settings
+        /// Gets the SystemReplicationPolicy 
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.SystemReplicationPolicy)]
         internal ReplicationPolicy SystemReplicationPolicy { get; set; }

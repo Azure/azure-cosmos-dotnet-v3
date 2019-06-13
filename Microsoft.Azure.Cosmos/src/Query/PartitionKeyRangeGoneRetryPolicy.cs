@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                     null,
                     AuthorizationTokenType.PrimaryMasterKey))
                 {
-                    CosmosContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                    ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
                     CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, request, cancellationToken);
                     if (routingMap != null)
                     {

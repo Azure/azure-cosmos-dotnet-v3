@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task<CosmosOfferResult> ReplaceThroughputIfExistsAsync(
             string targetRID,
-            int targetRequestUnitsPerSecond,
+            int throughput,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             try
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new NotImplementedException();
                 }
 
-                OfferV2 newOffer = new OfferV2(offerV2, targetRequestUnitsPerSecond);
+                OfferV2 newOffer = new OfferV2(offerV2, throughput);
                 Offer replacedOffer = await this.ReplaceOfferAsync(targetRID, newOffer, cancellationToken);
                 offerV2 = replacedOffer as OfferV2;
                 Debug.Assert(offerV2 != null);

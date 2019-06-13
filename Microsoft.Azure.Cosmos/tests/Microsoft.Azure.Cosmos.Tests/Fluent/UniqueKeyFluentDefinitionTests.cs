@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse()
         {
-            Mock<CosmosContainerFluentDefinitionForCreate> mockContainerDefinition = new Mock<CosmosContainerFluentDefinitionForCreate>();
+            Mock<ContainerFluentDefinitionForCreate> mockContainerDefinition = new Mock<ContainerFluentDefinitionForCreate>();
             Action<UniqueKey> callback = (uniqueKey) =>
             {
                 Assert.AreEqual(2, uniqueKey.Paths.Count);

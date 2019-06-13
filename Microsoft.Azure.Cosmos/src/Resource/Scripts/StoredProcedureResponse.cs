@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <summary>
     /// The cosmos stored procedure response
     /// </summary>
-    public class StoredProcedureResponse : Response<CosmosStoredProcedureProperties>
+    public class StoredProcedureResponse : Response<StoredProcedureProperties>
     {
         /// <summary>
         /// Create a <see cref="StoredProcedureResponse"/> as a no-op for mock testing
@@ -28,11 +28,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         internal StoredProcedureResponse(
            HttpStatusCode httpStatusCode,
            CosmosResponseMessageHeaders headers,
-           CosmosStoredProcedureProperties cosmosStoredProcedureSettings)
+           StoredProcedureProperties storedProcedureProperties)
             : base(
                httpStatusCode,
                headers,
-               cosmosStoredProcedureSettings)
+               storedProcedureProperties)
         {
         }
 
@@ -45,10 +45,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public virtual string SessionToken => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
 
         /// <summary>
-        /// Get <see cref="CosmosStoredProcedureProperties"/> implictly from <see cref="StoredProcedureResponse"/>
+        /// Get <see cref="StoredProcedureProperties"/> implictly from <see cref="StoredProcedureResponse"/>
         /// </summary>
         /// <param name="response">CosmosUserDefinedFunctionResponse</param>
-        public static implicit operator CosmosStoredProcedureProperties(StoredProcedureResponse response)
+        public static implicit operator StoredProcedureProperties(StoredProcedureResponse response)
         {
             return response.Resource;
         }

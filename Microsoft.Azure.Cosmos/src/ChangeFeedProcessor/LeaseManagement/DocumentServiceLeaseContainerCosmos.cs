@@ -10,20 +10,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
     {
-        private readonly CosmosContainer container;
-        private readonly DocumentServiceLeaseStoreManagerSettings settings;
+        private readonly Container container;
+        private readonly DocumentServiceLeaseStoreManagerOptions options;
 
         public DocumentServiceLeaseContainerCosmos(
-            CosmosContainer container,
-            DocumentServiceLeaseStoreManagerSettings settings)
+            Container container,
+            DocumentServiceLeaseStoreManagerOptions options)
         {
             this.container = container;
-            this.settings = settings;
+            this.options = options;
         }
 
         public override async Task<IReadOnlyList<DocumentServiceLease>> GetAllLeasesAsync()
         {
-            return await this.ListDocumentsAsync(this.settings.GetPartitionLeasePrefix()).ConfigureAwait(false);
+            return await this.ListDocumentsAsync(this.options.GetPartitionLeasePrefix()).ConfigureAwait(false);
         }
 
         public override async Task<IEnumerable<DocumentServiceLease>> GetOwnedLeasesAsync()
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             var ownedLeases = new List<DocumentServiceLease>();
             foreach (DocumentServiceLease lease in await this.GetAllLeasesAsync().ConfigureAwait(false))
             {
-                if (string.Compare(lease.Owner, this.settings.HostName, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Compare(lease.Owner, this.options.HostName, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     ownedLeases.Add(lease);
                 }

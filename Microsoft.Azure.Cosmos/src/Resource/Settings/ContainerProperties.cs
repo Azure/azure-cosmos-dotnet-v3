@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
-    ///     CosmosContainerSettings containerSettings = container.Resource;
+    ///     Container container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     ContainerProperties containerProperties = container.Resource;
     /// ]]>
     /// </code>
     /// </example>
@@ -34,13 +34,12 @@ namespace Microsoft.Azure.Cosmos
     /// The example below creates a new container with a custom indexing policy.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainerSettings collectionsettings = new CosmosContainerSettings("MyCollection", "/country");
-    ///     collectionsettings.IndexingPolicy.Automatic = true;
-    ///     collectionsettings.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
+    ///     ContainerProperties containerProperties = new ContainerProperties("MyCollection", "/country");
+    ///     containerProperties.IndexingPolicy.Automatic = true;
+    ///     containerProperties.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
     ///     
-    ///     CosmosContainer container = await client.GetDatabase("dbName"].Containers.CreateAsync(collectionsettings);
-    /// CosmosContainerResponse containerCreateResponse = await containers.CreateContainerAsync(containerSettings, 50000);
-    /// CosmosContainerSettings createdContainerSettings = containerCreateResponse.Container;
+    ///     CosmosContainerResponse containerCreateResponse = await client.GetDatabase("dbName"].CreateContainerAsync(containerProperties, 50000);
+    ///     ContainerProperties createdContainerProperties = containerCreateResponse.Container;
     /// ]]>
     /// </code>
     /// </example>
@@ -48,42 +47,42 @@ namespace Microsoft.Azure.Cosmos
     /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     CosmosContainer container = client.GetDatabase("dbName"].Containers["MyCollection"];
+    ///     Container container = client.GetDatabase("dbName"].Containers["MyCollection"];
     ///     await container.DeleteAsync();
     /// ]]>
     /// </code>
     /// </example>
     /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
-    public class CosmosContainerProperties
+    public class ContainerProperties
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
-        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private IndexingPolicy indexingPolicyInternal;
 
-        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private UniqueKeyPolicy uniqueKeyPolicyInternal;
 
-        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
         private string[] partitionKeyPathTokens;
         private string id;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
-        public CosmosContainerProperties()
+        public ContainerProperties()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        public CosmosContainerProperties(string id, string partitionKeyPath)
+        public ContainerProperties(string id, string partitionKeyPath)
         {
             this.Id = id;
             this.PartitionKeyPath = partitionKeyPath;
@@ -193,11 +192,11 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public string ETag { get; protected set; }
+        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
+        public string ETag { get; private set; }
 
         /// <summary>
-        /// Gets the last modified timestamp associated with <see cref="CosmosContainerProperties" /> from the Azure Cosmos DB service.
+        /// Gets the last modified timestamp associated with <see cref="ContainerProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
@@ -322,7 +321,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive)]
+        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
@@ -349,26 +348,26 @@ namespace Microsoft.Azure.Cosmos
         /// Only collection cache needs this contract. None are expected to use it. 
         /// </summary>
         /// <param name="resourceId">The resource identifier for the container.</param>
-        /// <returns>An instance of <see cref="CosmosContainerProperties"/>.</returns>
-        internal static CosmosContainerProperties CreateWithResourceId(string resourceId)
+        /// <returns>An instance of <see cref="ContainerProperties"/>.</returns>
+        internal static ContainerProperties CreateWithResourceId(string resourceId)
         {
             if (string.IsNullOrEmpty(resourceId))
             {
                 throw new ArgumentNullException(nameof(resourceId));
             }
 
-            return new CosmosContainerProperties()
+            return new ContainerProperties()
             {
                 ResourceId = resourceId,
             };
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosContainerProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="partitionKeyDefinition">The partition key <see cref="PartitionKeyDefinition"/></param>
-        internal CosmosContainerProperties(string id, PartitionKeyDefinition partitionKeyDefinition)
+        internal ContainerProperties(string id, PartitionKeyDefinition partitionKeyDefinition)
         {
             this.Id = id;
             this.PartitionKey = partitionKeyDefinition;
@@ -396,7 +395,7 @@ namespace Microsoft.Azure.Cosmos
         /// resource whether that is a database, a container or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
+        [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
 
         internal string ResourceId { get; private set; }
 
@@ -421,7 +420,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(CosmosContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+                this.partitionKeyPathTokens = this.PartitionKeyPath.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
                 return this.partitionKeyPathTokens;
             }
         }

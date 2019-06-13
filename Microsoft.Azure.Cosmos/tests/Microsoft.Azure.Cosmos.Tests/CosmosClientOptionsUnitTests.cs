@@ -160,13 +160,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
             var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             Assert.IsInstanceOfType(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
-            Assert.AreEqual(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, cosmosClient.ClientOptions.SettingsSerializer);
+            Assert.AreEqual(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, cosmosClient.ClientOptions.PropertiesSerializer);
 
-            CosmosJsonSerializer defaultSerializer = cosmosClient.ClientOptions.SettingsSerializer;
+            CosmosJsonSerializer defaultSerializer = cosmosClient.ClientOptions.PropertiesSerializer;
             CosmosJsonSerializer mockJsonSerializer = new Mock<CosmosJsonSerializer>().Object;
             cosmosClientBuilder.WithCustomJsonSerializer(mockJsonSerializer);
             var cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.SettingsSerializer);
+            Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.PropertiesSerializer);
             Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.CosmosSerializer);
             Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
             Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault).InternalJsonSerializer);

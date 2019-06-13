@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal sealed class CosmosScriptsCore : CosmosScripts
+    internal sealed class ScriptsCore : Scripts
     {
-        private readonly CosmosContainerCore container;
+        private readonly ContainerCore container;
         private readonly CosmosClientContext clientContext;
 
-        internal CosmosScriptsCore(
-            CosmosContainerCore container, 
+        internal ScriptsCore(
+            ContainerCore container, 
             CosmosClientContext clientContext)
         {
             this.container = container;
@@ -25,23 +25,23 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-                    CosmosStoredProcedureProperties storedProcedureSettings,
+                    StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStoredProcedureOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
+                streamPayload: CosmosResource.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosStoredProcedureProperties> GetStoredProceduresIterator(
+        public override FeedIterator<StoredProcedureProperties> GetStoredProceduresIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosStoredProcedureProperties>(
+            return new FeedIteratorCore<StoredProcedureProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -67,14 +67,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            CosmosStoredProcedureProperties storedProcedureSettings,
+            StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStoredProcedureOperationAsync(
-                id: storedProcedureSettings.Id,
+                id: storedProcedureProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(storedProcedureSettings),
+                streamPayload: CosmosResource.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(storedProcedureId));
             }
 
-            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
 
             Uri linkUri = this.clientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,
@@ -154,38 +154,38 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
-            CosmosTriggerProperties triggerSettings, 
+            TriggerProperties triggerProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (triggerSettings == null)
+            if (triggerProperties == null)
             {
-                throw new ArgumentNullException(nameof(triggerSettings));
+                throw new ArgumentNullException(nameof(triggerProperties));
             }
 
-            if (string.IsNullOrEmpty(triggerSettings.Id))
+            if (string.IsNullOrEmpty(triggerProperties.Id))
             {
-                throw new ArgumentNullException(nameof(triggerSettings.Id));
+                throw new ArgumentNullException(nameof(triggerProperties.Id));
             }
 
-            if (string.IsNullOrEmpty(triggerSettings.Body))
+            if (string.IsNullOrEmpty(triggerProperties.Body))
             {
-                throw new ArgumentNullException(nameof(triggerSettings.Body));
+                throw new ArgumentNullException(nameof(triggerProperties.Body));
             }
 
             return this.ProcessTriggerOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(triggerSettings),
+                streamPayload: CosmosResource.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosTriggerProperties> GetTriggersIterator(
+        public override FeedIterator<TriggerProperties> GetTriggersIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosTriggerProperties>(
+            return new FeedIteratorCore<TriggerProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -211,29 +211,29 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
-            CosmosTriggerProperties triggerSettings, 
+            TriggerProperties triggerProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (triggerSettings == null)
+            if (triggerProperties == null)
             {
-                throw new ArgumentNullException(nameof(triggerSettings));
+                throw new ArgumentNullException(nameof(triggerProperties));
             }
 
-            if (string.IsNullOrEmpty(triggerSettings.Id))
+            if (string.IsNullOrEmpty(triggerProperties.Id))
             {
-                throw new ArgumentNullException(nameof(triggerSettings.Id));
+                throw new ArgumentNullException(nameof(triggerProperties.Id));
             }
 
-            if (string.IsNullOrEmpty(triggerSettings.Body))
+            if (string.IsNullOrEmpty(triggerProperties.Body))
             {
-                throw new ArgumentNullException(nameof(triggerSettings.Body));
+                throw new ArgumentNullException(nameof(triggerProperties.Body));
             }
 
             return this.ProcessTriggerOperationAsync(
-                id: triggerSettings.Id,
+                id: triggerProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(triggerSettings),
+                streamPayload: CosmosResource.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -257,38 +257,38 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionSettings, 
+            UserDefinedFunctionProperties userDefinedFunctionProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (userDefinedFunctionSettings == null)
+            if (userDefinedFunctionProperties == null)
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties));
             }
 
-            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Id))
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Id))
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Id));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Id));
             }
 
-            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Body))
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Body))
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Body));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
             }
 
             return this.ProcessUserDefinedFunctionOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
+                streamPayload: CosmosResource.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<CosmosUserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
+        public override FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosUserDefinedFunctionProperties>(
+            return new FeedIteratorCore<UserDefinedFunctionProperties>(
                 maxItemCount,
                 continuationToken,
                 null,
@@ -314,29 +314,29 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            CosmosUserDefinedFunctionProperties userDefinedFunctionSettings, 
+            UserDefinedFunctionProperties userDefinedFunctionProperties, 
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (userDefinedFunctionSettings == null)
+            if (userDefinedFunctionProperties == null)
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties));
             }
 
-            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Id))
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Id))
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Id));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Id));
             }
 
-            if (string.IsNullOrEmpty(userDefinedFunctionSettings.Body))
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Body))
             {
-                throw new ArgumentNullException(nameof(userDefinedFunctionSettings.Body));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
             }
 
             return this.ProcessUserDefinedFunctionOperationAsync(
-                id: userDefinedFunctionSettings.Id,
+                id: userDefinedFunctionProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(userDefinedFunctionSettings),
+                streamPayload: CosmosResource.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -359,14 +359,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosTriggerProperties>> ContainerFeedRequestExecutorAsync(
+        private Task<FeedResponse<TriggerProperties>> ContainerFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosTriggerProperties>(
+            return this.GetIteratorAsync<TriggerProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,
@@ -375,14 +375,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosStoredProcedureProperties>> StoredProcedureFeedRequestExecutorAsync(
+        private Task<FeedResponse<StoredProcedureProperties>> StoredProcedureFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosStoredProcedureProperties>(
+            return this.GetIteratorAsync<StoredProcedureProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,
@@ -391,14 +391,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosUserDefinedFunctionProperties>> UserDefinedFunctionFeedRequestExecutorAsync(
+        private Task<FeedResponse<UserDefinedFunctionProperties>> UserDefinedFunctionFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.GetIteratorAsync<CosmosUserDefinedFunctionProperties>(
+            return this.GetIteratorAsync<UserDefinedFunctionProperties>(
                 maxItemCount: maxItemCount,
                 continuationToken: continuationToken,
                 state: state,

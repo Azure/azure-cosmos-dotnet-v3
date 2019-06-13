@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
     using System.Xml;
     using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
+    using System.Text;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Base class for all baseline tests.
@@ -37,8 +39,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
         /// The file extension for xml.
         /// </summary>
         private const string XmlFileExtension = "xml";
-
-        internal PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Id" }), Kind = PartitionKind.Hash };
 
         /// <summary>
         /// Executes a whole suite of baselines, which corresponds to a visual studio test method.
@@ -205,6 +205,53 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 this.Output.SerializeAsXml(xmlWriter);
                 xmlWriter.WriteEndElement();
                 xmlWriter.WriteEndElement();
+            }
+        }
+
+        public class CustomJsonSerializer : CosmosJsonSerializer
+        {
+            private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+            private JsonSerializer serializer;
+            public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
+            {
+                serializer = JsonSerializer.Create(jsonSerializerSettings);
+            }
+
+            public override T FromStream<T>(Stream stream)
+            {
+                using (stream)
+                {
+                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    {
+                        return (T)(object)(stream);
+                    }
+
+                    using (StreamReader sr = new StreamReader(stream))
+                    {
+                        using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+                        {
+                            return serializer.Deserialize<T>(jsonTextReader);
+                        }
+                    }
+                }
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                MemoryStream streamPayload = new MemoryStream();
+                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CustomJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+                {
+                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                    {
+                        writer.Formatting = Newtonsoft.Json.Formatting.None;
+                        serializer.Serialize(writer, input);
+                        writer.Flush();
+                        streamWriter.Flush();
+                    }
+                }
+
+                streamPayload.Position = 0;
+                return streamPayload;
             }
         }
     }

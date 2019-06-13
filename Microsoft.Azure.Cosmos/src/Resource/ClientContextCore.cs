@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
-    internal class CosmosClientContextCore : CosmosClientContext
+    internal class ClientContextCore : CosmosClientContext
     {
-        internal CosmosClientContextCore(
+        internal ClientContextCore(
             CosmosClient client,
             CosmosClientOptions clientOptions,
             CosmosJsonSerializer userJsonSerializer,
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             this.Client = client;
             this.ClientOptions = clientOptions;
             this.CosmosSerializer = userJsonSerializer;
-            this.SettingsSerializer = defaultJsonSerializer;
+            this.PropertiesSerializer = defaultJsonSerializer;
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override CosmosJsonSerializer CosmosSerializer { get; }
 
-        internal override CosmosJsonSerializer SettingsSerializer { get; }
+        internal override CosmosJsonSerializer PropertiesSerializer { get; }
 
         internal override CosmosResponseFactory ResponseFactory { get; }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
+            ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
+            ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,

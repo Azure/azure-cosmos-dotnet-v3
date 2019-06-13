@@ -13,7 +13,7 @@
     [TestClass]
     public class CosmosSpatialTests
     {
-        private CosmosContainerCore Container = null;
+        private ContainerCore Container = null;
         private DocumentClient documentClient;
         private CosmosJsonSerializerCore jsonSerializer = null;
         private readonly string spatialName = "SpatialName";
@@ -36,12 +36,12 @@
 
             string PartitionKey = "/partitionKey";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = (CosmosContainerCore)response;
+            this.Container = (ContainerCore)response;
             this.jsonSerializer = new CosmosJsonSerializerCore();
         }
 
