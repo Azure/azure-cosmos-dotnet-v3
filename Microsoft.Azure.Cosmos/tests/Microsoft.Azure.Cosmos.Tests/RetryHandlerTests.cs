@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(client.DocumentClient);
+            RetryHandler retryHandler = new RetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(client.DocumentClient);
+            RetryHandler retryHandler = new RetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(client.DocumentClient);
+            RetryHandler retryHandler = new RetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockRetryPolicy.Setup(m => m.GetRequestPolicy())
                 .Returns(() => mockClientRetryPolicy.Object);
 
-            RetryHandler retryHandler = new RetryHandler(dc);
+            RetryHandler retryHandler = new RetryHandler(client);
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, response) => {
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            RetryHandler retryHandler = new RetryHandler(client.DocumentClient);
+            RetryHandler retryHandler = new RetryHandler(client);
             retryHandler.InnerHandler = testHandler;
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
