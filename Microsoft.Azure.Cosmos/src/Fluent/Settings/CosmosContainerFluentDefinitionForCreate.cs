@@ -56,16 +56,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates a container with the current fluent definition.
         /// </summary>
-        /// <param name="requestUnitsPerSecond">Desired throughput for the container expressed in Request Units per second.</param>
+        /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="CosmosContainer"/> based on the Fluent definition.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual async Task<ContainerResponse> CreateAsync(int? requestUnitsPerSecond = null)
+        public virtual async Task<ContainerResponse> CreateAsync(int? throughput = null)
         {
             CosmosContainerProperties containerProperties = this.Build();
 
-            return await this.cosmosContainers.CreateContainerAsync(containerProperties, requestUnitsPerSecond);
+            return await this.cosmosContainers.CreateContainerAsync(containerProperties, throughput);
         }
 
         /// <summary>

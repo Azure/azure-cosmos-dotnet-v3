@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties() { Id = databaseId };
             CosmosResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(
                 databaseSettings,
-                requestUnitsPerSecond: 400);
+                throughput: 400);
 
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Headers.RequestCharge);

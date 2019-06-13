@@ -773,7 +773,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk",
-                    requestUnitsPerSecond: 15000);
+                    throughput: 15000);
                 container = (CosmosContainerCore)containerResponse;
 
                 // Get all the partition key ranges to verify there is more than one partition

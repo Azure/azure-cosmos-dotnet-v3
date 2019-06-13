@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
         /// <param name="id">The database id.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseProperties"/> containing the resource record.</returns>
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
-                int? requestUnitsPerSecond = null,
+                int? throughput = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDatabaseProperties databaseProperties = this.PrepareCosmosDatabaseProperties(id);
             return this.CreateDatabaseAsync(
                 databaseProperties: databaseProperties,
-                requestUnitsPerSecond: requestUnitsPerSecond,
+                throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
         /// <param name="id">The database id.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseProperties"/> containing the resource record.</returns>
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
-            int? requestUnitsPerSecond = null,
+            int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos
                 return cosmosDatabaseResponse;
             }
 
-            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, requestUnitsPerSecond, requestOptions, cancellationToken: cancellationToken);
+            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, throughput, requestOptions, cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return cosmosDatabaseResponse;
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
         /// <param name="databaseProperties">The database properties</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseProperties"/> containing the resource record.</returns>
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public virtual Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
                 CosmosDatabaseProperties databaseProperties,
-                int? requestUnitsPerSecond = null,
+                int? throughput = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(databaseProperties.Id);
             Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream<CosmosDatabaseProperties>(databaseProperties);
 
-            return this.CreateDatabaseStreamInternalAsync(streamPayload, requestUnitsPerSecond, requestOptions, cancellationToken);
+            return this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
         }
 
         /// <summary>
@@ -502,13 +502,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<DatabaseResponse> CreateDatabaseAsync(
                     CosmosDatabaseProperties databaseProperties,
-                    int? requestUnitsPerSecond = null,
+                    int? throughput = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream<CosmosDatabaseProperties>(databaseProperties),
-                requestUnitsPerSecond: requestUnitsPerSecond,
+                throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<CosmosResponseMessage> CreateDatabaseStreamInternalAsync(
                 Stream streamPayload,
-                int? requestUnitsPerSecond = null,
+                int? throughput = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -530,7 +530,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
-                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(requestUnitsPerSecond),
+                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
                 cancellationToken: cancellationToken);
         }
 
