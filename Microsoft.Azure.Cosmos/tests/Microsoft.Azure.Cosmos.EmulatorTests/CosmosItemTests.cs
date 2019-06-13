@@ -748,8 +748,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             CosmosResponseMessage response = await this.Container.ReadItemStreamAsync(
-                null,
                 Guid.NewGuid().ToString(),
+                null,
                 itemRequestOptions);
 
             // Ideally it should be NotFound
@@ -1252,7 +1252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sessionToken = responseAstype.Headers.Session;
             Assert.IsNotNull(sessionToken);
 
-            CosmosResponseMessage readResponse = await this.Container.ReadItemStreamAsync(new Cosmos.PartitionKey(temp.status), temp.id, new ItemRequestOptions() { SessionToken = sessionToken });
+            CosmosResponseMessage readResponse = await this.Container.ReadItemStreamAsync(temp.id, new Cosmos.PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = sessionToken });
 
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.IsNotNull(readResponse.Headers.Session);
@@ -1469,13 +1469,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task TestNonePKForNonExistingContainer(Container container)
         {
             // Stream implementation should not throw
-            CosmosResponseMessage response = await container.ReadItemStreamAsync(Cosmos.PartitionKey.NonePartitionKeyValue, "id1");
+            CosmosResponseMessage response = await container.ReadItemStreamAsync("id1", Cosmos.PartitionKey.NonePartitionKeyValue);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
             Assert.IsNotNull(response.Headers.ActivityId);
             Assert.IsNotNull(response.ErrorMessage);
 
             // FOr typed also its not error
-            var typedResponse = await container.ReadItemAsync<string>(Cosmos.PartitionKey.NonePartitionKeyValue, "id1");
+            var typedResponse = await container.ReadItemAsync<string>("id1", Cosmos.PartitionKey.NonePartitionKeyValue);
             Assert.AreEqual(HttpStatusCode.NotFound, typedResponse.StatusCode);
             Assert.IsNotNull(typedResponse.Headers.ActivityId);
         }
