@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public DocumentServiceLeaseStoreManagerCosmos(
             DocumentServiceLeaseStoreManagerOptions options,
-            CosmosContainer leaseContainer,
+            Container leaseContainer,
             RequestOptionsFactory requestOptionsFactory)
             : this(options, leaseContainer, requestOptionsFactory, new DocumentServiceLeaseUpdaterCosmos(leaseContainer))
         {
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </remarks>
         internal DocumentServiceLeaseStoreManagerCosmos(
             DocumentServiceLeaseStoreManagerOptions options,
-            CosmosContainer container,
+            Container container,
             RequestOptionsFactory requestOptionsFactory,
             DocumentServiceLeaseUpdater leaseUpdater) // For testing purposes only.
         {

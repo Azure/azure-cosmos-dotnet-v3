@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Func<bool, IQueryable<Datum>> getQuery;
         private static CosmosClient client;
         private static CosmosDatabase testDb;
-        private static CosmosContainer testCollection;
+        private static Container testCollection;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             // The test collection should have range index on string properties
             // for the orderby tests
-            var newCol = new CosmosContainerProperties()
+            var newCol = new ContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,

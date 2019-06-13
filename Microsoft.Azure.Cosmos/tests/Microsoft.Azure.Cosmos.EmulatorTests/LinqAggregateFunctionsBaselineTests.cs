@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             string databaseName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
 
-            CosmosContainer container;
+            Container container;
             cosmosDatabase = await client.CreateDatabaseAsync(databaseName);
             getQuery = LinqTestsCommon.GenerateSimpleCosmosData(cosmosDatabase);
             getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(cosmosDatabase, out container);

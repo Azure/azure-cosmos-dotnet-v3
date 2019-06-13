@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// Azure Cosmos container fluent definition.
     /// </summary>
-    /// <seealso cref="CosmosContainer"/>
-    public abstract class CosmosContainerFluentDefinition<T>
-        where T : CosmosContainerFluentDefinition<T>
+    /// <seealso cref="Container"/>
+    public abstract class ContainerFluentDefinition<T>
+        where T : ContainerFluentDefinition<T>
     {
         private readonly string containerName;
         private string partitionKeyPath;
@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public CosmosContainerFluentDefinition()
+        public ContainerFluentDefinition()
         {
         }
 
-        internal CosmosContainerFluentDefinition(
+        internal ContainerFluentDefinition(
             string name,
             string partitionKeyPath = null)
         {
@@ -34,12 +34,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// <see cref="CosmosContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// <see cref="ContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <param name="defaultTtlTimeSpan">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLive"/>
+        /// <seealso cref="ContainerProperties.DefaultTimeToLive"/>
         public virtual T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
         {
             if (defaultTtlTimeSpan == null)
@@ -52,12 +52,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// <see cref="CosmosContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
+        /// <see cref="ContainerProperties.DefaultTimeToLive"/> will be applied to all the items in the container as the default time-to-live policy.
         /// The individual item could override the default time-to-live policy by setting its time to live.
         /// </summary>
         /// <param name="defaulTtlInSeconds">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="CosmosContainerProperties.DefaultTimeToLive"/>
+        /// <seealso cref="ContainerProperties.DefaultTimeToLive"/>
         public virtual T WithDefaultTimeToLive(int defaulTtlInSeconds)
         {
             if (defaulTtlInSeconds < -1)
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="propertyPath">This property should be only present when DefaultTimeToLive is set. When this property is present, time to live for a item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
         /// <returns>An instance of the current Fluent builder.</returns>
-        /// <seealso cref="CosmosContainerProperties.TimeToLivePropertyPath"/>
+        /// <seealso cref="ContainerProperties.TimeToLivePropertyPath"/>
         public virtual T WithTimeToLivePropertyPath(string propertyPath)
         {
             if (string.IsNullOrEmpty(propertyPath))
@@ -106,10 +106,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Applies the current Fluent definition and creates a container configuration.
         /// </summary>
-        /// <returns>Builds the current Fluent configuration into an instance of <see cref="CosmosContainerProperties"/>.</returns>
-        public virtual CosmosContainerProperties Build()
+        /// <returns>Builds the current Fluent configuration into an instance of <see cref="ContainerProperties"/>.</returns>
+        public virtual ContainerProperties Build()
         {
-            CosmosContainerProperties containerProperties = new CosmosContainerProperties(id: this.containerName, partitionKeyPath: this.partitionKeyPath);
+            ContainerProperties containerProperties = new ContainerProperties(id: this.containerName, partitionKeyPath: this.partitionKeyPath);
             if (this.indexingPolicy != null)
             {
                 containerProperties.IndexingPolicy = this.indexingPolicy;

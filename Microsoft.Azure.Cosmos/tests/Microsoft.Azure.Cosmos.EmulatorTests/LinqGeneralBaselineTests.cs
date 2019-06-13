@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     {
         private static CosmosClient cosmosClient;
         private static CosmosDatabase testDb;
-        private static CosmosContainer testContainer;
+        private static Container testContainer;
         private static Func<bool, IQueryable<Family>> getQuery;
 
         [ClassInitialize]
@@ -1694,7 +1694,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public async Task ValidateLinqQueries()
         {
-            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerProperties (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/id" ));
+            Container container = await testDb.CreateContainerAsync(new ContainerProperties (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/id" ));
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };
@@ -2157,9 +2157,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         private class QueryHelper
         {
-            private readonly CosmosContainer container;
+            private readonly Container container;
 
-            public QueryHelper(CosmosContainer container)
+            public QueryHelper(Container container)
             {
                 this.container = container;
             }
@@ -2176,7 +2176,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public async Task ValidateLinqOnDataDocumentType()
         {
-            CosmosContainer container = await testDb.CreateContainerAsync(new CosmosContainerProperties(id : nameof(ValidateLinqOnDataDocumentType), partitionKeyPath : "/id"));
+            Container container = await testDb.CreateContainerAsync(new ContainerProperties(id : nameof(ValidateLinqOnDataDocumentType), partitionKeyPath : "/id"));
 
             DataDocument doc = new DataDocument() { Id = Guid.NewGuid().ToString("N"), Number = 0, TypeName = "Hello" };
             container.CreateItemAsync(doc).Wait();
@@ -2244,14 +2244,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private async Task ValidateServerSideQueryEvalWithPaginationScenario()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/title" }), Kind = PartitionKind.Hash };
-            CosmosContainerProperties cosmosContainerSettings = new CosmosContainerProperties
+            ContainerProperties cosmosContainerSettings = new ContainerProperties
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
             };
             cosmosContainerSettings.IndexingPolicy.IndexingMode = Microsoft.Azure.Cosmos.IndexingMode.Consistent;
 
-            CosmosContainer collection = await testDb.CreateContainerAsync(cosmosContainerSettings);
+            Container collection = await testDb.CreateContainerAsync(cosmosContainerSettings);
 
             //Do script post to insert as many document as we could in a tight loop.
             string script = @"function() {

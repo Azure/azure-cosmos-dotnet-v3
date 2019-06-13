@@ -10,11 +10,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
     {
-        private readonly CosmosContainer container;
+        private readonly Container container;
         private readonly DocumentServiceLeaseStoreManagerOptions options;
 
         public DocumentServiceLeaseContainerCosmos(
-            CosmosContainer container,
+            Container container,
             DocumentServiceLeaseStoreManagerOptions options)
         {
             this.container = container;

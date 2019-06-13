@@ -54,8 +54,8 @@ namespace Microsoft.Azure.Cosmos
         public string ConflictResolutionPath { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="CosmosStoredProcedureProperties"/> which is used for conflict resolution in the Azure Cosmos DB service.
-        /// This stored procedure may be created after the <see cref="CosmosContainer"/> is created and can be changed as required. 
+        /// Gets or sets the <see cref="StoredProcedureProperties"/> which is used for conflict resolution in the Azure Cosmos DB service.
+        /// This stored procedure may be created after the <see cref="Container"/> is created and can be changed as required. 
         /// </summary>
         /// <remarks>
         /// 1. This value should only be set when using <see cref="ConflictResolutionMode.Custom"/>

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     /// of the application which enables efficient connection management and performance.
     /// </summary>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="Container"/>.
     /// The CosmosClient uses the <see cref="CosmosClientOptions"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
@@ -35,14 +35,14 @@ namespace Microsoft.Azure.Cosmos
     /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {
     ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.CreateContainerAsync(Guid.NewGuid().ToString());
+    ///     Container container = await db.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="Container"/>.
     /// The CosmosClient is created with the AccountEndpoint and AccountKey.
     /// <code language="c#">
     /// <![CDATA[
@@ -51,14 +51,14 @@ namespace Microsoft.Azure.Cosmos
     ///     accountKey: "SuperSecretKey"))
     /// {
     ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+    ///     Container container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="Container"/>.
     /// The CosmosClient is created with the connection string.
     /// <code language="c#">
     /// <![CDATA[
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
     ///     connectionString: "AccountEndpoint=https://testcosmos.documents.azure.com:443/;AccountKey=SuperSecretKey;"))
     /// {
     ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+    ///     Container container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
@@ -231,12 +231,12 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClientContext ClientContext { get; private set; }
 
         /// <summary>
-        /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public virtual Task<CosmosAccountProperties> GetAccountPropertiesAsync()
+        public virtual Task<AccountProperties> GetAccountPropertiesAsync()
         {
             return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.EndPoint);
         }
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseId">cosmos database name</param>
         /// <param name="containerId">cosmos container name</param>
         /// <returns>Cosmos container proxy</returns>
-        public virtual CosmosContainer GetContainer(string databaseId, string containerId)
+        public virtual Container GetContainer(string databaseId, string containerId)
         {
             if (string.IsNullOrEmpty(databaseId))
             {
@@ -297,16 +297,16 @@ namespace Microsoft.Azure.Cosmos
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
         /// <param name="id">The database id.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseProperties"/> containing the resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
-                int? requestUnitsPerSecond = null,
+                int? throughput = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -315,10 +315,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(id));
             }
 
-            CosmosDatabaseProperties databaseProperties = this.PrepareCosmosDatabaseProperties(id);
+            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
             return this.CreateDatabaseAsync(
                 databaseProperties: databaseProperties,
-                requestUnitsPerSecond: requestUnitsPerSecond,
+                throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -336,16 +336,16 @@ namespace Microsoft.Azure.Cosmos
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
         /// <param name="id">The database id.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseProperties"/> containing the resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
-            int? requestUnitsPerSecond = null,
+            int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos
                 return cosmosDatabaseResponse;
             }
 
-            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, requestUnitsPerSecond, requestOptions, cancellationToken: cancellationToken);
+            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, throughput, requestOptions, cancellationToken: cancellationToken);
             if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.Conflict)
             {
                 return cosmosDatabaseResponse;
@@ -382,9 +382,9 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the database under the cosmos account
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosDatabaseProperties> feedIterator = this.cosmosClient.GetDatabasesIterator();
+        /// FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabasesIterator();
         /// {
-        ///     foreach (CosmosDatabaseProperties databaseProperties in  await feedIterator.FetchNextSetAsync())
+        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.FetchNextSetAsync())
         ///     {
         ///         Console.WriteLine(databaseProperties.Id); 
         ///     }
@@ -393,11 +393,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual FeedIterator<CosmosDatabaseProperties> GetDatabasesIterator(
+        public virtual FeedIterator<DatabaseProperties> GetDatabasesIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
-            return new FeedIteratorCore<CosmosDatabaseProperties>(
+            return new FeedIteratorCore<DatabaseProperties>(
                 maxItemCount,
                 continuationToken,
                 options: null,
@@ -416,16 +416,16 @@ namespace Microsoft.Azure.Cosmos
         /// required in order to access and successfully complete any action using the User APIs.
         /// </summary>
         /// <param name="databaseProperties">The database properties</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseProperties"/> containing the resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public virtual Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
-                CosmosDatabaseProperties databaseProperties,
-                int? requestUnitsPerSecond = null,
+                DatabaseProperties databaseProperties,
+                int? throughput = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -435,9 +435,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ClientContext.ValidateResource(databaseProperties.Id);
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream<CosmosDatabaseProperties>(databaseProperties);
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties);
 
-            return this.CreateDatabaseStreamInternalAsync(streamPayload, requestUnitsPerSecond, requestOptions, cancellationToken);
+            return this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
         }
 
         /// <summary>
@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
 
-            this.ClientContext = new CosmosClientContextCore(
+            this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
@@ -484,14 +484,14 @@ namespace Microsoft.Azure.Cosmos
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 
-        internal CosmosDatabaseProperties PrepareCosmosDatabaseProperties(string id)
+        internal DatabaseProperties PrepareDatabaseProperties(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentNullException(nameof(id));
             }
 
-            CosmosDatabaseProperties databaseProperties = new CosmosDatabaseProperties()
+            DatabaseProperties databaseProperties = new DatabaseProperties()
             {
                 Id = id
             };
@@ -501,14 +501,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<DatabaseResponse> CreateDatabaseAsync(
-                    CosmosDatabaseProperties databaseProperties,
-                    int? requestUnitsPerSecond = null,
+                    DatabaseProperties databaseProperties,
+                    int? throughput = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<CosmosResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream<CosmosDatabaseProperties>(databaseProperties),
-                requestUnitsPerSecond: requestUnitsPerSecond,
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties),
+                throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<CosmosResponseMessage> CreateDatabaseStreamInternalAsync(
                 Stream streamPayload,
-                int? requestUnitsPerSecond = null,
+                int? throughput = null,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -530,11 +530,11 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: null,
                 partitionKey: null,
                 streamPayload: streamPayload,
-                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(requestUnitsPerSecond),
+                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
                 cancellationToken: cancellationToken);
         }
 
-        private Task<FeedResponse<CosmosDatabaseProperties>> DatabaseFeedRequestExecutorAsync(
+        private Task<FeedResponse<DatabaseProperties>> DatabaseFeedRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
@@ -544,7 +544,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(state == null);
 
             Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<CosmosDatabaseProperties>>(
+            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<DatabaseProperties>>(
                 resourceUri: resourceUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.ReadFeed,
@@ -557,7 +557,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(request, continuationToken);
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<CosmosDatabaseProperties>(response),
+                responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<DatabaseProperties>(response),
                 cancellationToken: cancellationToken);
         }
 

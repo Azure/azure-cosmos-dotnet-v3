@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Net;
     using System.Text;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos throughput response
@@ -29,24 +30,42 @@ namespace Microsoft.Azure.Cosmos
         internal ThroughputResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            ThroughputProperties throughputProperties,
-            int? minThroughput)
+            ThroughputProperties throughputProperties)
             : base(
                 httpStatusCode,
                 headers,
                 throughputProperties)
         {
-            this.MinThroughput = minThroughput;
         }
 
         /// <summary>
         /// Gets minimum throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        public int? MinThroughput;
+        public int? MinThroughput
+        {
+            get
+            {
+                if (Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer) != null)
+                {
+                    return int.Parse(Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer));
+                }
+                return null;
+            }
+        }
 
         /// <summary>
         /// Gets the status whether offer replace is successful or pending.
         /// </summary>
-        public bool? IsOfferReplacePending;
+        public bool? IsOfferReplacePending
+        {
+            get
+            {
+                if (Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending) != null)
+                {
+                    return Boolean.Parse(Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer));
+                }
+                return null;
+            }
+        }
     }
 }

@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
-    internal class CosmosClientContextCore : CosmosClientContext
+    internal class ClientContextCore : CosmosClientContext
     {
-        internal CosmosClientContextCore(
+        internal ClientContextCore(
             CosmosClient client,
             CosmosClientOptions clientOptions,
             CosmosJsonSerializer userJsonSerializer,
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
+            ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
+            ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,

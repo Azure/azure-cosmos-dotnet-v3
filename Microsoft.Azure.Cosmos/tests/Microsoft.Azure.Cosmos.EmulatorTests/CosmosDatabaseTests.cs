@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Headers);
             Assert.IsNotNull(response.Headers.ActivityId);
 
-            CosmosDatabaseProperties databaseSettings = response.Resource;
+            DatabaseProperties databaseSettings = response.Resource;
             Assert.IsNotNull(databaseSettings.Id);
             Assert.IsNotNull(databaseSettings.ResourceId);
             Assert.IsNotNull(databaseSettings.ETag);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StreamCreateConflictTestAsync()
         {
-            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties()
+            DatabaseProperties databaseSettings = new DatabaseProperties()
             {
                 Id = Guid.NewGuid().ToString()
             };
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.GetDatabase(databaseName).ReadAsync(cancellationToken: this.cancellationToken);
             CosmosDatabase cosmosDatabase = cosmosDatabaseResponse;
-            CosmosDatabaseProperties cosmosDatabaseSettings = cosmosDatabaseResponse;
+            DatabaseProperties cosmosDatabaseSettings = cosmosDatabaseResponse;
             Assert.IsNotNull(cosmosDatabase);
             Assert.IsNull(cosmosDatabaseSettings);
 
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
             CosmosDatabase cosmosDatabase = createResponse;
-            int? readThroughput = await cosmosDatabase.ReadProvisionedThroughputAsync();
+            int? readThroughput = await ((CosmosDatabaseCore)cosmosDatabase).ReadProvisionedThroughputAsync();
             Assert.IsNull(readThroughput);
 
             await cosmosDatabase.DeleteAsync();
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
             CosmosDatabase cosmosDatabase = createResponse;
-            int? readThroughput = await cosmosDatabase.ReadProvisionedThroughputAsync();
+            int? readThroughput = await ((CosmosDatabaseCore)cosmosDatabase).ReadProvisionedThroughputAsync();
             Assert.AreEqual(throughput, readThroughput);
 
             string containerId = Guid.NewGuid().ToString();
@@ -237,9 +237,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
 
-            CosmosContainer container = containerResponse;
-            readThroughput = await container.ReadProvisionedThroughputAsync();
+            Container container = containerResponse;
+            readThroughput = await ((ContainerCore)container).ReadProvisionedThroughputAsync();
             Assert.IsNull(readThroughput);
+
+            await container.DeleteAsync();
+            await cosmosDatabase.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task ReadReplaceThroughputResponseTests()
+        {
+            string databaseId = Guid.NewGuid().ToString();
+            int throughput = 10000;
+            DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false, throughput: throughput);
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            CosmosDatabase cosmosDatabase = createResponse;
+            ThroughputResponse readThroughputResponse = await cosmosDatabase.ReadProvisionedThroughputAsync();
+            Assert.IsNotNull(readThroughputResponse);
+            Assert.IsNotNull(readThroughputResponse.Resource);
+            Assert.IsNotNull(readThroughputResponse.MinThroughput);
+            Assert.IsNotNull(readThroughputResponse.Resource.Throughput);
+            Assert.AreEqual(throughput, readThroughputResponse.Resource.Throughput.Value);
+
+            string containerId = Guid.NewGuid().ToString();
+            string partitionPath = "/users";
+            ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+            ThroughputResponse replaceThroughputResponse = await cosmosDatabase.ReplaceProvisionedThroughputAsync(readThroughputResponse.Resource.Throughput.Value + 1000);
+            Assert.IsNotNull(replaceThroughputResponse);
+            Assert.IsNotNull(replaceThroughputResponse.Resource);
+            Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
+
+            Container container = containerResponse;
+            readThroughputResponse = await container.ReadProvisionedThroughputAsync();
+            Assert.IsNull(readThroughputResponse.Resource);
 
             await container.DeleteAsync();
             await cosmosDatabase.DeleteAsync();
@@ -259,13 +293,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     databaseIds.Add(createResponse.Resource.Id);
                 }
 
-                FeedIterator<CosmosDatabaseProperties> feedIterator =
+                FeedIterator<DatabaseProperties> feedIterator =
                     this.cosmosClient.GetDatabasesIterator();
                 while (feedIterator.HasMoreResults)
                 {
-                    FeedResponse<CosmosDatabaseProperties> iterator =
+                    FeedResponse<DatabaseProperties> iterator =
                         await feedIterator.FetchNextSetAsync(this.cancellationToken);
-                    foreach (CosmosDatabaseProperties databaseSettings in iterator)
+                    foreach (DatabaseProperties databaseSettings in iterator)
                     {
                         if (databaseIds.Contains(databaseSettings.Id))
                         {
@@ -333,10 +367,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 databaseId = Guid.NewGuid().ToString();
             }
 
-            CosmosDatabaseProperties databaseSettings = new CosmosDatabaseProperties() { Id = databaseId };
+            DatabaseProperties databaseSettings = new DatabaseProperties() { Id = databaseId };
             CosmosResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(
                 databaseSettings,
-                requestUnitsPerSecond: 400);
+                throughput: 400);
 
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Headers.RequestCharge);

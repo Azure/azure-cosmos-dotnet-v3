@@ -13,11 +13,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
     public class UniqueKeyFluentDefinition
     {
         private readonly Collection<string> paths = new Collection<string>();
-        private readonly CosmosContainerFluentDefinitionForCreate parent;
+        private readonly ContainerFluentDefinitionForCreate parent;
         private readonly Action<UniqueKey> attachCallback;
 
         internal UniqueKeyFluentDefinition(
-            CosmosContainerFluentDefinitionForCreate parent,
+            ContainerFluentDefinitionForCreate parent,
             Action<UniqueKey> attachCallback)
         {
             this.parent = parent;
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual CosmosContainerFluentDefinitionForCreate Attach()
+        public virtual ContainerFluentDefinitionForCreate Attach()
         {
             this.attachCallback(new UniqueKey()
             {

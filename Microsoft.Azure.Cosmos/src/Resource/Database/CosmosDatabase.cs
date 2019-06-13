@@ -25,15 +25,15 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The Id of the Cosmos database
         /// </summary>
-        public abstract string Id { get;  }
+        public abstract string Id { get; }
 
         /// <summary>
-        /// Reads a <see cref="CosmosDatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Reads a <see cref="DatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="CosmosDatabaseProperties"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list>
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Delete a <see cref="CosmosDatabaseProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="DatabaseProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -97,57 +97,9 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets provisioned database throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <value>
-        /// The provisioned throughput for this database.
-        /// </value>
-        /// <remarks>
-        /// <para>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
-        /// </para>
-        /// </remarks>
-        /// <example>
-        /// The following example shows how to get the throughput.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// int? throughput = await this.cosmosDatabase.ReadProvisionedThroughputAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>The current provisioned throughput if any.</returns>
-        internal abstract Task<int?> ReadProvisionedThroughputAsync(
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Sets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
-        /// </summary>
-        /// <param name="requestUnitsPerSecond">The cosmos database throughput expressed in Request Units per second.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <value>
-        /// The provisioned throughput for this database.
-        /// </value>
-        /// <example>
-        /// The following example shows how to get the throughput.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// int? throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(10000);
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>A Task representing the asynchronous operation.</returns>
-        /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
-        /// </remarks>
-        internal abstract Task ReplaceProvisionedThroughputAsync(
-            int requestUnitsPerSecond,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
         /// Gets database throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        /// <param name="options">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
         /// The provisioned throughput for this database.
@@ -161,20 +113,20 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.cosmosDatabase.ReadProvisionedThroughputAsync();
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReadProvisionedThroughputAsync();
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>The throughput response.</returns>
         public abstract Task<ThroughputResponse> ReadProvisionedThroughputAsync(
-            RequestOptions options,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Sets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
         /// </summary>
-        /// <param name="requestUnitsPerSecond">The cosmos database throughput expressed in Request Units per second.</param>
-        /// <param name="options">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
+        /// <param name="throughput">The cosmos database throughput expressed in Request Units per second.</param>
+        /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
         /// The provisioned throughput for this database.
@@ -183,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(10000);
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(10000);
         /// ]]>
         /// </code>
         /// </example>
@@ -192,12 +144,12 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public abstract Task<ThroughputResponse> ReplaceProvisionedThroughputAsync(
-            int requestUnitsPerSecond,
-            RequestOptions options,
+            int throughput,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Reads a <see cref="CosmosDatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Reads a <see cref="DatabaseProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -209,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Delete a <see cref="CosmosDatabaseProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="DatabaseProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -235,16 +187,16 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>Cosmos container proxy</returns>
-        public abstract CosmosContainer GetContainer(string id);
+        public abstract Container GetContainer(string id);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="containerProperties">The <see cref="CosmosContainerProperties"/> object.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerProperties"/> containing the read resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="containerProperties"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
@@ -259,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for containers. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosContainerProperties"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="ContainerProperties"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -267,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainerProperties containerProperties = new CosmosContainerProperties() 
+        /// ContainerProperties containerProperties = new ContainerProperties() 
         /// { 
         ///     Id = Guid.NewGuid().ToString(),
         ///     IndexingPolicy = new IndexingPolicy()
@@ -286,8 +238,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public abstract Task<ContainerResponse> CreateContainerAsync(
-                    CosmosContainerProperties containerProperties,
-                    int? requestUnitsPerSecond = null,
+                    ContainerProperties containerProperties,
+                    int? throughput = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -296,10 +248,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos container id</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerProperties"/> containing the read resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
@@ -314,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for containers. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosContainerProperties"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="ContainerProperties"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -333,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
-            int? requestUnitsPerSecond = null,
+            int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -341,11 +293,11 @@ namespace Microsoft.Azure.Cosmos
         /// Check if a container exists, and if it doesn't, create it.
         /// This will make a read operation, and if the container is not found it will do a create operation.
         /// </summary>
-        /// <param name="containerProperties">The <see cref="CosmosContainerProperties"/> object.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerProperties"/> containing the read resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If either <paramref name="containerProperties"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
@@ -360,7 +312,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for containers. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosContainerProperties"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="ContainerProperties"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -368,7 +320,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosContainerProperties containerProperties = new CosmosContainerProperties() 
+        /// ContainerProperties containerProperties = new ContainerProperties() 
         /// { 
         ///     Id = Guid.NewGuid().ToString(),
         ///     IndexingPolicy = new IndexingPolicy()
@@ -386,8 +338,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
-            CosmosContainerProperties containerProperties,
-            int? requestUnitsPerSecond = null,
+            ContainerProperties containerProperties,
+            int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -397,10 +349,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos container id</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /location</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="CosmosContainerProperties"/> containing the read resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ContainerResponse"/> which wraps a <see cref="ContainerProperties"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
@@ -415,7 +367,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>403</term><description>Forbidden - This means you attempted to exceed your quota for containers. Contact support to have this quota increased.</description>
         ///     </item>
         ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="CosmosContainerProperties"/> with an id matching the id you supplied already existed.</description>
+        ///         <term>409</term><description>Conflict - This means a <see cref="ContainerProperties"/> with an id matching the id you supplied already existed.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -433,7 +385,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
-            int? requestUnitsPerSecond = null,
+            int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -446,10 +398,10 @@ namespace Microsoft.Azure.Cosmos
         /// Get an iterator for all the containers under the database
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<CosmosContainerProperties> feedIterator = this.cosmosDatabase.GetContainersIterator();
+        /// FeedIterator<ContainerProperties> feedIterator = this.cosmosDatabase.GetContainersIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(CosmosContainerProperties containerProperties in await feedIterator.FetchNextSetAsync())
+        ///     foreach(ContainerProperties containerProperties in await feedIterator.FetchNextSetAsync())
         ///     {
         ///          Console.WriteLine(containerProperties.Id); 
         ///     }
@@ -458,15 +410,15 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator<CosmosContainerProperties> GetContainersIterator(
+        public abstract FeedIterator<ContainerProperties> GetContainersIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="containerProperties">The <see cref="CosmosContainerProperties"/> object.</param>
-        /// <param name="requestUnitsPerSecond">(Optional) The throughput provisioned for a container in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
@@ -475,8 +427,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
         public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
-            CosmosContainerProperties containerProperties,
-            int? requestUnitsPerSecond = null,
+            ContainerProperties containerProperties,
+            int? throughput = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -531,7 +483,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosContainerFluentDefinitionForCreate DefineContainer(
+        public abstract ContainerFluentDefinitionForCreate DefineContainer(
             string name,
             string partitionKeyPath);
     }

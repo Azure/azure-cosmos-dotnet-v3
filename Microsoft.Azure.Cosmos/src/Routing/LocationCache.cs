@@ -149,10 +149,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Invoked when <see cref="CosmosAccountProperties"/> is read
+        /// Invoked when <see cref="AccountProperties"/> is read
         /// </summary>
         /// <param name="databaseAccount">Read DatabaseAccoaunt </param>
-        public void OnDatabaseAccountRead(CosmosAccountProperties databaseAccount)
+        public void OnDatabaseAccountRead(AccountProperties databaseAccount)
         {
             this.UpdateLocationCache(
                 databaseAccount.WritableLocations,
@@ -179,12 +179,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         ///            Once the endpoint is marked unavailable, it is moved to the end of available write endpoint. Current request will
         ///            be retried on next preferred available write endpoint.
         ///        (ii) For all other resources, always resolve to first/second (regardless of preferred locations)
-        ///             write endpoint in <see cref="CosmosAccountProperties.WritableLocations"/>.
-        ///             Endpoint of first write location in <see cref="CosmosAccountProperties.WritableLocations"/> is the only endpoint that supports
+        ///             write endpoint in <see cref="AccountProperties.WritableLocations"/>.
+        ///             Endpoint of first write location in <see cref="AccountProperties.WritableLocations"/> is the only endpoint that supports
         ///             write operation on all resource types (except during that region's failover). 
-        ///             Only during manual failover, client would retry write on second write location in <see cref="CosmosAccountProperties.WritableLocations"/>.
-        ///    (b) Else resolve the request to first write endpoint in <see cref="CosmosAccountProperties.writeLocations"/> OR 
-        ///        second write endpoint in <see cref="CosmosAccountProperties.WritableLocations"/> in case of manual failover of that location.
+        ///             Only during manual failover, client would retry write on second write location in <see cref="AccountProperties.WritableLocations"/>.
+        ///    (b) Else resolve the request to first write endpoint in <see cref="AccountProperties.writeLocations"/> OR 
+        ///        second write endpoint in <see cref="AccountProperties.WritableLocations"/> in case of manual failover of that location.
         /// 2. Else resolve the request to most preferred available read endpoint (automatic failover for read requests)
         /// </summary>
         /// <param name="request">Request for which endpoint is to be resolved</param>
@@ -409,8 +409,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
         private void UpdateLocationCache(
-            IEnumerable<CosmosAccountLocation> writeLocations = null,
-            IEnumerable<CosmosAccountLocation> readLocations = null,
+            IEnumerable<AccountLocation> writeLocations = null,
+            IEnumerable<AccountLocation> readLocations = null,
             ReadOnlyCollection<string> preferenceList = null,
             bool? enableMultipleWriteLocations = null)
         {
@@ -519,12 +519,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             return endpoints.AsReadOnly();
         }        
 
-        private ReadOnlyDictionary<string, Uri> GetEndpointByLocation(IEnumerable<CosmosAccountLocation> locations, out ReadOnlyCollection<string> orderedLocations)
+        private ReadOnlyDictionary<string, Uri> GetEndpointByLocation(IEnumerable<AccountLocation> locations, out ReadOnlyCollection<string> orderedLocations)
         {
             Dictionary<string, Uri> endpointsByLocation = new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase);
             List<string> parsedLocations = new List<string>();
 
-            foreach (CosmosAccountLocation location in locations)
+            foreach (AccountLocation location in locations)
             {
                 Uri endpoint;
                 if (!string.IsNullOrEmpty(location.Name)

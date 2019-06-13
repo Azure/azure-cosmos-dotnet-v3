@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     {
         private static CosmosClient cosmosClient;
         private static CosmosDatabase testDb;
-        private static CosmosContainer testContainer;
+        private static Container testContainer;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            testContainer = await testDb.CreateContainerAsync(new CosmosContainerProperties(id : Guid.NewGuid().ToString(),partitionKeyPath : "/Pk"));
+            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id : Guid.NewGuid().ToString(),partitionKeyPath : "/Pk"));
         }
 
         [TestCleanup]

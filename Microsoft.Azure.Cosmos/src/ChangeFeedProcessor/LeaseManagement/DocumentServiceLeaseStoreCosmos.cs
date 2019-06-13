@@ -15,13 +15,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal sealed class DocumentServiceLeaseStoreCosmos : DocumentServiceLeaseStore
     {
-        private readonly CosmosContainer container;
+        private readonly Container container;
         private readonly string containerNamePrefix;
         private readonly RequestOptionsFactory requestOptionsFactory;
         private string lockETag;
 
         public DocumentServiceLeaseStoreCosmos(
-            CosmosContainer container,
+            Container container,
             string containerNamePrefix,
             RequestOptionsFactory requestOptionsFactory)
         {
