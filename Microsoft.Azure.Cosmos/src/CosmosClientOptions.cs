@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
-        private static readonly CosmosJsonSerializer settingsSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
+        private static readonly CosmosJsonSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
         private CosmosJsonSerializer userJsonSerializer;
 
         private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
@@ -241,17 +241,17 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// The default serializer is always used for all system owned types like CosmosDatabaseSettings.
+        /// The default serializer is always used for all system owned types like DatabaseProperties.
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal virtual CosmosJsonSerializer SettingsSerializer => CosmosClientOptions.settingsSerializer;
+        internal virtual CosmosJsonSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
 
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal virtual CosmosJsonSerializer CosmosSerializerWithWrapperOrDefault => this.userJsonSerializer == null ? this.SettingsSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
+        internal virtual CosmosJsonSerializer CosmosSerializerWithWrapperOrDefault => this.userJsonSerializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.

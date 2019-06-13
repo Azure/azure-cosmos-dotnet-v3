@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosJsonSerializer CosmosSerializer { get; }
 
-        internal abstract CosmosJsonSerializer SettingsSerializer { get; }
+        internal abstract CosmosJsonSerializer PropertiesSerializer { get; }
 
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
+            ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,
-           CosmosContainerCore cosmosContainerCore,
+           ContainerCore cosmosContainerCore,
            PartitionKey partitionKey,
            Stream streamPayload,
            Action<CosmosRequestMessage> requestEnricher,

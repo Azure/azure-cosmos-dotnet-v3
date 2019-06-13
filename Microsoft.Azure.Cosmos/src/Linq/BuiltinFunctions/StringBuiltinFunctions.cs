@@ -109,6 +109,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
+                bool validInNet = false;
+                bool validInNetCore = false;
+
                 if (methodCallExpression.Arguments.Count == 1 &&
                     methodCallExpression.Arguments[0].NodeType == ExpressionType.Constant &&
                     methodCallExpression.Arguments[0].Type == typeof(char[]))
@@ -116,9 +119,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                     char[] argumentsExpressions = (char[])((ConstantExpression)methodCallExpression.Arguments[0]).Value;
                     if (argumentsExpressions.Length == 0)
                     {
-                        SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
-                        return SqlFunctionCallScalarExpression.CreateBuiltin("LTRIM", str);
+                        validInNet = true;
                     }
+                }
+                else if (methodCallExpression.Arguments.Count == 0)
+                {
+                    validInNetCore = true;
+                }
+
+                if (validInNet || validInNetCore)
+                {
+                    SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("LTRIM", str);
                 }
 
                 return null;
@@ -157,6 +169,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
+                bool validInNet = false;
+                bool validInNetCore = false;
+
                 if (methodCallExpression.Arguments.Count == 1 &&
                     methodCallExpression.Arguments[0].NodeType == ExpressionType.Constant &&
                     methodCallExpression.Arguments[0].Type == typeof(char[]))
@@ -164,9 +179,19 @@ namespace Microsoft.Azure.Cosmos.Linq
                     char[] argumentsExpressions = (char[])((ConstantExpression)methodCallExpression.Arguments[0]).Value;
                     if (argumentsExpressions.Length == 0)
                     {
-                        SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
-                        return SqlFunctionCallScalarExpression.CreateBuiltin("RTRIM", str);
+                        validInNet = true;
                     }
+                }
+                else if (methodCallExpression.Arguments.Count == 0)
+                {
+                    validInNetCore = true;
+
+                }
+
+                if (validInNet || validInNetCore)
+                {
+                    SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("RTRIM", str);
                 }
 
                 return null;

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken token,
             Guid correlatedActivityId)
         {
-            CosmosContainerProperties collection = null;
+            ContainerProperties collection = null;
             if (resourceTypeEnum.IsCollectionChild())
             {
                 CollectionCache collectionCache = await client.GetCollectionCacheAsync();
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Query
         internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             DefaultDocumentQueryExecutionContext queryExecutionContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            CosmosContainerProperties collection,
+            ContainerProperties collection,
             FeedOptions feedOptions)
         {
             List<PartitionKeyRange> targetRanges = null;

@@ -57,23 +57,23 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <seealso cref="CosmosContainerProperties"/>
-    public class CosmosDatabaseProperties
+    /// <seealso cref="ContainerProperties"/>
+    public class DatabaseProperties
     {
         private string id;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDatabaseProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="DatabaseProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
-        public CosmosDatabaseProperties()
+        public DatabaseProperties()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosDatabaseProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="DatabaseProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        public CosmosDatabaseProperties(string id)
+        public DatabaseProperties(string id)
         {
             this.Id = id;
         }
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         public string ETag { get; private set; }
 
         /// <summary>
-        /// Gets the last modified timestamp associated with <see cref="CosmosDatabaseProperties" /> from the Azure Cosmos DB service.
+        /// Gets the last modified timestamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]

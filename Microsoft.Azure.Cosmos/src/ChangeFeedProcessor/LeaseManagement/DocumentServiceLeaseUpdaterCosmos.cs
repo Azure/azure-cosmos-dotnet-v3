@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal sealed class DocumentServiceLeaseUpdaterCosmos : DocumentServiceLeaseUpdater
     {
         private const int RetryCountOnConflict = 5;
-        private readonly CosmosContainer container;
+        private readonly Container container;
 
-        public DocumentServiceLeaseUpdaterCosmos(CosmosContainer container)
+        public DocumentServiceLeaseUpdaterCosmos(Container container)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
             this.container = container;

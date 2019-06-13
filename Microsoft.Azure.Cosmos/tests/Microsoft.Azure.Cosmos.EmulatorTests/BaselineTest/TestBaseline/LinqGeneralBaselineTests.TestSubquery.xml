@@ -1150,31 +1150,6 @@ ORDER BY r0["ChildrenCount"] ASC
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select(new w/ Where) -> Where -> OrderBy -> Take]]></Description>
-      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => (c.Grade > 90)))).Where(f => ((f.ChildrenCount > 2) AndAlso (f.SmartChildren.Count() > 1))).OrderBy(f => f.FamilyId).Take(10)]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT TOP 10 VALUE r0 
-FROM (
-    SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenCount": ARRAY_LENGTH(root["Children"]), "SmartChildren": v0} 
-    FROM root 
-    JOIN (
-        SELECT VALUE ARRAY(
-            SELECT VALUE c0 
-            FROM root 
-            JOIN c0 IN root["Children"] 
-            WHERE (c0["Grade"] > 90)
-        )
-    ) AS v0
-) AS r0 
-WHERE ((r0["ChildrenCount"] > 2) AND (ARRAY_LENGTH(r0["SmartChildren"]) > 1)) 
-ORDER BY r0["FamilyId"] ASC 
-]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
       <Description><![CDATA[Select(new { Select(Select), conditional Count Take }) -> Where -> Select(Select(Any))]]></Description>
       <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenPetFirstChars = f.Children.Select(c => c.Pets.Select(p => p.GivenName.Substring(0, 1))), FirstChild = IIF((f.Children.Count() > 0), f.Children.Take(1), null))).Where(f => (f.FirstChild != null)).Select(f => f.ChildrenPetFirstChars.Select(chArray => chArray.Any(a => f.FamilyId.StartsWith(a))))]]></Expression>
       <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>

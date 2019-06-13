@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
     /// 1. The object operations where it serializes and deserializes the item on request/response
     /// 2. The stream response which takes a Stream containing a JSON serialized object and returns a response containing a Stream
     /// </summary>
-    internal partial class CosmosContainerCore : CosmosContainer
+    internal partial class ContainerCore : Container
     {
         /// <summary>
         /// Cache the full URI segment without the last resource id.
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator CreateItemQueryStream(
-            CosmosSqlQueryDefinition sqlQueryDefinition,
+            QueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             PartitionKey partitionKey = null,
             int? maxItemCount = null,
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQueryStream(
-                new CosmosSqlQueryDefinition(sqlQueryText),
+                new QueryDefinition(sqlQueryText),
                 maxConcurrency,
                 partitionKey,
                 maxItemCount,
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> CreateItemQuery<T>(
-            CosmosSqlQueryDefinition sqlQueryDefinition,
+            QueryDefinition sqlQueryDefinition,
             PartitionKey partitionKey,
             int? maxItemCount = null,
             string continuationToken = null,
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQuery<T>(
-                new CosmosSqlQueryDefinition(sqlQueryText),
+                new QueryDefinition(sqlQueryText),
                 partitionKey,
                 maxItemCount,
                 continuationToken,
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> CreateItemQuery<T>(
-            CosmosSqlQueryDefinition sqlQueryDefinition,
+            QueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             int? maxItemCount = null,
             string continuationToken = null,
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             return this.CreateItemQuery<T>(
-                new CosmosSqlQueryDefinition(sqlQueryText),
+                new QueryDefinition(sqlQueryText),
                 maxConcurrency,
                 maxItemCount,
                 continuationToken,
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions.EnableCrossPartitionQuery = true;
             }
 
-            return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, this.queryClient, requestOptions, allowSynchronousQueryExecution);
+            return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, (CosmosQueryClientCore)this.queryClient, requestOptions, allowSynchronousQueryExecution);
         }
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
@@ -420,7 +420,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
-                cosmosContainer: this,
+                container: this,
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
@@ -443,7 +443,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
-                cosmosContainer: this,
+                container: this,
                 changeFeedProcessor: changeFeedEstimatorCore,
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos
                 clientContext: this.ClientContext,
                 continuationToken: continuationToken,
                 maxItemCount: maxItemCount,
-                cosmosContainer: this,
+                container: this,
                 options: cosmosQueryRequestOptions);
         }
 
@@ -537,7 +537,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
             }
 
-            CosmosContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+            ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
             Uri resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             return await this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 CosmosElement partitionKeyValue = pathTraversal[tokens[tokens.Length - 1]];
-                if (partitionKeyValue == null)
+                if (partitionKeyValue == null || partitionKeyValue is CosmosNull)
                 {
                     return PartitionKey.NonePartitionKeyValue;
                 }

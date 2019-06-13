@@ -25,17 +25,17 @@ namespace Microsoft.Azure.Cosmos
         public void EndpointFailureMockTest()
         {
             // Setup dummpy read locations for the database account
-            Collection<CosmosAccountLocation> readableLocations = new Collection<CosmosAccountLocation>();
+            Collection<AccountLocation> readableLocations = new Collection<AccountLocation>();
 
-            CosmosAccountLocation writeLocation = new CosmosAccountLocation();
+            AccountLocation writeLocation = new AccountLocation();
             writeLocation.Name = "WriteLocation";
             writeLocation.DatabaseAccountEndpoint = "https://writeendpoint.net/";
 
-            CosmosAccountLocation readLocation1 = new CosmosAccountLocation();
+            AccountLocation readLocation1 = new AccountLocation();
             readLocation1.Name = "ReadLocation1";
             readLocation1.DatabaseAccountEndpoint = "https://readendpoint1.net/";
 
-            CosmosAccountLocation readLocation2 = new CosmosAccountLocation();
+            AccountLocation readLocation2 = new AccountLocation();
             readLocation2.Name = "ReadLocation2";
             readLocation2.DatabaseAccountEndpoint = "https://readendpoint2.net/";
 
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            CosmosAccountSettings databaseAccount = new CosmosAccountSettings();
+            AccountProperties databaseAccount = new AccountProperties();
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             //Setup mock owner "document client"
@@ -102,17 +102,17 @@ namespace Microsoft.Azure.Cosmos
         public void ReadLocationRemoveAndAddMockTest()
         {
             // Setup dummpy read locations for the database account
-            Collection<CosmosAccountLocation> readableLocations = new Collection<CosmosAccountLocation>();
+            Collection<AccountLocation> readableLocations = new Collection<AccountLocation>();
 
-            CosmosAccountLocation writeLocation = new CosmosAccountLocation();
+            AccountLocation writeLocation = new AccountLocation();
             writeLocation.Name = "WriteLocation";
             writeLocation.DatabaseAccountEndpoint = "https://writeendpoint.net/";
 
-            CosmosAccountLocation readLocation1 = new CosmosAccountLocation();
+            AccountLocation readLocation1 = new AccountLocation();
             readLocation1.Name = "ReadLocation1";
             readLocation1.DatabaseAccountEndpoint = "https://readendpoint1.net/";
 
-            CosmosAccountLocation readLocation2 = new CosmosAccountLocation();
+            AccountLocation readLocation2 = new AccountLocation();
             readLocation2.Name = "ReadLocation2";
             readLocation2.DatabaseAccountEndpoint = "https://readendpoint2.net/";
 
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            CosmosAccountSettings databaseAccount = new CosmosAccountSettings();
+            AccountProperties databaseAccount = new AccountProperties();
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             //Setup mock owner "document client"
