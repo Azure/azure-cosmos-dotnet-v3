@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<DatabaseProperties> iterator =
-                        await feedIterator.FetchNextSetAsync(this.cancellationToken);
+                        await feedIterator.ReadNextAsync(this.cancellationToken);
                     foreach (DatabaseProperties databaseSettings in iterator)
                     {
                         if (databaseIds.Contains(databaseSettings.Id))

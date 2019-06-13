@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProceduresIterator();
             while (iter.HasMoreResults)
             {
-                FeedResponse<StoredProcedureProperties> currentResultSet = await iter.FetchNextSetAsync();
+                FeedResponse<StoredProcedureProperties> currentResultSet = await iter.ReadNextAsync();
                 {
                     foreach (StoredProcedureProperties storedProcedureSettingsEntry in currentResultSet)
                     {

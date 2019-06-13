@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<ContainerProperties> settings = new List<ContainerProperties>();
                 while (rr.HasMoreResults)
                 {
-                    settings.AddRange(await rr.FetchNextSetAsync());
+                    settings.AddRange(await rr.ReadNextAsync());
                 }
 
                 Assert.AreEqual(settings.Count, 1);
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     int count = 0;
                     while (itemIterator.HasMoreResults)
                     {
-                        FeedResponse<dynamic> items = await itemIterator.FetchNextSetAsync();
+                        FeedResponse<dynamic> items = await itemIterator.ReadNextAsync();
                         count += items.Count();
                     }
                     Assert.AreEqual(3, count);
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             partitionKey: new Cosmos.PartitionKey(doc1.Id));
                         while (docServiceQuery.HasMoreResults)
                         {
-                            FeedResponse<Document> r = await docServiceQuery.FetchNextSetAsync();
+                            FeedResponse<Document> r = await docServiceQuery.ReadNextAsync();
                             if (r.Count() == 1)
                             {
                                 bFound = true;
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<StoredProcedureProperties> storedProcedures = new List<StoredProcedureProperties>();
                     while (storedProcedureIter.HasMoreResults)
                     {
-                        storedProcedures.AddRange(await storedProcedureIter.FetchNextSetAsync());
+                        storedProcedures.AddRange(await storedProcedureIter.ReadNextAsync());
                     }
 
                     Assert.AreEqual(storedProcedures.Count, 1);
@@ -1887,7 +1887,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (iterator.HasMoreResults)
             {
-                FeedResponse<T> countiter = await iterator.FetchNextSetAsync();
+                FeedResponse<T> countiter = await iterator.ReadNextAsync();
                 count += countiter.Count();
 
             }

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             FeedIterator iterator = container.GetConflicts().GetConflictsStreamIterator();
             while (iterator.HasMoreResults)
             {
-                CosmosResponseMessage responseMessage = await iterator.FetchNextSetAsync();
+                CosmosResponseMessage responseMessage = await iterator.ReadNextAsync();
             }
         }
 

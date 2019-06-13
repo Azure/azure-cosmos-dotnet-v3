@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator<TriggerProperties> iter = this.scripts.GetTriggersIterator(); ;
             while (iter.HasMoreResults)
             {
-                foreach (TriggerProperties storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
+                foreach (TriggerProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
                 {
                     settings.Add(storedProcedureSettingsEntry.Id);
                 }

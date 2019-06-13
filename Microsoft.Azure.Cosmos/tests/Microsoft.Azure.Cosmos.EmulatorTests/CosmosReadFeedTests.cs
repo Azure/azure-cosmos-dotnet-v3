@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
                 }
 
-                using (CosmosResponseMessage response = await iter.FetchNextSetAsync())
+                using (CosmosResponseMessage response = await iter.ReadNextAsync())
                 {
                     lastKnownContinuationToken = response.Headers.Continuation;
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
                 }
 
-                using (CosmosResponseMessage response = await iter.FetchNextSetAsync())
+                using (CosmosResponseMessage response = await iter.ReadNextAsync())
                 {
                     lastKnownContinuationToken = response.Headers.Continuation;
 

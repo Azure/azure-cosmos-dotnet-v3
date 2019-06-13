@@ -41,13 +41,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsTrue(resultSetIterator.HasMoreResults);
 
-            CosmosResponseMessage response = await resultSetIterator.FetchNextSetAsync(this.CancellationToken);
+            CosmosResponseMessage response = await resultSetIterator.ReadNextAsync(this.CancellationToken);
             this.ContinuationToken = response.Headers.Continuation;
 
             Assert.IsTrue(resultSetIterator.HasMoreResults);
             this.ContinueNextExecution = false;
 
-            response = await resultSetIterator.FetchNextSetAsync(this.CancellationToken);
+            response = await resultSetIterator.ReadNextAsync(this.CancellationToken);
             this.ContinuationToken = response.Headers.Continuation;
 
             Assert.IsFalse(resultSetIterator.HasMoreResults);
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            FeedResponse<ConflictProperties> response = await feedIterator.FetchNextSetAsync();
+            FeedResponse<ConflictProperties> response = await feedIterator.ReadNextAsync();
 
             Assert.AreEqual(1, response.Count());
 
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             mockClient.RequestHandler.InnerHandler = testHandler;
-            CosmosResponseMessage streamResponse = await feedIterator.FetchNextSetAsync();
+            CosmosResponseMessage streamResponse = await feedIterator.ReadNextAsync();
 
             Collection<ConflictProperties> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<ConflictProperties>>(streamResponse.Content).Data;
 

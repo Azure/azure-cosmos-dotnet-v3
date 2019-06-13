@@ -3611,7 +3611,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (iterator.HasMoreResults)
             {
-                FeedResponse<T> countiter = await iterator.FetchNextSetAsync();
+                FeedResponse<T> countiter = await iterator.ReadNextAsync();
                 count += countiter.Count();
                 
             }

@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
             try
             {
-                CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                CosmosResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode != HttpStatusCode.NotModified)
                 {
                     response.EnsureSuccessStatusCode();

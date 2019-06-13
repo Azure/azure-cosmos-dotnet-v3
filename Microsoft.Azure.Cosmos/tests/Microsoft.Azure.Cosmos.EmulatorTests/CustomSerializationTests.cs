@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryDefinition sql = new QueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
                container.GetItemsQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: new Cosmos.PartitionKey(testDocument.Name), maxItemCount: 1);
-            FeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
+            FeedResponse<TestDocument> queryResponse = await feedIterator.ReadNextAsync();
             AssertEqual(testDocument, queryResponse.First());
 
             //Will add LINQ test once it is available with new V3 OM 
@@ -470,7 +470,7 @@ function bulkImport(docs) {
 
             while (setIterator1.HasMoreResults)
             {
-                foreach (MyObject obj in await setIterator1.FetchNextSetAsync())
+                foreach (MyObject obj in await setIterator1.ReadNextAsync())
                 {
                     list1.Add(obj);
                 }
@@ -478,7 +478,7 @@ function bulkImport(docs) {
 
             while (setIterator2.HasMoreResults)
             {
-                foreach (MyObject obj in await setIterator2.FetchNextSetAsync())
+                foreach (MyObject obj in await setIterator2.ReadNextAsync())
                 {
                     list2.Add(obj);
                 }

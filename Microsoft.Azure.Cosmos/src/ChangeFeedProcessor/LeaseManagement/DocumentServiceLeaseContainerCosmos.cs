@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             var leases = new List<DocumentServiceLeaseCore>();
             while (query.HasMoreResults)
             {
-                leases.AddRange(await query.FetchNextSetAsync().ConfigureAwait(false));
+                leases.AddRange(await query.ReadNextAsync().ConfigureAwait(false));
             }
 
             return leases;

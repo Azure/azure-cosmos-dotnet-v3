@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainersIterator();
             while (resultSet.HasMoreResults)
             {
-                foreach (ContainerProperties setting in await resultSet.FetchNextSetAsync())
+                foreach (ContainerProperties setting in await resultSet.ReadNextAsync())
                 {
                     if (!containerIds.Contains(setting.Id))
                     {
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: new QueryRequestOptions());
             while (resultSet.HasMoreResults)
             {
-                using (CosmosResponseMessage message = await resultSet.FetchNextSetAsync())
+                using (CosmosResponseMessage message = await resultSet.ReadNextAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
                     CosmosJsonSerializerCore defaultJsonSerializer = new CosmosJsonSerializerCore();
