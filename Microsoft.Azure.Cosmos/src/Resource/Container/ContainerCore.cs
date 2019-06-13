@@ -124,7 +124,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public async override Task<ThroughputResponse> ReadProvisionedThroughputAsync(RequestOptions requestOptions, CancellationToken cancellationToken = default(CancellationToken))
+        public async override Task<ThroughputResponse> ReadProvisionedThroughputAsync(
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             OfferV2 offerV2 = await this.GetRIDAsync(cancellationToken)
             .ContinueWith(task => this.ClientContext.Client.Offers.GetOfferV2Async(task.Result, cancellationToken),
@@ -147,7 +149,10 @@ namespace Microsoft.Azure.Cosmos
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(response);
         }
 
-        public async override Task<ThroughputResponse> ReplaceProvisionedThroughputAsync(int throughput, RequestOptions requestOptions, CancellationToken cancellationToken = default(CancellationToken))
+        public async override Task<ThroughputResponse> ReplaceProvisionedThroughputAsync(
+            int throughput,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             OfferV2 offerV2 = await this.GetRIDAsync(cancellationToken)
              .ContinueWith(task => this.ClientContext.Client.Offers.GetOfferV2Async(task.Result, cancellationToken),
