@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
 
         private ClientPipelineBuilder UseRetryPolicy()
         {
-            this.retryHandler = new RetryHandler(this.client.DocumentClient);
+            this.retryHandler = new RetryHandler(this.client);
             Debug.Assert(this.retryHandler.InnerHandler == null, "The retryHandler.InnerHandler must be null to allow other handlers to be linked.");
             return this;
         }

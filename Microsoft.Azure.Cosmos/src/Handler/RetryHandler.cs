@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RetryHandler : AbstractRetryHandler
     {
-        private readonly DocumentClient client;
+        private readonly CosmosClient client;
 
-        public RetryHandler(DocumentClient client)
+        public RetryHandler(CosmosClient client)
         {
             if (client == null)
             {
@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(CosmosRequestMessage request)
         {
-            IDocumentClientRetryPolicy retryPolicyInstance = this.client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-            Debug.Assert(request.DocumentClientRetryPolicy == null, "Cosmos Request message only supports a single retry policy");
+            IDocumentClientRetryPolicy retryPolicyInstance = this.client.DocumentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
+            Debug.Assert(request.OnBeforeSendRequestActions == null, "Cosmos Request message only supports a single retry policy");
             return Task.FromResult(retryPolicyInstance);
         }
     }

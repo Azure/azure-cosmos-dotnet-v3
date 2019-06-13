@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
                 CosmosContainerProperties collectionFromCache =
-                    await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken);
+                    await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
                 List<CompositeContinuationToken> suppliedTokens;
                 //direction is not expected to change  between continuations.
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 if (serviceRequest.IsNameBased && resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
                 {
                     serviceRequest.ForceNameCacheRefresh = true;
-                    collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken);
+                    collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
                     resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
