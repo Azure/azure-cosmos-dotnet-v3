@@ -1526,7 +1526,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 database = await client.CreateDatabaseAsync("db1");
                 PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-                Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "coll1", PartitionKey = pKDefinition }, requestUnitsPerSecond: partitionCount * federationDefaultRUsPerPartition);
+                Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
 
                 ContainerCore containerCore = (ContainerCore)container;
                 CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
@@ -1599,7 +1599,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 database = await client.CreateDatabaseAsync("db1");
                 PartitionKeyDefinition pKDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-                Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "coll1", PartitionKey = pKDefinition }, requestUnitsPerSecond: partitionCount * federationDefaultRUsPerPartition);
+                Container container = await database.CreateContainerAsync(containerProperties: new ContainerProperties { Id = "coll1", PartitionKey = pKDefinition }, throughput: partitionCount * federationDefaultRUsPerPartition);
 
                 ContainerCore containerCore = (ContainerCore)container;
                 CollectionRoutingMap collectionRoutingMap = await containerCore.GetRoutingMapAsync(default(CancellationToken));
