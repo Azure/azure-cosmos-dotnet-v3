@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// One of the values of the <see cref="ConflictResolutionMode"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.Mode)]
+        [JsonProperty(PropertyName = Documents.Constants.Properties.Mode, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(StringEnumConverter))]
         public ConflictResolutionMode Mode { get; set; }
 
@@ -50,12 +50,12 @@ namespace Microsoft.Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionPath = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionPath)]
+        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionPath, NullValueHandling = NullValueHandling.Ignore)]
         public string ConflictResolutionPath { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="CosmosStoredProcedureProperties"/> which is used for conflict resolution in the Azure Cosmos DB service.
-        /// This stored procedure may be created after the <see cref="CosmosContainer"/> is created and can be changed as required. 
+        /// Gets or sets the <see cref="StoredProcedureProperties"/> which is used for conflict resolution in the Azure Cosmos DB service.
+        /// This stored procedure may be created after the <see cref="Container"/> is created and can be changed as required. 
         /// </summary>
         /// <remarks>
         /// 1. This value should only be set when using <see cref="ConflictResolutionMode.Custom"/>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionProcedure = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure)]
+        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
         public string ConflictResolutionProcedure { get; set; }
     }
 }

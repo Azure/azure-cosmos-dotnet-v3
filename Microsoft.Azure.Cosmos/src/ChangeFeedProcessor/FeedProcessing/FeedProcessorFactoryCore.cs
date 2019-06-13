@@ -13,13 +13,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
     {
-        private readonly CosmosContainerCore container;
+        private readonly ContainerCore container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
         private readonly CosmosJsonSerializer cosmosJsonSerializer;
 
         public FeedProcessorFactoryCore(
-            CosmosContainerCore container,
+            ContainerCore container,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             DocumentServiceLeaseCheckpointer leaseCheckpointer,
             CosmosJsonSerializer cosmosJsonSerializer)
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 partitionKeyRangeId: partitionKeyRangeId,
                 continuationToken: options.StartContinuation,
                 maxItemCount: options.MaxItemCount,
-                cosmosContainer: this.container,
+                container: this.container,
                 startTime: options.StartTime,
                 startFromBeginning: options.StartFromBeginning);
 

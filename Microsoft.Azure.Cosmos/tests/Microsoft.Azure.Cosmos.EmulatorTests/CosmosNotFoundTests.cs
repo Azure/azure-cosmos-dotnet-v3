@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateQueryNotFoundResponse()
         {
             CosmosDatabase db = await CosmosNotFoundTests.client.CreateDatabaseAsync("NotFoundTest" + Guid.NewGuid().ToString());
-            CosmosContainer container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
+            Container container = await db.CreateContainerAsync("NotFoundTest" + Guid.NewGuid().ToString(), "/pk", 500);
 
             dynamic randomItem = new { id = "test", pk = "testpk" };
             await container.CreateItemAsync(randomItem);
@@ -73,14 +73,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create should fail if the database does not exist
             if (dbNotExist)
             {
-                CosmosContainerProperties newcontainerSettings = new CosmosContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
+                ContainerProperties newcontainerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
                 this.VerifyNotFoundResponse(await database.CreateContainerStreamAsync(newcontainerSettings, throughput: 500));
             }
 
-            CosmosContainer doesNotExistContainer = database.GetContainer(DoesNotExist);
+            Container doesNotExistContainer = database.GetContainer(DoesNotExist);
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReadStreamAsync());
 
-            CosmosContainerProperties containerSettings = new CosmosContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
+            ContainerProperties containerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
             this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceStreamAsync(containerSettings));
             this.VerifyNotFoundResponse(await doesNotExistContainer.DeleteStreamAsync());
 
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // The database exists create a container and validate it's children
             if (!dbNotExist)
             {
-                CosmosContainer containerExists = await database.CreateContainerAsync(
+                Container containerExists = await database.CreateContainerAsync(
                     id: "NotFoundTest" + Guid.NewGuid().ToString(),
                     partitionKeyPath: "/pk");
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task ItemOperations(CosmosContainer container, bool containerNotExist)
+        private async Task ItemOperations(Container container, bool containerNotExist)
         {
             if (containerNotExist)
             {

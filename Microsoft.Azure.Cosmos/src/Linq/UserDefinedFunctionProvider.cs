@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="CosmosUserDefinedFunctionProperties"/>
+        /// <seealso cref="UserDefinedFunctionProperties"/>
         public static object Invoke(string udfName, params object[] arguments)
         {
             throw new Exception(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidCallToUserDefinedFunctionProvider));

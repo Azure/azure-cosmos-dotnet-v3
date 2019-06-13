@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// Inspecting Conflict resources will allow you to determine which operations and resources resulted in conflicts.
     /// This is not related to operations returning a Conflict status code.
     /// </remarks>
-    public class CosmosConflictProperties
+    public class ConflictProperties
     {
         /// <summary>
         /// Gets the Id of the resource in the Azure Cosmos DB service.

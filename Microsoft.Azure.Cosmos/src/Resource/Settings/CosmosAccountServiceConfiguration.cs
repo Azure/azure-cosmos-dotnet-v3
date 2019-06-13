@@ -12,11 +12,11 @@ namespace Microsoft.Azure.Cosmos
 
     internal class CosmosAccountServiceConfiguration : IServiceConfigurationReader
     {
-        private Func<Task<CosmosAccountProperties>> accountPropertiesTaskFunc { get; }
+        private Func<Task<AccountProperties>> accountPropertiesTaskFunc { get; }
 
-        internal CosmosAccountProperties AccountProperties { get; private set; }
+        internal AccountProperties AccountProperties { get; private set; }
 
-        public CosmosAccountServiceConfiguration(Func<Task<CosmosAccountProperties>> accountPropertiesTaskFunc)
+        public CosmosAccountServiceConfiguration(Func<Task<AccountProperties>> accountPropertiesTaskFunc)
         {
             if (accountPropertiesTaskFunc == null)
             {

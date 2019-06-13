@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// The default serializer is always used for all system owned types like CosmosDatabaseProperties.
+        /// The default serializer is always used for all system owned types like DatabaseProperties.
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]

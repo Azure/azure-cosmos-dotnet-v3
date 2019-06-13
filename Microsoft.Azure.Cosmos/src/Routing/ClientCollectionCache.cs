@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.sessionContainer = sessionContainer;
         }
 
-        protected override Task<CosmosContainerProperties> GetByRidAsync(string apiVersion, string collectionRid, CancellationToken cancellationToken)
+        protected override Task<ContainerProperties> GetByRidAsync(string apiVersion, string collectionRid, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(this.sessionContainer, this.retryPolicy.GetRequestPolicy());
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                   cancellationToken);
         }
 
-        protected override Task<CosmosContainerProperties> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellationToken)
+        protected override Task<ContainerProperties> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(this.sessionContainer, this.retryPolicy.GetRequestPolicy());
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 cancellationToken);
         }
 
-        private async Task<CosmosContainerProperties> ReadCollectionAsync(string collectionLink, CancellationToken cancellationToken, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ContainerProperties> ReadCollectionAsync(string collectionLink, CancellationToken cancellationToken, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     using (DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request))
                     {
-                        return CosmosResource.FromStream<CosmosContainerProperties>(response);
+                        return CosmosResource.FromStream<ContainerProperties>(response);
                     }
                 }
             }

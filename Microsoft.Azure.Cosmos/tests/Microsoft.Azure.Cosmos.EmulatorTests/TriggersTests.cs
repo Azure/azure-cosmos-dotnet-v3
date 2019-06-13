@@ -14,8 +14,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class TriggersTests : BaseCosmosClientHelper
     {
-        private CosmosContainerCore container = null;
-        private CosmosScripts scripts = null;
+        private ContainerCore container = null;
+        private Scripts scripts = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -23,12 +23,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestInit();
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.container = (CosmosContainerCore)response;
+            this.container = (ContainerCore)response;
             this.scripts = this.container.GetScripts();
         }
 
@@ -41,12 +41,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CRUDTest()
         {
-            CosmosTriggerProperties settings = new CosmosTriggerProperties
+            TriggerProperties settings = new TriggerProperties
             {
                 Id = Guid.NewGuid().ToString(),
                 Body = TriggersTests.GetTriggerFunction(".05"),
-                TriggerOperation = Scripts.TriggerOperation.Create,
-                TriggerType = Scripts.TriggerType.Pre
+                TriggerOperation = Cosmos.Scripts.TriggerOperation.Create,
+                TriggerType = Cosmos.Scripts.TriggerType.Pre
             };
 
             TriggerResponse triggerResponse =
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, triggerResponse.StatusCode);
             TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
-            CosmosTriggerProperties updatedSettings = triggerResponse.Resource;
+            TriggerProperties updatedSettings = triggerResponse.Resource;
             updatedSettings.Body = TriggersTests.GetTriggerFunction(".42");
 
             TriggerResponse replaceResponse = await this.scripts.ReplaceTriggerAsync(updatedSettings);
@@ -92,13 +92,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 1
             };
 
-            CosmosTriggerProperties cosmosTrigger = await this.scripts.CreateTriggerAsync(
-                new CosmosTriggerProperties
+            TriggerProperties cosmosTrigger = await this.scripts.CreateTriggerAsync(
+                new TriggerProperties
                 {
                     Id = "addTax",
                     Body = TriggersTests.GetTriggerFunction(".20"),
-                    TriggerOperation = Scripts.TriggerOperation.All,
-                    TriggerType = Scripts.TriggerType.Pre
+                    TriggerOperation = Cosmos.Scripts.TriggerOperation.All,
+                    TriggerType = Cosmos.Scripts.TriggerType.Pre
                 });
 
             ItemRequestOptions options = new ItemRequestOptions()
@@ -117,13 +117,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TriggersIteratorTest()
         {
-            CosmosTriggerProperties cosmosTrigger = await CreateRandomTrigger();
+            TriggerProperties cosmosTrigger = await CreateRandomTrigger();
 
             HashSet<string> settings = new HashSet<string>();
-            FeedIterator<CosmosTriggerProperties> iter = this.scripts.GetTriggersIterator(); ;
+            FeedIterator<TriggerProperties> iter = this.scripts.GetTriggersIterator(); ;
             while (iter.HasMoreResults)
             {
-                foreach (CosmosTriggerProperties storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
+                foreach (TriggerProperties storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
                 {
                     settings.Add(storedProcedureSettingsEntry.Id);
                 }
@@ -156,9 +156,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }";
         }
 
-        private static void ValidateTriggerSettings(CosmosTriggerProperties triggerSettings, TriggerResponse cosmosResponse)
+        private static void ValidateTriggerSettings(TriggerProperties triggerSettings, TriggerResponse cosmosResponse)
         {
-            CosmosTriggerProperties settings = cosmosResponse.Resource;
+            TriggerProperties settings = cosmosResponse.Resource;
             Assert.AreEqual(triggerSettings.Body, settings.Body,
                 "Trigger function do not match");
             Assert.AreEqual(triggerSettings.Id, settings.Id,
@@ -173,12 +173,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string id = Guid.NewGuid().ToString();
             string function = GetTriggerFunction(".05");
 
-            CosmosTriggerProperties settings = new CosmosTriggerProperties
+            TriggerProperties settings = new TriggerProperties
             {
                 Id = id,
                 Body = function,
-                TriggerOperation = Scripts.TriggerOperation.Create,
-                TriggerType = Scripts.TriggerType.Pre
+                TriggerOperation = Cosmos.Scripts.TriggerOperation.Create,
+                TriggerType = Cosmos.Scripts.TriggerType.Pre
             };
 
             //Create a user defined function 

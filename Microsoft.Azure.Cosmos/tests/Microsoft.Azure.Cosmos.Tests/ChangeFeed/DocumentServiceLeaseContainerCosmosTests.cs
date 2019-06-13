@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             CollectionAssert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases.Where(l => l.Owner == DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.HostName).ToList(), readLeases.ToList());
         }
 
-        private static CosmosContainer GetMockedContainer(string containerName = "myColl")
+        private static Container GetMockedContainer(string containerName = "myColl")
         {
             CosmosResponseMessageHeaders headers = new CosmosResponseMessageHeaders();
             headers.Continuation = string.Empty;
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns(true)
                 .Returns(false);
 
-            Mock<CosmosContainer> mockedItems = new Mock<CosmosContainer>();
+            Mock<Container> mockedItems = new Mock<Container>();
             mockedItems.Setup(i => i.CreateItemQuery<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => ("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')").Equals(value)), 

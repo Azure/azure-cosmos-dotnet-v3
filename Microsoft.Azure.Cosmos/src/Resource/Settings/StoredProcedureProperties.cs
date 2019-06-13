@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// Azure Cosmos DB allows application logic written entirely in JavaScript to be executed directly inside the database engine under the database transaction.
     /// For additional details, refer to the server-side JavaScript API documentation.
     /// </remarks>
-    public class CosmosStoredProcedureProperties
+    public class StoredProcedureProperties
     {
         private string id;
         private string body;
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Initializes a new instance of the Stored Procedure class for the Azure Cosmos DB service.
         /// </summary>
-        public CosmosStoredProcedureProperties()
+        public StoredProcedureProperties()
         {
         }
 
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="body">The body of the Azure Cosmos DB stored procedure.</param>
-        public CosmosStoredProcedureProperties(
+        public StoredProcedureProperties(
             string id,
             string body)
         {
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public string ETag { get; private set; }
 
         /// <summary>
-        /// Gets the last modified timestamp associated with <see cref="CosmosStoredProcedureProperties" /> from the Azure Cosmos DB service.
+        /// Gets the last modified timestamp associated with <see cref="StoredProcedureProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]

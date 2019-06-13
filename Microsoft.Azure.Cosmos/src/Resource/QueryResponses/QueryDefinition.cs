@@ -10,25 +10,25 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines a Cosmos SQL query
     /// </summary>
-    public class CosmosSqlQueryDefinition
+    public class QueryDefinition
     {
         private string Query { get; }
         private Dictionary<string, SqlParameter> SqlParameters { get; }
 
         /// <summary>
-        /// Create a <see cref="CosmosSqlQueryDefinition"/>
+        /// Create a <see cref="QueryDefinition"/>
         /// </summary>
         /// <param name="query">A valid Cosmos SQL query "Select * from test t"</param>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosSqlQueryDefinition query = new CosmosSqlQueryDefinition(
+        /// QueryDefinition query = new QueryDefinition(
         ///     "select * from t where t.Account = @account")
         ///     .UseParameter("@account", "12345");
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosSqlQueryDefinition(string query)
+        public QueryDefinition(string query)
         {
             if (string.IsNullOrEmpty(query))
             {
@@ -50,14 +50,14 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosSqlQueryDefinition query = new CosmosSqlQueryDefinition(
+        /// QueryDefinition query = new QueryDefinition(
         ///     "select * from t where t.Account = @account")
         ///     .UseParameter("@account", "12345");
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An instace of <see cref="CosmosSqlQueryDefinition"/>.</returns>
-        public virtual CosmosSqlQueryDefinition UseParameter(string name, object value)
+        /// <returns>An instace of <see cref="QueryDefinition"/>.</returns>
+        public virtual QueryDefinition UseParameter(string name, object value)
         {
             if (string.IsNullOrEmpty(name))
             {
