@@ -18,10 +18,10 @@ namespace Microsoft.Azure.Cosmos
     /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
     /// </remarks>
     /// <example>
-    /// The example below fetch the ThroughputProperties for resource RID "testRID".
+    /// The example below fetch the ThroughputProperties on testContainer.
     /// <code language="c#">
     /// <![CDATA[ 
-    /// add example here
+    /// ThroughputProperties throughputProperties = await testContainer.ReadProvisionedThroughputAsync().Resource;
     /// ]]>
     /// </code>
     /// </example>
