@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// IQueryable<T> queryable = container.GetItemsQuery<T>(allowSynchronousQueryExecution = true)
+        /// IQueryable<T> queryable = container.GetItemsQueryIterator<T>(allowSynchronousQueryExecution = true)
         ///                      .Where(t => b.id.contains("test"));
         /// String sqlQueryText = queryable.ToSqlQueryText();
         /// ]]>

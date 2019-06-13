@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns(false);
 
             Mock<Container> mockedItems = new Mock<Container>();
-            mockedItems.Setup(i => i.GetItemsQuery<DocumentServiceLeaseCore>(
+            mockedItems.Setup(i => i.GetItemsQueryIterator<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => ("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')").Equals(value)), 
                 It.IsAny<int>(), 
