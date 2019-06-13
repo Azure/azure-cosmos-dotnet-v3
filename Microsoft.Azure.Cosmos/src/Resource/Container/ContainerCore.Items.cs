@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public override IOrderedQueryable<T> GetItemsQuery<T>(
+        public override IOrderedQueryable<T> GetItemsLinq<T>(
             PartitionKey partitionKey = null, 
             bool allowSynchronousQueryExecution = false, 
             QueryRequestOptions requestOptions = null)
