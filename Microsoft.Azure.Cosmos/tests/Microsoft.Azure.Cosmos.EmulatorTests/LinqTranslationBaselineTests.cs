@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestLiteralSerialization()
         {
             List<DataObject> testData = new List<DataObject>();
-            var constantQuery = testContainer.CreateItemQuery<DataObject>(allowSynchronousQueryExecution : true);
+            var constantQuery = testContainer.GetItemsQuery<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Byte
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Partly because IsPrimitive is not trivial to implement.
             // Therefore these methods are verified with baseline only.
             List<DataObject> data = new List<DataObject>();
-            var query = testContainer.CreateItemQuery<DataObject>(allowSynchronousQueryExecution : true);
+            var query = testContainer.GetItemsQuery<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The spatial functions are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            var query = testContainer.CreateItemQuery<DataObject>(allowSynchronousQueryExecution : true);
+            var query = testContainer.GetItemsQuery<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -776,7 +776,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestCategory("Ignore")]
         public void TestStringCompareTo()
         {
-            var testQuery = testContainer.CreateItemQuery<DataObject>(allowSynchronousQueryExecution : true);
+            var testQuery = testContainer.GetItemsQuery<DataObject>(allowSynchronousQueryExecution : true);
             
             const int Records = 100;
             const int MaxStringLength = 20;
@@ -828,7 +828,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The UDFs invokation are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            var query = testContainer.CreateItemQuery<DataObject>(allowSynchronousQueryExecution : true);
+            var query = testContainer.GetItemsQuery<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -908,7 +908,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             var seed = generatedData.Item1;
             var data = generatedData.Item2;
 
-            var query = testContainer.CreateItemQuery<DataObject>(allowSynchronousQueryExecution : true);
+            var query = testContainer.GetItemsQuery<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();

@@ -768,7 +768,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// FeedIterator feedIterator = this.Container.CreateItemQueryStream(
+        /// FeedIterator feedIterator = this.Container.GetItemsQueryStream(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
@@ -787,7 +787,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator CreateItemQueryStream(
+        public abstract FeedIterator GetItemsQueryStream(
             QueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             PartitionKey partitionKey = null,
@@ -818,7 +818,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator feedIterator = this.Container.CreateItemQueryStream(
+        /// FeedIterator feedIterator = this.Container.GetItemsQueryStream(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
@@ -837,7 +837,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator CreateItemQueryStream(
+        public abstract FeedIterator GetItemsQueryStream(
             string sqlQueryText,
             int maxConcurrency,
             PartitionKey partitionKey = null,
@@ -865,7 +865,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemsQuery<ToDoActivity>(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     partitionKey: "Error");
         ///     
@@ -880,7 +880,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator<T> CreateItemQuery<T>(
+        public abstract FeedIterator<T> GetItemsQuery<T>(
             QueryDefinition sqlQueryDefinition,
             PartitionKey partitionKey,
             int? maxItemCount = null,
@@ -906,7 +906,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemsQuery<ToDoActivity>(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
         ///     partitionKey: "Error");
         ///     
@@ -921,7 +921,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator<T> CreateItemQuery<T>(
+        public abstract FeedIterator<T> GetItemsQuery<T>(
             string sqlQueryText,
             PartitionKey partitionKey,
             int? maxItemCount = null,
@@ -948,7 +948,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemsQuery<ToDoActivity>(
         ///     sqlQuery,
         ///     maxConcurrency: 2);
         ///     
@@ -963,7 +963,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator<T> CreateItemQuery<T>(
+        public abstract FeedIterator<T> GetItemsQuery<T>(
             QueryDefinition sqlQueryDefinition,
             int maxConcurrency,
             int? maxItemCount = null,
@@ -989,7 +989,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.Container.CreateItemQuery<ToDoActivity>(
+        /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemsQuery<ToDoActivity>(
         ///     "select * from ToDos t where t.cost > 9000",
         ///     maxConcurrency: 2);
         ///     
@@ -1004,7 +1004,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator<T> CreateItemQuery<T>(
+        public abstract FeedIterator<T> GetItemsQuery<T>(
             string sqlQueryText,
             int maxConcurrency,
             int? maxItemCount = null,
@@ -1040,19 +1040,19 @@ namespace Microsoft.Azure.Cosmos
         /// }
         ///  
         /// // Query by the Title property
-        /// Book book = container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true)
+        /// Book book = container.Items.GetItemsQuery<Book>(allowSynchronousQueryExecution = true)
         ///                      .Where(b => b.Title == "War and Peace")
         ///                      .AsEnumerable()
         ///                      .FirstOrDefault();
         /// 
         /// // Query a nested property
-        /// Book otherBook = container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true)
+        /// Book otherBook = container.Items.GetItemsQuery<Book>(allowSynchronousQueryExecution = true)
         ///                           .Where(b => b.Author.FirstName == "Leo")
         ///                           .AsEnumerable()
         ///                           .FirstOrDefault();
         /// 
         /// // Perform iteration on books
-        /// foreach (Book matchingBook in container.Items.CreateItemQuery<Book>(allowSynchronousQueryExecution = true).Where(b => b.Price > 100))
+        /// foreach (Book matchingBook in container.Items.GetItemsQuery<Book>(allowSynchronousQueryExecution = true).Where(b => b.Price > 100))
         /// {
         ///     // Iterate through books
         /// }
@@ -1065,12 +1065,12 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         ///
         /// // LINQ query generation
-        /// IQueryable<Book> queryable = container.Items.CreateItemQuery<Book>()
+        /// IQueryable<Book> queryable = container.Items.GetItemsQuery<Book>()
         ///                      .Where(b => b.Title == "War and Peace");
         /// //Asynchronous query execution
         /// string sqlQueryText = queriable.ToSqlQueryText();
         /// FeedIterator<Book> setIterator = this.Container
-        ///           .CreateItemQuery<Book>(sqlQueryText, maxConcurrency: 1);
+        ///           .GetItemsQuery<Book>(sqlQueryText, maxConcurrency: 1);
         ///           while (setIterator.HasMoreResults)
         ///           {
         ///           FeedResponse<Book> queryResponse = await setIterator.FetchNextSetAsync();
@@ -1087,7 +1087,10 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
-        public abstract IOrderedQueryable<T> CreateItemQuery<T>(object partitionKey = null, bool allowSynchronousQueryExecution = false, QueryRequestOptions requestOptions = null);
+        public abstract IOrderedQueryable<T> GetItemsQuery<T>(
+            PartitionKey partitionKey = null, 
+            bool allowSynchronousQueryExecution = false, 
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.

@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = container.CreateItemQuery<T>(allowSynchronousQueryExecution : true);
+            var query = container.GetItemsQuery<T>(allowSynchronousQueryExecution : true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = container.CreateItemQuery<Data>(allowSynchronousQueryExecution : true);
+            var query = container.GetItemsQuery<Data>(allowSynchronousQueryExecution : true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.

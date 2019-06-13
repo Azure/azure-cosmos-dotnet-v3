@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         bool bFound = false;
                         QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
-                        FeedIterator<Document> docServiceQuery = container.CreateItemQuery<Document>(
+                        FeedIterator<Document> docServiceQuery = container.GetItemsQuery<Document>(
                             sqlQueryDefinition: sqlQueryDefinition,
                             partitionKey: new Cosmos.PartitionKey(doc1.Id));
                         while (docServiceQuery.HasMoreResults)
@@ -454,11 +454,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument.Id, myDocument);
 
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
-            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.GetItemsQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             sqlQueryText = @"select * from root r where r.title = ""My new Book""";
-            cosmosResultSet = collection.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            cosmosResultSet = collection.GetItemsQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             myDocument.Title = "My old Book";
@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await collection.ReplaceItemAsync(myDocument.Id, myDocument);
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
-            cosmosResultSet = collection.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            cosmosResultSet = collection.GetItemsQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
         }
 

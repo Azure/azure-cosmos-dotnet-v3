@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryDefinition sql = new QueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
-               container.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: new Cosmos.PartitionKey(testDocument.Name), maxItemCount: 1);
+               container.GetItemsQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: new Cosmos.PartitionKey(testDocument.Name), maxItemCount: 1);
             FeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
             AssertEqual(testDocument, queryResponse.First());
 
@@ -460,10 +460,10 @@ function bulkImport(docs) {
             }
 
             QueryDefinition cosmosSqlQueryDefinition1 = new QueryDefinition("SELECT * FROM root");
-            FeedIterator<MyObject> setIterator1 = container.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
+            FeedIterator<MyObject> setIterator1 = container.GetItemsQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
 
             QueryDefinition cosmosSqlQueryDefinition2 = new QueryDefinition("SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC");
-            FeedIterator<MyObject> setIterator2 = container.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
+            FeedIterator<MyObject> setIterator2 = container.GetItemsQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
 
             List<MyObject> list1 = new List<MyObject>();
             List<MyObject> list2 = new List<MyObject>();
