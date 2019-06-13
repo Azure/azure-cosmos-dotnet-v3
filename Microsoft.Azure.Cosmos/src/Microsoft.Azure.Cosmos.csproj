@@ -38,6 +38,9 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <EmbeddedResource Include="Batch\HybridRowBatchSchemas.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>    
     <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
   
@@ -45,6 +48,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
+    <PackageReference Include="System.Memory" Version="4.5.1" />
   </ItemGroup>
   
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
@@ -52,7 +56,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="[$(DirectVersion)]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="3.0.0.33-preview" />
   </ItemGroup>
   
   <ItemGroup>
@@ -62,6 +66,30 @@
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
     <PackageReference Include="System.ServiceModel.Primitives" Version="4.5.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="Microsoft.Azure.Cosmos.Core">
+      <HintPath>C:\Users\abpai\.nuget\packages\microsoft.azure.cosmos.direct.myget\3.0.0.33-preview\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow">
+      <HintPath>C:\Users\abpai\.nuget\packages\microsoft.azure.cosmos.direct.myget\3.0.0.33-preview\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Update="ClientResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ClientResources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <EmbeddedResource Update="ClientResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
   <PropertyGroup>

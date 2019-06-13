@@ -1111,5 +1111,12 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             Func<long, CancellationToken, Task> estimationDelegate,
             TimeSpan? estimationPeriod = null);
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CosmosBatch"/> class.
+        /// </summary>
+        /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
+        /// <returns>An instance of <see cref="CosmosBatch"/></returns>
+        public abstract CosmosBatch CreateBatch(PartitionKey partitionKey);
     }
 }

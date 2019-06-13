@@ -1,0 +1,132 @@
+﻿{
+  "name": "Microsoft.Azure.Cosmos.BatchApi",
+  "version": "v1",
+  "schemas": [
+    {
+      "name": "BatchOperation",
+      "id": 2145473648,
+      "type": "schema",
+      "properties": [
+        {
+          "path": "operationType",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "resourceType",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "partitionKey",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "effectivePartitionKey",
+          "type": {
+            "type": "binary",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "id",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "binaryId",
+          "type": {
+            "type": "binary",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "resourceBody",
+          "type": {
+            "type": "binary",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "indexingDirective",
+          "type": {
+            "type": "utf8",
+            "storage": "sparse"
+          }
+        },
+        {
+          "path": "ifMatch",
+          "type": {
+            "type": "utf8",
+            "storage": "sparse"
+          }
+        },
+        {
+          "path": "ifNoneMatch",
+          "type": {
+            "type": "utf8",
+            "storage": "sparse"
+          }
+        },
+        {
+          "path": "timeToLiveInSeconds",
+          "type": {
+            "type": "int32",
+            "storage": "sparse"
+          }
+        }
+      ]
+    },
+    {
+      "name": "BatchResult",
+      "id": 2145473649,
+      "type": "schema",
+      "properties": [
+        {
+          "path": "statusCode",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "subStatusCode",
+          "type": {
+            "type": "int32",
+            "storage": "fixed"
+          }
+        },
+        {
+          "path": "eTag",
+          "type": {
+            "type": "utf8",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "resourceBody",
+          "type": {
+            "type": "binary",
+            "storage": "variable"
+          }
+        },
+        {
+          "path": "retryAfterMilliseconds",
+          "type": {
+            "type": "uint32",
+            "storage": "sparse"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -10,9 +10,8 @@
 
 namespace Microsoft.Azure.Cosmos {
     using System;
-    using System.Reflection;
-
-
+    
+    
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -20,7 +19,7 @@ namespace Microsoft.Azure.Cosmos {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class ClientResources {
@@ -40,8 +39,7 @@ namespace Microsoft.Azure.Cosmos {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.ClientResources", typeof(ClientResources).GetTypeInfo().Assembly);
-                    
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.ClientResources", typeof(ClientResources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -59,6 +57,15 @@ namespace Microsoft.Azure.Cosmos {
             }
             set {
                 resourceCulture = value;
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sorry, we are currently experiencing high demand in this region, and cannot fulfill your request at this time. We work continuously to bring more and more capacity online, and encourage you to try again shortly. Please do not hesitate to contact us via Azure support at any time or for any reason using this link http://aka.ms/azuresupport..
+        /// </summary>
+        internal static string AllServicePoolsEmpty {
+            get {
+                return ResourceManager.GetString("AllServicePoolsEmpty", resourceCulture);
             }
         }
         
@@ -198,6 +205,51 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to One or more provided request options are not supported on items that are part of a batch request..
+        /// </summary>
+        internal static string BatchItemRequestOptionNotSupported {
+            get {
+                return ResourceManager.GetString("BatchItemRequestOptionNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The batch request did not have any operations to be executed..
+        /// </summary>
+        internal static string BatchNoOperations {
+            get {
+                return ResourceManager.GetString("BatchNoOperations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to One or more batch operations are larger than the allowed limit..
+        /// </summary>
+        internal static string BatchOperationTooLarge {
+            get {
+                return ResourceManager.GetString("BatchOperationTooLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to One or more request options provided on the batch request are not supported..
+        /// </summary>
+        internal static string BatchRequestOptionNotSupported {
+            get {
+                return ResourceManager.GetString("BatchRequestOptionNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This batch request cannot be executed as it is larger than the allowed limit. Please reduce the number of operations in the batch and try again..
+        /// </summary>
+        internal static string BatchTooLarge {
+            get {
+                return ResourceManager.GetString("BatchTooLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Binary operator &apos;{0}&apos; is not supported..
         /// </summary>
         internal static string BinaryOperatorNotSupported {
@@ -221,6 +273,15 @@ namespace Microsoft.Azure.Cosmos {
         internal static string ConstructorInvocationNotSupported {
             get {
                 return ResourceManager.GetString("ConstructorInvocationNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expected valid byte[] value for {0} and string value for {1} when either property is set..
+        /// </summary>
+        internal static string EpkPropertiesPairingExpected {
+            get {
+                return ResourceManager.GetString("EpkPropertiesPairingExpected", resourceCulture);
             }
         }
         
@@ -286,20 +347,27 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("InvalidRangeError", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The count value provided for a Skip expression must be an integer..
+        ///   Looks up a localized string similar to Received an invalid response from the server..
         /// </summary>
-        internal static string InvalidSkipValue
-        {
-            get
-            {
+        internal static string InvalidServerResponse {
+            get {
+                return ResourceManager.GetString("InvalidServerResponse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The count value provided for a Skip expression must be a non-negative integer..
+        /// </summary>
+        internal static string InvalidSkipValue {
+            get {
                 return ResourceManager.GetString("InvalidSkipValue", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to The count value provided for a Take expression must be an integer..
+        ///   Looks up a localized string similar to The count value provided for a Take expression must be a non-negative integer..
         /// </summary>
         internal static string InvalidTakeValue {
             get {
@@ -407,11 +475,29 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Partition key and effective partition key may not both be set..
+        /// </summary>
+        internal static string PKAndEpkSetTogether {
+            get {
+                return ResourceManager.GetString("PKAndEpkSetTogether", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to A containing range for {0} doesn&apos;t exist in the partition map..
         /// </summary>
         internal static string RangeNotFoundError {
             get {
                 return ResourceManager.GetString("RangeNotFoundError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to deserialize response returned by server..
+        /// </summary>
+        internal static string ServerResponseDeserializationFailure {
+            get {
+                return ResourceManager.GetString("ServerResponseDeserializationFailure", resourceCulture);
             }
         }
         
@@ -484,17 +570,6 @@ namespace Microsoft.Azure.Cosmos {
         internal static string ValueAndAnonymousTypesAndGeometryOnly {
             get {
                 return ResourceManager.GetString("ValueAndAnonymousTypesAndGeometryOnly", resourceCulture);
-            }
-        }
-
-        /// <summary>
-        ///   Looks up a localized string similar to Sorry, we are currently experiencing high demand in this region, and cannot fulfill your request at this time. We work continuously to bring more and more capacity online, and encourage you to try again shortly. Please do not hesitate to contact us via Azure support at any time or for any reason using this link http://aka.ms/azuresupport..
-        /// </summary>
-        internal static string AllServicePoolsEmpty
-        {
-            get
-            {
-                return ResourceManager.GetString("AllServicePoolsEmpty", resourceCulture);
             }
         }
     }

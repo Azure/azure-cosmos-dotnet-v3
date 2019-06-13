@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AllServicePoolsEmpty" xml:space="preserve">
+    <value>Sorry, we are currently experiencing high demand in this region, and cannot fulfill your request at this time. We work continuously to bring more and more capacity online, and encourage you to try again shortly. Please do not hesitate to contact us via Azure support at any time or for any reason using this link http://aka.ms/azuresupport.</value>
+  </data>
   <data name="AuthTokenNotFound" xml:space="preserve">
     <value>The client does not have any valid token for the requested resource {0}.</value>
   </data>
@@ -162,6 +165,21 @@
   <data name="BadSession" xml:space="preserve">
     <value>Session object retrieved from client with endpoint {0} cannot be used on a client initialized to endpoint {1}.</value>
   </data>
+  <data name="BatchItemRequestOptionNotSupported" xml:space="preserve">
+    <value>One or more provided request options are not supported on items that are part of a batch request.</value>
+  </data>
+  <data name="BatchNoOperations" xml:space="preserve">
+    <value>The batch request did not have any operations to be executed.</value>
+  </data>
+  <data name="BatchOperationTooLarge" xml:space="preserve">
+    <value>One or more batch operations are larger than the allowed limit.</value>
+  </data>
+  <data name="BatchRequestOptionNotSupported" xml:space="preserve">
+    <value>One or more request options provided on the batch request are not supported.</value>
+  </data>
+  <data name="BatchTooLarge" xml:space="preserve">
+    <value>This batch request cannot be executed as it is larger than the allowed limit. Please reduce the number of operations in the batch and try again.</value>
+  </data>
   <data name="BinaryOperatorNotSupported" xml:space="preserve">
     <value>Binary operator '{0}' is not supported.</value>
   </data>
@@ -170,6 +188,9 @@
   </data>
   <data name="ConstructorInvocationNotSupported" xml:space="preserve">
     <value>Constructor invocation is not supported.</value>
+  </data>
+  <data name="EpkPropertiesPairingExpected" xml:space="preserve">
+    <value>Expected valid byte[] value for {0} and string value for {1} when either property is set.</value>
   </data>
   <data name="ExpectedMethodCallsMethods" xml:space="preserve">
     <value>Expected a static IQueryable or IEnumerable extension method, received an instance method.</value>
@@ -191,6 +212,9 @@
   </data>
   <data name="InvalidRangeError" xml:space="preserve">
     <value>Range low value must be less than or equal the high value.</value>
+  </data>
+  <data name="InvalidServerResponse" xml:space="preserve">
+    <value>Received an invalid response from the server.</value>
   </data>
   <data name="InvalidSkipValue" xml:space="preserve">
     <value>The count value provided for a Skip expression must be a non-negative integer.</value>
@@ -231,8 +255,14 @@
   <data name="PathExpressionsOnly" xml:space="preserve">
     <value>Only path expressions are supported for SelectMany.</value>
   </data>
+  <data name="PKAndEpkSetTogether" xml:space="preserve">
+    <value>Partition key and effective partition key may not both be set.</value>
+  </data>
   <data name="RangeNotFoundError" xml:space="preserve">
     <value>A containing range for {0} doesn't exist in the partition map.</value>
+  </data>
+  <data name="ServerResponseDeserializationFailure" xml:space="preserve">
+    <value>Failed to deserialize response returned by server.</value>
   </data>
   <data name="StringCompareToInvalidConstant" xml:space="preserve">
     <value>The right hand side of string.CompareTo() comparison must be constant '0'</value>
