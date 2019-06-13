@@ -10,14 +10,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal class CosmosConflictsCore : CosmosConflicts
+    internal class ConflictsCore : Conflicts
     {
-        private readonly CosmosContainerCore container;
+        private readonly ContainerCore container;
         private readonly CosmosClientContext clientContext;
 
-        public CosmosConflictsCore(
+        public ConflictsCore(
             CosmosClientContext clientContext,
-            CosmosContainerCore container)
+            ContainerCore container)
         {
             if (clientContext == null)
             {

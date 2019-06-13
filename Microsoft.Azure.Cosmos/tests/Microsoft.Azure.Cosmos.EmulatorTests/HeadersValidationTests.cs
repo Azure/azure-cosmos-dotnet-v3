@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = partitionKeyDefinition
                 };
-                CosmosContainer coll = await db.CreateContainerAsync(containerSetting);
+                Container coll = await db.CreateContainerAsync(containerSetting);
                 Document documentDefinition = new Document { Id = Guid.NewGuid().ToString() };
                 ItemResponse<Document> docResult = await coll.CreateItemAsync<Document>(documentDefinition);
                 Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentWriteQuorum], CultureInfo.InvariantCulture) > 0);
@@ -545,16 +545,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
                 var lazyCollection = new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 lazyCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Lazy;
-                CosmosContainer lazyContainer = await db.CreateContainerAsync(lazyCollection);
+                Container lazyContainer = await db.CreateContainerAsync(lazyCollection);
 
                 var consistentCollection = new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 consistentCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Consistent;
-                CosmosContainer consistentContainer = await db.CreateContainerAsync(consistentCollection);
+                Container consistentContainer = await db.CreateContainerAsync(consistentCollection);
 
                 var noneIndexCollection = new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 noneIndexCollection.IndexingPolicy.Automatic = false;
                 noneIndexCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.None;
-                CosmosContainer noneIndexContainer = await db.CreateContainerAsync(noneIndexCollection);
+                Container noneIndexContainer = await db.CreateContainerAsync(noneIndexCollection);
 
                 var doc = new Document() { Id = Guid.NewGuid().ToString() };
                 await lazyContainer.CreateItemAsync<Document>(doc);

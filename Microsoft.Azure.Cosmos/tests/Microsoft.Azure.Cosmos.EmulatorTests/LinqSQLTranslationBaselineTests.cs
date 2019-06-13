@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         private static CosmosClient cosmosClient;
         private static CosmosDatabase testDb;
-        private static CosmosContainer testContainer;
+        private static Container testContainer;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)

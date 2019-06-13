@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosReadFeedTests : BaseCosmosClientHelper
     {
-        private CosmosContainerCore Container = null;
+        private ContainerCore Container = null;
         private const string PartitionKey = "/id";
 
         [TestInitialize]
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = (CosmosContainerCore)response;
+            this.Container = (ContainerCore)response;
 
             DocumentFeedResponse<PartitionKeyRange> pkRangesFeed = await this.cosmosClient.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
             Assert.IsTrue(pkRangesFeed.Count > 1, "Refresh container throughput to have at-least > 1 pk-range");

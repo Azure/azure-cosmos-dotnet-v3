@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     /// <seealso cref="StoredProcedureProperties"/>
     /// <seealso cref="TriggerProperties"/>
     /// <seealso cref="UserDefinedFunctionProperties"/>
-    public abstract class CosmosScripts
+    public abstract class Scripts
     {
         /// <summary>
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// StoredProcedureProperties storedProcedure = new StoredProcedureProperties(id, sprocBody);
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(storedProcedure);
         /// 
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Get an iterator for all the stored procedures under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// FeedIterator<StoredProcedureProperties> setIterator = scripts.GetStoredProcedureIterator();
         /// while (setIterator.HasMoreResults)
         /// {
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This reads an existing stored procedure.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// CosmosStoredProcedure storedProcedure = await scripts.ReadStoredProcedureAsync("ExistingId");
         /// ]]>
         /// </code>
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///     getContext().getRequest().setBody(item);
         /// }";
         /// 
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// CosmosResponseMessage response = await scripts.ReplaceStoredProcedureAsync("testTriggerId", body);
         /// ]]>
         /// </code>
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples gets a reference to an existing stored procedure and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// CosmosResponseMessage response = await scripts.DeleteStoredProcedureAsync("taxUdfId");
         /// ]]>
         /// </code>
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
         ///         id: "appendString",
         ///         body: sprocBody);
@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
         ///         id: "appendString",
         ///         body: sprocBody);
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This creates a trigger then uses the trigger in a create item.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// CosmosTrigger cosmosTrigger = await scripts.CreateTriggerAsync(
         ///     new TriggerProperties
         ///     {
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// FeedIterator<TriggerProperties> setIterator = scripts.Triggers.GetTriggerIterator();
         /// while (setIterator.HasMoreResults)
         /// {
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This reads an existing trigger
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// TriggerResponse response = await scripts.ReadTriggerAsync("ExistingId");
         /// TriggerProperties triggerProperties = response;
         /// ]]>
@@ -491,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///     TriggerType = TriggerType.Post
         /// };
         /// 
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// TriggerResponse response = await scripts.ReplaceTriggerAsync(triggerSettigs);
         /// ]]>
         /// </code>
@@ -512,7 +512,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples gets a reference to an existing trigger and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// TriggerResponse response = await scripts.DeleteTriggerAsync("existingId");
         /// ]]>
         /// </code>
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This creates a user defined function then uses the function in an item query.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// await scripts.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
         ///     new UserDefinedFunctionProperties 
         ///     { 
@@ -562,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         Body = @"function(amt) { return amt * 0.05; }" 
         ///     });
         ///
-        /// CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition(
+        /// QueryDefinition sqlQuery = new QueryDefinition(
         ///     "SELECT VALUE udf.calculateTax(t.cost) FROM toDoActivity t where t.cost > @expensive and t.status = @status")
         ///     .UseParameter("@expensive", 9000)
         ///     .UseParameter("@status", "Done");
@@ -596,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Get an iterator for all the triggers under the cosmos container
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// FeedIterator<UserDefinedFunctionProperties> setIterator = scripts.GetUserDefinedFunctionIterator();
         /// while (setIterator.HasMoreResults)
         /// {
@@ -638,7 +638,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This reads an existing user defined function.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// UserDefinedFunctionResponse response = await scripts.ReadUserDefinedFunctionAsync("ExistingId");
         /// UserDefinedFunctionProperties udfProperties = response;
         /// ]]>
@@ -662,7 +662,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples replaces an existing user defined function.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.GetScripts();
         /// UserDefinedFunctionProperties udfProperties = new UserDefinedFunctionProperties
         /// {
         ///     Id = "testUserDefinedFunId",
@@ -690,8 +690,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples gets a reference to an existing user defined function and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// CosmosScripts scripts = this.container.GetScripts();
-        /// UserDefinedFunctionResponse response = await this.cosmosContainer.DeleteUserDefinedFunctionAsync("existingId");
+        /// Scripts scripts = this.container.GetScripts();
+        /// UserDefinedFunctionResponse response = await this.container.DeleteUserDefinedFunctionAsync("existingId");
         /// ]]>
         /// </code>
         /// </example>

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<ContainerResponse> CreateContainerResponseAsync(
-            CosmosContainer container,
+            Container container,
             Task<CosmosResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>

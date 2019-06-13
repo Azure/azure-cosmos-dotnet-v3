@@ -15,22 +15,22 @@ namespace Microsoft.Azure.Cosmos
     internal class ChangeFeedPartitionKeyResultSetIteratorCore : FeedIterator
     {
         private readonly CosmosClientContext clientContext;
-        private readonly CosmosContainerCore cosmosContainer;
+        private readonly ContainerCore container;
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private string continuationToken;
         private string partitionKeyRangeId;
 
         internal ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
-            CosmosContainerCore cosmosContainer,
+            ContainerCore container,
             string partitionKeyRangeId,
             string continuationToken,
             int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
-            if (cosmosContainer == null)
+            if (container == null)
             {
-                throw new ArgumentNullException(nameof(cosmosContainer));
+                throw new ArgumentNullException(nameof(container));
             }
 
             if (partitionKeyRangeId == null)
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientContext = clientContext;
-            this.cosmosContainer = cosmosContainer;
+            this.container = container;
             this.changeFeedOptions = options;
             this.MaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            Uri resourceUri = this.cosmosContainer.LinkUri;
+            Uri resourceUri = this.container.LinkUri;
             return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
-                cosmosContainerCore: this.cosmosContainer,
+                cosmosContainerCore: this.container,
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,

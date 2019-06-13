@@ -1219,9 +1219,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private static CosmosAccountConsistency GetServerConsistencyPolicy()
+        private static AccountConsistency GetServerConsistencyPolicy()
         {
-            CosmosAccountConsistency consistencyPolicy = new CosmosAccountConsistency
+            AccountConsistency consistencyPolicy = new AccountConsistency
             {
                 DefaultConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.Strong
             };

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
     /// of the application which enables efficient connection management and performance.
     /// </summary>
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="Container"/>.
     /// The CosmosClient uses the <see cref="CosmosClientOptions"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
@@ -35,14 +35,14 @@ namespace Microsoft.Azure.Cosmos
     /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
     /// {
     ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.CreateContainerAsync(Guid.NewGuid().ToString());
+    ///     Container container = await db.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="Container"/>.
     /// The CosmosClient is created with the AccountEndpoint and AccountKey.
     /// <code language="c#">
     /// <![CDATA[
@@ -51,14 +51,14 @@ namespace Microsoft.Azure.Cosmos
     ///     accountKey: "SuperSecretKey"))
     /// {
     ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+    ///     Container container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
     /// </example>
     /// 
     /// <example>
-    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="CosmosContainer"/>.
+    /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="Container"/>.
     /// The CosmosClient is created with the connection string.
     /// <code language="c#">
     /// <![CDATA[
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
     ///     connectionString: "AccountEndpoint=https://testcosmos.documents.azure.com:443/;AccountKey=SuperSecretKey;"))
     /// {
     ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     CosmosContainer container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
+    ///     Container container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
     /// }
     /// ]]>
     /// </code>
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseId">cosmos database name</param>
         /// <param name="containerId">cosmos container name</param>
         /// <returns>Cosmos container proxy</returns>
-        public virtual CosmosContainer GetContainer(string databaseId, string containerId)
+        public virtual Container GetContainer(string databaseId, string containerId)
         {
             if (string.IsNullOrEmpty(databaseId))
             {
@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
 
-            this.ClientContext = new CosmosClientContextCore(
+            this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,

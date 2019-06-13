@@ -171,8 +171,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            CosmosContainer cosmosContainer = this.GetContainer(containerProperties.Id);
-            ContainerResponse cosmosContainerResponse = await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
+            Container container = this.GetContainer(containerProperties.Id);
+            ContainerResponse cosmosContainerResponse = await container.ReadAsync(cancellationToken: cancellationToken);
             if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
             {
                 return cosmosContainerResponse;
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
             // so for the remaining ones we should do a Read instead of throwing Conflict exception
-            return await cosmosContainer.ReadAsync(cancellationToken: cancellationToken);
+            return await container.ReadAsync(cancellationToken: cancellationToken);
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -221,14 +221,14 @@ namespace Microsoft.Azure.Cosmos
                 this.ContainerFeedRequestExecutorAsync);
         }
 
-        public override CosmosContainer GetContainer(string id)
+        public override Container GetContainer(string id)
         {
             if (string.IsNullOrEmpty(id))
             {
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return new CosmosContainerCore(
+            return new ContainerCore(
                     this.ClientContext,
                     this,
                     id);
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ContainerStreamFeedRequestExecutorAsync);
         }
 
-        public override CosmosContainerFluentDefinitionForCreate DefineContainer(
+        public override ContainerFluentDefinitionForCreate DefineContainer(
             string name,
             string partitionKeyPath)
         {
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            return new CosmosContainerFluentDefinitionForCreate(this, name, partitionKeyPath);
+            return new ContainerFluentDefinitionForCreate(this, name, partitionKeyPath);
         }
 
         internal void ValidateContainerProperties(ContainerProperties containerProperties)

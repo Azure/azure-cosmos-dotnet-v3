@@ -79,8 +79,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestGetPartitionKeyValueFromStreamAsync()
         {
-            Mock<CosmosContainerCore> containerMock = new Mock<CosmosContainerCore>();
-            CosmosContainerCore container = containerMock.Object;
+            Mock<ContainerCore> containerMock = new Mock<ContainerCore>();
+            ContainerCore container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new string[] { "pk" }));
@@ -166,8 +166,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
-            Mock<CosmosContainerCore> containerMock = new Mock<CosmosContainerCore>();
-            CosmosContainerCore container = containerMock.Object;
+            Mock<ContainerCore> containerMock = new Mock<ContainerCore>();
+            ContainerCore container = containerMock.Object;
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new string[] { "a", "b", "c" }));
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
-            CosmosContainer container = client.GetDatabase("testdb")
+            Container container = client.GetDatabase("testdb")
                                         .GetContainer("testcontainer");
 
             await container.CreateItemAsync<dynamic>(
@@ -354,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 (builder) => builder.AddCustomHandlers(testHandler));
 
-            CosmosContainer container = client.GetDatabase("testdb")
+            Container container = client.GetDatabase("testdb")
                                         .GetContainer("testcontainer");
 
             ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(

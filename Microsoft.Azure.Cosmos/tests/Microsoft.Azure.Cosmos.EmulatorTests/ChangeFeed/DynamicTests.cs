@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             err => { if (err) throw err;}
                         );}";
 
-            CosmosScripts scripts = this.Container.GetScripts();
+            Scripts scripts = this.Container.GetScripts();
 
             StoredProcedureResponse storedProcedureResponse =
                 await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));

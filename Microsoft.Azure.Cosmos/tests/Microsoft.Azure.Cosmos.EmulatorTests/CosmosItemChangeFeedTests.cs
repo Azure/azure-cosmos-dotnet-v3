@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosItemChangeFeedTests : BaseCosmosClientHelper
     {
-        private CosmosContainerCore Container = null;
+        private ContainerCore Container = null;
         private CosmosJsonSerializerCore jsonSerializer = null;
 
         [TestInitialize]
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = (CosmosContainerCore)response;
+            this.Container = (ContainerCore)response;
             this.jsonSerializer = new CosmosJsonSerializerCore();
         }
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int visitedPkRanges = 0;
 
             await this.CreateRandomItems(batchSize, randomPartitionKey: true);
-            CosmosContainerCore itemsCore = (CosmosContainerCore)this.Container;
+            ContainerCore itemsCore = (ContainerCore)this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string corruptedTokenSerialized = JsonConvert.SerializeObject(corruptedTokens);
 
-            CosmosContainerCore itemsCore = (CosmosContainerCore)this.Container;
+            ContainerCore itemsCore = (ContainerCore)this.Container;
             FeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task StandByFeedIterator_WithMaxItemCount()
         {
             await this.CreateRandomItems(2, randomPartitionKey: true);
-            CosmosContainerCore itemsCore = (CosmosContainerCore)this.Container;
+            ContainerCore itemsCore = (ContainerCore)this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expected = 25;
             int iterations = 0;
             await this.CreateRandomItems(expected, randomPartitionKey: true);
-            CosmosContainerCore itemsCore = (CosmosContainerCore)this.Container;
+            ContainerCore itemsCore = (ContainerCore)this.Container;
             string continuationToken = null;
             int count = 0;
             while (true)
@@ -308,12 +308,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public bool HasCalledForceRefresh = false;
 
             internal CosmosChangeFeedResultSetIteratorCoreMock(
-                CosmosContainerCore cosmosContainer,
+                ContainerCore container,
                 string continuationToken,
                 int? maxItemCount,
                 ChangeFeedRequestOptions options) : base(
-                    clientContext: cosmosContainer.ClientContext,
-                    cosmosContainer: cosmosContainer,
+                    clientContext: container.ClientContext,
+                    container: container,
                     continuationToken: continuationToken,
                     maxItemCount: maxItemCount,
                     options: options)

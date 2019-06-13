@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>Cosmos container proxy</returns>
-        public abstract CosmosContainer GetContainer(string id);
+        public abstract Container GetContainer(string id);
 
         /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CosmosContainerFluentDefinitionForCreate DefineContainer(
+        public abstract ContainerFluentDefinitionForCreate DefineContainer(
             string name,
             string partitionKeyPath);
     }

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
-            CosmosClientContext context = new CosmosClientContextCore(
+            CosmosClientContext context = new ClientContextCore(
                 client: null,
                 clientOptions: null,
                 userJsonSerializer: null,
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             CosmosDatabaseCore db = new CosmosDatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
 
-            CosmosContainerCore container = new CosmosContainerCore(context, db, crId);
+            ContainerCore container = new ContainerCore(context, db, crId);
             Assert.AreEqual(container.LinkUri.OriginalString, "dbs/" + databaseId + "/colls/" + crId);
         }
 

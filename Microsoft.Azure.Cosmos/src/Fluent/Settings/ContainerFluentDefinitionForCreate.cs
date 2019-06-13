@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using System.Threading.Tasks;
 
     /// <summary>
-    /// <see cref="CosmosContainer"/> fluent definition for creation flows.
+    /// <see cref="Container"/> fluent definition for creation flows.
     /// </summary>
-    public class CosmosContainerFluentDefinitionForCreate : CosmosContainerFluentDefinition<CosmosContainerFluentDefinitionForCreate>
+    public class ContainerFluentDefinitionForCreate : ContainerFluentDefinition<ContainerFluentDefinitionForCreate>
     {
         private readonly CosmosDatabase cosmosContainers;
         private UniqueKeyPolicy uniqueKeyPolicy;
@@ -18,11 +18,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public CosmosContainerFluentDefinitionForCreate()
+        public ContainerFluentDefinitionForCreate()
         {
         }
 
-        internal CosmosContainerFluentDefinitionForCreate(
+        internal ContainerFluentDefinitionForCreate(
             CosmosDatabase cosmosContainers,
             string name,
             string partitionKeyPath = null)
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Creates a container with the current fluent definition.
         /// </summary>
         /// <param name="requestUnitsPerSecond">Desired throughput for the container expressed in Request Units per second.</param>
-        /// <returns>An asynchronous Task representing the creation of a <see cref="CosmosContainer"/> based on the Fluent definition.</returns>
+        /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>

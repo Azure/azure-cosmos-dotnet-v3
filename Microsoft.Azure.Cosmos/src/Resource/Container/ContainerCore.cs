@@ -14,22 +14,22 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
-    /// Operations for reading, replacing, or deleting a specific, existing cosmosContainer by id.
+    /// Operations for reading, replacing, or deleting a specific, existing container by id.
     /// 
     /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
     /// </summary>
-    internal partial class CosmosContainerCore : CosmosContainer
+    internal partial class ContainerCore : Container
     {
-        private readonly CosmosConflictsCore conflicts;
+        private readonly ConflictsCore conflicts;
 
         /// <summary>
         /// Only used for unit testing
         /// </summary>
-        internal CosmosContainerCore()
+        internal ContainerCore()
         {
         }
 
-        internal CosmosContainerCore(
+        internal ContainerCore(
             CosmosClientContext clientContext,
             CosmosDatabaseCore database,
             string containerId)
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                 id: containerId);
 
             this.Database = database;
-            this.conflicts = new CosmosConflictsCore(this.ClientContext, this);
+            this.conflicts = new ConflictsCore(this.ClientContext, this);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
         }
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosClientContext ClientContext { get; }
 
-        public override CosmosConflicts GetConflicts()
+        public override Conflicts GetConflicts()
         {
             return this.conflicts;
         }

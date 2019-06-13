@@ -15,10 +15,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal class DocumentServiceLeaseStoreManagerBuilder
     {
         private DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
-        private CosmosContainer container;
+        private Container container;
         private RequestOptionsFactory requestOptionsFactory;
 
-        public DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(CosmosContainer leaseContainer)
+        public DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(Container leaseContainer)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
 

@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// Azure Cosmos container fluent definition.
     /// </summary>
-    /// <seealso cref="CosmosContainer"/>
-    public abstract class CosmosContainerFluentDefinition<T>
-        where T : CosmosContainerFluentDefinition<T>
+    /// <seealso cref="Container"/>
+    public abstract class ContainerFluentDefinition<T>
+        where T : ContainerFluentDefinition<T>
     {
         private readonly string containerName;
         private string partitionKeyPath;
@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public CosmosContainerFluentDefinition()
+        public ContainerFluentDefinition()
         {
         }
 
-        internal CosmosContainerFluentDefinition(
+        internal ContainerFluentDefinition(
             string name,
             string partitionKeyPath = null)
         {

@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// The DatabaseAccountLocation class represents an Azure Cosmos DB database account in a specific region.
+    /// The AccountLocation class represents an Azure Cosmos DB database account in a specific region.
     /// </summary>
-    public class CosmosAccountLocation 
+    public class AccountLocation 
     {
         /// <summary>
         /// Gets the name of the database account location in the Azure Cosmos DB service. For example,

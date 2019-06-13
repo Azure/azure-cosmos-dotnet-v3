@@ -23,12 +23,12 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
         private readonly CosmosClientContext clientContext;
-        private readonly CosmosContainerCore cosmosContainerCore;
+        private readonly ContainerCore cosmosContainerCore;
         internal readonly IDocumentQueryClient DocumentQueryClient;
 
         internal CosmosQueryClientCore(
             CosmosClientContext clientContext,
-            CosmosContainerCore cosmosContainerCore)
+            ContainerCore cosmosContainerCore)
         {
             this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
             this.cosmosContainerCore = cosmosContainerCore ?? throw new ArgumentException(nameof(cosmosContainerCore));

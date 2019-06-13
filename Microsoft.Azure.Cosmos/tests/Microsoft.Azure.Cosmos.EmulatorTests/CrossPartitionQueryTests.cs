@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return ranges;
         }
 
-        private async Task<CosmosContainer> CreateMultiPartitionContainer(
+        private async Task<Container> CreateMultiPartitionContainer(
             string partitionKey = "/id",
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return containerResponse;
         }
 
-        private async Task<CosmosContainer> CreateSinglePartitionContainer(
+        private async Task<Container> CreateSinglePartitionContainer(
             string partitionKey = "/id",
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return containerResponse;
         }
 
-        private async Task<CosmosContainer> CreateNonPartitionedContainer(
+        private async Task<Container> CreateNonPartitionedContainer(
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             string containerName = Guid.NewGuid().ToString() + "container";
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return containerResponse;
         }
 
-        private async Task<Tuple<CosmosContainer, List<Document>>> CreateNonPartitionedContainerAndIngestDocuments(
+        private async Task<Tuple<Container, List<Document>>> CreateNonPartitionedContainerAndIngestDocuments(
             IEnumerable<string> documents,
             Cosmos.IndexingPolicy indexingPolicy = null)
         {
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 indexingPolicy: indexingPolicy);
         }
 
-        private async Task<Tuple<CosmosContainer, List<Document>>> CreateSinglePartitionContainerAndIngestDocuments(
+        private async Task<Tuple<Container, List<Document>>> CreateSinglePartitionContainerAndIngestDocuments(
             IEnumerable<string> documents,
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null)
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 indexingPolicy);
         }
 
-        private async Task<Tuple<CosmosContainer, List<Document>>> CreateMultiPartitionContainerAndIngestDocuments(
+        private async Task<Tuple<Container, List<Document>>> CreateMultiPartitionContainerAndIngestDocuments(
             IEnumerable<string> documents,
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null)
@@ -241,25 +241,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 indexingPolicy);
         }
 
-        private async Task<Tuple<CosmosContainer, List<Document>>> CreateContainerAndIngestDocuments(
+        private async Task<Tuple<Container, List<Document>>> CreateContainerAndIngestDocuments(
             CollectionTypes collectionType,
             IEnumerable<string> documents,
             string partitionKey = "/id",
             Cosmos.IndexingPolicy indexingPolicy = null)
         {
-            CosmosContainer cosmosContainer;
+            Container container;
             switch (collectionType)
             {
                 case CollectionTypes.NonPartitioned:
-                    cosmosContainer = await this.CreateNonPartitionedContainer(indexingPolicy);
+                    container = await this.CreateNonPartitionedContainer(indexingPolicy);
                     break;
 
                 case CollectionTypes.SinglePartition:
-                    cosmosContainer = await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
+                    container = await this.CreateSinglePartitionContainer(partitionKey, indexingPolicy);
                     break;
 
                 case CollectionTypes.MultiPartition:
-                    cosmosContainer = await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy);
+                    container = await this.CreateMultiPartitionContainer(partitionKey, indexingPolicy);
                     break;
 
                 default:
@@ -291,10 +291,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     pkValue = Cosmos.PartitionKey.NonePartitionKeyValue;
                 }
 
-                insertedDocuments.Add((await cosmosContainer.CreateItemAsync<JObject>(documentObject)).Resource.ToObject<Document>());
+                insertedDocuments.Add((await container.CreateItemAsync<JObject>(documentObject)).Resource.ToObject<Document>());
             }
 
-            return new Tuple<CosmosContainer, List<Document>>(cosmosContainer, insertedDocuments);
+            return new Tuple<Container, List<Document>>(container, insertedDocuments);
         }
 
         private static async Task CleanUp(CosmosClient client)
@@ -339,11 +339,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal delegate Task Query(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents);
 
         internal delegate Task Query<T>(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents,
             T testArgs);
 
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    List<Tuple<CosmosContainer, List<Document>>> collectionsAndDocuments = new List<Tuple<CosmosContainer, List<Document>>>();
+                    List<Tuple<Container, List<Document>>> collectionsAndDocuments = new List<Tuple<Container, List<Document>>>();
                     foreach (CollectionTypes collectionType in Enum.GetValues(collectionTypes.GetType()).Cast<Enum>().Where(collectionTypes.HasFlag))
                     {
                         if (collectionType == CollectionTypes.None)
@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             continue;
                         }
 
-                        Task<Tuple<CosmosContainer, List<Document>>> createContainerTask;
+                        Task<Tuple<Container, List<Document>>> createContainerTask;
                         switch (collectionType)
                         {
                             case CollectionTypes.NonPartitioned:
@@ -488,9 +488,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<Task> queryTasks = new List<Task>();
                     foreach (CosmosClient cosmosClient in cosmosClients)
                     {
-                        foreach (Tuple<CosmosContainer, List<Document>> containerAndDocuments in collectionsAndDocuments)
+                        foreach (Tuple<Container, List<Document>> containerAndDocuments in collectionsAndDocuments)
                         {
-                            CosmosContainer container = cosmosClient.GetContainer(containerAndDocuments.Item1.Database.Id, containerAndDocuments.Item1.Id);
+                            Container container = cosmosClient.GetContainer(containerAndDocuments.Item1.Database.Id, containerAndDocuments.Item1.Id);
                             Task queryTask = Task.Run(() => query(container, containerAndDocuments.Item2, testArgs));
                             queryTasks.Add(queryTask);
                         }
@@ -499,7 +499,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await Task.WhenAll(queryTasks);
 
                     List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
-                    foreach (CosmosContainer container in collectionsAndDocuments.Select(tuple => tuple.Item1))
+                    foreach (Container container in collectionsAndDocuments.Select(tuple => tuple.Item1))
                     {
                         deleteContainerTasks.Add(container.DeleteAsync());
                     }
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static async Task<List<T>> QueryWithContinuationTokens<T>(
-            CosmosContainer container,
+            Container container,
             string query,
             int? maxConcurrency = 2,
             int? maxItemCount = null,
@@ -596,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
-            CosmosContainer container,
+            Container container,
             string query,
             int maxConcurrency = 2,
             int? maxItemCount = null,
@@ -679,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.TestBadQueriesOverMultiplePartitionsHelper);
         }
 
-        private async Task TestBadQueriesOverMultiplePartitionsHelper(CosmosContainer container, IEnumerable<Document> documents)
+        private async Task TestBadQueriesOverMultiplePartitionsHelper(Container container, IEnumerable<Document> documents)
         {
             await CrossPartitionQueryTests.NoOp();
             try
@@ -713,7 +713,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.TestQueryCrossParitionPartitionProviderInvalidHelper);
         }
 
-        private async Task TestQueryCrossParitionPartitionProviderInvalidHelper(CosmosContainer container, IEnumerable<Document> documents)
+        private async Task TestQueryCrossParitionPartitionProviderInvalidHelper(Container container, IEnumerable<Document> documents)
         {
             await CrossPartitionQueryTests.NoOp();
             try
@@ -763,7 +763,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestQueryWithPartitionKeyHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents)
         {
             Assert.AreEqual(0, (await CrossPartitionQueryTests.RunQuery<Document>(
@@ -851,7 +851,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestQuerySinglePartitionKeyHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents)
         {
             // Query with partition key should be done in one round trip.
@@ -972,7 +972,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task TestQueryWithSpecialPartitionKeysHelper(CosmosContainer container, IEnumerable<Document> documents, QueryWithSpecialPartitionKeysArgs testArgs)
+        private async Task TestQueryWithSpecialPartitionKeysHelper(Container container, IEnumerable<Document> documents, QueryWithSpecialPartitionKeysArgs testArgs)
         {
             QueryWithSpecialPartitionKeysArgs args = testArgs;
 
@@ -1182,9 +1182,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey);
         }
 
-        private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(CosmosContainer container, IEnumerable<Document> documents, QueryCrossPartitionWithLargeNumberOfKeysArgs args)
+        private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(Container container, IEnumerable<Document> documents, QueryCrossPartitionWithLargeNumberOfKeysArgs args)
         {
-            CosmosSqlQueryDefinition query = new CosmosSqlQueryDefinition(
+            QueryDefinition query = new QueryDefinition(
                 $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").UseParameter("@keys", args.ExpectedPartitionKeyValues);
 
             HashSet<int> actualPartitionKeyValues = new HashSet<int>();
@@ -1221,7 +1221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestBasicCrossPartitionQueryHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents)
         {
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
@@ -1277,7 +1277,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestQueryPlanGatewayAndServiceInteropHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents)
         {
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
@@ -1315,7 +1315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestUnsupportedQueriesHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents)
         {
             QueryRequestOptions feedOptions = new QueryRequestOptions
@@ -1424,7 +1424,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string Predicate;
         }
 
-        private async Task TestQueryCrossPartitionAggregateFunctionsAsync(CosmosContainer container, IEnumerable<Document> documents, AggregateTestArgs aggregateTestArgs)
+        private async Task TestQueryCrossPartitionAggregateFunctionsAsync(Container container, IEnumerable<Document> documents, AggregateTestArgs aggregateTestArgs)
         {
             int numberOfDocumentsDifferentPartitionKey = aggregateTestArgs.NumberOfDocumentsDifferentPartitionKey;
             int numberOfDocumentSamePartitionKey = aggregateTestArgs.NumberOfDocsWithSamePartitionKey;
@@ -1624,7 +1624,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string UniqueField;
         }
 
-        private async Task TestQueryCrossPartitionAggregateFunctionsEmptyPartitionsHelper(CosmosContainer container, IEnumerable<Document> documents, AggregateQueryEmptyPartitionsArgs args)
+        private async Task TestQueryCrossPartitionAggregateFunctionsEmptyPartitionsHelper(Container container, IEnumerable<Document> documents, AggregateQueryEmptyPartitionsArgs args)
         {
             await CrossPartitionQueryTests.NoOp();
             int numDocuments = args.NumDocuments;
@@ -1767,7 +1767,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestQueryCrossPartitionAggregateFunctionsWithMixedTypesHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents,
             AggregateQueryMixedTypes args)
         {
@@ -1911,7 +1911,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/id");
         }
 
-        private async Task TestQueryDistinct(CosmosContainer container, IEnumerable<Document> documents, dynamic testArgs = null)
+        private async Task TestQueryDistinct(Container container, IEnumerable<Document> documents, dynamic testArgs = null)
         {
             #region Queries
             // To verify distint queries you can run it once without the distinct clause and run it through a hash set 
@@ -2229,7 +2229,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/key");
         }
 
-        private async Task TestQueryCrossPartitionTopOrderByDifferentDimensionHelper(CosmosContainer container, IEnumerable<Document> documents)
+        private async Task TestQueryCrossPartitionTopOrderByDifferentDimensionHelper(Container container, IEnumerable<Document> documents)
         {
             await CrossPartitionQueryTests.NoOp();
 
@@ -2282,7 +2282,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestOrderByNonAsciiCharactersHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents)
         {
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
@@ -2531,7 +2531,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         };
 
         private async Task TestMixedTypeOrderByHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents,
             Tuple<OrderByTypes[], Action<Exception>> args)
         {
@@ -2723,7 +2723,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey);
         }
 
-        private async Task TestQueryCrossPartitionTopOrderByHelper(CosmosContainer container, IEnumerable<Document> documents, string testArg)
+        private async Task TestQueryCrossPartitionTopOrderByHelper(Container container, IEnumerable<Document> documents, string testArg)
         {
             string partitionKey = testArg;
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
@@ -2875,7 +2875,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         maxItemCount = null;
                                     }
 
-                                    CosmosSqlQueryDefinition querySpec = new CosmosSqlQueryDefinition(queryText);
+                                    QueryDefinition querySpec = new QueryDefinition(queryText);
                                     SqlParameterCollection parameters = new SqlParameterCollection();
                                     if (isParametrized)
                                     {
@@ -2984,7 +2984,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestQueryCrossPartitionOffsetLimit(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents)
         {
             foreach (int offsetCount in new int[] { 0, 1, 10, 100, documents.Count() })
@@ -3033,7 +3033,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task TestQueryCrossPartitionTopHelper(CosmosContainer container, IEnumerable<Document> documents)
+        private async Task TestQueryCrossPartitionTopHelper(Container container, IEnumerable<Document> documents)
         {
             List<string> queryFormats = new List<string>()
             {
@@ -3155,7 +3155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey);
         }
 
-        private async Task TestQueryCrossPartitionWithContinuationsHelper(CosmosContainer container, IEnumerable<Document> documents, CrossPartitionWithContinuationsArgs args)
+        private async Task TestQueryCrossPartitionWithContinuationsHelper(Container container, IEnumerable<Document> documents, CrossPartitionWithContinuationsArgs args)
         {
             int documentCount = args.NumberOfDocuments;
             string partitionKey = args.PartitionKey;
@@ -3501,7 +3501,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task TestMultiOrderByQueriesHelper(
-            CosmosContainer container,
+            Container container,
             IEnumerable<Document> documents)
         {
             ContainerProperties containerSettings = await container.ReadAsync();
@@ -3850,7 +3850,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         //}
 
         private static async Task<List<T>> RunQuery<T>(
-            CosmosContainer container,
+            Container container,
             string query,
             int maxConcurrency = 2,
             int? maxItemCount = null,
@@ -3884,7 +3884,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task<List<T>> RunSinglePartitionQuery<T>(
-            CosmosContainer container,
+            Container container,
             string query,
             object partitionKey,
             int? maxItemCount = null,

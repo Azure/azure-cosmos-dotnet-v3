@@ -21,8 +21,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// Most commonly used with the Delete* and Replace* methods of <see cref="CosmosContainer"/> such as <see cref="CosmosContainer.ReplaceItemAsync{T}(string, T, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>
-        /// but can be used with other methods like <see cref="CosmosContainer.ReadItemAsync{T}(PartitionKey, string, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
+        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(string, T, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>
+        /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(PartitionKey, string, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
         /// </remarks>
         public virtual string IfMatchEtag { get; set; }
 

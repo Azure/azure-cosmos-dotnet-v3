@@ -151,9 +151,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             return new ChangeFeedEstimatorCore(estimationDelegate, TimeSpan.FromSeconds(5), remainingWorkEstimator.Object);
         }
 
-        private static CosmosContainerCore GetMockedContainer(string containerName = null)
+        private static ContainerCore GetMockedContainer(string containerName = null)
         {
-            Mock<CosmosContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
+            Mock<ContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             mockedContainer.Setup(c => c.ClientContext).Returns(ChangeFeedEstimatorCoreTests.GetMockedClientContext());
             return mockedContainer.Object;
         }

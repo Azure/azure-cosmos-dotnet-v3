@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockDefaultJsonSerializer.Setup(x => x.FromStream<TriggerProperties>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
             mockDefaultJsonSerializer.Setup(x => x.FromStream<UserDefinedFunctionProperties>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
 
-            Mock<CosmosContainer> mockContainer = new Mock<CosmosContainer>();
+            Mock<Container> mockContainer = new Mock<Container>();
             Mock<CosmosDatabase> mockDatabase = new Mock<CosmosDatabase>();
 
             // Verify all the system types that should always use default

@@ -980,7 +980,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 database = await client.CreateDatabaseAsync(uniqDatabaseName );
 
                 string uniqCollectionName = "COLL_" + Guid.NewGuid().ToString("N");
-                CosmosContainer container = await database.CreateContainerAsync(
+                Container container = await database.CreateContainerAsync(
                     new ContainerProperties
                     {
                         Id = uniqCollectionName,
@@ -1015,7 +1015,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     },
                     QueryRanges = new List<Range<string>>()
                     {
-                        Range<string>.GetPointRange(PartitionKeyInternal.FromObjectArray(new object[] { 1 }, true).GetEffectivePartitionKeyString(await ((CosmosContainerCore)container).GetPartitionKeyDefinitionAsync())),
+                        Range<string>.GetPointRange(PartitionKeyInternal.FromObjectArray(new object[] { 1 }, true).GetEffectivePartitionKeyString(await ((ContainerCore)container).GetPartitionKeyDefinitionAsync())),
                     },
                 };
 
@@ -1060,7 +1060,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             PartitionedQueryExecutionInfo queryInfoForPartitionedCollection = queryTuple.Item3;
                             PartitionedQueryExecutionInfo queryInfoForSinglePartitionCollection = queryTuple.Item4;
 
-                            CosmosContainer currentCollection = collectionTuple.Item1;
+                            Container currentCollection = collectionTuple.Item1;
                             Uri uri = collectionTuple.Item2;
                             bool isPartitionedCollectionUri = collectionTuple.Item3;
 

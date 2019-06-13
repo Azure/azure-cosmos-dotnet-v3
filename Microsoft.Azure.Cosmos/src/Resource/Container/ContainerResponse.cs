@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
             ContainerProperties containerProperties,
-            CosmosContainer container)
+            Container container)
             : base(
                 httpStatusCode,
                 headers,
@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos
         /// The reference to the cosmos container. This allows additional operations on the container
         /// or for easy access to other references like Items, StoredProcedures, etc..
         /// </summary>
-        public virtual CosmosContainer Container { get; private set; }
+        public virtual Container Container { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosContainer"/> implicitly from <see cref="ContainerResponse"/>
+        /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="ContainerResponse"/>
         /// </summary>
         /// <param name="response">ContainerResponse</param>
-        public static implicit operator CosmosContainer(ContainerResponse response)
+        public static implicit operator Container(ContainerResponse response)
         {
             return response.Container;
         }
