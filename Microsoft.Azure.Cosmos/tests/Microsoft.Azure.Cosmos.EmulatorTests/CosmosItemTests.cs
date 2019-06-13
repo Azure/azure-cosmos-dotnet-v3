@@ -1269,7 +1269,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataTestMethod]
         public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate)
         {
-            List<Func<CosmosContainer, HttpStatusCode, Task>> operations = new List<Func<CosmosContainer, HttpStatusCode, Task>>();
+            List<Func<Container, HttpStatusCode, Task>> operations = new List<Func<Container, HttpStatusCode, Task>>();
             // operations.Add(ExecuteQueryAsync);
             operations.Add(ExecuteReadFeedAsync);
             // operations.Add(ExecuteChangeFeedAsync);
@@ -1285,12 +1285,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     string containerName = Guid.NewGuid().ToString();
 
                     db1 = await cc1.CreateDatabaseAsync(dbName);
-                    CosmosContainerCore container1 = (CosmosContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+                    ContainerCore container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
 
                     await operation(container1, HttpStatusCode.OK);
 
                     // Read through client2 -> return 404
-                    CosmosContainer container2 = cc2.GetDatabase(dbName).GetContainer(containerName);
+                    Container container2 = cc2.GetDatabase(dbName).GetContainer(containerName);
                     await operation(container2, HttpStatusCode.OK);
 
                     // Delete container 
@@ -1306,7 +1306,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     // Re-create again 
-                    container1 = (CosmosContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+                    container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
 
                     // Read through client1
                     await operation(container1, HttpStatusCode.OK);
@@ -1323,7 +1323,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static async Task ExecuteQueryAsync(CosmosContainer container, HttpStatusCode expected)
+        private static async Task ExecuteQueryAsync(Container container, HttpStatusCode expected)
         {
             FeedIterator iterator = container.CreateItemQueryStream("select * from r", 1);
             while (iterator.HasMoreResults)
@@ -1333,7 +1333,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static async Task ExecuteReadFeedAsync(CosmosContainer container, HttpStatusCode expected)
+        private static async Task ExecuteReadFeedAsync(Container container, HttpStatusCode expected)
         {
             FeedIterator iterator = container.GetItemsStreamIterator();
             while (iterator.HasMoreResults)
@@ -1343,11 +1343,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static async Task ExecuteChangeFeedAsync(CosmosContainer container, HttpStatusCode expected)
+        private static async Task ExecuteChangeFeedAsync(Container container, HttpStatusCode expected)
         {
             try
             {
-                CosmosContainer leaseContainer = await container.Database.CreateContainerAsync(id: Guid.NewGuid().ToString(), partitionKeyPath: "/id");
+                Container leaseContainer = await container.Database.CreateContainerAsync(id: Guid.NewGuid().ToString(), partitionKeyPath: "/id");
                 int processedDocCount = 0;
                 string accumulator = string.Empty;
                 ChangeFeedProcessor processor = container
