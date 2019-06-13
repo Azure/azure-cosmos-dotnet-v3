@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .DefineChangeFeedProcessor("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
                     foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .DefineChangeFeedProcessor("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
                     foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
