@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (dbNotExist)
             {
                 ContainerProperties newcontainerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
-                this.VerifyNotFoundResponse(await database.CreateContainerStreamAsync(newcontainerSettings, requestUnitsPerSecond: 500));
+                this.VerifyNotFoundResponse(await database.CreateContainerStreamAsync(newcontainerSettings, throughput: 500));
             }
 
             Container doesNotExistContainer = database.GetContainer(DoesNotExist);
