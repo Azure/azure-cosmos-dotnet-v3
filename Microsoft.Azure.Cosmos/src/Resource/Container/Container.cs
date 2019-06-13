@@ -1072,15 +1072,15 @@ namespace Microsoft.Azure.Cosmos
         /// string sqlQueryText = queriable.ToSqlQueryText();
         /// FeedIterator<Book> setIterator = this.Container
         ///           .GetItemsQueryIterator<Book>(sqlQueryText, maxConcurrency: 1);
-        ///           while (setIterator.HasMoreResults)
-        ///           {
-        ///           FeedResponse<Book> queryResponse = await setIterator.FetchNextSetAsync();
-        ///            var iter = queryResponse.GetEnumerator();
-        ///            while (iter.MoveNext())
-        ///            {
-        ///             Book book = iter.Current;
-        ///            }
-        ///            }
+        /// while (setIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<Book> queryResponse = await setIterator.FetchNextSetAsync();
+        ///     var iter = queryResponse.GetEnumerator();
+        ///     while (iter.MoveNext())
+        ///     {
+        ///         Book book = iter.Current;
+        ///     }
+        /// }
         ///
         /// ]]>
         /// </code>
