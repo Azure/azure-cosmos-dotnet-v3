@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     ///  For instance, do not call `container.readAsync()` before every single `item.read()` call, to ensure the cosmosContainer exists;
     ///  do this once on application start up.
     /// </remarks>
-    public abstract partial class Container
+    public abstract class Container
     {
         /// <summary>
         /// The Id of the Cosmos container
