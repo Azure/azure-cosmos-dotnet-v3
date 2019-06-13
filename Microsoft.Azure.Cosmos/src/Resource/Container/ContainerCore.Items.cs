@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -404,7 +402,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
             string processorName,
-            Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate)
+            ChangesHandler<T> onChangesDelegate)
         {
             if (processorName == null)
             {
@@ -427,7 +425,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string processorName,
-            Func<long, CancellationToken, Task> estimationDelegate,
+            ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
             if (processorName == null)

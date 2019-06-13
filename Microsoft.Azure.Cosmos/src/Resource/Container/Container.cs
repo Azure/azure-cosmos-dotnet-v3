@@ -1090,6 +1090,26 @@ namespace Microsoft.Azure.Cosmos
         public abstract IOrderedQueryable<T> CreateItemQuery<T>(object partitionKey = null, bool allowSynchronousQueryExecution = false, QueryRequestOptions requestOptions = null);
 
         /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangesHandler<T>(
+            IReadOnlyCollection<T> changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the estimation of pending changes to be read by the associated <see cref="ChangeFeedProcessor"/> instance.
+        /// </summary>
+        /// <param name="estimatedPendingChanges">An estimation in number of items.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the estimation.</returns>
+        public delegate Task ChangesEstimationHandler(
+            long estimatedPendingChanges,
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
         /// </summary>
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
@@ -1097,7 +1117,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
             string processorName,
-            Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate);
+            ChangesHandler<T> onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
@@ -1111,7 +1131,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
             string processorName,
-            Func<long, CancellationToken, Task> estimationDelegate,
+            ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
     }
 }
