@@ -9,6 +9,18 @@
     using System.Text;
     using System.Threading.Tasks;
 
+    // Code below shows how to create a batch and check the batch results
+    // For example to execute batch with three operations we need to do following steps:
+    // 1. Create Batch: 
+    //     Batch batch = container.CreateBatch(new PartitionKey(partitionKeyValue));
+    // 2. Add Operations:
+    //     batch.CreateItem(salesOrder1);
+    //     batch.CreateItem(salesOrder2);
+    //     batch.ReadItem(salesOrder2.Id);
+    // 3. Execute Batch:
+    //     BatchResponse batchResponse = await batch.ExecuteAsync();
+    // 4. Check batch result:
+    //      Console.WriteLine(batchResponse.StatusCode);
     class Program
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();
@@ -37,7 +49,10 @@
                     Container container = client.GetContainer(databaseName, containerId);
                     ContainerResponse containerResponse = await container.ReadAsync();
 
+                    // Execute CRUD
                     await ExecuteCrudAsync(container);
+
+                    // Execute CRUD using Stream
                     await ExecuteCrudStreamAsync(container);
                 }
             }
