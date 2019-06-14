@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with multiple operations on the same entity works")]
         public async Task BatchOrderedAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
             TestDoc firstDoc = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify eTags passed to batch operations or returned in batch results flow as expected")]
         public async Task BatchItemETagAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
             {
                 TestDoc testDocToCreate = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
@@ -123,8 +123,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 testDocToReplace.Cost++;
 
                 ItemResponse<TestDoc> readResponse = await CosmosBatchTestBase.JsonContainer.ReadItemAsync<TestDoc>(
-                    CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1),
-                    this.TestDocPk1ExistingA.Id);
+                    this.TestDocPk1ExistingA.Id,
+                    CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
 
                 ItemRequestOptions firstReplaceOptions = new ItemRequestOptions()
                 {
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Verify with schematized containers where we are allowed to send TTL as a header
             const bool isSchematized = true;
             const bool isStream = true;
-            CosmosContainer container = CosmosBatchTestBase.SchematizedContainer;
+            Container container = CosmosBatchTestBase.SchematizedContainer;
             await this.CreateSchematizedTestDocsAsync(container);
             {
                 TestDoc testDocToCreate = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("abpai")]
         public async Task BatchLargerThanServerRequestAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             const int operationCount = 20;
             int appxDocSize = Constants.MaxDirectModeBatchRequestBodySizeInBytes / operationCount;
 
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("abpai")]
         public async Task BatchWithTooManyOperationsAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
             const int operationCount = Constants.MaxOperationsInDirectModeBatchRequest + 1;
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("abpai")]
         public async Task BatchServerResponseTooLargeAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             const int operationCount = 10;
             int appxDocSizeInBytes = 1 * 1024 * 1024;
 
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("abpai")]
         public async Task BatchReadsOnlyAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
             CosmosBatchResponse batchResponse = await container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1))
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(this.TestDocPk1ExistingC, batchResponse.GetOperationResultAtIndex<TestDoc>(2).Resource);
         }
 
-        private async Task<CosmosBatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, CosmosContainer container, RequestOptions batchOptions = null)
+        private async Task<CosmosBatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, Container container, RequestOptions batchOptions = null)
         {
             if (isSchematized)
             {
@@ -448,18 +448,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a large set of read operations that is expected to be rate limited.")]
         public async Task BatchRateLimitingAsync()
         {
-            CosmosContainer containerWithDefaultRetryPolicy = CosmosBatchTestBase.LowThroughputJsonContainer;
+            Container containerWithDefaultRetryPolicy = CosmosBatchTestBase.LowThroughputJsonContainer;
 
             await this.CreateJsonTestDocsAsync(containerWithDefaultRetryPolicy);
             CosmosClient clientWithNoThrottleRetry = new CosmosClientBuilder(
-                    CosmosBatchTestBase.Client.ClientOptions.EndPoint.ToString(),
-                    CosmosBatchTestBase.Client.ClientOptions.AccountKey.Key)
+                    CosmosBatchTestBase.Client.Endpoint.ToString(),
+                    CosmosBatchTestBase.Client.AccountKey)
                     .WithThrottlingRetryOptions(
                     maxRetryWaitTimeOnThrottledRequests: default(TimeSpan),
                     maxRetryAttemptsOnThrottledRequests: 0)
                 .Build();
 
-            CosmosContainer containerWithNoThrottleRetry = 
+            Container containerWithNoThrottleRetry = 
                 clientWithNoThrottleRetry.GetContainer(CosmosBatchTestBase.Database.Id, CosmosBatchTestBase.LowThroughputJsonContainer.Id);
             
             // The second batch started should be rate limited by the backend in admission control.
@@ -480,7 +480,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task<CosmosBatchResponse[]> RunTwoLargeBatchesAsync(CosmosContainer container)
+        private async Task<CosmosBatchResponse[]> RunTwoLargeBatchesAsync(Container container)
         {
             CosmosBatch batch1 = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
             CosmosBatch batch2 = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
@@ -523,7 +523,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.RunBatchWithCreateConflictAsync(CosmosBatchTestBase.SharedThroughputContainer);
         }
 
-        private async Task RunBatchWithCreateConflictAsync(CosmosContainer container)
+        private async Task RunBatchWithCreateConflictAsync(Container container)
         {
             await this.CreateJsonTestDocsAsync(container);
 
@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with an invalid create operation rolls back prior operations")]
         public async Task BatchWithInvalidCreateAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
 
             // partition key mismatch between doc and and value passed in to the operation
             await this.RunWithErrorAsync(
@@ -559,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a read operation on a non-existent entity rolls back prior operations")]
         public async Task BatchWithReadOfNonExistentEntityAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             await this.RunWithErrorAsync(
                 container,
                 batch => batch.ReadItem(Guid.NewGuid().ToString()), 
@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a replace operation on a stale entity rolls back prior operations")]
         public async Task BatchWithReplaceOfStaleEntityAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
             TestDoc staleTestDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingA);
@@ -595,15 +595,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a delete operation on a non-existent entity rolls back prior operations")]
         public async Task BatchWithDeleteOfNonExistentEntityAsync()
         {
-            CosmosContainer container = CosmosBatchTestBase.JsonContainer;
+            Container container = CosmosBatchTestBase.JsonContainer;
             await this.RunWithErrorAsync(
                 container,
                 batch => batch.DeleteItem(Guid.NewGuid().ToString()),
                 HttpStatusCode.NotFound);
         }
 
-        private async Task<CosmosContainer> RunWithErrorAsync(
-            CosmosContainer container,
+        private async Task<Container> RunWithErrorAsync(
+            Container container,
             Action<CosmosBatch> appendOperation, 
             HttpStatusCode expectedFailedOperationStatusCode)
         { 

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchInvalidOptionsAsync()
         {
-            CosmosContainer container = CosmosBatchUnitTests.GetCosmosContainer();
+            Container container = CosmosBatchUnitTests.GetCosmosContainer();
 
             List<RequestOptions> badBatchOptionsList = new List<RequestOptions>()
             {
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchInvalidItemOptionsAsync()
         {
-            CosmosContainer container = CosmosBatchUnitTests.GetCosmosContainer();
+            Container container = CosmosBatchUnitTests.GetCosmosContainer();
 
             List<ItemRequestOptions> badItemOptionsList = new List<ItemRequestOptions>()
             {
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchNoOperationsAsync()
         {
-            CosmosContainer container = CosmosBatchUnitTests.GetCosmosContainer();
+            Container container = CosmosBatchUnitTests.GetCosmosContainer();
             CosmosBatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1))
                .ExecuteAsync();
 
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Task.FromResult(new CosmosResponseMessage(HttpStatusCode.OK));
             });
 
-            CosmosContainer container = CosmosBatchUnitTests.GetCosmosContainer(testHandler);
+            Container container = CosmosBatchUnitTests.GetCosmosContainer(testHandler);
 
             CosmosBatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1))
                 .CreateItem(createItem)
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return responseMessage;
             });
 
-            CosmosContainer container = CosmosBatchUnitTests.GetCosmosContainer(testHandler);
+            Container container = CosmosBatchUnitTests.GetCosmosContainer(testHandler);
 
             CosmosBatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1))
                 .ReadItem("id1")
@@ -436,17 +436,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private static CosmosContainer GetCosmosContainer(TestHandler testHandler = null)
+        private static Container GetCosmosContainer(TestHandler testHandler = null)
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(testHandler));
             CosmosDatabaseCore database = new CosmosDatabaseCore(client.ClientContext, CosmosBatchUnitTests.DatabaseId);
-            CosmosContainerCore cosmosContainerCore = new CosmosContainerCore(client.ClientContext, database, CosmosBatchUnitTests.ContainerId);
-            return cosmosContainerCore;
+            ContainerCore container = new ContainerCore(client.ClientContext, database, CosmosBatchUnitTests.ContainerId);
+            return container;
         }
 
-        private static CosmosContainerCore GetMockedContainer(string containerName = null)
+        private static ContainerCore GetMockedContainer(string containerName = null)
         {
-            Mock<CosmosContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
+            Mock<ContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             mockedContainer.Setup(c => c.ClientContext).Returns(CosmosBatchUnitTests.GetMockedClientContext());
             return mockedContainer.Object;
         }
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return mockContext.Object;
         }
 
-        private static TestItem Deserialize(Memory<byte> body, CosmosJsonSerializer serializer)
+        private static TestItem Deserialize(Memory<byte> body, CosmosSerializer serializer)
         {
             return serializer.FromStream<TestItem>(new MemoryStream(body.Span.ToArray()));
         }

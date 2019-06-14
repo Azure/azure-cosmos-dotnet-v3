@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal virtual async Task MaterializeResourceAsync(CosmosJsonSerializer serializer, CancellationToken cancellationToken)
+        internal virtual async Task MaterializeResourceAsync(CosmosSerializer serializer, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.ResourceStream != null)
             {
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
-        internal override Task MaterializeResourceAsync(CosmosJsonSerializer serializer, CancellationToken cancellationToken)
+        internal override Task MaterializeResourceAsync(CosmosSerializer serializer, CancellationToken cancellationToken)
         {
             if (this.body.IsEmpty && this.Resource != null)
             {

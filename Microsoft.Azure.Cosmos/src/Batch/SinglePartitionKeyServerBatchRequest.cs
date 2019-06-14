@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             int maxBodyLength,
             int maxOperationCount,
-            CosmosJsonSerializer serializer)
+            CosmosSerializer serializer)
             : base(maxBodyLength, maxOperationCount, serializer)
         {
             this.PartitionKey = partitionKey;
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             ArraySegment<ItemBatchOperation> operations,
             int maxBodyLength,
             int maxOperationCount,
-            CosmosJsonSerializer serializer,
+            CosmosSerializer serializer,
             CancellationToken cancellationToken)
         {
             SinglePartitionKeyServerBatchRequest request = new SinglePartitionKeyServerBatchRequest(partitionKey, maxBodyLength, maxOperationCount, serializer);

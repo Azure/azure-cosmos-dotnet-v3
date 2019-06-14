@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly PartitionKey partitionKey;
 
-        private readonly CosmosContainerCore container;
+        private readonly ContainerCore container;
 
         private List<ItemBatchOperation> operations;
 
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="container">Container that has items on which batch operations are to be performed.</param>
         /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
-        internal CosmosBatch(CosmosContainerCore container, PartitionKey partitionKey)
+        internal CosmosBatch(ContainerCore container, PartitionKey partitionKey)
         {
             this.container = container;
             this.partitionKey = partitionKey;
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Adds an operation to create an item into the batch.
         /// </summary>
-        /// <param name="item">A JSON serializable object that must contain an id property.<see cref="CosmosJsonSerializer"/> to implement a custom serializer.</param>
+        /// <param name="item">A JSON serializable object that must contain an id property.<see cref="CosmosSerializer"/> to implement a custom serializer.</param>
         /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
         /// <returns>The <see cref="CosmosBatch"/> instance with the operation added.</returns>
         /// <typeparam name="T">The type of item to be created.</typeparam>
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Adds an operation to upsert an item into the batch.
         /// </summary>
-        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer.</param>
+        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
         /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
         /// <returns>The <see cref="CosmosBatch"/> instance with the operation added.</returns>
         /// <typeparam name="T">The type of item to be created.</typeparam>
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
         /// Adds an operation to replace an item into the batch.
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
-        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer.</param>
+        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
         /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
         /// <returns>The <see cref="CosmosBatch"/> instance with the operation added.</returns>
         /// <typeparam name="T">The type of item to be created.</typeparam>

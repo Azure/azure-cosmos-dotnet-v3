@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly int maxOperationCount;
 
-        private readonly CosmosJsonSerializer serializer;
+        private readonly CosmosSerializer serializer;
 
         private ArraySegment<ItemBatchOperation> operations;
 
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxBodyLength">Maximum length allowed for the request body.</param>
         /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
         /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
-        protected ServerBatchRequest(int maxBodyLength, int maxOperationCount, CosmosJsonSerializer serializer)
+        protected ServerBatchRequest(int maxBodyLength, int maxOperationCount, CosmosSerializer serializer)
         {
             this.maxBodyLength = maxBodyLength;
             this.maxOperationCount = maxOperationCount;

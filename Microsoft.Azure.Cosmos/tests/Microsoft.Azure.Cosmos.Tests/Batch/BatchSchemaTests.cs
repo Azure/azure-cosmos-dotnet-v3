@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
-            CosmosJsonSerializer serializer = new CosmosJsonSerializerCore();
+            CosmosSerializer serializer = new CosmosJsonSerializerCore();
             SinglePartitionKeyServerBatchRequest batchResponse = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(
@@ -197,8 +197,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     CosmosRequestMessage xMessage = new CosmosRequestMessage();
                     CosmosRequestMessage yMessage = new CosmosRequestMessage();
-                    x.FillRequestOptions(xMessage);
-                    y.FillRequestOptions(yMessage);
+                    x.PopulateRequestOptions(xMessage);
+                    y.PopulateRequestOptions(yMessage);
 
                     foreach (string headerName in xMessage.Headers)
                     {

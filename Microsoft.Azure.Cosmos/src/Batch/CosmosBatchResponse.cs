@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan? retryAfter,
             string activityId,
             ServerBatchRequest serverRequest,
-            CosmosJsonSerializer serializer)
+            CosmosSerializer serializer)
             : this(statusCode, subStatusCode, errorMessage, requestCharge, retryAfter, activityId, serverRequest.Operations, serializer)
         {
         }
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan? retryAfter,
             string activityId,
             IReadOnlyList<ItemBatchOperation> operations,
-            CosmosJsonSerializer serializer)
+            CosmosSerializer serializer)
         {
             this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
-        internal virtual CosmosJsonSerializer Serializer { get; }
+        internal virtual CosmosSerializer Serializer { get; }
 
         internal IReadOnlyList<ItemBatchOperation> Operations { get; set; }
 
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
         internal static async Task<CosmosBatchResponse> FromResponseMessageAsync(
             CosmosResponseMessage responseMessage, 
             ServerBatchRequest serverRequest,
-            CosmosJsonSerializer serializer)
+            CosmosSerializer serializer)
         {
             using (responseMessage)
             {
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
         internal static async Task<CosmosBatchResponse> PopulateFromContentAsync(
             CosmosResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
-            CosmosJsonSerializer serializer)
+            CosmosSerializer serializer)
         {
             List<CosmosBatchOperationResult> results = new List<CosmosBatchOperationResult>();
 

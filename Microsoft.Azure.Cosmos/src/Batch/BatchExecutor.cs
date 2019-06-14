@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class BatchExecutor
     {
-        private readonly CosmosContainerCore container;
+        private readonly ContainerCore container;
 
         private readonly CosmosClient client;
 
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxServerRequestOperationCount;
 
         public BatchExecutor(
-            CosmosContainerCore container,
+            ContainerCore container,
             PartitionKey partitionKey,
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,
