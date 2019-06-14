@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal ThroughputResponse(
             HttpStatusCode httpStatusCode,
-            CosmosResponseMessageHeaders headers,
+            ResponseHeaders headers,
             ThroughputProperties throughputProperties)
             : base(
                 httpStatusCode,

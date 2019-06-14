@@ -56,14 +56,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A change feed response from cosmos service</returns>
-        public override Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             return this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.MaxItemCount, this.changeFeedOptions, cancellationToken)
                 .ContinueWith(task =>
                 {
-                    CosmosResponseMessage response = task.Result;
+                    ResponseMessage response = task.Result;
                     // Change Feed uses ETAG
                     this.continuationToken = response.Headers.ETag;
                     this.HasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
-        private Task<CosmosResponseMessage> NextResultSetDelegateAsync(
+        private Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
+            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
                 cosmosContainerCore: this.container,
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,

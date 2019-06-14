@@ -8,12 +8,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.Container;
 
     internal sealed class ChangeFeedEstimatorDispatcher
     {
-        private readonly Func<long, CancellationToken, Task> dispatchEstimation;
+        private readonly ChangesEstimationHandler dispatchEstimation;
 
-        public ChangeFeedEstimatorDispatcher(Func<long, CancellationToken, Task> dispatchEstimation, TimeSpan? estimationPeriod = null)
+        public ChangeFeedEstimatorDispatcher(
+            ChangesEstimationHandler dispatchEstimation, 
+            TimeSpan? estimationPeriod = null)
         {
             this.dispatchEstimation = dispatchEstimation;
             this.DispatchPeriod = estimationPeriod;
@@ -21,7 +24,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public TimeSpan? DispatchPeriod { get; private set; }
 
-        public async Task DispatchEstimationAsync(long estimation, CancellationToken cancellationToken)
+        public async Task DispatchEstimationAsync(
+            long estimation, 
+            CancellationToken cancellationToken)
         {
             try
             {

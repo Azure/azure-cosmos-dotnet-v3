@@ -162,12 +162,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             partitionKeyDefinition.Paths.Add(partitionKeyPath);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyDefinition);
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.CreateContainerStreamAsync(settings))
+            using (ResponseMessage containerResponse = await this.cosmosDatabase.CreateContainerStreamAsync(settings))
             {
                 Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             }
 
-            using (CosmosResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteStreamAsync())
+            using (ResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
             }
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainersIterator();
             while (resultSet.HasMoreResults)
             {
-                foreach (ContainerProperties setting in await resultSet.FetchNextSetAsync())
+                foreach (ContainerProperties setting in await resultSet.ReadNextAsync())
                 {
                     if (!containerIds.Contains(setting.Id))
                     {
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: new QueryRequestOptions());
             while (resultSet.HasMoreResults)
             {
-                using (CosmosResponseMessage message = await resultSet.FetchNextSetAsync())
+                using (ResponseMessage message = await resultSet.ReadNextAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
                     CosmosJsonSerializerCore defaultJsonSerializer = new CosmosJsonSerializerCore();
@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReplaceThroughputReourceTest()
+        public async Task ReadReplaceThroughputReourceTest()
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
@@ -441,16 +441,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = this.cosmosDatabase.GetContainer(containerName);
 
-            ThroughputResponse readThroughputResponse = await container.ReadProvisionedThroughputAsync();
+            ThroughputResponse readThroughputResponse = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughputResponse);
             Assert.IsNotNull(readThroughputResponse.Resource);
             Assert.IsNotNull(readThroughputResponse.MinThroughput);
             Assert.IsNotNull(readThroughputResponse.Resource.Throughput);
 
-            ThroughputResponse replaceThroughputResponse = await container.ReplaceProvisionedThroughputAsync(readThroughputResponse.Resource.Throughput.Value + 1000);
+            ThroughputResponse replaceThroughputResponse = await container.ReplaceThroughputAsync(readThroughputResponse.Resource.Throughput.Value + 1000);
             Assert.IsNotNull(replaceThroughputResponse);
             Assert.IsNotNull(replaceThroughputResponse.Resource);
             Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
+            try
+            {
+                ThroughputResponse nonExistingContainerThroughput = await this.cosmosDatabase.GetContainer("nonExistingContainer").ReadThroughputAsync();
+                Assert.Fail("It should throw Resource Not Found exception");
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(ex.InnerException.Message.Contains("Resource Not Found"));
+            }
 
             containerResponse = await container.DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
@@ -550,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> createItemResponse = await container.CreateItemAsync<dynamic>(payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(new Cosmos.PartitionKey(payload.user), payload.id);
+            ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(payload.id, new Cosmos.PartitionKey(payload.user));
             Assert.IsNotNull(readItemResponse.Resource);
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
 

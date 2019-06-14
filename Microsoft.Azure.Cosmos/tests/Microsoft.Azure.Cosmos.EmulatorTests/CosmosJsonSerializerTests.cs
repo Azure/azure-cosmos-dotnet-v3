@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int toStreamCount = 0;
             int fromStreamCount = 0;
             
-            Mock<CosmosJsonSerializer> mockJsonSerializer = new Mock<CosmosJsonSerializer>();
+            Mock<CosmosSerializer> mockJsonSerializer = new Mock<CosmosSerializer>();
 
             //The item object will be serialized with the custom json serializer.
             ToDoActivity testItem = CreateRandomToDoActivity();
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, toStreamCount);
             Assert.AreEqual(1, fromStreamCount);
 
-            await mockContainer.DeleteItemAsync<ToDoActivity>(new Cosmos.PartitionKey(testItem.status), testItem.id);
+            await mockContainer.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.status));
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await container.UpsertItemAsync(document);
 
-            CosmosResponseMessage cosmosResponseMessage = await container.ReadItemStreamAsync(new PartitionKey(document.status), document.id);
+            ResponseMessage cosmosResponseMessage = await container.ReadItemStreamAsync(document.id, new PartitionKey(document.status));
             StreamReader reader = new StreamReader(cosmosResponseMessage.Content);
             string text = reader.ReadToEnd();
 

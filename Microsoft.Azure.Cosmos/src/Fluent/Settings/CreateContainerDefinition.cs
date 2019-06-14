@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="Container"/> fluent definition for creation flows.
     /// </summary>
-    public class ContainerFluentDefinitionForCreate : ContainerFluentDefinition<ContainerFluentDefinitionForCreate>
+    public class CreateContainerDefinition : ContainerDefinition<CreateContainerDefinition>
     {
         private readonly CosmosDatabase cosmosContainers;
         private UniqueKeyPolicy uniqueKeyPolicy;
@@ -18,11 +18,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public ContainerFluentDefinitionForCreate()
+        public CreateContainerDefinition()
         {
         }
 
-        internal ContainerFluentDefinitionForCreate(
+        internal CreateContainerDefinition(
             CosmosDatabase cosmosContainers,
             string name,
             string partitionKeyPath = null)
@@ -34,10 +34,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines a Unique Key policy for this Azure Cosmos container.
         /// </summary>
-        /// <returns>An instance of <see cref="UniqueKeyFluentDefinition"/>.</returns>
-        public virtual UniqueKeyFluentDefinition WithUniqueKey()
+        /// <returns>An instance of <see cref="UniqueKeyDefinition"/>.</returns>
+        public virtual UniqueKeyDefinition WithUniqueKey()
         {
-            return new UniqueKeyFluentDefinition(
+            return new UniqueKeyDefinition(
                 this,
                 (uniqueKey) => this.AddUniqueKey(uniqueKey));
         }
@@ -45,10 +45,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defined the conflict resoltuion for Azure Cosmos container
         /// </summary>
-        /// <returns>An instance of <see cref="ConflictResolutionFluentDefinition"/>.</returns>
-        public virtual ConflictResolutionFluentDefinition WithConflictResolution()
+        /// <returns>An instance of <see cref="ConflictResolutionDefinition"/>.</returns>
+        public virtual ConflictResolutionDefinition WithConflictResolution()
         {
-            return new ConflictResolutionFluentDefinition(
+            return new ConflictResolutionDefinition(
                 this,
                 (conflictPolicy) => this.AddConflictResolution(conflictPolicy));
         }

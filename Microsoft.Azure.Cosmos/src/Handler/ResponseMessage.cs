@@ -14,25 +14,25 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a response from the Azure Cosmos DB service.
     /// </summary>
-    public class CosmosResponseMessage : IDisposable
+    public class ResponseMessage : IDisposable
     {
         /// <summary>
-        /// Create a <see cref="CosmosResponseMessage"/>
+        /// Create a <see cref="ResponseMessage"/>
         /// </summary>
-        public CosmosResponseMessage()
+        public ResponseMessage()
         {
-            this.Headers = new CosmosResponseMessageHeaders();
+            this.Headers = new ResponseHeaders();
         }
 
         /// <summary>
-        /// Create a <see cref="CosmosResponseMessage"/>
+        /// Create a <see cref="ResponseMessage"/>
         /// </summary>
         /// <param name="statusCode">The HttpStatusCode of the response</param>
-        /// <param name="requestMessage">The <see cref="CosmosRequestMessage"/> object</param>
+        /// <param name="requestMessage">The <see cref="Cosmos.RequestMessage"/> object</param>
         /// <param name="errorMessage">The reason for failures if any.</param>
-        public CosmosResponseMessage(
+        public ResponseMessage(
             HttpStatusCode statusCode,
-            CosmosRequestMessage requestMessage = null,
+            RequestMessage requestMessage = null,
             string errorMessage = null)
         {
             if ((statusCode < 0) || ((int)statusCode > 999))
@@ -43,23 +43,23 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
-            this.Headers = new CosmosResponseMessageHeaders();
+            this.Headers = new ResponseHeaders();
         }
 
         /// <summary>
-        /// Create a <see cref="CosmosResponseMessage"/>
+        /// Create a <see cref="ResponseMessage"/>
         /// </summary>
         /// <param name="statusCode">The HttpStatusCode of the response</param>
-        /// <param name="requestMessage">The <see cref="CosmosRequestMessage"/> object</param>
+        /// <param name="requestMessage">The <see cref="Cosmos.RequestMessage"/> object</param>
         /// <param name="errorMessage">The reason for failures if any.</param>
         /// <param name="error">The inner error object</param>
         /// <param name="headers">The headers for the response.</param>
-        internal CosmosResponseMessage(
+        internal ResponseMessage(
             HttpStatusCode statusCode,
-            CosmosRequestMessage requestMessage,
+            RequestMessage requestMessage,
             string errorMessage,
             Error error,
-            CosmosResponseMessageHeaders headers)
+            ResponseHeaders headers)
         {
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
@@ -92,14 +92,14 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ErrorMessage { get; internal set; }
 
         /// <summary>
-        /// Gets the current <see cref="CosmosResponseMessage"/> HTTP headers.
+        /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
         /// </summary>
-        public virtual CosmosResponseMessageHeaders Headers { get; }
+        public virtual ResponseHeaders Headers { get; }
 
         /// <summary>
         /// Gets the original request message
         /// </summary>
-        public virtual CosmosRequestMessage RequestMessage { get; internal set; }
+        public virtual RequestMessage RequestMessage { get; internal set; }
 
         /// <summary>
         /// Gets the internal error object.
@@ -116,11 +116,11 @@ namespace Microsoft.Azure.Cosmos
         public virtual bool IsSuccessStatusCode => ((int)this.StatusCode >= 200) && ((int)this.StatusCode <= 299);
 
         /// <summary>
-        /// Checks if the current <see cref="CosmosResponseMessage"/> has a successful status code, otherwise, throws.
+        /// Checks if the current <see cref="ResponseMessage"/> has a successful status code, otherwise, throws.
         /// </summary>
         /// <exception cref="CosmosException">An instance of <see cref="CosmosException"/> representing the error state.</exception>
-        /// <returns>The current <see cref="CosmosResponseMessage"/>.</returns>
-        public virtual CosmosResponseMessage EnsureSuccessStatusCode()
+        /// <returns>The current <see cref="ResponseMessage"/>.</returns>
+        public virtual ResponseMessage EnsureSuccessStatusCode()
         {
             if (!this.IsSuccessStatusCode)
             {
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Disposes the current <see cref="CosmosResponseMessage"/>.
+        /// Disposes the current <see cref="ResponseMessage"/>.
         /// </summary>
         public void Dispose()
         {

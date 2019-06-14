@@ -24,15 +24,15 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        public override void FillRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal override void PopulateRequestOptions(RequestMessage request)
         {
             if (this.PopulateQuotaInfo)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PopulateQuotaInfo, bool.TrueString);
             }
 
-            base.FillRequestOptions(request);
+            base.PopulateRequestOptions(request);
         }
     }
 }

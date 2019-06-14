@@ -50,17 +50,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestCommon.masterStalenessIntervalInSeconds = int.Parse(ConfigurationManager.AppSettings["MasterStalenessIntervalInSeconds"], CultureInfo.InvariantCulture);
         }
 
-        internal static CosmosClientBuilder GetDefaultConfiguration()
+        internal static ClientBuilder GetDefaultConfiguration()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
-            return new CosmosClientBuilder(accountEndPoint: endpoint, accountKey: authKey);
+            return new ClientBuilder(accountEndpoint: endpoint, accountKey: authKey);
         }
 
-        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        internal static CosmosClient CreateCosmosClient(Action<ClientBuilder> customizeClientBuilder = null)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            ClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(
             bool useGateway)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            ClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
             if (useGateway)
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
@@ -1390,7 +1390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int totalCount = 0;
             while (resultSetIterator.HasMoreResults)
             {
-                foreach (DatabaseProperties database in await resultSetIterator.FetchNextSetAsync())
+                foreach (DatabaseProperties database in await resultSetIterator.ReadNextAsync())
                 {
                     deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(database.Id)));
                     totalCount++;
@@ -1417,7 +1417,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (resultSetIterator.HasMoreResults)
             {
                 List<Task> deleteCollectionTasks = new List<Task>(10);
-                foreach (ContainerProperties container in await resultSetIterator.FetchNextSetAsync())
+                foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())
                 {
                     Logger.LogLine("Deleting Collection with following info Id:{0}, database Id: {1}", container.Id, database.Id);
                     deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.GetContainer(container.Id).DeleteAsync()));

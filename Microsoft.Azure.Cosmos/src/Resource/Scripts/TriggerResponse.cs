@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         internal TriggerResponse(
            HttpStatusCode httpStatusCode,
-           CosmosResponseMessageHeaders headers,
+           ResponseHeaders headers,
            TriggerProperties triggerProperties)
             : base(
                httpStatusCode,

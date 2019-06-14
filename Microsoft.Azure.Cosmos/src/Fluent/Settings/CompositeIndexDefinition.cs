@@ -10,13 +10,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Composite Index fluent definition.
     /// </summary>
     /// <seealso cref="CompositePath"/>
-    public class CompositeIndexFluentDefinition<T>
+    public class CompositeIndexDefinition<T>
     {
         private readonly Collection<CompositePath> compositePaths = new Collection<CompositePath>();
         private readonly T parent;
         private readonly Action<Collection<CompositePath>> attachCallback;
 
-        internal CompositeIndexFluentDefinition(
+        internal CompositeIndexDefinition(
             T parent,
             Action<Collection<CompositePath>> attachCallback)
         {
@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Add a path to the current <see cref="CompositePath"/> definition.
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
-        /// <returns>An instance of <see cref="CompositeIndexFluentDefinition{T}"/>.</returns>
-        public virtual CompositeIndexFluentDefinition<T> Path(string path)
+        /// <returns>An instance of <see cref="CompositeIndexDefinition{T}"/>.</returns>
+        public virtual CompositeIndexDefinition<T> Path(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -45,8 +45,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
         /// <param name="sortOrder"><see cref="CompositePathSortOrder"/> to apply on the path.</param>
-        /// <returns>An instance of <see cref="CompositeIndexFluentDefinition{T}"/>.</returns>
-        public virtual CompositeIndexFluentDefinition<T> Path(
+        /// <returns>An instance of <see cref="CompositeIndexDefinition{T}"/>.</returns>
+        public virtual CompositeIndexDefinition<T> Path(
             string path,
             CompositePathSortOrder sortOrder)
         {

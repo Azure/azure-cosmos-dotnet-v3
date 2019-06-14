@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<ContainerProperties> settings = new List<ContainerProperties>();
                 while (rr.HasMoreResults)
                 {
-                    settings.AddRange(await rr.FetchNextSetAsync());
+                    settings.AddRange(await rr.ReadNextAsync());
                 }
 
                 Assert.AreEqual(settings.Count, 1);
@@ -149,11 +149,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     doc3 = await container.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(resourceRandomId), id: resourceRandomId);
 
                     // read databaseCollection feed.
-                    FeedIterator<dynamic> itemIterator = container.GetItemsIterator<dynamic>();
+                    FeedIterator<dynamic> itemIterator = container.GetItemIterator<dynamic>();
                     int count = 0;
                     while (itemIterator.HasMoreResults)
                     {
-                        FeedResponse<dynamic> items = await itemIterator.FetchNextSetAsync();
+                        FeedResponse<dynamic> items = await itemIterator.ReadNextAsync();
                         count += items.Count();
                     }
                     Assert.AreEqual(3, count);
@@ -162,12 +162,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         bool bFound = false;
                         QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
-                        FeedIterator<Document> docServiceQuery = container.CreateItemQuery<Document>(
+                        FeedIterator<Document> docServiceQuery = container.GetItemQueryIterator<Document>(
                             sqlQueryDefinition: sqlQueryDefinition,
                             partitionKey: new Cosmos.PartitionKey(doc1.Id));
                         while (docServiceQuery.HasMoreResults)
                         {
-                            FeedResponse<Document> r = await docServiceQuery.FetchNextSetAsync();
+                            FeedResponse<Document> r = await docServiceQuery.ReadNextAsync();
                             if (r.Count() == 1)
                             {
                                 bFound = true;
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Body = "function() {var x = 10;}",
                     };
 
-                    Scripts scripts = container.GetScripts();
+                    Scripts scripts = container.Scripts;
 
                     StoredProcedureProperties storedProcedure1 = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(myStoredProcedure.Id, myStoredProcedure.Body));
                     myStoredProcedure.Body = "function() {var x = 5;}";
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<StoredProcedureProperties> storedProcedures = new List<StoredProcedureProperties>();
                     while (storedProcedureIter.HasMoreResults)
                     {
-                        storedProcedures.AddRange(await storedProcedureIter.FetchNextSetAsync());
+                        storedProcedures.AddRange(await storedProcedureIter.ReadNextAsync());
                     }
 
                     Assert.AreEqual(storedProcedures.Count, 1);
@@ -451,22 +451,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             myDocument.Title = "My new Book";
             // Testing the ReplaceDocumentAsync API with DocumentUri as the parameter
-            ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument.Id, myDocument);
+            ItemResponse<LinqGeneralBaselineTests.Book> replacedDocument = await collection.ReplaceItemAsync<LinqGeneralBaselineTests.Book>(myDocument, myDocument.Id);
 
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
-            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency : 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             sqlQueryText = @"select * from root r where r.title = ""My new Book""";
-            cosmosResultSet = collection.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             myDocument.Title = "My old Book";
             // Testing the ReplaceDocumentAsync API with Document SelfLink as the parameter
-            await collection.ReplaceItemAsync(myDocument.Id, myDocument);
+            await collection.ReplaceItemAsync(myDocument, myDocument.Id);
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
-            cosmosResultSet = collection.CreateItemQuery<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, maxConcurrency: 1, maxItemCount: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
         }
 
@@ -844,7 +844,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = await database.CreateContainerAsync(containerSetting);
             try
             {
-                ItemResponse<Document> docIgnore = await container.ReadItemAsync<Document>(new Cosmos.PartitionKey(docId), docId);
+                ItemResponse<Document> docIgnore = await container.ReadItemAsync<Document>(docId, new Cosmos.PartitionKey(docId));
                 Assert.IsNull(docIgnore.Resource);
                 Assert.AreEqual(docIgnore.StatusCode, HttpStatusCode.NotFound);
             }
@@ -858,7 +858,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Document doc1 = await container.CreateItemAsync<Document>(new Document() { Id = docId });
 
-            Document docIgnore1 = await container.ReadItemAsync<Document>(new Cosmos.PartitionKey(docId), docId);
+            Document docIgnore1 = await container.ReadItemAsync<Document>(docId, new Cosmos.PartitionKey(docId));
         }
 
         [TestMethod]
@@ -946,7 +946,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Document doc1 = await coll1.CreateItemAsync<Document>(documentDefinition);
 
                 // and then read it!
-                Document docIgnore = await coll1.ReadItemAsync<Document>(new Cosmos.PartitionKey("test"), documentId, null);
+                Document docIgnore = await coll1.ReadItemAsync<Document>(documentId, new Cosmos.PartitionKey("test"), null);
                 Assert.AreEqual(docIgnore.Id, documentId);
             }
 
@@ -1017,7 +1017,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // the url doesn't conform to the schema at at all.
-                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(new Cosmos.PartitionKey(doc1Id), "dba/what/colltions/abc");
+                ItemResponse<Document> response = await coll.ReadItemAsync<Document>("dba/what/colltions/abc", new Cosmos.PartitionKey(doc1Id));
                 Assert.IsNull(response.Resource);
                 Assert.AreEqual(response.StatusCode, HttpStatusCode.NotFound);
             }
@@ -1031,7 +1031,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // the url doesn't conform to the schema at at all.
-                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(new Cosmos.PartitionKey(doc1Id), "dbs/what/colltions/abc");
+                ItemResponse<Document> response = await coll.ReadItemAsync<Document>("dbs/what/colltions/abc", new Cosmos.PartitionKey(doc1Id));
                 Assert.IsNull(response.Resource);
                 Assert.AreEqual(response.StatusCode, HttpStatusCode.NotFound);
             }
@@ -1044,7 +1044,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // doing a document read with collection link
-                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(new Cosmos.PartitionKey(doc1Id), UriFactory.CreateDocumentCollectionUri(databaseId, collectionId).ToString());
+                ItemResponse<Document> response = await coll.ReadItemAsync<Document>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId).ToString(), new Cosmos.PartitionKey(doc1Id));
                 Assert.IsNull(response.Resource);
                 Assert.AreEqual(response.StatusCode, HttpStatusCode.NotFound);
             }
@@ -1147,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     documentCreated.Id = resourceName;
-                    Document document = await coll1.ReplaceItemAsync<Document>(documentCreated.Id, documentCreated);
+                    Document document = await coll1.ReplaceItemAsync<Document>(documentCreated, documentCreated.Id);
                     Assert.Fail("Should have thrown exception in here");
                 }
                 catch (ArgumentException e)
@@ -1736,7 +1736,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await database.CreateContainerAsync(new ContainerProperties { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
                 container = client.GetDatabase("db1").GetContainer("coll1");
-                Scripts scripts = container.GetScripts();
+                Scripts scripts = container.Scripts;
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("sproc1", "function() {return 1}"));
                 for (int i = 0; i < 10; i++)
                 {
@@ -1887,7 +1887,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (iterator.HasMoreResults)
             {
-                FeedResponse<T> countiter = await iterator.FetchNextSetAsync();
+                FeedResponse<T> countiter = await iterator.ReadNextAsync();
                 count += countiter.Count();
 
             }

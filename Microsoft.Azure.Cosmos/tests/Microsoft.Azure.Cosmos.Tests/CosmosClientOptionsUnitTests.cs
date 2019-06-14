@@ -30,20 +30,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeSpan requestTimeout = TimeSpan.FromDays(1);
             int maxConnections = 9001;
             string userAgentSuffix = "testSuffix";
-            CosmosRequestHandler preProcessHandler = new TestHandler();
+            RequestHandler preProcessHandler = new TestHandler();
             ApiType apiType = ApiType.Sql;
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
 
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndPoint: endpoint,
+            ClientBuilder cosmosClientBuilder = new ClientBuilder(
+                accountEndpoint: endpoint,
                 accountKey: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+            ClientOptions clientOptions = cosmosClient.ClientOptions;
 
-            Assert.AreEqual(endpoint, clientOptions.EndPoint.OriginalString, "AccountEndPoint did not save correctly");
-            Assert.AreEqual(key, clientOptions.AccountKey, "AccountKey did not save correctly");
+            Assert.AreEqual(endpoint, cosmosClient.Endpoint.OriginalString, "AccountEndpoint did not save correctly");
+            Assert.AreEqual(key, cosmosClient.AccountKey, "AccountKey did not save correctly");
 
             //Verify the default values are different from the new values
             Assert.AreNotEqual(region, clientOptions.ApplicationRegion);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // All of the public properties and methods should be virtual to allow users to 
             // create unit tests by mocking the different types.
-            Type type = typeof(CosmosClientOptions);
+            Type type = typeof(ClientOptions);
 
 
             System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -114,12 +114,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnBadDelegatingHandler()
         {
-            CosmosRequestHandler handler = new TestHandler();
-            CosmosRequestHandler innerHandler = new TestHandler();
+            RequestHandler handler = new TestHandler();
+            RequestHandler innerHandler = new TestHandler();
 
             //Inner handler is required to be null to allow the client to connect it to other handlers
             handler.InnerHandler = innerHandler;
-            new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, "testKey")
+            new ClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, "testKey")
                 .AddCustomHandlers(handler);
         }
 
@@ -127,14 +127,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullEndpoint()
         {
-            new CosmosClientBuilder(null, "testKey");
+            new ClientBuilder(null, "testKey");
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullConnectionString()
         {
-            new CosmosClientBuilder(null);
+            new ClientBuilder(null);
         }
 
         [TestMethod]
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnMissingAccountKeyInConnectionString()
         {
             string invalidConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;";
-            new CosmosClientBuilder(invalidConnectionString);
+            new ClientBuilder(invalidConnectionString);
         }
 
         [TestMethod]
@@ -150,24 +150,24 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnMissingAccountEndpointInConnectionString()
         {
             string invalidConnectionString = "AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            new CosmosClientBuilder(invalidConnectionString);
+            new ClientBuilder(invalidConnectionString);
         }
 
         [TestMethod]
         public void AssertJsonSerializer()
         {
             string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
+            var cosmosClientBuilder = new ClientBuilder(connectionString);
             var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             Assert.IsInstanceOfType(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
             Assert.AreEqual(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, cosmosClient.ClientOptions.PropertiesSerializer);
 
-            CosmosJsonSerializer defaultSerializer = cosmosClient.ClientOptions.PropertiesSerializer;
-            CosmosJsonSerializer mockJsonSerializer = new Mock<CosmosJsonSerializer>().Object;
+            CosmosSerializer defaultSerializer = cosmosClient.ClientOptions.PropertiesSerializer;
+            CosmosSerializer mockJsonSerializer = new Mock<CosmosSerializer>().Object;
             cosmosClientBuilder.WithCustomJsonSerializer(mockJsonSerializer);
             var cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
             Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.PropertiesSerializer);
-            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.CosmosSerializer);
+            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.Serializer);
             Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
             Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault).InternalJsonSerializer);
         }

@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOption = new QueryRequestOptions();
             requestOption.RequestContinuation = "SomeToken";
 
-            CosmosRequestMessage testMessage = new CosmosRequestMessage();
-            requestOption.FillRequestOptions(testMessage);
+            RequestMessage testMessage = new RequestMessage();
+            requestOption.PopulateRequestOptions(testMessage);
 
             Assert.IsNull(testMessage.Headers.Continuation);
         }

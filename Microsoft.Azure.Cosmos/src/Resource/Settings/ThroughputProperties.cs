@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
     /// The example below fetch the ThroughputProperties on testContainer.
     /// <code language="c#">
     /// <![CDATA[ 
-    /// ThroughputProperties throughputProperties = await testContainer.ReadProvisionedThroughputAsync().Resource;
+    /// ThroughputProperties throughputProperties = await testContainer.ReadThroughputAsync().Resource;
     /// ]]>
     /// </code>
     /// </example>

@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = this.CreateRandomToDoActivity();
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
-                using (CosmosResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
+                using (ResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            using (CosmosResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
+            using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
             {
                 Assert.IsNotNull(deleteResponse);
                 Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 //Create the object
-                using (CosmosResponseMessage response = await this.Container.UpsertItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
+                using (ResponseMessage response = await this.Container.UpsertItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
@@ -306,13 +306,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             testItem.taskNum = 9001;
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
-                using (CosmosResponseMessage response = await this.Container.UpsertItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
+                using (ResponseMessage response = await this.Container.UpsertItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 }
             }
-            using (CosmosResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
+            using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
             {
                 Assert.IsNotNull(deleteResponse);
                 Assert.AreEqual(deleteResponse.StatusCode, HttpStatusCode.NoContent);
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 //Replace a non-existing item. It should fail, and not throw an exception.
-                using (CosmosResponseMessage response = await this.Container.ReplaceItemStreamAsync(
+                using (ResponseMessage response = await this.Container.ReplaceItemStreamAsync(
                     partitionKey: new Cosmos.PartitionKey(testItem.status),
                     id: testItem.id,
                     streamPayload: stream))
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
                 //Create the item
-                using (CosmosResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
+                using (ResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), streamPayload: stream))
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
@@ -351,13 +351,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             testItem.taskNum = 9001;
             using (Stream stream = this.jsonSerializer.ToStream<ToDoActivity>(testItem))
             {
-                using (CosmosResponseMessage response = await this.Container.ReplaceItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id, streamPayload: stream))
+                using (ResponseMessage response = await this.Container.ReplaceItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id, streamPayload: stream))
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 }
 
-                using (CosmosResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
+                using (ResponseMessage deleteResponse = await this.Container.DeleteItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id))
                 {
                     Assert.IsNotNull(deleteResponse);
                     Assert.AreEqual(deleteResponse.StatusCode, HttpStatusCode.NoContent);
@@ -377,17 +377,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int pageSize = 1;
             ItemRequestOptions requestOptions = new ItemRequestOptions();
             FeedIterator feedIterator =
-                this.Container.GetItemsStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
+                this.Container.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
 
             while (feedIterator.HasMoreResults)
             {
                 if (useStatelessIterator)
                 {
-                    feedIterator = this.Container.GetItemsStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
+                    feedIterator = this.Container.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
                 }
 
-                using (CosmosResponseMessage responseMessage =
-                    await feedIterator.FetchNextSetAsync(this.cancellationToken))
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastContinuationToken = responseMessage.Headers.Continuation;
 
@@ -414,10 +414,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
             HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
             FeedIterator<ToDoActivity> feedIterator =
-                this.Container.GetItemsIterator<ToDoActivity>();
+                this.Container.GetItemIterator<ToDoActivity>();
             while (feedIterator.HasMoreResults)
             {
-                foreach (ToDoActivity toDoActivity in await feedIterator.FetchNextSetAsync(this.cancellationToken))
+                foreach (ToDoActivity toDoActivity in await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     if (itemIds.Contains(toDoActivity.id))
                     {
@@ -469,11 +469,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // }
 
             FeedIterator setIterator =
-                this.Container.GetItemsStreamIterator();
+                this.Container.GetItemStreamIterator();
             FeedIterators.Add(setIterator);
 
             FeedIterator queryIterator =
-                this.Container.CreateItemQueryStream(@"select * from t where t.id != """" ", maxConcurrency: 1, maxItemCount: 4);
+                this.Container.GetItemQueryStreamIterator(@"select * from t where t.id != """" ", maxConcurrency: 1, maxItemCount: 4);
             FeedIterators.Add(queryIterator);
             string previousResult = null;
 
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 int count = 0;
                 while (iterator.HasMoreResults)
                 {
-                    CosmosResponseMessage response = await iterator.FetchNextSetAsync(this.cancellationToken);
+                    ResponseMessage response = await iterator.ReadNextAsync(this.cancellationToken);
                     response.EnsureSuccessStatusCode();
 
                     using (StreamReader sr = new StreamReader(response.Content))
@@ -547,12 +547,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 iterationCount++;
                 FeedIterator feedIterator = this.Container
-                    .CreateItemQueryStream(sql, 1, new Cosmos.PartitionKey(find.status),
+                    .GetItemQueryStreamIterator(sql, 1, new Cosmos.PartitionKey(find.status),
                         maxItemCount: maxItemCount,
                         continuationToken: lastContinuationToken,
                         requestOptions: new QueryRequestOptions());
 
-                CosmosResponseMessage response = await feedIterator.FetchNextSetAsync();
+                ResponseMessage response = await feedIterator.ReadNextAsync();
                 lastContinuationToken = response.Headers.Continuation;
                 Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 JsonSerializer serializer = new JsonSerializer();
@@ -608,10 +608,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             FeedIterator<ToDoActivity> feedIterator =
-                this.Container.CreateItemQuery<ToDoActivity>(sql, maxConcurrency: 1, maxItemCount: 1, requestOptions: requestOptions);
+                this.Container.GetItemQueryIterator<ToDoActivity>(sql, maxConcurrency: 1, maxItemCount: 1, requestOptions: requestOptions);
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<ToDoActivity> iter = await feedIterator.FetchNextSetAsync();
+                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
                 Assert.AreEqual(1, iter.Count());
                 ToDoActivity response = iter.First();
                 Assert.AreEqual(find.id, response.id);
@@ -637,10 +637,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<ToDoActivity> resultList = new List<ToDoActivity>();
             double totalRequstCharge = 0;
             FeedIterator feedIterator =
-                this.Container.CreateItemQueryStream(sql, maxConcurrency: 5, maxItemCount: 1, requestOptions: requestOptions);
+                this.Container.GetItemQueryStreamIterator(sql, maxConcurrency: 5, maxItemCount: 1, requestOptions: requestOptions);
             while (feedIterator.HasMoreResults)
             {
-                CosmosResponseMessage iter = await feedIterator.FetchNextSetAsync();
+                ResponseMessage iter = await feedIterator.ReadNextAsync();
                 Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
@@ -674,10 +674,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<ToDoActivity> resultList = new List<ToDoActivity>();
             double totalRequstCharge = 0;
             FeedIterator feedIterator =
-                this.Container.CreateItemQueryStream(sql, maxConcurrency: 5, maxItemCount: 5);
+                this.Container.GetItemQueryStreamIterator(sql, maxConcurrency: 5, maxItemCount: 5);
             while (feedIterator.HasMoreResults)
             {
-                CosmosResponseMessage iter = await feedIterator.FetchNextSetAsync();
+                ResponseMessage iter = await feedIterator.ReadNextAsync();
                 Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
@@ -715,12 +715,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string findPkValue = findItems.First().status;
             double totalRequstCharge = 0;
             FeedIterator setIterator =
-                this.Container.CreateItemQueryStream(sql, maxConcurrency: 1, partitionKey: new Cosmos.PartitionKey(findPkValue));
+                this.Container.GetItemQueryStreamIterator(sql, maxConcurrency: 1, partitionKey: new Cosmos.PartitionKey(findPkValue));
 
             List<ToDoActivity> foundItems = new List<ToDoActivity>();
             while (setIterator.HasMoreResults)
             {
-                CosmosResponseMessage iter = await setIterator.FetchNextSetAsync();
+                ResponseMessage iter = await setIterator.ReadNextAsync();
                 Assert.IsTrue(iter.IsSuccessStatusCode);
                 Assert.IsNull(iter.ErrorMessage);
                 totalRequstCharge += iter.Headers.RequestCharge;
@@ -747,9 +747,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
-            CosmosResponseMessage response = await this.Container.ReadItemStreamAsync(
-                null,
+            ResponseMessage response = await this.Container.ReadItemStreamAsync(
                 Guid.NewGuid().ToString(),
+                null,
                 itemRequestOptions);
 
             // Ideally it should be NotFound
@@ -832,10 +832,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<ToDoActivity> resultList = new List<ToDoActivity>();
             double totalRequstCharge = 0;
             FeedIterator feedIterator =
-                this.Container.CreateItemQueryStream(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
+                this.Container.GetItemQueryStreamIterator(sql, maxConcurrency: 5, maxItemCount: 5, requestOptions: requestOptions);
             while (feedIterator.HasMoreResults)
             {
-                CosmosResponseMessage response = await feedIterator.FetchNextSetAsync();
+                ResponseMessage response = await feedIterator.ReadNextAsync();
                 Assert.IsTrue(response.IsSuccessStatusCode);
                 Assert.IsNull(response.ErrorMessage);
                 totalRequstCharge += response.Headers.RequestCharge;
@@ -887,19 +887,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Test max size at 1
             FeedIterator<ToDoActivity> feedIterator =
-                this.Container.CreateItemQuery<ToDoActivity>(sql, new Cosmos.PartitionKey(toDoActivity.status), maxItemCount: 1);
+                this.Container.GetItemQueryIterator<ToDoActivity>(sql, new Cosmos.PartitionKey(toDoActivity.status), maxItemCount: 1);
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<ToDoActivity> iter = await feedIterator.FetchNextSetAsync();
+                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
                 Assert.AreEqual(1, iter.Count());
             }
 
             // Test max size at 2
             FeedIterator<ToDoActivity> setIteratorMax2 =
-                this.Container.CreateItemQuery<ToDoActivity>(sql, new Cosmos.PartitionKey(toDoActivity.status), maxItemCount: 2);
+                this.Container.GetItemQueryIterator<ToDoActivity>(sql, new Cosmos.PartitionKey(toDoActivity.status), maxItemCount: 2);
             while (setIteratorMax2.HasMoreResults)
             {
-                FeedResponse<ToDoActivity> iter = await setIteratorMax2.FetchNextSetAsync();
+                FeedResponse<ToDoActivity> iter = await setIteratorMax2.ReadNextAsync();
                 Assert.AreEqual(2, iter.Count());
             }
         }
@@ -915,13 +915,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                FeedIterator<dynamic> resultSet = this.Container.CreateItemQuery<dynamic>(
+                FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
                     sqlQueryText: "SELECT r.id FROM root r WHERE r._ts > 0",
                     maxConcurrency: 1,
                     maxItemCount: 10,
                     requestOptions: new QueryRequestOptions() { ResponseContinuationTokenLimitInKb = 0 });
 
-                await resultSet.FetchNextSetAsync();
+                await resultSet.ReadNextAsync();
                 Assert.Fail("Expected query to fail");
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
@@ -931,11 +931,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                FeedIterator<dynamic> resultSet = this.Container.CreateItemQuery<dynamic>(
+                FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
                     sqlQueryText: "SELECT r.id FROM root r WHERE r._ts >!= 0",
                     maxConcurrency: 1);
 
-                await resultSet.FetchNextSetAsync();
+                await resultSet.ReadNextAsync();
                 Assert.Fail("Expected query to fail");
             }
             catch (CosmosException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
@@ -1034,37 +1034,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Quering items on fixed container with cross partition enabled.
                 QueryDefinition sql = new QueryDefinition("select * from r");
                 FeedIterator<dynamic> feedIterator = fixedContainer
-                    .CreateItemQuery<dynamic>(sql, maxConcurrency: 1, maxItemCount: 10);
+                    .GetItemQueryIterator<dynamic>(sql, maxConcurrency: 1, maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
                 {
-                    FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
+                    FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();
                     Assert.AreEqual(3, queryResponse.Count());
                 }
 
                 //Reading all items on fixed container.
                 feedIterator = fixedContainer
-                    .GetItemsIterator<dynamic>(maxItemCount: 10);
+                    .GetItemIterator<dynamic>(maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
                 {
-                    FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
+                    FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();
                     Assert.AreEqual(3, queryResponse.Count());
                 }
 
                 //Quering items on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 feedIterator = fixedContainer
-                    .CreateItemQuery<dynamic>(sql, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue, maxItemCount: 10);
+                    .GetItemQueryIterator<dynamic>(sql, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue, maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
                 {
-                    FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
+                    FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();
                     Assert.AreEqual(2, queryResponse.Count());
                 }
 
                 //Quering items on fixed container with non-none PK.
                 feedIterator = fixedContainer
-                    .CreateItemQuery<dynamic>(sql, partitionKey: new Cosmos.PartitionKey(itemWithPK.status), maxItemCount: 10);
+                    .GetItemQueryIterator<dynamic>(sql, partitionKey: new Cosmos.PartitionKey(itemWithPK.status), maxItemCount: 10);
                 while (feedIterator.HasMoreResults)
                 {
-                    FeedResponse<dynamic> queryResponse = await feedIterator.FetchNextSetAsync();
+                    FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();
                     Assert.AreEqual(1, queryResponse.Count());
                 }
 
@@ -1108,15 +1108,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating items for query.
             IList<ToDoActivity> itemList = await CreateRandomItems(pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
 
-            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.CreateItemQuery<ToDoActivity>();
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQuery<ToDoActivity>();
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
             //V3 Asynchronous query execution with LINQ query generation sql text.
             FeedIterator<ToDoActivity> setIterator = this.Container
-                   .CreateItemQuery<ToDoActivity>(queriable.ToSqlQueryText(), maxConcurrency: 2);
+                   .GetItemQueryIterator<ToDoActivity>(queriable.ToSqlQueryText(), maxConcurrency: 2);
             int resultsFetched = 0;
             while (setIterator.HasMoreResults)
             {
-                FeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                FeedResponse<ToDoActivity> queryResponse = await setIterator.ReadNextAsync();
                 resultsFetched += queryResponse.Count();
 
                 // For the items returned with NonePartitionKeyValue
@@ -1130,7 +1130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             //LINQ query execution without partition key.
-            linqQueryable = this.Container.CreateItemQuery<ToDoActivity>(allowSynchronousQueryExecution: true);
+            linqQueryable = this.Container.GetItemLinqQuery<ToDoActivity>(allowSynchronousQueryExecution: true);
             queriable = linqQueryable.Where(item => (item.taskNum < 100));
 
             Assert.AreEqual(2, queriable.Count());
@@ -1138,12 +1138,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemList[1].id, queriable.ToList()[1].id);
 
             //LINQ query execution with wrong partition key.
-            linqQueryable = this.Container.CreateItemQuery<ToDoActivity>(partitionKey: "test", allowSynchronousQueryExecution: true);
+            linqQueryable = this.Container.GetItemLinqQuery<ToDoActivity>(partitionKey: new Cosmos.PartitionKey("test"), allowSynchronousQueryExecution: true);
             queriable = linqQueryable.Where(item => (item.taskNum < 100));
             Assert.AreEqual(0, queriable.Count());
 
             //LINQ query execution with correct partition key.
-            linqQueryable = this.Container.CreateItemQuery<ToDoActivity>(partitionKey: itemList[1].status, allowSynchronousQueryExecution: true, requestOptions: new QueryRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual });
+            linqQueryable = this.Container.GetItemLinqQuery<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(itemList[1].status), allowSynchronousQueryExecution: true, requestOptions: new QueryRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual });
             queriable = linqQueryable.Where(item => (item.taskNum < 100));
             Assert.AreEqual(1, queriable.Count());
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
@@ -1151,7 +1151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating LINQ query without setting allowSynchronousQueryExecution true.
             try
             {
-                linqQueryable = this.Container.CreateItemQuery<ToDoActivity>(partitionKey: itemList[0].status);
+                linqQueryable = this.Container.GetItemLinqQuery<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(itemList[0].status));
                 queriable = linqQueryable.Where(item => (item.taskNum < 100));
                 queriable.ToList();
                 Assert.Fail("Should throw NotSupportedException");
@@ -1185,10 +1185,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 int resultsFetched = 0;
                 QueryDefinition sql = new QueryDefinition("select * from r");
                 FeedIterator<ToDoActivity> setIterator = fixedContainer
-                    .CreateItemQuery<ToDoActivity>(sql, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue, maxItemCount: 2);
+                    .GetItemQueryIterator<ToDoActivity>(sql, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue, maxItemCount: 2);
                 while (setIterator.HasMoreResults)
                 {
-                    FeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    FeedResponse<ToDoActivity> queryResponse = await setIterator.ReadNextAsync();
                     resultsFetched += queryResponse.Count();
 
                     // For the items returned with NonePartitionKeyValue
@@ -1217,19 +1217,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Re-Query the items on the container with NonePartitionKeyValue
                 setIterator = fixedContainer
-                    .CreateItemQuery<ToDoActivity>(sql, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue, maxItemCount: ItemsToCreate);
+                    .GetItemQueryIterator<ToDoActivity>(sql, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue, maxItemCount: ItemsToCreate);
                 Assert.IsTrue(setIterator.HasMoreResults);
                 {
-                    FeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    FeedResponse<ToDoActivity> queryResponse = await setIterator.ReadNextAsync();
                     Assert.AreEqual(0, queryResponse.Count());
                 }
 
                 // Query the items with newly inserted PartitionKey
                 setIterator = fixedContainer
-                    .CreateItemQuery<ToDoActivity>(sql, partitionKey: new Cosmos.PartitionKey("TestPK"), maxItemCount: ItemsToCreate + 1);
+                    .GetItemQueryIterator<ToDoActivity>(sql, partitionKey: new Cosmos.PartitionKey("TestPK"), maxItemCount: ItemsToCreate + 1);
                 Assert.IsTrue(setIterator.HasMoreResults);
                 {
-                    FeedResponse<ToDoActivity> queryResponse = await setIterator.FetchNextSetAsync();
+                    FeedResponse<ToDoActivity> queryResponse = await setIterator.ReadNextAsync();
                     Assert.AreEqual(ItemsToCreate, queryResponse.Count());
                 }
             }
@@ -1252,7 +1252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sessionToken = responseAstype.Headers.Session;
             Assert.IsNotNull(sessionToken);
 
-            CosmosResponseMessage readResponse = await this.Container.ReadItemStreamAsync(new Cosmos.PartitionKey(temp.status), temp.id, new ItemRequestOptions() { SessionToken = sessionToken });
+            ResponseMessage readResponse = await this.Container.ReadItemStreamAsync(temp.id, new Cosmos.PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = sessionToken });
 
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.IsNotNull(readResponse.Headers.Session);
@@ -1469,13 +1469,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task TestNonePKForNonExistingContainer(Container container)
         {
             // Stream implementation should not throw
-            CosmosResponseMessage response = await container.ReadItemStreamAsync(Cosmos.PartitionKey.NonePartitionKeyValue, "id1");
+            ResponseMessage response = await container.ReadItemStreamAsync("id1", Cosmos.PartitionKey.NonePartitionKeyValue);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
             Assert.IsNotNull(response.Headers.ActivityId);
             Assert.IsNotNull(response.ErrorMessage);
 
             // FOr typed also its not error
-            var typedResponse = await container.ReadItemAsync<string>(Cosmos.PartitionKey.NonePartitionKeyValue, "id1");
+            var typedResponse = await container.ReadItemAsync<string>("id1", Cosmos.PartitionKey.NonePartitionKeyValue);
             Assert.AreEqual(HttpStatusCode.NotFound, typedResponse.StatusCode);
             Assert.IsNotNull(typedResponse.Headers.ActivityId);
         }

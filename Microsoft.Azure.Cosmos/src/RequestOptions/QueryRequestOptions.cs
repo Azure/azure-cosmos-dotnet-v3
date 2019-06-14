@@ -152,8 +152,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        public override void FillRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal override void PopulateRequestOptions(RequestMessage request)
         {
             request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
             request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationOptions.ContentSerializationFormat);
             }
 
-            base.FillRequestOptions(request);
+            base.PopulateRequestOptions(request);
         }
 
         internal QueryRequestOptions Clone()
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static void FillContinuationToken(
-            CosmosRequestMessage request,
+            RequestMessage request,
             string continuationToken)
         {
             if (!string.IsNullOrWhiteSpace(continuationToken))
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static void FillMaxItemCount(
-            CosmosRequestMessage request,
+            RequestMessage request,
             int? maxItemCount)
         {
             if (maxItemCount != null && maxItemCount.HasValue)

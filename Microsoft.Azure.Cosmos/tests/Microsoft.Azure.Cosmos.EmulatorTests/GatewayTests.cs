@@ -130,15 +130,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = transientProcedure
             };
-            StoredProcedureResponse retrievedStoredProcedure = collection.GetScripts().CreateStoredProcedureAsync(storedProcedure).Result;
+            StoredProcedureResponse retrievedStoredProcedure = collection.Scripts.CreateStoredProcedureAsync(storedProcedure).Result;
             Assert.IsNotNull(retrievedStoredProcedure);
             Assert.AreEqual(storedProcedure.Id, retrievedStoredProcedure.Resource.Id);
 
-            response = collection.GetScripts().ExecuteStoredProcedureAsync<object, TValue>(new Cosmos.PartitionKey(partitionKey), storedProcedure.Id, null).Result;
+            response = collection.Scripts.ExecuteStoredProcedureAsync<object, TValue>(new Cosmos.PartitionKey(partitionKey), storedProcedure.Id, null).Result;
             Assert.IsNotNull(response);
 
             // delete
-            StoredProcedureResponse deleteResponse = collection.GetScripts().DeleteStoredProcedureAsync(storedProcedure.Id).Result;
+            StoredProcedureResponse deleteResponse = collection.Scripts.DeleteStoredProcedureAsync(storedProcedure.Id).Result;
             Assert.IsNotNull(deleteResponse);
 
             return response;
@@ -1427,7 +1427,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 __.readDocuments(__.getSelfLink(), { pageSize : 1, continuation : ''}, callback);
             }";
             //Script cannot timeout.
-            Scripts scripts = collection.GetScripts();
+            Scripts scripts = collection.Scripts;
             StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
             string result = await scripts.ExecuteStoredProcedureAsync<object ,string >(storedProcedureId : "scriptId", partitionKey : new Cosmos.PartitionKey(documentDefinition.Id), input : null);
             await database.DeleteAsync();
@@ -1473,7 +1473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Script cannot timeout.
             try
             {
-                Scripts scripts = collection.GetScripts();
+                Scripts scripts = collection.Scripts;
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
                 string result = await scripts.ExecuteStoredProcedureAsync<object, string>(new Cosmos.PartitionKey(document.Id), "scriptId", input: null);
             }
@@ -1507,7 +1507,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             Container collection = await database.CreateContainerAsync(collectionSpec);
 
-            Scripts scripts = collection.GetScripts();
+            Scripts scripts = collection.Scripts;
             StoredProcedureProperties sprocUri = await scripts.ReadStoredProcedureAsync("__.sys.echo");
             string input = "foobar";
 
@@ -3345,7 +3345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             dynamic retrievedDocument = await collection.CreateItemAsync(document, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            FeedIterator<Document> queriedDocuments = collection.CreateItemQuery<Document>(sqlQueryText : @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions : new QueryRequestOptions { EnableCrossPartitionQuery = true});
+            FeedIterator<Document> queriedDocuments = collection.GetItemQueryIterator<Document>(sqlQueryText : @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions : new QueryRequestOptions { EnableCrossPartitionQuery = true});
 
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
@@ -3353,28 +3353,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Include });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = collection.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            queriedDocuments = collection.GetItemQueryIterator<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(1, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item : (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = collection.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            queriedDocuments = collection.GetItemQueryIterator<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Replace document to not include in index");
             retrievedDocument = await collection.ReplaceItemAsync(id: documentName, item: (Document)retrievedDocument, requestOptions: new ItemRequestOptions { IndexingDirective = Cosmos.IndexingDirective.Exclude });
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = collection.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            queriedDocuments = collection.GetItemQueryIterator<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             Logger.LogLine("Delete document");
             await collection.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(documentName), id: documentName);
 
             Logger.LogLine("Querying Document to ensure if document is not indexed");
-            queriedDocuments = collection.CreateItemQuery<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
+            queriedDocuments = collection.GetItemQueryIterator<Document>(sqlQueryText: @"select * from root r where r.StringField=""222""", maxConcurrency: 1, requestOptions: new QueryRequestOptions { EnableCrossPartitionQuery = true });
             Assert.AreEqual(0, await GetCountFromIterator(queriedDocuments));
 
             await database.DeleteAsync();
@@ -3611,7 +3611,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = 0;
             while (iterator.HasMoreResults)
             {
-                FeedResponse<T> countiter = await iterator.FetchNextSetAsync();
+                FeedResponse<T> countiter = await iterator.ReadNextAsync();
                 count += countiter.Count();
                 
             }

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class FeedIteratorCore : FeedIterator
     {
-        internal delegate Task<CosmosResponseMessage> NextResultSetDelegate(
+        internal delegate Task<ResponseMessage> NextResultSetDelegate(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
@@ -63,15 +63,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosResponseMessage response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken);
+            ResponseMessage response = await this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken);
             this.continuationToken = response.Headers.Continuation;
             this.HasMoreResults = GetHasMoreResults(this.continuationToken, response.StatusCode);
             return response;
         }
 
-        internal static string GetContinuationToken(CosmosResponseMessage httpResponseMessage)
+        internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
         {
             return httpResponseMessage.Headers.Continuation;
         }
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -157,8 +157,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static ReadFeedResponse<T> CreateCosmosQueryResponse(
-                CosmosResponseMessage cosmosResponseMessage,
-                CosmosJsonSerializer jsonSerializer)
+                ResponseMessage cosmosResponseMessage,
+                CosmosSerializer jsonSerializer)
         {
             using (cosmosResponseMessage)
             {

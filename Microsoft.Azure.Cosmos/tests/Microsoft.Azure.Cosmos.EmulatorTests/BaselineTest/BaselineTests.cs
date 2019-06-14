@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             }
         }
 
-        public class CustomJsonSerializer : CosmosJsonSerializer
+        public class CustomJsonSerializer : CosmosSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
             private JsonSerializer serializer;

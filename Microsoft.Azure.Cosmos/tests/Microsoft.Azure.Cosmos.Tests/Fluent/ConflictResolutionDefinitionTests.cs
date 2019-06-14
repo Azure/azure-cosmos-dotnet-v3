@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
     using Moq;
 
     [TestClass]
-    public class ConflictResolutionFluentDefinitionTests
+    public class ConflictResolutionDefinitionTests
     {
         [TestMethod]
         public void AttachReturnsCorrectResponse()
         {
-            Mock<ContainerFluentDefinitionForCreate> mockContainerDefinition = new Mock<ContainerFluentDefinitionForCreate>();
+            Mock<CreateContainerDefinition> mockContainerDefinition = new Mock<CreateContainerDefinition>();
 
             // LastWrite wins conflict resolution mode 
             {
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     Assert.AreEqual("/lww", ConflictResolutionPolicy.ConflictResolutionPath);
                 };
 
-                ConflictResolutionFluentDefinition conflictResolutionFluentDefinition = new ConflictResolutionFluentDefinition(
+                ConflictResolutionDefinition conflictResolutionFluentDefinition = new ConflictResolutionDefinition(
                     mockContainerDefinition.Object,
                     callback);
 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     Assert.AreEqual("testsproc", ConflictResolutionPolicy.ConflictResolutionProcedure);
                 };
 
-                ConflictResolutionFluentDefinition conflictResolutionFluentDefinition = new ConflictResolutionFluentDefinition(
+                ConflictResolutionDefinition conflictResolutionFluentDefinition = new ConflictResolutionDefinition(
                     mockContainerDefinition.Object,
                     callback);
 

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Data.Common;
     using System.Diagnostics;
     using System.IO;
     using System.Net;
@@ -24,11 +25,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="Container"/>.
-    /// The CosmosClient uses the <see cref="CosmosClientOptions"/> to get all the configuration values.
+    /// The CosmosClient uses the <see cref="Cosmos.ClientOptions"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
     /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-    ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+    ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey")
     ///     .WithApplicationRegion(LocationNames.EastUS2);
     /// 
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
     /// <code language="c#">
     /// <![CDATA[
     /// using (CosmosClient cosmosClient = new CosmosClient(
-    ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+    ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey"))
     /// {
     ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
@@ -101,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
         /// Create a new CosmosClient with the connection
         /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. Example: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey;</param>
+        /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// This example creates a CosmosClient
         /// <code language="c#">
@@ -113,16 +115,20 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosClient(string connectionString)
-            : this(new CosmosClientOptions(connectionString))
+        public CosmosClient(string connectionString, ClientOptions clientOptions = null)
+            : this(
+                  ClientOptions.GetAccountEndpoint(connectionString), 
+                  ClientOptions.GetAccountKey(connectionString), 
+                  clientOptions)
         {
         }
 
         /// <summary>
         /// Create a new CosmosClient with the account endpoint URI string and account key
         /// </summary>
-        /// <param name="accountEndPoint">The cosmos service endpoint to use to create the client.</param>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use to create the client.</param>
         /// <param name="accountKey">The cosmos account key to use to create the client.</param>
+        /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// This example creates a CosmosClient
         /// <code language="c#">
@@ -137,55 +143,32 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public CosmosClient(
-            string accountEndPoint,
-            string accountKey)
-            : this(new CosmosClientOptions(accountEndPoint, accountKey))
+            string accountEndpoint,
+            string accountKey,
+            ClientOptions clientOptions = null)
         {
-        }
-
-        /// <summary>
-        /// Create a new CosmosClient with the cosmosClientOption
-        /// </summary>
-        /// <param name="clientOptions">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
-        /// <example>
-        /// This example creates a CosmosClient through explicit CosmosClientOptions
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosClientOptions clientOptions = new CosmosClientOptions("accountEndpoint", "accountkey");
-        /// clientOptions.ApplicationRegion = "East US 2";
-        /// clientOptions.ConnectionMode = ConnectionMode.Direct;
-        /// clientOptions.RequestTimeout = TimeSpan.FromSeconds(5);
-        /// 
-        /// using (CosmosClient client = new CosmosClient(clientOptions))
-        /// {
-        ///     // Create a database and other CosmosClient operations
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <example>
-        /// This example creates a CosmosClient through builder
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("accountEndpoint", "accountkey")
-        /// .UseConsistencyLevel(ConsistencyLevel.Eventual)
-        /// .WithApplicationRegion("East US 2");
-        /// CosmosClient client = cosmosClientBuilder.Build();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public CosmosClient(CosmosClientOptions clientOptions)
-        {
-            if (clientOptions == null)
+            if (accountEndpoint == null)
             {
-                throw new ArgumentNullException(nameof(clientOptions));
+                throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            CosmosClientOptions clientOptionsClone = clientOptions.Clone();
+            if (accountKey == null)
+            {
+                throw new ArgumentNullException(nameof(accountKey));
+            }
+
+            if (clientOptions == null)
+            {
+                clientOptions = new ClientOptions();
+            }
+
+            this.Endpoint = new Uri(accountEndpoint);
+            this.AccountKey = accountKey;
+            ClientOptions clientOptionsClone = clientOptions.Clone();
 
             DocumentClient documentClient = new DocumentClient(
-                clientOptionsClone.EndPoint,
-                clientOptionsClone.AccountKey,
+                this.Endpoint,
+                this.AccountKey,
                 apitype: clientOptionsClone.ApiType,
                 sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
                 transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
@@ -202,9 +185,21 @@ namespace Microsoft.Azure.Cosmos
         /// Used for unit testing only.
         /// </summary>
         internal CosmosClient(
-            CosmosClientOptions cosmosClientOptions,
+            string accountEndpoint,
+            string accountKey,
+            ClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
+            if (accountEndpoint == null)
+            {
+                throw new ArgumentNullException(nameof(accountEndpoint));
+            }
+
+            if (accountKey == null)
+            {
+                throw new ArgumentNullException(nameof(accountKey));
+            }
+
             if (cosmosClientOptions == null)
             {
                 throw new ArgumentNullException(nameof(cosmosClientOptions));
@@ -215,13 +210,33 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(documentClient));
             }
 
+            this.Endpoint = new Uri(accountEndpoint);
+            this.AccountKey = accountKey;
+
             this.Init(cosmosClientOptions, documentClient);
         }
 
         /// <summary>
-        /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient
+        /// The <see cref="Cosmos.ClientOptions"/> used initialize CosmosClient
         /// </summary>
-        public virtual CosmosClientOptions ClientOptions { get; private set; }
+        public virtual ClientOptions ClientOptions { get; private set; }
+
+        /// <summary>
+        /// Gets the endpoint Uri for the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The Uri for the account endpoint.
+        /// </value>
+        /// <seealso cref="System.Uri"/>
+        public virtual Uri Endpoint { get; }
+
+        /// <summary>
+        /// Gets the AuthKey used by the client from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The AuthKey used by the client.
+        /// </value>
+        internal string AccountKey { get; }
 
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
@@ -238,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<AccountProperties> GetAccountPropertiesAsync()
         {
-            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.ClientOptions.EndPoint);
+            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint);
         }
 
         /// <summary>
@@ -423,7 +438,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual Task<CosmosResponseMessage> CreateDatabaseStreamAsync(
+        public virtual Task<ResponseMessage> CreateDatabaseStreamAsync(
                 DatabaseProperties databaseProperties,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
@@ -450,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal void Init(
-            CosmosClientOptions clientOptions,
+            ClientOptions clientOptions,
             DocumentClient documentClient)
         {
             this.ClientOptions = clientOptions;
@@ -506,7 +521,7 @@ namespace Microsoft.Azure.Cosmos
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<CosmosResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
+            Task<ResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,
@@ -515,7 +530,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
         }
 
-        private Task<CosmosResponseMessage> CreateDatabaseStreamInternalAsync(
+        private Task<ResponseMessage> CreateDatabaseStreamInternalAsync(
                 Stream streamPayload,
                 int? throughput = null,
                 RequestOptions requestOptions = null,

@@ -10,14 +10,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="UniqueKeyPolicy"/> fluent definition.
     /// </summary>
-    public class UniqueKeyFluentDefinition
+    public class UniqueKeyDefinition
     {
         private readonly Collection<string> paths = new Collection<string>();
-        private readonly ContainerFluentDefinitionForCreate parent;
+        private readonly CreateContainerDefinition parent;
         private readonly Action<UniqueKey> attachCallback;
 
-        internal UniqueKeyFluentDefinition(
-            ContainerFluentDefinitionForCreate parent,
+        internal UniqueKeyDefinition(
+            CreateContainerDefinition parent,
             Action<UniqueKey> attachCallback)
         {
             this.parent = parent;
@@ -25,11 +25,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Adds a path to the current <see cref="UniqueKeyFluentDefinition"/>.
+        /// Adds a path to the current <see cref="UniqueKeyDefinition"/>.
         /// </summary>
-        /// <param name="path">Path for the property to add to the current <see cref="UniqueKeyFluentDefinition"/>. Example: /property</param>
-        /// <returns>An instance of the current <see cref="UniqueKeyFluentDefinition"/>.</returns>
-        public virtual UniqueKeyFluentDefinition Path(string path)
+        /// <param name="path">Path for the property to add to the current <see cref="UniqueKeyDefinition"/>. Example: /property</param>
+        /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
+        public virtual UniqueKeyDefinition Path(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual ContainerFluentDefinitionForCreate Attach()
+        public virtual CreateContainerDefinition Attach()
         {
             this.attachCallback(new UniqueKey()
             {

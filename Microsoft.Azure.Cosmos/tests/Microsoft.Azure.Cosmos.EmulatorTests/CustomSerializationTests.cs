@@ -283,26 +283,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //create and read
             ItemResponse<TestDocument> createResponse = await container.CreateItemAsync<TestDocument>(testDocument);
-            ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
+            ItemResponse<TestDocument> readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Id, new Cosmos.PartitionKey(testDocument.Name));
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, createResponse.Resource);
 
             // upsert
             ItemResponse<TestDocument> upsertResponse = await container.UpsertItemAsync<TestDocument>(testDocument);
-            readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
+            readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Id, new Cosmos.PartitionKey(testDocument.Name));
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, upsertResponse.Resource);
 
             // replace 
-            ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument.Id, testDocument);
-            readResponse = await container.ReadItemAsync<TestDocument>(new Cosmos.PartitionKey(testDocument.Name), testDocument.Id);
+            ItemResponse<TestDocument> replacedResponse = await container.ReplaceItemAsync<TestDocument>(testDocument, testDocument.Id);
+            readResponse = await container.ReadItemAsync<TestDocument>(testDocument.Id, new Cosmos.PartitionKey(testDocument.Name));
             AssertEqual(testDocument, readResponse.Resource);
             AssertEqual(testDocument, replacedResponse.Resource);
 
             QueryDefinition sql = new QueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
-               container.CreateItemQuery<TestDocument>(sqlQueryDefinition: sql, partitionKey: new Cosmos.PartitionKey(testDocument.Name), maxItemCount: 1);
-            FeedResponse<TestDocument> queryResponse = await feedIterator.FetchNextSetAsync();
+               container.GetItemQueryIterator<TestDocument>(sqlQueryDefinition: sql, partitionKey: new Cosmos.PartitionKey(testDocument.Name), maxItemCount: 1);
+            FeedResponse<TestDocument> queryResponse = await feedIterator.ReadNextAsync();
             AssertEqual(testDocument, queryResponse.First());
 
             //Will add LINQ test once it is available with new V3 OM 
@@ -460,17 +460,17 @@ function bulkImport(docs) {
             }
 
             QueryDefinition cosmosSqlQueryDefinition1 = new QueryDefinition("SELECT * FROM root");
-            FeedIterator<MyObject> setIterator1 = container.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
+            FeedIterator<MyObject> setIterator1 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition1, maxConcurrency: -1, maxItemCount: -1);
 
             QueryDefinition cosmosSqlQueryDefinition2 = new QueryDefinition("SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC");
-            FeedIterator<MyObject> setIterator2 = container.CreateItemQuery<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
+            FeedIterator<MyObject> setIterator2 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition2, maxConcurrency: -1, maxItemCount: -1);
 
             List<MyObject> list1 = new List<MyObject>();
             List<MyObject> list2 = new List<MyObject>();
 
             while (setIterator1.HasMoreResults)
             {
-                foreach (MyObject obj in await setIterator1.FetchNextSetAsync())
+                foreach (MyObject obj in await setIterator1.ReadNextAsync())
                 {
                     list1.Add(obj);
                 }
@@ -478,7 +478,7 @@ function bulkImport(docs) {
 
             while (setIterator2.HasMoreResults)
             {
-                foreach (MyObject obj in await setIterator2.FetchNextSetAsync())
+                foreach (MyObject obj in await setIterator2.ReadNextAsync())
                 {
                     list2.Add(obj);
                 }
@@ -578,7 +578,7 @@ function bulkImport(docs) {
         }
 #pragma warning restore CS0618
 
-        private class CustomJsonSerializer : CosmosJsonSerializer
+        private class CustomJsonSerializer : CosmosSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
             private JsonSerializer serializer;

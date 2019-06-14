@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializer serializer = new CustomSerializer();
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializerFails serializer = new CustomSerializerFails();
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
             FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosJsonSerializerCore());
@@ -98,9 +98,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
 
-        private static CosmosResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)
+        private static ResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)
         {
-            CosmosResponseMessage message = new CosmosResponseMessage(statusCode);
+            ResponseMessage message = new ResponseMessage(statusCode);
             message.Headers.Continuation = "someContinuation";
             if (subStatusCode > 0)
             {

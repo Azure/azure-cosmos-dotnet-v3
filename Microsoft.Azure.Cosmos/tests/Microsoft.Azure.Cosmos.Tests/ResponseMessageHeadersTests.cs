@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosResponseMessageHeadersTests
+    public class ResponseHeadersTests
     {
         private const string Key = "testKey";
 
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string value1 = Guid.NewGuid().ToString();
             string value2 = Guid.NewGuid().ToString();
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             requestHeaders.Add(Key, value1);
             Assert.AreEqual(value1, requestHeaders.Get(Key));
             requestHeaders.Set(Key, value2);
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestIndexer()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             string value = Guid.NewGuid().ToString();
             requestHeaders.CosmosMessageHeaders[Key] = value;
             Assert.AreEqual(value, requestHeaders[Key]);
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestRemove()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             string value = Guid.NewGuid().ToString();
             requestHeaders.CosmosMessageHeaders[Key] = value;
             Assert.AreEqual(value, requestHeaders[Key]);
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestClear()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             requestHeaders.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             requestHeaders.CosmosMessageHeaders.Clear();
             Assert.IsNull(requestHeaders[Key]);
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestCount()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             requestHeaders.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Assert.AreEqual(1, requestHeaders.CosmosMessageHeaders.Count());
         }
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestGetValues()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             string value1 = Guid.NewGuid().ToString();
             requestHeaders.Add(Key, value1);
             IEnumerable<string> values = requestHeaders.GetValues(Key);
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestAllKeys()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             requestHeaders.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Assert.AreEqual(Key, requestHeaders.AllKeys().First());
         }
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestGetIEnumerableKeys()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             string value = Guid.NewGuid().ToString();
             requestHeaders.CosmosMessageHeaders[Key] = value;
             foreach (var header in requestHeaders)
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(NotImplementedException))]
         public void TestGetToNameValueCollection()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             string value = Guid.NewGuid().ToString();
             requestHeaders.CosmosMessageHeaders[Key] = value;
             NameValueCollection anotherCollection = requestHeaders.CosmosMessageHeaders.ToNameValueCollection();
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string value2 = "1002";
             string value3 = "20";
             string value4 = "someSession";
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.Continuation] = value1;
             requestHeaders.CosmosMessageHeaders[WFConstants.BackendHeaders.SubStatus] = value2;
             requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = value3;
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestClearWithKnownProperties()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             requestHeaders.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             requestHeaders.Continuation = Guid.NewGuid().ToString();
             requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestCountWithKnownProperties()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             requestHeaders.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             requestHeaders.Continuation = Guid.NewGuid().ToString();
             requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestAllKeysWithKnownProperties()
         {
-            var requestHeaders = new CosmosResponseMessageHeaders();
+            var requestHeaders = new ResponseHeaders();
             requestHeaders.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             requestHeaders.Continuation = Guid.NewGuid().ToString();
             requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
@@ -172,8 +172,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void AllKnownPropertiesHaveGetAndSetAndIndexed()
         {
-            var responseHeaders = new CosmosResponseMessageHeaders();
-            var knownHeaderProperties = typeof(CosmosResponseMessageHeaders)
+            var responseHeaders = new ResponseHeaders();
+            var knownHeaderProperties = typeof(ResponseHeaders)
                     .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(p => p.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).Any());
 

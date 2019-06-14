@@ -113,12 +113,12 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputResponse throughput = await this.cosmosDatabase.ReadProvisionedThroughputAsync();
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReadThroughputAsync();
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>The throughput response.</returns>
-        public abstract Task<ThroughputResponse> ReadProvisionedThroughputAsync(
+        public abstract Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceProvisionedThroughputAsync(10000);
+        /// ThroughputResponse throughput = await this.cosmosDatabase.ReplaceThroughputAsync(10000);
         /// ]]>
         /// </code>
         /// </example>
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<ThroughputResponse> ReplaceProvisionedThroughputAsync(
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -154,9 +154,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.
         /// </returns>
-        public abstract Task<CosmosResponseMessage> ReadStreamAsync(
+        public abstract Task<ResponseMessage> ReadStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -165,8 +165,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain information about the request issued.</returns>
-        public abstract Task<CosmosResponseMessage> DeleteStreamAsync(
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
+        public abstract Task<ResponseMessage> DeleteStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -421,12 +421,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> containing the created resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the created resource record.</returns>
         /// <seealso cref="DefineContainer(string, string)"/>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<CosmosResponseMessage> CreateContainerStreamAsync(
+        public abstract Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -483,7 +483,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract ContainerFluentDefinitionForCreate DefineContainer(
+        public abstract CreateContainerDefinition DefineContainer(
             string name,
             string partitionKeyPath);
     }

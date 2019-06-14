@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId)
         {
             var response = await container.ReadItemAsync<T>(
-                    partitionKey,
-                    itemId)
+                    itemId,
+                    partitionKey)
                     .ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
-            var response = await container.DeleteItemAsync<T>(partitionKey, itemId, cosmosItemRequestOptions).ConfigureAwait(false);
+            var response = await container.DeleteItemAsync<T>(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return default(T);
@@ -66,8 +66,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId)
         {
             var response = await container.ReadItemStreamAsync(
-                        partitionKey,
-                        itemId)
+                        itemId,
+                        partitionKey)
                         .ConfigureAwait(false);
 
             return response.IsSuccessStatusCode;
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 CultureInfo.InvariantCulture,
                 "{0}{1}_{2}",
                 optionsPrefix,
-                ((ContainerCore)monitoredContainer).ClientContext.ClientOptions.EndPoint.Host,
+                ((ContainerCore)monitoredContainer).ClientContext.Client.Endpoint.Host,
                 monitoredContainerRid);
         }
     }

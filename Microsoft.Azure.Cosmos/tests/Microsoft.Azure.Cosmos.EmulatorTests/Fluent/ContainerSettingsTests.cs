@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     // Similar tests to CosmosContainerTests but with Fluent syntax
     [TestClass]
-    public class CosmosContainerSettingsFluentTests : BaseCosmosClientHelper
+    public class ContainerSettingsTests : BaseCosmosClientHelper
     {
         private static long ToEpoch(DateTime dateTime) => (long)(dateTime - (new DateTime(1970, 1, 1))).TotalSeconds;
 
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = this.database.GetContainer(containerName);
 
-            ThroughputResponse readThroughput = await container.ReadProvisionedThroughputAsync();
+            ThroughputResponse readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
             Assert.AreEqual(expectedThroughput, readThroughput.Resource.Throughput);
 
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> createItemResponse = await container.CreateItemAsync<dynamic>(payload);
             Assert.IsNotNull(createItemResponse.Resource);
             Assert.AreEqual(createItemResponse.StatusCode, HttpStatusCode.Created);
-            ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(new Cosmos.PartitionKey(payload.user), payload.id);
+            ItemResponse<dynamic> readItemResponse = await container.ReadItemAsync<dynamic>(payload.id, new Cosmos.PartitionKey(payload.user));
             Assert.IsNotNull(readItemResponse.Resource);
             Assert.AreEqual(readItemResponse.StatusCode, HttpStatusCode.OK);
 

@@ -11,14 +11,14 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Base class for Header handling.
     /// </summary>
-    public abstract class CosmosMessageHeadersBase : IEnumerable
+    public abstract class HeadersBase : IEnumerable
     {
         private readonly Lazy<CosmosMessageHeadersInternal> messageHeaders;
 
         /// <summary>
-        /// Creates a new instance of <see cref="CosmosMessageHeadersBase"/>.
+        /// Creates a new instance of <see cref="HeadersBase"/>.
         /// </summary>
-        public CosmosMessageHeadersBase()
+        public HeadersBase()
         {
             this.messageHeaders = new Lazy<CosmosMessageHeadersInternal>(this.CreateCosmosMessageHeaders);
         }
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enumerates all the HTTP headers names in the <see cref="CosmosMessageHeadersBase"/>.
+        /// Enumerates all the HTTP headers names in the <see cref="HeadersBase"/>.
         /// </summary>
         /// <returns>An enumator for all headers.</returns>
         public virtual IEnumerator<string> GetEnumerator()
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enumerates all the HTTP headers names in the <see cref="CosmosMessageHeadersBase"/>.
+        /// Enumerates all the HTTP headers names in the <see cref="HeadersBase"/>.
         /// </summary>
         /// <returns>An enumator for all headers.</returns>
         IEnumerator IEnumerable.GetEnumerator()
