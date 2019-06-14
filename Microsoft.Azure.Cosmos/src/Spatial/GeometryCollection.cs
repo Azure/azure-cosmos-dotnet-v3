@@ -8,11 +8,13 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a geometry consisting of other geometries.
     /// </summary>
+    [DataContract]
     internal sealed class GeometryCollection : Geometry, IEquatable<GeometryCollection>
     {
         /// <summary>
@@ -63,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Child geometries.
         /// </value>
+        [DataMember(Name = "geometries")]
         [JsonProperty("geometries", Required = Required.Always, Order = 1)]
         public ReadOnlyCollection<Geometry> Geometries { get; private set; }
 

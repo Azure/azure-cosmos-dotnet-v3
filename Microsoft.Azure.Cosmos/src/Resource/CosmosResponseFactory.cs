@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
-            CosmosDatabase database,
+            Database database,
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
@@ -77,6 +77,19 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     databaseProperties,
                     database);
+            });
+        }
+
+        internal Task<ThroughputResponse> CreateThroughputResponseAsync(
+            Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                ThroughputProperties throughputProperties = this.ToObjectInternal<ThroughputProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new ThroughputResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    throughputProperties);
             });
         }
 

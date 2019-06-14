@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
-    using System.Net.Http;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -21,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public ResponseMessage()
         {
-            this.Headers = new ResponseHeaders();
+            this.Headers = new Headers();
         }
 
         /// <summary>
@@ -43,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
-            this.Headers = new ResponseHeaders();
+            this.Headers = new Headers();
         }
 
         /// <summary>
@@ -59,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             string errorMessage,
             Error error,
-            ResponseHeaders headers)
+            Headers headers)
         {
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
@@ -94,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
         /// </summary>
-        public virtual ResponseHeaders Headers { get; }
+        public virtual Headers Headers { get; }
 
         /// <summary>
         /// Gets the original request message

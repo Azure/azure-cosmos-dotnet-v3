@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(loopCount, count);
 
             // Create real container and address 
-            CosmosDatabase db = await client.CreateDatabaseAsync(dbName);
+            Cosmos.Database db = await client.CreateDatabaseAsync(dbName);
             Container container = await db.CreateContainerAsync(containerName, "/id");
 
             // reset counter

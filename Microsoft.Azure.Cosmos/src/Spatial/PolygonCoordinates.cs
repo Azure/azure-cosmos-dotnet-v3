@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Converters;
     using Newtonsoft.Json;
 
@@ -15,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Polygon coordinates.
     /// </summary>
     /// <seealso cref="MultiPolygon"/>
+    [DataContract]
     [JsonConverter(typeof(PolygonCoordinatesJsonConverter))]
     internal sealed class PolygonCoordinates : IEquatable<PolygonCoordinates>
     {
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Rings of the polygon.
         /// </value>
+        [DataMember(Name = "rings")]
         public ReadOnlyCollection<LinearRing> Rings { get; private set; }
 
         /// <summary>

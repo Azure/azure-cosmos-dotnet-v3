@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// HTTP headers in a <see cref="ResponseMessage"/>.
     /// </summary>
-    internal class CosmosQueryResponseMessageHeaders : ResponseHeaders
+    internal class CosmosQueryResponseMessageHeaders : Headers
     {
         public CosmosQueryResponseMessageHeaders(
             string continauationToken, 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static CosmosQueryResponseMessageHeaders ConvertToQueryHeaders(
-            ResponseHeaders sourceHeaders,
+            Headers sourceHeaders,
             ResourceType resourceType,
             string containerRid)
         {

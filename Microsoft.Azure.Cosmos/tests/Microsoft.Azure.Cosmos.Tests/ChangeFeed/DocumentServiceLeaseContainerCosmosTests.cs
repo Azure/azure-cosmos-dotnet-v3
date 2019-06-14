@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static Container GetMockedContainer(string containerName = "myColl")
         {
-            ResponseHeaders headers = new ResponseHeaders();
+            Headers headers = new Headers();
             headers.Continuation = string.Empty;
 
             Mock<FeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<FeedIterator<DocumentServiceLeaseCore>>();
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             DocumentClient documentClient = new MockDocumentClient();
 
-            ClientBuilder cosmosClientBuilder = new ClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
 
             return cosmosClientBuilder.Build(documentClient);
         }

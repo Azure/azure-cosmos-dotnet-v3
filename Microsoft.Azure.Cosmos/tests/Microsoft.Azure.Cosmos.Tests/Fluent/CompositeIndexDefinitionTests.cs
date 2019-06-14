@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse()
         {
-            Mock<IndexingPolicyDefinition<CreateContainerDefinition>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyDefinition<CreateContainerDefinition>>();
+            Mock<IndexingPolicyDefinition<ContainerBuilder>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyDefinition<ContainerBuilder>>();
             Action<Collection<CompositePath>> callback = (paths) =>
             {
                 Assert.AreEqual(2, paths.Count);
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 Assert.AreEqual(CompositePathSortOrder.Descending, paths[1].Order);                
             };
 
-            CompositeIndexDefinition<IndexingPolicyDefinition<CreateContainerDefinition>> compositeIndexFluentDefinitionCore = new CompositeIndexDefinition<IndexingPolicyDefinition<CreateContainerDefinition>>(
+            CompositeIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>> compositeIndexFluentDefinitionCore = new CompositeIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>>(
                 mockIndexingPolicyDefinition.Object,
                 callback);
 

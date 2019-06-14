@@ -61,6 +61,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal async Task<OfferV2> GetOfferV2Async(
+            string targetRID,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrWhiteSpace(targetRID))
+            {
+                throw new ArgumentNullException(targetRID);
+            }
+
+            Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
+            OfferV2 offerV2 = offer as OfferV2;
+            return offerV2;
+        }
+
         internal async Task<CosmosOfferResult> ReplaceThroughputIfExistsAsync(
             string targetRID,
             int throughput,

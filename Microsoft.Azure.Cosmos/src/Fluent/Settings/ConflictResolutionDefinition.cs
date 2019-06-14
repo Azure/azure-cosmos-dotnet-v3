@@ -12,13 +12,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class ConflictResolutionDefinition
     {
-        private readonly CreateContainerDefinition parent;
+        private readonly ContainerBuilder parent;
         private readonly Action<ConflictResolutionPolicy> attachCallback;
         private string conflictResolutionPath;
         private string conflictResolutionProcedure;
 
         internal ConflictResolutionDefinition(
-            CreateContainerDefinition parent,
+            ContainerBuilder parent,
             Action<ConflictResolutionPolicy> attachCallback)
         {
             this.parent = parent;
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual CreateContainerDefinition Attach()
+        public virtual ContainerBuilder Attach()
         {
             ConflictResolutionPolicy resolutionPolicy = new ConflictResolutionPolicy();
             if (this.conflictResolutionPath != null)
