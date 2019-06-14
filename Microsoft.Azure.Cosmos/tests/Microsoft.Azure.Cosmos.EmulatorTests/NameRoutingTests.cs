@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Body = "function() {var x = 10;}",
                     };
 
-                    Scripts scripts = container.GetScripts();
+                    Scripts scripts = container.Scripts;
 
                     StoredProcedureProperties storedProcedure1 = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(myStoredProcedure.Id, myStoredProcedure.Body));
                     myStoredProcedure.Body = "function() {var x = 5;}";
@@ -1736,7 +1736,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await database.CreateContainerAsync(new ContainerProperties { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
                 container = client.GetDatabase("db1").GetContainer("coll1");
-                Scripts scripts = container.GetScripts();
+                Scripts scripts = container.Scripts;
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("sproc1", "function() {return 1}"));
                 for (int i = 0; i < 10; i++)
                 {

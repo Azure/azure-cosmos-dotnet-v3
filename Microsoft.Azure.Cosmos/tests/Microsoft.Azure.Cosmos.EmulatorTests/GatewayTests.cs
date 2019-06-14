@@ -130,15 +130,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = transientProcedure
             };
-            StoredProcedureResponse retrievedStoredProcedure = collection.GetScripts().CreateStoredProcedureAsync(storedProcedure).Result;
+            StoredProcedureResponse retrievedStoredProcedure = collection.Scripts.CreateStoredProcedureAsync(storedProcedure).Result;
             Assert.IsNotNull(retrievedStoredProcedure);
             Assert.AreEqual(storedProcedure.Id, retrievedStoredProcedure.Resource.Id);
 
-            response = collection.GetScripts().ExecuteStoredProcedureAsync<object, TValue>(new Cosmos.PartitionKey(partitionKey), storedProcedure.Id, null).Result;
+            response = collection.Scripts.ExecuteStoredProcedureAsync<object, TValue>(new Cosmos.PartitionKey(partitionKey), storedProcedure.Id, null).Result;
             Assert.IsNotNull(response);
 
             // delete
-            StoredProcedureResponse deleteResponse = collection.GetScripts().DeleteStoredProcedureAsync(storedProcedure.Id).Result;
+            StoredProcedureResponse deleteResponse = collection.Scripts.DeleteStoredProcedureAsync(storedProcedure.Id).Result;
             Assert.IsNotNull(deleteResponse);
 
             return response;
@@ -1427,7 +1427,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 __.readDocuments(__.getSelfLink(), { pageSize : 1, continuation : ''}, callback);
             }";
             //Script cannot timeout.
-            Scripts scripts = collection.GetScripts();
+            Scripts scripts = collection.Scripts;
             StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
             string result = await scripts.ExecuteStoredProcedureAsync<object ,string >(storedProcedureId : "scriptId", partitionKey : new Cosmos.PartitionKey(documentDefinition.Id), input : null);
             await database.DeleteAsync();
@@ -1473,7 +1473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Script cannot timeout.
             try
             {
-                Scripts scripts = collection.GetScripts();
+                Scripts scripts = collection.Scripts;
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
                 string result = await scripts.ExecuteStoredProcedureAsync<object, string>(new Cosmos.PartitionKey(document.Id), "scriptId", input: null);
             }
@@ -1507,7 +1507,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             Container collection = await database.CreateContainerAsync(collectionSpec);
 
-            Scripts scripts = collection.GetScripts();
+            Scripts scripts = collection.Scripts;
             StoredProcedureProperties sprocUri = await scripts.ReadStoredProcedureAsync("__.sys.echo");
             string input = "foobar";
 

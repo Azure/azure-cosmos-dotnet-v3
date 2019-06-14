@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
             this.container = (ContainerCore)response;
-            this.scripts = this.container.GetScripts();
+            this.scripts = this.container.Scripts;
         }
 
         [TestCleanup]

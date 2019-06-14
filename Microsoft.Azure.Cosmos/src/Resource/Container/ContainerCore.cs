@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -21,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
     internal partial class ContainerCore : Container
     {
         private readonly ConflictsCore conflicts;
+        private readonly ScriptsCore scripts;
 
         /// <summary>
         /// Only used for unit testing
@@ -43,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Database = database;
             this.conflicts = new ConflictsCore(this.ClientContext, this);
+            this.scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
         }
@@ -55,10 +58,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosClientContext ClientContext { get; }
 
-        public override Conflicts GetConflicts()
-        {
-            return this.conflicts;
-        }
+        public override Conflicts Conflicts => this.conflicts;
+
+        public override Scripts.Scripts Scripts => this.scripts;
 
         public override Task<ContainerResponse> ReadAsync(
             ContainerRequestOptions requestOptions = null,
