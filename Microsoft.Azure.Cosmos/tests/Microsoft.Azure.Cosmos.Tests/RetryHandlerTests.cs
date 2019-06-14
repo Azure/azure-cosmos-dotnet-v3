@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryHandler.InnerHandler = testHandler;
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
             requestMessage.OperationType = OperationType.Read;
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryHandler.InnerHandler = testHandler;
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
             requestMessage.OperationType =OperationType.Read;
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryHandler.InnerHandler = testHandler;
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
             requestMessage.OperationType = OperationType.Read;
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryHandler.InnerHandler = testHandler;
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
             requestMessage.OperationType = OperationType.Read;
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
             requestMessage.OperationType = OperationType.Read;
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryHandler.InnerHandler = testHandler;
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryHandler.InnerHandler = testHandler;
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryHandler.InnerHandler = testHandler;
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new Uri("https://localhost/dbs/db1/colls/col1/docs/doc1"));
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://localhost/dbs/db1/colls/col1/docs/doc1"));
             await invoker.SendAsync(requestMessage, new CancellationToken());
 
             int expectedHandlerCalls = 2;

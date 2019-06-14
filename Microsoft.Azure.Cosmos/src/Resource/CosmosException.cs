@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal CosmosException(
-            CosmosResponseMessage cosmosResponseMessage, 
+            ResponseMessage cosmosResponseMessage, 
             string message,
             Error error = null)
             : base(message)
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the internal headers
         /// </summary>
-        internal virtual CosmosResponseMessageHeaders Headers { get; }
+        internal virtual ResponseHeaders Headers { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message

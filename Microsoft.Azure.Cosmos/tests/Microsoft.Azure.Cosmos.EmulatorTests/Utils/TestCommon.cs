@@ -50,17 +50,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestCommon.masterStalenessIntervalInSeconds = int.Parse(ConfigurationManager.AppSettings["MasterStalenessIntervalInSeconds"], CultureInfo.InvariantCulture);
         }
 
-        internal static CosmosClientBuilder GetDefaultConfiguration()
+        internal static ClientBuilder GetDefaultConfiguration()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
-            return new CosmosClientBuilder(accountEndpoint: endpoint, accountKey: authKey);
+            return new ClientBuilder(accountEndpoint: endpoint, accountKey: authKey);
         }
 
-        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        internal static CosmosClient CreateCosmosClient(Action<ClientBuilder> customizeClientBuilder = null)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            ClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(
             bool useGateway)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            ClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
             if (useGateway)
             {
                 cosmosClientBuilder.WithConnectionModeGateway();

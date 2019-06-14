@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Http headers in a <see cref="CosmosRequestMessage"/>.
+    /// Http headers in a <see cref="RequestMessage"/>.
     /// </summary>
-    public class CosmosRequestMessageHeaders : CosmosMessageHeadersBase
+    public class RequestHeaders : HeadersBase
     {
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PartitionKey)]
         internal string PartitionKey { get; set; }
@@ -38,11 +38,11 @@ namespace Microsoft.Azure.Cosmos
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PageSize)]
         internal string PageSize { get; set; }
 
-        private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<CosmosRequestMessageHeaders>();
+        private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<RequestHeaders>();
 
         internal override Dictionary<string, CosmosCustomHeader> CreateKnownDictionary()
         {
-            return CosmosRequestMessageHeaders.knownHeaderProperties.ToDictionary(
+            return RequestHeaders.knownHeaderProperties.ToDictionary(
                     knownProperty => knownProperty.Key,
                     knownProperty => new CosmosCustomHeader(
                             () => (string)knownProperty.Value.GetValue(this),

@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage httpResponseMessage,
+            ResponseMessage httpResponseMessage,
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(

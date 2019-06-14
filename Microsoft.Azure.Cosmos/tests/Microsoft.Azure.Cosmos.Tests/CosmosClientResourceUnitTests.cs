@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 }
             };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 }
             };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             options.PreTriggers = new List<string>() { "preTrigger" };
             options.PostTriggers = new List<string>() { "postTrigger" };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 

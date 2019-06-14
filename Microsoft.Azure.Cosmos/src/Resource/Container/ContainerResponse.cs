@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal ContainerResponse(
             HttpStatusCode httpStatusCode,
-            CosmosResponseMessageHeaders headers,
+            ResponseHeaders headers,
             ContainerProperties containerProperties,
             Container container)
             : base(

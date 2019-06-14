@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="id">The identifier of the Stored Procedure to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="CosmosResponseMessage"/> which will contain the response to the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain the response to the request issued.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> are not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
+        public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             PartitionKey partitionKey,
             string storedProcedureId,
             Stream streamPayload,

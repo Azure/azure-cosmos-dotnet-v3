@@ -130,13 +130,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 streamPayload: replace));
         }
 
-        private void VerifyQueryNotFoundResponse(CosmosResponseMessage response)
+        private void VerifyQueryNotFoundResponse(ResponseMessage response)
         {
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         }
 
-        private void VerifyNotFoundResponse(CosmosResponseMessage response)
+        private void VerifyNotFoundResponse(ResponseMessage response)
         {
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
