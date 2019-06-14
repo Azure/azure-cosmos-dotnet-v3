@@ -1123,7 +1123,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder DefineChangeFeedProcessor<T>(
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate);
 
@@ -1137,7 +1137,7 @@ namespace Microsoft.Azure.Cosmos
         /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
         /// </remarks>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder DefineChangeFeedEstimator(
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
