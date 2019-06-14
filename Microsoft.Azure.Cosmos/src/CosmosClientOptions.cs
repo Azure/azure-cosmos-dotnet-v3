@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                Collection<CosmosRequestHandler> handlers = value as Collection<CosmosRequestHandler>;
+                Collection<RequestHandler> handlers = value as Collection<RequestHandler>;
                 if (handlers != null)
                 {
                     writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));
