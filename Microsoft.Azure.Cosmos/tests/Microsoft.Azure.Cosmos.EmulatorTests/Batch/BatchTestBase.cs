@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
-    public class CosmosBatchTestBase
+    public class BatchTestBase
     {
         protected static CosmosClient Client { get; set; }
 
@@ -76,14 +76,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static void InitializeDirectContainers()
         {
-            CosmosBatchTestBase.Client = TestCommon.CreateCosmosClient();
-            CosmosBatchTestBase.Database = CosmosBatchTestBase.Client.CreateDatabaseAsync(Guid.NewGuid().ToString())
+            BatchTestBase.Client = TestCommon.CreateCosmosClient();
+            BatchTestBase.Database = BatchTestBase.Client.CreateDatabaseAsync(Guid.NewGuid().ToString())
                 .GetAwaiter().GetResult().Database;
 
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add("/Status");
 
-            CosmosBatchTestBase.LowThroughputJsonContainer = CosmosBatchTestBase.Database.CreateContainerAsync(
+            BatchTestBase.LowThroughputJsonContainer = BatchTestBase.Database.CreateContainerAsync(
                 new ContainerProperties()
                 {
                     Id = Guid.NewGuid().ToString(),
@@ -91,14 +91,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 throughput: 400).GetAwaiter().GetResult().Container;
 
-            CosmosBatchTestBase.PartitionKeyDefinition = ((ContainerCore)CosmosBatchTestBase.LowThroughputJsonContainer).GetPartitionKeyDefinitionAsync(CancellationToken.None).GetAwaiter().GetResult();
+            BatchTestBase.PartitionKeyDefinition = ((ContainerCore)BatchTestBase.LowThroughputJsonContainer).GetPartitionKeyDefinitionAsync(CancellationToken.None).GetAwaiter().GetResult();
 
             // Create a container with at least 2 physical partitions for effective cross-partition testing
-            CosmosBatchTestBase.JsonContainer = CosmosBatchTestBase.Database.CreateContainerAsync(
+            BatchTestBase.JsonContainer = BatchTestBase.Database.CreateContainerAsync(
                 new ContainerProperties()
                 {
                     Id = Guid.NewGuid().ToString(),
-                    PartitionKey = CosmosBatchTestBase.PartitionKeyDefinition
+                    PartitionKey = BatchTestBase.PartitionKeyDefinition
                 },
                 throughput: 12000).GetAwaiter().GetResult().Container;
 
@@ -113,13 +113,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            CosmosBatchTestBase.LayoutResolver = new LayoutResolverNamespace(testNamespace);
-            CosmosBatchTestBase.TestDocLayout = CosmosBatchTestBase.LayoutResolver.Resolve(testSchema.SchemaId);
+            BatchTestBase.LayoutResolver = new LayoutResolverNamespace(testNamespace);
+            BatchTestBase.TestDocLayout = BatchTestBase.LayoutResolver.Resolve(testSchema.SchemaId);
 
             BatchContainerProperties schematizedContainerProperties = new BatchContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
-                PartitionKey = CosmosBatchTestBase.PartitionKeyDefinition,
+                PartitionKey = BatchTestBase.PartitionKeyDefinition,
                 DefaultTimeToLive = (int)TimeSpan.FromDays(1).TotalSeconds // allow for TTL testing
             };
 
@@ -130,19 +130,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             schematizedContainerProperties.SchemaPolicy = schemaPolicy;
 
-            CosmosBatchTestBase.SchematizedContainer = CosmosBatchTestBase.Database.CreateContainerAsync(
+            BatchTestBase.SchematizedContainer = BatchTestBase.Database.CreateContainerAsync(
                 schematizedContainerProperties,
                 throughput: 12000).GetAwaiter().GetResult().Container;
         }
 
         private static void InitializeGatewayContainers()
         {
-            CosmosBatchTestBase.GatewayClient = TestCommon.CreateCosmosClient(useGateway: true);
-            CosmosBatchTestBase.GatewayDatabase = GatewayClient.GetDatabase(CosmosBatchTestBase.Database.Id);
+            BatchTestBase.GatewayClient = TestCommon.CreateCosmosClient(useGateway: true);
+            BatchTestBase.GatewayDatabase = GatewayClient.GetDatabase(BatchTestBase.Database.Id);
 
-            CosmosBatchTestBase.GatewayLowThroughputJsonContainer = CosmosBatchTestBase.GatewayDatabase.GetContainer(CosmosBatchTestBase.LowThroughputJsonContainer.Id);
-            CosmosBatchTestBase.GatewayJsonContainer = CosmosBatchTestBase.GatewayDatabase.GetContainer(CosmosBatchTestBase.JsonContainer.Id);
-            CosmosBatchTestBase.GatewaySchematizedContainer = CosmosBatchTestBase.GatewayDatabase.GetContainer(CosmosBatchTestBase.SchematizedContainer.Id);
+            BatchTestBase.GatewayLowThroughputJsonContainer = BatchTestBase.GatewayDatabase.GetContainer(BatchTestBase.LowThroughputJsonContainer.Id);
+            BatchTestBase.GatewayJsonContainer = BatchTestBase.GatewayDatabase.GetContainer(BatchTestBase.JsonContainer.Id);
+            BatchTestBase.GatewaySchematizedContainer = BatchTestBase.GatewayDatabase.GetContainer(BatchTestBase.SchematizedContainer.Id);
         }
 
         private static void InitializeSharedThroughputContainer()
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new ContainerProperties
                     {
                         Id = Guid.NewGuid().ToString(),
-                        PartitionKey = CosmosBatchTestBase.PartitionKeyDefinition
+                        PartitionKey = BatchTestBase.PartitionKeyDefinition
                     })
                     .GetAwaiter().GetResult();
 
@@ -164,47 +164,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (index == 2)
                 {
-                    CosmosBatchTestBase.SharedThroughputContainer = containerResponse.Container;
+                    BatchTestBase.SharedThroughputContainer = containerResponse.Container;
                 }
             }
 
-            CosmosBatchTestBase.SharedThroughputDatabase = db;
+            BatchTestBase.SharedThroughputDatabase = db;
         }
 
         public static void ClassClean()
         {
-            if (CosmosBatchTestBase.Client == null)
+            if (BatchTestBase.Client == null)
             {
                 return;
             }
 
-            if (CosmosBatchTestBase.Database != null)
+            if (BatchTestBase.Database != null)
             {
-                CosmosBatchTestBase.Database.DeleteAsync().GetAwaiter().GetResult();
+                BatchTestBase.Database.DeleteAsync().GetAwaiter().GetResult();
             }
 
-            if (CosmosBatchTestBase.SharedThroughputDatabase != null)
+            if (BatchTestBase.SharedThroughputDatabase != null)
             {
-                CosmosBatchTestBase.SharedThroughputDatabase.DeleteAsync().GetAwaiter().GetResult();
+                BatchTestBase.SharedThroughputDatabase.DeleteAsync().GetAwaiter().GetResult();
             }
 
-            CosmosBatchTestBase.Client.Dispose();
+            BatchTestBase.Client.Dispose();
         }
 
         protected virtual async Task CreateJsonTestDocsAsync(Container container)
         {
-            this.TestDocPk1ExistingA = await CosmosBatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1);
-            this.TestDocPk1ExistingB = await CosmosBatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1);
-            this.TestDocPk1ExistingC = await CosmosBatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1);
-            this.TestDocPk1ExistingD = await CosmosBatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1);
+            this.TestDocPk1ExistingA = await BatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1);
+            this.TestDocPk1ExistingB = await BatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1);
+            this.TestDocPk1ExistingC = await BatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1);
+            this.TestDocPk1ExistingD = await BatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1);
         }
 
         protected virtual async Task CreateSchematizedTestDocsAsync(Container container)
         {
-            this.TestDocPk1ExistingA = await CosmosBatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1);
-            this.TestDocPk1ExistingB = await CosmosBatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1);
-            this.TestDocPk1ExistingC = await CosmosBatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1);
-            this.TestDocPk1ExistingD = await CosmosBatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1);
+            this.TestDocPk1ExistingA = await BatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1);
+            this.TestDocPk1ExistingB = await BatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1);
+            this.TestDocPk1ExistingC = await BatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1);
+            this.TestDocPk1ExistingD = await BatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1);
         }
 
         protected static TestDoc PopulateTestDoc(object partitionKey, int minDesiredSize = 20)
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new TestDoc()
             {
                 Id = Guid.NewGuid().ToString(),
-                Cost = CosmosBatchTestBase.Random.Next(),
+                Cost = BatchTestBase.Random.Next(),
                 Description = description,
                 Status = partitionKey.ToString()
             };
@@ -258,16 +258,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         protected static async Task VerifyByReadAsync(Container container, TestDoc doc, bool isStream = false, bool isSchematized = false, bool useEpk = false, string eTag = null)
         {
-            Cosmos.PartitionKey partitionKey = CosmosBatchTestBase.GetPartitionKey(doc.Status, useEpk);
+            Cosmos.PartitionKey partitionKey = BatchTestBase.GetPartitionKey(doc.Status, useEpk);
 
             if (isStream)
             {
-                string id = CosmosBatchTestBase.GetId(doc, isSchematized);
-                ItemRequestOptions requestOptions = CosmosBatchTestBase.GetItemRequestOptions(doc, isSchematized, useEpk, isPartOfBatch: false);
+                string id = BatchTestBase.GetId(doc, isSchematized);
+                ItemRequestOptions requestOptions = BatchTestBase.GetItemRequestOptions(doc, isSchematized, useEpk, isPartOfBatch: false);
                 CosmosResponseMessage response = await container.ReadItemStreamAsync(id, partitionKey, requestOptions);
 
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-                Assert.AreEqual(doc, CosmosBatchTestBase.StreamToTestDoc(response.Content, isSchematized));
+                Assert.AreEqual(doc, BatchTestBase.StreamToTestDoc(response.Content, isSchematized));
 
                 if (eTag != null)
                 {
@@ -290,9 +290,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         protected static async Task VerifyNotFoundAsync(Container container, TestDoc doc, bool isSchematized = false, bool useEpk = false)
         {
-            string id = CosmosBatchTestBase.GetId(doc, isSchematized);
-            Cosmos.PartitionKey partitionKey = CosmosBatchTestBase.GetPartitionKey(doc.Status, useEpk);
-            ItemRequestOptions requestOptions = CosmosBatchTestBase.GetItemRequestOptions(doc, isSchematized, useEpk, isPartOfBatch: false);
+            string id = BatchTestBase.GetId(doc, isSchematized);
+            Cosmos.PartitionKey partitionKey = BatchTestBase.GetPartitionKey(doc.Status, useEpk);
+            ItemRequestOptions requestOptions = BatchTestBase.GetItemRequestOptions(doc, isSchematized, useEpk, isPartOfBatch: false);
 
             CosmosResponseMessage response = await container.ReadItemStreamAsync(id, partitionKey, requestOptions);
 
@@ -323,10 +323,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     string epk = new Microsoft.Azure.Documents.PartitionKey(partitionKey)
                                     .InternalKey
-                                    .GetEffectivePartitionKeyString(CosmosBatchTestBase.PartitionKeyDefinition);
+                                    .GetEffectivePartitionKeyString(BatchTestBase.PartitionKeyDefinition);
 
                     batchOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
-                    batchOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, CosmosBatchTestBase.HexStringToBytes(epk));
+                    batchOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
                 }
             }
 
@@ -371,10 +371,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     string epk = new Microsoft.Azure.Documents.PartitionKey(doc.Status)
                                     .InternalKey
-                                    .GetEffectivePartitionKeyString(CosmosBatchTestBase.PartitionKeyDefinition);
+                                    .GetEffectivePartitionKeyString(BatchTestBase.PartitionKeyDefinition);
 
                     requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
-                    requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, CosmosBatchTestBase.HexStringToBytes(epk));
+                    requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
                 }
 
                 if (!isPartOfBatch)
@@ -388,19 +388,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         protected static async Task<TestDoc> CreateJsonTestDocAsync(Container container, object partitionKey, int minDesiredSize = 20)
         {
-            TestDoc doc = CosmosBatchTestBase.PopulateTestDoc(partitionKey, minDesiredSize);
-            ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(doc, CosmosBatchTestBase.GetPartitionKey(partitionKey));
+            TestDoc doc = BatchTestBase.PopulateTestDoc(partitionKey, minDesiredSize);
+            ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(doc, BatchTestBase.GetPartitionKey(partitionKey));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             return doc;
         }
 
         protected static async Task<TestDoc> CreateSchematizedTestDocAsync(Container container, object partitionKey, int? ttlInSeconds = null)
         {
-            TestDoc doc = CosmosBatchTestBase.PopulateTestDoc(partitionKey);
+            TestDoc doc = BatchTestBase.PopulateTestDoc(partitionKey);
             CosmosResponseMessage createResponse = await container.CreateItemStreamAsync(
                 doc.ToHybridRowStream(),
-                CosmosBatchTestBase.GetPartitionKey(partitionKey),
-                CosmosBatchTestBase.GetItemRequestOptions(doc, isSchematized: true, isPartOfBatch: false, ttlInSeconds: ttlInSeconds));
+                BatchTestBase.GetPartitionKey(partitionKey),
+                BatchTestBase.GetItemRequestOptions(doc, isSchematized: true, isPartOfBatch: false, ttlInSeconds: ttlInSeconds));
             Assert.AreEqual(
                 HttpStatusCode.Created,
                 createResponse.StatusCode);
@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 RowBuffer row = new RowBuffer((int)length);
-                Assert.IsTrue(row.ReadFrom(stream, (int)length, HybridRowVersion.V1, CosmosBatchTestBase.LayoutResolver));
+                Assert.IsTrue(row.ReadFrom(stream, (int)length, HybridRowVersion.V1, BatchTestBase.LayoutResolver));
                 RowReader reader = new RowReader(ref row);
 
                 TestDoc testDoc = new TestDoc();
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public MemoryStream ToHybridRowStream()
             {
                 RowBuffer row = new RowBuffer(80000);
-                row.InitLayout(HybridRowVersion.V1, CosmosBatchTestBase.TestDocLayout, CosmosBatchTestBase.LayoutResolver);
+                row.InitLayout(HybridRowVersion.V1, BatchTestBase.TestDocLayout, BatchTestBase.LayoutResolver);
                 Result r = RowWriter.WriteBuffer(ref row, this, TestDoc.WriteDoc);
                 Assert.AreEqual(Result.Success, r);
                 MemoryStream output = new MemoryStream(row.Length);

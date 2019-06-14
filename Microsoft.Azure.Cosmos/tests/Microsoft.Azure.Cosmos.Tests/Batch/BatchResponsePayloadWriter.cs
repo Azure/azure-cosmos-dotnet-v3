@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal class BatchResponsePayloadWriter
     {
-        private List<CosmosBatchOperationResult> results;
+        private List<BatchOperationResult> results;
 
-        public BatchResponsePayloadWriter(List<CosmosBatchOperationResult> results)
+        public BatchResponsePayloadWriter(List<BatchOperationResult> results)
         {
             this.results = results;
         }
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return r;
         }
 
-        private static Result WriteResult(ref RowWriter writer, TypeArgument typeArg, CosmosBatchOperationResult result)
+        private static Result WriteResult(ref RowWriter writer, TypeArgument typeArg, BatchOperationResult result)
         {
             Result r = writer.WriteInt32("statusCode", (int)result.StatusCode);
             if (r != Result.Success)

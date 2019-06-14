@@ -449,9 +449,9 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
-        public override CosmosBatch CreateBatch(PartitionKey partitionKey)
+        public override Batch CreateBatch(PartitionKey partitionKey)
         {
-            return new CosmosBatch(this, partitionKey);
+            return new Batch(this, partitionKey);
         }
 
         internal FeedIterator GetStandByFeedIterator(

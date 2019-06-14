@@ -12,18 +12,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class BatchSinglePartitionKeyTests : CosmosBatchTestBase
+    public class BatchSinglePartitionKeyTests : BatchTestBase
     {
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
-            CosmosBatchTestBase.ClassInit(context);
+            BatchTestBase.ClassInit(context);
         }
 
         [ClassCleanup]
         public static void ClassCleanup()
         {
-            CosmosBatchTestBase.ClassClean();
+            BatchTestBase.ClassClean();
         }
 
         [TestMethod]
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch CRUD with default options at all levels (client/batch/operation) and all operations expected to pass works")]
         public async Task BatchCrudAsync()
         {
-            await this.RunCrudAsync(isStream: false, isSchematized: false, useEpk: false, container: CosmosBatchTestBase.JsonContainer);
+            await this.RunCrudAsync(isStream: false, isSchematized: false, useEpk: false, container: BatchTestBase.JsonContainer);
         }
 
         [TestMethod]
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch CRUD with JSON stream operation resource bodies with default options and all operations expected to pass works")]
         public async Task BatchCrudStreamAsync()
         {
-            await this.RunCrudAsync(isStream: true, isSchematized: false, useEpk: false, container: CosmosBatchTestBase.JsonContainer);
+            await this.RunCrudAsync(isStream: true, isSchematized: false, useEpk: false, container: BatchTestBase.JsonContainer);
         }
 
         [TestMethod]
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch CRUD with HybridRow stream operation resource bodies and EPK with default options and all operations expected to pass works")]
         public async Task BatchCrudHybridRowStreamWithEpkAsync()
         {
-            await this.RunCrudAsync(isStream: true, isSchematized: true, useEpk: true, container: CosmosBatchTestBase.SchematizedContainer);
+            await this.RunCrudAsync(isStream: true, isSchematized: true, useEpk: true, container: BatchTestBase.SchematizedContainer);
         }
 
         [TestMethod]
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch CRUD with default options at all levels (client/batch/operation) and all operations expected to pass works in gateway mode")]
         public async Task BatchCrudGatewayAsync()
         {
-            await this.RunCrudAsync(isStream: false, isSchematized: false, useEpk: false, container: CosmosBatchTestBase.GatewayJsonContainer);
+            await this.RunCrudAsync(isStream: false, isSchematized: false, useEpk: false, container: BatchTestBase.GatewayJsonContainer);
         }
 
         [TestMethod]
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch CRUD with JSON stream operation resource bodies with default options and all operations expected to pass works in gateway mode")]
         public async Task BatchCrudStreamGatewayAsync()
         {
-            await this.RunCrudAsync(isStream: true, isSchematized: false, useEpk: false, container: CosmosBatchTestBase.GatewayJsonContainer);
+            await this.RunCrudAsync(isStream: true, isSchematized: false, useEpk: false, container: BatchTestBase.GatewayJsonContainer);
         }
 
         [TestMethod]
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch CRUD with default options at all levels (client/batch/operation) and all operations expected to pass works in shared throughput ")]
         public async Task BatchCrudSharedThroughputAsync()
         {
-            await this.RunCrudAsync(isStream: false, isSchematized: false, useEpk: false, container: CosmosBatchTestBase.SharedThroughputContainer);
+            await this.RunCrudAsync(isStream: false, isSchematized: false, useEpk: false, container: BatchTestBase.SharedThroughputContainer);
         }
 
         [TestMethod]
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch CRUD with JSON stream operation resource bodies with default options and all operations expected to pass works in shared throughput")]
         public async Task BatchCrudSharedThroughputStreamAsync()
         {
-            await this.RunCrudAsync(isStream: true, isSchematized: false, useEpk: false, container: CosmosBatchTestBase.SharedThroughputContainer);
+            await this.RunCrudAsync(isStream: true, isSchematized: false, useEpk: false, container: BatchTestBase.SharedThroughputContainer);
         }
 
         [TestMethod]
@@ -87,15 +87,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with multiple operations on the same entity works")]
         public async Task BatchOrderedAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
-            TestDoc firstDoc = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
+            TestDoc firstDoc = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
             TestDoc replaceDoc = this.GetTestDocCopy(firstDoc);
             replaceDoc.Cost += 20;
 
-            CosmosBatchResponse batchResponse = await container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1))
+            BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                 .CreateItem(firstDoc)
                 .ReplaceItem(replaceDoc.Id, replaceDoc)
                 .ExecuteAsync();
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
 
             // Ensure that the replace overwrote the doc from the first operation
-            await CosmosBatchTestBase.VerifyByReadAsync(container, replaceDoc);
+            await BatchTestBase.VerifyByReadAsync(container, replaceDoc);
         }
 
         [TestMethod]
@@ -114,24 +114,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify eTags passed to batch operations or returned in batch results flow as expected")]
         public async Task BatchItemETagAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
             {
-                TestDoc testDocToCreate = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
+                TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
                 TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingA);
                 testDocToReplace.Cost++;
 
-                ItemResponse<TestDoc> readResponse = await CosmosBatchTestBase.JsonContainer.ReadItemAsync<TestDoc>(
+                ItemResponse<TestDoc> readResponse = await BatchTestBase.JsonContainer.ReadItemAsync<TestDoc>(
                     this.TestDocPk1ExistingA.Id,
-                    CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
+                    BatchTestBase.GetPartitionKey(this.PartitionKey1));
 
                 ItemRequestOptions firstReplaceOptions = new ItemRequestOptions()
                 {
                     IfMatchEtag = readResponse.ETag
                 };
 
-                CosmosBatchResponse batchResponse = await container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                    .CreateItem(testDocToCreate)
                    .ReplaceItem(testDocToReplace.Id, testDocToReplace, itemRequestOptions: firstReplaceOptions)
                    .ExecuteAsync();
@@ -141,8 +141,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
                 Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
 
-                await CosmosBatchTestBase.VerifyByReadAsync(container, testDocToCreate, eTag: batchResponse[0].ETag);
-                await CosmosBatchTestBase.VerifyByReadAsync(container, testDocToReplace, eTag: batchResponse[1].ETag);
+                await BatchTestBase.VerifyByReadAsync(container, testDocToCreate, eTag: batchResponse[0].ETag);
+                await BatchTestBase.VerifyByReadAsync(container, testDocToReplace, eTag: batchResponse[1].ETag);
             }
 
             {
@@ -151,10 +151,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ItemRequestOptions replaceOptions = new ItemRequestOptions()
                 {
-                    IfMatchEtag = CosmosBatchTestBase.Random.Next().ToString()
+                    IfMatchEtag = BatchTestBase.Random.Next().ToString()
                 };
 
-                CosmosBatchResponse batchResponse = await container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                    .ReplaceItem(testDocToReplace.Id, testDocToReplace, itemRequestOptions: replaceOptions)
                    .ExecuteAsync();
 
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, batchResponse[0].StatusCode);
 
                 // ensure the document was not updated
-                await CosmosBatchTestBase.VerifyByReadAsync(container, this.TestDocPk1ExistingB);
+                await BatchTestBase.VerifyByReadAsync(container, this.TestDocPk1ExistingB);
             }
         }
 
@@ -178,11 +178,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Verify with schematized containers where we are allowed to send TTL as a header
             const bool isSchematized = true;
             const bool isStream = true;
-            Container container = CosmosBatchTestBase.SchematizedContainer;
+            Container container = BatchTestBase.SchematizedContainer;
             await this.CreateSchematizedTestDocsAsync(container);
             {
-                TestDoc testDocToCreate = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
-                TestDoc anotherTestDocToCreate = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
+                TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+                TestDoc anotherTestDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
                 TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingA);
                 testDocToReplace.Cost++;
@@ -190,24 +190,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 const int ttlInSeconds = 3;
                 const int infiniteTtl = -1;
 
-                TestDoc testDocToUpsert = await CosmosBatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1, ttlInSeconds: ttlInSeconds);
+                TestDoc testDocToUpsert = await BatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1, ttlInSeconds: ttlInSeconds);
                 testDocToUpsert.Cost++;
 
-                CosmosBatchResponse batchResponse = await container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                    .CreateItemStream(
-                        CosmosBatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(testDocToCreate, isSchematized, ttlInSeconds: ttlInSeconds))
+                        BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(testDocToCreate, isSchematized, ttlInSeconds: ttlInSeconds))
                    .CreateItemStream(
-                        CosmosBatchTestBase.TestDocToStream(anotherTestDocToCreate, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(anotherTestDocToCreate, isSchematized))
+                        BatchTestBase.TestDocToStream(anotherTestDocToCreate, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(anotherTestDocToCreate, isSchematized))
                    .ReplaceItemStream(
-                        CosmosBatchTestBase.GetId(testDocToReplace, isSchematized),
-                        CosmosBatchTestBase.TestDocToStream(testDocToReplace, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(testDocToReplace, isSchematized, ttlInSeconds: ttlInSeconds))
+                        BatchTestBase.GetId(testDocToReplace, isSchematized),
+                        BatchTestBase.TestDocToStream(testDocToReplace, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(testDocToReplace, isSchematized, ttlInSeconds: ttlInSeconds))
                    .UpsertItemStream(
-                        CosmosBatchTestBase.TestDocToStream(testDocToUpsert, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(testDocToUpsert, isSchematized, ttlInSeconds: infiniteTtl))
-                   .ExecuteAsync(CosmosBatchTestBase.GetUpdatedBatchRequestOptions(isSchematized: true));
+                        BatchTestBase.TestDocToStream(testDocToUpsert, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(testDocToUpsert, isSchematized, ttlInSeconds: infiniteTtl))
+                   .ExecuteAsync(BatchTestBase.GetUpdatedBatchRequestOptions(isSchematized: true));
 
                 BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 4);
 
@@ -219,10 +219,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // wait for TTL to expire
                 await Task.Delay(TimeSpan.FromSeconds(ttlInSeconds + 1));
 
-                await CosmosBatchTestBase.VerifyNotFoundAsync(container, testDocToCreate, isSchematized);
-                await CosmosBatchTestBase.VerifyByReadAsync(container, anotherTestDocToCreate, isStream, isSchematized);
-                await CosmosBatchTestBase.VerifyNotFoundAsync(container, testDocToReplace, isSchematized);
-                await CosmosBatchTestBase.VerifyByReadAsync(container, testDocToUpsert, isStream, isSchematized);
+                await BatchTestBase.VerifyNotFoundAsync(container, testDocToCreate, isSchematized);
+                await BatchTestBase.VerifyByReadAsync(container, anotherTestDocToCreate, isStream, isSchematized);
+                await BatchTestBase.VerifyNotFoundAsync(container, testDocToReplace, isSchematized);
+                await BatchTestBase.VerifyByReadAsync(container, testDocToUpsert, isStream, isSchematized);
             }
         }
 
@@ -230,35 +230,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("abpai")]
         public async Task BatchLargerThanServerRequestAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             const int operationCount = 20;
             int appxDocSize = Constants.MaxDirectModeBatchRequestBodySizeInBytes / operationCount;
 
             // Increase the doc size by a bit so all docs won't fit in one server request.
             appxDocSize = (int)(appxDocSize * 1.05);
             {
-                CosmosBatch batch = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
+                Batch batch = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
                 for (int i = 0; i < operationCount; i++)
                 {
-                    TestDoc doc = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1, appxDocSize);
+                    TestDoc doc = BatchTestBase.PopulateTestDoc(this.PartitionKey1, appxDocSize);
                     batch.CreateItem(doc);
                 }
 
-                CosmosBatchResponse batchResponse = await batch.ExecuteAsync();
+                BatchResponse batchResponse = await batch.ExecuteAsync();
 
                 Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, batchResponse.StatusCode);
             }
 
             // Validate the server enforces this as well
             {
-                CosmosBatch batch = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
+                Batch batch = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
                 for (int i = 0; i < operationCount; i++)
                 {
-                    TestDoc doc = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1, appxDocSize);
+                    TestDoc doc = BatchTestBase.PopulateTestDoc(this.PartitionKey1, appxDocSize);
                     batch.CreateItem(doc);
                 }
 
-                CosmosBatchResponse batchResponse = await batch.ExecuteAsync(
+                BatchResponse batchResponse = await batch.ExecuteAsync(
                     maxServerRequestBodyLength: int.MaxValue,
                     maxServerRequestOperationCount: int.MaxValue);
 
@@ -270,33 +270,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("abpai")]
         public async Task BatchWithTooManyOperationsAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
             const int operationCount = Constants.MaxOperationsInDirectModeBatchRequest + 1;
 
             // Validate SDK enforces this
             {
-                CosmosBatch batch = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
+                Batch batch = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
                 for (int i = 0; i < operationCount; i++)
                 {
                     batch.ReadItem(this.TestDocPk1ExistingA.Id);
                 }
 
-                CosmosBatchResponse batchResponse = await batch.ExecuteAsync();
+                BatchResponse batchResponse = await batch.ExecuteAsync();
 
                 Assert.AreEqual(HttpStatusCode.BadRequest, batchResponse.StatusCode);
             }
 
             // Validate the server enforces this as well
             {
-                CosmosBatch batch = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
+                Batch batch = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
                 for (int i = 0; i < operationCount; i++)
                 {
                     batch.ReadItem(this.TestDocPk1ExistingA.Id);
                 }
 
-                CosmosBatchResponse batchResponse = await batch.ExecuteAsync(
+                BatchResponse batchResponse = await batch.ExecuteAsync(
                     maxServerRequestBodyLength: int.MaxValue,
                     maxServerRequestOperationCount: int.MaxValue);
 
@@ -308,19 +308,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("abpai")]
         public async Task BatchServerResponseTooLargeAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             const int operationCount = 10;
             int appxDocSizeInBytes = 1 * 1024 * 1024;
 
-            TestDoc doc = await CosmosBatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1, appxDocSizeInBytes);
+            TestDoc doc = await BatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1, appxDocSizeInBytes);
 
-            CosmosBatch batch = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
+            Batch batch = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
             for (int i = 0; i < operationCount; i++)
             {
                 batch.ReadItem(doc.Id);
             }
 
-            CosmosBatchResponse batchResponse = await batch.ExecuteAsync();
+            BatchResponse batchResponse = await batch.ExecuteAsync();
 
             BatchSinglePartitionKeyTests.VerifyBatchProcessed(
                 batchResponse, 
@@ -335,10 +335,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("abpai")]
         public async Task BatchReadsOnlyAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
-            CosmosBatchResponse batchResponse = await container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1))
+            BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .ReadItem(this.TestDocPk1ExistingA.Id)
                     .ReadItem(this.TestDocPk1ExistingB.Id)
                     .ReadItem(this.TestDocPk1ExistingC.Id)
@@ -355,22 +355,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(this.TestDocPk1ExistingC, batchResponse.GetOperationResultAtIndex<TestDoc>(2).Resource);
         }
 
-        private async Task<CosmosBatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, Container container, RequestOptions batchOptions = null)
+        private async Task<BatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, Container container, RequestOptions batchOptions = null)
         {
             if (isSchematized)
             {
                 await this.CreateSchematizedTestDocsAsync(container);
 
-                batchOptions = CosmosBatchTestBase.GetUpdatedBatchRequestOptions(batchOptions, isSchematized, useEpk, this.PartitionKey1);
+                batchOptions = BatchTestBase.GetUpdatedBatchRequestOptions(batchOptions, isSchematized, useEpk, this.PartitionKey1);
             }
             else
             {
                 await this.CreateJsonTestDocsAsync(container);
             }
 
-            TestDoc testDocToCreate = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
+            TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
-            TestDoc testDocToUpsert = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
+            TestDoc testDocToUpsert = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
             TestDoc anotherTestDocToUpsert = this.GetTestDocCopy(this.TestDocPk1ExistingA);
             anotherTestDocToUpsert.Cost++;
@@ -379,10 +379,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             testDocToReplace.Cost++;
 
             // We run CRUD operations where all are expected to return HTTP 2xx.
-            CosmosBatchResponse batchResponse;
+            BatchResponse batchResponse;
             if (!isStream)
             {
-                batchResponse = await container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1))
+                batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .CreateItem(testDocToCreate)
                     .ReadItem(this.TestDocPk1ExistingC.Id)
                     .ReplaceItem(testDocToReplace.Id, testDocToReplace)
@@ -393,26 +393,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                batchResponse = await container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1, useEpk))
+                batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1, useEpk))
                     .CreateItemStream(
-                        CosmosBatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(testDocToCreate, isSchematized))
+                        BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(testDocToCreate, isSchematized))
                     .ReadItem(
-                        CosmosBatchTestBase.GetId(this.TestDocPk1ExistingC, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(this.TestDocPk1ExistingC, isSchematized))
+                        BatchTestBase.GetId(this.TestDocPk1ExistingC, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(this.TestDocPk1ExistingC, isSchematized))
                     .ReplaceItemStream(
-                        CosmosBatchTestBase.GetId(testDocToReplace, isSchematized),
-                        CosmosBatchTestBase.TestDocToStream(testDocToReplace, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(testDocToReplace, isSchematized))
+                        BatchTestBase.GetId(testDocToReplace, isSchematized),
+                        BatchTestBase.TestDocToStream(testDocToReplace, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(testDocToReplace, isSchematized))
                     .UpsertItemStream(
-                        CosmosBatchTestBase.TestDocToStream(testDocToUpsert, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(testDocToUpsert, isSchematized))
+                        BatchTestBase.TestDocToStream(testDocToUpsert, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(testDocToUpsert, isSchematized))
                     .UpsertItemStream(
-                        CosmosBatchTestBase.TestDocToStream(anotherTestDocToUpsert, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(anotherTestDocToUpsert, isSchematized))
+                        BatchTestBase.TestDocToStream(anotherTestDocToUpsert, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(anotherTestDocToUpsert, isSchematized))
                     .DeleteItem(
-                        CosmosBatchTestBase.GetId(this.TestDocPk1ExistingD, isSchematized),
-                        CosmosBatchTestBase.GetItemRequestOptions(this.TestDocPk1ExistingD, isSchematized))
+                        BatchTestBase.GetId(this.TestDocPk1ExistingD, isSchematized),
+                        BatchTestBase.GetItemRequestOptions(this.TestDocPk1ExistingD, isSchematized))
                     .ExecuteAsync(batchOptions);
             }
 
@@ -431,14 +431,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                Assert.AreEqual(this.TestDocPk1ExistingC, CosmosBatchTestBase.StreamToTestDoc(batchResponse[1].ResourceStream, isSchematized));
+                Assert.AreEqual(this.TestDocPk1ExistingC, BatchTestBase.StreamToTestDoc(batchResponse[1].ResourceStream, isSchematized));
             }
 
-            await CosmosBatchTestBase.VerifyByReadAsync(container, testDocToCreate, isStream, isSchematized, useEpk);
-            await CosmosBatchTestBase.VerifyByReadAsync(container, testDocToReplace, isStream, isSchematized, useEpk);
-            await CosmosBatchTestBase.VerifyByReadAsync(container, testDocToUpsert, isStream, isSchematized, useEpk);
-            await CosmosBatchTestBase.VerifyByReadAsync(container, anotherTestDocToUpsert, isStream, isSchematized, useEpk);
-            await CosmosBatchTestBase.VerifyNotFoundAsync(container, this.TestDocPk1ExistingD, isSchematized, useEpk);
+            await BatchTestBase.VerifyByReadAsync(container, testDocToCreate, isStream, isSchematized, useEpk);
+            await BatchTestBase.VerifyByReadAsync(container, testDocToReplace, isStream, isSchematized, useEpk);
+            await BatchTestBase.VerifyByReadAsync(container, testDocToUpsert, isStream, isSchematized, useEpk);
+            await BatchTestBase.VerifyByReadAsync(container, anotherTestDocToUpsert, isStream, isSchematized, useEpk);
+            await BatchTestBase.VerifyNotFoundAsync(container, this.TestDocPk1ExistingD, isSchematized, useEpk);
 
             return batchResponse;
         }
@@ -448,23 +448,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a large set of read operations that is expected to be rate limited.")]
         public async Task BatchRateLimitingAsync()
         {
-            Container containerWithDefaultRetryPolicy = CosmosBatchTestBase.LowThroughputJsonContainer;
+            Container containerWithDefaultRetryPolicy = BatchTestBase.LowThroughputJsonContainer;
 
             await this.CreateJsonTestDocsAsync(containerWithDefaultRetryPolicy);
             CosmosClient clientWithNoThrottleRetry = new CosmosClientBuilder(
-                    CosmosBatchTestBase.Client.Endpoint.ToString(),
-                    CosmosBatchTestBase.Client.AccountKey)
+                    BatchTestBase.Client.Endpoint.ToString(),
+                    BatchTestBase.Client.AccountKey)
                     .WithThrottlingRetryOptions(
                     maxRetryWaitTimeOnThrottledRequests: default(TimeSpan),
                     maxRetryAttemptsOnThrottledRequests: 0)
                 .Build();
 
             Container containerWithNoThrottleRetry = 
-                clientWithNoThrottleRetry.GetContainer(CosmosBatchTestBase.Database.Id, CosmosBatchTestBase.LowThroughputJsonContainer.Id);
+                clientWithNoThrottleRetry.GetContainer(BatchTestBase.Database.Id, BatchTestBase.LowThroughputJsonContainer.Id);
             
             // The second batch started should be rate limited by the backend in admission control.
             {
-                CosmosBatchResponse[] batchResponses = await this.RunTwoLargeBatchesAsync(containerWithNoThrottleRetry);
+                BatchResponse[] batchResponses = await this.RunTwoLargeBatchesAsync(containerWithNoThrottleRetry);
 
                 Assert.AreEqual(HttpStatusCode.OK, batchResponses[0].StatusCode);
                 Assert.AreEqual((int)StatusCodes.TooManyRequests, (int)batchResponses[1].StatusCode);
@@ -473,17 +473,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // The default retry policy around throttling should ensure the second batch also succeeds.
             {
-                CosmosBatchResponse[] batchResponses = await this.RunTwoLargeBatchesAsync(containerWithDefaultRetryPolicy);
+                BatchResponse[] batchResponses = await this.RunTwoLargeBatchesAsync(containerWithDefaultRetryPolicy);
 
                 Assert.AreEqual(HttpStatusCode.OK, batchResponses[0].StatusCode);
                 Assert.AreEqual(HttpStatusCode.OK, batchResponses[1].StatusCode);
             }
         }
 
-        private async Task<CosmosBatchResponse[]> RunTwoLargeBatchesAsync(Container container)
+        private async Task<BatchResponse[]> RunTwoLargeBatchesAsync(Container container)
         {
-            CosmosBatch batch1 = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
-            CosmosBatch batch2 = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1));
+            Batch batch1 = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
+            Batch batch2 = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
 
             for (int i = 0; i < Constants.MaxOperationsInDirectModeBatchRequest; i++)
             {
@@ -491,11 +491,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 batch2.CreateItem(BatchSinglePartitionKeyTests.PopulateTestDoc(this.PartitionKey1));
             }
 
-            Task<CosmosBatchResponse> batch1Task = batch1.ExecuteAsync();
+            Task<BatchResponse> batch1Task = batch1.ExecuteAsync();
             await Task.Delay(50);
-            Task<CosmosBatchResponse> batch2Task = batch2.ExecuteAsync();
+            Task<BatchResponse> batch2Task = batch2.ExecuteAsync();
 
-            CosmosBatchResponse[] batchResponses = await Task.WhenAll(batch1Task, batch2Task);
+            BatchResponse[] batchResponses = await Task.WhenAll(batch1Task, batch2Task);
             return batchResponses;
         }
 
@@ -504,7 +504,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a create operation having a conflict rolls back prior operations")]
         public async Task BatchWithCreateConflictAsync()
         {
-            await this.RunBatchWithCreateConflictAsync(CosmosBatchTestBase.JsonContainer);
+            await this.RunBatchWithCreateConflictAsync(BatchTestBase.JsonContainer);
         }
 
         [TestMethod]
@@ -512,7 +512,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a create operation having a conflict rolls back prior operations in gateway mode")]
         public async Task BatchWithCreateConflictGatewayAsync()
         {
-            await this.RunBatchWithCreateConflictAsync(CosmosBatchTestBase.GatewayJsonContainer);
+            await this.RunBatchWithCreateConflictAsync(BatchTestBase.GatewayJsonContainer);
         }
 
         [TestMethod]
@@ -520,7 +520,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a create operation having a conflict rolls back prior operations in shared throughput")]
         public async Task BatchWithCreateConflictSharedThroughputAsync()
         {
-            await this.RunBatchWithCreateConflictAsync(CosmosBatchTestBase.SharedThroughputContainer);
+            await this.RunBatchWithCreateConflictAsync(BatchTestBase.SharedThroughputContainer);
         }
 
         private async Task RunBatchWithCreateConflictAsync(Container container)
@@ -537,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpStatusCode.Conflict);
 
             // make sure the conflicted doc hasn't changed
-            await CosmosBatchTestBase.VerifyByReadAsync(container, this.TestDocPk1ExistingA);
+            await BatchTestBase.VerifyByReadAsync(container, this.TestDocPk1ExistingA);
         }
 
         [TestMethod]
@@ -545,12 +545,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with an invalid create operation rolls back prior operations")]
         public async Task BatchWithInvalidCreateAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
 
             // partition key mismatch between doc and and value passed in to the operation
             await this.RunWithErrorAsync(
                 container,
-                batch => batch.CreateItem(CosmosBatchTestBase.PopulateTestDoc(partitionKey: Guid.NewGuid().ToString())),
+                batch => batch.CreateItem(BatchTestBase.PopulateTestDoc(partitionKey: Guid.NewGuid().ToString())),
                 HttpStatusCode.BadRequest);
         }
 
@@ -559,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a read operation on a non-existent entity rolls back prior operations")]
         public async Task BatchWithReadOfNonExistentEntityAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             await this.RunWithErrorAsync(
                 container,
                 batch => batch.ReadItem(Guid.NewGuid().ToString()), 
@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a replace operation on a stale entity rolls back prior operations")]
         public async Task BatchWithReplaceOfStaleEntityAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
             TestDoc staleTestDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingA);
@@ -587,7 +587,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpStatusCode.PreconditionFailed);
 
             // make sure the stale doc hasn't changed
-            await CosmosBatchTestBase.VerifyByReadAsync(container, this.TestDocPk1ExistingA);
+            await BatchTestBase.VerifyByReadAsync(container, this.TestDocPk1ExistingA);
         }
 
         [TestMethod]
@@ -595,7 +595,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Description("Verify batch with a delete operation on a non-existent entity rolls back prior operations")]
         public async Task BatchWithDeleteOfNonExistentEntityAsync()
         {
-            Container container = CosmosBatchTestBase.JsonContainer;
+            Container container = BatchTestBase.JsonContainer;
             await this.RunWithErrorAsync(
                 container,
                 batch => batch.DeleteItem(Guid.NewGuid().ToString()),
@@ -604,18 +604,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<Container> RunWithErrorAsync(
             Container container,
-            Action<CosmosBatch> appendOperation, 
+            Action<Batch> appendOperation, 
             HttpStatusCode expectedFailedOperationStatusCode)
         { 
-            TestDoc testDocToCreate = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
-            TestDoc anotherTestDocToCreate = CosmosBatchTestBase.PopulateTestDoc(this.PartitionKey1);
+            TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+            TestDoc anotherTestDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
-            CosmosBatch batch = container.CreateBatch(CosmosBatchTestBase.GetPartitionKey(this.PartitionKey1))
+            Batch batch = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                 .CreateItem(testDocToCreate);
 
             appendOperation(batch);
 
-            CosmosBatchResponse batchResponse = await batch
+            BatchResponse batchResponse = await batch
                 .CreateItem(anotherTestDocToCreate)
                 .ExecuteAsync();
 
@@ -628,12 +628,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(expectedFailedOperationStatusCode, batchResponse[1].StatusCode);
             Assert.AreEqual((HttpStatusCode)StatusCodes.FailedDependency, batchResponse[2].StatusCode);
 
-            await CosmosBatchTestBase.VerifyNotFoundAsync(container, testDocToCreate);
-            await CosmosBatchTestBase.VerifyNotFoundAsync(container, anotherTestDocToCreate);
+            await BatchTestBase.VerifyNotFoundAsync(container, testDocToCreate);
+            await BatchTestBase.VerifyNotFoundAsync(container, anotherTestDocToCreate);
             return container;
         }
 
-        private static void VerifyBatchProcessed(CosmosBatchResponse batchResponse, int numberOfOperations, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
+        private static void VerifyBatchProcessed(BatchResponse batchResponse, int numberOfOperations, HttpStatusCode expectedStatusCode = HttpStatusCode.OK)
         {
             Assert.IsNotNull(batchResponse);
             Assert.AreEqual(

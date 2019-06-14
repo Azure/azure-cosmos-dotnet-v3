@@ -130,19 +130,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchResponseDeserializationAsync()
         {
-           List<CosmosBatchOperationResult> results = new List<CosmosBatchOperationResult>();
+           List<BatchOperationResult> results = new List<BatchOperationResult>();
 
-            results.Add(new CosmosBatchOperationResult(HttpStatusCode.Conflict));
+            results.Add(new BatchOperationResult(HttpStatusCode.Conflict));
 
             results.Add(
-                new CosmosBatchOperationResult(HttpStatusCode.OK)
+                new BatchOperationResult(HttpStatusCode.OK)
                 {
                     ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                     ETag = "1234"
                 });
 
             results.Add(
-                new CosmosBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests)
+                new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests)
                 {
                     RetryAfter = TimeSpan.FromMilliseconds(360)
                 });
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 maxOperationCount: 1,
                 serializer: serializer,
                 cancellationToken: CancellationToken.None);
-            CosmosBatchResponse batchresponse = await CosmosBatchResponse.PopulateFromContentAsync(
+            BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
                 new CosmosResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchResponse,
                 serializer);
@@ -226,9 +226,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private class CosmosBatchOperationResultEqualityComparer : IEqualityComparer<CosmosBatchOperationResult>
+        private class CosmosBatchOperationResultEqualityComparer : IEqualityComparer<BatchOperationResult>
         {
-            public bool Equals(CosmosBatchOperationResult x, CosmosBatchOperationResult y)
+            public bool Equals(BatchOperationResult x, BatchOperationResult y)
             {
                 return x.StatusCode == y.StatusCode
                     && x.SubStatusCode == y.SubStatusCode
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return false;
             }
 
-            public int GetHashCode(CosmosBatchOperationResult obj)
+            public int GetHashCode(BatchOperationResult obj)
             {
                 int hashCode = 1176625765;
                 hashCode = (hashCode * -1521134295) + obj.StatusCode.GetHashCode();

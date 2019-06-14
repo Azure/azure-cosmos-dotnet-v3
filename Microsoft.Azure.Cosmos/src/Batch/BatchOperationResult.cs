@@ -14,14 +14,14 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a result for a specific operation that was part of a batch request.
     /// </summary>
-    public class CosmosBatchOperationResult
+    public class BatchOperationResult
     {
-        internal CosmosBatchOperationResult(HttpStatusCode statusCode)
+        internal BatchOperationResult(HttpStatusCode statusCode)
         {
             this.StatusCode = statusCode;
         }
 
-        internal CosmosBatchOperationResult(CosmosBatchOperationResult other)
+        internal BatchOperationResult(BatchOperationResult other)
         {
             this.StatusCode = other.StatusCode;
             this.SubStatusCode = other.SubStatusCode;
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.RetryAfter = other.RetryAfter;
         }
 
-        private CosmosBatchOperationResult()
+        private BatchOperationResult()
         {
         }
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal virtual SubStatusCodes SubStatusCode { get; set; }
 
-        internal static Result ReadOperationResult(Memory<byte> input, out CosmosBatchOperationResult batchOperationResult)
+        internal static Result ReadOperationResult(Memory<byte> input, out BatchOperationResult batchOperationResult)
         {
             RowBuffer row = new RowBuffer(input.Length);
             if (!row.ReadFrom(
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             RowReader reader = new RowReader(ref row);
-            Result result = CosmosBatchOperationResult.ReadOperationResult(ref reader, out batchOperationResult);
+            Result result = BatchOperationResult.ReadOperationResult(ref reader, out batchOperationResult);
             if (result != Result.Success)
             {
                 return result;
@@ -108,9 +108,9 @@ namespace Microsoft.Azure.Cosmos
             return Result.Success;
         }
 
-        private static Result ReadOperationResult(ref RowReader reader, out CosmosBatchOperationResult batchOperationResult)
+        private static Result ReadOperationResult(ref RowReader reader, out BatchOperationResult batchOperationResult)
         {
-            batchOperationResult = new CosmosBatchOperationResult();
+            batchOperationResult = new BatchOperationResult();
             while (reader.Read())
             {
                 Result r;
@@ -178,15 +178,15 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <typeparam name="T">The type of the Resource which this class wraps.</typeparam>
 #pragma warning disable SA1402 // File may only contain a single type
-    public class CosmosBatchOperationResult<T> : CosmosBatchOperationResult
+    public class BatchOperationResult<T> : BatchOperationResult
 #pragma warning restore SA1402 // File may only contain a single type
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosBatchOperationResult{T}"/> class.
+        /// Initializes a new instance of the <see cref="BatchOperationResult{T}"/> class.
         /// </summary>
         /// <param name="result">CosmosBatchOperationResult with stream resource.</param>
         /// <param name="resource">Deserialized resource.</param>
-        internal CosmosBatchOperationResult(CosmosBatchOperationResult result, T resource)
+        internal BatchOperationResult(BatchOperationResult result, T resource)
             : base(result)
         {
             this.Resource = resource;

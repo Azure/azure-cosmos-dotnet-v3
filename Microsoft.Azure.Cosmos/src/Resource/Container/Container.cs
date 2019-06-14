@@ -1143,10 +1143,10 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan? estimationPeriod = null);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosBatch"/> class.
+        /// Initializes a new instance of the <see cref="Batch"/> class.
         /// </summary>
         /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
-        /// <returns>An instance of <see cref="CosmosBatch"/></returns>
-        public abstract CosmosBatch CreateBatch(PartitionKey partitionKey);
+        /// <returns>An instance of <see cref="Batch"/></returns>
+        public abstract Batch CreateBatch(PartitionKey partitionKey);
     }
 }

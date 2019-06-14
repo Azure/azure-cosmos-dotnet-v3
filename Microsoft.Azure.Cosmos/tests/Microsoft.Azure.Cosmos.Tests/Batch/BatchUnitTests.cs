@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Newtonsoft.Json;
 
     [TestClass]
-    public class CosmosBatchUnitTests
+    public class BatchUnitTests
     {
         private const string DatabaseId = "mockDatabase";
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchInvalidOptionsAsync()
         {
-            Container container = CosmosBatchUnitTests.GetCosmosContainer();
+            Container container = BatchUnitTests.GetCosmosContainer();
 
             List<RequestOptions> badBatchOptionsList = new List<RequestOptions>()
             {
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (RequestOptions batchOptions in badBatchOptionsList)
             {
-                CosmosBatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1))
+                BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                                                             .ReadItem("someId")
                                                             .ExecuteAsync(batchOptions);
 
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchInvalidItemOptionsAsync()
         {
-            Container container = CosmosBatchUnitTests.GetCosmosContainer();
+            Container container = BatchUnitTests.GetCosmosContainer();
 
             List<ItemRequestOptions> badItemOptionsList = new List<ItemRequestOptions>()
             {
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (ItemRequestOptions itemOptions in badItemOptionsList)
             {
-                CosmosBatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1))
+                BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                                                             .ReplaceItem("someId", new TestItem("repl"), itemOptions)
                                                             .ExecuteAsync();
 
@@ -106,8 +106,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchNoOperationsAsync()
         {
-            Container container = CosmosBatchUnitTests.GetCosmosContainer();
-            CosmosBatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1))
+            Container container = BatchUnitTests.GetCosmosContainer();
+            BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.BadRequest, batchResponse.StatusCode);
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
             BatchTestHandler testHandler = new BatchTestHandler((request, operations) =>
             {
-                Assert.AreEqual(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1).ToString(), request.Headers.PartitionKey);
+                Assert.AreEqual(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1).ToString(), request.Headers.PartitionKey);
                 Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsBatchAtomic]);
                 Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsBatchOrdered]);
                 Assert.IsFalse(request.Headers.TryGetValue(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, out string unused));
@@ -210,56 +210,56 @@ namespace Microsoft.Azure.Cosmos.Tests
                     ItemBatchOperation operation = operations[operationIndex++];
                     Assert.AreEqual(OperationType.Create, operation.OperationType);
                     Assert.IsNull(operation.Id);
-                    Assert.AreEqual(createItem, CosmosBatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
-                    CosmosBatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? createRequestOptions : null, operation.RequestOptions);
+                    Assert.AreEqual(createItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
+                    BatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? createRequestOptions : null, operation.RequestOptions);
 
                     operation = operations[operationIndex++];
                     Assert.AreEqual(OperationType.Read, operation.OperationType);
                     Assert.AreEqual(readId, operation.Id);
-                    CosmosBatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? readRequestOptions : null, operation.RequestOptions);
+                    BatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? readRequestOptions : null, operation.RequestOptions);
 
                     operation = operations[operationIndex++];
                     Assert.AreEqual(OperationType.Replace, operation.OperationType);
                     Assert.AreEqual(replaceItem.Id, operation.Id);
-                    Assert.AreEqual(replaceItem, CosmosBatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
-                    CosmosBatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? replaceRequestOptions : null, operation.RequestOptions);
+                    Assert.AreEqual(replaceItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
+                    BatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? replaceRequestOptions : null, operation.RequestOptions);
 
                     operation = operations[operationIndex++];
                     Assert.AreEqual(OperationType.Upsert, operation.OperationType);
                     Assert.IsNull(operation.Id);
-                    Assert.AreEqual(upsertItem, CosmosBatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
-                    CosmosBatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
+                    Assert.AreEqual(upsertItem, BatchUnitTests.Deserialize(operation.ResourceBody, jsonSerializer));
+                    BatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
 
                     operation = operations[operationIndex++];
                     Assert.AreEqual(OperationType.Delete, operation.OperationType);
                     Assert.AreEqual(deleteId, operation.Id);
-                    CosmosBatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? deleteRequestOptions : null, operation.RequestOptions);
+                    BatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? deleteRequestOptions : null, operation.RequestOptions);
 
                     operation = operations[operationIndex++];
                     Assert.AreEqual(OperationType.Create, operation.OperationType);
                     Assert.IsNull(operation.Id);
                     Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(createStreamContent));
-                    CosmosBatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? createRequestOptions : null, operation.RequestOptions);
+                    BatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? createRequestOptions : null, operation.RequestOptions);
 
                     operation = operations[operationIndex++];
                     Assert.AreEqual(OperationType.Replace, operation.OperationType);
                     Assert.AreEqual(replaceStreamId, operation.Id);
                     Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(replaceStreamContent));
-                    CosmosBatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? replaceRequestOptions : null, operation.RequestOptions);
+                    BatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? replaceRequestOptions : null, operation.RequestOptions);
 
                     operation = operations[operationIndex++];
                     Assert.AreEqual(OperationType.Upsert, operation.OperationType);
                     Assert.IsNull(operation.Id);
                     Assert.IsTrue(operation.ResourceBody.Span.SequenceEqual(upsertStreamContent));
-                    CosmosBatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
+                    BatchUnitTests.VerifyItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
                 }
 
                 return Task.FromResult(new CosmosResponseMessage(HttpStatusCode.OK));
             });
 
-            Container container = CosmosBatchUnitTests.GetCosmosContainer(testHandler);
+            Container container = BatchUnitTests.GetCosmosContainer(testHandler);
 
-            CosmosBatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1))
+            BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .CreateItem(createItem)
                 .ReadItem(readId)
                 .ReplaceItem(replaceItem.Id, replaceItem)
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchSingleServerResponseAsync()
         {
-            List<CosmosBatchOperationResult> expectedResults = new List<CosmosBatchOperationResult>();
+            List<BatchOperationResult> expectedResults = new List<BatchOperationResult>();
             CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
             TestItem testItem = new TestItem("tst");
 
@@ -302,13 +302,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             expectedResults.Add(
-                new CosmosBatchOperationResult(HttpStatusCode.OK)
+                new BatchOperationResult(HttpStatusCode.OK)
                 {
                     ETag = "theETag",
                     SubStatusCode = (SubStatusCodes)1100,
                     ResourceStream = resourceStream
                 });
-            expectedResults.Add(new CosmosBatchOperationResult(HttpStatusCode.Conflict));
+            expectedResults.Add(new BatchOperationResult(HttpStatusCode.Conflict));
 
             double requestCharge = 3.6;
 
@@ -323,9 +323,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return responseMessage;
             });
 
-            Container container = CosmosBatchUnitTests.GetCosmosContainer(testHandler);
+            Container container = BatchUnitTests.GetCosmosContainer(testHandler);
 
-            CosmosBatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(CosmosBatchUnitTests.PartitionKey1))
+            BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .ReadItem("id1")
                 .ReadItem("id2")
                 .ExecuteAsync();
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
             Assert.AreEqual(requestCharge, batchResponse.RequestCharge);
 
-            CosmosBatchOperationResult<TestItem> result0 = batchResponse.GetOperationResultAtIndex<TestItem>(0);
+            BatchOperationResult<TestItem> result0 = batchResponse.GetOperationResultAtIndex<TestItem>(0);
             Assert.AreEqual(expectedResults[0].StatusCode, result0.StatusCode);
             Assert.AreEqual(expectedResults[0].SubStatusCode, result0.SubStatusCode);
             Assert.AreEqual(expectedResults[0].ETag, result0.ETag);
@@ -365,10 +365,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static async Task<CosmosResponseMessage> GetBatchResponseMessageAsync(List<ItemBatchOperation> operations, int rateLimitedOperationCount = 0)
         {
-            CosmosBatchOperationResult okOperationResult = new CosmosBatchOperationResult(HttpStatusCode.OK);
-            CosmosBatchOperationResult rateLimitedOperationResult = new CosmosBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
+            BatchOperationResult okOperationResult = new BatchOperationResult(HttpStatusCode.OK);
+            BatchOperationResult rateLimitedOperationResult = new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
 
-            List<CosmosBatchOperationResult> resultsFromServer = new List<CosmosBatchOperationResult>();
+            List<BatchOperationResult> resultsFromServer = new List<BatchOperationResult>();
             for (int operationIndex = 0; operationIndex < operations.Count - rateLimitedOperationCount; operationIndex++)
             {
                 resultsFromServer.Add(okOperationResult);
@@ -439,15 +439,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static Container GetCosmosContainer(TestHandler testHandler = null)
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(testHandler));
-            CosmosDatabaseCore database = new CosmosDatabaseCore(client.ClientContext, CosmosBatchUnitTests.DatabaseId);
-            ContainerCore container = new ContainerCore(client.ClientContext, database, CosmosBatchUnitTests.ContainerId);
+            CosmosDatabaseCore database = new CosmosDatabaseCore(client.ClientContext, BatchUnitTests.DatabaseId);
+            ContainerCore container = new ContainerCore(client.ClientContext, database, BatchUnitTests.ContainerId);
             return container;
         }
 
         private static ContainerCore GetMockedContainer(string containerName = null)
         {
             Mock<ContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
-            mockedContainer.Setup(c => c.ClientContext).Returns(CosmosBatchUnitTests.GetMockedClientContext());
+            mockedContainer.Setup(c => c.ClientContext).Returns(BatchUnitTests.GetMockedClientContext());
             return mockedContainer.Object;
         }
 
@@ -495,8 +495,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Uri expectedRequestUri = new Uri(
                     string.Format(
                         "dbs/{0}/colls/{1}",
-                        CosmosBatchUnitTests.DatabaseId,
-                        CosmosBatchUnitTests.ContainerId),
+                        BatchUnitTests.DatabaseId,
+                        BatchUnitTests.ContainerId),
                     UriKind.Relative);
                 Assert.AreEqual(expectedRequestUri, request.RequestUri);
             }

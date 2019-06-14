@@ -17,14 +17,14 @@ namespace Microsoft.Azure.Cosmos
     /// Response of a batch request.
     /// </summary>
 #pragma warning disable CA1710 // Identifiers should have correct suffix
-    public class CosmosBatchResponse : IReadOnlyList<CosmosBatchOperationResult>, IDisposable
+    public class BatchResponse : IReadOnlyList<BatchOperationResult>, IDisposable
 #pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         private bool isDisposed;
 
-        private List<CosmosBatchOperationResult> results;
+        private List<BatchOperationResult> results;
 
-        internal CosmosBatchResponse(
+        internal BatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
@@ -38,14 +38,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosBatchResponse"/> class.
+        /// Initializes a new instance of the <see cref="BatchResponse"/> class.
         /// This method is intended to be used only when a response from the server is not available.
         /// </summary>
         /// <param name="statusCode">Indicates why the batch was not processed.</param>
         /// <param name="subStatusCode">Provides further details about why the batch was not processed.</param>
         /// <param name="errorMessage">The reason for failure.</param>
         /// <param name="operations">Operations that were to be executed.</param>
-        internal CosmosBatchResponse(
+        internal BatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
@@ -62,13 +62,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CosmosBatchResponse"/> class.
+        /// Initializes a new instance of the <see cref="BatchResponse"/> class.
         /// </summary>
-        protected CosmosBatchResponse()
+        protected BatchResponse()
         {
         }
 
-        private CosmosBatchResponse(
+        private BatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="index">0-based index of the operation in the batch whose result needs to be returned.</param>
         /// <returns>Result of operation at the provided index in the batch.</returns>
-        public virtual CosmosBatchOperationResult this[int index]
+        public virtual BatchOperationResult this[int index]
         {
             get
             {
@@ -160,9 +160,9 @@ namespace Microsoft.Azure.Cosmos
         /// <typeparam name="T">Type to which the Resource in the operation result needs to be deserialized to, when present.</typeparam>
         /// <param name="index">0-based index of the operation in the batch whose result needs to be returned.</param>
         /// <returns>Result of batch operation that contains a Resource deserialized to specified type.</returns>
-        public virtual CosmosBatchOperationResult<T> GetOperationResultAtIndex<T>(int index)
+        public virtual BatchOperationResult<T> GetOperationResultAtIndex<T>(int index)
         {
-            CosmosBatchOperationResult result = this.results[index];
+            BatchOperationResult result = this.results[index];
 
             T resource = default(T);
             if (result.ResourceStream != null)
@@ -170,14 +170,14 @@ namespace Microsoft.Azure.Cosmos
                 resource = this.Serializer.FromStream<T>(result.ResourceStream);
             }
 
-            return new CosmosBatchOperationResult<T>(result, resource);
+            return new BatchOperationResult<T>(result, resource);
         }
 
         /// <summary>
         /// Gets an enumerator over the operation results.
         /// </summary>
         /// <returns>Enumerator over the operation results.</returns>
-        public virtual IEnumerator<CosmosBatchOperationResult> GetEnumerator()
+        public virtual IEnumerator<BatchOperationResult> GetEnumerator()
         {
             return this.results.GetEnumerator();
         }
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Disposes the current <see cref="CosmosBatchResponse"/>.
+        /// Disposes the current <see cref="BatchResponse"/>.
         /// </summary>
         public void Dispose()
         {
@@ -206,21 +206,21 @@ namespace Microsoft.Azure.Cosmos
             return this.GetEnumerator();
         }
 
-        internal static async Task<CosmosBatchResponse> FromResponseMessageAsync(
+        internal static async Task<BatchResponse> FromResponseMessageAsync(
             CosmosResponseMessage responseMessage, 
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {
             using (responseMessage)
             {
-                CosmosBatchResponse response = null;
+                BatchResponse response = null;
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
-                    response = await CosmosBatchResponse.PopulateFromContentAsync(responseMessage, serverRequest, serializer);
+                    response = await BatchResponse.PopulateFromContentAsync(responseMessage, serverRequest, serializer);
                     if (response == null)
                     {
                         // Convert any payload read failures as InternalServerError
-                        response = new CosmosBatchResponse(
+                        response = new BatchResponse(
                             HttpStatusCode.InternalServerError,
                             SubStatusCodes.Unknown,
                             ClientResources.ServerResponseDeserializationFailure,
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    response = new CosmosBatchResponse(
+                    response = new BatchResponse(
                         responseMessage.StatusCode,
                         responseMessage.Headers.SubStatusCode,
                         responseMessage.ErrorMessage,
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         // Server should be guaranteeing number of results equal to operations when
                         // batch request is successful - so fail as InternalServerError if this is not the case.
-                        response = new CosmosBatchResponse(
+                        response = new BatchResponse(
                             HttpStatusCode.InternalServerError,
                             SubStatusCodes.Unknown,
                             ClientResources.InvalidServerResponse,
@@ -274,11 +274,11 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    response.results = new List<CosmosBatchOperationResult>();
+                    response.results = new List<BatchOperationResult>();
                     for (int i = 0; i < serverRequest.Operations.Count; i++)
                     {
                         response.results.Add(
-                            new CosmosBatchOperationResult(response.StatusCode)
+                            new BatchOperationResult(response.StatusCode)
                             {
                                 SubStatusCode = response.SubStatusCode,
                                 RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
@@ -290,12 +290,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static async Task<CosmosBatchResponse> PopulateFromContentAsync(
+        internal static async Task<BatchResponse> PopulateFromContentAsync(
             CosmosResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {
-            List<CosmosBatchOperationResult> results = new List<CosmosBatchOperationResult>();
+            List<BatchOperationResult> results = new List<BatchOperationResult>();
 
             int resizerInitialCapacity = 81920;
             if (responseMessage.Content.CanSeek)
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos
             Result res = await responseMessage.Content.ReadRecordIOAsync(
                 record =>
                 {
-                    Result r = CosmosBatchOperationResult.ReadOperationResult(record, out CosmosBatchOperationResult operationResult);
+                    Result r = BatchOperationResult.ReadOperationResult(record, out BatchOperationResult operationResult);
                     if (r != Result.Success)
                     {
                         return r;
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            CosmosBatchResponse response = new CosmosBatchResponse(
+            BatchResponse response = new BatchResponse(
                 responseMessage.StatusCode,
                 responseMessage.Headers.SubStatusCode,
                 responseMessage.ErrorMessage,

@@ -90,7 +90,6 @@ namespace Microsoft.Azure.Cosmos
         public static CosmosResponseMessage Validate(
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,
-            CosmosClient client,
             int? maxOperationCount = null)
         {
             string errorMessage = null;
