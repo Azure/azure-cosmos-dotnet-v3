@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract CreateContainerDefinition DefineContainer(
+        public abstract ContainerBuilder DefineContainer(
             string name,
             string partitionKeyPath);
     }

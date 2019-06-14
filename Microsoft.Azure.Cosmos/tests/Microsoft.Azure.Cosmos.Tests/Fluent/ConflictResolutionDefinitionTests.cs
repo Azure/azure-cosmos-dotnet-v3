@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse()
         {
-            Mock<CreateContainerDefinition> mockContainerDefinition = new Mock<CreateContainerDefinition>();
+            Mock<ContainerBuilder> mockContainerDefinition = new Mock<ContainerBuilder>();
 
             // LastWrite wins conflict resolution mode 
             {
