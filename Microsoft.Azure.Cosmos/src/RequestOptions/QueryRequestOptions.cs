@@ -69,14 +69,6 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxItemCount { get; set; }
 
         /// <summary>
-        /// Gets or sets the request continuation token in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The request continuation token.
-        /// </value>>
-        public string RequestContinuation { get; set; }
-
-        /// <summary>
         /// Gets or sets the number of concurrent operations run client side during 
         /// parallel query execution in the Azure Cosmos DB service. 
         /// A positive property value limits the number of 
@@ -202,7 +194,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 IfMatchEtag = this.IfMatchEtag,
                 IfNoneMatchEtag = this.IfNoneMatchEtag,
-                RequestContinuation = this.RequestContinuation,
                 MaxItemCount = this.MaxItemCount,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,

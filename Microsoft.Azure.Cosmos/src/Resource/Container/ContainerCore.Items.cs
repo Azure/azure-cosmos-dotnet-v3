@@ -243,7 +243,6 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
-            requestOptions.RequestContinuation = continuationToken;
 
             CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
@@ -251,6 +250,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: true,
@@ -282,7 +282,6 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
-            requestOptions.RequestContinuation = continuationToken;
 
             CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
@@ -290,6 +289,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
                 sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: true,
