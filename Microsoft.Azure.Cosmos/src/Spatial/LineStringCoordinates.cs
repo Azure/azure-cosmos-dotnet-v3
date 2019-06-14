@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Converters;
     using Newtonsoft.Json;
 
@@ -15,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Line string coordinates.
     /// </summary>
     /// <seealso cref="MultiLineString"/>
+    [DataContract]
     [JsonConverter(typeof(LineStringCoordinatesJsonConverter))]
     internal sealed class LineStringCoordinates : IEquatable<LineStringCoordinates>
     {
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Positions of the line string.
         /// </value>
+        [DataMember(Name = "coordinates")]
         public ReadOnlyCollection<Position> Positions { get; private set; }
 
         /// <summary>
