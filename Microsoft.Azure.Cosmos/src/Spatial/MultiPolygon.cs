@@ -8,12 +8,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Geometry which is comprised of multiple polygons.
     /// </summary>
     /// <seealso cref="Polygon"/>
+    [DataContract]
     internal sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
     {
         /// <summary>
@@ -62,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Collection of <see cref="PolygonCoordinates"/> instances. Each <see cref="PolygonCoordinates"/> represents separate polygon.
         /// </value>
+        [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public ReadOnlyCollection<PolygonCoordinates> Polygons { get; private set; }
 

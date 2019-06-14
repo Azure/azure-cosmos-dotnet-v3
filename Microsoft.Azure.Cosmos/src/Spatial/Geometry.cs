@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// <summary>
     /// Base class for spatial geometry objects in the Azure Cosmos DB service.
     /// </summary>
+    [DataContract]
     [JsonObject(MemberSerialization.OptIn)]
     [JsonConverter(typeof(GeometryJsonConverter))]
     public abstract class Geometry
@@ -69,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Type of geometry.
         /// </value>
+        [DataMember(Name = "type")]
         [JsonProperty("type", Required = Required.Always, Order = 0)]
         [JsonConverter(typeof(StringEnumConverter))]
         public GeometryType Type { get; private set; }
@@ -79,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Bounding box of the geometry.
         /// </value>
+        [DataMember(Name = "bbox")]
         [JsonProperty("bbox", DefaultValueHandling = DefaultValueHandling.Ignore, Order = 3)]
         public BoundingBox BoundingBox { get; private set; }
 
@@ -98,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// This is artificial property needed for serialization. If CRS is default one, we don't want
         /// to serialize anything.
         /// </remarks>
+        [DataMember(Name = "crs")]
         [JsonProperty("crs", DefaultValueHandling = DefaultValueHandling.Ignore, Order = 2)]
         private Crs CrsForSerialization { get; set; }
 
