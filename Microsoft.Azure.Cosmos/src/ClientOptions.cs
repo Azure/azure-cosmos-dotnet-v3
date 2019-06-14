@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal virtual CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
+        internal virtual CosmosSerializer PropertiesSerializer => ClientOptions.propertiesSerializer;
 
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
