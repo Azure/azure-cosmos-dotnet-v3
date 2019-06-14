@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     {
         internal ClientContextCore(
             CosmosClient client,
-            ClientOptions clientOptions,
+            CosmosClientOptions clientOptions,
             CosmosSerializer userJsonSerializer,
             CosmosSerializer defaultJsonSerializer,
             CosmosResponseFactory cosmosResponseFactory,
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override RequestInvokerHandler RequestHandler { get; }
 
-        internal override ClientOptions ClientOptions { get; }
+        internal override CosmosClientOptions ClientOptions { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+        internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync(
@@ -118,8 +118,8 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Action<RequestMessage> requestEnricher,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync<T>(

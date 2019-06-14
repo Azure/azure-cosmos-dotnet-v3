@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     {
         private static Func<bool, IQueryable<Datum>> getQuery;
         private static CosmosClient client;
-        private static CosmosDatabase testDb;
+        private static Cosmos.Database testDb;
         private static Container testCollection;
 
         [ClassInitialize]

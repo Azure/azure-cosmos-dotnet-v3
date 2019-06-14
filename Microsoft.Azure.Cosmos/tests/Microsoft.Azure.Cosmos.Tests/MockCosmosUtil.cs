@@ -43,18 +43,18 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return mockContainer;
         }
 
-        public static Mock<CosmosDatabaseCore> CreateMockDatabase(string dbName = "myDb")
+        public static Mock<DatabaseCore> CreateMockDatabase(string dbName = "myDb")
         {
             Uri link = new Uri($"/dbs/{dbName}", UriKind.Relative);
-            Mock<CosmosDatabaseCore> mockDB = new Mock<CosmosDatabaseCore>();
+            Mock<DatabaseCore> mockDB = new Mock<DatabaseCore>();
             mockDB.Setup(x => x.LinkUri).Returns(link);
             mockDB.Setup(x => x.GetRIDAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(dbName));
             return mockDB;
         }
 
-        public static ClientOptions GetDefaultConfiguration()
+        public static CosmosClientOptions GetDefaultConfiguration()
         {
-            return new ClientOptions();
+            return new CosmosClientOptions();
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

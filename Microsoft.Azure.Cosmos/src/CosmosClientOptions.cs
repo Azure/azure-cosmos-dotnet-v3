@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
-    public class ClientOptions
+    public class CosmosClientOptions
     {
         /// <summary>
         /// Default max connection limit
@@ -44,23 +44,23 @@ namespace Microsoft.Azure.Cosmos
         private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
-        private readonly Collection<CosmosRequestHandler> customHandlers;
+        private readonly Collection<RequestHandler> customHandlers;
         private CosmosSerializer userJsonSerializer;
 
         private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
-        /// Creates a new ClientOptions
+        /// Creates a new CosmosClientOptions
         /// </summary>
-        public ClientOptions()
+        public CosmosClientOptions()
         {
             this.UserAgentContainer = new UserAgentContainer();
-            this.GatewayModeMaxConnectionLimit = ClientOptions.DefaultMaxConcurrentConnectionLimit;
-            this.RequestTimeout = ClientOptions.DefaultRequestTimeout;
-            this.ConnectionMode = ClientOptions.DefaultConnectionMode;
-            this.ConnectionProtocol = ClientOptions.DefaultProtocol;
-            this.ApiType = ClientOptions.DefaultApiType;
-            this.customHandlers = new Collection<CosmosRequestHandler>();
+            this.GatewayModeMaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
+            this.RequestTimeout = CosmosClientOptions.DefaultRequestTimeout;
+            this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
+            this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
+            this.ApiType = CosmosClientOptions.DefaultApiType;
+            this.customHandlers = new Collection<RequestHandler>();
             this.userJsonSerializer = null;
         }
 
@@ -122,9 +122,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the handlers run before the process
         /// </summary>
-        /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(CosmosRequestHandler[])"/>
+        /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(RequestHandler[])"/>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        public virtual Collection<CosmosRequestHandler> CustomHandlers
+        public virtual Collection<RequestHandler> CustomHandlers
         {
             get => this.customHandlers;
         }
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal virtual CosmosSerializer PropertiesSerializer => ClientOptions.propertiesSerializer;
+        internal virtual CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
 
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
@@ -280,9 +280,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
-        internal ClientOptions Clone()
+        internal CosmosClientOptions Clone()
         {
-            ClientOptions cloneConfiguration = (ClientOptions)this.MemberwiseClone();
+            CosmosClientOptions cloneConfiguration = (CosmosClientOptions)this.MemberwiseClone();
             return cloneConfiguration;
         }
 
@@ -342,12 +342,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal static string GetAccountEndpoint(string connectionString)
         {
-            return ClientOptions.GetValueFromConnectionString(connectionString, ClientOptions.ConnectionStringAccountEndpoint);
+            return CosmosClientOptions.GetValueFromConnectionString(connectionString, CosmosClientOptions.ConnectionStringAccountEndpoint);
         }
 
         internal static string GetAccountKey(string connectionString)
         {
-            return ClientOptions.GetValueFromConnectionString(connectionString, ClientOptions.ConnectionStringAccountKey);
+            return CosmosClientOptions.GetValueFromConnectionString(connectionString, CosmosClientOptions.ConnectionStringAccountKey);
         }
 
         private static string GetValueFromConnectionString(string connectionString, string keyName)
@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                ReadOnlyCollection<CosmosRequestHandler> handlers = value as ReadOnlyCollection<CosmosRequestHandler>;
+                ReadOnlyCollection<RequestHandler> handlers = value as ReadOnlyCollection<RequestHandler>;
                 if (handlers != null)
                 {
                     writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));

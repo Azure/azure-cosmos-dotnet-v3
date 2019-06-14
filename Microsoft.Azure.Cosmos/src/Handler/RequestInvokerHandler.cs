@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// <summary>
     /// HttpMessageHandler can only be invoked by derived classed or internal classes inside http assembly
     /// </summary>
-    internal class RequestInvokerHandler : CosmosRequestHandler
+    internal class RequestInvokerHandler : RequestHandler
     {
         private readonly CosmosClient client;
 
@@ -26,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.client = client;
         }
 
-        public override Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        public override Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             if (request == null)
@@ -93,8 +93,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ContainerCore cosmosContainerCore,
             Cosmos.PartitionKey partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Action<RequestMessage> requestEnricher,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (responseCreator == null)
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(responseCreator));
             }
 
-            CosmosResponseMessage responseMessage = await this.SendAsync(
+            ResponseMessage responseMessage = await this.SendAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return responseCreator(responseMessage);
         }
 
-        public virtual async Task<CosmosResponseMessage> SendAsync(
+        public virtual async Task<ResponseMessage> SendAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ContainerCore cosmosContainerCore,
             Cosmos.PartitionKey partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (resourceUri == null)
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
 
-            CosmosRequestMessage request = new CosmosRequestMessage(method, resourceUri)
+            RequestMessage request = new RequestMessage(method, resourceUri)
             {
                 OperationType = operationType,
                 ResourceType = resourceType,
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private void FillMultiMasterContext(CosmosRequestMessage request)
+        private void FillMultiMasterContext(RequestMessage request)
         {
             if (this.client.DocumentClient.UseMultipleWriteLocations)
             {

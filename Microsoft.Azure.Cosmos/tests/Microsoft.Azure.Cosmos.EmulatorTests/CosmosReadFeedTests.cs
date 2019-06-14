@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ""id"": ""{i}""
                     }}";
 
-                using (CosmosResponseMessage createResponse = await this.Container.CreateItemStreamAsync(
+                using (ResponseMessage createResponse = await this.Container.CreateItemStreamAsync(
                         CosmosReadFeedTests.GenerateStreamFromString(item),
                         new Cosmos.PartitionKey(i.ToString())))
                 {
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
                 }
 
-                using (CosmosResponseMessage response = await iter.ReadNextAsync())
+                using (ResponseMessage response = await iter.ReadNextAsync())
                 {
                     lastKnownContinuationToken = response.Headers.Continuation;
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
                 }
 
-                using (CosmosResponseMessage response = await iter.ReadNextAsync())
+                using (ResponseMessage response = await iter.ReadNextAsync())
                 {
                     lastKnownContinuationToken = response.Headers.Continuation;
 

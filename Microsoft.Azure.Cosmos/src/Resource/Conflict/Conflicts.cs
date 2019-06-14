@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         /// <seealso cref="ConflictProperties"/>
-        public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
+        public abstract Task<ResponseMessage> DeleteConflictAsync(
             PartitionKey partitionKey,
             ConflictProperties conflict,
             CancellationToken cancellationToken = default(CancellationToken));

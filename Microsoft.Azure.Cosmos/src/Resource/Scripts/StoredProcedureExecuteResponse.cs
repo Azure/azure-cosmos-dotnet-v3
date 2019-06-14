@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         internal StoredProcedureExecuteResponse(
            HttpStatusCode httpStatusCode,
-           CosmosResponseMessageHeaders headers,
+           Headers headers,
            T response) 
             : base(httpStatusCode,
                headers,

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeSpan requestTimeout = TimeSpan.FromDays(1);
             int maxConnections = 9001;
             string userAgentSuffix = "testSuffix";
-            CosmosRequestHandler preProcessHandler = new TestHandler();
+            RequestHandler preProcessHandler = new TestHandler();
             ApiType apiType = ApiType.Sql;
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 accountKey: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            ClientOptions clientOptions = cosmosClient.ClientOptions;
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
 
             Assert.AreEqual(endpoint, cosmosClient.Endpoint.OriginalString, "AccountEndpoint did not save correctly");
             Assert.AreEqual(key, cosmosClient.AccountKey, "AccountKey did not save correctly");
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // All of the public properties and methods should be virtual to allow users to 
             // create unit tests by mocking the different types.
-            Type type = typeof(ClientOptions);
+            Type type = typeof(CosmosClientOptions);
 
 
             System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -114,8 +114,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnBadDelegatingHandler()
         {
-            CosmosRequestHandler handler = new TestHandler();
-            CosmosRequestHandler innerHandler = new TestHandler();
+            RequestHandler handler = new TestHandler();
+            RequestHandler innerHandler = new TestHandler();
 
             //Inner handler is required to be null to allow the client to connect it to other handlers
             handler.InnerHandler = innerHandler;

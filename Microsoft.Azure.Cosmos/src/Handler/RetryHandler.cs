@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.retryPolicyFactory = retryPolicyFactory;
         }
 
-        internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(CosmosRequestMessage request)
+        internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = retryPolicyFactory.GetRequestPolicy();
             request.DocumentClientRetryPolicy = retryPolicyInstance;

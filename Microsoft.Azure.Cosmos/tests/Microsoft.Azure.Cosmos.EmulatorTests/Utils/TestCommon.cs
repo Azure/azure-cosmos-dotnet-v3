@@ -1383,7 +1383,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static async Task DeleteAllDatabasesAsyncWorker(CosmosClient client)
         {
-            IList<CosmosDatabase> databases = new List<CosmosDatabase>();
+            IList<Cosmos.Database> databases = new List<Cosmos.Database>();
 
             FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabasesIterator(maxItemCount: 10);
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
@@ -1403,14 +1403,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Logger.LogLine("Number of database to delete {0}", totalCount);
         }
 
-        public static async Task DeleteDatabaseAsync(CosmosClient client, CosmosDatabase database)
+        public static async Task DeleteDatabaseAsync(CosmosClient client, Cosmos.Database database)
         {
             await TestCommon.DeleteDatabaseCollectionAsync(client, database);
 
             await TestCommon.AsyncRetryRateLimiting(() => database.DeleteAsync());
         }
 
-        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, CosmosDatabase database)
+        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, Cosmos.Database database)
         {
             //Delete them in chunks of 10.
             FeedIterator<ContainerProperties> resultSetIterator = database.GetContainersIterator(maxItemCount: 10);

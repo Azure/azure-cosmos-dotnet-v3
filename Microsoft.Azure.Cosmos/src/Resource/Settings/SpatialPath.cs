@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 return this.spatialTypesInternal;
             }
-            internal set
+            set
             {
                 if (value == null)
                 {

@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         public static Func<bool, IQueryable<Family>> GenerateFamilyCosmosData(
-            CosmosDatabase cosmosDatabase, out Container container)
+            Cosmos.Database cosmosDatabase, out Container container)
         {
             // The test collection should have range index on string properties
             // for the orderby tests
@@ -427,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(
-         CosmosDatabase cosmosDatabase
+         Cosmos.Database cosmosDatabase
          )
         {
             const int DocumentCount = 10;

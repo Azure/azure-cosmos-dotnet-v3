@@ -14,16 +14,16 @@ namespace Microsoft.Azure.Cosmos
     internal class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
-        private readonly CosmosRequestHandler invalidPartitionExceptionRetryHandler;
-        private readonly CosmosRequestHandler transportHandler;
-        private readonly CosmosRequestHandler partitionKeyRangeGoneRetryHandler;
-        private IReadOnlyCollection<CosmosRequestHandler> customHandlers;
-        private CosmosRequestHandler retryHandler;
+        private readonly RequestHandler invalidPartitionExceptionRetryHandler;
+        private readonly RequestHandler transportHandler;
+        private readonly RequestHandler partitionKeyRangeGoneRetryHandler;
+        private IReadOnlyCollection<RequestHandler> customHandlers;
+        private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
             CosmosClient client,
             IRetryPolicyFactory retryPolicyFactory,
-            IReadOnlyCollection<CosmosRequestHandler> customHandlers)
+            IReadOnlyCollection<RequestHandler> customHandlers)
         {
             this.client = client;
             this.transportHandler = new TransportHandler(client);
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             this.AddCustomHandlers(customHandlers);
         }
 
-        internal IReadOnlyCollection<CosmosRequestHandler> CustomHandlers
+        internal IReadOnlyCollection<RequestHandler> CustomHandlers
         {
             get => this.customHandlers;
             private set
@@ -56,45 +56,45 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal CosmosRequestHandler PartitionKeyRangeHandler { get; set; }
+        internal RequestHandler PartitionKeyRangeHandler { get; set; }
 
         public RequestInvokerHandler Build()
         {
             RequestInvokerHandler root = new RequestInvokerHandler(this.client);
 
-            CosmosRequestHandler current = root;
+            RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())
             {
-                foreach (CosmosRequestHandler handler in this.CustomHandlers)
+                foreach (RequestHandler handler in this.CustomHandlers)
                 {
                     current.InnerHandler = handler;
-                    current = (CosmosRequestHandler)current.InnerHandler;
+                    current = (RequestHandler)current.InnerHandler;
                 }
             }
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;
-            current = (CosmosRequestHandler)current.InnerHandler;
+            current = (RequestHandler)current.InnerHandler;
 
             // Have a router handler
-            CosmosRequestHandler feedHandler = this.CreateDocumentFeedPipeline();
+            RequestHandler feedHandler = this.CreateDocumentFeedPipeline();
 
             Debug.Assert(feedHandler != null, nameof(feedHandler));
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
-            CosmosRequestHandler routerHandler = new RouterHandler(feedHandler, this.transportHandler);
+            RequestHandler routerHandler = new RouterHandler(feedHandler, this.transportHandler);
             current.InnerHandler = routerHandler;
-            current = (CosmosRequestHandler)current.InnerHandler;
+            current = (RequestHandler)current.InnerHandler;
 
             return root;
         }
 
-        private static CosmosRequestHandler CreatePipeline(params CosmosRequestHandler[] requestHandlers)
+        private static RequestHandler CreatePipeline(params RequestHandler[] requestHandlers)
         {
-            CosmosRequestHandler head = null;
+            RequestHandler head = null;
             int handlerCount = requestHandlers.Length;
             for (int i = handlerCount - 1; i >= 0; i--)
             {
-                CosmosRequestHandler indexHandler = requestHandlers[i];
+                RequestHandler indexHandler = requestHandlers[i];
                 if (indexHandler.InnerHandler != null)
                 {
                     throw new ArgumentOutOfRangeException($"The requestHandlers[{i}].InnerHandler is required to be null to allow the pipeline to chain the handlers.");
@@ -117,15 +117,15 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        private ClientPipelineBuilder AddCustomHandlers(IReadOnlyCollection<CosmosRequestHandler> customHandlers)
+        private ClientPipelineBuilder AddCustomHandlers(IReadOnlyCollection<RequestHandler> customHandlers)
         {
             this.CustomHandlers = customHandlers;
             return this;
         }
 
-        private CosmosRequestHandler CreateDocumentFeedPipeline()
+        private RequestHandler CreateDocumentFeedPipeline()
         {
-            CosmosRequestHandler[] feedPipeline = new CosmosRequestHandler[]
+            RequestHandler[] feedPipeline = new RequestHandler[]
                 {
                     this.partitionKeyRangeGoneRetryHandler,
                     this.invalidPartitionExceptionRetryHandler,
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos
                     this.transportHandler,
                 };
 
-            return (CosmosRequestHandler)ClientPipelineBuilder.CreatePipeline(feedPipeline);
+            return (RequestHandler)ClientPipelineBuilder.CreatePipeline(feedPipeline);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class CosmosClientBuilder
     {
-        private readonly ClientOptions clientOptions = new ClientOptions();
+        private readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
         private readonly string accountEndpoint;
         private readonly string accountKey;
 
@@ -77,8 +77,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 throw new ArgumentNullException(nameof(connectionString));
             }
 
-            this.accountEndpoint = ClientOptions.GetAccountEndpoint(connectionString);
-            this.accountKey = ClientOptions.GetAccountKey(connectionString);
+            this.accountEndpoint = CosmosClientOptions.GetAccountEndpoint(connectionString);
+            this.accountKey = CosmosClientOptions.GetAccountKey(connectionString);
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.ApplicationRegion"/>
+        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
         public virtual CosmosClientBuilder WithApplicationRegion(string applicationRegion)
         {
             this.clientOptions.ApplicationRegion = applicationRegion;
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="requestTimeout">A time to use as timeout for operations.</param>
         /// <value>Default value is 60 seconds.</value>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.RequestTimeout"/>
+        /// <seealso cref="CosmosClientOptions.RequestTimeout"/>
         public virtual CosmosClientBuilder WithRequestTimeout(TimeSpan requestTimeout)
         {
             this.clientOptions.RequestTimeout = requestTimeout;
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.ConnectionMode"/>
+        /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
         public virtual CosmosClientBuilder WithConnectionModeDirect()
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
@@ -180,8 +180,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.ConnectionMode"/>
-        /// <seealso cref="ClientOptions.GatewayModeMaxConnectionLimit"/>
+        /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
+        /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
         public virtual CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
@@ -200,11 +200,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// pipeline to chain the handlers.
         /// </summary>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <param name="customHandlers">A list of <see cref="CosmosRequestHandler"/> instaces to add to the pipeline.</param>
-        /// <seealso cref="ClientOptions.CustomHandlers"/>
-        public virtual CosmosClientBuilder AddCustomHandlers(params CosmosRequestHandler[] customHandlers)
+        /// <param name="customHandlers">A list of <see cref="RequestHandler"/> instaces to add to the pipeline.</param>
+        /// <seealso cref="CosmosClientOptions.CustomHandlers"/>
+        public virtual CosmosClientBuilder AddCustomHandlers(params RequestHandler[] customHandlers)
         {
-            foreach (CosmosRequestHandler handler in customHandlers)
+            foreach (RequestHandler handler in customHandlers)
             {
                 this.clientOptions.CustomHandlers.Add(handler);
             }
@@ -227,8 +227,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.MaxRetryWaitTimeOnThrottledRequests"/>
-        /// <seealso cref="ClientOptions.MaxRetryAttemptsOnThrottledRequests"/>
+        /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnThrottledRequests"/>
+        /// <seealso cref="CosmosClientOptions.MaxRetryAttemptsOnThrottledRequests"/>
         public virtual CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
             int maxRetryAttemptsOnThrottledRequests)
         {
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosSerializer"/>
-        /// <seealso cref="ClientOptions.Serializer"/>
+        /// <seealso cref="CosmosClientOptions.Serializer"/>
         public virtual CosmosClientBuilder WithCustomJsonSerializer(
             CosmosSerializer cosmosJsonSerializer)
         {
