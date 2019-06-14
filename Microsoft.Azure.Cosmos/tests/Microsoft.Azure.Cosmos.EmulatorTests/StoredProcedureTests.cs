@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse cosmosContainerResponse = await this.database
                 .CreateContainerIfNotExistsAsync(containerName, "/user");
             this.container = cosmosContainerResponse;
-            this.scripts = this.container.GetScripts();
+            this.scripts = this.container.Scripts;
         }
 
         [TestCleanup]

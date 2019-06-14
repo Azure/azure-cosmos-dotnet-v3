@@ -37,10 +37,14 @@ namespace Microsoft.Azure.Cosmos
         public abstract CosmosDatabase Database { get; }
 
         /// <summary>
-        /// Operations for reading/querying all conflicts
+        /// Returns the conflicts
         /// </summary>
-        /// <returns>An instance of <see cref="Conflicts"/> to do operations on Conflicts.</returns>
-        public abstract Conflicts GetConflicts();
+        public abstract Conflicts Conflicts { get; }
+
+        /// <summary>
+        /// Returns the scripts
+        /// </summary>
+        public abstract Scripts.Scripts Scripts { get; }
 
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
