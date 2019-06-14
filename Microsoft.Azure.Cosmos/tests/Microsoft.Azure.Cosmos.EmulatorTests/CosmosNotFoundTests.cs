@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 dynamic randomItem = new { id = "test", pk = "doesnotexist" };
                 Stream create = jsonSerializer.ToStream<dynamic>(randomItem);
-                this.VerifyNotFoundResponse(await container.CreateItemStreamAsync(new PartitionKey(randomItem.pk), create));
+                this.VerifyNotFoundResponse(await container.CreateItemStreamAsync(create, new PartitionKey(randomItem.pk)));
 
                 var queryIterator = container.GetItemsQueryStreamIterator("select * from t where true", maxConcurrency: 2);
                 this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());

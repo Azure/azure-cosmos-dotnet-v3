@@ -4,16 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using static Microsoft.Azure.Cosmos.Container;
 
     internal sealed class ChangeFeedObserverFactoryCore<T> : ChangeFeedObserverFactory<T>
     {
-        private readonly Func<IReadOnlyCollection<T>, CancellationToken, Task> onChanges;
+        private readonly ChangesHandler<T> onChanges;
 
-        public ChangeFeedObserverFactoryCore(Func<IReadOnlyCollection<T>, CancellationToken, Task> onChanges)
+        public ChangeFeedObserverFactoryCore(ChangesHandler<T> onChanges)
         {
             this.onChanges = onChanges;
         }

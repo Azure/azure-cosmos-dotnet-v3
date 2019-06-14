@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -38,8 +36,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosQueryClient queryClient;
 
         public override Task<CosmosResponseMessage> CreateItemStreamAsync(
-                    PartitionKey partitionKey,
                     Stream streamPayload,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -76,8 +74,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> ReadItemStreamAsync(
-                    PartitionKey partitionKey,
                     string id,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -92,8 +90,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
-            PartitionKey partitionKey,
             string id,
+            PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -107,8 +105,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> UpsertItemStreamAsync(
-                    PartitionKey partitionKey,
                     Stream streamPayload,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -145,9 +143,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> ReplaceItemStreamAsync(
-                    PartitionKey partitionKey,
-                    string id,
                     Stream streamPayload,
+                    string id,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -162,8 +160,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
-            string id,
             T item,
+            string id,
             PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -190,8 +188,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<CosmosResponseMessage> DeleteItemStreamAsync(
-                    PartitionKey partitionKey,
                     string id,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -206,8 +204,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ItemResponse<T>> DeleteItemAsync<T>(
-            PartitionKey partitionKey,
             string id,
+            PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -405,9 +403,9 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, (CosmosQueryClientCore)this.queryClient, requestOptions, allowSynchronousQueryExecution);
         }
 
-        public override ChangeFeedProcessorBuilder CreateChangeFeedProcessorBuilder<T>(
+        public override ChangeFeedProcessorBuilder DefineChangeFeedProcessor<T>(
             string processorName,
-            Func<IReadOnlyCollection<T>, CancellationToken, Task> onChangesDelegate)
+            ChangesHandler<T> onChangesDelegate)
         {
             if (processorName == null)
             {
@@ -428,9 +426,9 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
-        public override ChangeFeedProcessorBuilder CreateChangeFeedEstimatorBuilder(
+        public override ChangeFeedProcessorBuilder DefineChangeFeedEstimator(
             string processorName,
-            Func<long, CancellationToken, Task> estimationDelegate,
+            ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null)
         {
             if (processorName == null)

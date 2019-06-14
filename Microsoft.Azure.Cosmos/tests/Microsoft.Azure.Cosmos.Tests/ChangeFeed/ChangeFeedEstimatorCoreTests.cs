@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using static Microsoft.Azure.Cosmos.Container;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidCustomStore()
         {
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ApplyBuildConfiguration_ValidContainerStore()
         {
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullStore()
         {
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ApplyBuildConfiguration_ValidatesNullMonitoredContainer()
         {
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
             {
                 return Task.CompletedTask;
             };
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             const long remainingWork = 15;
             long estimationDelegateValue = 0;
             bool receivedEstimation = false;
-            Func<long, CancellationToken, Task> estimationDelegate = (long estimation, CancellationToken token) =>
+            ChangesEstimationHandler estimationDelegate = (long estimation, CancellationToken token) =>
             {
                 estimationDelegateValue = estimation;
                 receivedEstimation = true;
@@ -145,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(remainingWork, estimationDelegateValue);
         }
 
-        private static ChangeFeedEstimatorCore CreateEstimator(Func<long, CancellationToken, Task> estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator)
+        private static ChangeFeedEstimatorCore CreateEstimator(ChangesEstimationHandler estimationDelegate, out Mock<RemainingWorkEstimator> remainingWorkEstimator)
         {
             remainingWorkEstimator = new Mock<RemainingWorkEstimator>();
             return new ChangeFeedEstimatorCore(estimationDelegate, TimeSpan.FromSeconds(5), remainingWorkEstimator.Object);
