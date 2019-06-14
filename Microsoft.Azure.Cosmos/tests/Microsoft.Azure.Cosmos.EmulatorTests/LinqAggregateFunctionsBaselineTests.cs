@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
     {
         private static CosmosClient client;
-        private static CosmosDatabase cosmosDatabase;
+        private static Cosmos.Database cosmosDatabase;
         private static Func<bool, IQueryable<Data>> getQuery;
         private static Func<bool, IQueryable<Family>> getQueryFamily;
         private static IQueryable lastExecutedScalarQuery;

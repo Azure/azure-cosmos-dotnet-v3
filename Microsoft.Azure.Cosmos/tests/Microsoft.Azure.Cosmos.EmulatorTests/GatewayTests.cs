@@ -192,14 +192,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return accumulator;
         }
 
-        internal async Task<IList<DocumentCollection>> CreateCollectionsAsync(DocumentClient client, IList<Database> databases, int numberOfCollectionsPerDatabase)
+        internal async Task<IList<DocumentCollection>> CreateCollectionsAsync(DocumentClient client, IList<Documents.Database> databases, int numberOfCollectionsPerDatabase)
         {
             List<DocumentCollection> result = new List<DocumentCollection>();
 
             if (numberOfCollectionsPerDatabase > 0 && databases.Count > 0)
             {
                 IList<Task<IList<DocumentCollection>>> createTasks = new List<Task<IList<DocumentCollection>>>();
-                foreach (Database database in databases)
+                foreach (Documents.Database database in databases)
                 {
                     createTasks.Add(this.CreateCollectionsAsync(client, database, numberOfCollectionsPerDatabase, false));
                 }
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return result;
         }
 
-        internal async Task<IList<DocumentCollection>> CreateCollectionsAsync(DocumentClient client, Database database, int numberOfCollectionsPerDatabase, bool isCollectionElastic)
+        internal async Task<IList<DocumentCollection>> CreateCollectionsAsync(DocumentClient client, Documents.Database database, int numberOfCollectionsPerDatabase, bool isCollectionElastic)
         {
             IList<DocumentCollection> documentCollections = new List<DocumentCollection>();
             if (numberOfCollectionsPerDatabase > 0)
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Database database = null;
+            Documents.Database database = null;
             DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
             Logger.LogLine("Listing StoredProcedures");
@@ -443,7 +443,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Database database = null;
+            Documents.Database database = null;
             DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
             Logger.LogLine("Listing Triggers");
@@ -578,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 DocumentClient client = TestCommon.CreateClient(true);
-                Database database = null;
+                Documents.Database database = null;
 
                 DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
@@ -610,7 +610,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionPolicy.ConnectionProtocol,
                 defaultConsistencyLevel: consistencyLevel);
 
-            Database database = null;
+            Documents.Database database = null;
             DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out database);
 
             Logger.LogLine("Listing UserDefinedFunctions");
@@ -716,7 +716,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(false);
             TestCommon.DeleteAllDatabasesAsync().Wait();
-            Database database = TestCommon.CreateOrGetDatabase(client);
+            Documents.Database database = TestCommon.CreateOrGetDatabase(client);
 
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database.SelfLink, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition  })).Result;
@@ -776,7 +776,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = TestCommon.CreateClient(true, defaultConsistencyLevel: consistencyLevel);
 #endif
             TestCommon.DeleteAllDatabasesAsync().Wait();
-            Database database = TestCommon.CreateOrGetDatabase(client);
+            Documents.Database database = TestCommon.CreateOrGetDatabase(client);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Result;
 
@@ -1043,7 +1043,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //}
 
             // failure test - trigger on resource other than document, say database
-            Database dbToCreate = new Database
+            Documents.Database dbToCreate = new Documents.Database
             {
                 Id = "temp" + Guid.NewGuid().ToString()
             };
@@ -1405,7 +1405,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = TestCommon.CreateCosmosClient(true);
 
-            CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             ContainerProperties inputCollection = new ContainerProperties {
                 Id = "ValidateExecuteSprocs",
@@ -1438,7 +1438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = TestCommon.CreateCosmosClient(true);
 
-            CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             ContainerProperties inputCollection = new ContainerProperties
             {
@@ -1499,7 +1499,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-            CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             ContainerProperties collectionSpec = new ContainerProperties
             {
                 Id = "ValidateSystemSproc" + Guid.NewGuid().ToString(),
@@ -2198,7 +2198,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await TestCommon.DeleteAllDatabasesAsync();
 
-                Database database = TestCommon.CreateOrGetDatabase(masterClient);
+                Documents.Database database = TestCommon.CreateOrGetDatabase(masterClient);
 
                 DocumentCollection collection = await TestCommon.CreateCollectionAsync(masterClient,
                     database,
@@ -2271,7 +2271,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(true);
 
-            Database database = TestCommon.CreateOrGetDatabase(client);
+            Documents.Database database = TestCommon.CreateOrGetDatabase(client);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             DocumentCollection inputCollection = new DocumentCollection { Id = "ValidateStoredProceduresBlacklisting" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
             DocumentCollection collection = TestCommon.CreateCollectionAsync(client, database, inputCollection).Result;
@@ -2327,7 +2327,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient secondary2Client = TestCommon.CreateClient(false, Protocol.Tcp);
             secondary1Client.LockClient(2);
 
-            Database database = TestCommon.CreateOrGetDatabase(client);
+            Documents.Database database = TestCommon.CreateOrGetDatabase(client);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             DocumentCollection inputCollection = new DocumentCollection { Id = "ValidateUserDefinedFunctions" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition  };
             inputCollection.IndexingPolicy.IndexingMode = Documents.IndexingMode.Consistent;
@@ -2452,7 +2452,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentClient client = TestCommon.CreateClient(true);
 
-            Database database = TestCommon.CreateOrGetDatabase(client);
+            Documents.Database database = TestCommon.CreateOrGetDatabase(client);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             DocumentCollection inputCollection = new DocumentCollection { Id = "ValidateUserDefinedFunctionsBlacklisting" + Guid.NewGuid().ToString(), PartitionKey= partitionKeyDefinition };
             DocumentCollection collection = client.Create(database.ResourceId, inputCollection);
@@ -2555,7 +2555,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateChangeFeedIfNoneMatchHelper(bool useGateway, Protocol protocol = Protocol.Tcp)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
-            var db = await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
+            var db = await client.CreateDatabaseAsync(new Documents.Database() { Id = Guid.NewGuid().ToString() });
             try
             {
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
@@ -2705,7 +2705,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateChangeFeedIfModifiedSinceHelper(bool useGateway, Protocol protocol = Protocol.Tcp)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
-            var db = await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
+            var db = await client.CreateDatabaseAsync(new Documents.Database() { Id = Guid.NewGuid().ToString() });
             try
             {
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
@@ -2856,7 +2856,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateChangeFeedWithPartitionKeyHelper(bool useGateway, Protocol protocol = Protocol.Tcp)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
-            Database db = await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
+            Documents.Database db = await client.CreateDatabaseAsync(new Documents.Database() { Id = Guid.NewGuid().ToString() });
             string pk1 = "4", pk2 = "6", pk3 = "22";    // The values are chosen in such a way that hash lands on the same range.
 
             try
@@ -2993,7 +2993,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateReadPartitionKeyRangeHelper(bool useGateway, Protocol protocol = Protocol.Tcp)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway, protocol);
-            Database db = await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
+            Documents.Database db = await client.CreateDatabaseAsync(new Documents.Database() { Id = Guid.NewGuid().ToString() });
             try
             {
                 var collSpec = new DocumentCollection() { Id = Guid.NewGuid().ToString() };
@@ -3044,7 +3044,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = TestCommon.CreateClient(true);
 
             await TestCommon.DeleteAllDatabasesAsync();
-            Database database = await client.CreateDatabaseAsync(new Database { Id = "db" });
+            Documents.Database database = await client.CreateDatabaseAsync(new Documents.Database { Id = "db" });
 
             DocumentCollection collection = await TestCommon.CreateCollectionAsync(client,
                 database,
@@ -3106,7 +3106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
 
-            CosmosDatabase database = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             Container collection = await database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
 
@@ -3145,7 +3145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = TestCommon.CreateCosmosClient(useGateway);
 
-            CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
 
             Container collection = await database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
@@ -3184,7 +3184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             // 1. Verify the customer can serialize their POCO object in their own ways
             DocumentClient client = TestCommon.CreateClient(true);
-            Database database = TestCommon.CreateOrGetDatabase(client);
+            Documents.Database database = TestCommon.CreateOrGetDatabase(client);
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
             DocumentCollection collection1 = TestCommon.CreateCollectionAsync(client, database, (new DocumentCollection { Id = "TestTriggers" + Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Result;
 
@@ -3325,7 +3325,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if !DIRECT_MODE
             CosmosClient client = TestCommon.CreateCosmosClient(true);
 #endif
-            CosmosDatabase database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
             Container collection = await database.CreateContainerAsync(new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition });
 
@@ -3409,12 +3409,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateCollectionQuotaTestsWithFailure(bool useGateway)
         {
             DocumentClient client = TestCommon.CreateClient(useGateway);
-            Database database = null;
+            Documents.Database database = null;
             try
             {
                 Logger.LogLine("ValidateCollectionQuotaTestsWithFailure");
                 Logger.LogLine("Deleting all databases in the system");
-                database = client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString() }).Result;
+                database = client.CreateDatabaseAsync(new Documents.Database { Id = Guid.NewGuid().ToString() }).Result;
 
                 string duplicateCollectionName = Guid.NewGuid().ToString("N");
                 List<DocumentCollection> documentCollections = new List<DocumentCollection>();
