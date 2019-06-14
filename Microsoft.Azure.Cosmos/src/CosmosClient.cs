@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
     /// <code language="c#">
     /// <![CDATA[
     /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-    ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+    ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey")
     ///     .WithApplicationRegion(LocationNames.EastUS2);
     /// 
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
     /// <code language="c#">
     /// <![CDATA[
     /// using (CosmosClient cosmosClient = new CosmosClient(
-    ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+    ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
     ///     accountKey: "SuperSecretKey"))
     /// {
     ///     CosmosDatabase db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a new CosmosClient with the account endpoint URI string and account key
         /// </summary>
-        /// <param name="accountEndPoint">The cosmos service endpoint to use to create the client.</param>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use to create the client.</param>
         /// <param name="accountKey">The cosmos account key to use to create the client.</param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
@@ -143,13 +143,13 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public CosmosClient(
-            string accountEndPoint,
+            string accountEndpoint,
             string accountKey,
             ClientOptions clientOptions = null)
         {
-            if (accountEndPoint == null)
+            if (accountEndpoint == null)
             {
-                throw new ArgumentNullException(nameof(accountEndPoint));
+                throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
             if (accountKey == null)
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions = new ClientOptions();
             }
 
-            this.Endpoint = new Uri(accountEndPoint);
+            this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = accountKey;
             ClientOptions clientOptionsClone = clientOptions.Clone();
 
@@ -185,14 +185,14 @@ namespace Microsoft.Azure.Cosmos
         /// Used for unit testing only.
         /// </summary>
         internal CosmosClient(
-            string accountEndPoint,
+            string accountEndpoint,
             string accountKey,
             ClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
-            if (accountEndPoint == null)
+            if (accountEndpoint == null)
             {
-                throw new ArgumentNullException(nameof(accountEndPoint));
+                throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
             if (accountKey == null)
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(documentClient));
             }
 
-            this.Endpoint = new Uri(accountEndPoint);
+            this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = accountKey;
 
             this.Init(cosmosClientOptions, documentClient);

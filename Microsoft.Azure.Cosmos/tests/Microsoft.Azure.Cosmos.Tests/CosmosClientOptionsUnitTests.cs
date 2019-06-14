@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             ClientOptions clientOptions = cosmosClient.ClientOptions;
 
-            Assert.AreEqual(endpoint, cosmosClient.Endpoint.OriginalString, "AccountEndPoint did not save correctly");
+            Assert.AreEqual(endpoint, cosmosClient.Endpoint.OriginalString, "AccountEndpoint did not save correctly");
             Assert.AreEqual(key, cosmosClient.AccountKey, "AccountKey did not save correctly");
 
             //Verify the default values are different from the new values

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
         /// .UseConsistencyLevel(ConsistencyLevel.Strong)
         /// .WithApplicationRegion("East US 2");
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
+        ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
         /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
