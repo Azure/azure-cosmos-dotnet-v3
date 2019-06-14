@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Coordinate values.
         /// </value>
-        [DataMember(Name = "coordinates")]
+        [DataMember(Name = "Coordinates")]
         public ReadOnlyCollection<double> Coordinates { get; private set; }
 
         /// <summary>
