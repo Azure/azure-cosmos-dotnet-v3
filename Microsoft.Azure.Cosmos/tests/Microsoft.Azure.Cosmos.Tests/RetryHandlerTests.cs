@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = new CosmosClient(
                 RetryHandlerTests.TestUri.OriginalString, 
                 Guid.NewGuid().ToString(), 
-                new ClientOptions(), 
+                new CosmosClientOptions(), 
                 dc);
 
             Mock<IDocumentClientRetryPolicy> mockClientRetryPolicy = new Mock<IDocumentClientRetryPolicy>();
