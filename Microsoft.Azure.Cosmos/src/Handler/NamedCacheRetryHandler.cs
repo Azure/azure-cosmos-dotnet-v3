@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.client = client;
         }
 
-        internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(CosmosRequestMessage request)
+        internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
             return new InvalidPartitionExceptionRetryPolicy(await client.DocumentClient.GetCollectionCacheAsync(), null);
         }

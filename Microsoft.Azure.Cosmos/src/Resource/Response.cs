@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="resource">The object from the response</param>
         internal Response(
             HttpStatusCode httpStatusCode,
-            CosmosResponseMessageHeaders headers,
+            ResponseHeaders headers,
             T resource)
         {
             this.Headers = headers;
@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the current <see cref="CosmosResponseMessage"/> HTTP headers.
+        /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
         /// </summary>
-        public virtual CosmosResponseMessageHeaders Headers { get; }
+        public virtual ResponseHeaders Headers { get; }
 
         /// <summary>
         /// The content of the response.

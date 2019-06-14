@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
-            CosmosRequestMessage request = new CosmosRequestMessage();
+            RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions(){ };
 
             ChangeFeedRequestOptions.FillContinuationToken(request, "something");
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ChangeFeedRequestOptions_DefaultValues()
         {
-            CosmosRequestMessage request = new CosmosRequestMessage();
+            RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
 
             requestOptions.PopulateRequestOptions(request);
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ChangeFeedRequestOptions_MaxItemSizeIsSet()
         {
-            CosmosRequestMessage request = new CosmosRequestMessage();
+            RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions() { };
 
             ChangeFeedRequestOptions.FillMaxItemCount(request, 10);
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ChangeFeedRequestOptions_ContinuationBeatsStartTime()
         {
-            CosmosRequestMessage request = new CosmosRequestMessage();
+            RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
                 StartTime = new DateTime(1985, 1, 1)
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ChangeFeedRequestOptions_AddsStartTime()
         {
-            CosmosRequestMessage request = new CosmosRequestMessage();
+            RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
             {
                 StartTime = new DateTime(1985, 1, 1, 0, 0,0, DateTimeKind.Utc)
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ChangeFeedRequestOptions_AddsPartitionKeyRangeId()
         {
-            CosmosRequestMessage request = new CosmosRequestMessage();
+            RequestMessage request = new RequestMessage();
             ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions();
 
             ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, "randomPK");

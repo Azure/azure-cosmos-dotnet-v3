@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
-            CosmosResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
+            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
                 new Cosmos.PartitionKey(testPartitionId),
                 sprocId,
                 cosmosJsonSerializer.ToStream(new string[] { Guid.NewGuid().ToString() }),
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
-            CosmosResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(new Cosmos.PartitionKey(testPartitionId), sprocId, null);
+            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(new Cosmos.PartitionKey(testPartitionId), sprocId, null);
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
             using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))

@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// HTTP headers in a <see cref="CosmosResponseMessage"/>.
+    /// HTTP headers in a <see cref="ResponseMessage"/>.
     /// </summary>
-    public class CosmosResponseMessageHeaders : CosmosMessageHeadersBase, IEnumerable
+    public class ResponseHeaders : HeadersBase, IEnumerable
     {
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.RequestCharge)]
         private string requestCharge
@@ -60,19 +60,19 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ETag { get; internal set; }
 
         /// <summary>
-        /// Gets the Continuation Token in the current <see cref="CosmosResponseMessage"/>.
+        /// Gets the Continuation Token in the current <see cref="ResponseMessage"/>.
         /// </summary>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Continuation)]
         public virtual string Continuation { get; internal set; }
 
         /// <summary>
-        /// Gets the Content Type for the current content in the <see cref="CosmosResponseMessage"/>.
+        /// Gets the Content Type for the current content in the <see cref="ResponseMessage"/>.
         /// </summary>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ContentType)]
         public virtual string ContentType { get; internal set; }
 
         /// <summary>
-        /// Gets the Session Token for the current <see cref="CosmosResponseMessage"/>.
+        /// Gets the Session Token for the current <see cref="ResponseMessage"/>.
         /// </summary>
         /// <remarks>
         /// Session Token is used along with Session Consistency.
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual string Session { get; internal set; }
 
         /// <summary>
-        /// Gets the Content Length for the current content in the <see cref="CosmosResponseMessage"/>.
+        /// Gets the Content Length for the current content in the <see cref="ResponseMessage"/>.
         /// </summary>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.ContentLength)]
         public virtual string ContentLength
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the Location for the current content in the <see cref="CosmosResponseMessage"/>.
+        /// Gets the Location for the current content in the <see cref="ResponseMessage"/>.
         /// </summary>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Location)]
         public virtual string Location { get; internal set; }
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
             }
             set
             {
-                this.SubStatusCode = CosmosResponseMessageHeaders.GetSubStatusCodes(value);
+                this.SubStatusCode = ResponseHeaders.GetSubStatusCodes(value);
                 this.subStatusCodeLiteral = value;
             }
         }
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
             }
             set
             {
-                this.RetryAfter = CosmosResponseMessageHeaders.GetRetryAfter(value);
+                this.RetryAfter = ResponseHeaders.GetRetryAfter(value);
                 this.retryAfterInternal = value;
             }
         }
@@ -143,11 +143,11 @@ namespace Microsoft.Azure.Cosmos
 
         private string retryAfterInternal;
 
-        private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<CosmosResponseMessageHeaders>();
+        private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<ResponseHeaders>();
 
         internal override Dictionary<string, CosmosCustomHeader> CreateKnownDictionary()
         {
-            return CosmosResponseMessageHeaders.knownHeaderProperties.ToDictionary(
+            return ResponseHeaders.knownHeaderProperties.ToDictionary(
                     knownProperty => knownProperty.Key,
                     knownProperty => new CosmosCustomHeader(
                             () => (string)knownProperty.Value.GetValue(this),

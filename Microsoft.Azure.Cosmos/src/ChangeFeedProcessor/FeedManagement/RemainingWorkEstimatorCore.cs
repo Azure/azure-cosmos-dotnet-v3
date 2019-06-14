@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return parsed;
         }
 
-        private static Collection<JObject> GetItemsFromResponse(CosmosResponseMessage response)
+        private static Collection<JObject> GetItemsFromResponse(ResponseMessage response)
         {
             if (response.Content == null)
             {
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
             try
             {
-                CosmosResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                ResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode != HttpStatusCode.NotModified)
                 {
                     response.EnsureSuccessStatusCode();

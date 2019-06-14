@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal FeedResponse<T> CreateResultSetQueryResponse<T>(
-            CosmosResponseMessage cosmosResponseMessage)
+            ResponseMessage cosmosResponseMessage)
         {
             return FeedIteratorCore<T>.CreateCosmosQueryResponse(
                 cosmosResponseMessage,
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+            Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<ContainerResponse> CreateContainerResponseAsync(
             Container container,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+            Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
             CosmosDatabase database,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+            Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<StoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponseAsync<T>(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<StoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponseAsync<T>(Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<StoredProcedureResponse> CreateStoredProcedureResponseAsync(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<StoredProcedureResponse> CreateStoredProcedureResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<TriggerResponse> CreateTriggerResponseAsync(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<TriggerResponse> CreateTriggerResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponseAsync(Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
@@ -128,15 +128,15 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
-        internal async Task<T> ProcessMessageAsync<T>(Task<CosmosResponseMessage> cosmosResponseTask, Func<CosmosResponseMessage, T> createResponse)
+        internal async Task<T> ProcessMessageAsync<T>(Task<ResponseMessage> cosmosResponseTask, Func<ResponseMessage, T> createResponse)
         {
-            using (CosmosResponseMessage message = await cosmosResponseTask)
+            using (ResponseMessage message = await cosmosResponseTask)
             {
                 return createResponse(message);
             }
         }
 
-        internal T ToObjectInternal<T>(CosmosResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
+        internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
         {
             // Not finding something is part of a normal work-flow and should not be an exception.
             // This prevents the unnecessary overhead of an exception

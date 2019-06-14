@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
         private CosmosSerializer userJsonSerializer;
 
-        private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
+        private ReadOnlyCollection<RequestHandler> customHandlers;
         private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the current region. <see cref="CosmosRegions"/> to get a list of regions that
         /// are currently supported. Please update to a latest SDK version if a preferred Azure region is not listed.
         /// </summary>
-        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
+        /// <seealso cref="ClientBuilder.WithApplicationRegion(string)"/>
         public virtual string ApplicationRegion { get; set; }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         /// This setting is only applicable in Gateway mode.
         /// </remarks>
         /// <value>Default value is 50.</value>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
+        /// <seealso cref="ClientBuilder.WithConnectionModeGateway(int?)"/>
         public virtual int GatewayModeMaxConnectionLimit
         {
             get => this.gatewayModeMaxConnectionLimit;
@@ -116,15 +116,15 @@ namespace Microsoft.Azure.Cosmos
         /// The number specifies the time to wait for response to come back from network peer.
         /// </summary>
         /// <value>Default value is 1 minute.</value>
-        /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
+        /// <seealso cref="ClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public virtual TimeSpan RequestTimeout { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
         /// </summary>
-        /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(CosmosRequestHandler[])"/>
+        /// <seealso cref="ClientBuilder.AddCustomHandlers(RequestHandler[])"/>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        public virtual ReadOnlyCollection<CosmosRequestHandler> CustomHandlers
+        public virtual ReadOnlyCollection<RequestHandler> CustomHandlers
         {
             get => this.customHandlers;
             set
@@ -152,14 +152,14 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect"/>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
+        /// <seealso cref="ClientBuilder.WithConnectionModeDirect"/>
+        /// <seealso cref="ClientBuilder.WithConnectionModeGateway(int?)"/>
         public virtual ConnectionMode ConnectionMode { get; set; }
 
         /// <summary>
         /// The number of times to retry on throttled requests.
         /// </summary>
-        /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
+        /// <seealso cref="ClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public virtual int? MaxRetryAttemptsOnThrottledRequests { get; set; }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The minimum interval is seconds. Any interval that is smaller will be ignored.
         /// </remarks>
-        /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
+        /// <seealso cref="ClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public virtual TimeSpan? MaxRetryWaitTimeOnThrottledRequests { get; set; }
 
         /// <summary>
@@ -400,7 +400,7 @@ namespace Microsoft.Azure.Cosmos
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                ReadOnlyCollection<CosmosRequestHandler> handlers = value as ReadOnlyCollection<CosmosRequestHandler>;
+                ReadOnlyCollection<RequestHandler> handlers = value as ReadOnlyCollection<RequestHandler>;
                 if (handlers != null)
                 {
                     writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));

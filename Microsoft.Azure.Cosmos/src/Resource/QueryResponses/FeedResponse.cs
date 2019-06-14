@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="resource">The object from the response</param>
         internal FeedResponse(
             HttpStatusCode httpStatusCode,
-            CosmosResponseMessageHeaders headers,
+            ResponseHeaders headers,
             IEnumerable<T> resource)
             : base(
                 httpStatusCode,
