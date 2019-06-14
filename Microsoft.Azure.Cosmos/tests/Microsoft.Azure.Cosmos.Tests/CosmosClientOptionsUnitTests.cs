@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndPoint: endpoint,
+                accountEndpoint: endpoint,
                 accountKey: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             ClientOptions clientOptions = cosmosClient.ClientOptions;
 
-            Assert.AreEqual(endpoint, clientOptions.EndPoint.OriginalString, "AccountEndPoint did not save correctly");
-            Assert.AreEqual(key, clientOptions.AccountKey, "AccountKey did not save correctly");
+            Assert.AreEqual(endpoint, cosmosClient.Endpoint.OriginalString, "AccountEndPoint did not save correctly");
+            Assert.AreEqual(key, cosmosClient.AccountKey, "AccountKey did not save correctly");
 
             //Verify the default values are different from the new values
             Assert.AreNotEqual(region, clientOptions.ApplicationRegion);

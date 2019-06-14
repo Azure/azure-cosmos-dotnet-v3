@@ -14,12 +14,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class CosmosClientBuilder
     {
-        private readonly ClientOptions clientOptions = null;
+        private readonly ClientOptions clientOptions = new ClientOptions();
+        private readonly string accountEndpoint;
+        private readonly string accountKey;
 
         /// <summary>
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
         /// </summary>
-        /// <param name="accountEndPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
+        /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
         /// <param name="accountKey">The key to the account.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/>
@@ -46,10 +48,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </code>
         /// </example>
         public CosmosClientBuilder(
-            string accountEndPoint,
+            string accountEndpoint,
             string accountKey)
         {
-            this.clientOptions = new ClientOptions(accountEndPoint, accountKey);
+            if (this.accountEndpoint == null)
+            {
+                throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
+            }
+
+            if (accountKey == null)
+            {
+                throw new ArgumentNullException(nameof(accountKey));
+            }
+
+            this.accountEndpoint = accountEndpoint;
+            this.accountKey = accountKey;
         }
 
         /// <summary>
@@ -59,7 +72,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey.</param>
         public CosmosClientBuilder(string connectionString)
         {
-            this.clientOptions = new ClientOptions(connectionString);
+            if (connectionString == null)
+            {
+                throw new ArgumentNullException(nameof(connectionString));
+            }
+
+            this.accountEndpoint = ClientOptions.GetAccountEndpoint(connectionString);
+            this.accountKey = ClientOptions.GetAccountKey(connectionString);
         }
 
         /// <summary>
@@ -72,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public virtual CosmosClient Build()
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
-            return new CosmosClient(this.clientOptions);
+            return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions);
         }
 
         /// <summary>
@@ -84,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal virtual CosmosClient Build(DocumentClient documentClient)
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build(DocumentClient) with configuration: {this.clientOptions.GetSerializedConfiguration()}");
-            return new CosmosClient(this.clientOptions, documentClient);
+            return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions, documentClient);
         }
 
         /// <summary>
