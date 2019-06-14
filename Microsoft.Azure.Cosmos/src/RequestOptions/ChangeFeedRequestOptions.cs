@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        public override void FillRequestOptions(CosmosRequestMessage request)
+        internal override void PopulateRequestOptions(CosmosRequestMessage request)
         {
             // Check if no Continuation Token is present
             if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
 
             request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
 
-            base.FillRequestOptions(request);
+            base.PopulateRequestOptions(request);
         }
 
         internal static void FillPartitionKeyRangeId(CosmosRequestMessage request, string partitionKeyRangeId)

@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        public virtual void FillRequestOptions(CosmosRequestMessage request)
+        internal virtual void PopulateRequestOptions(CosmosRequestMessage request)
         {
             if (this.Properties != null)
             {

@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             options.Object.EnableScanInQuery = true;
             options.Object.SessionToken = "SessionToken";
             options.Object.ConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.BoundedStaleness;
-            options.Object.FillRequestOptions(request);
+            options.Object.PopulateRequestOptions(request);
 
             Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsQuery]);
             Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.EnableCrossPartitionQuery]);
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.EnableScanInQuery]);
             Assert.AreEqual(options.Object.SessionToken, request.Headers[HttpConstants.HttpHeaders.SessionToken]);
             Assert.AreEqual(options.Object.ConsistencyLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
-            options.Verify(m => m.FillRequestOptions(It.Is<CosmosRequestMessage>(p => ReferenceEquals(p, request))), Times.Once);
+            options.Verify(m => m.PopulateRequestOptions(It.Is<CosmosRequestMessage>(p => ReferenceEquals(p, request))), Times.Once);
         }
 
         [TestMethod]
