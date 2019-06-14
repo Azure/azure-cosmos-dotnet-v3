@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
     internal class QueryResponse<T> : FeedResponse<T>
     {
         private readonly IEnumerable<CosmosElement> cosmosElements;
-        private readonly CosmosJsonSerializer jsonSerializer;
+        private readonly CosmosSerializer jsonSerializer;
         private readonly CosmosSerializationOptions serializationOptions;
         private IEnumerable<T> resources;
 
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<CosmosElement> cosmosElements,
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             bool hasMoreResults,
-            CosmosJsonSerializer jsonSerializer,
+            CosmosSerializer jsonSerializer,
             CosmosSerializationOptions serializationOptions)
         {
             this.cosmosElements = cosmosElements;
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
-            CosmosJsonSerializer jsonSerializer,
+            CosmosSerializer jsonSerializer,
             bool hasMoreResults)
         {
             QueryResponse<TInput> queryResponse;

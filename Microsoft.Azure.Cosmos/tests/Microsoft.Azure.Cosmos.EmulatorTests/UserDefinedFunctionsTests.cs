@@ -15,8 +15,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class UserDefinedFunctionsTests : BaseCosmosClientHelper
     {
-        private CosmosContainerCore container = null;
-        private CosmosScripts scripts = null;
+        private ContainerCore container = null;
+        private Scripts scripts = null;
         private const string function = @"function(amt) { return amt * 0.05; }";
 
         [TestInitialize]
@@ -25,13 +25,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestInit();
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.container = (CosmosContainerCore)response;
-            this.scripts = this.container.GetScripts();
+            this.container = (ContainerCore)response;
+            this.scripts = this.container.Scripts;
         }
 
         [TestCleanup]
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CRUDTest()
         {
-            CosmosUserDefinedFunctionSettings settings = new CosmosUserDefinedFunctionSettings
+            UserDefinedFunctionProperties settings = new UserDefinedFunctionProperties
             {
                 Id = Guid.NewGuid().ToString(),
                 Body = UserDefinedFunctionsTests.function,
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(settings, response);
 
-            CosmosUserDefinedFunctionSettings updatedSettings = response.Resource;
+            UserDefinedFunctionProperties updatedSettings = response.Resource;
             updatedSettings.Body = @"function(amt) { return amt * 0.42; }";
 
             UserDefinedFunctionResponse replaceResponse = await this.scripts.ReplaceUserDefinedFunctionAsync(updatedSettings);
@@ -94,26 +94,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.container.CreateItemAsync<ToDoActivity>(item);
 
-            CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await this.scripts.CreateUserDefinedFunctionAsync(
-                new CosmosUserDefinedFunctionSettings
+            UserDefinedFunctionProperties cosmosUserDefinedFunction = await this.scripts.CreateUserDefinedFunctionAsync(
+                new UserDefinedFunctionProperties
                 {
                     Id = "calculateTax",
                     Body = @"function(amt) { return amt * 0.05; }"
                 });
             
-             CosmosSqlQueryDefinition sqlQuery = new CosmosSqlQueryDefinition(
+             QueryDefinition sqlQuery = new QueryDefinition(
              "SELECT t.id, t.status, t.cost, udf.calculateTax(t.cost) as total FROM toDoActivity t where t.cost > @expensive and t.status = @status")
                  .UseParameter("@expensive", 9000)
                  .UseParameter("@status", "Done");
             
-             FeedIterator<dynamic> feedIterator = this.container.CreateItemQuery<dynamic>(
+             FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
                  sqlQueryDefinition: sqlQuery,
                  partitionKey: new Cosmos.PartitionKey("Done"));
 
             HashSet<string> iterIds = new HashSet<string>();
             while (feedIterator.HasMoreResults)
             {
-                foreach (var response in await feedIterator.FetchNextSetAsync())
+                foreach (var response in await feedIterator.ReadNextAsync())
                 {
                     Assert.IsTrue(response.cost > 9000);
                     Assert.AreEqual(response.cost * .05, response.total);
@@ -131,13 +131,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task UserDefinedFunctionsIteratorTest()
         {
-            CosmosUserDefinedFunctionSettings cosmosUserDefinedFunction = await CreateRandomUdf();
+            UserDefinedFunctionProperties cosmosUserDefinedFunction = await CreateRandomUdf();
 
             HashSet<string> settings = new HashSet<string>();
-            FeedIterator<CosmosUserDefinedFunctionSettings> iter = this.scripts.GetUserDefinedFunctionsIterator(); ;
+            FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionsIterator(); ;
             while (iter.HasMoreResults)
             {
-                foreach (CosmosUserDefinedFunctionSettings storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
+                foreach (UserDefinedFunctionProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
                 {
                     settings.Add(storedProcedureSettingsEntry.Id);
                 }
@@ -149,9 +149,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
         }
 
-        private static void ValidateUserDefinedFunctionSettings(CosmosUserDefinedFunctionSettings udfSettings, UserDefinedFunctionResponse cosmosResponse)
+        private static void ValidateUserDefinedFunctionSettings(UserDefinedFunctionProperties udfSettings, UserDefinedFunctionResponse cosmosResponse)
         {
-            CosmosUserDefinedFunctionSettings settings = cosmosResponse.Resource;
+            UserDefinedFunctionProperties settings = cosmosResponse.Resource;
             Assert.AreEqual(udfSettings.Body, settings.Body,
                 "User defined function do not match");
             Assert.AreEqual(udfSettings.Id, settings.Id,
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string id = Guid.NewGuid().ToString();
             string function = UserDefinedFunctionsTests.function;
 
-            CosmosUserDefinedFunctionSettings settings = new CosmosUserDefinedFunctionSettings
+            UserDefinedFunctionProperties settings = new UserDefinedFunctionProperties
             {
                 Id = id,
                 Body = function,
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Create a user defined function 
             UserDefinedFunctionResponse createResponse = await this.scripts.CreateUserDefinedFunctionAsync(
-                userDefinedFunctionSettings: settings,
+                userDefinedFunctionProperties: settings,
                 cancellationToken: this.cancellationToken);
 
             ValidateUserDefinedFunctionSettings(settings, createResponse);

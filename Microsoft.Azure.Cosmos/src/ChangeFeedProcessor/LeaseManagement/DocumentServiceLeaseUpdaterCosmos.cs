@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal sealed class DocumentServiceLeaseUpdaterCosmos : DocumentServiceLeaseUpdater
     {
         private const int RetryCountOnConflict = 5;
-        private readonly CosmosContainer container;
+        private readonly Container container;
 
-        public DocumentServiceLeaseUpdaterCosmos(CosmosContainer container)
+        public DocumentServiceLeaseUpdaterCosmos(Container container)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
             this.container = container;
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 DefaultTrace.TraceInformation("Lease with token {0} update conflict. Reading the current version of lease.", lease.CurrentLeaseToken);
 
                 ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReadItemAsync<DocumentServiceLeaseCore>(
-                    partitionKey, itemId).ConfigureAwait(false);
+                    itemId, partitionKey).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     DefaultTrace.TraceInformation("Lease with token {0} no longer exists", lease.CurrentLeaseToken);

@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
 
             bool collectionRoutingMapCacheIsUptoDate = false;
 
-            CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+            ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                 collection.ResourceId, null, request, cancellationToken);
 
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
         private static void EnsureRoutingMapPresent(
             DocumentServiceRequest request,
             CollectionRoutingMap routingMap,
-            CosmosContainerSettings collection)
+            ContainerProperties collection)
         {
             if (routingMap == null && request.IsNameBased && request.PartitionKeyRangeIdentity != null
                 && request.PartitionKeyRangeIdentity.CollectionRid != null)
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResolutionResult> TryResolveServerPartitionAsync(
             DocumentServiceRequest request,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap,
             bool collectionCacheIsUptodate,
             bool collectionRoutingMapCacheIsUptodate,
@@ -526,7 +526,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResolutionResult> TryResolveServerPartitionByPartitionKeyRangeIdAsync(
             DocumentServiceRequest request,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap,
             bool collectionCacheIsUpToDate,
             bool routingMapCacheIsUpToDate,
@@ -564,7 +564,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             string partitionKeyString,
             bool collectionCacheUptoDate,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap)
         {
             if (request == null)

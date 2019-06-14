@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos container response
     /// </summary>
-    public class ContainerResponse : Response<CosmosContainerSettings>
+    public class ContainerResponse : Response<ContainerProperties>
     {
         /// <summary>
         /// Create a <see cref="ContainerResponse"/> as a no-op for mock testing
@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos
         internal ContainerResponse(
             HttpStatusCode httpStatusCode,
             CosmosResponseMessageHeaders headers,
-            CosmosContainerSettings cosmosContainerSettings,
-            CosmosContainer container)
+            ContainerProperties containerProperties,
+            Container container)
             : base(
                 httpStatusCode,
                 headers,
-                cosmosContainerSettings)
+                containerProperties)
         {
             this.Container = container;
         }
@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos
         /// The reference to the cosmos container. This allows additional operations on the container
         /// or for easy access to other references like Items, StoredProcedures, etc..
         /// </summary>
-        public virtual CosmosContainer Container { get; private set; }
+        public virtual Container Container { get; private set; }
 
         /// <summary>
-        /// Get <see cref="CosmosContainer"/> implicitly from <see cref="ContainerResponse"/>
+        /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="ContainerResponse"/>
         /// </summary>
         /// <param name="response">ContainerResponse</param>
-        public static implicit operator CosmosContainer(ContainerResponse response)
+        public static implicit operator Container(ContainerResponse response)
         {
             return response.Container;
         }

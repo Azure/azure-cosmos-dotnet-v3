@@ -21,14 +21,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ConflictsFeedSetsPartitionKeyRangeIdentity()
         {
-            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
+            ContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 Assert.IsNotNull(request.DocumentServiceRequest.PartitionKeyRangeIdentity);
                 return TestHandler.ReturnSuccess();
             });
-            FeedIterator iterator = container.GetConflicts().GetConflictsStreamIterator();
+            FeedIterator iterator = container.Conflicts.GetConflictsStreamIterator();
             while (iterator.HasMoreResults)
             {
-                CosmosResponseMessage responseMessage = await iterator.FetchNextSetAsync();
+                CosmosResponseMessage responseMessage = await iterator.ReadNextAsync();
             }
         }
 
@@ -39,23 +39,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("pk");
             // Using "test" as container name because the Mocked DocumentClient has it hardcoded
             Uri expectedRequestUri = new Uri($"dbs/conflictsDb/colls/test/docs/{expectedRID}", UriKind.Relative);
-            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
+            ContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.Read, request.OperationType);
                 Assert.AreEqual(ResourceType.Document, request.ResourceType);
                 Assert.AreEqual(expectedRequestUri, request.RequestUri);
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.SourceResourceId = expectedRID;
 
-            await container.GetConflicts().ReadCurrentAsync<JObject>(partitionKey, conflictSettings);
+            await container.Conflicts.ReadCurrentAsync<JObject>(partitionKey, conflictSettings);
         }
 
         [TestMethod]
         public void ReadConflictContentDeserializesContent()
         {
-            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
+            ContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 return TestHandler.ReturnSuccess();
             });
 
@@ -63,10 +63,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             someJsonObject["id"] = Guid.NewGuid().ToString();
             someJsonObject["someInt"] = 2;
 
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.Content = someJsonObject.ToString();
 
-            Assert.AreEqual(someJsonObject.ToString(), container.GetConflicts().ReadConflictContent<JObject>(conflictSettings).ToString());
+            Assert.AreEqual(someJsonObject.ToString(), container.Conflicts.ReadConflictContent<JObject>(conflictSettings).ToString());
         }
 
         [TestMethod]
@@ -75,23 +75,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             const string expectedId = "something";
             Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey("pk");
             Uri expectedRequestUri = new Uri($"/dbs/conflictsDb/colls/conflictsColl/conflicts/{expectedId}", UriKind.Relative);
-            CosmosContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
+            ContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
                 Assert.AreEqual(OperationType.Delete, request.OperationType);
                 Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
                 Assert.AreEqual(expectedRequestUri, request.RequestUri);
                 return TestHandler.ReturnSuccess();
             });
 
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.Id = expectedId;
 
-            await container.GetConflicts().DeleteConflictAsync(partitionKey, conflictSettings);
+            await container.Conflicts.DeleteConflictAsync(partitionKey, conflictSettings);
         }
 
-        private static CosmosContainerCore GetMockedContainer(Func<CosmosRequestMessage,
+        private static ContainerCore GetMockedContainer(Func<CosmosRequestMessage,
             CancellationToken, Task<CosmosResponseMessage>> handlerFunc)
         {
-            return new CosmosContainerCore(CosmosConflictTests.GetMockedClientContext(handlerFunc), MockCosmosUtil.CreateMockDatabase("conflictsDb").Object, "conflictsColl");
+            return new ContainerCore(CosmosConflictTests.GetMockedClientContext(handlerFunc), MockCosmosUtil.CreateMockDatabase("conflictsDb").Object, "conflictsColl");
         }
 
         private static CosmosClientContext GetMockedClientContext(
@@ -117,11 +117,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 handler = handler.InnerHandler;
             }
 
-            CosmosJsonSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
+            CosmosSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
 
             CosmosResponseFactory responseFactory = new CosmosResponseFactory(cosmosJsonSerializer, cosmosJsonSerializer);
 
-            return new CosmosClientContextCore(
+            return new ClientContextCore(
                 client: client,
                 clientOptions: null,
                 userJsonSerializer: cosmosJsonSerializer,

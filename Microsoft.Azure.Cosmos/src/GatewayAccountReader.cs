@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
             this.apiType = apiType;
         }
 
-        private async Task<CosmosAccountSettings> GetDatabaseAccountAsync(Uri serviceEndpoint)
+        private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
             HttpClient httpClient = this.messageHandler == null ? new HttpClient() : new HttpClient(this.messageHandler);
 
@@ -80,14 +80,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
-                    return CosmosResource.FromStream<CosmosAccountSettings>(documentServiceResponse);
+                    return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                 }
             }
         }
 
-        public async Task<CosmosAccountSettings> InitializeReaderAsync()
+        public async Task<AccountProperties> InitializeReaderAsync()
         {
-            CosmosAccountSettings databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+            AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                 this.serviceEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync);
 
             return databaseAccount;

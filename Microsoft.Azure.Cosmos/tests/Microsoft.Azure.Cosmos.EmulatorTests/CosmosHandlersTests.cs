@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosHandlersTests : BaseCosmosClientHelper
     {
-        private CosmosContainer Container = null;
-        private CosmosJsonSerializer jsonSerializer = null;
+        private Container Container = null;
+        private CosmosSerializer jsonSerializer = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestInit();
             string PartitionKey = "/status";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);

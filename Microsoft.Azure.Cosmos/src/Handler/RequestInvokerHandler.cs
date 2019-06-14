@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (promotedRequestOptions != null)
             {
                 // Fill request options
-                promotedRequestOptions.FillRequestOptions(request);
+                promotedRequestOptions.PopulateRequestOptions(request);
 
                 // Validate the request consistency compatibility with account consistency
                 // Type based access context for requested consistency preferred for performance
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
+            ContainerCore cosmosContainerCore,
             Cosmos.PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
+            ContainerCore cosmosContainerCore,
             Cosmos.PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,

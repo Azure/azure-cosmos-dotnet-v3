@@ -291,6 +291,17 @@ FROM root ]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[TrimStart]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimStart())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LTRIM(root["StringField"]) 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Replace char]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.StringField.Replace(c, a))]]></Expression>
     </Input>
@@ -308,6 +319,17 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE REPLACE(root["StringField"], "str", "str2") 
+FROM root ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimEnd]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimEnd())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE RTRIM(root["StringField"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>

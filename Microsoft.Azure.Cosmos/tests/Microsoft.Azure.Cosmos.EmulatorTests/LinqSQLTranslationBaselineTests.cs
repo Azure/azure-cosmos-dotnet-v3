@@ -12,15 +12,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Newtonsoft.Json;
     using BaselineTest;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
-    using System.Configuration;
-    using System.Text.RegularExpressions;
-    using System.Text;
-    using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using System.Threading.Tasks;
 
     [TestClass]
-    [TestCategory("Quarantine")]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         static Expression Lambda<T, S>(Expression<Func<T, S>> func)
@@ -28,59 +23,45 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return func;
         }
 
-        private static DocumentClient client;
-        private static Database testDb;
-        private static DocumentCollection testCollection;
+        private static CosmosClient cosmosClient;
+        private static CosmosDatabase testDb;
+        private static Container testContainer;
 
         [ClassInitialize]
-        public static void Initialize(TestContext textContext)
+        public async static Task Initialize(TestContext textContext)
         {
-            var authKey = ConfigurationManager.AppSettings["MasterKey"];
-            var uri = new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]);
-            var connectionPolicy = new ConnectionPolicy
-            {
-                ConnectionMode = ConnectionMode.Gateway,
-                EnableEndpointDiscovery = true,
-            };
-            ConsistencyLevel? defaultConsistencyLevel = null;
-            client = new DocumentClient(
-                uri,
-                authKey,
-                new JsonSerializerSettings()
+            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
+                cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
                 {
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                     // We want to simulate the property not exist so ignoring the null value
                     NullValueHandling = NullValueHandling.Ignore
-                },
-                connectionPolicy,
-                defaultConsistencyLevel);
-            var db = new Database() { Id = nameof(LinqTranslationBaselineTests) };
-            try
-            {
-                var response = client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id)).Result;
-            }
-            catch { }
-            testDb = client.CreateDatabaseAsync(db).Result;
+                })).WithConnectionModeGateway();
+            });
+
+            await cosmosClient.GetDatabase(id: nameof(LinqSQLTranslationBaselineTest)).DeleteAsync();
+            testDb = await cosmosClient.CreateDatabaseAsync(nameof(LinqSQLTranslationBaselineTest));
+
         }
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
-            testCollection = client.CreateDocumentCollectionAsync(testDb, new DocumentCollection() { Id = Guid.NewGuid().ToString() }).Result;
+            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
         }
 
         [TestCleanup]
-        public void TestCleanUp()
+        public async Task TestCleanUp()
         {
-            client.DeleteDocumentCollectionAsync(testCollection);
+            await testContainer.DeleteAsync();
         }
 
         [ClassCleanup]
-        public static void CleanUp()
+        public async static Task CleanUp()
         {
             if (testDb != null)
             {
-                client.DeleteDatabaseAsync(testDb);
+                await testDb.DeleteAsync();
             }
         }
 
@@ -88,9 +69,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             public int x;
             public int y;
+            public string id;
+            public string pk;
 
             public simple(int x, int y)
-            { this.x = x;  this.y = y; }
+            { this.x = x;  this.y = y; this.id = Guid.NewGuid().ToString(); this.pk = "Test"; }
         }
 
         struct nested
@@ -114,6 +97,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             public bool b;
             public double[] dblArray;
             public simple inside;
+            public string id;
+            public string pk;
 
             public complex(double d, string str, bool b, double[] da, simple s)
             {
@@ -123,6 +108,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 this.dblArray = da;
                 this.inside = s;
                 this.json = null;
+                this.id = Guid.NewGuid().ToString();
+                this.pk = "Test";
             }
 
             public override string ToString()
@@ -212,9 +199,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 var obj = new simple();
                 obj.x = random.Next();
                 obj.y = random.Next();
+                obj.id = Guid.NewGuid().ToString();
+                obj.pk = "Test";
                 return obj;
             };
-            var dataQuery = LinqTestsCommon.GenerateTestData<simple>(createDataObj, Records, client, testCollection);
+            var dataQuery = LinqTestsCommon.GenerateTestCosmosData<simple>(createDataObj, Records, testContainer);
 
             var inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select cast float", b => dataQuery(b).Select(x => (int)(floatValue))));
@@ -270,9 +259,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
                 obj.inside = new simple() { x = random.Next(), y = random.Next() };
                 obj.str = random.NextDouble() < 0.1 ? "5" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
+                obj.id = Guid.NewGuid().ToString();
+                obj.pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestData<complex>(createDataObj, Records, client, testCollection);
+            var getQuery = LinqTestsCommon.GenerateTestCosmosData<complex>(createDataObj, Records, testContainer);
 
             var inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select equality", b => getQuery(b).Select(s => s.str == "5")));

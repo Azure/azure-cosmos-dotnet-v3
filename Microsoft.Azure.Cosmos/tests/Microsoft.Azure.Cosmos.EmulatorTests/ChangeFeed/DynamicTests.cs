@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                requestUnitsPerSecond: 10000,
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                throughput: 10000,
                 cancellationToken: this.cancellationToken);
             this.Container = response;
         }
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .DefineChangeFeedProcessor("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
                     foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
@@ -84,17 +84,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             err => { if (err) throw err;}
                         );}";
 
-            CosmosScripts scripts = this.Container.GetScripts();
+            Scripts scripts = this.Container.Scripts;
 
             StoredProcedureResponse storedProcedureResponse =
-                await scripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(sprocId, sprocBody));
+                await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
 
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .DefineChangeFeedProcessor("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
                     foreach (var doc in docs) accumulator += doc.id.ToString() + ".";

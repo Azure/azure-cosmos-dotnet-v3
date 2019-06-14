@@ -13,17 +13,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.Container;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {
         private const string EstimatorDefaultHostName = "Estimator";
 
-        private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
+        private readonly ChangesEstimationHandler initialEstimateDelegate;
         private CancellationTokenSource shutdownCts;
-        private CosmosContainerCore leaseContainer;
+        private ContainerCore leaseContainer;
         private string monitoredContainerRid;
         private TimeSpan? estimatorPeriod = null;
-        private CosmosContainerCore monitoredContainer;
+        private ContainerCore monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimator feedEstimator;
         private RemainingWorkEstimator remainingWorkEstimator;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private Task runAsync;
 
         public ChangeFeedEstimatorCore(
-            Func<long, CancellationToken, Task> initialEstimateDelegate, 
+            ChangesEstimationHandler initialEstimateDelegate, 
             TimeSpan? estimatorPeriod)
         {
             if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         internal ChangeFeedEstimatorCore(
-            Func<long, CancellationToken, Task> initialEstimateDelegate,
+            ChangesEstimationHandler initialEstimateDelegate,
             TimeSpan? estimatorPeriod,
             RemainingWorkEstimator remainingWorkEstimator)
             : this(initialEstimateDelegate, estimatorPeriod)
@@ -54,12 +55,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            CosmosContainerCore leaseContainer,
+            ContainerCore leaseContainer,
             string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            CosmosContainerCore monitoredContainer)
+            ContainerCore monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null) throw new ArgumentNullException(nameof(leaseContainer));
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         partitionKeyRangeId: partitionKeyRangeId,
                         continuationToken: continuationToken,
                         maxItemCount: 1,
-                        cosmosContainer: this.monitoredContainer,
+                        container: this.monitoredContainer,
                         startTime: null,
                         startFromBeginning: string.IsNullOrEmpty(continuationToken));
                 };

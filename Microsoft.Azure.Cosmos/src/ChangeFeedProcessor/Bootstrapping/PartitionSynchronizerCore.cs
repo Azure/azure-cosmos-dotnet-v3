@@ -22,14 +22,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         internal static int DefaultDegreeOfParallelism = 25;
 #pragma warning restore SA1401 // Fields should be private
 
-        private readonly CosmosContainerCore container;
+        private readonly ContainerCore container;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly int degreeOfParallelism;
         private readonly int maxBatchSize;
 
         public PartitionSynchronizerCore(
-            CosmosContainerCore container,
+            ContainerCore container,
             DocumentServiceLeaseContainer leaseContainer,
             DocumentServiceLeaseManager leaseManager,
             int degreeOfParallelism,

@@ -14,13 +14,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
     internal static class CosmosContainerExtensions
     {
         public static async Task<T> TryGetItemAsync<T>(
-            this CosmosContainer container,
+            this Container container,
             PartitionKey partitionKey,
             string itemId)
         {
             var response = await container.ReadItemAsync<T>(
-                    partitionKey,
-                    itemId)
+                    itemId,
+                    partitionKey)
                     .ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static async Task<ItemResponse<T>> TryCreateItemAsync<T>(
-            this CosmosContainer container, 
+            this Container container, 
             object partitionKey, 
             T item)
         {
@@ -46,12 +46,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static async Task<T> TryDeleteItemAsync<T>(
-            this CosmosContainer container,
+            this Container container,
             PartitionKey partitionKey,
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
-            var response = await container.DeleteItemAsync<T>(partitionKey, itemId, cosmosItemRequestOptions).ConfigureAwait(false);
+            var response = await container.DeleteItemAsync<T>(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
                 return default(T);
@@ -61,20 +61,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static async Task<bool> ItemExistsAsync(
-            this CosmosContainer container,
+            this Container container,
             PartitionKey partitionKey,
             string itemId)
         {
             var response = await container.ReadItemStreamAsync(
-                        partitionKey,
-                        itemId)
+                        itemId,
+                        partitionKey)
                         .ConfigureAwait(false);
 
             return response.IsSuccessStatusCode;
         }
 
         public static async Task<string> GetMonitoredContainerRidAsync(
-            this CosmosContainer monitoredContainer,
+            this Container monitoredContainer,
             string suggestedMonitoredRid,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -83,13 +83,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 return suggestedMonitoredRid;
             }
 
-            string containerRid = await ((CosmosContainerCore)monitoredContainer).GetRIDAsync(cancellationToken);
-            string databaseRid = await ((CosmosDatabaseCore)((CosmosContainerCore)monitoredContainer).Database).GetRIDAsync(cancellationToken);
+            string containerRid = await ((ContainerCore)monitoredContainer).GetRIDAsync(cancellationToken);
+            string databaseRid = await ((CosmosDatabaseCore)((ContainerCore)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
         }
 
         public static string GetLeasePrefix(
-            this CosmosContainer monitoredContainer,
+            this Container monitoredContainer,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             string monitoredContainerRid)
         {
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 CultureInfo.InvariantCulture,
                 "{0}{1}_{2}",
                 optionsPrefix,
-                ((CosmosContainerCore)monitoredContainer).ClientContext.ClientOptions.EndPoint.Host,
+                ((ContainerCore)monitoredContainer).ClientContext.Client.Endpoint.Host,
                 monitoredContainerRid);
         }
     }

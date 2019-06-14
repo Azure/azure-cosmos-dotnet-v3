@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        public override void FillRequestOptions(CosmosRequestMessage request)
+        internal override void PopulateRequestOptions(CosmosRequestMessage request)
         {
             if (this.EnableScriptLogging)
             {
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions.SetSessionToken(request, this.SessionToken);
             RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
-            base.FillRequestOptions(request);
+            base.PopulateRequestOptions(request);
         }
     }
 }

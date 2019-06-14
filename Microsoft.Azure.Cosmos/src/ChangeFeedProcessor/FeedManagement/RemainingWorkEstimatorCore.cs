@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         private const char PKRangeIdSeparator = ':';
         private const char SegmentSeparator = '#';
         private const string LSNPropertyName = "_lsn";
-        private static readonly CosmosJsonSerializer DefaultSerializer = new CosmosJsonSerializerCore();
+        private static readonly CosmosSerializer DefaultSerializer = new CosmosJsonSerializerCore();
         private readonly Func<string, string, bool, FeedIterator> feedCreator;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly int degreeOfParallelism;
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
             try
             {
-                CosmosResponseMessage response = await iterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                CosmosResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode != HttpStatusCode.NotModified)
                 {
                     response.EnsureSuccessStatusCode();

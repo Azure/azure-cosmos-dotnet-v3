@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(typeof(RequestInvokerHandler).Equals(client.RequestHandler.GetType()));
             Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.GetType()));
 
-            CosmosContainer container = client.GetDatabase("testdb")
+            Container container = client.GetDatabase("testdb")
                                         .GetContainer("testcontainer");
 
             HttpStatusCode[] testHttpStatusCodes = new HttpStatusCode[]
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
-                ItemResponse<object> response = await container.ReadItemAsync<object>(new Cosmos.PartitionKey("pk1"), "id1", options);
+                ItemResponse<object> response = await container.ReadItemAsync<object>("id1", new Cosmos.PartitionKey("pk1"), options);
                 Console.WriteLine($"Got status code {response.StatusCode}");
                 Assert.AreEqual(code, response.StatusCode);
             }

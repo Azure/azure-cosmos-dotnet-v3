@@ -83,12 +83,12 @@ namespace Microsoft.Azure.Cosmos
         #region Account operation
 
         /// <summary>
-        /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountSettings"/> as an asynchronous operation in the Azure Cosmos DB service.
+        /// Read the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        Task<CosmosAccountSettings> GetDatabaseAccountAsync();
+        Task<AccountProperties> GetDatabaseAccountAsync();
 
         #endregion
 

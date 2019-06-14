@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         };
 
         private ReadOnlyCollection<string> preferredLocations;
-        private CosmosAccountSettings databaseAccount;
+        private AccountProperties databaseAccount;
         private LocationCache cache;
         private GlobalEndpointManager endpointManager;
         private Mock<IDocumentClientInternal> mockedClient;
@@ -64,12 +64,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             Assert.AreEqual(this.databaseAccount.WriteLocationsInternal.First().Name, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
 
-            foreach (CosmosAccountLocation databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
+            foreach (AccountLocation databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
             {
                 Assert.AreEqual(databaseAccountLocation.Name, this.cache.GetLocation(new Uri(databaseAccountLocation.DatabaseAccountEndpoint)));
             }
 
-            foreach (CosmosAccountLocation databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
+            foreach (AccountLocation databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
             {
                 Assert.AreEqual(databaseAccountLocation.Name, this.cache.GetLocation(new Uri(databaseAccountLocation.DatabaseAccountEndpoint)));
             }
@@ -513,22 +513,22 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
-        private static CosmosAccountSettings CreateDatabaseAccount(bool useMultipleWriteLocations)
+        private static AccountProperties CreateDatabaseAccount(bool useMultipleWriteLocations)
         {
-            CosmosAccountSettings databaseAccount = new CosmosAccountSettings()
+            AccountProperties databaseAccount = new AccountProperties()
             {
                 EnableMultipleWriteLocations = useMultipleWriteLocations,
-                ReadLocationsInternal = new Collection<CosmosAccountLocation>()
+                ReadLocationsInternal = new Collection<AccountLocation>()
                 {
-                    { new CosmosAccountLocation() { Name = "location1", DatabaseAccountEndpoint = LocationCacheTests.Location1Endpoint.ToString() } },
-                    { new CosmosAccountLocation() { Name = "location2", DatabaseAccountEndpoint = LocationCacheTests.Location2Endpoint.ToString() } },
-                    { new CosmosAccountLocation() { Name = "location4", DatabaseAccountEndpoint = LocationCacheTests.Location4Endpoint.ToString() } },
+                    { new AccountLocation() { Name = "location1", DatabaseAccountEndpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                    { new AccountLocation() { Name = "location2", DatabaseAccountEndpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                    { new AccountLocation() { Name = "location4", DatabaseAccountEndpoint = LocationCacheTests.Location4Endpoint.ToString() } },
                 },
-                WriteLocationsInternal = new Collection<CosmosAccountLocation>()
+                WriteLocationsInternal = new Collection<AccountLocation>()
                 {
-                    { new CosmosAccountLocation() { Name = "location1", DatabaseAccountEndpoint = LocationCacheTests.Location1Endpoint.ToString() } },
-                    { new CosmosAccountLocation() { Name = "location2", DatabaseAccountEndpoint = LocationCacheTests.Location2Endpoint.ToString() } },
-                    { new CosmosAccountLocation() { Name = "location3", DatabaseAccountEndpoint = LocationCacheTests.Location3Endpoint.ToString() } },
+                    { new AccountLocation() { Name = "location1", DatabaseAccountEndpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                    { new AccountLocation() { Name = "location2", DatabaseAccountEndpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                    { new AccountLocation() { Name = "location3", DatabaseAccountEndpoint = LocationCacheTests.Location3Endpoint.ToString() } },
                 }
             };
 

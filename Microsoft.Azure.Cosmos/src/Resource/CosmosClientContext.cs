@@ -29,15 +29,15 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract IDocumentQueryClient DocumentQueryClient { get; }
 
-        internal abstract CosmosJsonSerializer CosmosSerializer { get; }
+        internal abstract CosmosSerializer CosmosSerializer { get; }
 
-        internal abstract CosmosJsonSerializer SettingsSerializer { get; }
+        internal abstract CosmosSerializer PropertiesSerializer { get; }
 
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 
-        internal abstract CosmosClientOptions ClientOptions { get; }
+        internal abstract ClientOptions ClientOptions { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
+            ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
             Action<CosmosRequestMessage> requestEnricher,
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,
-           CosmosContainerCore cosmosContainerCore,
+           ContainerCore cosmosContainerCore,
            PartitionKey partitionKey,
            Stream streamPayload,
            Action<CosmosRequestMessage> requestEnricher,

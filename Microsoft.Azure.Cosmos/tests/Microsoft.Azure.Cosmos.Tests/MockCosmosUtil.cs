@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Security;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -21,30 +20,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
     internal class MockCosmosUtil
     {
-        private static SecureString mockAccountKey;
-
-        public static SecureString MockAccountKey
-        {
-            get
-            {
-                if(mockAccountKey == null)
-                {
-                    mockAccountKey = new SecureString();
-                    foreach(char c in "5BF89B4F04E44AC6B566484F8DBBFB37")
-                    {
-                        mockAccountKey.AppendChar(c);
-                    }
-                }
-
-                return mockAccountKey;
-            }
-        }
-
         public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             DocumentClient documentClient = new MockDocumentClient();
             
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockAccountKey);
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);
@@ -53,12 +33,12 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return cosmosClientBuilder.Build(documentClient);
         }
 
-        public static Mock<CosmosContainerCore> CreateMockContainer(
+        public static Mock<ContainerCore> CreateMockContainer(
             string dbName = "myDb",
             string containerName = "myContainer")
         {
             Uri link = new Uri($"/dbs/{dbName}/colls/{containerName}" , UriKind.Relative);
-            Mock<CosmosContainerCore> mockContainer = new Mock<CosmosContainerCore>();
+            Mock<ContainerCore> mockContainer = new Mock<ContainerCore>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             return mockContainer;
         }
@@ -72,9 +52,9 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return mockDB;
         }
 
-        public static CosmosClientOptions GetDefaultConfiguration()
+        public static ClientOptions GetDefaultConfiguration()
         {
-            return new CosmosClientOptions(endPoint: "http://localhost", accountKey: MockAccountKey);
+            return new ClientOptions();
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

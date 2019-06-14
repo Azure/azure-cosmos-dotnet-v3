@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosReadFeedTests : BaseCosmosClientHelper
     {
-        private CosmosContainerCore Container = null;
+        private ContainerCore Container = null;
         private const string PartitionKey = "/id";
 
         [TestInitialize]
@@ -25,13 +25,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit();
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
-                requestUnitsPerSecond: 50000,
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                throughput: 50000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = (CosmosContainerCore)response;
+            this.Container = (ContainerCore)response;
 
             DocumentFeedResponse<PartitionKeyRange> pkRangesFeed = await this.cosmosClient.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
             Assert.IsTrue(pkRangesFeed.Count > 1, "Refresh container throughput to have at-least > 1 pk-range");
@@ -62,8 +62,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }}";
 
                 using (CosmosResponseMessage createResponse = await this.Container.CreateItemStreamAsync(
-                        new Cosmos.PartitionKey(i.ToString()),
-                        CosmosReadFeedTests.GenerateStreamFromString(item)))
+                        CosmosReadFeedTests.GenerateStreamFromString(item),
+                        new Cosmos.PartitionKey(i.ToString())))
                 {
                     Assert.IsTrue(createResponse.IsSuccessStatusCode);
                 }
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string lastKnownContinuationToken = null;
             FeedIterator iter = this.Container.Database.GetContainer(this.Container.Id)
-                                .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
+                                .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
             int count = 0;
             List<string> forwardOrder = new List<string>();
             while (iter.HasMoreResults)
@@ -79,10 +79,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (useStatelessIteration)
                 {
                     iter = this.Container.Database.GetContainer(this.Container.Id)
-                                        .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
+                                        .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
                 }
 
-                using (CosmosResponseMessage response = await iter.FetchNextSetAsync())
+                using (CosmosResponseMessage response = await iter.ReadNextAsync())
                 {
                     lastKnownContinuationToken = response.Headers.Continuation;
 
@@ -113,16 +113,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             lastKnownContinuationToken = null;
             iter = this.Container.Database.GetContainer(this.Container.Id)
-                    .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                    .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
             while (iter.HasMoreResults)
             {
                 if (useStatelessIteration)
                 {
                     iter = this.Container.Database.GetContainer(this.Container.Id)
-                            .GetItemsStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                            .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
                 }
 
-                using (CosmosResponseMessage response = await iter.FetchNextSetAsync())
+                using (CosmosResponseMessage response = await iter.ReadNextAsync())
                 {
                     lastKnownContinuationToken = response.Headers.Continuation;
 
