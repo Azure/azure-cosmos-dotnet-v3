@@ -34,10 +34,10 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosResponseMessage != null)
             {
                 this.StatusCode = cosmosResponseMessage.StatusCode;
-                this.Headers = cosmosResponseMessage.Headers;
-                this.ActivityId = this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
-                this.RequestCharge = this.Headers == null ? 0 : this.Headers.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
-                this.SubStatusCode = (int)this.Headers.SubStatusCode;
+                this.ResponseHeaders = cosmosResponseMessage.Headers;
+                this.ActivityId = this.ResponseHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
+                this.RequestCharge = this.ResponseHeaders == null ? 0 : this.ResponseHeaders.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
+                this.SubStatusCode = (int)this.ResponseHeaders.SubStatusCode;
                 if (cosmosResponseMessage.Headers.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the internal headers
         /// </summary>
-        internal virtual ResponseHeaders Headers { get; }
+        internal virtual Headers ResponseHeaders { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
@@ -123,13 +123,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A value indicating if the header was read.</returns>
         public virtual bool TryGetHeader(string headerName, out string value)
         {
-            if (this.Headers == null)
+            if (this.ResponseHeaders == null)
             {
                 value = null;
                 return false;
             }
 
-            return this.Headers.TryGetValue(headerName, out value);
+            return this.ResponseHeaders.TryGetValue(headerName, out value);
         }
 
         /// <summary>

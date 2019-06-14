@@ -698,7 +698,7 @@ namespace Microsoft.Azure.Cosmos
             catch (CosmosException exception)
             {
                 return new ResponseMessage(
-                    headers: exception.Headers,
+                    headers: exception.ResponseHeaders,
                     requestMessage: null,
                     errorMessage: exception.Message,
                     statusCode: exception.StatusCode,
