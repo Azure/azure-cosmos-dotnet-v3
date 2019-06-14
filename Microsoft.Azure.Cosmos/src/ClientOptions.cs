@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
-    public class CosmosClientOptions
+    public class ClientOptions
     {
         /// <summary>
         /// Default max connection limit
@@ -50,76 +50,19 @@ namespace Microsoft.Azure.Cosmos
         private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
-        /// Initialize a new CosmosClientOptions class that holds all the properties the CosmosClient requires.
+        /// Creates a new ClientOptions
         /// </summary>
-        /// <param name="endPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
-        /// <param name="accountKey">The key to the account.</param>
-        /// <example>
-        /// The example below creates a new <see cref="CosmosClientOptions"/>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// CosmosClientOptions clientOptions = new CosmosClientOptions(
-        ///     endPoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey");
-        /// ]]>
-        /// </code>
-        /// </example>
-        public CosmosClientOptions(
-            string endPoint,
-            string accountKey)
+        public ClientOptions()
         {
-            if (string.IsNullOrWhiteSpace(endPoint))
-            {
-                throw new ArgumentNullException(nameof(endPoint));
-            }
-
-            if (string.IsNullOrWhiteSpace(accountKey))
-            {
-                throw new ArgumentNullException(nameof(accountKey));
-            }
-
-            this.EndPoint = new Uri(endPoint);
-            this.AccountKey = accountKey;
-
-            this.Initialize();
+            this.UserAgentContainer = new UserAgentContainer();
+            this.GatewayModeMaxConnectionLimit = ClientOptions.DefaultMaxConcurrentConnectionLimit;
+            this.RequestTimeout = ClientOptions.DefaultRequestTimeout;
+            this.ConnectionMode = ClientOptions.DefaultConnectionMode;
+            this.ConnectionProtocol = ClientOptions.DefaultProtocol;
+            this.ApiType = ClientOptions.DefaultApiType;
+            this.customHandlers = null;
+            this.userJsonSerializer = null;
         }
-
-        /// <summary>
-        /// Extracts the account endpoint and key from the connection string.
-        /// </summary>
-        /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
-        /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey.</param>
-        public CosmosClientOptions(string connectionString)
-        {
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new ArgumentNullException(nameof(connectionString));
-            }
-
-            DbConnectionStringBuilder builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
-            this.EndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
-                CosmosClientOptions.ConnectionStringAccountEndpoint));
-            this.AccountKey = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
-
-            this.Initialize();
-        }
-
-        /// <summary>
-        /// Gets the endpoint Uri for the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The Uri for the account endpoint.
-        /// </value>
-        /// <seealso cref="System.Uri"/>
-        public virtual Uri EndPoint { get; }
-
-        /// <summary>
-        /// Gets the AuthKey used by the client from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The AuthKey used by the client.
-        /// </value>
-        internal string AccountKey { get; }
 
         /// <summary>
         /// A suffix to be added to the default user-agent for the Azure Cosmos DB service.
@@ -351,9 +294,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
-        internal CosmosClientOptions Clone()
+        internal ClientOptions Clone()
         {
-            CosmosClientOptions cloneConfiguration = (CosmosClientOptions)this.MemberwiseClone();
+            ClientOptions cloneConfiguration = (ClientOptions)this.MemberwiseClone();
             return cloneConfiguration;
         }
 
@@ -411,20 +354,24 @@ namespace Microsoft.Azure.Cosmos
             return connectionPolicy;
         }
 
-        private void Initialize()
+        internal static string GetAccountEndpoint(string connectionString)
         {
-            this.UserAgentContainer = new UserAgentContainer();
-            this.GatewayModeMaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
-            this.RequestTimeout = CosmosClientOptions.DefaultRequestTimeout;
-            this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
-            this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
-            this.ApiType = CosmosClientOptions.DefaultApiType;
-            this.customHandlers = null;
-            this.userJsonSerializer = null;
+            return ClientOptions.GetValueFromConnectionString(connectionString, ClientOptions.ConnectionStringAccountEndpoint);
         }
 
-        private static string GetValueFromSqlConnectionString(DbConnectionStringBuilder builder, string keyName)
+        internal static string GetAccountKey(string connectionString)
         {
+            return ClientOptions.GetValueFromConnectionString(connectionString, ClientOptions.ConnectionStringAccountKey);
+        }
+
+        private static string GetValueFromConnectionString(string connectionString, string keyName)
+        {
+            if (connectionString == null)
+            {
+                throw new ArgumentNullException(nameof(connectionString));
+            }
+
+            DbConnectionStringBuilder builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
             if (builder.TryGetValue(keyName, out object value))
             {
                 string keyNameValue = value as string;

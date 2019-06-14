@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (promotedRequestOptions != null)
             {
                 // Fill request options
-                promotedRequestOptions.FillRequestOptions(request);
+                promotedRequestOptions.PopulateRequestOptions(request);
 
                 // Validate the request consistency compatibility with account consistency
                 // Type based access context for requested consistency preferred for performance
