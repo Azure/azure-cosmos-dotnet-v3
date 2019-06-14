@@ -200,17 +200,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// pipeline to chain the handlers.
         /// </summary>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <param name="handlers">A list of <see cref="CosmosRequestHandler"/> instaces to add to the pipeline.</param>
+        /// <param name="customHandlers">A list of <see cref="CosmosRequestHandler"/> instaces to add to the pipeline.</param>
         /// <seealso cref="ClientOptions.CustomHandlers"/>
-        public virtual CosmosClientBuilder AddCustomHandlers(params CosmosRequestHandler[] handlers)
+        public virtual CosmosClientBuilder AddCustomHandlers(params CosmosRequestHandler[] customHandlers)
         {
-            if (handlers != null && handlers.Any(x => x != null))
+            foreach (CosmosRequestHandler handler in customHandlers)
             {
-                this.clientOptions.CustomHandlers = handlers.ToList().AsReadOnly();
-            }
-            else
-            {
-                this.clientOptions.CustomHandlers = null;
+                this.clientOptions.CustomHandlers.Add(handler);
             }
 
             return this;

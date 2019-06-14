@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos
         private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
+        private readonly Collection<CosmosRequestHandler> customHandlers;
         private CosmosSerializer userJsonSerializer;
 
-        private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
         private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionMode = ClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = ClientOptions.DefaultProtocol;
             this.ApiType = ClientOptions.DefaultApiType;
-            this.customHandlers = null;
+            this.customHandlers = new Collection<CosmosRequestHandler>();
             this.userJsonSerializer = null;
         }
 
@@ -124,23 +124,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(CosmosRequestHandler[])"/>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        public virtual ReadOnlyCollection<CosmosRequestHandler> CustomHandlers
+        public virtual Collection<CosmosRequestHandler> CustomHandlers
         {
             get => this.customHandlers;
-            set
-            {
-                if (value != null && value.Any(x => x == null))
-                {
-                    throw new ArgumentNullException(nameof(this.CustomHandlers) + "requires all positions in the array to not be null.");
-                }
-
-                if (value != null && value.Any(x => x?.InnerHandler != null))
-                {
-                    throw new ArgumentException(nameof(this.CustomHandlers) + " requires all DelegatingHandler.InnerHandler to be null. The CosmosClient uses the inner handler in building the pipeline.");
-                }
-
-                this.customHandlers = value;
-            }
         }
 
         /// <summary>
