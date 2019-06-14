@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@expensive", 9000)
                  .UseParameter("@status", "Done");
             
-             FeedIterator<dynamic> feedIterator = this.container.GetItemsQueryIterator<dynamic>(
+             FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
                  sqlQueryDefinition: sqlQuery,
                  partitionKey: new Cosmos.PartitionKey("Done"));
 
