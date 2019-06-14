@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.1.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AppSettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Azure.Cosmos.Client">
+      <HintPath>..\..\..\Microsoft.Azure.Cosmos\src\bin\Debug\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Azure.Cosmos.Direct">
+      <HintPath>C:\Users\kadurga\.nuget\packages\microsoft.azure.cosmos.direct.myget\3.0.0.33-preview\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
