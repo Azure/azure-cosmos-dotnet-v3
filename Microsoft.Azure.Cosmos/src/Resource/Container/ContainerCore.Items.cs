@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, (CosmosQueryClientCore)this.queryClient, requestOptions, allowSynchronousQueryExecution);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder<T>(
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
         {

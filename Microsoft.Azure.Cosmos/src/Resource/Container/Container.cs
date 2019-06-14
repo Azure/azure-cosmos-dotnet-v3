@@ -1123,7 +1123,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder<T>(
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate);
 
