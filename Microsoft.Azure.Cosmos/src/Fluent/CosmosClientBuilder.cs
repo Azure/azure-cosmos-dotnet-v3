@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             string accountEndpoint,
             string accountKey)
         {
-            if (this.accountEndpoint == null)
+            if (accountEndpoint == null)
             {
                 throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
             }
