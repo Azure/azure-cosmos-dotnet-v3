@@ -578,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DocumentClient client = TestCommon.CreateClient(true);
 
-                DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out Database database);
+                DocumentCollection collection1 = TestCommon.CreateOrGetDocumentCollection(client, out Documents.Database database);
 
                 // udfName should fail if it is not a valid SQL token name.
                 string udfName = "udf" + Guid.NewGuid().ToString().Replace("-", "");
