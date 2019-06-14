@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
-    public class ClientOptions
+    public class CosmosClientOptions
     {
         /// <summary>
         /// Default max connection limit
@@ -50,16 +50,16 @@ namespace Microsoft.Azure.Cosmos
         private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
-        /// Creates a new ClientOptions
+        /// Creates a new CosmosClientOptions
         /// </summary>
-        public ClientOptions()
+        public CosmosClientOptions()
         {
             this.UserAgentContainer = new UserAgentContainer();
-            this.GatewayModeMaxConnectionLimit = ClientOptions.DefaultMaxConcurrentConnectionLimit;
-            this.RequestTimeout = ClientOptions.DefaultRequestTimeout;
-            this.ConnectionMode = ClientOptions.DefaultConnectionMode;
-            this.ConnectionProtocol = ClientOptions.DefaultProtocol;
-            this.ApiType = ClientOptions.DefaultApiType;
+            this.GatewayModeMaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
+            this.RequestTimeout = CosmosClientOptions.DefaultRequestTimeout;
+            this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
+            this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
+            this.ApiType = CosmosClientOptions.DefaultApiType;
             this.customHandlers = null;
             this.userJsonSerializer = null;
         }
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the current region. <see cref="CosmosRegions"/> to get a list of regions that
         /// are currently supported. Please update to a latest SDK version if a preferred Azure region is not listed.
         /// </summary>
-        /// <seealso cref="ClientBuilder.WithApplicationRegion(string)"/>
+        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         public virtual string ApplicationRegion { get; set; }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         /// This setting is only applicable in Gateway mode.
         /// </remarks>
         /// <value>Default value is 50.</value>
-        /// <seealso cref="ClientBuilder.WithConnectionModeGateway(int?)"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
         public virtual int GatewayModeMaxConnectionLimit
         {
             get => this.gatewayModeMaxConnectionLimit;
@@ -116,13 +116,13 @@ namespace Microsoft.Azure.Cosmos
         /// The number specifies the time to wait for response to come back from network peer.
         /// </summary>
         /// <value>Default value is 1 minute.</value>
-        /// <seealso cref="ClientBuilder.WithRequestTimeout(TimeSpan)"/>
+        /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public virtual TimeSpan RequestTimeout { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
         /// </summary>
-        /// <seealso cref="ClientBuilder.AddCustomHandlers(RequestHandler[])"/>
+        /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(RequestHandler[])"/>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public virtual ReadOnlyCollection<RequestHandler> CustomHandlers
         {
@@ -152,14 +152,14 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
-        /// <seealso cref="ClientBuilder.WithConnectionModeDirect"/>
-        /// <seealso cref="ClientBuilder.WithConnectionModeGateway(int?)"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
         public virtual ConnectionMode ConnectionMode { get; set; }
 
         /// <summary>
         /// The number of times to retry on throttled requests.
         /// </summary>
-        /// <seealso cref="ClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
+        /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public virtual int? MaxRetryAttemptsOnThrottledRequests { get; set; }
 
         /// <summary>
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The minimum interval is seconds. Any interval that is smaller will be ignored.
         /// </remarks>
-        /// <seealso cref="ClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
+        /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public virtual TimeSpan? MaxRetryWaitTimeOnThrottledRequests { get; set; }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal virtual CosmosSerializer PropertiesSerializer => ClientOptions.propertiesSerializer;
+        internal virtual CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
 
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
@@ -294,9 +294,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
-        internal ClientOptions Clone()
+        internal CosmosClientOptions Clone()
         {
-            ClientOptions cloneConfiguration = (ClientOptions)this.MemberwiseClone();
+            CosmosClientOptions cloneConfiguration = (CosmosClientOptions)this.MemberwiseClone();
             return cloneConfiguration;
         }
 
@@ -356,12 +356,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal static string GetAccountEndpoint(string connectionString)
         {
-            return ClientOptions.GetValueFromConnectionString(connectionString, ClientOptions.ConnectionStringAccountEndpoint);
+            return CosmosClientOptions.GetValueFromConnectionString(connectionString, CosmosClientOptions.ConnectionStringAccountEndpoint);
         }
 
         internal static string GetAccountKey(string connectionString)
         {
-            return ClientOptions.GetValueFromConnectionString(connectionString, ClientOptions.ConnectionStringAccountKey);
+            return CosmosClientOptions.GetValueFromConnectionString(connectionString, CosmosClientOptions.ConnectionStringAccountKey);
         }
 
         private static string GetValueFromConnectionString(string connectionString, string keyName)

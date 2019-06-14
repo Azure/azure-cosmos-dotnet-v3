@@ -35,12 +35,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
 
-            ClientBuilder cosmosClientBuilder = new ClientBuilder(
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
                 accountKey: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            ClientOptions clientOptions = cosmosClient.ClientOptions;
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
 
             Assert.AreEqual(endpoint, cosmosClient.Endpoint.OriginalString, "AccountEndpoint did not save correctly");
             Assert.AreEqual(key, cosmosClient.AccountKey, "AccountKey did not save correctly");
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // All of the public properties and methods should be virtual to allow users to 
             // create unit tests by mocking the different types.
-            Type type = typeof(ClientOptions);
+            Type type = typeof(CosmosClientOptions);
 
 
             System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Inner handler is required to be null to allow the client to connect it to other handlers
             handler.InnerHandler = innerHandler;
-            new ClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, "testKey")
+            new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, "testKey")
                 .AddCustomHandlers(handler);
         }
 
@@ -127,14 +127,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullEndpoint()
         {
-            new ClientBuilder(null, "testKey");
+            new CosmosClientBuilder(null, "testKey");
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ThrowOnNullConnectionString()
         {
-            new ClientBuilder(null);
+            new CosmosClientBuilder(null);
         }
 
         [TestMethod]
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnMissingAccountKeyInConnectionString()
         {
             string invalidConnectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;";
-            new ClientBuilder(invalidConnectionString);
+            new CosmosClientBuilder(invalidConnectionString);
         }
 
         [TestMethod]
@@ -150,14 +150,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnMissingAccountEndpointInConnectionString()
         {
             string invalidConnectionString = "AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            new ClientBuilder(invalidConnectionString);
+            new CosmosClientBuilder(invalidConnectionString);
         }
 
         [TestMethod]
         public void AssertJsonSerializer()
         {
             string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            var cosmosClientBuilder = new ClientBuilder(connectionString);
+            var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
             var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             Assert.IsInstanceOfType(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
             Assert.AreEqual(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, cosmosClient.ClientOptions.PropertiesSerializer);
