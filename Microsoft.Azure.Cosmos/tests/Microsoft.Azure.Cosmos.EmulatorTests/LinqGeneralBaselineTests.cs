@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static CosmosClient cosmosClient;
-        private static CosmosDatabase testDb;
+        private static Cosmos.Database testDb;
         private static Container testContainer;
         private static Func<bool, IQueryable<Family>> getQuery;
 
@@ -1936,16 +1936,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private async Task ValidateBasicQueryAsync()
         {
             DocumentClient client = TestCommon.CreateClient(true);
-            Database database = await client.ReadDatabaseAsync(string.Format("dbs/{0}", testDb.Id));
+            Documents.Database database = await client.ReadDatabaseAsync(string.Format("dbs/{0}", testDb.Id));
 
             string databaseName = database.Id;
 
             List<Database> queryResults = new List<Database>();
             //Simple Equality
-            IQueryable<Database> dbQuery = from db in client.CreateDatabaseQuery()
+            IQueryable<Documents.Database> dbQuery = from db in client.CreateDatabaseQuery()
                                            where db.Id == databaseName
                                            select db;
-            IDocumentQuery<Database> documentQuery = dbQuery.AsDocumentQuery();
+            IDocumentQuery<Documents.Database> documentQuery = dbQuery.AsDocumentQuery();
 
             while (documentQuery.HasMoreResults)
             {

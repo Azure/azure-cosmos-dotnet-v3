@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     public class LinqTranslationBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static CosmosClient cosmosClient;
-        private static CosmosDatabase testDb;
+        private static Cosmos.Database testDb;
         private static Container testContainer;
 
         [ClassInitialize]

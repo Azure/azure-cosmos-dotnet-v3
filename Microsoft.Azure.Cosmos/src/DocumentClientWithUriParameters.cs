@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">the URI of the database to delete.</param>
         /// <param name="options">The request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public Task<ResourceResponse<Database>> DeleteDatabaseAsync(Uri databaseUri, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> DeleteDatabaseAsync(Uri databaseUri, Documents.Client.RequestOptions options = null)
         {
             if (databaseUri == null)
             {
@@ -528,7 +528,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> ReadDatabaseAsync(Uri databaseUri, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> ReadDatabaseAsync(Uri databaseUri, Documents.Client.RequestOptions options = null)
         {
             if (databaseUri == null)
             {
