@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="CosmosDatabase"/>, and a <see cref="Container"/>.
-    /// The CosmosClient uses the <see cref="CosmosClientOptions"/> to get all the configuration values.
+    /// The CosmosClient uses the <see cref="Cosmos.ClientOptions"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
     /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public CosmosClient(string connectionString)
-            : this(new CosmosClientOptions(connectionString))
+            : this(new ClientOptions(connectionString))
         {
         }
 
@@ -139,14 +139,14 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClient(
             string accountEndPoint,
             string accountKey)
-            : this(new CosmosClientOptions(accountEndPoint, accountKey))
+            : this(new ClientOptions(accountEndPoint, accountKey))
         {
         }
 
         /// <summary>
         /// Create a new CosmosClient with the cosmosClientOption
         /// </summary>
-        /// <param name="clientOptions">The <see cref="CosmosClientOptions"/> used to initialize the cosmos client.</param>
+        /// <param name="clientOptions">The <see cref="Cosmos.ClientOptions"/> used to initialize the cosmos client.</param>
         /// <example>
         /// This example creates a CosmosClient through explicit CosmosClientOptions
         /// <code language="c#">
@@ -174,14 +174,14 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosClient(CosmosClientOptions clientOptions)
+        public CosmosClient(ClientOptions clientOptions)
         {
             if (clientOptions == null)
             {
                 throw new ArgumentNullException(nameof(clientOptions));
             }
 
-            CosmosClientOptions clientOptionsClone = clientOptions.Clone();
+            ClientOptions clientOptionsClone = clientOptions.Clone();
 
             DocumentClient documentClient = new DocumentClient(
                 clientOptionsClone.EndPoint,
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
         /// Used for unit testing only.
         /// </summary>
         internal CosmosClient(
-            CosmosClientOptions cosmosClientOptions,
+            ClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
             if (cosmosClientOptions == null)
@@ -219,9 +219,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient
+        /// The <see cref="Cosmos.ClientOptions"/> used initialize CosmosClient
         /// </summary>
-        public virtual CosmosClientOptions ClientOptions { get; private set; }
+        public virtual ClientOptions ClientOptions { get; private set; }
 
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal void Init(
-            CosmosClientOptions clientOptions,
+            ClientOptions clientOptions,
             DocumentClient documentClient)
         {
             this.ClientOptions = clientOptions;

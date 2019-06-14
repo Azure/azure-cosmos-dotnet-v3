@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
-    public class CosmosClientOptions
+    public class ClientOptions
     {
         /// <summary>
         /// Default max connection limit
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="endPoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
         /// <param name="accountKey">The key to the account.</param>
         /// <example>
-        /// The example below creates a new <see cref="CosmosClientOptions"/>
+        /// The example below creates a new <see cref="ClientOptions"/>
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions(
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosClientOptions(
+        public ClientOptions(
             string endPoint,
             string accountKey)
         {
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
         /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey.</param>
-        public CosmosClientOptions(string connectionString)
+        public ClientOptions(string connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
             {
@@ -97,9 +97,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
-            this.EndPoint = new Uri(CosmosClientOptions.GetValueFromSqlConnectionString(builder,
-                CosmosClientOptions.ConnectionStringAccountEndpoint));
-            this.AccountKey = CosmosClientOptions.GetValueFromSqlConnectionString(builder, CosmosClientOptions.ConnectionStringAccountKey);
+            this.EndPoint = new Uri(ClientOptions.GetValueFromSqlConnectionString(builder,
+                ClientOptions.ConnectionStringAccountEndpoint));
+            this.AccountKey = ClientOptions.GetValueFromSqlConnectionString(builder, ClientOptions.ConnectionStringAccountKey);
 
             this.Initialize();
         }
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos
         /// The default serializer is used for user types if no UserJsonSerializer is specified
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal virtual CosmosJsonSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
+        internal virtual CosmosJsonSerializer PropertiesSerializer => ClientOptions.propertiesSerializer;
 
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
@@ -351,9 +351,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
-        internal CosmosClientOptions Clone()
+        internal ClientOptions Clone()
         {
-            CosmosClientOptions cloneConfiguration = (CosmosClientOptions)this.MemberwiseClone();
+            ClientOptions cloneConfiguration = (ClientOptions)this.MemberwiseClone();
             return cloneConfiguration;
         }
 
@@ -414,11 +414,11 @@ namespace Microsoft.Azure.Cosmos
         private void Initialize()
         {
             this.UserAgentContainer = new UserAgentContainer();
-            this.GatewayModeMaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
-            this.RequestTimeout = CosmosClientOptions.DefaultRequestTimeout;
-            this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
-            this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
-            this.ApiType = CosmosClientOptions.DefaultApiType;
+            this.GatewayModeMaxConnectionLimit = ClientOptions.DefaultMaxConcurrentConnectionLimit;
+            this.RequestTimeout = ClientOptions.DefaultRequestTimeout;
+            this.ConnectionMode = ClientOptions.DefaultConnectionMode;
+            this.ConnectionProtocol = ClientOptions.DefaultProtocol;
+            this.ApiType = ClientOptions.DefaultApiType;
             this.customHandlers = null;
             this.userJsonSerializer = null;
         }

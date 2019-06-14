@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 accountKey: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+            ClientOptions clientOptions = cosmosClient.ClientOptions;
 
             Assert.AreEqual(endpoint, clientOptions.EndPoint.OriginalString, "AccountEndPoint did not save correctly");
             Assert.AreEqual(key, clientOptions.AccountKey, "AccountKey did not save correctly");
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // All of the public properties and methods should be virtual to allow users to 
             // create unit tests by mocking the different types.
-            Type type = typeof(CosmosClientOptions);
+            Type type = typeof(ClientOptions);
 
 
             System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
