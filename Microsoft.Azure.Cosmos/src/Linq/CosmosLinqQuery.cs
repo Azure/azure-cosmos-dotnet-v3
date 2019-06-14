@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (!this.allowSynchronousQueryExecution)
             {
                 throw new NotSupportedException("To execute LINQ query please set " + nameof(allowSynchronousQueryExecution) + " true or" +
-                    " use CreateItemQuery returning CosmosFeedIterator which execute asynchronously via CosmosFeedIterator");
+                    " use GetItemsQueryIterator to execute asynchronously");
             }
 
             using (CosmosQueryExecutionContext localQueryExecutionContext = CreateCosmosQueryExecutionContext())

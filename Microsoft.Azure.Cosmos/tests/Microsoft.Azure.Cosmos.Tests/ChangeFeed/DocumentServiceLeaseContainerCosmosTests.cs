@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             headers.Continuation = string.Empty;
 
             Mock<FeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<FeedIterator<DocumentServiceLeaseCore>>();
-            mockedQuery.Setup(q => q.FetchNextSetAsync(It.IsAny<CancellationToken>()))
+            mockedQuery.Setup(q => q.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => ReadFeedResponse<DocumentServiceLeaseCore>.CreateResponse(
                     responseMessageHeaders: headers,
                     resources: DocumentServiceLeaseContainerCosmosTests.allLeases,
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns(false);
 
             Mock<Container> mockedItems = new Mock<Container>();
-            mockedItems.Setup(i => i.CreateItemQuery<DocumentServiceLeaseCore>(
+            mockedItems.Setup(i => i.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => ("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')").Equals(value)), 
                 It.IsAny<int>(), 

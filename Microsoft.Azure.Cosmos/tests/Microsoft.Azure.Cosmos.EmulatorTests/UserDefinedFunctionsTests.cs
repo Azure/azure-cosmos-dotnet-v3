@@ -106,14 +106,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@expensive", 9000)
                  .UseParameter("@status", "Done");
             
-             FeedIterator<dynamic> feedIterator = this.container.CreateItemQuery<dynamic>(
+             FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
                  sqlQueryDefinition: sqlQuery,
                  partitionKey: new Cosmos.PartitionKey("Done"));
 
             HashSet<string> iterIds = new HashSet<string>();
             while (feedIterator.HasMoreResults)
             {
-                foreach (var response in await feedIterator.FetchNextSetAsync())
+                foreach (var response in await feedIterator.ReadNextAsync())
                 {
                     Assert.IsTrue(response.cost > 9000);
                     Assert.AreEqual(response.cost * .05, response.total);
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionsIterator(); ;
             while (iter.HasMoreResults)
             {
-                foreach (UserDefinedFunctionProperties storedProcedureSettingsEntry in await iter.FetchNextSetAsync())
+                foreach (UserDefinedFunctionProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
                 {
                     settings.Add(storedProcedureSettingsEntry.Id);
                 }

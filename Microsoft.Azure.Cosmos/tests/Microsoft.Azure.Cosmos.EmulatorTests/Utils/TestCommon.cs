@@ -1390,7 +1390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int totalCount = 0;
             while (resultSetIterator.HasMoreResults)
             {
-                foreach (DatabaseProperties database in await resultSetIterator.FetchNextSetAsync())
+                foreach (DatabaseProperties database in await resultSetIterator.ReadNextAsync())
                 {
                     deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(database.Id)));
                     totalCount++;
@@ -1417,7 +1417,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (resultSetIterator.HasMoreResults)
             {
                 List<Task> deleteCollectionTasks = new List<Task>(10);
-                foreach (ContainerProperties container in await resultSetIterator.FetchNextSetAsync())
+                foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())
                 {
                     Logger.LogLine("Deleting Collection with following info Id:{0}, database Id: {1}", container.Id, database.Id);
                     deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.GetContainer(container.Id).DeleteAsync()));
