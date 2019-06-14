@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndPoint: endpoint,
+                accountEndpoint: endpoint,
                 accountKey: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+            ClientOptions clientOptions = cosmosClient.ClientOptions;
 
-            Assert.AreEqual(endpoint, clientOptions.EndPoint.OriginalString, "AccountEndPoint did not save correctly");
-            Assert.AreEqual(key, clientOptions.AccountKey, "AccountKey did not save correctly");
+            Assert.AreEqual(endpoint, cosmosClient.Endpoint.OriginalString, "AccountEndpoint did not save correctly");
+            Assert.AreEqual(key, cosmosClient.AccountKey, "AccountKey did not save correctly");
 
             //Verify the default values are different from the new values
             Assert.AreNotEqual(region, clientOptions.ApplicationRegion);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // All of the public properties and methods should be virtual to allow users to 
             // create unit tests by mocking the different types.
-            Type type = typeof(CosmosClientOptions);
+            Type type = typeof(ClientOptions);
 
 
             System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
