@@ -48,52 +48,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal long ContentLengthAsLong;
 
-        [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.SubStatus)]
-        internal string SubStatusCodeLiteral
-        {
-            get
-            {
-                return this.subStatusCodeLiteral;
-            }
-            set
-            {
-                this.SubStatusCode = Headers.GetSubStatusCodes(value);
-                this.subStatusCodeLiteral = value;
-            }
-        }
-
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.RetryAfterInMilliseconds)]
-        internal string RetryAfterLiteral
-        {
-            get
-            {
-                return this.retryAfterInternal;
-            }
-            set
-            {
-                this.RetryAfter = Headers.GetRetryAfter(value);
-                this.retryAfterInternal = value;
-            }
-        }
-
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PartitionKey)]
-        internal string PartitionKey { get; set; }
-
-        [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.PartitionKeyRangeId)]
-        internal string PartitionKeyRangeId { get; set; }
-
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IsUpsert)]
-        internal string IsUpsert { get; set; }
-
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.OfferThroughput)]
-        internal string OfferThroughput { get; set; }
-
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IfNoneMatch)]
-        internal string IfNoneMatch { get; set; }
-
-        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PageSize)]
-        internal string PageSize { get; set; }
-
         /// <summary>
         /// Gets the Continuation Token in the current <see cref="ResponseMessage"/>.
         /// </summary>
@@ -166,6 +120,52 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Location)]
         public virtual string Location { get; internal set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.SubStatus)]
+        internal string SubStatusCodeLiteral
+        {
+            get
+            {
+                return this.subStatusCodeLiteral;
+            }
+            set
+            {
+                this.SubStatusCode = Headers.GetSubStatusCodes(value);
+                this.subStatusCodeLiteral = value;
+            }
+        }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.RetryAfterInMilliseconds)]
+        internal string RetryAfterLiteral
+        {
+            get
+            {
+                return this.retryAfterInternal;
+            }
+            set
+            {
+                this.RetryAfter = Headers.GetRetryAfter(value);
+                this.retryAfterInternal = value;
+            }
+        }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PartitionKey)]
+        internal string PartitionKey { get; set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = WFConstants.BackendHeaders.PartitionKeyRangeId)]
+        internal string PartitionKeyRangeId { get; set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IsUpsert)]
+        internal string IsUpsert { get; set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.OfferThroughput)]
+        internal string OfferThroughput { get; set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.IfNoneMatch)]
+        internal string IfNoneMatch { get; set; }
+
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PageSize)]
+        internal string PageSize { get; set; }
 
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
