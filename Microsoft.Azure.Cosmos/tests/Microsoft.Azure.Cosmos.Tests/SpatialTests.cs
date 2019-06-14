@@ -27,20 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             BoundingBox testObj = new BoundingBox(new Position(1, 1), new Position(1, 1));
             string result = ContractObjectToXml(testObj);
-        }
-
-        [TestMethod]
-        public void GeometryParamsSerialization()
-        {
-            GeometryParams testObj = new GeometryParams();
-            string result = ContractObjectToXml(testObj);
-        }
-
-        [TestMethod]
-        public void GeometryValidationResultSerialization()
-        {
-            GeometryValidationResult testObj = new GeometryValidationResult();
-            string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -48,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             LinearRing testObj = new LinearRing(new List<Position>() { new Position(1, 1) });
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -55,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             LineString testObj = new LineString(new List<Position>() { new Position(1, 1) });
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -62,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             LineStringCoordinates testObj = new LineStringCoordinates(new List<Position>() { new Position(1, 1) });
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -69,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             LinkedCrs testObj = new LinkedCrs("href", "hrefType");
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -76,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             MultiLineString testObj = new MultiLineString(new List<LineStringCoordinates>());
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -83,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             MultiPolygon testObj = new MultiPolygon(new List<PolygonCoordinates>() { new PolygonCoordinates(new List<LinearRing>() { new LinearRing(new List<Position>() { new Position(1, 1) }) } ) } );
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -90,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             MultiPoint testObj = new MultiPoint(new List<Position>() { new Position(1, 1) });
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -97,6 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             NamedCrs testObj = new NamedCrs("name");
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -104,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Point testObj = new Point(1,1);
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -111,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Polygon testObj = new Polygon(new List<Position>() { new Position(1,1) });
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -118,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             PolygonCoordinates testObj = new PolygonCoordinates(new List<LinearRing>() { new LinearRing(new List<Position>() { new Position(1, 1) }) });
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -125,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Position testObj = new Position(1,1);
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         [TestMethod]
@@ -132,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             UnspecifiedCrs testObj = new UnspecifiedCrs();
             string result = ContractObjectToXml(testObj);
+            Assert.IsTrue(VerifySerialization(result, testObj));
         }
 
         private static string ContractObjectToXml<T>(T obj)
@@ -147,7 +147,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             return text;
+        }
 
+        private static bool VerifySerialization<T>(string serialized, T obj)
+        {
+            DataContractSerializer dataContractSerializer = new DataContractSerializer(obj.GetType());
+
+
+            using (var stream = new MemoryStream())
+            {
+                var writer = new StreamWriter(stream);
+                writer.Write(serialized);
+                writer.Flush();
+                stream.Position = 0;
+                T deserialized = (T)dataContractSerializer.ReadObject(stream);
+                return deserialized.Equals(obj);
+            }
         }
     }
 }

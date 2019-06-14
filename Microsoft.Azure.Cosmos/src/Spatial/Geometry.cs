@@ -93,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Additional geometry properties.
         /// </value>
         [JsonExtensionData]
+        [DataMember(Name = "properties")]
         public IDictionary<string, object> AdditionalProperties { get; private set; }
 
         /// <summary>
