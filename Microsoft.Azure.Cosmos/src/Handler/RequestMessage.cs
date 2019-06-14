@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="RequestMessage"/> HTTP headers.
         /// </summary>
-        public virtual RequestHeaders Headers => this.headers.Value;
+        public virtual Headers Headers => this.headers.Value;
 
         /// <summary>
         /// Gets or sets the current <see cref="RequestMessage"/> payload.
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly Lazy<Dictionary<string, object>> properties = new Lazy<Dictionary<string, object>>(RequestMessage.CreateDictionary);
 
-        private readonly Lazy<RequestHeaders> headers = new Lazy<RequestHeaders>(RequestMessage.CreateHeaders);
+        private readonly Lazy<Headers> headers = new Lazy<Headers>(RequestMessage.CreateHeaders);
 
         private bool disposed;
 
@@ -202,9 +202,9 @@ namespace Microsoft.Azure.Cosmos
             return new Dictionary<string, object>();
         }
 
-        private static RequestHeaders CreateHeaders()
+        private static Headers CreateHeaders()
         {
-            return new RequestHeaders();
+            return new Headers();
         }
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
