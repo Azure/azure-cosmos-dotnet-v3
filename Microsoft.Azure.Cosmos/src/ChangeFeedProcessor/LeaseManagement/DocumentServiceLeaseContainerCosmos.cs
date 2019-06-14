@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         private readonly Container container;
         private readonly DocumentServiceLeaseStoreManagerOptions options;
+        private static readonly QueryRequestOptions queryRequestOptions = new QueryRequestOptions() { MaxConcurrency = 0 };
 
         public DocumentServiceLeaseContainerCosmos(
             Container container,
@@ -46,7 +47,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
             var query = this.container.GetItemQueryIterator<DocumentServiceLeaseCore>(
-                "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')");
+                "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
+                requestOptions: queryRequestOptions);
+
             var leases = new List<DocumentServiceLeaseCore>();
             while (query.HasMoreResults)
             {
