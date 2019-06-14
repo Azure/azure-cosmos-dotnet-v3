@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The headers of the response
         /// </summary>
-        public override ResponseHeaders Headers => this.QueryHeaders;
+        public override Headers Headers => this.QueryHeaders;
 
         /// <summary>
         /// The number of items in the stream.

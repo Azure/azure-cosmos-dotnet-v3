@@ -228,9 +228,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = this.database.GetContainer(containerName);
 
-            int? readThroughput = await container.ReadProvisionedThroughputAsync();
+            int? readThroughput = await ((ContainerCore)container).ReadProvisionedThroughputAsync();
             Assert.IsNotNull(readThroughput);
             Assert.AreEqual(expectedThroughput, readThroughput);
+
+            containerResponse = await container.DeleteAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ThroughputResponseTest()
+        {
+            int expectedThroughput = 2400;
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+
+            ContainerResponse containerResponse
+                = await this.database.DefineContainer(containerName, partitionKeyPath)
+                        .CreateAsync(expectedThroughput);
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Container container = this.database.GetContainer(containerName);
+
+            ThroughputResponse readThroughput = await container.ReadThroughputAsync();
+            Assert.IsNotNull(readThroughput);
+            Assert.AreEqual(expectedThroughput, readThroughput.Resource.Throughput);
 
             containerResponse = await container.DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);

@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, (CosmosQueryClientCore)this.queryClient, requestOptions, allowSynchronousQueryExecution);
         }
 
-        public override ChangeFeedProcessorBuilder DefineChangeFeedProcessor<T>(
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
         {
@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
-        public override ChangeFeedProcessorBuilder DefineChangeFeedEstimator(
+        public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null)
@@ -698,7 +698,7 @@ namespace Microsoft.Azure.Cosmos
             catch (CosmosException exception)
             {
                 return new ResponseMessage(
-                    headers: exception.Headers,
+                    headers: exception.ResponseHeaders,
                     requestMessage: null,
                     errorMessage: exception.Message,
                     statusCode: exception.StatusCode,

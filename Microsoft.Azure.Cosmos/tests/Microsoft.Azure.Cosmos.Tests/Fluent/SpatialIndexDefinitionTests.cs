@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithSpatialType()
         {
-            Mock<IndexingPolicyDefinition<CreateContainerDefinition>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyDefinition<CreateContainerDefinition>>();
+            Mock<IndexingPolicyDefinition<ContainerBuilder>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyDefinition<ContainerBuilder>>();
             Action<SpatialPath> callback = (spatialspec) =>
             {
                 Assert.AreEqual("/path", spatialspec.Path);
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 Assert.AreEqual(SpatialType.Point, spatialspec.SpatialTypes[1]);
             };
 
-            SpatialIndexDefinition<IndexingPolicyDefinition<CreateContainerDefinition>> spatialIndexFluentDefinitionCore = new SpatialIndexDefinition<IndexingPolicyDefinition<CreateContainerDefinition>>(
+            SpatialIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>> spatialIndexFluentDefinitionCore = new SpatialIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>>(
                 mockIndexingPolicyDefinition.Object,
                 callback);
 
@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithNoSpatialType()
         {
-            Mock<IndexingPolicyDefinition<CreateContainerDefinition>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyDefinition<CreateContainerDefinition>>();
+            Mock<IndexingPolicyDefinition<ContainerBuilder>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyDefinition<ContainerBuilder>>();
             Action<SpatialPath> callback = (spatialspec) =>
             {
                 Assert.AreEqual("/path", spatialspec.Path);
                 Assert.AreEqual(0, spatialspec.SpatialTypes.Count);
             };
 
-            SpatialIndexDefinition<IndexingPolicyDefinition<CreateContainerDefinition>> spatialIndexFluentDefinitionCore = new SpatialIndexDefinition<IndexingPolicyDefinition<CreateContainerDefinition>>(
+            SpatialIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>> spatialIndexFluentDefinitionCore = new SpatialIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>>(
                 mockIndexingPolicyDefinition.Object,
                 callback);
 

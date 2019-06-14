@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal DatabaseResponse(
             HttpStatusCode httpStatusCode,
-            ResponseHeaders headers,
+            Headers headers,
             DatabaseProperties databaseProperties,
             Database database)
             : base(

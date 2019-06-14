@@ -146,11 +146,12 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets provisioned container throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
+        /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
-        /// The provisioned throughput for this database.
+        /// The provisioned throughput for this container.
         /// </value>
         /// <remarks>
         /// <para>
@@ -161,36 +162,39 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.container.ReadProvisionedThroughputAsync();
+        /// ThroughputResponse throughput = await this.container.ReadThroughputAsync();
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>The value of the provisioned throughput if any</returns>
-        public abstract Task<int?> ReadProvisionedThroughputAsync(
+        /// <returns>The throughput response</returns>
+        public abstract Task<ThroughputResponse> ReadThroughputAsync(
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Sets throughput provisioned for a container in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Sets throughput provisioned for a container in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
         /// <param name="throughput">The cosmos container throughput, expressed in Request Units per second.</param>
+        /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
-        /// The provisioned throughput for this database.
+        /// The provisioned throughput for this container.
         /// </value>
         /// <example>
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// int? throughput = await this.container.ReplaceProvisionedThroughputAsync(400);
+        /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(400, requestOptions : new RequestOptions());
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        /// <returns>The throughput response.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task ReplaceProvisionedThroughputAsync(
+        public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -1123,7 +1127,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder DefineChangeFeedProcessor<T>(
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate);
 
@@ -1137,7 +1141,7 @@ namespace Microsoft.Azure.Cosmos
         /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
         /// </remarks>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder DefineChangeFeedEstimator(
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
