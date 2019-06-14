@@ -96,8 +96,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        internal override void PopulateRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal override void PopulateRequestOptions(RequestMessage request)
         {
             if (this.PreTriggers != null && this.PreTriggers.Any())
             {

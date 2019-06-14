@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the template class used by feed methods (enumeration operations) for the Azure Cosmos DB service.
     /// </summary>
-    internal class QueryResponse : CosmosResponseMessage
+    internal class QueryResponse : ResponseMessage
     {
         /// <summary>
         /// Used for unit testing only
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
-            CosmosRequestMessage requestMessage,
+            RequestMessage requestMessage,
             string errorMessage,
             Error error)
             : base(
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         internal static QueryResponse CreateFailure(
             CosmosQueryResponseMessageHeaders responseHeaders,
             HttpStatusCode statusCode,
-            CosmosRequestMessage requestMessage,
+            RequestMessage requestMessage,
             string errorMessage,
             Error error)
         {
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The headers of the response
         /// </summary>
-        public override CosmosResponseMessageHeaders Headers => this.QueryHeaders;
+        public override ResponseHeaders Headers => this.QueryHeaders;
 
         /// <summary>
         /// The number of items in the stream.

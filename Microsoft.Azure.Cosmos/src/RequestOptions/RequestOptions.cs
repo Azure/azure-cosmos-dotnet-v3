@@ -37,8 +37,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        internal virtual void PopulateRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal virtual void PopulateRequestOptions(RequestMessage request)
         {
             if (this.Properties != null)
             {
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="request">The current request.</param>
         /// <param name="consistencyLevel">The desired Consistency level.</param>
-        protected static void SetConsistencyLevel(CosmosRequestMessage request, ConsistencyLevel? consistencyLevel)
+        protected static void SetConsistencyLevel(RequestMessage request, ConsistencyLevel? consistencyLevel)
         {
             if (consistencyLevel != null && consistencyLevel.HasValue)
             {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="request">The current request.</param>
         /// <param name="sessionToken">The current session token.</param>
-        protected static void SetSessionToken(CosmosRequestMessage request, string sessionToken)
+        protected static void SetSessionToken(RequestMessage request, string sessionToken)
         {
             if (!string.IsNullOrWhiteSpace(sessionToken))
             {

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         internal UserDefinedFunctionResponse(
           HttpStatusCode httpStatusCode,
-          CosmosResponseMessageHeaders headers,
+          ResponseHeaders headers,
           UserDefinedFunctionProperties userDefinedFunctionProperties)
             : base(
               httpStatusCode,

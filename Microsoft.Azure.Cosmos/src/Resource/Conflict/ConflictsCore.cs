@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
         }
 
-        public override Task<CosmosResponseMessage> DeleteConflictAsync(
+        public override Task<ResponseMessage> DeleteConflictAsync(
             PartitionKey partitionKey,
             ConflictProperties conflict, 
             CancellationToken cancellationToken = default(CancellationToken))
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
                 uriPathSegment: Paths.DocumentsPathSegment,
                 id: cosmosConflict.SourceResourceId);
 
-            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+            Task<ResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: itemLink,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.Read,
@@ -161,14 +161,14 @@ namespace Microsoft.Azure.Cosmos
             return default(T);
         }
 
-        private Task<CosmosResponseMessage> ConflictsFeedStreamRequestExecutorAsync(
+        private Task<ResponseMessage> ConflictsFeedStreamRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
+            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Conflict,
                 operationType: OperationType.ReadFeed,

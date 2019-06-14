@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             DocumentClient documentClient = new MockDocumentClient();
 
-            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            ClientBuilder cosmosClientBuilder = new ClientBuilder("http://localhost", Guid.NewGuid().ToString());
 
             return cosmosClientBuilder.Build(documentClient);
         }

@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.Headers.PartitionKey);
                 Assert.AreEqual(Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.Headers.PartitionKey.ToString());
 
-                return Task.FromResult(new CosmosResponseMessage(HttpStatusCode.OK));
+                return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             dynamic testItem,
             ItemRequestOptions requestOptions = null)
         {
-            CosmosResponseMessage response = null;
+            ResponseMessage response = null;
             HttpStatusCode httpStatusCode = HttpStatusCode.OK;
             int testHandlerHitCount = 0;
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
@@ -346,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.Headers.PartitionKey);
                 Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
                 testHandlerHitCount++;
-                response = new CosmosResponseMessage(httpStatusCode, request, errorMessage: null);
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
                 response.Content = request.Content;
                 return Task.FromResult(response);
             });
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.CreateItemStreamAsync(
+                using (ResponseMessage streamResponse = await container.CreateItemStreamAsync(
                     partitionKey: partitionKey,
                     streamPayload: itemStream,
                     requestOptions: requestOptions))
@@ -407,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.ReadItemStreamAsync(
+                using (ResponseMessage streamResponse = await container.ReadItemStreamAsync(
                     partitionKey: partitionKey,
                     id: testItem.id,
                     requestOptions: requestOptions))
@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.UpsertItemStreamAsync(
+                using (ResponseMessage streamResponse = await container.UpsertItemStreamAsync(
                     partitionKey: partitionKey,
                     streamPayload: itemStream,
                     requestOptions: requestOptions))
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.ReplaceItemStreamAsync(
+                using (ResponseMessage streamResponse = await container.ReplaceItemStreamAsync(
                     partitionKey: partitionKey,
                     id: testItem.id,
                     streamPayload: itemStream,
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
             {
-                using (CosmosResponseMessage streamResponse = await container.DeleteItemStreamAsync(
+                using (ResponseMessage streamResponse = await container.DeleteItemStreamAsync(
                     partitionKey: partitionKey,
                     id: testItem.id,
                     requestOptions: requestOptions))

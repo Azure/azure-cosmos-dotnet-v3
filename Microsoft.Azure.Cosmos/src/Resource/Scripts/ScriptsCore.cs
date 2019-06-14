@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
             }
 
-            Task<CosmosResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
+            Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
                 partitionKey: partitionKey,
                 storedProcedureId: storedProcedureId,
                 streamPayload: parametersStream,
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
         }
 
-        public override Task<CosmosResponseMessage> ExecuteStoredProcedureStreamAsync(
+        public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             Cosmos.PartitionKey partitionKey,
             string storedProcedureId,
             Stream streamPayload,
@@ -434,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
+            Task<ResponseMessage> response = this.ProcessStreamOperationAsync(
                 resourceUri: linkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: operationType,
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
+            Task<ResponseMessage> response = this.ProcessStreamOperationAsync(
                 resourceUri: linkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: operationType,
@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateTriggerResponseAsync(response);
         }
 
-        private Task<CosmosResponseMessage> ProcessStreamOperationAsync(
+        private Task<ResponseMessage> ProcessStreamOperationAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -533,7 +533,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            Task<CosmosResponseMessage> response = this.ProcessStreamOperationAsync(
+            Task<ResponseMessage> response = this.ProcessStreamOperationAsync(
                 resourceUri: linkUri,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: operationType,
