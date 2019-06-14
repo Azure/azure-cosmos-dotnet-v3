@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the internal headers
         /// </summary>
-        internal virtual Headers Headers { get; }
+        internal virtual Headers ResponseHeaders { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
