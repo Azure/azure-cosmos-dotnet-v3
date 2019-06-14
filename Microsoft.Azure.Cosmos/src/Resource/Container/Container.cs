@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// There are two different types of operations.
     /// 1. The object operations where it serializes and deserializes the item on request/response
     /// 2. The stream response which takes a Stream containing a JSON serialized object and returns a response containing a Stream
-    /// <see cref="CosmosDatabase"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="Cosmos.Database"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     /// <remarks>
     ///  Note: all these operations make calls against a fixed budget.
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns the parent database reference
         /// </summary>
-        public abstract CosmosDatabase Database { get; }
+        public abstract Database Database { get; }
 
         /// <summary>
         /// Returns the conflicts
@@ -1136,7 +1136,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="processorName">The name of the Processor the Estimator is going to measure.</param>
         /// <param name="estimationDelegate">Delegate to receive estimation.</param>
-        /// <param name="estimationPeriod">Time interval on which to report the estimation.</param>
+        /// <param name="estimationPeriod">Time interval on which to report the estimation. Default is 5 seconds.</param>
         /// <remarks>
         /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
         /// </remarks>

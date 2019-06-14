@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task MissingPKForCreateThrows()
         {
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
+            Mock<Database> mockContainers = new Mock<Database>();
 
             CreateContainerDefinition containerFluentDefinitionForCreate = new CreateContainerDefinition(
                 mockContainers.Object,
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .Setup(c => c.ReadAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
+            Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)), 
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public async Task WithThroughput()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
+            Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.IsAny<ContainerProperties>(),
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public async Task WithTimeToLivePropertyPath()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
+            Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.TimeToLivePropertyPath.Equals(path)),
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public async Task WithDefaultTimeToLiveTimeSpan()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
+            Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public async Task WithDefaultTimeToLiveInt()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
+            Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public async Task WithIndexingPolicy()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
+            Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public async Task WithUniqueKey()
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<CosmosDatabase> mockContainers = new Mock<CosmosDatabase>();
+            Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),

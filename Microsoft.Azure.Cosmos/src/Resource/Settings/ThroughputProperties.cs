@@ -28,25 +28,6 @@ namespace Microsoft.Azure.Cosmos
     public class ThroughputProperties
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ThroughputProperties"/> class for the Azure Cosmos DB service.
-        /// </summary>
-        public ThroughputProperties()
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ThroughputProperties"/> class,
-        /// use for mocking in unit testing.
-        /// </summary>
-        /// <param name="eTag"></param>
-        /// <param name="lastModified"></param>
-        protected ThroughputProperties(string eTag, DateTime lastModified)
-        {
-            this.ETag = eTag;
-            this.LastModified = lastModified;
-        }
-
-        /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -75,9 +56,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.Content.OfferThroughput;
             }
-            set
+            private set
             {
-                this.Content = new ThroughputContent(value);
+                this.Content = new OfferContentV2(value.Value);
             }
         }
 
@@ -94,21 +75,6 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceRID { get; private set; }
 
         [JsonProperty(PropertyName = "content", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        private ThroughputContent Content { get; set; }
-
-        private sealed class ThroughputContent : JsonSerializable
-        {
-            internal ThroughputContent()
-            {
-            }
-
-            internal ThroughputContent(int? offerThroughput)
-            {
-                this.OfferThroughput = offerThroughput;
-            }
-
-            [JsonProperty(PropertyName = "offerThroughput", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            internal int? OfferThroughput { get; set; }
-        }
+        private OfferContentV2 Content { get; set; }
     }
 }

@@ -763,14 +763,14 @@ namespace Microsoft.Azure.Cosmos
         private async Task OpenPrivateAsync(CancellationToken cancellationToken)
         {
             // Initialize caches for all databases and collections
-            ResourceFeedReader<Database> databaseFeedReader = this.CreateDatabaseFeedReader(
+            ResourceFeedReader<Documents.Database> databaseFeedReader = this.CreateDatabaseFeedReader(
                 new FeedOptions { MaxItemCount = -1 });
 
             try
             {
                 while (databaseFeedReader.HasMoreResults)
                 {
-                    foreach (Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
+                    foreach (Documents.Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
                     {
                         ResourceFeedReader<DocumentCollection> collectionFeedReader = this.CreateDocumentCollectionFeedReader(
                             database.SelfLink,
@@ -1577,13 +1577,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> CreateDatabaseAsync(Database database, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> CreateDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> CreateDatabasePrivateAsync(Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> CreateDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -1605,7 +1605,7 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 SerializationFormattingPolicy.None))
             {
-                return new ResourceResponse<Database>(await this.CreateAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.CreateAsync(request, retryPolicyInstance));
             }
         }
 
@@ -1646,12 +1646,12 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsAsync(Database database, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => CreateDatabaseIfNotExistsPrivateAsync(database, options), null);
         }
 
-        private async Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsPrivateAsync(Database database,
+        private async Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsPrivateAsync(Documents.Database database,
             Documents.Client.RequestOptions options)
         {
             if (database == null)
@@ -2008,7 +2008,7 @@ namespace Microsoft.Azure.Cosmos
 
             // ReadDatabaseAsync call is needed to support this API that takes databaseLink as a parameter, to be consistent with CreateDocumentCollectionAsync. We need to construct the collectionLink to make
             // ReadDocumentCollectionAsync call, in case database selfLink got passed to this API. We cannot simply concat the database selfLink with /colls/{collectionId} to get the collectionLink.
-            Database database = await this.ReadDatabaseAsync(databaseLink);
+            Documents.Database database = await this.ReadDatabaseAsync(databaseLink);
 
             // Doing a Read before Create will give us better latency for existing collections.
             // Also, in emulator case when you hit the max allowed partition count and you use this API for a collection that already exists,
@@ -2543,13 +2543,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> DeleteDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> DeleteDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> DeleteDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> DeleteDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2566,7 +2566,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                return new ResourceResponse<Database>(await this.DeleteAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.DeleteAsync(request, retryPolicyInstance));
             }
         }
 
@@ -3537,13 +3537,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<Database>> ReadDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> ReadDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReadDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> ReadDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> ReadDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -3560,7 +3560,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                return new ResourceResponse<Database>(await this.ReadAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.ReadAsync(request, retryPolicyInstance));
             }
         }
 
@@ -4417,14 +4417,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<DocumentFeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
+        public Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDatabaseFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<DocumentFeedResponse<Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5324,13 +5324,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<Database>> UpsertDatabaseAsync(Database database, Documents.Client.RequestOptions options = null)
+        internal Task<ResourceResponse<Documents.Database>> UpsertDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> UpsertDatabasePrivateAsync(Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> UpsertDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5352,7 +5352,7 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 SerializationFormattingPolicy.None))
             {
-                return new ResourceResponse<Database>(await this.UpsertAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.UpsertAsync(request, retryPolicyInstance));
             }
         }
 
