@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos
         private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
+        private readonly Collection<RequestHandler> customHandlers;
         private CosmosSerializer userJsonSerializer;
 
-        private ReadOnlyCollection<RequestHandler> customHandlers;
         private int gatewayModeMaxConnectionLimit;
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
-            this.customHandlers = null;
+            this.customHandlers = new Collection<RequestHandler>();
             this.userJsonSerializer = null;
         }
 
@@ -124,23 +124,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(RequestHandler[])"/>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        public virtual ReadOnlyCollection<RequestHandler> CustomHandlers
+        public virtual Collection<RequestHandler> CustomHandlers
         {
             get => this.customHandlers;
-            set
-            {
-                if (value != null && value.Any(x => x == null))
-                {
-                    throw new ArgumentNullException(nameof(this.CustomHandlers) + "requires all positions in the array to not be null.");
-                }
-
-                if (value != null && value.Any(x => x?.InnerHandler != null))
-                {
-                    throw new ArgumentException(nameof(this.CustomHandlers) + " requires all DelegatingHandler.InnerHandler to be null. The CosmosClient uses the inner handler in building the pipeline.");
-                }
-
-                this.customHandlers = value;
-            }
         }
 
         /// <summary>
@@ -400,7 +386,7 @@ namespace Microsoft.Azure.Cosmos
         {
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                ReadOnlyCollection<RequestHandler> handlers = value as ReadOnlyCollection<RequestHandler>;
+                Collection<RequestHandler> handlers = value as Collection<RequestHandler>;
                 if (handlers != null)
                 {
                     writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));

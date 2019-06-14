@@ -63,25 +63,25 @@ namespace Microsoft.Azure.Cosmos
         public IndexingMode IndexingMode { get; set; }
 
         /// <summary>
-        /// Gets or sets the collection containing <see cref="IncludedPath"/> objects in the Azure Cosmos DB service.
+        /// Gets the collection containing <see cref="IncludedPath"/> objects in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The collection containing <see cref="IncludedPath"/> objects.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.IncludedPaths)]
-        public Collection<IncludedPath> IncludedPaths { get; set; } = new Collection<IncludedPath>();
+        public Collection<IncludedPath> IncludedPaths { get; internal set; } = new Collection<IncludedPath>();
 
         /// <summary>
-        /// Gets or sets the collection containing <see cref="ExcludedPath"/> objects in the Azure Cosmos DB service.
+        /// Gets the collection containing <see cref="ExcludedPath"/> objects in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The collection containing <see cref="ExcludedPath"/> objects.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.ExcludedPaths)]
-        public Collection<ExcludedPath> ExcludedPaths { get; set; } = new Collection<ExcludedPath>();
+        public Collection<ExcludedPath> ExcludedPaths { get; internal set; } = new Collection<ExcludedPath>();
 
         /// <summary>
-        /// Gets or sets the composite indexes for additional indexes
+        /// Gets the composite indexes for additional indexes
         /// </summary>
         /// <example>
         /// <![CDATA[
@@ -108,13 +108,13 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = Constants.Properties.CompositeIndexes)]
-        public Collection<Collection<CompositePath>> CompositeIndexes { get; set; } = new Collection<Collection<CompositePath>>();
+        public Collection<Collection<CompositePath>> CompositeIndexes { get; internal set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
         /// Collection of spatial index definitions to be used
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
-        public Collection<SpatialPath> SpatialIndexes { get; set; } = new Collection<SpatialPath>();
+        public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
 
         #region EqualityComparers
         internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
