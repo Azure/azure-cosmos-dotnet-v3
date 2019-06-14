@@ -366,6 +366,11 @@ namespace Microsoft.Azure.Cosmos
 
         private static string GetValueFromConnectionString(string connectionString, string keyName)
         {
+            if (connectionString == null)
+            {
+                throw new ArgumentNullException(nameof(connectionString));
+            }
+
             DbConnectionStringBuilder builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
             if (builder.TryGetValue(keyName, out object value))
             {
