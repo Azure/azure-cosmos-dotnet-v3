@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Creates a item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
+        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer</param>
         /// <param name="partitionKey">Partition key for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="ItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -457,7 +457,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts an item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer</param>
+        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer</param>
         /// <param name="partitionKey">Partition key for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="ItemRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>        
-        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosJsonSerializer"/> to implement a custom serializer.</param>
+        /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
         /// <param name="id">The cosmos item id, which is expected to match the value within T.</param>
         /// <param name="partitionKey">Partition key for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request <see cref="ItemRequestOptions"/></param>

@@ -29,9 +29,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract IDocumentQueryClient DocumentQueryClient { get; }
 
-        internal abstract CosmosJsonSerializer CosmosSerializer { get; }
+        internal abstract CosmosSerializer CosmosSerializer { get; }
 
-        internal abstract CosmosJsonSerializer PropertiesSerializer { get; }
+        internal abstract CosmosSerializer PropertiesSerializer { get; }
 
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 

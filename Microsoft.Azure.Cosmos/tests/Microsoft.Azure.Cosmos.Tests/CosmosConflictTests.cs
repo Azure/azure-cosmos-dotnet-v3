@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 handler = handler.InnerHandler;
             }
 
-            CosmosJsonSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
+            CosmosSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
 
             CosmosResponseFactory responseFactory = new CosmosResponseFactory(cosmosJsonSerializer, cosmosJsonSerializer);
 

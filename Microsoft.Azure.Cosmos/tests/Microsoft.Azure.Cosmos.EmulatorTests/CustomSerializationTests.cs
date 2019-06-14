@@ -578,7 +578,7 @@ function bulkImport(docs) {
         }
 #pragma warning restore CS0618
 
-        private class CustomJsonSerializer : CosmosJsonSerializer
+        private class CustomJsonSerializer : CosmosSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
             private JsonSerializer serializer;

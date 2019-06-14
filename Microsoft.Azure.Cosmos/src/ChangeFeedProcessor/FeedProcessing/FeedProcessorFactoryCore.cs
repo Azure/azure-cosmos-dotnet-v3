@@ -16,13 +16,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly ContainerCore container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
-        private readonly CosmosJsonSerializer cosmosJsonSerializer;
+        private readonly CosmosSerializer cosmosJsonSerializer;
 
         public FeedProcessorFactoryCore(
             ContainerCore container,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             DocumentServiceLeaseCheckpointer leaseCheckpointer,
-            CosmosJsonSerializer cosmosJsonSerializer)
+            CosmosSerializer cosmosJsonSerializer)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
             if (changeFeedProcessorOptions == null) throw new ArgumentNullException(nameof(changeFeedProcessorOptions));

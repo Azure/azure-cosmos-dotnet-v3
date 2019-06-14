@@ -28,13 +28,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private readonly ContainerCore container;
         private readonly CosmosQueryClientCore queryClient;
-        private readonly CosmosJsonSerializer cosmosJsonSerializer;
+        private readonly CosmosSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
 
         public CosmosLinqQuery(
            ContainerCore container,
-           CosmosJsonSerializer cosmosJsonSerializer,
+           CosmosSerializer cosmosJsonSerializer,
            CosmosQueryClientCore queryClient,
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public CosmosLinqQuery(
           ContainerCore container,
-          CosmosJsonSerializer cosmosJsonSerializer,
+          CosmosSerializer cosmosJsonSerializer,
           CosmosQueryClientCore queryClient,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution)

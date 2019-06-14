@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The default Cosmos JSON serializer
     /// </summary>
-    internal class CosmosJsonSerializerCore : CosmosJsonSerializer
+    internal class CosmosJsonSerializerCore : CosmosSerializer
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
         private static readonly JsonSerializer Serializer = new JsonSerializer()

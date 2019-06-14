@@ -23,14 +23,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
         private readonly FeedIterator resultSetIterator;
-        private readonly CosmosJsonSerializer cosmosJsonSerializer;
+        private readonly CosmosSerializer cosmosJsonSerializer;
 
         public FeedProcessorCore(
             ChangeFeedObserver<T> observer,
             FeedIterator resultSetIterator, 
             ProcessorOptions options, 
             PartitionCheckpointer checkpointer, 
-            CosmosJsonSerializer cosmosJsonSerializer)
+            CosmosSerializer cosmosJsonSerializer)
         {
             this.observer = observer;
             this.options = options;

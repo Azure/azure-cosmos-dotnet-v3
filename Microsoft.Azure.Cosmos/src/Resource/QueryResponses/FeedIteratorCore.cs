@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ReadFeedResponse<T> CreateCosmosQueryResponse(
                 CosmosResponseMessage cosmosResponseMessage,
-                CosmosJsonSerializer jsonSerializer)
+                CosmosSerializer jsonSerializer)
         {
             using (cosmosResponseMessage)
             {

@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
             CosmosResponseMessageHeaders responseMessageHeaders,
             Stream stream,
-            CosmosJsonSerializer jsonSerializer,
+            CosmosSerializer jsonSerializer,
             bool hasMoreResults)
         {
             using (stream)
