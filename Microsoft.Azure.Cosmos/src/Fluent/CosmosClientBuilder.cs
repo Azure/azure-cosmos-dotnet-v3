@@ -206,6 +206,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             foreach (RequestHandler handler in customHandlers)
             {
+                if (handler.InnerHandler != null)
+                {
+                    throw new ArgumentException(nameof(customHandlers) + " requires all DelegatingHandler.InnerHandler to be null. The CosmosClient uses the inner handler in building the pipeline.");
+                }
+
                 this.clientOptions.CustomHandlers.Add(handler);
             }
 
