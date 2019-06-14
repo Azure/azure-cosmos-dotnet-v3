@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets database throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Gets database throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Sets throughput provisioned for a database in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Sets throughput provisioned for a database in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
         /// <param name="throughput">The cosmos database throughput expressed in Request Units per second.</param>
         /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>

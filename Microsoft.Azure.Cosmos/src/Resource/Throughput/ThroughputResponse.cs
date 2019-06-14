@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets minimum throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Gets minimum throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
         public int? MinThroughput
         {

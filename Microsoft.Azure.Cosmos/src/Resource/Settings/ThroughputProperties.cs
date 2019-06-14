@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// It is the standard pricing for the resource in the Azure Cosmos DB service.
     /// </summary>
     /// <remarks>
-    /// It contains provisioned container throughput in measurement of Requests-per-Unit in the Azure Cosmos service.
+    /// It contains provisioned container throughput in measurement of request units per second in the Azure Cosmos service.
     /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-performance-levels/ for details on provision offer throughput.
     /// </remarks>
     /// <example>
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         public DateTime LastModified { get; private set; }
 
         /// <summary>
-        /// Gets the provisioned throughput for a resource in measurement of Requests-per-Unit in the Azure Cosmos service.
+        /// Gets the provisioned throughput for a resource in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
         public int? Throughput
         {
