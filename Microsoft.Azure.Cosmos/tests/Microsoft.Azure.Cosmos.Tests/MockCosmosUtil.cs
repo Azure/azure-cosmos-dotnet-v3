@@ -20,11 +20,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
     internal class MockCosmosUtil
     {
-        public static CosmosClient CreateMockCosmosClient(Action<ClientBuilder> customizeClientBuilder = null)
+        public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             DocumentClient documentClient = new MockDocumentClient();
             
-            ClientBuilder cosmosClientBuilder = new ClientBuilder("http://localhost", Guid.NewGuid().ToString());
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
             if (customizeClientBuilder != null)
             {
                 customizeClientBuilder(cosmosClientBuilder);
@@ -52,9 +52,9 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return mockDB;
         }
 
-        public static ClientOptions GetDefaultConfiguration()
+        public static CosmosClientOptions GetDefaultConfiguration()
         {
-            return new ClientOptions();
+            return new CosmosClientOptions();
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

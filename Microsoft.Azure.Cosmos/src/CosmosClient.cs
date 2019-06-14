@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
-    /// The CosmosClient uses the <see cref="Cosmos.ClientOptions"/> to get all the configuration values.
+    /// The CosmosClient uses the <see cref="Cosmos.CosmosClientOptions"/> to get all the configuration values.
     /// <code language="c#">
     /// <![CDATA[
     /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
@@ -115,10 +115,10 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosClient(string connectionString, ClientOptions clientOptions = null)
+        public CosmosClient(string connectionString, CosmosClientOptions clientOptions = null)
             : this(
-                  ClientOptions.GetAccountEndpoint(connectionString), 
-                  ClientOptions.GetAccountKey(connectionString), 
+                  CosmosClientOptions.GetAccountEndpoint(connectionString), 
+                  CosmosClientOptions.GetAccountKey(connectionString), 
                   clientOptions)
         {
         }
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClient(
             string accountEndpoint,
             string accountKey,
-            ClientOptions clientOptions = null)
+            CosmosClientOptions clientOptions = null)
         {
             if (accountEndpoint == null)
             {
@@ -159,12 +159,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (clientOptions == null)
             {
-                clientOptions = new ClientOptions();
+                clientOptions = new CosmosClientOptions();
             }
 
             this.Endpoint = new Uri(accountEndpoint);
             this.AccountKey = accountKey;
-            ClientOptions clientOptionsClone = clientOptions.Clone();
+            CosmosClientOptions clientOptionsClone = clientOptions.Clone();
 
             DocumentClient documentClient = new DocumentClient(
                 this.Endpoint,
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClient(
             string accountEndpoint,
             string accountKey,
-            ClientOptions cosmosClientOptions,
+            CosmosClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
             if (accountEndpoint == null)
@@ -217,9 +217,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The <see cref="Cosmos.ClientOptions"/> used initialize CosmosClient
+        /// The <see cref="Cosmos.CosmosClientOptions"/> used initialize CosmosClient
         /// </summary>
-        public virtual ClientOptions ClientOptions { get; private set; }
+        public virtual CosmosClientOptions ClientOptions { get; private set; }
 
         /// <summary>
         /// Gets the endpoint Uri for the Azure Cosmos DB service.
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal void Init(
-            ClientOptions clientOptions,
+            CosmosClientOptions clientOptions,
             DocumentClient documentClient)
         {
             this.ClientOptions = clientOptions;
