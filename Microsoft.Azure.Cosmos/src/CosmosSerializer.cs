@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This is an interface to allow custom serializers to be used by the CosmosClient
     /// </summary>
-    public abstract class CosmosJsonSerializer
+    public abstract class CosmosSerializer
     {
         /// <summary>
         /// Convert a Stream of JSON to an object. 

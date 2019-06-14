@@ -9,8 +9,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Azure Cosmos container fluent definition.
     /// </summary>
     /// <seealso cref="Container"/>
-    public abstract class ContainerFluentDefinition<T>
-        where T : ContainerFluentDefinition<T>
+    public abstract class ContainerDefinition<T>
+        where T : ContainerDefinition<T>
     {
         private readonly string containerName;
         private string partitionKeyPath;
@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public ContainerFluentDefinition()
+        public ContainerDefinition()
         {
         }
 
-        internal ContainerFluentDefinition(
+        internal ContainerDefinition(
             string name,
             string partitionKeyPath = null)
         {
@@ -89,8 +89,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// <see cref="Cosmos.IndexingPolicy"/> definition for the current Azure Cosmos container.
         /// </summary>
-        /// <returns>An instance of <see cref="IndexingPolicyFluentDefinition{T}"/>.</returns>
-        public virtual IndexingPolicyFluentDefinition<T> WithIndexingPolicy()
+        /// <returns>An instance of <see cref="IndexingPolicyDefinition{T}"/>.</returns>
+        public virtual IndexingPolicyDefinition<T> WithIndexingPolicy()
         {
             if (this.indexingPolicy != null)
             {
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 throw new NotSupportedException();
             }
 
-            return new IndexingPolicyFluentDefinition<T>(
+            return new IndexingPolicyDefinition<T>(
                 (T)this,
                 (indexingPolicy) => this.WithIndexingPolicy(indexingPolicy));
         }

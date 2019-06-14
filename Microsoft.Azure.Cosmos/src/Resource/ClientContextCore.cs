@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
         internal ClientContextCore(
             CosmosClient client,
             ClientOptions clientOptions,
-            CosmosJsonSerializer userJsonSerializer,
-            CosmosJsonSerializer defaultJsonSerializer,
+            CosmosSerializer userJsonSerializer,
+            CosmosSerializer defaultJsonSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDocumentQueryClient DocumentQueryClient { get; }
 
-        internal override CosmosJsonSerializer CosmosSerializer { get; }
+        internal override CosmosSerializer CosmosSerializer { get; }
 
-        internal override CosmosJsonSerializer PropertiesSerializer { get; }
+        internal override CosmosSerializer PropertiesSerializer { get; }
 
         internal override CosmosResponseFactory ResponseFactory { get; }
 

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         public const string DoesNotExist = "DoesNotExist-69E1BD04-EC99-449B-9365-34DA9F4D4ECE";
         private static CosmosClient client = null;
-        private static CosmosJsonSerializer jsonSerializer = new CosmosJsonSerializerCore();
+        private static CosmosSerializer jsonSerializer = new CosmosJsonSerializerCore();
 
         [ClassInitialize]
         public static void Initialize(TestContext textContext)

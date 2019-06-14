@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class StoredProcedureTests : BaseCosmosClientHelper
     {
-        private static CosmosJsonSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
+        private static CosmosSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
         private Container container = null;
         private Scripts scripts = null;
         private StoredProcedureRequestOptions requestOptions = new StoredProcedureRequestOptions();

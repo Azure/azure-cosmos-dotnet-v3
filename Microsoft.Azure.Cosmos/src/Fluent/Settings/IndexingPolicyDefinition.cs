@@ -11,22 +11,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Indexing Policy fluent definition.
     /// </summary>
     /// <seealso cref="IndexingPolicy"/>
-    public class IndexingPolicyFluentDefinition<T>
+    public class IndexingPolicyDefinition<T>
     {
         private readonly IndexingPolicy indexingPolicy = new IndexingPolicy();
         private readonly T parent;
         private readonly Action<IndexingPolicy> attachCallback;
-        private PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> includedPathsBuilder;
-        private PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> excludedPathsBuilder;
+        private PathsDefinition<IndexingPolicyDefinition<T>> includedPathsBuilder;
+        private PathsDefinition<IndexingPolicyDefinition<T>> excludedPathsBuilder;
 
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public IndexingPolicyFluentDefinition()
+        public IndexingPolicyDefinition()
         {
         }
 
-        internal IndexingPolicyFluentDefinition(
+        internal IndexingPolicyDefinition(
             T parent,
             Action<IndexingPolicy> attachCallback)
         {
@@ -38,11 +38,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines the <see cref="Container"/>'s <see cref="Cosmos.IndexingMode"/>.
         /// </summary>
         /// <param name="indexingMode">An <see cref="Cosmos.IndexingMode"/></param>
-        /// <returns>An instance of <see cref="IndexingPolicyFluentDefinition{T}"/>.</returns>
+        /// <returns>An instance of <see cref="IndexingPolicyDefinition{T}"/>.</returns>
         /// <remarks>
-        /// If multiple calls are made to this method within the same <see cref="IndexingPolicyFluentDefinition{T}"/>, the last one will apply.
+        /// If multiple calls are made to this method within the same <see cref="IndexingPolicyDefinition{T}"/>, the last one will apply.
         /// </remarks>
-        public virtual IndexingPolicyFluentDefinition<T> WithIndexingMode(IndexingMode indexingMode)
+        public virtual IndexingPolicyDefinition<T> WithIndexingMode(IndexingMode indexingMode)
         {
             this.indexingPolicy.IndexingMode = indexingMode;
             return this;
@@ -52,8 +52,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines the <see cref="Container"/>'s automatic indexing.
         /// </summary>
         /// <param name="enabled">Defines whether Automatic Indexing is enabled or not.</param>
-        /// <returns>An instance of <see cref="IndexingPolicyFluentDefinition{T}"/>.</returns>
-        public virtual IndexingPolicyFluentDefinition<T> WithAutomaticIndexing(bool enabled)
+        /// <returns>An instance of <see cref="IndexingPolicyDefinition{T}"/>.</returns>
+        public virtual IndexingPolicyDefinition<T> WithAutomaticIndexing(bool enabled)
         {
             this.indexingPolicy.Automatic = enabled;
             return this;
@@ -62,12 +62,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the <see cref="Container"/>'s <see cref="IndexingPolicy.IncludedPaths"/>.
         /// </summary>
-        /// <returns>An instance of <see cref="PathsFluentDefinition{T}"/>.</returns>
-        public virtual PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> WithIncludedPaths()
+        /// <returns>An instance of <see cref="PathsDefinition{T}"/>.</returns>
+        public virtual PathsDefinition<IndexingPolicyDefinition<T>> WithIncludedPaths()
         {
             if (this.includedPathsBuilder == null)
             {
-                this.includedPathsBuilder = new PathsFluentDefinition<IndexingPolicyFluentDefinition<T>>(
+                this.includedPathsBuilder = new PathsDefinition<IndexingPolicyDefinition<T>>(
                     this,
                     (paths) => this.AddIncludedPaths(paths));
             }
@@ -78,12 +78,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the <see cref="Container"/>'s <see cref="IndexingPolicy.ExcludedPaths"/>.
         /// </summary>
-        /// <returns>An instance of <see cref="PathsFluentDefinition{T}"/>.</returns>
-        public virtual PathsFluentDefinition<IndexingPolicyFluentDefinition<T>> WithExcludedPaths()
+        /// <returns>An instance of <see cref="PathsDefinition{T}"/>.</returns>
+        public virtual PathsDefinition<IndexingPolicyDefinition<T>> WithExcludedPaths()
         {
             if (this.excludedPathsBuilder == null)
             {
-                this.excludedPathsBuilder = new PathsFluentDefinition<IndexingPolicyFluentDefinition<T>>(
+                this.excludedPathsBuilder = new PathsDefinition<IndexingPolicyDefinition<T>>(
                     this,
                     (paths) => this.AddExcludedPaths(paths));
             }
@@ -94,10 +94,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines a Composite Index in the current <see cref="Container"/>'s definition.
         /// </summary>
-        /// <returns>An instance of <see cref="CompositeIndexFluentDefinition{T}"/>.</returns>
-        public virtual CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> WithCompositeIndex()
+        /// <returns>An instance of <see cref="CompositeIndexDefinition{T}"/>.</returns>
+        public virtual CompositeIndexDefinition<IndexingPolicyDefinition<T>> WithCompositeIndex()
         {
-            return new CompositeIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
+            return new CompositeIndexDefinition<IndexingPolicyDefinition<T>>(
                 this,
                 (compositePaths) => this.AddCompositePaths(compositePaths));
         }
@@ -105,10 +105,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines a <see cref="Cosmos.SpatialIndex"/> in the current <see cref="Container"/>'s definition.
         /// </summary>
-        /// <returns>An instance of <see cref="SpatialIndexFluentDefinition{T}"/>.</returns>
-        public virtual SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>> WithSpatialIndex()
+        /// <returns>An instance of <see cref="SpatialIndexDefinition{T}"/>.</returns>
+        public virtual SpatialIndexDefinition<IndexingPolicyDefinition<T>> WithSpatialIndex()
         {
-            return new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<T>>(
+            return new SpatialIndexDefinition<IndexingPolicyDefinition<T>>(
                 this,
                 (spatialIndex) => this.AddSpatialPath(spatialIndex));
         }

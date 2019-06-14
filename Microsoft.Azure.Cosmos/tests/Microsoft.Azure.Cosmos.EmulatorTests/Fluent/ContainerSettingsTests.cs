@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     // Similar tests to CosmosContainerTests but with Fluent syntax
     [TestClass]
-    public class CosmosContainerSettingsFluentTests : BaseCosmosClientHelper
+    public class ContainerSettingsTests : BaseCosmosClientHelper
     {
         private static long ToEpoch(DateTime dateTime) => (long)(dateTime - (new DateTime(1970, 1, 1))).TotalSeconds;
 

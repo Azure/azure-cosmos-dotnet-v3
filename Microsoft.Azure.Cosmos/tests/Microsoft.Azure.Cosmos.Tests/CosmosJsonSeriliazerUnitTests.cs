@@ -72,8 +72,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             CosmosResponseMessage itemResponse = this.CreateResponse();
             CosmosResponseMessage feedResponse = this.CreateResponse();
 
-            Mock<CosmosJsonSerializer> mockUserJsonSerializer = new Mock<CosmosJsonSerializer>();
-            Mock<CosmosJsonSerializer> mockDefaultJsonSerializer = new Mock<CosmosJsonSerializer>();
+            Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
+            Mock<CosmosSerializer> mockDefaultJsonSerializer = new Mock<CosmosSerializer>();
             CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
                defaultJsonSerializer: mockDefaultJsonSerializer.Object,
                userJsonSerializer: mockUserJsonSerializer.Object);

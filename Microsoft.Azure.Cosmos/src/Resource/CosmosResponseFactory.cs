@@ -14,16 +14,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Cosmos JSON converter. This allows custom JSON parsers.
         /// </summary>
-        private readonly CosmosJsonSerializer cosmosSerializer;
+        private readonly CosmosSerializer cosmosSerializer;
 
         /// <summary>
         /// This is used for all meta data types
         /// </summary>
-        private readonly CosmosJsonSerializer propertiesSerializer;
+        private readonly CosmosSerializer propertiesSerializer;
 
         internal CosmosResponseFactory(
-            CosmosJsonSerializer defaultJsonSerializer,
-            CosmosJsonSerializer userJsonSerializer)
+            CosmosSerializer defaultJsonSerializer,
+            CosmosSerializer userJsonSerializer)
         {
             this.propertiesSerializer = defaultJsonSerializer;
             this.cosmosSerializer = userJsonSerializer;
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal T ToObjectInternal<T>(CosmosResponseMessage cosmosResponseMessage, CosmosJsonSerializer jsonSerializer)
+        internal T ToObjectInternal<T>(CosmosResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
         {
             // Not finding something is part of a normal work-flow and should not be an exception.
             // This prevents the unnecessary overhead of an exception
