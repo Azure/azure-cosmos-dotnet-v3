@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<ConflictProperties> GetConflictIterator(
+        public abstract FeedIterator<ConflictProperties> GetQueryIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetConflicttreamIterator(
+        public abstract FeedIterator GetQuerytreamIterator(
             int? maxItemCount = null,
             string continuationToken = null);
     }
