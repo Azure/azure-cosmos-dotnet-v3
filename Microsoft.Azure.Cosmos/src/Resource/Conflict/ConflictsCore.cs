@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConflictsFeedRequestExecutorAsync);
         }
 
-        public override FeedIterator GetConflictstreamIterator(
+        public override FeedIterator GetConflicttreamIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {

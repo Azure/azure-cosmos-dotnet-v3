@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id { get; }
 
-        public override Database Database { get; }
+        public Database Database { get; }
 
         internal virtual Uri LinkUri { get; }
 

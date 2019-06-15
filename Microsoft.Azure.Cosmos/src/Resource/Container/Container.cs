@@ -32,11 +32,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract string Id { get; }
 
         /// <summary>
-        /// Returns the parent database reference
-        /// </summary>
-        public abstract Database Database { get; }
-
-        /// <summary>
         /// Returns the conflicts
         /// </summary>
         public abstract Conflicts Conflicts { get; }
