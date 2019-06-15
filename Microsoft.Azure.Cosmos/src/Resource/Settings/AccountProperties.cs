@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public virtual IEnumerable<AccountRegion> WritableRegions
+        public IEnumerable<AccountRegion> WritableRegions
         {
             get { return this.WriteLocationsInternal; }
         }
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public virtual IEnumerable<AccountRegion> ReadableRegions
+        public IEnumerable<AccountRegion> ReadableRegions
         {
             get { return this.ReadLocationsInternal; }
         }
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; internal set; }
+        public string Id { get; internal set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; internal set; }
+        public string ETag { get; internal set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
         /// The ConsistencySetting.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.UserConsistencyPolicy)]
-        public virtual AccountConsistency Consistency { get; internal set; }
+        public AccountConsistency Consistency { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount
