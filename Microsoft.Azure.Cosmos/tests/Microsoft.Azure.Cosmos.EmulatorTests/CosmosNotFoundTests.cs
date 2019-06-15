@@ -64,7 +64,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             var queryIterator = container.GetItemQueryStreamIterator(
                 "select * from t where true", 
-                requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 });
+                requestOptions: new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 1,
+                        PartitionKey = new Cosmos.PartitionKey("testpk")
+                    });
 
             this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());
 
