@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             dynamic randomItem = new { id = "test", pk = "testpk" };
             await container.CreateItemAsync(randomItem);
 
-            await container.DeleteAsync();
+            await container.DeleteContainerAsync();
 
             var crossPartitionQueryIterator = container.GetItemQueryStreamIterator(
                 "select * from t where true", 

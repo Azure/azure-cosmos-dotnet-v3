@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal ConsistencyLevel? ConsistencyLevel { get; set; }
 
-        internal bool EnableCrossPartitionQuery => this.PartitionKey == null;
+        internal bool EnableCrossPartitionQuery { get; set; }
 
         internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
 

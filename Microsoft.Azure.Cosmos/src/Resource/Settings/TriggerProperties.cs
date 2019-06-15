@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <value>The body of the trigger.</value>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public virtual string Body { get; set; }
+        public string Body { get; set; }
 
         /// <summary>
         /// Gets or sets the type of the trigger for the Azure Cosmos DB service.
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <seealso cref="TriggerType"/>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.TriggerType)]
-        public virtual TriggerType TriggerType { get; set; }
+        public TriggerType TriggerType { get; set; }
 
         /// <summary>
         /// Gets or sets the operation the trigger is associated with for the Azure Cosmos DB service.
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <seealso cref="TriggerOperation"/>
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(PropertyName = Constants.Properties.TriggerOperation)]
-        public virtual TriggerOperation TriggerOperation { get; set; }
+        public TriggerOperation TriggerOperation { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; set; }
+        public string Id { get; set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -76,6 +76,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; private set; }
+        public string ETag { get; private set; }
     }
 }

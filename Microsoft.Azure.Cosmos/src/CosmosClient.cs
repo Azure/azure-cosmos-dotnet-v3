@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public virtual Task<AccountProperties> GetAccountPropertiesAsync()
+        public virtual Task<AccountProperties> ReadAccountAsync()
         {
             return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint);
         }

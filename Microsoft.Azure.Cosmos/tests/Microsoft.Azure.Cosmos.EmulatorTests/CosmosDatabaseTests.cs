@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             readThroughput = await ((ContainerCore)container).ReadProvisionedThroughputAsync();
             Assert.IsNull(readThroughput);
 
-            await container.DeleteAsync();
+            await container.DeleteContainerAsync();
             await cosmosDatabase.DeleteAsync();
         }
 
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             readThroughputResponse = await container.ReadThroughputAsync();
             Assert.IsNull(readThroughputResponse.Resource);
 
-            await container.DeleteAsync();
+            await container.DeleteContainerAsync();
             await cosmosDatabase.DeleteAsync();
         }
 

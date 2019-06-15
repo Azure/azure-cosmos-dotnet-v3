@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             Mock<Container> mockContainer = new Mock<Container>();
             mockContainer
-                .Setup(c => c.ReadAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(c => c.ReadContainerAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
             Mock<Database> mockContainers = new Mock<Database>();
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerResponse response = await containerFluentDefinitionForCreate.CreateAsync();
 
-            mockContainer.Verify(c => c.ReadAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockContainer.Verify(c => c.ReadContainerAsync(It.IsAny<ContainerRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]

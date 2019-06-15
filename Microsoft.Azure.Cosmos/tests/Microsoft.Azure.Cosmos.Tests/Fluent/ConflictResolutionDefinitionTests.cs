@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 {
                     Assert.IsNotNull(ConflictResolutionPolicy);
                     Assert.AreEqual(ConflictResolutionMode.LastWriterWins, ConflictResolutionPolicy.Mode);
-                    Assert.AreEqual("/lww", ConflictResolutionPolicy.ConflictResolutionPath);
+                    Assert.AreEqual("/lww", ConflictResolutionPolicy.ResolutionPath);
                 };
 
                 ConflictResolutionDefinition conflictResolutionFluentDefinition = new ConflictResolutionDefinition(
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 {
                     Assert.IsNotNull(ConflictResolutionPolicy);
                     Assert.AreEqual(ConflictResolutionMode.Custom, ConflictResolutionPolicy.Mode);
-                    Assert.AreEqual("testsproc", ConflictResolutionPolicy.ConflictResolutionProcedure);
+                    Assert.AreEqual("testsproc", ConflictResolutionPolicy.ResolutionProcedure);
                 };
 
                 ConflictResolutionDefinition conflictResolutionFluentDefinition = new ConflictResolutionDefinition(

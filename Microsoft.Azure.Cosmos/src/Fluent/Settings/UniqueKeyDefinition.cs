@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="path">Path for the property to add to the current <see cref="UniqueKeyDefinition"/>. Example: /property</param>
         /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
-        public virtual UniqueKeyDefinition Path(string path)
+        public UniqueKeyDefinition Path(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual ContainerBuilder Attach()
+        public ContainerBuilder Attach()
         {
             this.attachCallback(new UniqueKey()
             {
