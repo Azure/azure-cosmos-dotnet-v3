@@ -1420,7 +1420,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())
                 {
                     Logger.LogLine("Deleting Collection with following info Id:{0}, database Id: {1}", container.Id, database.Id);
-                    deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.GetContainer(container.Id).DeleteAsync()));
+                    deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.GetContainer(container.Id).DeleteContainerAsync()));
                 }
 
                 await Task.WhenAll(deleteCollectionTasks);

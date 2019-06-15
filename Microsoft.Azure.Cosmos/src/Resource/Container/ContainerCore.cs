@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Id { get; }
 
-        public override Database Database { get; }
+        public Database Database { get; }
 
         internal virtual Uri LinkUri { get; }
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Scripts.Scripts Scripts => this.scripts;
 
-        public override Task<ContainerResponse> ReadAsync(
+        public override Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
         }
 
-        public override Task<ContainerResponse> ReplaceAsync(
+        public override Task<ContainerResponse> ReplaceContainerAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response);
         }
 
-        public override Task<ContainerResponse> DeleteAsync(
+        public override Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {

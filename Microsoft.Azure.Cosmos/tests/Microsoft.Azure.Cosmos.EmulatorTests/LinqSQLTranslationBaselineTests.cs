@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         public async static Task Initialize(TestContext textContext)
         {
             cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
-                cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
+                cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
                 {
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                     // We want to simulate the property not exist so ignoring the null value
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         [TestCleanup]
         public async Task TestCleanUp()
         {
-            await testContainer.DeleteAsync();
+            await testContainer.DeleteContainerAsync();
         }
 
         [ClassCleanup]

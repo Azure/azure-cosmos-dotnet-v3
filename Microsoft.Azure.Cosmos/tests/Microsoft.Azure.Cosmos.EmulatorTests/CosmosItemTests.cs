@@ -836,7 +836,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (container != null)
                 {
-                    await container.DeleteAsync();
+                    await container.DeleteContainerAsync();
                 }
             }
         }
@@ -1033,7 +1033,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.CreateUndefinedPartitionItem();
                 fixedContainer = this.database.GetContainer(nonPartitionContainerId);
 
-                ContainerResponse containerResponse = await fixedContainer.ReadAsync();
+                ContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
                 Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
                 Assert.AreEqual(PartitionKey.SystemKeyPath, containerResponse.Resource.PartitionKey.Paths[0]);
 
@@ -1144,7 +1144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (fixedContainer != null)
                 {
-                    await fixedContainer.DeleteAsync();
+                    await fixedContainer.DeleteContainerAsync();
                 }
             }
         }
@@ -1232,7 +1232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 fixedContainer = this.database.GetContainer(nonPartitionContainerId);
 
                 // Read the container metadata
-                ContainerResponse containerResponse = await fixedContainer.ReadAsync();
+                ContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
 
                 // Query items on the container that have no partition key value
                 int resultsFetched = 0;
@@ -1296,7 +1296,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (fixedContainer != null)
                 {
-                    await fixedContainer.DeleteAsync();
+                    await fixedContainer.DeleteContainerAsync();
                 }
             }
         }

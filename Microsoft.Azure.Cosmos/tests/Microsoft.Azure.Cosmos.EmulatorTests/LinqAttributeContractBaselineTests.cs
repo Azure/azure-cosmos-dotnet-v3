@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestCleanup]
         public void TestCleanUp()
         {
-            testCollection.DeleteAsync().Wait();
+            testCollection.DeleteContainerAsync().Wait();
         }
 
         /// <summary>

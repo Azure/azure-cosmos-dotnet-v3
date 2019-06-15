@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
         /// <seealso cref="IndexingDirective"/>
-        public virtual IndexingDirective? IndexingDirective { get; set; }
+        public IndexingDirective? IndexingDirective { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// </para>
         /// </remarks>
-        public virtual string SessionToken { get; set; }
+        public string SessionToken { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         /// for each individual request.
         /// </para>
         /// </remarks>
-        public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
+        public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
