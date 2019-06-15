@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         [TestCleanup]
         public async Task TestCleanUp()
         {
-            await testContainer.DeleteAsync();
+            await testContainer.DeleteContainerAsync();
         }
 
         [ClassCleanup]

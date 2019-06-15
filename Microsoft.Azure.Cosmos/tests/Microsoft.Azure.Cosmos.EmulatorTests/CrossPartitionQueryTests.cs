@@ -501,7 +501,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<Task<ContainerResponse>> deleteContainerTasks = new List<Task<ContainerResponse>>();
                     foreach (Container container in collectionsAndDocuments.Select(tuple => tuple.Item1))
                     {
-                        deleteContainerTasks.Add(container.DeleteAsync());
+                        deleteContainerTasks.Add(container.DeleteContainerAsync());
                     }
 
                     await Task.WhenAll(deleteContainerTasks);
@@ -2729,7 +2729,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
             IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
 
-            ContainerProperties containerSettings = await container.ReadAsync();
+            ContainerProperties containerSettings = await container.ReadContainerAsync();
             foreach (Document document in documents)
             {
                 IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
@@ -3504,7 +3504,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
-            ContainerProperties containerSettings = await container.ReadAsync();
+            ContainerProperties containerSettings = await container.ReadContainerAsync();
             // For every composite index
             foreach (Collection<Cosmos.CompositePath> compositeIndex in containerSettings.IndexingPolicy.CompositeIndexes)
             {

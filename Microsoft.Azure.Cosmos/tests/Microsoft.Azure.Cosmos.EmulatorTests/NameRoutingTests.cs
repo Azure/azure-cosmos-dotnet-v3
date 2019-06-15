@@ -110,10 +110,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //2. DocumentCollection CRUD
                 Container container = await database.CreateContainerAsync(resourceRandomId, partitionKeyPath: "/id");
-                await container.DeleteAsync();
+                await container.DeleteContainerAsync();
 
                 container = await database.CreateContainerAsync(collectionId, partitionKeyPath: "/id");
-                container = await container.ReadAsync();
+                container = await container.ReadContainerAsync();
 
                 // read documentCollection feed.
                 FeedIterator<ContainerProperties> rr = database.GetContainersIterator();
@@ -676,7 +676,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Now delete the collection so we have 1 bindable collection left
             //DocumentCollection collIgnore = await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionFooId));
-            await collFoo.DeleteAsync();
+            await collFoo.DeleteContainerAsync();
 
             Container collBar = null;
             if (type == FabircServiceReuseType.BoundToSameName)
@@ -688,7 +688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Now create collectionBar fist.
                 collBar = await database.CreateContainerAsync( new ContainerProperties() { Id = collectionBarId, PartitionKey = partitionKeyDefinition });
                 // delete another random collection so we have 1 bindable collection left
-                await collBar.DeleteAsync();
+                await collBar.DeleteContainerAsync();
             }
 
             // Now create collectionFoo second time
@@ -696,13 +696,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (type == FabircServiceReuseType.Bindable)
             {
-                await collBar.DeleteAsync();
+                await collBar.DeleteContainerAsync();
             }
 
             // Now verify the collectionFooId, the cache has collectionFooId -> OldRid cache
             if (eApiTest == CallAPIForStaleCacheTest.DocumentCollection)
             {
-                Container collFooRead = await collFoo2.ReadAsync();
+                Container collFooRead = await collFoo2.ReadContainerAsync();
             }
             else if (eApiTest == CallAPIForStaleCacheTest.Document)
             {
@@ -713,11 +713,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Now delete the collection foo again
-            await collFoo2.DeleteAsync();
+            await collFoo2.DeleteContainerAsync();
 
             if (type == FabircServiceReuseType.BoundToDifferentName)
             {
-                await collBar.DeleteAsync(); ;
+                await collBar.DeleteContainerAsync(); ;
             }
         }
 
@@ -786,7 +786,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerSetting);
             Document documentDefinition = new Document { Id = Guid.NewGuid().ToString() };
             await containerResponse.Container.CreateItemAsync(documentDefinition);
-            await containerResponse.Container.DeleteAsync();
+            await containerResponse.Container.DeleteContainerAsync();
 
             try
             {
@@ -794,7 +794,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // 1. DC -> GW: address resolver to resolve collectionFullName. 
                 // 2. GW -> MC: call mc to resolve collectionFullName.
                 // 3. MC : return NotFoundException
-                ContainerResponse readContainerResponse = await containerResponse.Container.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
+                ContainerResponse readContainerResponse = await containerResponse.Container.ReadContainerAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.IsNull(readContainerResponse.Resource);
                 Assert.AreEqual(readContainerResponse.StatusCode, HttpStatusCode.NotFound);
                 Assert.IsNull(readContainerResponse.Headers[HttpConstants.HttpHeaders.RequestValidationFailure]);
@@ -1057,7 +1057,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 // doing a collection read with Document link
-                ContainerResponse collection1 = await database.GetContainer(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id).ToString()).ReadAsync();
+                ContainerResponse collection1 = await database.GetContainer(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id).ToString()).ReadContainerAsync();
                 Assert.IsNull(collection1.Resource);
                 Assert.AreEqual(collection1.StatusCode, HttpStatusCode.NotFound);
             }
@@ -1322,7 +1322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosClient otherClient = TestCommon.CreateCosmosClient(false);
                 database = otherClient.GetDatabase("db1");
                 container = database.GetContainer("coll1");
-                await container.DeleteAsync();
+                await container.DeleteContainerAsync();
                 PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
                 container = await database.CreateContainerAsync(new ContainerProperties { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
@@ -1731,7 +1731,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosClient otherClient = TestCommon.CreateCosmosClient(false);
                 database = otherClient.GetDatabase("db1");
                 container = database.GetContainer("coll1");
-                await container.DeleteAsync();
+                await container.DeleteContainerAsync();
                 PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
                 container = await database.CreateContainerAsync(new ContainerProperties { Id = "coll1", PartitionKey = partitionKeyDefinition2 });
 
@@ -1782,19 +1782,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 containerSetting.Id = collection.Id;
                 containerSetting.IndexingPolicy.IncludedPaths.Add(new Cosmos.IncludedPath { Path = "/" });
                 containerSetting.IndexingPolicy.ExcludedPaths.Add(new Cosmos.ExcludedPath { Path = "/\"Author\"/?" });
-                await collection.ReplaceAsync(containerSetting);
+                await collection.ReplaceContainerAsync(containerSetting);
 
                 // Read collection.
-                ContainerResponse containerResponse = await collection.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
+                ContainerResponse containerResponse = await collection.ReadContainerAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.IsTrue(int.Parse(containerResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture) >= 0);
 
                 // Delete and re-create the collection with the same name.
-                await collection.DeleteAsync();
+                await collection.DeleteContainerAsync();
                 collection = await database.CreateContainerAsync(containerSetting);
 
                 // Read the new collection.
                 // The gateway's cache is stale at this point. This test verifies that the gateway should be able to refresh the cache and returns the response.
-                containerResponse = await collection.ReadAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
+                containerResponse = await collection.ReadContainerAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                 Assert.AreEqual(100, int.Parse(containerResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture));
 
                 // Scenario 2: name based collection put.
@@ -1807,7 +1807,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await collection.CreateItemAsync(payload);
 
                 // Delete and re-create the collection with the same name.
-                await collection.DeleteAsync();
+                await collection.DeleteContainerAsync();
                 collection = await database.CreateContainerAsync(containerSetting);
 
                 // Update collection.
@@ -1818,7 +1818,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
                 containerSetting.IndexingPolicy.IncludedPaths.Add(new Cosmos.IncludedPath { Path = "/" });
                 containerSetting.IndexingPolicy.ExcludedPaths.Add(new Cosmos.ExcludedPath { Path = "/\"Author\"/?" });
-                await collection.ReplaceAsync(containerSetting);
+                await collection.ReplaceContainerAsync(containerSetting);
             }
             finally
             {

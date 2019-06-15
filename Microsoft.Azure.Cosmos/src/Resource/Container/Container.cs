@@ -66,11 +66,11 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Container container = this.database.GetContainer("containerId");
-        /// ContainerProperties containerProperties = container.ReadAsync();
+        /// ContainerProperties containerProperties = container.ReadContainerAsync();
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ContainerResponse> ReadAsync(
+        public abstract Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -102,12 +102,12 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// ContainerProperties containerProperties = containerReadResponse;
         /// setting.IndexingPolicy.Automatic = false;
-        /// ContainerResponse response = container.ReplaceAsync(containerProperties);
+        /// ContainerResponse response = container.ReplaceContainerAsync(containerProperties);
         /// ContainerProperties replacedProperties = response;
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ContainerResponse> ReplaceAsync(
+        public abstract Task<ContainerResponse> ReplaceContainerAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -132,11 +132,11 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Container container = this.database.Containers["containerId"];
-        /// ContainerResponse response = container.DeleteAsync();
+        /// ContainerResponse response = container.DeleteContainerAsync();
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ContainerResponse> DeleteAsync(
+        public abstract Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
