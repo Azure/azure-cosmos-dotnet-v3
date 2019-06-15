@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 FeedIterator<DatabaseProperties> feedIterator =
-                    this.cosmosClient.GetDatabasesIterator();
+                    this.cosmosClient.GetDatabaseIterator();
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<DatabaseProperties> iterator =
