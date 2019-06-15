@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public override IOrderedQueryable<T> GetItemLinqQuery<T>(
+        public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false, 
             QueryRequestOptions requestOptions = null)
         {
