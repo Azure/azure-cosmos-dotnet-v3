@@ -15,8 +15,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class AccountProperties
     {
-        private Collection<AccountLocation> readLocations;
-        private Collection<AccountLocation> writeLocations;
+        private Collection<AccountRegion> readRegions;
+        private Collection<AccountRegion> writeRegions;
 
         internal readonly Lazy<IDictionary<string, object>> QueryEngineConfiurationInternal;
 
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public virtual IEnumerable<AccountLocation> WritableLocations
+        public virtual IEnumerable<AccountRegion> WritableRegions
         {
             get { return this.WriteLocationsInternal; }
         }
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public virtual IEnumerable<AccountLocation> ReadableLocations
+        public virtual IEnumerable<AccountRegion> ReadableRegions
         {
             get { return this.ReadLocationsInternal; }
         }
@@ -99,36 +99,36 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]
-        internal Collection<AccountLocation> WriteLocationsInternal
+        internal Collection<AccountRegion> WriteLocationsInternal
         {
             get
             {
-                if (this.writeLocations == null)
+                if (this.writeRegions == null)
                 {
-                    this.writeLocations = new Collection<AccountLocation>();
+                    this.writeRegions = new Collection<AccountRegion>();
                 }
-                return this.writeLocations;
+                return this.writeRegions;
             }
             set
             {
-                this.writeLocations = value;
+                this.writeRegions = value;
             }
         }
 
         [JsonProperty(PropertyName = Constants.Properties.ReadableLocations)]
-        internal Collection<AccountLocation> ReadLocationsInternal
+        internal Collection<AccountRegion> ReadLocationsInternal
         {
             get
             {
-                if (this.readLocations == null)
+                if (this.readRegions == null)
                 {
-                    this.readLocations = new Collection<AccountLocation>();
+                    this.readRegions = new Collection<AccountRegion>();
                 }
-                return this.readLocations;
+                return this.readRegions;
             }
             set
             {
-                this.readLocations = value;
+                this.readRegions = value;
             }
         }
 
@@ -197,13 +197,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the <see cref="ConsistencySetting"/> from the Azure Cosmos DB service.
+        /// Gets the <see cref="Consistency"/> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The ConsistencySetting.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.UserConsistencyPolicy)]
-        public virtual AccountConsistency ConsistencySetting { get; internal set; }
+        public virtual AccountConsistency Consistency { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount

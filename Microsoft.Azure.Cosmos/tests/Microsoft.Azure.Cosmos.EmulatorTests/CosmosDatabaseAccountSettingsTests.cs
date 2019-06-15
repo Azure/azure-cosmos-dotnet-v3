@@ -42,10 +42,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             AccountProperties accountProperties = await this.cosmosClient.GetAccountPropertiesAsync();
             Assert.IsNotNull(accountProperties);
             Assert.IsNotNull(accountProperties.Id);
-            Assert.IsNotNull(accountProperties.ReadableLocations);
-            Assert.IsTrue(accountProperties.ReadableLocations.Count() > 0);
-            Assert.IsNotNull(accountProperties.WritableLocations);
-            Assert.IsTrue(accountProperties.WritableLocations.Count() > 0);
+            Assert.IsNotNull(accountProperties.ReadableRegions);
+            Assert.IsTrue(accountProperties.ReadableRegions.Count() > 0);
+            Assert.IsNotNull(accountProperties.WritableRegions);
+            Assert.IsTrue(accountProperties.WritableRegions.Count() > 0);
         }
     }
 }
