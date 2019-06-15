@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="defaultTtlTimeSpan">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
         /// <seealso cref="ContainerProperties.DefaultTimeToLive"/>
-        public virtual T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
+        public T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
         {
             if (defaultTtlTimeSpan == null)
             {
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="defaulTtlInSeconds">The default Time To Live.</param>
         /// <returns>An instance of the current Fluent builder.</returns>
         /// <seealso cref="ContainerProperties.DefaultTimeToLive"/>
-        public virtual T WithDefaultTimeToLive(int defaulTtlInSeconds)
+        public T WithDefaultTimeToLive(int defaulTtlInSeconds)
         {
             if (defaulTtlInSeconds < -1)
             {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="propertyPath">This property should be only present when DefaultTimeToLive is set. When this property is present, time to live for a item is decided based on the value of this property in an item. By default, time to live is based on the _ts property in an item. Example: /property</param>
         /// <returns>An instance of the current Fluent builder.</returns>
         /// <seealso cref="ContainerProperties.TimeToLivePropertyPath"/>
-        public virtual T WithTimeToLivePropertyPath(string propertyPath)
+        public T WithTimeToLivePropertyPath(string propertyPath)
         {
             if (string.IsNullOrEmpty(propertyPath))
             {
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <see cref="Cosmos.IndexingPolicy"/> definition for the current Azure Cosmos container.
         /// </summary>
         /// <returns>An instance of <see cref="IndexingPolicyDefinition{T}"/>.</returns>
-        public virtual IndexingPolicyDefinition<T> WithIndexingPolicy()
+        public IndexingPolicyDefinition<T> WithIndexingPolicy()
         {
             if (this.indexingPolicy != null)
             {
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current Fluent definition and creates a container configuration.
         /// </summary>
         /// <returns>Builds the current Fluent configuration into an instance of <see cref="ContainerProperties"/>.</returns>
-        public virtual ContainerProperties Build()
+        public ContainerProperties Build()
         {
             ContainerProperties containerProperties = new ContainerProperties(id: this.containerName, partitionKeyPath: this.partitionKeyPath);
             if (this.indexingPolicy != null)

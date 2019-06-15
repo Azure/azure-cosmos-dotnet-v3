@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="conflictResolutionPath"> sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution. <see cref="ConflictResolutionPolicy.ResolutionPath"/>.</param>
         /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
-        public virtual ConflictResolutionDefinition WithLastWriterWinsResolution(string conflictResolutionPath)
+        public ConflictResolutionDefinition WithLastWriterWinsResolution(string conflictResolutionPath)
         {
             if (string.IsNullOrEmpty(conflictResolutionPath))
             {
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="conflictResolutionProcedure"> sets the stored procedure to be used for conflict-resolution. <see cref="ConflictResolutionPolicy.ResolutionProcedure"/>.</param>
         /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
-        public virtual ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure)
+        public ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure)
         {
             if (string.IsNullOrEmpty(conflictResolutionProcedure))
             {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual ContainerBuilder Attach()
+        public ContainerBuilder Attach()
         {
             ConflictResolutionPolicy resolutionPolicy = new ConflictResolutionPolicy();
             if (this.conflictResolutionPath != null)

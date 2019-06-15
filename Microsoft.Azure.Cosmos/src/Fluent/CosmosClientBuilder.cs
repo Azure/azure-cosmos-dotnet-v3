@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
         /// <returns>An instance of <see cref="CosmosClient"/>.</returns>
-        public virtual CosmosClient Build()
+        public CosmosClient Build()
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions);
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        public virtual CosmosClientBuilder WithApplicationName(string applicationName)
+        public CosmosClientBuilder WithApplicationName(string applicationName)
         {
             this.clientOptions.ApplicationName = applicationName;
             return this;
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
-        public virtual CosmosClientBuilder WithApplicationRegion(string applicationRegion)
+        public CosmosClientBuilder WithApplicationRegion(string applicationRegion)
         {
             this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <value>Default value is 60 seconds.</value>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.RequestTimeout"/>
-        public virtual CosmosClientBuilder WithRequestTimeout(TimeSpan requestTimeout)
+        public CosmosClientBuilder WithRequestTimeout(TimeSpan requestTimeout)
         {
             this.clientOptions.RequestTimeout = requestTimeout;
             return this;
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
-        public virtual CosmosClientBuilder WithConnectionModeDirect()
+        public CosmosClientBuilder WithConnectionModeDirect()
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
         /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
-        public virtual CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
+        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
             this.clientOptions.ConnectionProtocol = Protocol.Https;
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <param name="customHandlers">A list of <see cref="RequestHandler"/> instaces to add to the pipeline.</param>
         /// <seealso cref="CosmosClientOptions.CustomHandlers"/>
-        public virtual CosmosClientBuilder AddCustomHandlers(params RequestHandler[] customHandlers)
+        public CosmosClientBuilder AddCustomHandlers(params RequestHandler[] customHandlers)
         {
             foreach (RequestHandler handler in customHandlers)
             {
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnThrottledRequests"/>
         /// <seealso cref="CosmosClientOptions.MaxRetryAttemptsOnThrottledRequests"/>
-        public virtual CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
+        public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
             int maxRetryAttemptsOnThrottledRequests)
         {
             this.clientOptions.MaxRetryWaitTimeOnThrottledRequests = maxRetryWaitTimeOnThrottledRequests;
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosSerializer"/>
         /// <seealso cref="CosmosClientOptions.Serializer"/>
-        public virtual CosmosClientBuilder WithCustomSerializer(
+        public CosmosClientBuilder WithCustomSerializer(
             CosmosSerializer cosmosJsonSerializer)
         {
             this.clientOptions.Serializer = cosmosJsonSerializer;
