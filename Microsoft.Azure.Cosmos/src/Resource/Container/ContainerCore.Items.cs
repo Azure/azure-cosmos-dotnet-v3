@@ -239,18 +239,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator GetItemQueryStreamIterator(
             QueryDefinition sqlQueryDefinition,
-            int maxConcurrency,
-            PartitionKey partitionKey = null,
-            int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
-            requestOptions.MaxConcurrency = maxConcurrency;
-            requestOptions.EnableCrossPartitionQuery = true;
-            requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxItemCount = maxItemCount;
-            requestOptions.PartitionKey = partitionKey;
 
             CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
@@ -258,6 +250,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: true,
@@ -265,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
                 correlatedActivityId: Guid.NewGuid());
 
             return new FeedIteratorCore(
-                maxItemCount,
+                requestOptions.MaxItemCount,
                 continuationToken,
                 requestOptions,
                 this.QueryRequestExecutorAsync,
@@ -274,33 +267,21 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator GetItemQueryStreamIterator(
             string sqlQueryText,
-            int maxConcurrency,
-            PartitionKey partitionKey = null,
-            int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             return this.GetItemQueryStreamIterator(
                 new QueryDefinition(sqlQueryText),
-                maxConcurrency,
-                partitionKey,
-                maxItemCount,
                 continuationToken,
                 requestOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
             QueryDefinition sqlQueryDefinition,
-            PartitionKey partitionKey,
-            int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
-            requestOptions.PartitionKey = partitionKey;
-            requestOptions.EnableCrossPartitionQuery = false;
-            requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxItemCount = maxItemCount;
 
             CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
@@ -308,6 +289,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
                 sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: true,
@@ -315,7 +297,7 @@ namespace Microsoft.Azure.Cosmos
                 correlatedActivityId: Guid.NewGuid());
 
             return new FeedIteratorCore<T>(
-                maxItemCount,
+                requestOptions.MaxItemCount,
                 continuationToken,
                 requestOptions,
                 this.NextResultSetAsync<T>,
@@ -324,83 +306,27 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
             string sqlQueryText,
-            PartitionKey partitionKey,
-            int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             return this.GetItemQueryIterator<T>(
                 new QueryDefinition(sqlQueryText),
-                partitionKey,
-                maxItemCount,
-                continuationToken,
-                requestOptions);
-        }
-
-        public override FeedIterator<T> GetItemQueryIterator<T>(
-            QueryDefinition sqlQueryDefinition,
-            int maxConcurrency,
-            int? maxItemCount = null,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
-            requestOptions.EnableCrossPartitionQuery = true;
-            requestOptions.RequestContinuation = continuationToken;
-            requestOptions.MaxItemCount = maxItemCount;
-            requestOptions.MaxConcurrency = maxConcurrency;
-
-            CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
-                client: this.queryClient,
-                resourceTypeEnum: ResourceType.Document,
-                operationType: OperationType.Query,
-                resourceType: typeof(T),
-                sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
-                queryRequestOptions: requestOptions,
-                resourceLink: this.LinkUri,
-                isContinuationExpected: true,
-                allowNonValueAggregateQuery: true,
-                correlatedActivityId: Guid.NewGuid());
-
-            return new FeedIteratorCore<T>(
-                maxItemCount,
-                continuationToken,
-                requestOptions,
-                this.NextResultSetAsync<T>,
-                cosmosQueryExecution);
-        }
-
-        public override FeedIterator<T> GetItemQueryIterator<T>(
-            string sqlQueryText,
-            int maxConcurrency,
-            int? maxItemCount = null,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            return this.GetItemQueryIterator<T>(
-                new QueryDefinition(sqlQueryText),
-                maxConcurrency,
-                maxItemCount,
                 continuationToken,
                 requestOptions);
         }
 
         public override IOrderedQueryable<T> GetItemLinqQuery<T>(
-            PartitionKey partitionKey = null, 
             bool allowSynchronousQueryExecution = false, 
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
-            if (partitionKey != null)
-            {
-                requestOptions.PartitionKey = partitionKey;
-            }
-            else
-            {
-                requestOptions.EnableCrossPartitionQuery = true;
-            }
 
-            return new CosmosLinqQuery<T>(this, this.ClientContext.CosmosSerializer, (CosmosQueryClientCore)this.queryClient, requestOptions, allowSynchronousQueryExecution);
+            return new CosmosLinqQuery<T>(
+                this, 
+                this.ClientContext.CosmosSerializer, 
+                (CosmosQueryClientCore)this.queryClient, 
+                requestOptions, 
+                allowSynchronousQueryExecution);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(

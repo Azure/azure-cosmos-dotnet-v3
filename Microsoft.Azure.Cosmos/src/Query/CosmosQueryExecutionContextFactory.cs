@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private const int PageSizeFactorForTop = 5;
 
         private readonly CosmosQueryContext cosmosQueryContext;
+        private readonly string InitialUserContinuationToken;
         private CosmosQueryExecutionContext innerExecutionContext;
 
         /// <summary>
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query
             OperationType operationType,
             Type resourceType,
             SqlQuerySpec sqlQuerySpec,
+            string continuationToken,
             QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             bool isContinuationExpected,
@@ -83,6 +85,8 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 cloneQueryRequestOptions.MaxItemCount = int.MaxValue;
             }
+
+            this.InitialUserContinuationToken = continuationToken;
 
             this.cosmosQueryContext = new CosmosQueryContext(
                   client: client,
@@ -251,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken);
         }
 
-        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
+        public async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
             CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
@@ -327,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 (int)initialPageSize,
-                cosmosQueryContext.QueryRequestOptions.RequestContinuation,
+                this.InitialUserContinuationToken,
                 cancellationToken);
         }
 
