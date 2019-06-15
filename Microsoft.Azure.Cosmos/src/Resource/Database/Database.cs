@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator<ContainerProperties> GetContainersIterator(
+        public abstract FeedIterator<ContainerProperties> GetContainerIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator GetContainersStreamIterator(
+        public abstract FeedIterator GetContainerStreamIterator(
             int? maxItemCount = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ChangeFeedRequestOptions changeFeedOptions;
         private string continuationToken;
         private string partitionKeyRangeId;
+        private bool hasMoreResultsInternal;
 
         internal ChangeFeedPartitionKeyResultSetIteratorCore(
             CosmosClientContext clientContext,
@@ -51,6 +53,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public int? MaxItemCount { get; set; }
 
+        public override bool HasMoreResults => this.hasMoreResultsInternal;
+
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -66,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                     ResponseMessage response = task.Result;
                     // Change Feed uses ETAG
                     this.continuationToken = response.Headers.ETag;
-                    this.HasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
+                    this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
                     response.Headers.Continuation = this.continuationToken;
                     return response;
                 }, cancellationToken);

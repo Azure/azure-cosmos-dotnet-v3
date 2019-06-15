@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.SourceResourceId = expectedRID;
 
-            await container.Conflicts.ReadCurrentAsync<JObject>(partitionKey, conflictSettings);
+            await container.Conflicts.ReadCurrentAsync<JObject>(conflictSettings, partitionKey);
         }
 
         [TestMethod]
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.Id = expectedId;
 
-            await container.Conflicts.DeleteAsync(partitionKey, conflictSettings);
+            await container.Conflicts.DeleteAsync(conflictSettings, partitionKey);
         }
 
         private static ContainerCore GetMockedContainer(Func<RequestMessage,

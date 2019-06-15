@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private string continuationToken;
         private string partitionKeyRangeId;
         private int? maxItemCount;
+        private bool hasMoreResultsInternal;
 
         internal ChangeFeedResultSetIteratorCore(
             CosmosClientContext clientContext,
@@ -44,13 +45,15 @@ namespace Microsoft.Azure.Cosmos
             this.maxItemCount = maxItemCount;
             this.originalMaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
-            this.HasMoreResults = true;
+            this.hasMoreResultsInternal = true;
         }
 
         /// <summary>
         /// The query options for the result set
         /// </summary>
         protected readonly ChangeFeedRequestOptions changeFeedOptions;
+
+        public override bool HasMoreResults => this.hasMoreResultsInternal;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
