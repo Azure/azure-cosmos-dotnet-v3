@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// ResponseContinuationTokenLimitInKb is used to limit the length of continuation token in the query response. Valid values are >= 0.
         /// </para>
         /// </remarks>
-        public virtual int? ResponseContinuationTokenLimitInKb { get; set; }
+        public int? ResponseContinuationTokenLimitInKb { get; set; }
 
         /// <summary>
         /// Gets or sets the option to enable scans on the queries which couldn't be served
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Option is true if scan on queries is enabled; otherwise, false.
         /// </value>
-        public virtual bool? EnableScanInQuery { get; set; }
+        public bool? EnableScanInQuery { get; set; }
 
         /// <summary>
         /// Gets or sets the option to enable low precision order by in the Azure Cosmos DB service.
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The option to enable low-precision order by.
         /// </value>
-        public virtual bool? EnableLowPrecisionOrderBy { get; set; }
+        public bool? EnableLowPrecisionOrderBy { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
@@ -53,7 +53,38 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is only suggestive and cannot be abided by in certain cases.
         /// </remarks>
-        public virtual int? MaxBufferedItemCount { get; set; }
+        public int? MaxBufferedItemCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The maximum number of items to be returned in the enumeration operation.
+        /// </value> 
+        /// <remarks>
+        /// Used for query pagination.
+        /// '-1' Used for dynamic page size.
+        /// This is a maximum. Query can return 0 items in the page.
+        /// </remarks>
+        public int? MaxItemCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of concurrent operations run client side during 
+        /// parallel query execution in the Azure Cosmos DB service. 
+        /// A positive property value limits the number of 
+        /// concurrent operations to the set value. If it is set to less than 0, the 
+        /// system automatically decides the number of concurrent operations to run.
+        /// </summary>
+        /// <value>
+        /// The maximum number of concurrent operations during parallel execution. 
+        /// Defaults will be executed serially with no-parallelism
+        /// </value> 
+        public int? MaxConcurrency { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
+        /// </summary>
+        public PartitionKey PartitionKey { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -84,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// </para>
         /// </remarks>
-        public virtual string SessionToken { get; set; }
+        internal string SessionToken { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
@@ -99,48 +130,9 @@ namespace Microsoft.Azure.Cosmos
         /// for each individual request.
         /// </para>
         /// </remarks>
-        public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
+        internal ConsistencyLevel? ConsistencyLevel { get; set; }
 
-        /// <summary>
-        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The maximum number of items to be returned in the enumeration operation.
-        /// </value> 
-        /// <remarks>
-        /// Used for query pagination.
-        /// '-1' Used for dynamic page size.
-        /// This is a maximum. Query can return 0 items in the page.
-        /// </remarks>
-        public virtual int? MaxItemCount { get; set; }
-
-        /// <summary>
-        /// Gets or sets the request continuation token in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The request continuation token.
-        /// </value>>
-        public virtual string RequestContinuation { get; set; }
-
-        /// <summary>
-        /// Gets or sets the number of concurrent operations run client side during 
-        /// parallel query execution in the Azure Cosmos DB service. 
-        /// A positive property value limits the number of 
-        /// concurrent operations to the set value. If it is set to less than 0, the 
-        /// system automatically decides the number of concurrent operations to run.
-        /// </summary>
-        /// <value>
-        /// The maximum number of concurrent operations during parallel execution. 
-        /// Defaults will be executed serially with no-parallelism
-        /// </value> 
-        internal int? MaxConcurrency { get; set; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
-        /// </summary>
-        internal PartitionKey PartitionKey { get; set; }
-
-        internal bool EnableCrossPartitionQuery { get; set; }
+        internal bool EnableCrossPartitionQuery => this.PartitionKey == null;
 
         internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
 
@@ -157,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
         {
             request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
             request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, this.EnableCrossPartitionQuery ? bool.TrueString : bool.FalseString);
+            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
             RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
@@ -202,7 +194,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 IfMatchEtag = this.IfMatchEtag,
                 IfNoneMatchEtag = this.IfNoneMatchEtag,
-                RequestContinuation = this.RequestContinuation,
                 MaxItemCount = this.MaxItemCount,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
                 EnableScanInQuery = this.EnableScanInQuery,
@@ -212,7 +203,6 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel = this.ConsistencyLevel,
                 MaxConcurrency = this.MaxConcurrency,
                 PartitionKey = this.PartitionKey,
-                EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 Properties = this.Properties
@@ -225,7 +215,6 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedOptions()
             {
-                EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 MaxDegreeOfParallelism = this.MaxConcurrency.HasValue ? this.MaxConcurrency.Value : 0,
                 PartitionKey = this.PartitionKey != null ? new Documents.PartitionKey(this.PartitionKey) : null,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,

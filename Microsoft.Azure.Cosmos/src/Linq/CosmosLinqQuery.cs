@@ -178,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
                 sqlQuerySpec: DocumentQueryEvaluator.Evaluate(expression),
+                continuationToken: null,
                 queryRequestOptions: this.cosmosQueryRequestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: false,
