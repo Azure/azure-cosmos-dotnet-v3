@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<ConflictProperties> GetQueryIterator(
+        public override FeedIterator<ConflictProperties> GetConflictsIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConflictsFeedRequestExecutorAsync);
         }
 
-        public override FeedIterator GetQuerytreamIterator(
+        public override FeedIterator GetConflictstreamIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
