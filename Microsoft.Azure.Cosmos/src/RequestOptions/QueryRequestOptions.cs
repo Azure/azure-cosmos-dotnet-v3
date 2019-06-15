@@ -132,45 +132,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal ConsistencyLevel? ConsistencyLevel { get; set; }
 
-        /// <summary>
-        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The maximum number of items to be returned in the enumeration operation.
-        /// </value> 
-        /// <remarks>
-        /// Used for query pagination.
-        /// '-1' Used for dynamic page size.
-        /// This is a maximum. Query can return 0 items in the page.
-        /// </remarks>
-        public int? MaxItemCount { get; set; }
-
-        /// <summary>
-        /// Gets or sets the request continuation token in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The request continuation token.
-        /// </value>>
-        public string RequestContinuation { get; set; }
-
-        /// <summary>
-        /// Gets or sets the number of concurrent operations run client side during 
-        /// parallel query execution in the Azure Cosmos DB service. 
-        /// A positive property value limits the number of 
-        /// concurrent operations to the set value. If it is set to less than 0, the 
-        /// system automatically decides the number of concurrent operations to run.
-        /// </summary>
-        /// <value>
-        /// The maximum number of concurrent operations during parallel execution. 
-        /// Defaults will be executed serially with no-parallelism
-        /// </value> 
-        internal int? MaxConcurrency { get; set; }
-
-        /// <summary>
-        /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
-        /// </summary>
-        internal PartitionKey PartitionKey { get; set; }
-
         internal bool EnableCrossPartitionQuery { get; set; }
 
         internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
