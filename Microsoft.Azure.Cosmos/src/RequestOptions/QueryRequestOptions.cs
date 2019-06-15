@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// ResponseContinuationTokenLimitInKb is used to limit the length of continuation token in the query response. Valid values are >= 0.
         /// </para>
         /// </remarks>
-        public virtual int? ResponseContinuationTokenLimitInKb { get; set; }
+        public int? ResponseContinuationTokenLimitInKb { get; set; }
 
         /// <summary>
         /// Gets or sets the option to enable scans on the queries which couldn't be served
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Option is true if scan on queries is enabled; otherwise, false.
         /// </value>
-        public virtual bool? EnableScanInQuery { get; set; }
+        public bool? EnableScanInQuery { get; set; }
 
         /// <summary>
         /// Gets or sets the option to enable low precision order by in the Azure Cosmos DB service.
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The option to enable low-precision order by.
         /// </value>
-        public virtual bool? EnableLowPrecisionOrderBy { get; set; }
+        public bool? EnableLowPrecisionOrderBy { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is only suggestive and cannot be abided by in certain cases.
         /// </remarks>
-        public virtual int? MaxBufferedItemCount { get; set; }
+        public int? MaxBufferedItemCount { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// </para>
         /// </remarks>
-        public virtual string SessionToken { get; set; }
+        public string SessionToken { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         /// for each individual request.
         /// </para>
         /// </remarks>
-        public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
+        public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         /// '-1' Used for dynamic page size.
         /// This is a maximum. Query can return 0 items in the page.
         /// </remarks>
-        public virtual int? MaxItemCount { get; set; }
+        public int? MaxItemCount { get; set; }
 
         /// <summary>
         /// Gets or sets the request continuation token in the Azure Cosmos DB service.
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request continuation token.
         /// </value>>
-        public virtual string RequestContinuation { get; set; }
+        public string RequestContinuation { get; set; }
 
         /// <summary>
         /// Gets or sets the number of concurrent operations run client side during 
