@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The last modified timestamp associated with the resource.</value>
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        public DateTime? LastModified { get; protected set; }
+        public DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the container from the Azure Cosmos DB service. 
