@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     ResponseMessage response = task.Result;
                     this.continuationToken = response.Headers.ETag;
-                    this.HasMoreResults = ChangeFeedResultSetStreamIterator.GetHasMoreResults(this.continuationToken, response.StatusCode);
+                    this.hasMoreResultsInternal = ChangeFeedResultSetStreamIterator.GetHasMoreResults(this.continuationToken, response.StatusCode);
                     return response;
                 }, cancellationToken);
         }

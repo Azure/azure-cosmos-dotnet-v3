@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await container.ReadContainerAsync();
 
                 // read documentCollection feed.
-                FeedIterator<ContainerProperties> rr = database.GetContainersIterator();
+                FeedIterator<ContainerProperties> rr = database.GetContainerIterator();
                 List<ContainerProperties> settings = new List<ContainerProperties>();
                 while (rr.HasMoreResults)
                 {

@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual FeedIterator<DatabaseProperties> GetDatabasesIterator(
+        public virtual FeedIterator<DatabaseProperties> GetDatabaseIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {

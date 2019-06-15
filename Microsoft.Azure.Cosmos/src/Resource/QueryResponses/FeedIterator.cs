@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
         /// </summary>
-        public virtual bool HasMoreResults { get; protected set; }
+        public abstract bool HasMoreResults { get; }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
         /// </summary>
-        public virtual bool HasMoreResults { get; protected set; }
+        public abstract bool HasMoreResults { get; }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
