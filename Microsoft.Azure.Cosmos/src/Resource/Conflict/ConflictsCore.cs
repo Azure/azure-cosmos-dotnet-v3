@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
         }
 
-        public override Task<ResponseMessage> DeleteConflictAsync(
+        public override Task<ResponseMessage> DeleteAsync(
             PartitionKey partitionKey,
             ConflictProperties conflict, 
             CancellationToken cancellationToken = default(CancellationToken))
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<ConflictProperties> GetConflictsIterator(
+        public override FeedIterator<ConflictProperties> GetConflictIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConflictsFeedRequestExecutorAsync);
         }
 
-        public override FeedIterator GetConflictsStreamIterator(
+        public override FeedIterator GetConflictstreamIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {

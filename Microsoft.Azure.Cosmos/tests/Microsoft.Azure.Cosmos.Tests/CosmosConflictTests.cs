@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.DocumentServiceRequest.PartitionKeyRangeIdentity);
                 return TestHandler.ReturnSuccess();
             });
-            FeedIterator iterator = container.Conflicts.GetConflictsStreamIterator();
+            FeedIterator iterator = container.Conflicts.GetConflictstreamIterator();
             while (iterator.HasMoreResults)
             {
                 ResponseMessage responseMessage = await iterator.ReadNextAsync();
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.Id = expectedId;
 
-            await container.Conflicts.DeleteConflictAsync(partitionKey, conflictSettings);
+            await container.Conflicts.DeleteAsync(partitionKey, conflictSettings);
         }
 
         private static ContainerCore GetMockedContainer(Func<RequestMessage,

@@ -137,8 +137,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerProperties containerSettings = containerResponse.Resource;
             Assert.IsNotNull(containerSettings.ConflictResolutionPolicy);
             Assert.AreEqual(ConflictResolutionMode.LastWriterWins, containerSettings.ConflictResolutionPolicy.Mode);
-            Assert.AreEqual("/lww", containerSettings.ConflictResolutionPolicy.ConflictResolutionPath);
-            Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure));
+            Assert.AreEqual("/lww", containerSettings.ConflictResolutionPolicy.ResolutionPath);
+            Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ResolutionProcedure));
 
             // Delete container
             await containerResponse.Container.DeleteAsync();
@@ -157,8 +157,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             containerSettings = containerResponse.Resource;
             Assert.IsNotNull(containerSettings.ConflictResolutionPolicy);
             Assert.AreEqual(ConflictResolutionMode.Custom, containerSettings.ConflictResolutionPolicy.Mode);
-            Assert.AreEqual(sprocName, containerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure);
-            Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ConflictResolutionPath));
+            Assert.AreEqual(sprocName, containerSettings.ConflictResolutionPolicy.ResolutionProcedure);
+            Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ResolutionPath));
         }
 
         [TestMethod]

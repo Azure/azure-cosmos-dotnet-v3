@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the path used to resolve LastWrtierWins resolution mode <see cref="ConflictResolutionPolicy"/>.
         /// </summary>
-        /// <param name="conflictResolutionPath"> sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution. <see cref="ConflictResolutionPolicy.ConflictResolutionPath"/>.</param>
+        /// <param name="conflictResolutionPath"> sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution. <see cref="ConflictResolutionPolicy.ResolutionPath"/>.</param>
         /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
         public virtual ConflictResolutionDefinition WithLastWriterWinsResolution(string conflictResolutionPath)
         {
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the stored procedure to be used as custom conflict resolution mode <see cref="ConflictResolutionPolicy"/>.
         /// </summary>
-        /// <param name="conflictResolutionProcedure"> sets the stored procedure to be used for conflict-resolution. <see cref="ConflictResolutionPolicy.ConflictResolutionProcedure"/>.</param>
+        /// <param name="conflictResolutionProcedure"> sets the stored procedure to be used for conflict-resolution. <see cref="ConflictResolutionPolicy.ResolutionProcedure"/>.</param>
         /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
         public virtual ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure)
         {
@@ -69,13 +69,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
             if (this.conflictResolutionPath != null)
             {
                 resolutionPolicy.Mode = ConflictResolutionMode.LastWriterWins;
-                resolutionPolicy.ConflictResolutionPath = this.conflictResolutionPath;
+                resolutionPolicy.ResolutionPath = this.conflictResolutionPath;
             }
 
             if (this.conflictResolutionProcedure != null)
             {
                 resolutionPolicy.Mode = ConflictResolutionMode.Custom;
-                resolutionPolicy.ConflictResolutionProcedure = this.conflictResolutionProcedure;
+                resolutionPolicy.ResolutionProcedure = this.conflictResolutionProcedure;
             }
 
             this.attachCallback(resolutionPolicy);

@@ -255,8 +255,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ConflictResolutionPolicy = new Cosmos.ConflictResolutionPolicy()
                 {
                     Mode = Cosmos.ConflictResolutionMode.Custom,
-                    ConflictResolutionPath = "/path",
-                    ConflictResolutionProcedure = "sp"
+                    ResolutionPath = "/path",
+                    ResolutionProcedure = "sp"
                 }
             };
 
@@ -280,8 +280,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(cosmosContainerSettings.Id, collectionDeser.Id);
             Assert.AreEqual((int)cosmosContainerSettings.ConflictResolutionPolicy.Mode, (int)collectionDeser.ConflictResolutionPolicy.Mode);
-            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath, collectionDeser.ConflictResolutionPolicy.ConflictResolutionPath);
-            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure, collectionDeser.ConflictResolutionPolicy.ConflictResolutionProcedure);
+            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ResolutionPath, collectionDeser.ConflictResolutionPolicy.ConflictResolutionPath);
+            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ResolutionProcedure, collectionDeser.ConflictResolutionPolicy.ConflictResolutionProcedure);
         }
 
         [TestMethod]
