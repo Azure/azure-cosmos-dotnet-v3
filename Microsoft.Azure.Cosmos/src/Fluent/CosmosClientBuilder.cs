@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosSerializer"/>
         /// <seealso cref="CosmosClientOptions.Serializer"/>
-        public virtual CosmosClientBuilder WithCustomJsonSerializer(
+        public virtual CosmosClientBuilder WithCustomSerializer(
             CosmosSerializer cosmosJsonSerializer)
         {
             this.clientOptions.Serializer = cosmosJsonSerializer;

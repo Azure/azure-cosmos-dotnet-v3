@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
-                    cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
+                    cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
                     {
                         ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                         // We want to simulate the property not exist so ignoring the null value
