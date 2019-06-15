@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
         public void StatelessTest()
         {
             QueryRequestOptions requestOption = new QueryRequestOptions();
-            requestOption.RequestContinuation = "SomeToken";
 
             RequestMessage testMessage = new RequestMessage();
             requestOption.PopulateRequestOptions(testMessage);

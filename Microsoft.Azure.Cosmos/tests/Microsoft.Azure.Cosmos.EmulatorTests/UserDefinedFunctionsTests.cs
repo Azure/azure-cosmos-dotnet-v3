@@ -107,8 +107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@status", "Done");
             
              FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
-                 sqlQueryDefinition: sqlQuery,
-                 partitionKey: new Cosmos.PartitionKey("Done"));
+                 sqlQueryDefinition: sqlQuery);
 
             HashSet<string> iterIds = new HashSet<string>();
             while (feedIterator.HasMoreResults)

@@ -64,14 +64,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 OperationType = OperationType.SqlQuery
             };
 
-            options.Object.EnableCrossPartitionQuery = true;
             options.Object.EnableScanInQuery = true;
             options.Object.SessionToken = "SessionToken";
             options.Object.ConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.BoundedStaleness;
             options.Object.PopulateRequestOptions(request);
 
             Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.IsQuery]);
-            Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.EnableCrossPartitionQuery]);
             Assert.AreEqual(RuntimeConstants.MediaTypes.QueryJson, request.Headers[HttpConstants.HttpHeaders.ContentType]);
             Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.EnableScanInQuery]);
             Assert.AreEqual(options.Object.SessionToken, request.Headers[HttpConstants.HttpHeaders.SessionToken]);

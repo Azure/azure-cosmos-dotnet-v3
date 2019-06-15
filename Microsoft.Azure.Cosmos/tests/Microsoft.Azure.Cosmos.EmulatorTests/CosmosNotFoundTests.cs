@@ -54,15 +54,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await container.DeleteAsync();
 
-            var crossPartitionQueryIterator = container.GetItemQueryStreamIterator("select * from t where true", maxConcurrency: 2);
+            var crossPartitionQueryIterator = container.GetItemQueryStreamIterator(
+                "select * from t where true", 
+                requestOptions: new QueryRequestOptions() { MaxConcurrency= 2});
+
             var queryResponse = await crossPartitionQueryIterator.ReadNextAsync();
             Assert.IsNotNull(queryResponse);
             Assert.AreEqual(HttpStatusCode.Gone, queryResponse.StatusCode);
 
-            var queryIterator = container.GetItemQueryStreamIterator("select * from t where true", maxConcurrency: 1, partitionKey: new Cosmos.PartitionKey("testpk"));
+            var queryIterator = container.GetItemQueryStreamIterator(
+                "select * from t where true", 
+                requestOptions: new QueryRequestOptions()
+                    {
+                        MaxConcurrency = 1,
+                        PartitionKey = new Cosmos.PartitionKey("testpk")
+                    });
+
             this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());
 
-            var crossPartitionQueryIterator2 = container.GetItemQueryStreamIterator("select * from t where true", maxConcurrency: 2);
+            var crossPartitionQueryIterator2 = container.GetItemQueryStreamIterator(
+                "select * from t where true", 
+                requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
+
             this.VerifyQueryNotFoundResponse(await crossPartitionQueryIterator2.ReadNextAsync());
 
             await db.DeleteAsync();
@@ -106,7 +119,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Stream create = jsonSerializer.ToStream<dynamic>(randomItem);
                 this.VerifyNotFoundResponse(await container.CreateItemStreamAsync(create, new PartitionKey(randomItem.pk)));
 
-                var queryIterator = container.GetItemQueryStreamIterator("select * from t where true", maxConcurrency: 2);
+                var queryIterator = container.GetItemQueryStreamIterator(
+                    "select * from t where true", 
+                    requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
+
                 this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());
 
                 var feedIterator = container.GetItemStreamIterator();
