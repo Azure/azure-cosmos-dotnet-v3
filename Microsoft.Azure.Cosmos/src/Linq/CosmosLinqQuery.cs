@@ -155,6 +155,29 @@ namespace Microsoft.Azure.Cosmos.Linq
             return container.LinkUri.ToString();
         }
 
+        public FeedIterator<T> ToFeedIterator(string continuationToken = null)
+        {
+            CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
+                client: this.queryClient,
+                resourceTypeEnum: ResourceType.Document,
+                operationType: OperationType.Query,
+                resourceType: typeof(T),
+                sqlQuerySpec: DocumentQueryEvaluator.Evaluate(this.expression),
+                continuationToken: continuationToken,
+                queryRequestOptions: cosmosQueryRequestOptions,
+                resourceLink: container.LinkUri,
+                isContinuationExpected: true,
+                allowNonValueAggregateQuery: true,
+                correlatedActivityId: Guid.NewGuid());
+
+            return new FeedIteratorCore<T>(
+                cosmosQueryRequestOptions.MaxItemCount,
+                continuationToken,
+                cosmosQueryRequestOptions,
+                container.NextResultSetAsync<T>,
+                cosmosQueryExecution);
+        }
+
         public void Dispose()
         {
             //NOTHING TO DISPOSE HERE

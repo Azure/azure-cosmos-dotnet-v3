@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary>
-    /// This class provides extension method for converting a <see cref="System.Linq.IQueryable{T}"/> object to a  SqlQueryText.
+    /// This class provides extension methods used within cosmos sdk code.
     /// </summary>
     public static class CosmosExtensions
     {
@@ -32,6 +32,28 @@ namespace Microsoft.Azure.Cosmos
         public static string ToSqlQueryText<T>(this IQueryable<T> query)
         {
             return ((CosmosLinqQuery<T>)query).ToSqlQueryText();
+        }
+
+        /// <summary>
+        /// This extension method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
+        /// </summary>
+        /// <typeparam name="T">the type of object to query.</typeparam>
+        /// <param name="query">the IQueryable{T} to be converted.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <returns>An iterator to go through the items.</returns>
+        /// <example>
+        /// This example shows how to get FeedIterator from LINQ.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
+        /// FeedIterator<ToDoActivity> setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator()
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static FeedIterator<T> ToFeedIterator<T>(this IQueryable<T> query, string continuationToken = null)
+        {
+            return ((CosmosLinqQuery<T>)query).ToFeedIterator(continuationToken);
         }
     }
 }
