@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return container.LinkUri.ToString();
         }
 
-        public FeedIterator<T> ToFeedIterator(string continuationToken = null)
+        public FeedIterator<T> ToFeedIterator()
         {
             CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
                 sqlQuerySpec: DocumentQueryEvaluator.Evaluate(this.expression),
-                continuationToken: continuationToken,
+                continuationToken: null,
                 queryRequestOptions: cosmosQueryRequestOptions,
                 resourceLink: container.LinkUri,
                 isContinuationExpected: true,
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             return new FeedIteratorCore<T>(
                 cosmosQueryRequestOptions.MaxItemCount,
-                continuationToken,
+                null,
                 cosmosQueryRequestOptions,
                 container.NextResultSetAsync<T>,
                 cosmosQueryExecution);

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public static string ToSqlQueryText<T>(this IQueryable<T> query)
+        internal static string ToSqlQueryText<T>(this IQueryable<T> query)
         {
             return ((CosmosLinqQuery<T>)query).ToSqlQueryText();
         }
@@ -39,7 +39,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <typeparam name="T">the type of object to query.</typeparam>
         /// <param name="query">the IQueryable{T} to be converted.</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <example>
         /// This example shows how to get FeedIterator from LINQ.
@@ -51,9 +50,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public static FeedIterator<T> ToFeedIterator<T>(this IQueryable<T> query, string continuationToken = null)
+        public static FeedIterator<T> ToFeedIterator<T>(this IQueryable<T> query)
         {
-            return ((CosmosLinqQuery<T>)query).ToFeedIterator(continuationToken);
+            return ((CosmosLinqQuery<T>)query).ToFeedIterator();
         }
     }
 }
