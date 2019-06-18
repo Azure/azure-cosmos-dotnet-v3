@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
     /// in case writes from different regions result in conflicts on items in the container in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class ConflictResolutionPolicy
+    public class ConflictResolutionPolicy
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConflictResolutionPolicy"/> class for the Azure Cosmos DB service.
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionPath, NullValueHandling = NullValueHandling.Ignore)]
-        public string ConflictResolutionPath { get; set; }
+        public string ResolutionPath { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="StoredProcedureProperties"/> which is used for conflict resolution in the Azure Cosmos DB service.
@@ -71,6 +71,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
-        public string ConflictResolutionProcedure { get; set; }
+        public string ResolutionProcedure { get; set; }
     }
 }

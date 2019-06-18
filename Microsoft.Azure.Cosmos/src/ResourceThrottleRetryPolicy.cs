@@ -75,11 +75,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
+        /// <param name="cosmosResponseMessage"><see cref="ResponseMessage"/> in return of the request</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage,
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

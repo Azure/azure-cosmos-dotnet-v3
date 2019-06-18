@@ -10,13 +10,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Spatial index fluent definition.
     /// </summary>
     /// <seealso cref="SpatialPath"/>
-    public class SpatialIndexFluentDefinition<T>
+    public class SpatialIndexDefinition<T>
     {
         private readonly SpatialPath spatialSpec = new SpatialPath();
         private readonly T parent;
         private readonly Action<SpatialPath> attachCallback;
 
-        internal SpatialIndexFluentDefinition(
+        internal SpatialIndexDefinition(
             T parent,
             Action<SpatialPath> attachCallback)
         {
@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Adds a path to the current <see cref="SpatialPath"/> definition.
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
-        /// <returns>An instance of the current <see cref="SpatialIndexFluentDefinition{T}"/>.</returns>
-        public virtual SpatialIndexFluentDefinition<T> Path(string path)
+        /// <returns>An instance of the current <see cref="SpatialIndexDefinition{T}"/>.</returns>
+        public SpatialIndexDefinition<T> Path(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -45,8 +45,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /property</param>
         /// <param name="spatialTypes">Set of <see cref="SpatialType"/> to apply to the path.</param>
-        /// <returns>An instance of the current <see cref="SpatialIndexFluentDefinition{T}"/>.</returns>
-        public virtual SpatialIndexFluentDefinition<T> Path(
+        /// <returns>An instance of the current <see cref="SpatialIndexDefinition{T}"/>.</returns>
+        public SpatialIndexDefinition<T> Path(
             string path,
             params SpatialType[] spatialTypes)
         {
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual T Attach()
+        public T Attach()
         {
             this.attachCallback(this.spatialSpec);
             return this.parent;

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     {
         protected ReadFeedResponse(
             IEnumerable<T> resource,
-            CosmosResponseMessageHeaders responseMessageHeaders,
+            Headers responseMessageHeaders,
             bool hasMoreResults)
             : base(
                 httpStatusCode: HttpStatusCode.Accepted,
@@ -35,9 +35,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            CosmosResponseMessageHeaders responseMessageHeaders,
+            Headers responseMessageHeaders,
             Stream stream,
-            CosmosJsonSerializer jsonSerializer,
+            CosmosSerializer jsonSerializer,
             bool hasMoreResults)
         {
             using (stream)
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            CosmosResponseMessageHeaders responseMessageHeaders,
+            Headers responseMessageHeaders,
             IEnumerable<TInput> resources,
             bool hasMoreResults)
         {

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     ///     .UseParameter("@expensive", 9000)
     ///     .UseParameter("@status", "Done");
     ///
-    /// FeedIterator<double> feedIterator = this.container.Items.CreateItemQuery<double>(
+    /// FeedIterator<double> feedIterator = this.container.Items.GetItemsQueryIterator<double>(
     ///     sqlQueryDefinition: sqlQuery,
     ///     partitionKey: "Done");
     ///
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <value>The body of the user defined function.</value>
         /// <remarks>This must be a valid JavaScript function e.g. "function (input) { return input.toLowerCase(); }".</remarks>
         [JsonProperty(PropertyName = Constants.Properties.Body)]
-        public virtual string Body { get; set; }
+        public string Body { get; set; }
 
         /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public virtual string Id { get; set; }
+        public string Id { get; set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -90,6 +90,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag)]
-        public virtual string ETag { get; private set; }
+        public string ETag { get; private set; }
     }
 }

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             long? receivedEstimation = 0;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task WhenLeasesHaveContinuationTokenNullReturn0()
         {
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     return Task.CompletedTask;
                 })
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task CountPendingDocuments()
         {
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     return Task.CompletedTask;
                 })
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;

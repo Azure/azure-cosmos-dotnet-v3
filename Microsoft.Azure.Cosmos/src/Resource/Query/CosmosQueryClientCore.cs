@@ -71,10 +71,10 @@ namespace Microsoft.Azure.Cosmos
             string containerResourceId,
             QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -97,11 +97,11 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+            using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             string containerResourceId,
-            CosmosResponseMessage cosmosResponseMessage)
+            ResponseMessage cosmosResponseMessage)
         {
             using (cosmosResponseMessage)
             {

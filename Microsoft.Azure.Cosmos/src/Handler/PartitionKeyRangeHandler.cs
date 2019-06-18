@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// It doesn't participates in split logic directly but on split retry, will select the new 
     /// appropriate partition-key-range id after a forced refresh of the CollectionRoutingMap.
     /// </summary>
-    internal class PartitionKeyRangeHandler : CosmosRequestHandler
+    internal class PartitionKeyRangeHandler : RequestHandler
     {
         private readonly CosmosClient client;
         private PartitionRoutingHelper partitionRoutingHelper;
@@ -40,11 +40,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.partitionRoutingHelper = partitionRoutingHelper ?? new PartitionRoutingHelper();
         }
 
-        public override async Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        public override async Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
-            CosmosResponseMessage response = null;
+            ResponseMessage response = null;
             string originalContinuation = request.Headers.Continuation;
             try
             {
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }            
             catch (DocumentClientException ex)
             {
-                CosmosResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
+                ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
                 this.SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private void SetOriginalContinuationToken(CosmosRequestMessage request, CosmosResponseMessage response, string originalContinuation)
+        private void SetOriginalContinuationToken(RequestMessage request, ResponseMessage response, string originalContinuation)
         {
             request.Headers.Continuation = originalContinuation;
             if (response != null)

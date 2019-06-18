@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         private readonly Container container;
         private readonly DocumentServiceLeaseStoreManagerOptions options;
+        private static readonly QueryRequestOptions queryRequestOptions = new QueryRequestOptions() { MaxConcurrency = 0 };
 
         public DocumentServiceLeaseContainerCosmos(
             Container container,
@@ -45,13 +46,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (string.IsNullOrEmpty(prefix))
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
-            var query = this.container.CreateItemQuery<DocumentServiceLeaseCore>(
+            var query = this.container.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
-                0 /* max concurrency */);
+                requestOptions: queryRequestOptions);
+
             var leases = new List<DocumentServiceLeaseCore>();
             while (query.HasMoreResults)
             {
-                leases.AddRange(await query.FetchNextSetAsync().ConfigureAwait(false));
+                leases.AddRange(await query.ReadNextAsync().ConfigureAwait(false));
             }
 
             return leases;

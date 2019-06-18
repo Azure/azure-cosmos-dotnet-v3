@@ -89,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQuerySpec,
+                continuationToken: null,
                 queryRequestOptions: queryRequestOptions,
                 resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,

@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
         }
 
-        internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(CosmosRequestMessage request)
+        internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
             return Task.FromResult<IDocumentClientRetryPolicy>(new InvalidPartitionExceptionRetryPolicy(null));
         }

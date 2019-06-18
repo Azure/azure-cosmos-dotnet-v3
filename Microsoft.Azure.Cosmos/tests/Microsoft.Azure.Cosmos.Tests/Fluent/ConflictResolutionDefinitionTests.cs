@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
     using Moq;
 
     [TestClass]
-    public class ConflictResolutionFluentDefinitionTests
+    public class ConflictResolutionDefinitionTests
     {
         [TestMethod]
         public void AttachReturnsCorrectResponse()
         {
-            Mock<ContainerFluentDefinitionForCreate> mockContainerDefinition = new Mock<ContainerFluentDefinitionForCreate>();
+            Mock<ContainerBuilder> mockContainerDefinition = new Mock<ContainerBuilder>();
 
             // LastWrite wins conflict resolution mode 
             {
@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 {
                     Assert.IsNotNull(ConflictResolutionPolicy);
                     Assert.AreEqual(ConflictResolutionMode.LastWriterWins, ConflictResolutionPolicy.Mode);
-                    Assert.AreEqual("/lww", ConflictResolutionPolicy.ConflictResolutionPath);
+                    Assert.AreEqual("/lww", ConflictResolutionPolicy.ResolutionPath);
                 };
 
-                ConflictResolutionFluentDefinition conflictResolutionFluentDefinition = new ConflictResolutionFluentDefinition(
+                ConflictResolutionDefinition conflictResolutionFluentDefinition = new ConflictResolutionDefinition(
                     mockContainerDefinition.Object,
                     callback);
 
@@ -41,10 +41,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 {
                     Assert.IsNotNull(ConflictResolutionPolicy);
                     Assert.AreEqual(ConflictResolutionMode.Custom, ConflictResolutionPolicy.Mode);
-                    Assert.AreEqual("testsproc", ConflictResolutionPolicy.ConflictResolutionProcedure);
+                    Assert.AreEqual("testsproc", ConflictResolutionPolicy.ResolutionProcedure);
                 };
 
-                ConflictResolutionFluentDefinition conflictResolutionFluentDefinition = new ConflictResolutionFluentDefinition(
+                ConflictResolutionDefinition conflictResolutionFluentDefinition = new ConflictResolutionDefinition(
                     mockContainerDefinition.Object,
                     callback);
 

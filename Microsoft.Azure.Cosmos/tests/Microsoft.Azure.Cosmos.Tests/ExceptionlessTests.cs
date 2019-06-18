@@ -384,8 +384,8 @@ namespace Microsoft.Azure.Cosmos
             {
             }
 
-            public override async Task<CosmosResponseMessage> SendAsync(
-                CosmosRequestMessage request,
+            public override async Task<ResponseMessage> SendAsync(
+                RequestMessage request,
                 CancellationToken cancellationToken)
             {
                 this.ProcessMessagesAsyncThrew = false;

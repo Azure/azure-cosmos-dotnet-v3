@@ -28,13 +28,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private readonly ContainerCore container;
         private readonly CosmosQueryClientCore queryClient;
-        private readonly CosmosJsonSerializer cosmosJsonSerializer;
+        private readonly CosmosSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
 
         public CosmosLinqQuery(
            ContainerCore container,
-           CosmosJsonSerializer cosmosJsonSerializer,
+           CosmosSerializer cosmosJsonSerializer,
            CosmosQueryClientCore queryClient,
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public CosmosLinqQuery(
           ContainerCore container,
-          CosmosJsonSerializer cosmosJsonSerializer,
+          CosmosSerializer cosmosJsonSerializer,
           CosmosQueryClientCore queryClient,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution)
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (!this.allowSynchronousQueryExecution)
             {
                 throw new NotSupportedException("To execute LINQ query please set " + nameof(allowSynchronousQueryExecution) + " true or" +
-                    " use CreateItemQuery returning CosmosFeedIterator which execute asynchronously via CosmosFeedIterator");
+                    " use GetItemsQueryIterator to execute asynchronously");
             }
 
             using (CosmosQueryExecutionContext localQueryExecutionContext = CreateCosmosQueryExecutionContext())
@@ -178,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
                 sqlQuerySpec: DocumentQueryEvaluator.Evaluate(expression),
+                continuationToken: null,
                 queryRequestOptions: this.cosmosQueryRequestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: false,

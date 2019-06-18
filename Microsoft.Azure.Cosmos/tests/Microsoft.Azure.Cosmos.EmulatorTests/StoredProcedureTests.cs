@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class StoredProcedureTests : BaseCosmosClientHelper
     {
-        private static CosmosJsonSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
+        private static CosmosSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
         private Container container = null;
         private Scripts scripts = null;
         private StoredProcedureRequestOptions requestOptions = new StoredProcedureRequestOptions();
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse cosmosContainerResponse = await this.database
                 .CreateContainerIfNotExistsAsync(containerName, "/user");
             this.container = cosmosContainerResponse;
-            this.scripts = this.container.GetScripts();
+            this.scripts = this.container.Scripts;
         }
 
         [TestCleanup]
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
-            CosmosResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
+            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
                 new Cosmos.PartitionKey(testPartitionId),
                 sprocId,
                 cosmosJsonSerializer.ToStream(new string[] { Guid.NewGuid().ToString() }),
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProceduresIterator();
             while (iter.HasMoreResults)
             {
-                FeedResponse<StoredProcedureProperties> currentResultSet = await iter.FetchNextSetAsync();
+                FeedResponse<StoredProcedureProperties> currentResultSet = await iter.ReadNextAsync();
                 {
                     foreach (StoredProcedureProperties storedProcedureSettingsEntry in currentResultSet)
                     {
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
-            CosmosResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(new Cosmos.PartitionKey(testPartitionId), sprocId, null);
+            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(new Cosmos.PartitionKey(testPartitionId), sprocId, null);
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
             using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.client = client;
         }
 
-        internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(CosmosRequestMessage request)
+        internal override Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.client.DocumentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             Debug.Assert(request.OnBeforeSendRequestActions == null, "Cosmos Request message only supports a single retry policy");

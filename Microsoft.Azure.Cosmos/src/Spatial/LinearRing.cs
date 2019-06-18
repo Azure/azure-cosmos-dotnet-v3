@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
     using Newtonsoft.Json;
 
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Though a <see cref="LinearRing" /> is not explicitly represented as a GeoJSON geometry type, it is referred to in
     /// the <see cref="Polygon"/> geometry type definition in the Azure Cosmos DB service.
     /// </summary>
+    [DataContract]
     [JsonConverter(typeof(LinearRingJsonConverter))]
     public sealed class LinearRing : IEquatable<LinearRing>
     {
@@ -43,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Positions of the <see cref="LinearRing"/>.
         /// </value>
+        [DataMember(Name = "coordinates")]
         public ReadOnlyCollection<Position> Positions { get; private set; }
 
         /// <summary>

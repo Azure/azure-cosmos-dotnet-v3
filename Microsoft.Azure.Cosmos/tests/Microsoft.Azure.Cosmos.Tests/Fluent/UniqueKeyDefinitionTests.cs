@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
     using Moq;
 
     [TestClass]
-    public class UniqueKeyFluentDefinitionTests
+    public class UniqueKeyDefinitionTests
     {
         [TestMethod]
         public void AttachReturnsCorrectResponse()
         {
-            Mock<ContainerFluentDefinitionForCreate> mockContainerDefinition = new Mock<ContainerFluentDefinitionForCreate>();
+            Mock<ContainerBuilder> mockContainerDefinition = new Mock<ContainerBuilder>();
             Action<UniqueKey> callback = (uniqueKey) =>
             {
                 Assert.AreEqual(2, uniqueKey.Paths.Count);
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 Assert.AreEqual("/property2", uniqueKey.Paths[1]);
             };
 
-            UniqueKeyFluentDefinition uniqueKeyFluentDefinitionCore = new UniqueKeyFluentDefinition(
+            UniqueKeyDefinition uniqueKeyFluentDefinitionCore = new UniqueKeyDefinition(
                 mockContainerDefinition.Object,
                 callback);
 

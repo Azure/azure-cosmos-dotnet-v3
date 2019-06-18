@@ -18,8 +18,8 @@ namespace Microsoft.Azure.Cosmos
         internal ClientContextCore(
             CosmosClient client,
             CosmosClientOptions clientOptions,
-            CosmosJsonSerializer userJsonSerializer,
-            CosmosJsonSerializer defaultJsonSerializer,
+            CosmosSerializer userJsonSerializer,
+            CosmosSerializer defaultJsonSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IDocumentQueryClient DocumentQueryClient { get; }
 
-        internal override CosmosJsonSerializer CosmosSerializer { get; }
+        internal override CosmosSerializer CosmosSerializer { get; }
 
-        internal override CosmosJsonSerializer PropertiesSerializer { get; }
+        internal override CosmosSerializer PropertiesSerializer { get; }
 
         internal override CosmosResponseFactory ResponseFactory { get; }
 
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+        internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync(
@@ -118,8 +118,8 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore cosmosContainerCore,
             PartitionKey partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Action<RequestMessage> requestEnricher,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync<T>(

@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
         }
 
-        public override Task<CosmosResponseMessage> DeleteConflictAsync(
-            PartitionKey partitionKey,
+        public override Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict, 
+            PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (partitionKey == null)
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<ConflictProperties> GetConflictsIterator(
+        public override FeedIterator<ConflictProperties> GetConflictIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConflictsFeedRequestExecutorAsync);
         }
 
-        public override FeedIterator GetConflictsStreamIterator(
+        public override FeedIterator GetConflicttreamIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
@@ -88,8 +88,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
-            PartitionKey partitionKey, 
             ConflictProperties cosmosConflict, 
+            PartitionKey partitionKey, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (partitionKey == null)
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
-            CosmosDatabaseCore databaseCore = (CosmosDatabaseCore)this.container.Database;
+            DatabaseCore databaseCore = (DatabaseCore)this.container.Database;
             string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
             string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
                 uriPathSegment: Paths.DocumentsPathSegment,
                 id: cosmosConflict.SourceResourceId);
 
-            Task<CosmosResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
+            Task<ResponseMessage> response = this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: itemLink,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.Read,
@@ -161,14 +161,14 @@ namespace Microsoft.Azure.Cosmos
             return default(T);
         }
 
-        private Task<CosmosResponseMessage> ConflictsFeedStreamRequestExecutorAsync(
+        private Task<ResponseMessage> ConflictsFeedStreamRequestExecutorAsync(
             int? maxItemCount,
             string continuationToken,
             RequestOptions options,
             object state,
             CancellationToken cancellationToken)
         {
-            return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
+            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Conflict,
                 operationType: OperationType.ReadFeed,

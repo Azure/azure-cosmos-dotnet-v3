@@ -5,10 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using System.Runtime.Serialization;
 
     /// <summary>
     /// Coordinate Reference System which is identified by name in the Azure Cosmos DB service.
     /// </summary>
+    [DataContract]
     public sealed class NamedCrs : Crs, IEquatable<NamedCrs>
     {
         /// <summary>
@@ -34,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Name identifying a coordinate reference system. For example "urn:ogc:def:crs:OGC:1.3:CRS84".
         /// </value>
+        [DataMember(Name = "name")]
         public string Name { get; private set; }
 
         /// <summary>

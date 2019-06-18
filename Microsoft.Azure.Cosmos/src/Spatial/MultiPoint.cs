@@ -8,12 +8,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Geometry consisting of several points.
     /// </summary>
     /// <seealso cref="Point"/>.
+    [DataContract]
     internal sealed class MultiPoint : Geometry, IEquatable<MultiPoint>
     {
         /// <summary>
@@ -62,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Collections of <see cref="Position"/> representing individual points.
         /// </value>
+        [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public ReadOnlyCollection<Position> Points { get; private set; }
 

@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string containerRid,
             IEnumerable<CosmosElement> cosmosElements,
             ResourceType resourceType,
-            CosmosJsonSerializer jsonSerializer,
+            CosmosSerializer jsonSerializer,
             CosmosSerializationOptions cosmosSerializationOptions = null)
         {
             if (!cosmosElements.Any())

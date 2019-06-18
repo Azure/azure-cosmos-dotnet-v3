@@ -5,11 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Point geometry class in the Azure Cosmos DB service.
     /// </summary>
+    [DataContract]
     public sealed class Point : Geometry, IEquatable<Point>
     {
         /// <summary>
@@ -74,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Coordinates of the point.
         /// </value>
+        [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public Position Position { get; private set; }
 

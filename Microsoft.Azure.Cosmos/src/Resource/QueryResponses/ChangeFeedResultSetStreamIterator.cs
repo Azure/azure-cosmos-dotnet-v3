@@ -29,14 +29,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.nextResultSetDelegate(this.MaxItemCount, this.continuationToken, this.queryOptions, this.state, cancellationToken)
                 .ContinueWith(task =>
                 {
-                    CosmosResponseMessage response = task.Result;
+                    ResponseMessage response = task.Result;
                     this.continuationToken = response.Headers.ETag;
-                    this.HasMoreResults = ChangeFeedResultSetStreamIterator.GetHasMoreResults(this.continuationToken, response.StatusCode);
+                    this.hasMoreResultsInternal = ChangeFeedResultSetStreamIterator.GetHasMoreResults(this.continuationToken, response.StatusCode);
                     return response;
                 }, cancellationToken);
         }

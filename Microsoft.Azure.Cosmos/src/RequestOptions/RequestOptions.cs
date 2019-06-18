@@ -21,10 +21,10 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(string, T, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>
-        /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(PartitionKey, string, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
+        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>
+        /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
         /// </remarks>
-        public virtual string IfMatchEtag { get; set; }
+        public string IfMatchEtag { get; set; }
 
         /// <summary>
         /// Gets or sets the If-None-Match (ETag) associated with the request in the Azure Cosmos DB service.
@@ -32,13 +32,13 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Most commonly used to detect changes to the resource
         /// </remarks>
-        public virtual string IfNoneMatchEtag { get; set; }
+        public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        public virtual void FillRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal virtual void PopulateRequestOptions(RequestMessage request)
         {
             if (this.Properties != null)
             {
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="request">The current request.</param>
         /// <param name="consistencyLevel">The desired Consistency level.</param>
-        protected static void SetConsistencyLevel(CosmosRequestMessage request, ConsistencyLevel? consistencyLevel)
+        internal static void SetConsistencyLevel(RequestMessage request, ConsistencyLevel? consistencyLevel)
         {
             if (consistencyLevel != null && consistencyLevel.HasValue)
             {
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="request">The current request.</param>
         /// <param name="sessionToken">The current session token.</param>
-        protected static void SetSessionToken(CosmosRequestMessage request, string sessionToken)
+        internal static void SetSessionToken(RequestMessage request, string sessionToken)
         {
             if (!string.IsNullOrWhiteSpace(sessionToken))
             {

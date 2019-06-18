@@ -15,21 +15,21 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a conflict from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the conflict.</param>
         /// <param name="conflict">The conflict to delete.</param>
+        /// <param name="partitionKey">The partition key for the conflict.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         /// <seealso cref="ConflictProperties"/>
-        public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
-            PartitionKey partitionKey,
+        public abstract Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
+            PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the item that originated the conflict.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="conflict">The conflict for which we want to read the item.</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The current state of the item associated with the conflict.</returns>
         /// <seealso cref="ConflictProperties"/>
@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
-            PartitionKey partitionKey,
             ConflictProperties conflict,
+            PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictsIterator();
+        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     foreach(ConflictProperties item in await conflictIterator.FetchNextSetAsync())
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<ConflictProperties> GetConflictsIterator(
+        public abstract FeedIterator<ConflictProperties> GetConflictIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator conflictIterator = await conflicts.GetConflictsStreamIterator();
+        /// FeedIterator conflictIterator = await conflicts.GetConflictStreamIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetConflictsStreamIterator(
+        public abstract FeedIterator GetConflicttreamIterator(
             int? maxItemCount = null,
             string continuationToken = null);
     }

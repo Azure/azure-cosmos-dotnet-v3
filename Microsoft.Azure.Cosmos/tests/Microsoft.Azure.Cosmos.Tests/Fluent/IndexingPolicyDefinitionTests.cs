@@ -11,19 +11,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
     using Moq;
 
     [TestClass]
-    public class IndexingPolicyFluentDefinitionTests
+    public class IndexingPolicyDefinitionTests
     {
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithIndexingMode()
         {
-            Mock<ContainerFluentDefinitionForCreate> mockContainerPolicyDefinition = new Mock<ContainerFluentDefinitionForCreate>();
+            Mock<ContainerBuilder> mockContainerPolicyDefinition = new Mock<ContainerBuilder>();
             Action<IndexingPolicy> callback = (policy) =>
             {
                 Assert.IsFalse(policy.Automatic);
                 Assert.AreEqual(IndexingMode.None, policy.IndexingMode);
             };
 
-            IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate> indexingPolicyFluentDefinitionCore = new IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>(
+            IndexingPolicyDefinition<ContainerBuilder> indexingPolicyFluentDefinitionCore = new IndexingPolicyDefinition<ContainerBuilder>(
                 mockContainerPolicyDefinition.Object,
                 callback);
 
@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithSpatialIndexes()
         {
-            Mock<ContainerFluentDefinitionForCreate> mockContainerPolicyDefinition = new Mock<ContainerFluentDefinitionForCreate>();
+            Mock<ContainerBuilder> mockContainerPolicyDefinition = new Mock<ContainerBuilder>();
             Action<IndexingPolicy> callback = (policy) =>
             {
                 Assert.AreEqual(1, policy.SpatialIndexes.Count);
                 Assert.AreEqual("/path", policy.SpatialIndexes[0].Path);
             };
 
-            IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate> indexingPolicyFluentDefinitionCore = new IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>(
+            IndexingPolicyDefinition<ContainerBuilder> indexingPolicyFluentDefinitionCore = new IndexingPolicyDefinition<ContainerBuilder>(
                 mockContainerPolicyDefinition.Object,
                 callback);
 
@@ -57,14 +57,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithExcludedPaths()
         {
-            Mock<ContainerFluentDefinitionForCreate> mockContainerPolicyDefinition = new Mock<ContainerFluentDefinitionForCreate>();
+            Mock<ContainerBuilder> mockContainerPolicyDefinition = new Mock<ContainerBuilder>();
             Action<IndexingPolicy> callback = (policy) =>
             {
                 Assert.AreEqual(1, policy.ExcludedPaths.Count);
                 Assert.AreEqual("/path", policy.ExcludedPaths[0].Path);
             };
 
-            IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate> indexingPolicyFluentDefinitionCore = new IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>(
+            IndexingPolicyDefinition<ContainerBuilder> indexingPolicyFluentDefinitionCore = new IndexingPolicyDefinition<ContainerBuilder>(
                 mockContainerPolicyDefinition.Object,
                 callback);
 
@@ -78,14 +78,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithIncludedPaths()
         {
-            Mock<ContainerFluentDefinitionForCreate> mockContainerPolicyDefinition = new Mock<ContainerFluentDefinitionForCreate>();
+            Mock<ContainerBuilder> mockContainerPolicyDefinition = new Mock<ContainerBuilder>();
             Action<IndexingPolicy> callback = (policy) =>
             {
                 Assert.AreEqual(1, policy.IncludedPaths.Count);
                 Assert.AreEqual("/path", policy.IncludedPaths[0].Path);
             };
 
-            IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate> indexingPolicyFluentDefinitionCore = new IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>(
+            IndexingPolicyDefinition<ContainerBuilder> indexingPolicyFluentDefinitionCore = new IndexingPolicyDefinition<ContainerBuilder>(
                 mockContainerPolicyDefinition.Object,
                 callback);
 
@@ -99,14 +99,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithCompositeIndex()
         {
-            Mock<ContainerFluentDefinitionForCreate> mockContainerPolicyDefinition = new Mock<ContainerFluentDefinitionForCreate>();
+            Mock<ContainerBuilder> mockContainerPolicyDefinition = new Mock<ContainerBuilder>();
             Action<IndexingPolicy> callback = (policy) =>
             {
                 Assert.AreEqual(1, policy.CompositeIndexes.Count);
                 Assert.AreEqual("/path", policy.CompositeIndexes[0][0].Path);
             };
 
-            IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate> indexingPolicyFluentDefinitionCore = new IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>(
+            IndexingPolicyDefinition<ContainerBuilder> indexingPolicyFluentDefinitionCore = new IndexingPolicyDefinition<ContainerBuilder>(
                 mockContainerPolicyDefinition.Object,
                 callback);
 

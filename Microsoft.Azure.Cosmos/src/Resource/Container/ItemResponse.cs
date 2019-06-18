@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal ItemResponse(
             HttpStatusCode httpStatusCode,
-            CosmosResponseMessageHeaders headers,
+            Headers headers,
             T item)
             : base(
                 httpStatusCode,

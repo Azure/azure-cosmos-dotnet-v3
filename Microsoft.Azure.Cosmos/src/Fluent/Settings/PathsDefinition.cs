@@ -9,13 +9,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// Fluent definition to specify paths.
     /// </summary>
-    public class PathsFluentDefinition<T>
+    public class PathsDefinition<T>
     {
         private readonly List<string> paths = new List<string>();
         private readonly T parent;
         private readonly Action<IEnumerable<string>> attachCallback;
 
-        internal PathsFluentDefinition(
+        internal PathsDefinition(
             T parent,
             Action<IEnumerable<string>> attachCallback)
         {
@@ -24,11 +24,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Adds a path to the current <see cref="PathsFluentDefinition{T}"/>.
+        /// Adds a path to the current <see cref="PathsDefinition{T}"/>.
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /path/*</param>
-        /// <returns>An instance of the current <see cref="PathsFluentDefinition{T}"/>.</returns>
-        public virtual PathsFluentDefinition<T> Path(string path)
+        /// <returns>An instance of the current <see cref="PathsDefinition{T}"/>.</returns>
+        public PathsDefinition<T> Path(string path)
         {
             this.paths.Add(path);
             return this;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual T Attach()
+        public T Attach()
         {
             this.attachCallback(this.paths);
             return this.parent;

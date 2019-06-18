@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
     using Moq;
 
     [TestClass]
-    public class SpatialIndexFluentDefinitionTests
+    public class SpatialIndexDefinitionTests
     {
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithSpatialType()
         {
-            Mock<IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>>();
+            Mock<IndexingPolicyDefinition<ContainerBuilder>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyDefinition<ContainerBuilder>>();
             Action<SpatialPath> callback = (spatialspec) =>
             {
                 Assert.AreEqual("/path", spatialspec.Path);
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 Assert.AreEqual(SpatialType.Point, spatialspec.SpatialTypes[1]);
             };
 
-            SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>> spatialIndexFluentDefinitionCore = new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>>(
+            SpatialIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>> spatialIndexFluentDefinitionCore = new SpatialIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>>(
                 mockIndexingPolicyDefinition.Object,
                 callback);
 
@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public void AttachReturnsCorrectResponse_WithNoSpatialType()
         {
-            Mock<IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>>();
+            Mock<IndexingPolicyDefinition<ContainerBuilder>> mockIndexingPolicyDefinition = new Mock<IndexingPolicyDefinition<ContainerBuilder>>();
             Action<SpatialPath> callback = (spatialspec) =>
             {
                 Assert.AreEqual("/path", spatialspec.Path);
                 Assert.AreEqual(0, spatialspec.SpatialTypes.Count);
             };
 
-            SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>> spatialIndexFluentDefinitionCore = new SpatialIndexFluentDefinition<IndexingPolicyFluentDefinition<ContainerFluentDefinitionForCreate>>(
+            SpatialIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>> spatialIndexFluentDefinitionCore = new SpatialIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>>(
                 mockIndexingPolicyDefinition.Object,
                 callback);
 
