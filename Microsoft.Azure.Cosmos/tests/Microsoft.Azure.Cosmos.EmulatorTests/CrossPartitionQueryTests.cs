@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<DatabaseProperties> allDatabases = client.GetDatabaseIterator();
+            FeedIterator<DatabaseProperties> allDatabases = client.GetDatabaseQueryIterator(null);
 
             while (allDatabases.HasMoreResults)
             {
@@ -1206,7 +1206,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             HashSet<int> actualPartitionKeyValues = new HashSet<int>();
             FeedIterator<int> documentQuery = container.GetItemQueryIterator<int>(
-                    sqlQueryDefinition: query,
+                    queryDefinition: query,
                     requestOptions: new QueryRequestOptions() { MaxItemCount = -1, MaxConcurrency = 100 });
 
             while (documentQuery.HasMoreResults)

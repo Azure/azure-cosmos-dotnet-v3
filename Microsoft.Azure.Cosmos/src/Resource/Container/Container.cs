@@ -683,71 +683,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the items for the container
-        /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <example>
-        /// Get an iterator for all the items under the cosmos container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        /// }
-        /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.container.GetItemIterator<ToDoActivity>();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     foreach(ToDoActivity item in await feedIterator.FetchNextSetAsync())
-        ///     {
-        ///          Console.WriteLine(item.id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator<T> GetItemIterator<T>(
-            int? maxItemCount = null,
-            string continuationToken = null);
-
-        /// <summary>
-        /// Gets an iterator to go through all the items for the container as the original CosmosResponseMessage
-        /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
-        /// <example>
-        /// Get an iterator for all the items under the cosmos container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        /// }
-        /// 
-        /// FeedIterator feedIterator = this.Container.Items.GetItemStreamIterator();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
-        ///     {
-        ///         using (StreamReader sr = new StreamReader(iterator.Content))
-        ///         {
-        ///             string content = await sr.ReadToEndAsync();
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator GetItemStreamIterator(
-            int? maxItemCount = null,
-            string continuationToken = null,
-            ItemRequestOptions requestOptions = null);
-
-        /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetStreamIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
@@ -840,7 +775,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
-        /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <example>
@@ -870,7 +805,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            QueryDefinition sqlQueryDefinition,
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 

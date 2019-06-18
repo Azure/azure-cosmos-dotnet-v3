@@ -218,27 +218,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
         }
 
-        public override FeedIterator<T> GetItemIterator<T>(
-            int? maxItemCount = null,
-            string continuationToken = null)
-        {
-            return new FeedIteratorCore<T>(
-                maxItemCount,
-                continuationToken,
-                null,
-                this.ItemFeedRequestExecutorAsync<T>);
-        }
-
-        public override FeedIterator GetItemStreamIterator(
-            int? maxItemCount = null,
-            string continuationToken = null,
-            ItemRequestOptions requestOptions = null)
-        {
-            return new FeedIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutorAsync);
-        }
-
         public override FeedIterator GetItemQueryStreamIterator(
-            QueryDefinition sqlQueryDefinition,
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
@@ -249,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
-                sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,

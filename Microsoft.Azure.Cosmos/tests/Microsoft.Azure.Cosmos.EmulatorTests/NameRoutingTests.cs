@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await container.ReadContainerAsync();
 
                 // read documentCollection feed.
-                FeedIterator<ContainerProperties> rr = database.GetContainerIterator();
+                FeedIterator<ContainerProperties> rr = database.GetContainerQueryIterator(null);
                 List<ContainerProperties> settings = new List<ContainerProperties>();
                 while (rr.HasMoreResults)
                 {
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     doc3 = await container.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(resourceRandomId), id: resourceRandomId);
 
                     // read databaseCollection feed.
-                    FeedIterator<dynamic> itemIterator = container.GetItemIterator<dynamic>();
+                    FeedIterator<dynamic> itemIterator = container.GetItemQueryIterator<dynamic>(queryDefinition: null);
                     int count = 0;
                     while (itemIterator.HasMoreResults)
                     {
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         bool bFound = false;
                         QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
                         FeedIterator<Document> docServiceQuery = container.GetItemQueryIterator<Document>(
-                            sqlQueryDefinition: sqlQueryDefinition);
+                            queryDefinition: sqlQueryDefinition);
                         while (docServiceQuery.HasMoreResults)
                         {
                             FeedResponse<Document> r = await docServiceQuery.ReadNextAsync();

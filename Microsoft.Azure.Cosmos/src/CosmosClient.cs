@@ -79,6 +79,7 @@ namespace Microsoft.Azure.Cosmos
     /// </remarks>
     public class CosmosClient : IDisposable
     {
+        private readonly Uri DatabaseRootUri = new Uri(Paths.Databases_Root, UriKind.Relative);
         private Lazy<CosmosOffers> offerSet;
 
         static CosmosClient()
@@ -391,8 +392,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets an iterator to go through all the databases for the account
         /// </summary>
-        /// <param name="maxItemCount">The max item count to return as part of the query</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <example>
         /// Get an iterator for all the database under the cosmos account
         /// <code language="c#">
@@ -408,15 +410,40 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual FeedIterator<DatabaseProperties> GetDatabaseIterator(
-            int? maxItemCount = null,
-            string continuationToken = null)
+        public virtual FeedIterator<DatabaseProperties> GetDatabaseQueryIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore<DatabaseProperties>(
-                maxItemCount,
+            FeedIterator databaseStreamIterator = this.GetDatabaseQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
-                options: null,
-                nextDelegate: this.DatabaseFeedRequestExecutorAsync);
+                requestOptions);
+
+            return new FeedStatelessIteratorCore<DatabaseProperties>(
+                databaseStreamIterator,
+                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<DatabaseProperties>);
+        }
+
+        /// <summary>
+        /// Gets an iterator to go through all the containers for the database
+        /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the containers</returns>
+        public virtual FeedIterator GetDatabaseQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedStatelessIteratorCore(
+               this.ClientContext,
+               this.DatabaseRootUri,
+               ResourceType.Collection,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
         }
 
         /// <summary>
@@ -536,9 +563,8 @@ namespace Microsoft.Azure.Cosmos
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
-            Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
+                resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
@@ -558,9 +584,8 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
             return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<DatabaseProperties>>(
-                resourceUri: resourceUri,
+                resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,

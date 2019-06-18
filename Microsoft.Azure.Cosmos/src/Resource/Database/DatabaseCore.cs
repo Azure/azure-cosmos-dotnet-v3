@@ -263,17 +263,6 @@ namespace Microsoft.Azure.Cosmos
             return this.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, cancellationToken);
         }
 
-        public override FeedIterator<ContainerProperties> GetContainerIterator(
-            int? maxItemCount = null,
-            string continuationToken = null)
-        {
-            return new FeedIteratorCore<ContainerProperties>(
-                maxItemCount,
-                continuationToken,
-                null,
-                this.ContainerFeedRequestExecutorAsync);
-        }
-
         public override Container GetContainer(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -308,15 +297,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetContainerStreamIterator(
-            int? maxItemCount = null,
             string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+            RequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(
-                maxItemCount,
+            return new FeedStatelessIteratorCore(
+               this.ClientContext,
+               this.LinkUri,
+               ResourceType.Collection,
+               continuationToken,
+               requestOptions);
+        }
+
+        public override FeedIterator<ContainerProperties> GetContainerIterator(
+            string continuationToken = null,
+            RequestOptions requestOptions = null)
+        {
+            FeedIterator databaseStreamIterator = this.GetContainerStreamIterator(
                 continuationToken,
-                requestOptions,
-                this.ContainerStreamFeedRequestExecutorAsync);
+                requestOptions);
+
+            return new FeedStatelessIteratorCore<ContainerProperties>(
+                databaseStreamIterator,
+                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<ContainerProperties>);
         }
 
         public override ContainerBuilder DefineContainer(
@@ -397,55 +399,6 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 throughput: throughput,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<ResponseMessage> ContainerStreamFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions requestOptions,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.LinkUri,
-               resourceType: ResourceType.Collection,
-               operationType: OperationType.ReadFeed,
-               cosmosContainerCore: null,
-               partitionKey: null,
-               streamPayload: null,
-               requestOptions: requestOptions,
-               requestEnricher: request =>
-               {
-                   QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                   QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-               },
-               cancellationToken: cancellationToken);
-        }
-
-        private Task<FeedResponse<ContainerProperties>> ContainerFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(state == null);
-
-            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<ContainerProperties>>(
-                resourceUri: this.LinkUri,
-                resourceType: ResourceType.Collection,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: null,
-                requestEnricher: request =>
-                {
-                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<ContainerProperties>(response),
                 cancellationToken: cancellationToken);
         }
 
