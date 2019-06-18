@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabasesIterator();
         /// {
-        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.ReadNextSet())
+        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.ReadNextAsync())
         ///     {
         ///         Console.WriteLine(databaseProperties.Id); 
         ///     }

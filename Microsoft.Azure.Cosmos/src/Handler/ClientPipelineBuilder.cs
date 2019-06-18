@@ -37,8 +37,8 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
 
-            UseRetryPolicy(retryPolicyFactory);
-            AddCustomHandlers(customHandlers);
+            this.UseRetryPolicy(retryPolicyFactory);
+            this.AddCustomHandlers(customHandlers);
         }
 
         internal IReadOnlyCollection<RequestHandler> CustomHandlers
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             current = current.InnerHandler;
 
             // Have a router handler
-            RequestHandler feedHandler = CreateDocumentFeedPipeline();
+            RequestHandler feedHandler = this.CreateDocumentFeedPipeline();
 
             Debug.Assert(feedHandler != null, nameof(feedHandler));
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
