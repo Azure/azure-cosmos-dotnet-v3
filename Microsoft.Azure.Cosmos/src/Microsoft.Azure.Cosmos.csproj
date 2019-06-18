@@ -49,6 +49,7 @@
   
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct.MyGet" Version="[$(DirectVersion)]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="1.0.0-preview" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">    
