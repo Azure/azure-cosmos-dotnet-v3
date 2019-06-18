@@ -86,11 +86,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await container.CreateItemAsync<dynamic>(
                     item: new { id = "429testid", pk = "429pkvalue" },
                     partitionKey: new Cosmos.PartitionKey("429pkvalue"));
+                Assert.Fail("Request should have thrown");
+
             }catch(CosmosException ce)
             {
                 Assert.IsNotNull(ce.RetryAfter);
-                Assert.IsNotNull(ce.ResponseHeaders);
-                Assert.AreEqual(ce.RetryAfter, ce.ResponseHeaders.RetryAfter);
+                Assert.IsNotNull(ce.Headers);
+                Assert.AreEqual(ce.RetryAfter, ce.Headers.RetryAfter);
             }
         }
 
