@@ -1168,7 +1168,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedResponse<ToDoActivity> queryResponse = await setIterator.ReadNextAsync();
                 resultsFetched += queryResponse.Count();
 
-                // For the items returned with NonePartitionKeyValue
+                var iter = queryResponse.GetEnumerator();
+                while (iter.MoveNext())
+                {
+                    ToDoActivity activity = iter.Current;
+                    Assert.AreEqual(42, activity.taskNum);
+                }
+                Assert.AreEqual(2, resultsFetched);
+            }
+
+            //V3 Asynchronous query execution with LINQ queryable extension method ToFeedIterator().
+            setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator();
+
+            resultsFetched = 0;
+            while (setIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> queryResponse = await setIterator.ReadNextAsync();
+                resultsFetched += queryResponse.Count();
+
                 var iter = queryResponse.GetEnumerator();
                 while (iter.MoveNext())
                 {
@@ -1214,6 +1231,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(exception.Message.Contains("To execute LINQ query please set allowSynchronousQueryExecution true"));
             }
         }
+
         // Move the data from None Partition to other logical partitions
         [TestMethod]
         public async Task MigrateDataInNonPartitionContainer()
