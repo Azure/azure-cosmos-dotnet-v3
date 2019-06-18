@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = statusCode;
             this.Error = error;
+            this.ResponseHeaders = new Headers();
         }
 
         internal CosmosException(
@@ -35,10 +36,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.StatusCode = cosmosResponseMessage.StatusCode;
                 this.ResponseHeaders = cosmosResponseMessage.Headers;
-                this.ActivityId = this.ResponseHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
-                this.RequestCharge = this.ResponseHeaders == null ? 0 : this.ResponseHeaders.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
+                if (this.ResponseHeaders == null)
+                {
+                    this.ResponseHeaders = new Headers();
+                }
+
+                this.ActivityId = this.ResponseHeaders.ActivityId;
+                this.RequestCharge = this.ResponseHeaders.RequestCharge;
+                this.RetryAfter = this.ResponseHeaders.RetryAfter;
                 this.SubStatusCode = (int)this.ResponseHeaders.SubStatusCode;
-                if (cosmosResponseMessage.Headers.ContentLengthAsLong > 0)
+                if (this.ResponseHeaders.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
                     {
@@ -70,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
+            this.ResponseHeaders = new Headers();
         }
 
         /// <summary>
@@ -106,14 +114,19 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ActivityId { get; }
 
         /// <summary>
+        /// Gets the retry after time. This tells how long a request should wait before doing a retry.
+        /// </summary>
+        public virtual TimeSpan? RetryAfter { get; }
+
+        /// <summary>
+        /// Gets the response headers
+        /// </summary>
+        public virtual Headers ResponseHeaders { get; }
+
+        /// <summary>
         /// Gets the internal error object
         /// </summary>
         internal virtual Error Error { get; }
-
-        /// <summary>
-        /// Gets the internal headers
-        /// </summary>
-        internal virtual Headers ResponseHeaders { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message

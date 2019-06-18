@@ -63,6 +63,38 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task TestCosmosExceptionRetryAfter()
+        {
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                return Task.FromResult(new ResponseMessage(
+                    statusCode: ((HttpStatusCode)429), 
+                    requestMessage: null, 
+                    errorMessage: "To Many Request", 
+                    error: null, 
+                    headers: new Headers() { RetryAfter = TimeSpan.FromSeconds(42) }));
+            });
+
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+               (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
+
+            Container container = client.GetDatabase("testdb")
+                                        .GetContainer("testcontainer");
+
+            try
+            {
+                await container.CreateItemAsync<dynamic>(
+                    item: new { id = "429testid", pk = "429pkvalue" },
+                    partitionKey: new Cosmos.PartitionKey("429pkvalue"));
+            }catch(CosmosException ce)
+            {
+                Assert.IsNotNull(ce.RetryAfter);
+                Assert.IsNotNull(ce.ResponseHeaders);
+                Assert.AreEqual(ce.RetryAfter, ce.ResponseHeaders.RetryAfter);
+            }
+        }
+
+        [TestMethod]
         public async Task TestNullItemPartitionKeyBehavior()
         {
             dynamic testItem = new
