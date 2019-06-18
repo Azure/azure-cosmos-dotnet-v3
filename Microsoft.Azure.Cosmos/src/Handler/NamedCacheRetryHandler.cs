@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
-    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
 
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
-            return new InvalidPartitionExceptionRetryPolicy(await client.DocumentClient.GetCollectionCacheAsync(), null);
+            return new InvalidPartitionExceptionRetryPolicy(await this.client.DocumentClient.GetCollectionCacheAsync(), null);
         }
     }
 }
