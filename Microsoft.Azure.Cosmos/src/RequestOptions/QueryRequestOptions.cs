@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos query request options
     /// </summary>
-    public class QueryRequestOptions : RequestOptions
+    public class QueryRequestOptions : ItemIteratorRequestOptions
     {
         /// <summary>
         ///  Gets or sets the <see cref="ResponseContinuationTokenLimitInKb"/> request option for document query requests in the Azure Cosmos DB service.
@@ -56,19 +56,6 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxBufferedItemCount { get; set; }
 
         /// <summary>
-        /// Gets or sets the maximum number of items to be returned in the enumeration operation in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The maximum number of items to be returned in the enumeration operation.
-        /// </value> 
-        /// <remarks>
-        /// Used for query pagination.
-        /// '-1' Used for dynamic page size.
-        /// This is a maximum. Query can return 0 items in the page.
-        /// </remarks>
-        public int? MaxItemCount { get; set; }
-
-        /// <summary>
         /// Gets or sets the number of concurrent operations run client side during 
         /// parallel query execution in the Azure Cosmos DB service. 
         /// A positive property value limits the number of 
@@ -81,60 +68,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value> 
         public int? MaxConcurrency { get; set; }
 
-        /// <summary>
-        /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
-        /// </summary>
-        public PartitionKey PartitionKey { get; set; }
-
-        /// <summary>
-        /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The token for use with session consistency.
-        /// </value>
-        ///
-        /// <remarks>
-        /// One of the <see cref="ConsistencyLevel"/> for Azure Cosmos DB is Session. In fact, this is the default level applied to accounts.
-        /// <para>
-        /// When working with Session consistency, each new write request to Azure Cosmos DB is assigned a new SessionToken.
-        /// The DocumentClient will use this token internally with each read/query request to ensure that the set consistency level is maintained.
-        ///
-        /// <para>
-        /// In some scenarios you need to manage this Session yourself;
-        /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="DocumentClient"/>
-        /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
-        /// you would have to send the SessionToken from <see cref="QueryResponse{T}"/> of the write action on one node
-        /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
-        /// If you are using a round-robin load balancer which does not maintain session affinity between requests, such as the Azure Load Balancer,
-        /// the read could potentially land on a different node to the write request, where the session was created.
-        /// </para>
-        ///
-        /// <para>
-        /// If you do not flow the Azure Cosmos DB SessionToken across as described above you could end up with inconsistent read results for a period of time.
-        /// </para>
-        ///
-        /// </para>
-        /// </remarks>
-        internal string SessionToken { get; set; }
-
-        /// <summary>
-        /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The consistency level required for the request.
-        /// </value>
-        /// <remarks>
-        /// Azure Cosmos DB offers 5 different consistency levels. Strong, Bounded Staleness, Session, Consistent Prefix and Eventual - in order of strongest to weakest consistency. <see cref="ConnectionPolicy"/>
-        /// <para>
-        /// While this is set at a database account level, Azure Cosmos DB allows a developer to override the default consistency level
-        /// for each individual request.
-        /// </para>
-        /// </remarks>
-        internal ConsistencyLevel? ConsistencyLevel { get; set; }
-
-        internal bool EnableCrossPartitionQuery { get; set; }
-
-        internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
+        internal bool EnableCrossPartitionQuery => this.PartitionKey == null;
 
         /// <summary>
         /// Gets or sets the flag that enables skip take across partitions.
@@ -149,15 +83,13 @@ namespace Microsoft.Azure.Cosmos
         {
             request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
             request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
-
-            RequestOptions.SetSessionToken(request, this.SessionToken);
-            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
-
-            // Flow the pageSize only when we are not doing client eval
-            if (this.MaxItemCount.HasValue)
+            if (this.EnableCrossPartitionQuery)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+            }
+            else
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.FalseString);
             }
 
             if (this.MaxConcurrency.HasValue && this.MaxConcurrency > 0)
@@ -180,34 +112,12 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
 
-            if (this.CosmosSerializationOptions != null)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationOptions.ContentSerializationFormat);
-            }
-
             base.PopulateRequestOptions(request);
         }
 
         internal QueryRequestOptions Clone()
         {
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
-            {
-                IfMatchEtag = this.IfMatchEtag,
-                IfNoneMatchEtag = this.IfNoneMatchEtag,
-                MaxItemCount = this.MaxItemCount,
-                ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
-                EnableScanInQuery = this.EnableScanInQuery,
-                EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
-                MaxBufferedItemCount = this.MaxBufferedItemCount,
-                SessionToken = this.SessionToken,
-                ConsistencyLevel = this.ConsistencyLevel,
-                MaxConcurrency = this.MaxConcurrency,
-                PartitionKey = this.PartitionKey,
-                CosmosSerializationOptions = this.CosmosSerializationOptions,
-                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
-                Properties = this.Properties
-            };
-
+            QueryRequestOptions queryRequestOptions = (QueryRequestOptions)this.MemberwiseClone();
             return queryRequestOptions;
         }
 
@@ -215,6 +125,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedOptions()
             {
+                MaxItemCount = this.MaxItemCount,
                 MaxDegreeOfParallelism = this.MaxConcurrency.HasValue ? this.MaxConcurrency.Value : 0,
                 PartitionKey = this.PartitionKey != null ? new Documents.PartitionKey(this.PartitionKey) : null,
                 ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
@@ -224,26 +135,6 @@ namespace Microsoft.Azure.Cosmos
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 Properties = this.Properties,
             };
-        }
-
-        internal static void FillContinuationToken(
-            RequestMessage request,
-            string continuationToken)
-        {
-            if (!string.IsNullOrWhiteSpace(continuationToken))
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
-            }
-        }
-
-        internal static void FillMaxItemCount(
-            RequestMessage request,
-            int? maxItemCount)
-        {
-            if (maxItemCount != null && maxItemCount.HasValue)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
-            }
         }
     }
 }

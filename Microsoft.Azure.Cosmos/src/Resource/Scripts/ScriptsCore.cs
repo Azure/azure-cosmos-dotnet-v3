@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         private readonly CosmosClientContext clientContext;
 
         internal ScriptsCore(
-            ContainerCore container, 
+            ContainerCore container,
             CosmosClientContext clientContext)
         {
             this.container = container;
@@ -38,13 +38,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override FeedIterator<StoredProcedureProperties> GetStoredProceduresIterator(
-            int? maxItemCount = null,
-            string continuationToken = null)
+            string continuationToken = null,
+            IteratorRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<StoredProcedureProperties>(
-                maxItemCount,
+                requestOptions?.MaxItemCount,
                 continuationToken,
-                null,
+                requestOptions,
                 this.StoredProcedureFeedRequestExecutorAsync);
         }
 
@@ -90,8 +90,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessStoredProcedureOperationAsync(
-                id: id, 
-                operationType: OperationType.Delete, 
+                id: id,
+                operationType: OperationType.Delete,
                 streamPayload: null,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -154,8 +154,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
-            TriggerProperties triggerProperties, 
-            RequestOptions requestOptions = null, 
+            TriggerProperties triggerProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (triggerProperties == null)
@@ -182,19 +182,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override FeedIterator<TriggerProperties> GetTriggersIterator(
-            int? maxItemCount = null, 
-            string continuationToken = null)
+            string continuationToken = null,
+            IteratorRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<TriggerProperties>(
-                maxItemCount,
+                requestOptions?.MaxItemCount,
                 continuationToken,
-                null,
+                requestOptions,
                 this.ContainerFeedRequestExecutorAsync);
         }
 
         public override Task<TriggerResponse> ReadTriggerAsync(
             string id,
-            RequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -211,8 +211,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
-            TriggerProperties triggerProperties, 
-            RequestOptions requestOptions = null, 
+            TriggerProperties triggerProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (triggerProperties == null)
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override Task<TriggerResponse> DeleteTriggerAsync(
             string id,
-            RequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -257,8 +257,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            UserDefinedFunctionProperties userDefinedFunctionProperties, 
-            RequestOptions requestOptions = null, 
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (userDefinedFunctionProperties == null)
@@ -285,19 +285,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
-            int? maxItemCount = null, 
-            string continuationToken = null)
+            string continuationToken = null,
+            IteratorRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<UserDefinedFunctionProperties>(
-                maxItemCount,
+                requestOptions?.MaxItemCount,
                 continuationToken,
-                null,
+                requestOptions,
                 this.UserDefinedFunctionFeedRequestExecutorAsync);
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
-            string id, 
-            RequestOptions requestOptions = null, 
+            string id,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            UserDefinedFunctionProperties userDefinedFunctionProperties, 
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -342,8 +342,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
-            string id, 
-            RequestOptions requestOptions = null, 
+            string id,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))

@@ -685,8 +685,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets an iterator to go through all the items for the container
         /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request</param>
         /// <example>
         /// Get an iterator for all the items under the cosmos container
         /// <code language="c#">
@@ -709,15 +709,14 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> GetItemIterator<T>(
-            int? maxItemCount = null,
-            string continuationToken = null);
+            string continuationToken = null,
+            ItemIteratorRequestOptions requestOptions = null);
 
         /// <summary>
         /// Gets an iterator to go through all the items for the container as the original CosmosResponseMessage
         /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <param name="requestOptions">(Optional) The options for the item query request</param>
         /// <example>
         /// Get an iterator for all the items under the cosmos container
         /// <code language="c#">
@@ -743,9 +742,8 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator GetItemStreamIterator(
-            int? maxItemCount = null,
             string continuationToken = null,
-            ItemRequestOptions requestOptions = null);
+            ItemIteratorRequestOptions requestOptions = null);
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetStreamIterator.

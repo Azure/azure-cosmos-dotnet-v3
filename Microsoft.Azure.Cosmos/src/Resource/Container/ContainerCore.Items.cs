@@ -219,22 +219,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> GetItemIterator<T>(
-            int? maxItemCount = null,
-            string continuationToken = null)
+            string continuationToken = null,
+            ItemIteratorRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<T>(
-                maxItemCount,
+                requestOptions?.MaxItemCount,
                 continuationToken,
-                null,
+                requestOptions,
                 this.ItemFeedRequestExecutorAsync<T>);
         }
 
         public override FeedIterator GetItemStreamIterator(
-            int? maxItemCount = null,
             string continuationToken = null,
-            ItemRequestOptions requestOptions = null)
+            ItemIteratorRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore(maxItemCount, continuationToken, requestOptions, this.ItemStreamFeedRequestExecutorAsync);
+            return new FeedIteratorCore(
+                requestOptions?.MaxItemCount, 
+                continuationToken, 
+                requestOptions, 
+                this.ItemStreamFeedRequestExecutorAsync);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -563,7 +566,7 @@ namespace Microsoft.Azure.Cosmos
             object state,
             CancellationToken cancellationToken)
         {
-            return this.ClientContext.ProcessResourceOperationAsync<ResponseMessage>(
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.LinkUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
@@ -573,7 +576,6 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(request, continuationToken);
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => response,
                 cosmosContainerCore: this,
                 partitionKey: null,
                 streamPayload: null,
