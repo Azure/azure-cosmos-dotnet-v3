@@ -55,9 +55,12 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
 
-            return linqQuery != null
-                ? linqQuery.ToFeedIterator()
-                : throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToFeedIterator is only supported on cosmos LINQ query operations");
+            if (linqQuery == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToFeedIterator is only supported on cosmos LINQ query operations");
+            }
+
+            return linqQuery.ToFeedIterator();
         }
     }
 }
