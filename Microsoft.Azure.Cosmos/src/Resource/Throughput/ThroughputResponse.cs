@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos throughput response
     /// </summary>
-    public class ThroughputResponse : Response<int?>
+    public class ThroughputResponse : Response<ThroughputProperties>
     {
         /// <summary>
         /// Create a <see cref="ThroughputResponse"/> as a no-op for mock testing
@@ -30,23 +30,12 @@ namespace Microsoft.Azure.Cosmos
         internal ThroughputResponse(
             HttpStatusCode httpStatusCode,
             Headers headers,
-            int? throughput)
+            ThroughputProperties throughputProperties)
             : base(
                 httpStatusCode,
                 headers,
-                throughput)
+                throughputProperties)
         {
-        }
-
-        /// <summary>
-        /// Gets the provisioned throughput in measurement of request units per second in the Azure Cosmos service.
-        /// </summary>
-        public int? Throughput
-        {
-            get
-            {
-                return this.Resource;
-            }
         }
 
         /// <summary>
@@ -67,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the status whether offer replace is successful or pending.
         /// </summary>
-        public bool? IsOfferReplacePending
+        public bool? IsReplacePending
         {
             get
             {
@@ -77,6 +66,15 @@ namespace Microsoft.Azure.Cosmos
                 }
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Get <see cref="ThroughputProperties"/> implicitly from <see cref="ThroughputResponse"/>
+        /// </summary>
+        /// <param name="response">Throughput response</param>
+        public static implicit operator ThroughputProperties(ThroughputResponse response)
+        {
+            return response.Resource;
         }
     }
 }

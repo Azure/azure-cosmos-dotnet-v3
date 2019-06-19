@@ -254,25 +254,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
             Cosmos.Database cosmosDatabase = createResponse;
-            ThroughputResponse readThroughputResponse = await cosmosDatabase.ReadThroughputAsync();
+            ThroughputResponse readThroughputResponse = await cosmosDatabase.ReadThroughputAsync(new RequestOptions());
             Assert.IsNotNull(readThroughputResponse);
             Assert.IsNotNull(readThroughputResponse.Resource);
             Assert.IsNotNull(readThroughputResponse.MinThroughput);
-            Assert.IsNotNull(readThroughputResponse.Throughput);
-            Assert.AreEqual(throughput, readThroughputResponse.Throughput.Value);
+            Assert.IsNotNull(readThroughputResponse.Resource.Throughput);
+            Assert.AreEqual(throughput, readThroughputResponse.Resource.Throughput.Value);
+
+            // Implicit
+            ThroughputProperties throughputProperties = await cosmosDatabase.ReadThroughputAsync(new RequestOptions());
+            Assert.IsNotNull(throughputProperties);
+            Assert.AreEqual(throughput, throughputProperties.Throughput);
+
+            // Simple API 
+            int? readThroughput = await cosmosDatabase.ReadThroughputAsync();
+            Assert.AreEqual(throughput, readThroughput);
 
             string containerId = Guid.NewGuid().ToString();
             string partitionPath = "/users";
             ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
 
-            ThroughputResponse replaceThroughputResponse = await cosmosDatabase.ReplaceThroughputAsync(readThroughputResponse.Throughput.Value + 1000);
+            ThroughputResponse replaceThroughputResponse = await cosmosDatabase.ReplaceThroughputAsync(readThroughputResponse.Resource.Throughput.Value + 1000);
             Assert.IsNotNull(replaceThroughputResponse);
             Assert.IsNotNull(replaceThroughputResponse.Resource);
-            Assert.AreEqual(readThroughputResponse.Throughput.Value + 1000, replaceThroughputResponse.Throughput.Value);
+            Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
 
             Container container = containerResponse;
-            readThroughputResponse = await container.ReadThroughputAsync();
+            readThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
             Assert.IsNull(readThroughputResponse.Resource);
 
             await container.DeleteContainerAsync();

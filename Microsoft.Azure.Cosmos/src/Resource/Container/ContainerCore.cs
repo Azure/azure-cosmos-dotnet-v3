@@ -126,8 +126,15 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public async override Task<int?> ReadThroughputAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ThroughputResponse response = await this.ReadThroughputAsync(null, cancellationToken);
+            return response.Resource?.Throughput;
+        }
+
         public async override Task<ThroughputResponse> ReadThroughputAsync(
-            RequestOptions requestOptions = null,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             string rid = await this.GetRIDAsync(cancellationToken);
@@ -135,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (offerV2 == null)
             {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughput: null);
+                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
             }
 
             Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
@@ -159,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (offerV2 == null)
             {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughput: null);
+                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
             }
 
             OfferV2 newOffer = new OfferV2(offerV2, throughput);

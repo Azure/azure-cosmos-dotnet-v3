@@ -250,9 +250,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = this.database.GetContainer(containerName);
 
-            ThroughputResponse readThroughput = await container.ReadThroughputAsync();
+            ThroughputResponse readThroughput = await container.ReadThroughputAsync(new RequestOptions());
             Assert.IsNotNull(readThroughput);
-            Assert.AreEqual(expectedThroughput, readThroughput.Throughput);
+            Assert.AreEqual(expectedThroughput, readThroughput.Resource.Throughput);
+
+            // Implicit conversion 
+            ThroughputProperties throughputProperties = await container.ReadThroughputAsync(new RequestOptions());
+            Assert.IsNotNull(throughputProperties);
+            Assert.AreEqual(expectedThroughput, throughputProperties.Throughput);
+
+            // simple API
+            int? throughput = await container.ReadThroughputAsync();
+            Assert.IsNotNull(throughput);
+            Assert.AreEqual(expectedThroughput, throughput);
 
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);

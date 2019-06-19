@@ -143,6 +143,32 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <value>
+        /// The provisioned throughput for this container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// Null value indicates a container with no throughput provisioned.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// The following example shows how to get the throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// int? throughput = await container.ReadThroughputAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>Provisioned throughput in request units per second</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-database"/>
+        public abstract Task<int?> ReadThroughputAsync(
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
+        /// </summary>
         /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
@@ -154,16 +180,28 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <example>
-        /// The following example shows how to get the throughput.
+        /// The following example shows how to get the throughput
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputResponse throughput = await this.container.ReadThroughputAsync();
+        /// ThroughputProperties throughputProperties = await container.ReadThroughputAsync();
+        /// Console.WriteLine($"Throughput: {throughputProperties.Throughput}");
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The following example shows how to get throughput, MinThroughput and is replacein-progress
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ThroughputResponse response = await container.ReadThroughputAsync();
+        /// Console.WriteLine($"Throughput: {response.Resource.Throughput}");
+        /// Console.WriteLine($"MinThroughput: {response.MinThroughput}");
+        /// Console.WriteLine($"IsReplacePending: {response.IsReplacePending}");
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>The throughput response</returns>
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
-            RequestOptions requestOptions = null,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

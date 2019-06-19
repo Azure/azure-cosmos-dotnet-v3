@@ -441,19 +441,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = this.cosmosDatabase.GetContainer(containerName);
 
-            ThroughputResponse readThroughputResponse = await container.ReadThroughputAsync();
+            ThroughputResponse readThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
             Assert.IsNotNull(readThroughputResponse);
             Assert.IsNotNull(readThroughputResponse.Resource);
             Assert.IsNotNull(readThroughputResponse.MinThroughput);
-            Assert.IsNotNull(readThroughputResponse.Throughput);
+            Assert.IsNotNull(readThroughputResponse.Resource.Throughput);
 
-            ThroughputResponse replaceThroughputResponse = await container.ReplaceThroughputAsync(readThroughputResponse.Throughput.Value + 1000);
+            ThroughputResponse replaceThroughputResponse = await container.ReplaceThroughputAsync(readThroughputResponse.Resource.Throughput.Value + 1000);
             Assert.IsNotNull(replaceThroughputResponse);
             Assert.IsNotNull(replaceThroughputResponse.Resource);
-            Assert.AreEqual(readThroughputResponse.Throughput.Value + 1000, replaceThroughputResponse.Throughput.Value);
+            Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
             try
             {
-                ThroughputResponse nonExistingContainerThroughput = await this.cosmosDatabase.GetContainer("nonExistingContainer").ReadThroughputAsync();
+                ThroughputResponse nonExistingContainerThroughput = await this.cosmosDatabase
+                        .GetContainer("nonExistingContainer")
+                        .ReadThroughputAsync(new RequestOptions());
                 Assert.Fail("It should throw Resource Not Found exception");
             }
             catch (Exception ex)
