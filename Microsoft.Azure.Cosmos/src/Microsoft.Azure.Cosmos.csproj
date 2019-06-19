@@ -44,7 +44,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />    
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
   </ItemGroup>
   
   <ItemGroup Condition=" '$(SignAssembly)' != 'true' ">
@@ -52,7 +52,7 @@
     <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="1.0.0-preview" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">    
+  <ItemGroup Condition=" '$(SignAssembly)' == 'true' ">
     <Reference Include="Microsoft.Azure.Cosmos.Direct">
       <HintPath>$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Direct.dll</HintPath>
     </Reference>
