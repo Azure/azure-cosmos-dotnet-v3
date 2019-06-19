@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputProperties throughputProperties = await database.ReadThroughputAsync();
-        /// Console.WriteLine($"Throughput: {throughputProperties.Throughput}");
+        /// Console.WriteLine($"Throughput: {throughputProperties?.Throughput}");
         /// ]]>
         /// </code>
         /// </example>
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse response = await database.ReadThroughputAsync();
-        /// Console.WriteLine($"Throughput: {response.Resource.Throughput}");
+        /// Console.WriteLine($"Throughput: {response.Resource?.Throughput}");
         /// Console.WriteLine($"MinThroughput: {response.MinThroughput}");
         /// Console.WriteLine($"IsReplacePending: {response.IsReplacePending}");
         /// ]]>
