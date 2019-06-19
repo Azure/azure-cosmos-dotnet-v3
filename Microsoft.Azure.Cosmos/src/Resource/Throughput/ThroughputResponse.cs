@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The cosmos throughput response
     /// </summary>
-    public class ThroughputResponse : Response<ThroughputProperties>
+    public class ThroughputResponse : Response<int?>
     {
         /// <summary>
         /// Create a <see cref="ThroughputResponse"/> as a no-op for mock testing
@@ -30,12 +30,23 @@ namespace Microsoft.Azure.Cosmos
         internal ThroughputResponse(
             HttpStatusCode httpStatusCode,
             Headers headers,
-            ThroughputProperties throughputProperties)
+            int? throughput)
             : base(
                 httpStatusCode,
                 headers,
-                throughputProperties)
+                throughput)
         {
+        }
+
+        /// <summary>
+        /// Gets the provisioned throughput in measurement of request units per second in the Azure Cosmos service.
+        /// </summary>
+        public int? Throughput
+        {
+            get
+            {
+                return this.Resource;
+            }
         }
 
         /// <summary>

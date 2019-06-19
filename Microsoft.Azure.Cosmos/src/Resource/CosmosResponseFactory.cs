@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
                 return new ThroughputResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    throughputProperties);
+                    throughputProperties?.Throughput);
             });
         }
 

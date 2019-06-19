@@ -232,13 +232,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnThrottledRequests"/>
-        /// <seealso cref="CosmosClientOptions.MaxRetryAttemptsOnThrottledRequests"/>
+        /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnRateLimitedRequests"/>
+        /// <seealso cref="CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests"/>
         public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
             int maxRetryAttemptsOnThrottledRequests)
         {
-            this.clientOptions.MaxRetryWaitTimeOnThrottledRequests = maxRetryWaitTimeOnThrottledRequests;
-            this.clientOptions.MaxRetryAttemptsOnThrottledRequests = maxRetryAttemptsOnThrottledRequests;
+            this.clientOptions.MaxRetryWaitTimeOnRateLimitedRequests = maxRetryWaitTimeOnThrottledRequests;
+            this.clientOptions.MaxRetryAttemptsOnRateLimitedRequests = maxRetryAttemptsOnThrottledRequests;
             return this;
         }
 

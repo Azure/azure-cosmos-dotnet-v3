@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// The number of times to retry on throttled requests.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
-        public int? MaxRetryAttemptsOnThrottledRequests { get; set; }
+        public int? MaxRetryAttemptsOnRateLimitedRequests { get; set; }
 
         /// <summary>
         /// The max time to wait for retry requests. 
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         /// The minimum interval is seconds. Any interval that is smaller will be ignored.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
-        public TimeSpan? MaxRetryWaitTimeOnThrottledRequests { get; set; }
+        public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
         /// A serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
@@ -303,14 +303,14 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
             }
 
-            if (this.MaxRetryAttemptsOnThrottledRequests != null)
+            if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
             {
-                connectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests = this.MaxRetryAttemptsOnThrottledRequests.Value;
+                connectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests = this.MaxRetryAttemptsOnRateLimitedRequests.Value;
             }
 
-            if (this.MaxRetryWaitTimeOnThrottledRequests != null)
+            if (this.MaxRetryWaitTimeOnRateLimitedRequests != null)
             {
-                connectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds = (int)this.MaxRetryWaitTimeOnThrottledRequests.Value.TotalSeconds;
+                connectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds = (int)this.MaxRetryWaitTimeOnRateLimitedRequests.Value.TotalSeconds;
             }
 
             if (this.InitialRetryForRetryWithMilliseconds != null)

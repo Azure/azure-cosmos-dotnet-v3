@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ThroughputResponse readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
-            Assert.AreEqual(expectedThroughput, readThroughput.Resource.Throughput);
+            Assert.AreEqual(expectedThroughput, readThroughput.Throughput);
 
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);

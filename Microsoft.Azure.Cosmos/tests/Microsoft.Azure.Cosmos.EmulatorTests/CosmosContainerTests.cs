@@ -445,12 +445,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(readThroughputResponse);
             Assert.IsNotNull(readThroughputResponse.Resource);
             Assert.IsNotNull(readThroughputResponse.MinThroughput);
-            Assert.IsNotNull(readThroughputResponse.Resource.Throughput);
+            Assert.IsNotNull(readThroughputResponse.Throughput);
 
-            ThroughputResponse replaceThroughputResponse = await container.ReplaceThroughputAsync(readThroughputResponse.Resource.Throughput.Value + 1000);
+            ThroughputResponse replaceThroughputResponse = await container.ReplaceThroughputAsync(readThroughputResponse.Throughput.Value + 1000);
             Assert.IsNotNull(replaceThroughputResponse);
             Assert.IsNotNull(replaceThroughputResponse.Resource);
-            Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
+            Assert.AreEqual(readThroughputResponse.Throughput.Value + 1000, replaceThroughputResponse.Throughput.Value);
             try
             {
                 ThroughputResponse nonExistingContainerThroughput = await this.cosmosDatabase.GetContainer("nonExistingContainer").ReadThroughputAsync();

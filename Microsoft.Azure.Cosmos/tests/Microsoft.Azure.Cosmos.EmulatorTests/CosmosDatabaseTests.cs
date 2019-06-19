@@ -258,18 +258,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(readThroughputResponse);
             Assert.IsNotNull(readThroughputResponse.Resource);
             Assert.IsNotNull(readThroughputResponse.MinThroughput);
-            Assert.IsNotNull(readThroughputResponse.Resource.Throughput);
-            Assert.AreEqual(throughput, readThroughputResponse.Resource.Throughput.Value);
+            Assert.IsNotNull(readThroughputResponse.Throughput);
+            Assert.AreEqual(throughput, readThroughputResponse.Throughput.Value);
 
             string containerId = Guid.NewGuid().ToString();
             string partitionPath = "/users";
             ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
 
-            ThroughputResponse replaceThroughputResponse = await cosmosDatabase.ReplaceThroughputAsync(readThroughputResponse.Resource.Throughput.Value + 1000);
+            ThroughputResponse replaceThroughputResponse = await cosmosDatabase.ReplaceThroughputAsync(readThroughputResponse.Throughput.Value + 1000);
             Assert.IsNotNull(replaceThroughputResponse);
             Assert.IsNotNull(replaceThroughputResponse.Resource);
-            Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
+            Assert.AreEqual(readThroughputResponse.Throughput.Value + 1000, replaceThroughputResponse.Throughput.Value);
 
             Container container = containerResponse;
             readThroughputResponse = await container.ReadThroughputAsync();

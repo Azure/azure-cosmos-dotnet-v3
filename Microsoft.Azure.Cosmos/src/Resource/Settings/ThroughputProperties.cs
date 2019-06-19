@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    public class ThroughputProperties
+    internal class ThroughputProperties
     {
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.

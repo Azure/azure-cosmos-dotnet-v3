@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (offerV2 == null)
             {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
+                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughput: null);
             }
 
             Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (offerV2 == null)
             {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
+                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughput: null);
             }
 
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
