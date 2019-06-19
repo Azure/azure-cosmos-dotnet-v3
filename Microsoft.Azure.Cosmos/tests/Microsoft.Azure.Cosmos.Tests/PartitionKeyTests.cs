@@ -26,29 +26,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void ValueContainsOriginalValue()
-        {
-            const string somePK = "somePK";
-            PartitionKey pk = new PartitionKey(somePK);
-            Assert.AreEqual(somePK, pk.Value);
-        }
-
-        [TestMethod]
         public void ToStringGetsJsonString()
         {
             const string somePK = "somePK";
             string expected = $"[\"{somePK}\"]";
             PartitionKey pk = new PartitionKey(somePK);
             Assert.AreEqual(expected, pk.ToString());
-        }
-
-        [TestMethod]
-        public void WithCosmosPartitionKey()
-        {
-            const string somePK = "somePK";
-            PartitionKey v3PK = new PartitionKey(somePK);
-            PartitionKey pk = new PartitionKey(v3PK);
-            Assert.AreEqual(v3PK.ToString(), pk.ToString());
         }
 
         [TestMethod]

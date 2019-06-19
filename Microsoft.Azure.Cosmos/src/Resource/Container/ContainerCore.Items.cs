@@ -520,7 +520,7 @@ namespace Microsoft.Azure.Cosmos
                     return PartitionKey.NonePartitionKeyValue;
                 }
 
-                return new PartitionKey(this.CosmosElementToPartitionKeyObject(partitionKeyValue));
+                return this.CosmosElementToPartitionKeyObject(partitionKeyValue);
             }
             finally
             {
@@ -529,26 +529,32 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private object CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
+        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
         {
             // TODO: Leverage original serialization and avoid re-serialization (bug)
             switch (cosmosElement.Type)
             {
                 case CosmosElementType.String:
                     CosmosString cosmosString = cosmosElement as CosmosString;
-                    return cosmosString.Value;
+                    return new PartitionKey(cosmosString.Value);
 
                 case CosmosElementType.Number:
                     CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                    return cosmosNumber.AsFloatingPoint();
+                    double? number = cosmosNumber.AsFloatingPoint();
+                    if (!number.HasValue)
+                    {
+                        throw new ArgumentException(
+                            string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
+                    }
+
+                    return new PartitionKey(cosmosNumber.AsFloatingPoint().Value);
 
                 case CosmosElementType.Boolean:
                     CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
-                    return cosmosBool.Value;
+                    return new PartitionKey(cosmosBool.Value);
 
-                case CosmosElementType.Guid:
-                    CosmosGuid cosmosGuid = cosmosElement as CosmosGuid;
-                    return cosmosGuid.Value;
+                case CosmosElementType.Null:
+                    return PartitionKey.NullPartitionKeyValue;
 
                 default:
                     throw new ArgumentException(

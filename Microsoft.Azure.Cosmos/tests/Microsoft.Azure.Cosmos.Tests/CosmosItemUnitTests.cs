@@ -49,6 +49,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = true,
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[true]", item);
+
+            item = new
+            {
+                id = Guid.NewGuid().ToString()
+            };
+            await VerifyItemOperations(Cosmos.PartitionKey.NonePartitionKeyValue, "[{}]", item);
         }
 
         [TestMethod]
@@ -59,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 id = Guid.NewGuid().ToString()
             };
 
-            await VerifyItemOperations(new Cosmos.PartitionKey(Undefined.Value), "[{}]", testItem);
+            await VerifyItemOperations(Cosmos.PartitionKey.NonePartitionKeyValue, "[{}]", testItem);
         }
 
         [TestMethod]

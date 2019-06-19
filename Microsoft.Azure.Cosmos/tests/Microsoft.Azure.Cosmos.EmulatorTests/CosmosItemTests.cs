@@ -25,6 +25,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonReader = Json.JsonReader;
     using JsonWriter = Json.JsonWriter;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Documents.Routing;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -84,13 +86,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id = Guid.NewGuid().ToString()
             };
 
-            ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem, partitionKey: new Cosmos.PartitionKey(Undefined.Value));
+            ItemResponse<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             Assert.IsNotNull(response.MaxResourceQuota);
             Assert.IsNotNull(response.CurrentResourceQuotaUsage);
 
-            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: new Cosmos.PartitionKey(Undefined.Value));
+            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue);
             Assert.IsNotNull(deleteResponse);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
