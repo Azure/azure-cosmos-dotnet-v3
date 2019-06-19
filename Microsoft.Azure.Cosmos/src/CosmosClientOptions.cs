@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// A suffix to be added to the default user-agent for the Azure Cosmos DB service.
+        /// Get or set application name suffix to be added to the default user-agent for the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
@@ -77,9 +77,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the current region. <see cref="CosmosRegions"/> to get a list of regions that
-        /// are currently supported. Please update to a latest SDK version if a preferred Azure region is not listed.
+        /// Get or set the preferred geo-replicated region to be used in the Azure Cosmos DB service. 
         /// </summary>
+        /// <remarks>
+        /// When this property is specified, the SDK prefers the region to perform operations. Also SDK auto-selects 
+        /// fall-back geo-replicated regions for high availability. 
+        /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
+        /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         public string ApplicationRegion { get; set; }
 

@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set the current preferred region
+        /// Set the preferred geo-replicated region to be used in the Azure Cosmos DB service. 
         /// </summary>
         /// <param name="applicationRegion"><see cref="CosmosRegions"/> for a list of valid azure regions. This list may not contain the latest azure regions.</param>
         /// <example>
