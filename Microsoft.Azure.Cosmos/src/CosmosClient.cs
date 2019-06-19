@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos database id</param>
         /// <remarks>
-        /// <see cref="Database"/> proxy referene doesn't guarantee existence.
+        /// <see cref="Database"/> proxy reference doesn't guarantee existence.
         /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/> 
         /// or <see cref="CosmosClient.CreateDatabaseIfNotExistsAsync(string, int?, RequestOptions, CancellationToken)"/>, before
         /// operating on it.
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos
         /// Returns a proxy reference to a container. 
         /// </summary>
         /// <remarks>
-        /// <see cref="Container"/> proxy referene doesn't guarantee existence.
+        /// <see cref="Container"/> proxy reference doesn't guarantee existence.
         /// Please ensure container exists through <see cref="Database.CreateContainerAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/> 
         /// or <see cref="Database.CreateContainerIfNotExistsAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/>, before
         /// operating on it.

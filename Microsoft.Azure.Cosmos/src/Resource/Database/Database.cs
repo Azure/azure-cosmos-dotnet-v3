@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// The following example shows how to get throughput, MinThroughput and is replacein-progress
+        /// The following example shows how to get throughput, MinThroughput and is replace in progress
         /// <code language="c#">
         /// <![CDATA[
         /// ThroughputResponse response = await database.ReadThroughputAsync();
