@@ -8,6 +8,7 @@
     using Cosmos.Samples.Handlers.Models;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
+    using Microsoft.Azure.Cosmos.Fluent;
 
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
@@ -57,11 +58,11 @@
 
             CosmosClient client = cosmosClientBuilder.Build();
 
-            CosmosDatabaseResponse databaseResponse = await client.Databases.CreateDatabaseIfNotExistsAsync("mydb");
-            CosmosDatabase database = databaseResponse.Database;
+            DatabaseResponse databaseResponse = await client.CreateDatabaseIfNotExistsAsync("mydb");
+            Database database = databaseResponse.Database;
 
-            CosmosContainerResponse containerResponse = await database.Containers.CreateContainerIfNotExistsAsync("mycoll", "/id");
-            CosmosContainer container = containerResponse.Container;
+            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync("mycoll", "/id");
+            Container container = containerResponse.Container;
 
             Item item = new Item()
             {
@@ -72,39 +73,38 @@
             };
 
             // Create
-            await container.Items.CreateItemAsync<Item>(item.Id, item);
+            await container.CreateItemAsync<Item>(item, new PartitionKey(item.Id));
 
             item.Completed = true;
 
             // Replace
-            await container.Items.ReplaceItemAsync<Item>(item.Id, item.Id, item);
+            await container.ReplaceItemAsync<Item>(item, item.Id, new PartitionKey(item.Id));
 
             // Querying
-            CosmosResultSetIterator<Item> query = container.Items.CreateItemQuery<Item>(new CosmosSqlQueryDefinition("SELECT * FROM c"), maxConcurrency: 1);
+            FeedIterator<Item> query = container.GetItemQueryIterator<Item>(new QueryDefinition("SELECT * FROM c"), requestOptions: new QueryRequestOptions() { MaxConcurrency = 1});
             List<Item> results = new List<Item>();
             while (query.HasMoreResults)
             {
-                CosmosQueryResponse<Item> response = await query.FetchNextSetAsync();
+                FeedResponse<Item> response = await query.ReadNextAsync();
 
                 results.AddRange(response.ToList());
             }
 
             // Read Item
 
-            CosmosItemResponse<Item> cosmosItemResponse = await container.Items.ReadItemAsync<Item>(item.Id, item.Id);
+            ItemResponse<Item> cosmosItemResponse = await container.ReadItemAsync<Item>(item.Id, new PartitionKey(item.Id));
 
-            AccessCondition accessCondition = new AccessCondition
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
             {
-                Condition = cosmosItemResponse.ETag,
-                Type = AccessConditionType.IfMatch
+                IfMatchEtag = cosmosItemResponse.ETag
             };
 
             // Concurrency
 
-            List<Task<CosmosItemResponse<Item>>> tasks = new List<Task<CosmosItemResponse<Item>>>
+            List<Task<ItemResponse<Item>>> tasks = new List<Task<ItemResponse<Item>>>
             {
-                UpdateItemForConcurrency(container, accessCondition, item),
-                UpdateItemForConcurrency(container, accessCondition, item)
+                UpdateItemForConcurrency(container, itemRequestOptions, item),
+                UpdateItemForConcurrency(container, itemRequestOptions, item)
             };
 
             try
@@ -118,19 +118,17 @@
             }
 
             // Delete
-            await container.Items.DeleteItemAsync<Item>(item.Id, item.Id);
+            await container.DeleteItemAsync<Item>(item.Id, new PartitionKey(item.Id));
         }
 
-        private static Task<CosmosItemResponse<Item>> UpdateItemForConcurrency(CosmosContainer container, AccessCondition accessCondition, Item item)
+        private static Task<ItemResponse<Item>> UpdateItemForConcurrency(Container container, ItemRequestOptions itemRequestOptions, Item item)
         {
             item.Description = $"Updating description {Guid.NewGuid().ToString()}";
-            return container.Items.ReplaceItemAsync<Item>(
+            return container.ReplaceItemAsync<Item>(
+                item,
                 item.Id,
-                item.Id,
-                item, new CosmosItemRequestOptions()
-                {
-                    AccessCondition = accessCondition
-                });
+                new PartitionKey(item.Id),
+                itemRequestOptions);
         }
     }
 }

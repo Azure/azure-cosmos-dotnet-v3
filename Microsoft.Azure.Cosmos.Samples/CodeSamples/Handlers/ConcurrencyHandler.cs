@@ -7,14 +7,14 @@
     /// <summary>
     /// Handler that detects concurrency and etag issues
     /// </summary>
-    class ConcurrencyHandler : CosmosRequestHandler
+    class ConcurrencyHandler : RequestHandler
     {
-        public override async Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        public override async Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
 
-            CosmosResponseMessage response = await base.SendAsync(request, cancellationToken);
+            ResponseMessage response = await base.SendAsync(request, cancellationToken);
 
             if (response.StatusCode == System.Net.HttpStatusCode.PreconditionFailed)
             {
