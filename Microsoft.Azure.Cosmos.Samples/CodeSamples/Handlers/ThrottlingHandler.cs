@@ -8,14 +8,14 @@
     /// <summary>
     /// Using Polly to retry on Throttles.
     /// </summary>
-    class ThrottlingHandler : CosmosRequestHandler
+    class ThrottlingHandler : RequestHandler
     {
-        public override Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        public override Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             return Policy
-                .HandleResult<CosmosResponseMessage>(r => (int)r.StatusCode == 429)
+                .HandleResult<ResponseMessage>(r => (int)r.StatusCode == 429)
                 .RetryAsync(3)
                 .ExecuteAsync(() => base.SendAsync(request, cancellationToken));
         }

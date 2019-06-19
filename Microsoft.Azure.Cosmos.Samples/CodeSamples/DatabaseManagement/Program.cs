@@ -65,12 +65,12 @@
             DatabaseResponse databaseResponse = await client.CreateDatabaseIfNotExistsAsync(databaseId, 10000);
 
             // A client side reference object that allows additional operations like ReadAsync
-            CosmosDatabase database = databaseResponse;
+            Database database = databaseResponse;
 
             // The response from Azure Cosmos
-            CosmosDatabaseSettings settings = databaseResponse;
+            DatabaseProperties properties = databaseResponse;
 
-            Console.WriteLine($"\n1. Create a database resource with id: {settings.Id} and last modified time stamp: {settings.LastModified}");
+            Console.WriteLine($"\n1. Create a database resource with id: {properties.Id} and last modified time stamp: {properties.LastModified}");
             Console.WriteLine($"\n2. Create a database resource request charge: {databaseResponse.RequestCharge} and Activity Id: {databaseResponse.ActivityId}");
 
             // Read the database from Azure Cosmos
@@ -80,20 +80,20 @@
             await readResponse.Database.CreateContainerAsync("testContainer", "/pk");
 
             // Get the current throughput for the database
-            int? throughput = await database.ReadProvisionedThroughputAsync();
-            if (throughput.HasValue)
+            ThroughputResponse throughputResponse = await database.ReadThroughputAsync();
+            if (throughputResponse.Resource.Throughput.HasValue)
             {
-                Console.WriteLine($"\n4. Read a database throughput: {throughput.Value}");
+                Console.WriteLine($"\n4. Read a database throughput: {throughputResponse.Resource.Throughput.HasValue}");
 
                 // Update the current throughput for the database
-                await database.ReplaceProvisionedThroughputAsync(11000);
+                await database.ReplaceThroughputAsync(11000);
             }
 
             Console.WriteLine("\n5. Reading all databases resources for an account");
-            FeedIterator<CosmosDatabaseSettings> iterator = client.GetDatabasesIterator();
+            FeedIterator<DatabaseProperties> iterator = client.GetDatabaseIterator();
             do
             {
-                foreach (CosmosDatabaseSettings db in await iterator.FetchNextSetAsync())
+                foreach (DatabaseProperties db in await iterator.ReadNextAsync())
                 {
                     Console.WriteLine(db.Id);
                 }
