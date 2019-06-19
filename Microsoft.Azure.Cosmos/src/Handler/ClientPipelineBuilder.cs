@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -49,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (value != null && value.Any(x => x?.InnerHandler != null))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(CustomHandlers));
+                    throw new ArgumentOutOfRangeException(nameof(this.CustomHandlers));
                 }
 
                 this.customHandlers = value;
@@ -68,13 +67,13 @@ namespace Microsoft.Azure.Cosmos
                 foreach (RequestHandler handler in this.CustomHandlers)
                 {
                     current.InnerHandler = handler;
-                    current = (RequestHandler)current.InnerHandler;
+                    current = current.InnerHandler;
                 }
             }
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;
-            current = (RequestHandler)current.InnerHandler;
+            current = current.InnerHandler;
 
             // Have a router handler
             RequestHandler feedHandler = this.CreateDocumentFeedPipeline();
@@ -83,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
             RequestHandler routerHandler = new RouterHandler(feedHandler, this.transportHandler);
             current.InnerHandler = routerHandler;
-            current = (RequestHandler)current.InnerHandler;
+            current = current.InnerHandler;
 
             return root;
         }
@@ -133,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                     this.transportHandler,
                 };
 
-            return (RequestHandler)ClientPipelineBuilder.CreatePipeline(feedPipeline);
+            return ClientPipelineBuilder.CreatePipeline(feedPipeline);
         }
     }
 }

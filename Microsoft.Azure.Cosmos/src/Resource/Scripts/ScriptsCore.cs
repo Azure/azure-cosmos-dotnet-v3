@@ -32,12 +32,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessStoredProcedureOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(storedProcedureProperties),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<StoredProcedureProperties> GetStoredProceduresIterator(
+        public override FeedIterator<StoredProcedureProperties> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null)
         {
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessStoredProcedureOperationAsync(
                 id: storedProcedureProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(storedProcedureProperties),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessTriggerOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(triggerProperties),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessTriggerOperationAsync(
                 id: triggerProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(triggerProperties),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -279,12 +279,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessUserDefinedFunctionOperationAsync(
                 linkUri: this.container.LinkUri,
                 operationType: OperationType.Create,
-                streamPayload: CosmosResource.ToStream(userDefinedFunctionProperties),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
+        public override FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionIterator(
             int? maxItemCount = null, 
             string continuationToken = null)
         {
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessUserDefinedFunctionOperationAsync(
                 id: userDefinedFunctionProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: CosmosResource.ToStream(userDefinedFunctionProperties),
+                streamPayload: this.clientContext.PropertiesSerializer.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

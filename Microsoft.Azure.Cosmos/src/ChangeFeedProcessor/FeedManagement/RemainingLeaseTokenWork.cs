@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System;
 
     /// <summary>
-    /// Remaing estimated work on the lease token
+    /// Remaining estimated work on the lease token
     /// </summary>
     internal class RemainingLeaseTokenWork
     {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         public string LeaseToken { get; }
 
         /// <summary>
-        /// Gets the ammount of documents remaining to be processed.
+        /// Gets the amount of documents remaining to be processed.
         /// </summary>
         public long RemainingWork { get; }
     }
