@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClientContext ClientContext { get; private set; }
 
         /// <summary>
-        /// Read the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read Azure Cosmos DB account properties <see cref="Microsoft.Azure.Cosmos.AccountProperties"/>
         /// </summary>
         /// <returns>
         /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
@@ -307,17 +307,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Returns a reference to a database object. 
+        /// Returns a proxy reference to a database. 
         /// </summary>
         /// <param name="id">The cosmos database id</param>
         /// <remarks>
-        /// Note that the database must be explicitly created, if it does not already exist, before
-        /// you can read from it or write to it.
+        /// <see cref="Database"/> proxy referene doesn't guarantee existence.
+        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/> 
+        /// or <see cref="CosmosClient.CreateDatabaseIfNotExistsAsync(string, int?, RequestOptions, CancellationToken)"/>, before
+        /// operating on it.
         /// </remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// Database db = cosmosClient.GetDatabase("myDatabaseId"];
         /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
@@ -329,9 +331,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Get cosmos container proxy. 
+        /// Returns a proxy reference to a container. 
         /// </summary>
-        /// <remarks>Proxy existence doesn't guarantee either database or container existence.</remarks>
+        /// <remarks>
+        /// <see cref="Container"/> proxy referene doesn't guarantee existence.
+        /// Please ensure container exists through <see cref="Database.CreateContainerAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/> 
+        /// or <see cref="Database.CreateContainerIfNotExistsAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/>, before
+        /// operating on it.
+        /// </remarks>
         /// <param name="databaseId">cosmos database name</param>
         /// <param name="containerId">cosmos container name</param>
         /// <returns>Cosmos container proxy</returns>
