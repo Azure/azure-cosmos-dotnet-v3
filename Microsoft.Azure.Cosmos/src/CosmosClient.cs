@@ -16,62 +16,80 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Provides a client-side logical representation of the Azure Cosmos DB database account.
+    /// Provides a client-side logical representation of the Azure Cosmos DB account.
     /// This client can be used to configure and execute requests in the Azure Cosmos DB database service.
     /// 
     /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
-    /// of the application which enables efficient connection management and performance.
+    /// of the application which enables efficient connection management and performance. Please refer to 
+    /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
     /// </summary>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
-    /// The CosmosClient uses the <see cref="Cosmos.CosmosClientOptions"/> to get all the configuration values.
+    /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
     /// <code language="c#">
     /// <![CDATA[
-    /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-    ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-    ///     accountKey: "SuperSecretKey")
-    ///     .WithApplicationRegion(LocationNames.EastUS2);
+    /// using Microsoft.Azure.Cosmos;
     /// 
-    /// using (CosmosClient cosmosClient = cosmosClientBuilder.Build())
-    /// {
-    ///     Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     Container container = await db.CreateContainerAsync(Guid.NewGuid().ToString());
-    /// }
+    /// CosmosClient cosmosClient = new CosmosClient(
+    ///             "connection-string-from-portal", 
+    ///             new CosmosClientOptions()
+    ///             {
+    ///                 ApplicationRegion = "East US 2",
+    ///             });
+    /// 
+    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Container container = await db.CreateContainerAsync("container-id");
+    /// 
+    /// // Dispose cosmosClient at application exit
     /// ]]>
     /// </code>
     /// </example>
-    /// 
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
-    /// The CosmosClient is created with the AccountEndpoint and AccountKey.
+    /// The CosmosClient is created with the AccountEndpoint, AccountKey and configured to use "East US 2" region.
     /// <code language="c#">
     /// <![CDATA[
-    /// using (CosmosClient cosmosClient = new CosmosClient(
-    ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-    ///     accountKey: "SuperSecretKey"))
-    /// {
-    ///     Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     Container container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
-    /// }
+    /// using Microsoft.Azure.Cosmos;
+    /// 
+    /// CosmosClient cosmosClient = new CosmosClient(
+    ///             "account-endpoint-from-portal", 
+    ///             "account-key-from-portal", 
+    ///             new CosmosClientOptions()
+    ///             {
+    ///                 ApplicationRegion = "East US 2",
+    ///             });
+    /// 
+    /// Database db = await client.CreateDatabaseAsync("database-id");
+    /// Container container = await db.CreateContainerAsync("container-id");
+    /// 
+    /// // Dispose cosmosClient at application exit
     /// ]]>
     /// </code>
     /// </example>
-    /// 
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
-    /// The CosmosClient is created with the connection string.
+    /// The CosmosClient is created through builder pattern <see cref="Fluent.CosmosClientBuilder"/>.
     /// <code language="c#">
     /// <![CDATA[
-    /// using (CosmosClient cosmosClient = new CosmosClient(
-    ///     connectionString: "AccountEndpoint=https://testcosmos.documents.azure.com:443/;AccountKey=SuperSecretKey;"))
-    /// {
-    ///     Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-    ///     Container container = await db.Containers.CreateContainerAsync(Guid.NewGuid().ToString());
-    /// }
+    /// using Microsoft.Azure.Cosmos;
+    /// using Microsoft.Azure.Cosmos.Fluent;
+    /// 
+    /// CosmosClient cosmosClient = new CosmosClientBuilder("connection-string-from-portal")
+    ///     .WithApplicationRegion("East US 2")
+    ///     .Build();
+    /// 
+    /// Database db = await client.CreateDatabaseAsync("database-id")
+    /// Container container = await db.CreateContainerAsync("container-id");
+    /// 
+    /// // Dispose cosmosClient at application exit
     /// ]]>
     /// </code>
     /// </example>
     /// <remarks>
+    /// <seealso cref="CosmosClientOptions"/>
+    /// <seealso cref="Fluent.CosmosClientBuilder"/>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally" />
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview" />
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units" />
@@ -98,23 +116,41 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Create a new CosmosClient with the connection
+        /// Create a new CosmosClient with the connection string
+        /// 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to 
+        /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
         /// </summary>
-        /// <param name="connectionString">The connection string to the cosmos account. Example: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey;</param>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
-        /// This example creates a CosmosClient
+        /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
         /// <code language="c#">
         /// <![CDATA[
-        /// using (CosmosClient cosmosClient = new CosmosClient(
-        ///     connectionString: "https://testcosmos.documents.azure.com:443/;AccountKey=SuperSecretKey;"))
-        /// {
-        ///     // Create a database and other CosmosClient operations
-        /// }
+        /// using Microsoft.Azure.Cosmos;
+        /// 
+        /// CosmosClient cosmosClient = new CosmosClient(
+        ///             "account-endpoint-from-portal", 
+        ///             "account-key-from-portal", 
+        ///             new CosmosClientOptions()
+        ///             {
+        ///                 ApplicationRegion = "East US 2",
+        ///             });
+        /// 
+        /// // Dispose cosmosClient at application exit
         /// ]]>
         /// </code>
         /// </example>
-        public CosmosClient(string connectionString, CosmosClientOptions clientOptions = null)
+        /// <remarks>
+        /// <seealso cref="CosmosClientOptions"/>
+        /// <seealso cref="Fluent.CosmosClientBuilder"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
+        /// </remarks>
+        public CosmosClient(
+            string connectionString, 
+            CosmosClientOptions clientOptions = null)
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),
                   CosmosClientOptions.GetAccountKey(connectionString),
@@ -124,23 +160,38 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Create a new CosmosClient with the account endpoint URI string and account key
+        /// 
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to 
+        /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
         /// </summary>
-        /// <param name="accountEndpoint">The cosmos service endpoint to use to create the client.</param>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="accountKey">The cosmos account key to use to create the client.</param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
-        /// This example creates a CosmosClient
+        /// The CosmosClient is created with the AccountEndpoint, AccountKey and configured to use "East US 2" region.
         /// <code language="c#">
         /// <![CDATA[
-        /// using (CosmosClient cosmosClient = new CosmosClient(
-        ///     accountEndPoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey"))
-        /// {
-        ///     // Create a database and other CosmosClient operations
-        /// }
+        /// using Microsoft.Azure.Cosmos;
+        /// 
+        /// CosmosClient cosmosClient = new CosmosClient(
+        ///             "account-endpoint-from-portal", 
+        ///             "account-key-from-portal", 
+        ///             new CosmosClientOptions()
+        ///             {
+        ///                 ApplicationRegion = "East US 2",
+        ///             });
+        /// 
+        /// // Dispose cosmosClient at application exit
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// <seealso cref="CosmosClientOptions"/>
+        /// <seealso cref="Fluent.CosmosClientBuilder"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
+        /// </remarks>
         public CosmosClient(
             string accountEndpoint,
             string accountKey,
@@ -245,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClientContext ClientContext { get; private set; }
 
         /// <summary>
-        /// Read the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read Azure Cosmos DB account properties <see cref="Microsoft.Azure.Cosmos.AccountProperties"/>
         /// </summary>
         /// <returns>
         /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
@@ -256,17 +307,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Returns a reference to a database object. 
+        /// Returns a proxy reference to a database. 
         /// </summary>
         /// <param name="id">The cosmos database id</param>
         /// <remarks>
-        /// Note that the database must be explicitly created, if it does not already exist, before
-        /// you can read from it or write to it.
+        /// <see cref="Database"/> proxy reference doesn't guarantee existence.
+        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/> 
+        /// or <see cref="CosmosClient.CreateDatabaseIfNotExistsAsync(string, int?, RequestOptions, CancellationToken)"/>, before
+        /// operating on it.
         /// </remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// Database db = cosmosClient.GetDatabase("myDatabaseId"];
         /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
@@ -278,9 +331,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Get cosmos container proxy. 
+        /// Returns a proxy reference to a container. 
         /// </summary>
-        /// <remarks>Proxy existence doesn't guarantee either database or container existence.</remarks>
+        /// <remarks>
+        /// <see cref="Container"/> proxy reference doesn't guarantee existence.
+        /// Please ensure container exists through <see cref="Database.CreateContainerAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/> 
+        /// or <see cref="Database.CreateContainerIfNotExistsAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/>, before
+        /// operating on it.
+        /// </remarks>
         /// <param name="databaseId">cosmos database name</param>
         /// <param name="containerId">cosmos container name</param>
         /// <returns>Cosmos container proxy</returns>

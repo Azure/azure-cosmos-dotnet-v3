@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the status whether offer replace is successful or pending.
         /// </summary>
-        public bool? IsOfferReplacePending
+        public bool? IsReplacePending
         {
             get
             {
@@ -66,6 +66,15 @@ namespace Microsoft.Azure.Cosmos
                 }
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Get <see cref="ThroughputProperties"/> implicitly from <see cref="ThroughputResponse"/>
+        /// </summary>
+        /// <param name="response">Throughput response</param>
+        public static implicit operator ThroughputProperties(ThroughputResponse response)
+        {
+            return response.Resource;
         }
     }
 }
