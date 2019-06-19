@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -40,9 +39,9 @@ namespace Microsoft.Azure.Cosmos
         public string ETag { get; private set; }
 
         /// <summary>
-        /// Gets the last modified timestamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
+        /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
         /// </summary>
-        /// <value>The last modified timestamp associated with the resource.</value>
+        /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified)]
         public DateTime LastModified { get; private set; }
@@ -52,14 +51,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public int? Throughput
         {
-            get
-            {
-                return this.Content.OfferThroughput;
-            }
-            private set
-            {
-                this.Content = new OfferContentV2(value.Value);
-            }
+            get => this.Content.OfferThroughput;
+            private set => this.Content = new OfferContentV2(value.Value);
         }
 
         /// <summary>

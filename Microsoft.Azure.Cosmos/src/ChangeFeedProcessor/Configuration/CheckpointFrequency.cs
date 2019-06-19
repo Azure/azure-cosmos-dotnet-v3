@@ -13,7 +13,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
     internal class CheckpointFrequency
     {
         /// <summary>
-        /// Gets or sets a value indicating whether explicit checkpointing is enabled. By default false. Setting to true means changefeed host will never checkpoint. Client code needs to explicitly checkpoint via <see cref="PartitionCheckpointer"/>
+        /// Gets or sets a value indicating whether explicit check pointing is enabled. By default false. 
+        /// Setting to true means change feed host will never checkpoint. 
+        /// Client code needs to explicitly checkpoint via <see cref="PartitionCheckpointer"/>
         /// </summary>
         public bool ExplicitCheckpoint { get; set; }
 

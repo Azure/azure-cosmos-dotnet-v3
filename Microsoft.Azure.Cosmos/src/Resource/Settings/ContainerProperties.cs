@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -87,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.PartitionKeyPath = partitionKeyPath;
 
-            this.ValidateRequiredProperties();
+            ValidateRequiredProperties();
         }
 
         /// <summary>
@@ -196,9 +195,9 @@ namespace Microsoft.Azure.Cosmos
         public string ETag { get; private set; }
 
         /// <summary>
-        /// Gets the last modified timestamp associated with <see cref="ContainerProperties" /> from the Azure Cosmos DB service.
+        /// Gets the last modified time stamp associated with <see cref="ContainerProperties" /> from the Azure Cosmos DB service.
         /// </summary>
-        /// <value>The last modified timestamp associated with the resource.</value>
+        /// <value>The last modified time stamp associated with the resource.</value>
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
         public DateTime? LastModified { get; private set; }
@@ -255,7 +254,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the time to live base timestamp property path.
+        /// Gets or sets the time to live base time stamp property path.
         /// </summary>
         /// <value>
         /// It is an optional property.
@@ -372,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.PartitionKey = partitionKeyDefinition;
 
-            this.ValidateRequiredProperties();
+            ValidateRequiredProperties();
         }
 
         /// <summary>
