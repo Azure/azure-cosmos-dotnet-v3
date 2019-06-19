@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// When this property is specified, the SDK prefers the region to perform operations. Also SDK auto-selects 
-        /// fall-back geo-replicated regions for high availability. 
+        /// fallback geo-replicated regions for high availability. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
