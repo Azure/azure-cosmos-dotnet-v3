@@ -19,11 +19,6 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClientOptions
     {
         /// <summary>
-        /// Default max connection limit
-        /// </summary>
-        private const int DefaultMaxConcurrentConnectionLimit = 50;
-
-        /// <summary>
         /// Default connection mode
         /// </summary>
         private const ConnectionMode DefaultConnectionMode = ConnectionMode.Direct;
@@ -41,11 +36,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default request timeout
         /// </summary>
-        private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
-
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
         private readonly Collection<RequestHandler> customHandlers;
-        private CosmosSerializer userJsonSerializer;
 
         private int gatewayModeMaxConnectionLimit;
 
@@ -55,17 +47,16 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClientOptions()
         {
             this.UserAgentContainer = new UserAgentContainer();
-            this.GatewayModeMaxConnectionLimit = CosmosClientOptions.DefaultMaxConcurrentConnectionLimit;
-            this.RequestTimeout = CosmosClientOptions.DefaultRequestTimeout;
+            this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
+            this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.customHandlers = new Collection<RequestHandler>();
-            this.userJsonSerializer = null;
         }
 
         /// <summary>
-        /// Get or set application name suffix to be added to the default user-agent for the Azure Cosmos DB service.
+        /// Get or set user-agent suffix to include with every Azure Cosmos DB service interaction.
         /// </summary>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
@@ -77,18 +68,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Get or set the preferred geo-replicated region to be used in the Azure Cosmos DB service. 
+        /// Get or set the preferred geo-replicated region to be used for Azure Cosmos DB service interaction.
         /// </summary>
         /// <remarks>
         /// When this property is specified, the SDK prefers the region to perform operations. Also SDK auto-selects 
         /// fallback geo-replicated regions for high availability. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
-        /// </remarks>
+        /// 
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master"/>
+        /// </remarks>
         public string ApplicationRegion { get; set; }
 
         /// <summary>
-        /// Gets the maximum number of concurrent connections allowed for the target
+        /// Get or set the maximum number of concurrent connections allowed for the target
         /// service endpoint in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -134,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the connection mode used by the client when connecting to the Azure Cosmos DB service.
+        /// Get or set the connection mode used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// Default value is <see cref="Cosmos.ConnectionMode.Direct"/>
@@ -147,13 +140,13 @@ namespace Microsoft.Azure.Cosmos
         public ConnectionMode ConnectionMode { get; set; }
 
         /// <summary>
-        /// The number of times to retry on throttled requests.
+        /// Get ot set the number of times client should retry on rate throttled requests.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public int? MaxRetryAttemptsOnRateLimitedRequests { get; set; }
 
         /// <summary>
-        /// The max time to wait for retry requests. 
+        /// Get or set the max time to client is allowed to retry on rate throttled requests. 
         /// </summary>
         /// <remarks>
         /// The minimum interval is seconds. Any interval that is smaller will be ignored.
@@ -162,15 +155,10 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
-        /// A serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
+        /// Get ot set an optional serializer client should use to serialize or de-serialize cosmos request/responses.
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        public CosmosSerializer Serializer
-        {
-            get => this.userJsonSerializer;
-            set => this.userJsonSerializer = value ?? throw new NullReferenceException(nameof(this.Serializer));
-        }
+        public CosmosSerializer Serializer { get; set; }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
@@ -184,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        internal CosmosSerializer CosmosSerializerWithWrapperOrDefault => this.userJsonSerializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.userJsonSerializer);
+        internal CosmosSerializer CosmosSerializerWithWrapperOrDefault => this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
