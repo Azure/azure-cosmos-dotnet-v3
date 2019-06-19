@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Linq;
 
@@ -53,11 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public static FeedIterator<T> ToFeedIterator<T>(this IQueryable<T> query)
         {
-            CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
-
-            return linqQuery != null
-                ? linqQuery.ToFeedIterator()
-                : throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToFeedIterator is only supported on cosmos LINQ query operations");
+            return ((CosmosLinqQuery<T>)query).ToFeedIterator();
         }
     }
 }
