@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         /// <summary>
-        /// Get <see cref="TriggerProperties"/> implictly from <see cref="TriggerResponse"/>
+        /// Get <see cref="TriggerProperties"/> implicitly from <see cref="TriggerResponse"/>
         /// </summary>
         /// <param name="response">CosmosUserDefinedFunctionResponse</param>
         public static implicit operator TriggerProperties(TriggerResponse response)
