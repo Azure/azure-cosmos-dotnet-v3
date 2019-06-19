@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// FeedIterator<StoredProcedureProperties> setIterator = scripts.GetStoredProcedureIterator();
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach(StoredProcedureProperties storedProcedure in await setIterator.FetchNextSetAsync())
+        ///     foreach(StoredProcedureProperties storedProcedure in await setIterator.ReadNextAsync())
         ///     {
         ///          Console.WriteLine(storedProcedure.Id); 
         ///     }
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<StoredProcedureProperties> GetStoredProceduresIterator(
+        public abstract FeedIterator<StoredProcedureProperties> GetStoredProcedureIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// FeedIterator<TriggerProperties> setIterator = scripts.Triggers.GetTriggerIterator();
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach(TriggerProperties triggerProperties in await setIterator.FetchNextSetAsync())
+        ///     foreach(TriggerProperties triggerProperties in await setIterator.ReadNextAsync())
         ///     {
         ///          Console.WriteLine(triggerProperties.Id); 
         ///     }
@@ -573,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach (var tax in await setIterator.FetchNextSetAsync())
+        ///     foreach (var tax in await setIterator.ReadNextAsync())
         ///     {
         ///         Console.WriteLine(tax);
         ///     }
@@ -600,7 +600,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// FeedIterator<UserDefinedFunctionProperties> setIterator = scripts.GetUserDefinedFunctionIterator();
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     foreach(UserDefinedFunctionProperties usdfProperties in await setIterator.FetchNextSetAsync())
+        ///     foreach(UserDefinedFunctionProperties usdfProperties in await setIterator.ReadNextAsync())
         ///     {
         ///          Console.WriteLine(udfProperties.Id); 
         ///     }
@@ -608,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
+        public abstract FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionIterator(
             int? maxItemCount = null,
             string continuationToken = null);
 
