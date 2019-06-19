@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]", item);
+            await VerifyItemOperations(item.pk, "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]", item);
 
             item = new
             {
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = 4567,
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[4567.0]", item);
+            await VerifyItemOperations(item.pk, "[4567.0]", item);
 
             item = new
             {
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = 4567.1234,
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[4567.1234]", item);
+            await VerifyItemOperations(item.pk, "[4567.1234]", item);
 
             item = new
             {
@@ -49,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = true,
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[true]", item);
+            await VerifyItemOperations(item.pk, "[true]", item);
 
             item = new
             {
