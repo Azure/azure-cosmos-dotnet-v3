@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     /// <summary>
-    /// Provides a flexible way to to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
+    /// Provides a flexible way to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
     /// </summary>
     public class ChangeFeedProcessorBuilder
     {

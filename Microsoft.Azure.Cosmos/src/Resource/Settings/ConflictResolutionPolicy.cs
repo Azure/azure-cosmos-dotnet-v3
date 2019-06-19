@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution.
         /// This path must be present in each item and must be an integer value.
-        /// In case of a conflict occuring on a item, the item with the higher integer value in the specified path will be picked.
-        /// If the path is unspecified, by default the Timestamp path will be used.
+        /// In case of a conflict occurring on a item, the item with the higher integer value in the specified path will be picked.
+        /// If the path is unspecified, by default the time stamp path will be used.
         /// </summary>
         /// <remarks>
         /// This value should only be set when using <see cref="ConflictResolutionMode.LastWriterWins"/>

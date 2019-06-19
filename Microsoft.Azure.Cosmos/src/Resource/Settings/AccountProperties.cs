@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary> 
-    /// Represents a <see cref="AccountProperties"/>. A DatabaseAccountProperties is the container for databases in the Azure Cosmos DB service.
+    /// Represents a <see cref="AccountProperties"/>. A AccountProperties is the container for databases in the Azure Cosmos DB service.
     /// </summary>
     public class AccountProperties
     {
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal AccountProperties()
         {
-            this.QueryEngineConfiurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
+            this.QueryEngineConfiurationInternal = new Lazy<IDictionary<string, object>>(() => QueryStringToDictConverter());
         }
 
         /// <summary>
@@ -33,20 +33,14 @@ namespace Microsoft.Azure.Cosmos
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public IEnumerable<AccountRegion> WritableRegions
-        {
-            get { return this.WriteLocationsInternal; }
-        }
+        public IEnumerable<AccountRegion> WritableRegions => this.WriteLocationsInternal;
 
         /// <summary>
         /// Gets the list of locations representing the readable regions of
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
         [JsonIgnore]
-        public IEnumerable<AccountRegion> ReadableRegions
-        {
-            get { return this.ReadLocationsInternal; }
-        }
+        public IEnumerable<AccountRegion> ReadableRegions => this.ReadLocationsInternal;
 
         /// <summary>
         /// Gets the Id of the resource in the Azure Cosmos DB service.
@@ -109,10 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 return this.writeRegions;
             }
-            set
-            {
-                this.writeRegions = value;
-            }
+            set => this.writeRegions = value;
         }
 
         [JsonProperty(PropertyName = Constants.Properties.ReadableLocations)]
@@ -126,10 +117,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 return this.readRegions;
             }
-            set
-            {
-                this.readRegions = value;
-            }
+            set => this.readRegions = value;
         }
 
         /// <summary>
@@ -226,13 +214,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ReadPolicy)]
         internal ReadPolicy ReadPolicy { get; set; }
 
-        internal IDictionary<string, object> QueryEngineConfiuration
-        {
-            get
-            {
-                return this.QueryEngineConfiurationInternal.Value;
-            }
-        }
+        internal IDictionary<string, object> QueryEngineConfiuration => this.QueryEngineConfiurationInternal.Value;
 
         [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
         internal string QueryEngineConfiurationString { get; set; }
