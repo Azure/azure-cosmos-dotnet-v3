@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the consistency policy of a database account of the Azure Cosmos DB service.
     /// </summary>
-    internal class AccountConsistency
+    public class AccountConsistency
     {
         private const ConsistencyLevel defaultDefaultConsistencyLevel = ConsistencyLevel.Session;
 
