@@ -374,16 +374,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
 
             string lastContinuationToken = null;
-            int pageSize = 1;
-            ItemRequestOptions requestOptions = new ItemRequestOptions();
-            FeedIterator feedIterator =
-                this.Container.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1
+            };
+
+            FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+                null,
+                continuationToken: lastContinuationToken, 
+                requestOptions: requestOptions);
 
             while (feedIterator.HasMoreResults)
             {
                 if (useStatelessIterator)
                 {
-                    feedIterator = this.Container.GetItemStreamIterator(maxItemCount: pageSize, continuationToken: lastContinuationToken, requestOptions: requestOptions);
+                    feedIterator = this.Container.GetItemQueryStreamIterator(
+                        null,
+                        continuationToken: lastContinuationToken, 
+                        requestOptions: requestOptions);
                 }
 
                 using (ResponseMessage responseMessage =
@@ -414,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
             HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
             FeedIterator<ToDoActivity> feedIterator =
-                this.Container.GetItemIterator<ToDoActivity>();
+                this.Container.GetItemQueryIterator<ToDoActivity>(null);
             while (feedIterator.HasMoreResults)
             {
                 foreach (ToDoActivity toDoActivity in await feedIterator.ReadNextAsync(this.cancellationToken))
@@ -469,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // }
 
             FeedIterator setIterator =
-                this.Container.GetItemStreamIterator();
+                this.Container.GetItemQueryStreamIterator(null);
             FeedIterators.Add(setIterator);
 
             QueryRequestOptions options = new QueryRequestOptions()
@@ -479,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             FeedIterator queryIterator = this.Container.GetItemQueryStreamIterator(
-                    sqlQueryText: @"select * from t where t.id != """" ",
+                    queryDefinition: @"select * from t where t.id != """" ",
                     requestOptions: options);
 
             FeedIterators.Add(queryIterator);
@@ -963,7 +971,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
-                    sqlQueryText: "SELECT r.id FROM root r WHERE r._ts > 0",
+                    queryDefinition: "SELECT r.id FROM root r WHERE r._ts > 0",
                     requestOptions: new QueryRequestOptions() { ResponseContinuationTokenLimitInKb = 0, MaxItemCount = 10, MaxConcurrency = 1 });
 
                 await resultSet.ReadNextAsync();
@@ -977,7 +985,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
-                    sqlQueryText: "SELECT r.id FROM root r WHERE r._ts >!= 0",
+                    queryDefinition: "SELECT r.id FROM root r WHERE r._ts >!= 0",
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 1});
 
                 await resultSet.ReadNextAsync();
@@ -1088,7 +1096,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 //Reading all items on fixed container.
-                feedIterator = fixedContainer.GetItemIterator<dynamic>(maxItemCount: 10);
+                feedIterator = fixedContainer.GetItemQueryIterator<dynamic>(null, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();

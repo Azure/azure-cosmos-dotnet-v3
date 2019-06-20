@@ -410,6 +410,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets an iterator to go through all the containers for the database
         /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <example>
@@ -428,17 +429,20 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator<ContainerProperties> GetContainerIterator(
+        public abstract FeedIterator<ContainerProperties> GetContainerQueryIterator(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Gets an iterator to go through all the containers for the database
         /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator GetContainerStreamIterator(
+        public abstract FeedIterator GetContainerQueryStreamIterator(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 

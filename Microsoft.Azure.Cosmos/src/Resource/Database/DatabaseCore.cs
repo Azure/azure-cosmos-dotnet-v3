@@ -296,23 +296,27 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override FeedIterator GetContainerStreamIterator(
+        public override FeedIterator GetContainerQueryStreamIterator(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
-            RequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
             return new FeedStatelessIteratorCore(
                this.ClientContext,
                this.LinkUri,
                ResourceType.Collection,
+               queryDefinition,
                continuationToken,
                requestOptions);
         }
 
-        public override FeedIterator<ContainerProperties> GetContainerIterator(
+        public override FeedIterator<ContainerProperties> GetContainerQueryIterator(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
-            RequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetContainerStreamIterator(
+            FeedIterator databaseStreamIterator = this.GetContainerQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
                 requestOptions);
 

@@ -454,11 +454,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions options = new QueryRequestOptions() { MaxConcurrency = 1, MaxItemCount = 1 };
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
-            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, requestOptions: options);
+            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryDefinition: sqlQueryText, requestOptions: options);
             Assert.AreEqual(0, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             sqlQueryText = @"select * from root r where r.title = ""My new Book""";
-            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, requestOptions: options);
+            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryDefinition: sqlQueryText, requestOptions: options);
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             myDocument.Title = "My old Book";
@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await collection.ReplaceItemAsync(myDocument, myDocument.Id);
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
-            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, requestOptions: options);
+            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryDefinition: sqlQueryText, requestOptions: options);
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
         }
 

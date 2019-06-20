@@ -246,17 +246,6 @@ namespace Microsoft.Azure.Cosmos
                 cosmosQueryExecution);
         }
 
-        public override FeedIterator GetItemQueryStreamIterator(
-            string sqlQueryText,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            return this.GetItemQueryStreamIterator(
-                new QueryDefinition(sqlQueryText),
-                continuationToken,
-                requestOptions);
-        }
-
         public override FeedIterator<T> GetItemQueryIterator<T>(
             QueryDefinition sqlQueryDefinition,
             string continuationToken = null,
@@ -283,17 +272,6 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 this.NextResultSetAsync<T>,
                 cosmosQueryExecution);
-        }
-
-        public override FeedIterator<T> GetItemQueryIterator<T>(
-            string sqlQueryText,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            return this.GetItemQueryIterator<T>(
-                new QueryDefinition(sqlQueryText),
-                continuationToken,
-                requestOptions);
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(

@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());
 
-                var feedIterator = container.GetItemStreamIterator();
+                var feedIterator = container.GetItemQueryStreamIterator(null);
                 this.VerifyNotFoundResponse(await feedIterator.ReadNextAsync());
 
                 dynamic randomUpsertItem = new { id = DoesNotExist, pk = DoesNotExist, status = 42 };

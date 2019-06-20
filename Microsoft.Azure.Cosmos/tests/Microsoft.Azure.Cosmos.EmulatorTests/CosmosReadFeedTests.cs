@@ -51,7 +51,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             //create items
             const int total = 30;
-            const int maxItemCount = 10;
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 10
+            };
+
             List<string> items = new List<string>();
 
             for (int i = 0; i < total; i++)
@@ -70,16 +74,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string lastKnownContinuationToken = null;
-            FeedIterator iter = this.Container.Database.GetContainer(this.Container.Id)
-                                .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
+            FeedIterator iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamIterator(
+                null,
+                continuationToken: lastKnownContinuationToken, 
+                requestOptions: requestOptions);
+
             int count = 0;
             List<string> forwardOrder = new List<string>();
             while (iter.HasMoreResults)
             {
                 if (useStatelessIteration)
                 {
-                    iter = this.Container.Database.GetContainer(this.Container.Id)
-                                        .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken);
+                    iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamIterator(
+                        null,
+                        continuationToken: lastKnownContinuationToken,
+                        requestOptions: requestOptions);
                 }
 
                 using (ResponseMessage response = await iter.ReadNextAsync())
@@ -105,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(total, count);
             Assert.IsFalse(forwardOrder.Where(x => string.IsNullOrEmpty(x)).Any());
 
-            ItemRequestOptions requestOptions = new ItemRequestOptions();
             requestOptions.Properties = requestOptions.Properties = new Dictionary<string, object>();
             requestOptions.Properties.Add(HttpConstants.HttpHeaders.EnumerationDirection, (byte)BinaryScanDirection.Reverse);
             count = 0;
@@ -113,13 +121,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             lastKnownContinuationToken = null;
             iter = this.Container.Database.GetContainer(this.Container.Id)
-                    .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                    .GetItemQueryStreamIterator(null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
             while (iter.HasMoreResults)
             {
                 if (useStatelessIteration)
                 {
                     iter = this.Container.Database.GetContainer(this.Container.Id)
-                            .GetItemStreamIterator(maxItemCount, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                            .GetItemQueryStreamIterator(null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
                 }
 
                 using (ResponseMessage response = await iter.ReadNextAsync())

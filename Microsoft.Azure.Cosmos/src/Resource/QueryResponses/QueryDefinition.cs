@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An instace of <see cref="QueryDefinition"/>.</returns>
+        /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
         public QueryDefinition UseParameter(string name, object value)
         {
             if (string.IsNullOrEmpty(name))
@@ -66,6 +66,15 @@ namespace Microsoft.Azure.Cosmos
 
             this.SqlParameters[name] = new SqlParameter(name, value);
             return this;
+        }
+
+        /// <summary>
+        /// Implicit converter
+        /// </summary>
+        /// <param name="queryText">The query text</param>
+        public static implicit operator QueryDefinition(string queryText)
+        {
+            return new QueryDefinition(queryText);
         }
 
         internal SqlQuerySpec ToSqlQuerySpec()
