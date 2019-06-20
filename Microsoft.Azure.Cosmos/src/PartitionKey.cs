@@ -15,14 +15,14 @@ namespace Microsoft.Azure.Cosmos
         private static readonly PartitionKeyInternal FalsePartitionKeyInternal = new Documents.PartitionKey(false).InternalKey;
 
         /// <summary>
-        /// The returned object represents a partition key value that allows creating and accessing documents
+        /// The returned object represents a partition key value that allows creating and accessing items
         /// without a value for partition key.
         /// </summary>
         public static readonly PartitionKey NonePartitionKeyValue = new PartitionKey(Documents.PartitionKey.None.InternalKey);
 
         /// <summary>
-        /// The returned object represents a partition key value that allows creating and accessing documents
-        /// without a value for partition key.
+        /// The returned object represents a partition key value that allows creating and accessing items
+        /// with a null value for the partition key.
         /// </summary>
         public static readonly PartitionKey NullPartitionKeyValue = new PartitionKey(PartitionKey.NullPartitionKeyInternal);
 
