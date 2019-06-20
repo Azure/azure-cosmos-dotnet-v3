@@ -1195,6 +1195,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(2, resultsFetched);
             }
 
+            //Checking for exception in case of ToFeedIterator() use on non cosmos linq IQueryable.
+            try
+            {
+                IQueryable<ToDoActivity> nonLinqQueryable = (new List<ToDoActivity> { CreateRandomToDoActivity() }).AsQueryable();
+                setIterator = nonLinqQueryable.ToFeedIterator();
+                Assert.Fail("It should throw ArgumentOutOfRangeException as ToFeedIterator() only applicable to cosmos LINQ query");
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("ToFeedIterator is only supported on cosmos LINQ query operations"));
+            }
+
             //LINQ query execution without partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true);
             queriable = linqQueryable.Where(item => (item.taskNum < 100));
