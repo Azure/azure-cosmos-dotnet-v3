@@ -42,8 +42,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(directAssembly.FullName.StartsWith("Microsoft.Azure.Cosmos.Direct", System.StringComparison.Ordinal), directAssembly.FullName);
 
             Type[] exportedTypes = directAssembly.GetExportedTypes();
-            Assert.AreEqual(1, exportedTypes.Length, string.Join(",", exportedTypes.Select(e => e.Name).ToArray()));
-            Assert.AreEqual("Microsoft.Azure.Cosmos.CosmosRegions", exportedTypes.Select(e => e.FullName).Single());
+            Assert.AreEqual(0, exportedTypes.Length, string.Join(",", exportedTypes.Select(e => e.Name).ToArray()));
         }
 
         [TestMethod]
