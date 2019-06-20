@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Data.Common;
     using System.Diagnostics;
     using System.IO;
     using System.Net;
@@ -118,8 +117,8 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public CosmosClient(string connectionString, CosmosClientOptions clientOptions = null)
             : this(
-                  CosmosClientOptions.GetAccountEndpoint(connectionString), 
-                  CosmosClientOptions.GetAccountKey(connectionString), 
+                  CosmosClientOptions.GetAccountEndpoint(connectionString),
+                  CosmosClientOptions.GetAccountKey(connectionString),
                   clientOptions)
         {
         }
@@ -401,7 +400,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabasesIterator();
         /// {
-        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.FetchNextSetAsync())
+        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.ReadNextAsync())
         ///     {
         ///         Console.WriteLine(databaseProperties.Id); 
         ///     }

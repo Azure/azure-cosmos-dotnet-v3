@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         internal int? MaximumRetryForRetryWithMilliseconds { get; set; }
 
         /// <summary>
-        /// Gets or sets the interval to salt retrywith retries with. This will spread the retry values from 1..n from the exponential backoff
+        /// Gets or sets the interval to salt retry with value. This will spread the retry values from 1..n from the exponential back-off
         /// subscribed.
         /// </summary>
         /// <value>
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
         internal int? RandomSaltForRetryWithMilliseconds { get; set; }
 
         /// <summary>
-        /// Gets or sets the total time to wait before failing the request for retrywith failures.
+        /// Gets or sets the total time to wait before failing the request for retry with failures.
         /// subscribed.
         /// </summary>
         /// <value>

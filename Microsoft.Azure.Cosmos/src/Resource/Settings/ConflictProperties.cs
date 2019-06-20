@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -13,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents a conflict in the Azure Cosmos DB service.
     /// </summary>
     /// <remarks>
-    /// On rare occasions, during an async operation (insert, replace and delete), a version conflict may occur on a resource during failover or multi master scenarios.
+    /// On rare occasions, during an async operation (insert, replace and delete), a version conflict may occur on a resource during fail over or multi master scenarios.
     /// The conflicting resource is persisted as a Conflict resource.  
     /// Inspecting Conflict resources will allow you to determine which operations and resources resulted in conflicts.
     /// This is not related to operations returning a Conflict status code.

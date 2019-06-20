@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         /// Parses a Session Token and extracts the LSN.
         /// </summary>
         /// <param name="sessionToken">A Session Token</param>
-        /// <returns>Lsn value</returns>
+        /// <returns>LSN value</returns>
         internal static string ExtractLsnFromSessionToken(string sessionToken)
         {
             if (string.IsNullOrEmpty(sessionToken))

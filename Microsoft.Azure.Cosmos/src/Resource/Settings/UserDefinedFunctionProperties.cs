@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using System;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 

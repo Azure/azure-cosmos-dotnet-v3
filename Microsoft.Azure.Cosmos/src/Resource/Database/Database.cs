@@ -420,7 +420,7 @@ namespace Microsoft.Azure.Cosmos
         /// FeedIterator<ContainerProperties> feedIterator = this.cosmosDatabase.GetContainerQueryIterator();
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(ContainerProperties containerProperties in await feedIterator.FetchNextSetAsync())
+        ///     foreach(ContainerProperties containerProperties in await feedIterator.ReadNextAsync())
         ///     {
         ///          Console.WriteLine(containerProperties.Id); 
         ///     }

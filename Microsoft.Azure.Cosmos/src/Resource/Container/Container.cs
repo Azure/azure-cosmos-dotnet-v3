@@ -425,7 +425,9 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the read resource record.
         /// </returns>
         /// <exception>
-        /// The Stream operation only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
+        /// The Stream operation only throws on client side exceptions. 
+        /// This is to increase performance and prevent the overhead of throwing exceptions. 
+        /// Check the HTTP status code on the response to check if the operation failed.
         /// </exception>
         /// <example>
         /// Upsert a Stream containing the item to Cosmos
@@ -521,7 +523,9 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the replace resource record.
         /// </returns>
         /// <exception>
-        /// The Stream operation only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
+        /// The Stream operation only throws on client side exceptions. 
+        /// This is to increase performance and prevent the overhead of throwing exceptions. 
+        /// Check the HTTP status code on the response to check if the operation failed.
         /// </exception>
         /// <example>
         /// Replace an item in Cosmos
@@ -705,7 +709,7 @@ namespace Microsoft.Azure.Cosmos
         /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
         /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     sqlQueryDefinition: sqlQuery, 
-        ///     partitionKey: "Error");
+        ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -747,11 +751,11 @@ namespace Microsoft.Azure.Cosmos
         /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
         /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     sqlQueryDefinition: sqlQuery, 
-        ///     partitionKey: "Error");
+        ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(var item in await feedIterator.FetchNextSetAsync()){
+        ///     foreach(var item in await feedIterator.ReadNextAsync()){
         ///     {
         ///         Console.WriteLine(item.cost); 
         ///     }
@@ -767,8 +771,12 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
-        /// IQueryable extension method ToSqlQueryText() should be use for asynchronous execution with FeedIterator, please refer to example 2.
+        /// IQueryable extension method ToFeedIterator() should be use for asynchronous execution with FeedIterator, please refer to example 2.
         /// </summary>
+        /// <remarks>
+        /// LINQ execution is synchronous which will cause issues related to blocking calls. 
+        /// It is recommended to always use ToFeedIterator(), and to do the asynchronous execution.
+        /// </remarks>
         /// <typeparam name="T">The type of object to query.</typeparam>
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
         /// <param name="requestOptions">(Optional)The options for the item query request.<see cref="QueryRequestOptions"/></param>
@@ -819,19 +827,16 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         ///
         /// // LINQ query generation
-        /// IQueryable<Book> queryable = container.Items.GetItemLinqQuery<Book>()
-        ///                      .Where(b => b.Title == "War and Peace");
+        /// var setIterator = container.Items.GetItemLinqQuery<Book>()
+        ///                      .Where(b => b.Title == "War and Peace")
+        ///                      .ToFeedIterator();
+        ///                      
         /// //Asynchronous query execution
-        /// string sqlQueryText = queriable.ToSqlQueryText();
-        /// FeedIterator<Book> setIterator = this.Container
-        ///           .GetItemQueryIterator<Book>(sqlQueryText, maxConcurrency: 1);
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<Book> queryResponse = await setIterator.FetchNextSetAsync();
-        ///     var iter = queryResponse.GetEnumerator();
-        ///     while (iter.MoveNext())
+        ///     foreach(var item in await feedIterator.ReadNextAsync()){
         ///     {
-        ///         Book book = iter.Current;
+        ///         Console.WriteLine(item.cost); 
         ///     }
         /// }
         ///
