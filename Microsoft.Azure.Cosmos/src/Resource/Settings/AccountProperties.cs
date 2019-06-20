@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
         /// The ConsistencySetting.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.UserConsistencyPolicy)]
-        internal AccountConsistency Consistency { get; set; }
+        public AccountConsistency Consistency { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount
