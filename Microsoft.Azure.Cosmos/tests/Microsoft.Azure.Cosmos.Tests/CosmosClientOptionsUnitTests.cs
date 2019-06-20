@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string endpoint = AccountEndpoint;
             string key = Guid.NewGuid().ToString();
-            string region = CosmosRegions.WestCentralUS;
+            string region = LocationNames.WestCentralUS;
             ConnectionMode connectionMode = ConnectionMode.Gateway;
             TimeSpan requestTimeout = TimeSpan.FromDays(1);
             int maxConnections = 9001;
