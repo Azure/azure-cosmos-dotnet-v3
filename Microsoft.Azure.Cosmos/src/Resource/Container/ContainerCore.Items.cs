@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 CosmosElement partitionKeyValue = pathTraversal[tokens[tokens.Length - 1]];
-                if (partitionKeyValue == null || partitionKeyValue is CosmosNull)
+                if (partitionKeyValue == null)
                 {
                     return PartitionKey.NonePartitionKeyValue;
                 }

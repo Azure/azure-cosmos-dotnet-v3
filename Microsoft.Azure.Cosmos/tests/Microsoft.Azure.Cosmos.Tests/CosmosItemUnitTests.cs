@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]", item);
-            await VerifyItemOperations(item.pk, "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]", item);
 
             item = new
             {
@@ -36,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = 4567,
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[4567.0]", item);
-            await VerifyItemOperations(item.pk, "[4567.0]", item);
 
             item = new
             {
@@ -44,7 +42,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = 4567.1234,
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[4567.1234]", item);
-            await VerifyItemOperations(item.pk, "[4567.1234]", item);
 
             item = new
             {
@@ -52,13 +49,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = true,
             };
             await VerifyItemOperations(new Cosmos.PartitionKey(item.pk), "[true]", item);
-            await VerifyItemOperations(item.pk, "[true]", item);
 
             item = new
             {
                 id = Guid.NewGuid().ToString()
             };
             await VerifyItemOperations(Cosmos.PartitionKey.NonePartitionKeyValue, "[{}]", item);
+
+            item = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = (object)null
+            };
+            await VerifyItemOperations(Cosmos.PartitionKey.NullPartitionKeyValue, "[null]", item);
         }
 
         [TestMethod]
@@ -204,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //null should return Undefined
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { pk = (object)null }));
-            Assert.AreEqual(Cosmos.PartitionKey.NonePartitionKeyValue, pkValue);
+            Assert.AreEqual(Cosmos.PartitionKey.NullPartitionKeyValue, pkValue);
         }
 
         [TestMethod]
