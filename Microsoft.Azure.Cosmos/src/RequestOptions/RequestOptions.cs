@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -66,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>True if the object exists in the request options. False if the value was not passed in as a request option</returns>
         internal bool TryGetResourceUri(out Uri resourceUri)
         {
-            if (this.Properties != null && this.Properties.TryGetValue(HandlerConstants.ResourceUri, out var requestOptesourceUri))
+            if (this.Properties != null && this.Properties.TryGetValue(HandlerConstants.ResourceUri, out object requestOptesourceUri))
             {
                 Uri uri = requestOptesourceUri as Uri;
                 if (uri == null || uri.IsAbsoluteUri)

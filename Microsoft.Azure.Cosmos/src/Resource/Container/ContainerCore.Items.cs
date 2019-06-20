@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
-        {   
+        {
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
@@ -319,16 +319,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
-            bool allowSynchronousQueryExecution = false, 
+            bool allowSynchronousQueryExecution = false,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
 
             return new CosmosLinqQuery<T>(
-                this, 
-                this.ClientContext.CosmosSerializer, 
-                (CosmosQueryClientCore)this.queryClient, 
-                requestOptions, 
+                this,
+                this.ClientContext.CosmosSerializer,
+                (CosmosQueryClientCore)this.queryClient,
+                requestOptions,
                 allowSynchronousQueryExecution);
         }
 
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos
                 hasMoreResults: !cosmosQueryExecution.IsDone);
         }
 
-        // Extracted partiotn key might be invaild as CollectionCache might be stale.
+        // Extracted partition key might be invalid as CollectionCache might be stale.
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
         // and partition-key is extracted again. 
         internal async Task<ResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync(
@@ -617,7 +617,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-                return (ResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
+                return await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
             }
             catch (DocumentClientException exception)
             {
@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos
             catch (CosmosException exception)
             {
                 return new ResponseMessage(
-                    headers: exception.ResponseHeaders,
+                    headers: exception.Headers,
                     requestMessage: null,
                     errorMessage: exception.Message,
                     statusCode: exception.StatusCode,

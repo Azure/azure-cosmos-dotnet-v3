@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (cosmosException != null)
             {
                 return new ResponseMessage(
-                    headers: cosmosException.ResponseHeaders,
+                    headers: cosmosException.Headers,
                     requestMessage: request,
                     errorMessage: cosmosException.Message,
                     statusCode: cosmosException.StatusCode,

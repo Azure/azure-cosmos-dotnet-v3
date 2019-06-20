@@ -4,10 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
-
     /// <summary>
     /// Partitioning version.
     /// </summary> 

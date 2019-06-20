@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public virtual string SessionToken => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
 
         /// <summary>
-        /// Get <see cref="StoredProcedureProperties"/> implictly from <see cref="StoredProcedureResponse"/>
+        /// Get <see cref="StoredProcedureProperties"/> implicitly from <see cref="StoredProcedureResponse"/>
         /// </summary>
         /// <param name="response">CosmosUserDefinedFunctionResponse</param>
         public static implicit operator StoredProcedureProperties(StoredProcedureResponse response)
