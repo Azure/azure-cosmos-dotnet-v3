@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Net;
-    using System.Text;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -31,12 +29,35 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             ThroughputProperties throughputProperties)
-            : base(
-                httpStatusCode,
-                headers,
-                throughputProperties)
         {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = throughputProperties;
         }
+
+        /// <inheritdoc/>
+        public override Headers Headers { get; protected set; }
+
+        /// <inheritdoc/>
+        public override ThroughputProperties Resource { get; protected set; }
+
+        /// <inheritdoc/>
+        public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override double RequestCharge => this.Headers.RequestCharge;
+
+        /// <inheritdoc/>
+        public override string ActivityId => this.Headers.ActivityId;
+
+        /// <inheritdoc/>
+        public override string ETag => this.Headers.ETag;
+
+        /// <inheritdoc/>
+        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+
+        /// <inheritdoc/>
+        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Gets minimum throughput in measurement of request units per second in the Azure Cosmos service.

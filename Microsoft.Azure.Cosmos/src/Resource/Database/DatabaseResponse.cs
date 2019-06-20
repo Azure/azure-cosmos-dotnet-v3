@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
-    using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos database response
@@ -29,11 +29,10 @@ namespace Microsoft.Azure.Cosmos
             Headers headers,
             DatabaseProperties databaseProperties,
             Database database)
-            : base(
-                httpStatusCode, 
-                headers, 
-                databaseProperties)
         {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = databaseProperties;
             this.Database = database;
         }
 
@@ -42,6 +41,30 @@ namespace Microsoft.Azure.Cosmos
         /// This allows additional operations for the database and easier access to the container operations
         /// </summary>
         public virtual Database Database { get; private set; }
+
+        /// <inheritdoc/>
+        public override Headers Headers { get; protected set; }
+
+        /// <inheritdoc/>
+        public override DatabaseProperties Resource { get; protected set; }
+
+        /// <inheritdoc/>
+        public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override double RequestCharge => this.Headers.RequestCharge;
+
+        /// <inheritdoc/>
+        public override string ActivityId => this.Headers.ActivityId;
+
+        /// <inheritdoc/>
+        public override string ETag => this.Headers.ETag;
+
+        /// <inheritdoc/>
+        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+
+        /// <inheritdoc/>
+        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Get <see cref="Cosmos.Database"/> implicitly from <see cref="DatabaseResponse"/>

@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using System;
     using System.Net;
     using Microsoft.Azure.Documents;
 
@@ -29,12 +28,35 @@ namespace Microsoft.Azure.Cosmos.Scripts
            HttpStatusCode httpStatusCode,
            Headers headers,
            StoredProcedureProperties storedProcedureProperties)
-            : base(
-               httpStatusCode,
-               headers,
-               storedProcedureProperties)
         {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = storedProcedureProperties;
         }
+
+        /// <inheritdoc/>
+        public override Headers Headers { get; protected set; }
+
+        /// <inheritdoc/>
+        public override StoredProcedureProperties Resource { get; protected set; }
+
+        /// <inheritdoc/>
+        public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override double RequestCharge => this.Headers.RequestCharge;
+
+        /// <inheritdoc/>
+        public override string ActivityId => this.Headers.ActivityId;
+
+        /// <inheritdoc/>
+        public override string ETag => this.Headers.ETag;
+
+        /// <inheritdoc/>
+        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+
+        /// <inheritdoc/>
+        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Gets the token for use with session consistency requests from the Azure Cosmos DB service.

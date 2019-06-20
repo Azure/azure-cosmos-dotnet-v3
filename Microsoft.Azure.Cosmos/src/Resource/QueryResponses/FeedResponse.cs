@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using System.Net;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The user contract for the various feed responses that serialized the responses to a type.
@@ -30,12 +31,35 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             IEnumerable<T> resource)
-            : base(
-                httpStatusCode,
-                headers,
-                resource)
         {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = resource;
         }
+
+        /// <inheritdoc/>
+        public override Headers Headers { get; protected set; }
+
+        /// <inheritdoc/>
+        public override IEnumerable<T> Resource { get; protected set; }
+
+        /// <inheritdoc/>
+        public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override double RequestCharge => this.Headers.RequestCharge;
+
+        /// <inheritdoc/>
+        public override string ActivityId => this.Headers.ActivityId;
+
+        /// <inheritdoc/>
+        public override string ETag => this.Headers.ETag;
+
+        /// <inheritdoc/>
+        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+
+        /// <inheritdoc/>
+        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.
