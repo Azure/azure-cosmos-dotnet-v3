@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator<ContainerProperties> GetContainerIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null)
+            FeedRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<ContainerProperties>(
                 requestOptions?.MaxItemCount,
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator GetContainerStreamIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null)
+            FeedRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
                 requestOptions?.MaxItemCount,

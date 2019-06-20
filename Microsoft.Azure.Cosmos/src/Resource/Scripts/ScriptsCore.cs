@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override FeedIterator<StoredProcedureProperties> GetStoredProceduresIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null)
+            FeedRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<StoredProcedureProperties>(
                 requestOptions?.MaxItemCount,
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override FeedIterator<TriggerProperties> GetTriggersIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null)
+            FeedRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<TriggerProperties>(
                 requestOptions?.MaxItemCount,
@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null)
+            FeedRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<UserDefinedFunctionProperties>(
                 requestOptions?.MaxItemCount,

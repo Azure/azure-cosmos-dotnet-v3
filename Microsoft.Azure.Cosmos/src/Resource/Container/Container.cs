@@ -710,7 +710,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> GetItemIterator<T>(
             string continuationToken = null,
-            ItemIteratorRequestOptions requestOptions = null);
+            ItemFeedRequestOptions requestOptions = null);
 
         /// <summary>
         /// Gets an iterator to go through all the items for the container as the original CosmosResponseMessage
@@ -743,7 +743,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator GetItemStreamIterator(
             string continuationToken = null,
-            ItemIteratorRequestOptions requestOptions = null);
+            ItemFeedRequestOptions requestOptions = null);
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetStreamIterator.

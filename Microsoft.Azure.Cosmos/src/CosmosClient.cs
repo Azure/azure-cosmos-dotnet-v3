@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the containers</returns>
         public virtual FeedIterator GetDatabaseStreamIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null)
+            FeedRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
                requestOptions?.MaxItemCount,
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the databases.</returns>
         public virtual FeedIterator<DatabaseProperties> GetDatabaseIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null)
+            FeedRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore<DatabaseProperties>(
                 requestOptions?.MaxItemCount,

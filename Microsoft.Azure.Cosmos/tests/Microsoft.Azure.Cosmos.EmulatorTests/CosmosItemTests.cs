@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string lastContinuationToken = null;
             int pageSize = 1;
-            ItemIteratorRequestOptions requestOptions = new ItemIteratorRequestOptions()
+            ItemFeedRequestOptions requestOptions = new ItemFeedRequestOptions()
             {
                 MaxItemCount = pageSize
             };
@@ -1092,7 +1092,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 //Reading all items on fixed container.
-                feedIterator = fixedContainer.GetItemIterator<dynamic>(requestOptions: new ItemIteratorRequestOptions() { MaxItemCount = 10 });
+                feedIterator = fixedContainer.GetItemIterator<dynamic>(requestOptions: new ItemFeedRequestOptions() { MaxItemCount = 10 });
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();

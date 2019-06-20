@@ -430,7 +430,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the containers</returns>
         public abstract FeedIterator<ContainerProperties> GetContainerIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null);
+            FeedRequestOptions requestOptions = null);
 
         /// <summary>
         /// Gets an iterator to go through all the containers for the database
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the containers</returns>
         public abstract FeedIterator GetContainerStreamIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null);
+            FeedRequestOptions requestOptions = null);
 
         /// <summary>
         /// Create an Azure Cosmos container through a Fluent API.

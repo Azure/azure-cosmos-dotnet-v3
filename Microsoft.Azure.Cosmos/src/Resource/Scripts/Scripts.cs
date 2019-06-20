@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract FeedIterator<StoredProcedureProperties> GetStoredProceduresIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null);
+            FeedRequestOptions requestOptions = null);
 
         /// <summary>
         /// Reads a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract FeedIterator<TriggerProperties> GetTriggersIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null);
+            FeedRequestOptions requestOptions = null);
 
         /// <summary>
         /// Reads a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -610,7 +610,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionsIterator(
             string continuationToken = null,
-            IteratorRequestOptions requestOptions = null);
+            FeedRequestOptions requestOptions = null);
 
         /// <summary>
         /// Reads a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.

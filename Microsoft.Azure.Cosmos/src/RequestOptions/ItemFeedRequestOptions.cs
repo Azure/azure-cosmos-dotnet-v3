@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos query request options
     /// </summary>
-    public class ItemIteratorRequestOptions : IteratorRequestOptions
+    public class ItemFeedRequestOptions : FeedRequestOptions
     {
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.

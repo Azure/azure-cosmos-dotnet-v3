@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             //create items
             const int total = 30;
-            ItemIteratorRequestOptions requestOptions = new ItemIteratorRequestOptions() { MaxItemCount = 10 };
+            ItemFeedRequestOptions requestOptions = new ItemFeedRequestOptions() { MaxItemCount = 10 };
             List<string> items = new List<string>();
 
             for (int i = 0; i < total; i++)
