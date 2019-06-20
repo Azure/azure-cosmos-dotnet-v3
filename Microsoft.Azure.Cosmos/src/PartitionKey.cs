@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos
     public sealed class PartitionKey
     {
         private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Documents.PartitionKey(null).InternalKey;
+        private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Documents.PartitionKey(true).InternalKey;
+        private static readonly PartitionKeyInternal FalsePartitionKeyInternal = new Documents.PartitionKey(false).InternalKey;
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing documents
@@ -60,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
         public PartitionKey(bool partitionKeyValue)
         {
-            this.Value = new Documents.PartitionKey(partitionKeyValue).InternalKey;
+            this.Value = partitionKeyValue ? TruePartitionKeyInternal : FalsePartitionKeyInternal;
         }
 
         /// <summary>
