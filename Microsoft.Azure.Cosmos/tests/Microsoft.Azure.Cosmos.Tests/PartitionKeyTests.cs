@@ -9,20 +9,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class PartitionKeyTests
     {
-        [ExpectedException(typeof(ArgumentNullException))]
         [TestMethod]
         public void NullValue()
         {
             new PartitionKey(null);
-        }
-
-        [TestMethod]
-        public void WithDocumentPartitionKey()
-        {
-            const string somePK = "somePK";
-            Documents.PartitionKey v2PK = new Documents.PartitionKey(somePK);
-            PartitionKey pk = new PartitionKey(v2PK);
-            Assert.AreEqual(v2PK.InternalKey.ToJsonString(), pk.ToString());
         }
 
         [TestMethod]
@@ -37,13 +27,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestPartitionKeyValues()
         {
-            Tuple<object, string>[] testcases =
+            Tuple<dynamic, string>[] testcases =
             {
-                Tuple.Create<object, string>(Documents.Undefined.Value, "[{}]"),
-                Tuple.Create<object, string>(false, "[false]"),
-                Tuple.Create<object, string>(true, "[true]"),
-                Tuple.Create<object, string>(123.456, "[123.456]"),
-                Tuple.Create<object, string>("PartitionKeyValue", "[\"PartitionKeyValue\"]"),
+                Tuple.Create<dynamic, string>(Documents.Undefined.Value, "[{}]"),
+                Tuple.Create<dynamic, string>(Documents.Undefined.Value, "[{}]"),
+                Tuple.Create<dynamic, string>(false, "[false]"),
+                Tuple.Create<dynamic, string>(true, "[true]"),
+                Tuple.Create<dynamic, string>(123.456, "[123.456]"),
+                Tuple.Create<dynamic, string>("PartitionKeyValue", "[\"PartitionKeyValue\"]"),
             };
 
             foreach (Tuple<object, string> testcase in testcases)

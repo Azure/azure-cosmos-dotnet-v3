@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
-        /// The function selects the right partition key constant mapping for <see cref="PartitionKey.NonePartitionKeyValue"/>
+        /// The function selects the right partition key constant mapping for <see cref="PartitionKey.None"/>
         /// </summary>
         internal PartitionKeyInternal GetNoneValue()
         {

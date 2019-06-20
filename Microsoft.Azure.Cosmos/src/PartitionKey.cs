@@ -18,13 +18,13 @@ namespace Microsoft.Azure.Cosmos
         /// The returned object represents a partition key value that allows creating and accessing items
         /// without a value for partition key.
         /// </summary>
-        public static readonly PartitionKey NonePartitionKeyValue = new PartitionKey(Documents.PartitionKey.None.InternalKey);
+        public static readonly PartitionKey None = new PartitionKey(Documents.PartitionKey.None.InternalKey);
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing items
         /// with a null value for the partition key.
         /// </summary>
-        public static readonly PartitionKey NullPartitionKeyValue = new PartitionKey(PartitionKey.NullPartitionKeyInternal);
+        public static readonly PartitionKey Null = new PartitionKey(PartitionKey.NullPartitionKeyInternal);
 
         /// <summary>
         /// The tag name to use in the documents for specifying a partition key value
@@ -52,8 +52,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.Value = PartitionKey.NullPartitionKeyInternal;
             }
-
-            this.Value = new Documents.PartitionKey(partitionKeyValue).InternalKey;
+            else
+            {
+                this.Value = new Documents.PartitionKey(partitionKeyValue).InternalKey;
+            }
         }
 
         /// <summary>
@@ -98,11 +100,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The string representation of the partition key value</returns>
         public new string ToString()
         {
-            if (this.Value == null)
-            {
-                return null;
-            }
-
             return this.Value.ToJsonString();
         }
     }

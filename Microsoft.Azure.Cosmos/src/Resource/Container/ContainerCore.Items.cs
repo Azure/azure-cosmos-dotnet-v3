@@ -510,14 +510,14 @@ namespace Microsoft.Azure.Cosmos
                     pathTraversal = pathTraversal[tokens[i]] as CosmosObject;
                     if (pathTraversal == null)
                     {
-                        return PartitionKey.NonePartitionKeyValue;
+                        return PartitionKey.None;
                     }
                 }
 
                 CosmosElement partitionKeyValue = pathTraversal[tokens[tokens.Length - 1]];
                 if (partitionKeyValue == null)
                 {
-                    return PartitionKey.NonePartitionKeyValue;
+                    return PartitionKey.None;
                 }
 
                 return this.CosmosElementToPartitionKeyObject(partitionKeyValue);
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos
                     return new PartitionKey(cosmosBool.Value);
 
                 case CosmosElementType.Null:
-                    return PartitionKey.NullPartitionKeyValue;
+                    return PartitionKey.Null;
 
                 default:
                     throw new ArgumentException(
