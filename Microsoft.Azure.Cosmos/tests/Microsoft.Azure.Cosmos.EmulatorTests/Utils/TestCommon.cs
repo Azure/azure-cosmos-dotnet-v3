@@ -1385,7 +1385,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<Cosmos.Database> databases = new List<Cosmos.Database>();
 
-            FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator(
+            FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
                 null, 
                 requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
 

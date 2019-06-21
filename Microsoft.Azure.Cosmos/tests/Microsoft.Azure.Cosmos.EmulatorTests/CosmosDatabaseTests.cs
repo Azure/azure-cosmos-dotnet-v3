@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Id = Guid.NewGuid().ToString()
             };
-            
+
             using (ResponseMessage response = await this.cosmosClient.CreateDatabaseStreamAsync(databaseSettings))
             {
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
@@ -294,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 FeedIterator<DatabaseProperties> feedIterator =
-                    this.cosmosClient.GetDatabaseQueryIterator(null);
+                    this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(null);
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<DatabaseProperties> iterator =
@@ -317,6 +318,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(0, databaseIds.Count);
+        }
+
+        [TestMethod]
+        public async Task DatabaseQueryIterator()
+        {
+            List<Cosmos.Database> deleteList = new List<Cosmos.Database>();
+            try
+            {
+                string firstDb = "Abcdefg";
+                string secondDb = "Bcdefgh";
+                string thirdDb = "Zoo";
+
+                DatabaseResponse createResponse2 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(secondDb);
+                deleteList.Add(createResponse2.Database);
+                DatabaseResponse createResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(firstDb);
+                deleteList.Add(createResponse.Database);
+                DatabaseResponse createResponse3 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(thirdDb);
+                deleteList.Add(createResponse3.Database);
+                 
+                FeedIterator<DatabaseProperties> feedIterator =
+                    this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                        new QueryDefinition("select c.id From c where c.id = @id ")
+                        .UseParameter("@id", createResponse.Database.Id),
+                        requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+
+                FeedResponse<DatabaseProperties> iterator = await feedIterator.ReadNextAsync(this.cancellationToken);
+                Assert.AreEqual(1, iterator.Resource.Count());
+                Assert.AreEqual(firstDb, iterator.First().Id);
+
+                Assert.IsFalse(feedIterator.HasMoreResults);
+            }
+            finally
+            {
+                foreach (Cosmos.Database database in deleteList)
+                {
+                    await database.DeleteAsync(cancellationToken: this.cancellationToken);
+                }
+            }
         }
 
         private Task<DatabaseResponse> CreateDatabaseHelper()

@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual FeedIterator<DatabaseProperties> GetDatabaseQueryIterator(
+        public virtual FeedIterator<DatabaseProperties> GetDatabaseQueryIterator<DatabaseProperties>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
             return new FeedStatelessIteratorCore(
                this.ClientContext,
                this.DatabaseRootUri,
-               ResourceType.Collection,
+               ResourceType.Database,
                queryDefinition,
                continuationToken,
                requestOptions);

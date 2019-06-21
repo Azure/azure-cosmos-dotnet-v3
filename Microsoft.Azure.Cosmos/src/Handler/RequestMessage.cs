@@ -167,9 +167,17 @@ namespace Microsoft.Azure.Cosmos
             if (this.DocumentServiceRequest == null)
             {
                 DocumentServiceRequest serviceRequest;
-                if (this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Database)
+                if ((this.OperationType == OperationType.ReadFeed || this.OperationType == OperationType.Query) && this.ResourceType == ResourceType.Database)
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, null, this.ResourceType, this.Content, this.Headers.CosmosMessageHeaders, false, AuthorizationTokenType.PrimaryMasterKey);
+                    serviceRequest = new DocumentServiceRequest(
+                        operationType: this.OperationType,
+                        resourceIdOrFullName: null,
+                        resourceType: this.ResourceType,
+                        body: this.Content,
+                        headers: this.Headers.CosmosMessageHeaders,
+                        isNameBased: false,
+                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+                    serviceRequest.UseGatewayMode = true;
                 }
                 else
                 {

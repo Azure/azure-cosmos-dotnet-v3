@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
         {
             request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
             request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.FalseString);
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
             RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
@@ -230,10 +230,12 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             string continuationToken)
         {
-            if (!string.IsNullOrWhiteSpace(continuationToken))
+            if (continuationToken == null)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
+                continuationToken = string.Empty;
             }
+
+            request.Headers.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
         }
 
         internal static void FillMaxItemCount(

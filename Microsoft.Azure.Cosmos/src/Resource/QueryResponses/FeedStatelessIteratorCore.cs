@@ -34,11 +34,13 @@ namespace Microsoft.Azure.Cosmos
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
             this.resourceType = resourceType;
-            this.querySpec = queryDefinition.ToSqlQuerySpec();
+            this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.continuationToken = continuationToken;
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
         }
+
+        public override bool HasMoreResults => this.hasMoreResultsInternal;
 
         /// <summary>
         /// The query options for the result set
@@ -50,8 +52,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         protected string continuationToken { get; set; }
 
-        public override bool HasMoreResults => this.hasMoreResultsInternal;
-
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
@@ -59,15 +59,26 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            Stream stream = null;
+            OperationType operation = OperationType.ReadFeed;
+            if (this.querySpec != null)
+            {
+                stream = this.clientContext.CosmosSerializer.ToStream(this.querySpec);
+                operation = OperationType.Query;
+            }
+
             ResponseMessage response = await this.clientContext.ProcessResourceOperationStreamAsync(
                resourceUri: this.resourceLink,
                resourceType: this.resourceType,
-               operationType: OperationType.ReadFeed,
+               operationType: operation,
                requestOptions: this.requestOptions,
                cosmosContainerCore: null,
                partitionKey: this.requestOptions?.PartitionKey,
-               streamPayload: this.clientContext.CosmosSerializer.ToStream(this.querySpec),
-               requestEnricher: null,
+               streamPayload: stream,
+               requestEnricher: request => 
+               {
+                   QueryRequestOptions.FillContinuationToken(request, continuationToken);
+               },
                cancellationToken: cancellationToken);
 
             this.continuationToken = response.Headers.Continuation;

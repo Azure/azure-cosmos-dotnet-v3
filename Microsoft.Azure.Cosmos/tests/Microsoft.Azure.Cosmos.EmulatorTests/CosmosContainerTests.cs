@@ -302,6 +302,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(containerIds.Count > 0, "The iterator did not find any containers.");
             Assert.IsTrue(containerIds.Contains(containerName), "The iterator did not find the created container");
 
+            resultSet = this.cosmosDatabase.GetContainerQueryIterator($"select * from c where c.id = \"{containerName}\"");
+            FeedResponse<ContainerProperties> queryProperties = await resultSet.ReadNextAsync();
+
+            Assert.AreEqual(1, queryProperties.Resource.Count());
+            Assert.AreEqual(containerName, queryProperties.First().Id);
+
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
