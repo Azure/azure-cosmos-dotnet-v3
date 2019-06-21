@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// The reference to the cosmos database. 
         /// This allows additional operations for the database and easier access to the container operations
         /// </summary>
-        public virtual Database Database { get; private set; }
+        public virtual Database Database { get; }
 
         /// <inheritdoc/>
         public override Headers Headers { get; }
