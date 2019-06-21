@@ -30,6 +30,14 @@ Copyright (C) Microsoft Corporation. All rights reserved.
   </ItemGroup>
 
   <ItemGroup>
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>Microsoft.Azure.Cosmos.Direct.dll</TargetPath>
+      <Visible>False</Visible>
+    </ContentWithTargetPath>
+  </ItemGroup>
+  
+  <ItemGroup>
     <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Microsoft.Azure.Cosmos.Core.dll</TargetPath>

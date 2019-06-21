@@ -72,7 +72,7 @@
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\any\lib\netstandard2.0" />
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\any\lib\netstandard2.0" />
-    <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\any\lib\netstandard2.0" />
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
