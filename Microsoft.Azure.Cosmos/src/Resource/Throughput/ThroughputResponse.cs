@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="ThroughputResponse"/> as a no-op for mock testing
         /// </summary>
-        public ThroughputResponse()
+        protected ThroughputResponse()
             : base()
         {
         }
@@ -36,28 +36,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Headers Headers { get; protected set; }
+        public override Headers Headers { get; }
 
         /// <inheritdoc/>
-        public override ThroughputProperties Resource { get; protected set; }
+        public override ThroughputProperties Resource { get; }
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
-        public override double RequestCharge => this.Headers.RequestCharge;
+        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         /// <inheritdoc/>
-        public override string ActivityId => this.Headers.ActivityId;
+        public override string ActivityId => this.Headers?.ActivityId;
 
         /// <inheritdoc/>
-        public override string ETag => this.Headers.ETag;
+        public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Gets minimum throughput in measurement of request units per second in the Azure Cosmos service.
@@ -66,9 +66,9 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                if (Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer) != null)
+                if (this.Headers?.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer) != null)
                 {
-                    return int.Parse(Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer));
+                    return int.Parse(this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer));
                 }
                 return null;
             }
@@ -81,9 +81,9 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                if (Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending) != null)
+                if (this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.OfferReplacePending) != null)
                 {
-                    return Boolean.Parse(Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer));
+                    return Boolean.Parse(this.Headers.GetHeaderValue<string>(WFConstants.BackendHeaders.MinimumRUsForOffer));
                 }
                 return null;
             }

@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Create a <see cref="UserDefinedFunctionResponse"/> as a no-op for mock testing
         /// </summary>
-        public UserDefinedFunctionResponse()
+        protected UserDefinedFunctionResponse()
             : base()
         {
         }
@@ -35,28 +35,28 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         /// <inheritdoc/>
-        public override Headers Headers { get; protected set; }
+        public override Headers Headers { get; }
 
         /// <inheritdoc/>
-        public override UserDefinedFunctionProperties Resource { get; protected set; }
+        public override UserDefinedFunctionProperties Resource { get; }
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
-        public override double RequestCharge => this.Headers.RequestCharge;
+        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         /// <inheritdoc/>
-        public override string ActivityId => this.Headers.ActivityId;
+        public override string ActivityId => this.Headers?.ActivityId;
 
         /// <inheritdoc/>
-        public override string ETag => this.Headers.ETag;
+        public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Get <see cref="UserDefinedFunctionProperties"/> implicitly from <see cref="UserDefinedFunctionResponse"/>

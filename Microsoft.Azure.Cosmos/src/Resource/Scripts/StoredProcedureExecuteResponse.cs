@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Create a <see cref="StoredProcedureExecuteResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        public StoredProcedureExecuteResponse() 
+        protected StoredProcedureExecuteResponse() 
             : base()
         {
         }
@@ -36,28 +36,28 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         /// <inheritdoc/>
-        public override Headers Headers { get; protected set; }
+        public override Headers Headers { get; }
 
         /// <inheritdoc/>
-        public override T Resource { get; protected set; }
+        public override T Resource { get; }
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
-        public override double RequestCharge => this.Headers.RequestCharge;
+        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         /// <inheritdoc/>
-        public override string ActivityId => this.Headers.ActivityId;
+        public override string ActivityId => this.Headers?.ActivityId;
 
         /// <inheritdoc/>
-        public override string ETag => this.Headers.ETag;
+        public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Gets the token for use with session consistency requests from the Azure Cosmos DB service.
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <value>
         /// The token for use with session consistency requests.
         /// </value>
-        public virtual string SessionToken => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
+        public virtual string SessionToken => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
 
         /// <summary>
         /// Gets the output from stored procedure console.log() statements.
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         {
             get
             {
-                string logResults = this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.LogResults);
+                string logResults = this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.LogResults);
                 return string.IsNullOrEmpty(logResults) ? logResults : Uri.UnescapeDataString(logResults);
             }
         }

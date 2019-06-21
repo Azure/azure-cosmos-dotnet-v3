@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create an empty cosmos feed response for mock testing
         /// </summary>
-        public FeedResponse()
+        protected FeedResponse()
         {
         }
 
@@ -38,28 +38,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Headers Headers { get; protected set; }
+        public override Headers Headers { get; }
 
         /// <inheritdoc/>
-        public override IEnumerable<T> Resource { get; protected set; }
+        public override IEnumerable<T> Resource { get; }
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
-        public override double RequestCharge => this.Headers.RequestCharge;
+        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         /// <inheritdoc/>
-        public override string ActivityId => this.Headers.ActivityId;
+        public override string ActivityId => this.Headers?.ActivityId;
 
         /// <inheritdoc/>
-        public override string ETag => this.Headers.ETag;
+        public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.

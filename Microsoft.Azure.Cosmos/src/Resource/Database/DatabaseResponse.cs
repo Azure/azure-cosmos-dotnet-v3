@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="DatabaseResponse"/> as a no-op for mock testing
         /// </summary>
-        public DatabaseResponse()
+        protected DatabaseResponse()
             : base()
         {
         }
@@ -43,28 +43,28 @@ namespace Microsoft.Azure.Cosmos
         public virtual Database Database { get; private set; }
 
         /// <inheritdoc/>
-        public override Headers Headers { get; protected set; }
+        public override Headers Headers { get; }
 
         /// <inheritdoc/>
-        public override DatabaseProperties Resource { get; protected set; }
+        public override DatabaseProperties Resource { get; }
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
-        public override double RequestCharge => this.Headers.RequestCharge;
+        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         /// <inheritdoc/>
-        public override string ActivityId => this.Headers.ActivityId;
+        public override string ActivityId => this.Headers?.ActivityId;
 
         /// <inheritdoc/>
-        public override string ETag => this.Headers.ETag;
+        public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Get <see cref="Cosmos.Database"/> implicitly from <see cref="DatabaseResponse"/>

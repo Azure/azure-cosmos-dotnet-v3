@@ -21,12 +21,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
         /// </summary>
-        public abstract Headers Headers { get; protected set; }
+        public abstract Headers Headers { get; }
 
         /// <summary>
         /// The content of the response.
         /// </summary>
-        public abstract T Resource { get; protected set; }
+        public abstract T Resource { get; }
 
         /// <summary>
         /// Get Resource implicitly from <see cref="Response{T}"/>

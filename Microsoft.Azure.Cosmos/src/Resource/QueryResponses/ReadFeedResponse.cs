@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override int Count { get; }
 
-        public override string Continuation => this.Headers.Continuation;
+        public override string Continuation => this.Headers?.Continuation;
 
         internal override string InternalContinuationToken => this.Continuation;
 
