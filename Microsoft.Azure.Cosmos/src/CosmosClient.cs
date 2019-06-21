@@ -97,6 +97,7 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClient : IDisposable
     {
         private Lazy<CosmosOffers> offerSet;
+        private Lazy<ConsistencyLevel> accountConsistencyLevel;
 
         static CosmosClient()
         {
@@ -291,7 +292,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
         internal RequestInvokerHandler RequestHandler { get; private set; }
-        internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
+        internal ConsistencyLevel AccountConsistencyLevel => this.accountConsistencyLevel.Value;
         internal CosmosResponseFactory ResponseFactory { get; private set; }
         internal CosmosClientContext ClientContext { get; private set; }
 
@@ -535,7 +536,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientOptions.CustomHandlers);
 
             // DocumentClient is not initialized with any consistency overrides so default is backend consistency
-            this.AccountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;
+            this.accountConsistencyLevel = new Lazy<ConsistencyLevel>(() => (ConsistencyLevel)this.DocumentClient.ConsistencyLevel);
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
