@@ -82,11 +82,6 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxConcurrency { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
-        /// </summary>
-        public PartitionKey PartitionKey { get; set; }
-
-        /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -132,14 +127,19 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal ConsistencyLevel? ConsistencyLevel { get; set; }
 
-        internal bool EnableCrossPartitionQuery { get; set; }
-
         internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the flag that enables skip take across partitions.
         /// </summary>
         internal bool EnableCrossPartitionSkipTake { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
+        /// </summary>
+        internal PartitionKey PartitionKey { get; set; }
+
+        internal bool EnableCrossPartitionQuery { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -149,7 +149,10 @@ namespace Microsoft.Azure.Cosmos
         {
             request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
             request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.FalseString);
+            if (EnableCrossPartitionQuery)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+            }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
             RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);

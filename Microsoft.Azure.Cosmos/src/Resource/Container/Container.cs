@@ -691,6 +691,7 @@ namespace Microsoft.Azure.Cosmos
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <remarks>
@@ -728,6 +729,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator GetItemQueryStreamIterator(
             QueryDefinition queryDefinition,
+            PartitionKey partitionKey = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
@@ -736,6 +738,7 @@ namespace Microsoft.Azure.Cosmos
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <example>
@@ -766,6 +769,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> GetItemQueryIterator<T>(
             QueryDefinition queryDefinition,
+            PartitionKey partitionKey = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
@@ -779,6 +783,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <typeparam name="T">The type of object to query.</typeparam>
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
         /// <param name="requestOptions">(Optional)The options for the item query request.<see cref="QueryRequestOptions"/></param>
         /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
         /// <example>
@@ -847,7 +852,8 @@ namespace Microsoft.Azure.Cosmos
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
-            bool allowSynchronousQueryExecution = false, 
+            bool allowSynchronousQueryExecution = false,
+            PartitionKey partitionKey = null,
             QueryRequestOptions requestOptions = null);
 
         /// <summary>

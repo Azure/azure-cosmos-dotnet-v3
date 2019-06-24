@@ -425,12 +425,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets an iterator to go through all the containers for the database
+        /// Gets an iterator to go through all the databases for the Cosmos DB account
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
-        /// <returns>An iterator to go through the containers</returns>
+        /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the databases</returns>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
