@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
@@ -78,6 +79,11 @@ namespace Microsoft.Azure.Cosmos
                requestEnricher: request => 
                {
                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                   if (this.querySpec != null)
+                   {
+                       request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
+                       request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                   }
                },
                cancellationToken: cancellationToken);
 

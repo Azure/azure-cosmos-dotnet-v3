@@ -1386,7 +1386,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<Cosmos.Database> databases = new List<Cosmos.Database>();
 
             FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
-                null, 
+                queryDefinition: null,
+                continuationToken: null, 
                 requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
 
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10

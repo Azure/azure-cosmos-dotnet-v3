@@ -303,8 +303,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     databaseIds.Add(createResponse.Resource.Id);
                 }
 
-                FeedIterator<DatabaseProperties> feedIterator =
-                    this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(null);
+                FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
+                    queryDefinition: null,
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 2 });
+
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<DatabaseProperties> iterator =

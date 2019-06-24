@@ -147,8 +147,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="RequestMessage"/></param>
         internal override void PopulateRequestOptions(RequestMessage request)
         {
-            request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-            request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
             if (EnableCrossPartitionQuery)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
