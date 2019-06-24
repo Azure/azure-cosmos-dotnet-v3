@@ -63,40 +63,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestCosmosExceptionRetryAfter()
-        {
-            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-            {
-                return Task.FromResult(new ResponseMessage(
-                    statusCode: ((HttpStatusCode)429), 
-                    requestMessage: null, 
-                    errorMessage: "To Many Request", 
-                    error: null, 
-                    headers: new Headers() { RetryAfter = TimeSpan.FromSeconds(42) }));
-            });
-
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
-               (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
-
-            Container container = client.GetDatabase("testdb")
-                                        .GetContainer("testcontainer");
-
-            try
-            {
-                await container.CreateItemAsync<dynamic>(
-                    item: new { id = "429testid", pk = "429pkvalue" },
-                    partitionKey: new Cosmos.PartitionKey("429pkvalue"));
-                Assert.Fail("Request should have thrown");
-
-            }catch(CosmosException ce)
-            {
-                Assert.IsNotNull(ce.RetryAfter);
-                Assert.IsNotNull(ce.Headers);
-                Assert.AreEqual(ce.RetryAfter, ce.Headers.RetryAfter);
-            }
-        }
-
-        [TestMethod]
         public async Task TestNullItemPartitionKeyBehavior()
         {
             dynamic testItem = new
@@ -192,9 +158,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
             }
 
-            //null should return Undefined
+            //null should return null
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { pk = (object)null }));
-            Assert.AreEqual(Cosmos.PartitionKey.NonePartitionKeyValue, pkValue);
+            Assert.AreEqual(Cosmos.PartitionKey.Null, pkValue);
         }
 
         [TestMethod]
@@ -266,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (dynamic poco in invalidNestedItems)
             {
                 object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
-                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.NonePartitionKeyValue, pk));
+                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.None, pk));
             }
         }
 

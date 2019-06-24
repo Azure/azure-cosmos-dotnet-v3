@@ -59,8 +59,8 @@
         private static readonly JsonSerializer Serializer = new JsonSerializer();
 
         //Reusable instance of ItemClient which represents the connection to a Cosmos endpoint
-        private static CosmosDatabase database = null;
-        private static CosmosContainer container = null;
+        private static Database database = null;
+        private static Container container = null;
 
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
         public static async Task Main(string[] args)
@@ -173,7 +173,7 @@
             SalesOrder salesOrderV3 = GetSalesOrderSample("SalesOrderV3");
             using (Stream stream = Program.ToStream<SalesOrder>(salesOrderV3))
             {
-                using (CosmosResponseMessage responseMessage = await container.CreateItemStreamAsync(new PartitionKey(salesOrderV3.AccountNumber), stream))
+                using (ResponseMessage responseMessage = await container.CreateItemStreamAsync(stream, new PartitionKey(salesOrderV3.AccountNumber)))
                 {
                     // Item stream operations do not throw exceptions for better performance
                     if (responseMessage.IsSuccessStatusCode)
@@ -207,7 +207,7 @@
             SalesOrder readOrder = (SalesOrder)response;
 
             // Read the same item but as a stream.
-            using (CosmosResponseMessage responseMessage = await container.ReadItemStreamAsync(
+            using (ResponseMessage responseMessage = await container.ReadItemStreamAsync(
                 partitionKey: new PartitionKey("Account1"),
                 id: "SalesOrder1"))
             {
@@ -235,19 +235,20 @@
             //******************************************************************************************************************
             Console.WriteLine("\n1.4 - Querying for a item using its AccountNumber property");
 
-            CosmosSqlQueryDefinition query = new CosmosSqlQueryDefinition(
+            QueryDefinition query = new QueryDefinition(
                 "select * from sales s where s.AccountNumber = @AccountInput ")
                 .UseParameter("@AccountInput", "Account1");
 
-            FeedIterator<SalesOrder> resultSet = container.CreateItemQuery<SalesOrder>(
+            FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
                 query,
-                partitionKey: new PartitionKey("Account1"),
-                maxItemCount: 1);
+                requestOptions : new QueryRequestOptions() {
+                    PartitionKey = new PartitionKey("Account1"),
+                    MaxItemCount = 1});
 
             List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
             while (resultSet.HasMoreResults)
             {
-                SalesOrder sale = (await resultSet.FetchNextSetAsync()).First();
+                SalesOrder sale = (await resultSet.ReadNextAsync()).First();
                 Console.WriteLine($"\n1.4.1 Account Number: {sale.AccountNumber}; Id: {sale.Id} ");
                 allSalesForAccount1.Add(sale);
             }
@@ -255,16 +256,17 @@
             Console.WriteLine($"\n1.4.2 Query found {allSalesForAccount1.Count} items.");
 
             // Use the same query as before but get the cosmos response message to access the stream directly
-            FeedIterator streamResultSet = container.CreateItemQueryStream(
+            FeedIterator streamResultSet = container.GetItemQueryStreamIterator(
                 query,
-                maxConcurrency: 1,
-                partitionKey: new PartitionKey("Account1"),
-                maxItemCount: 10);
+                requestOptions: new QueryRequestOptions() {
+                    PartitionKey = new PartitionKey("Account1"),
+                    MaxItemCount = 10,
+                    MaxConcurrency = 1 });
 
             List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
             while (streamResultSet.HasMoreResults)
             {
-                using (CosmosResponseMessage responseMessage = await streamResultSet.FetchNextSetAsync())
+                using (ResponseMessage responseMessage = await streamResultSet.ReadNextAsync())
                 {
                     // Item stream operations do not throw exceptions for better performance
                     if (responseMessage.IsSuccessStatusCode)
@@ -311,7 +313,7 @@
             order.ShippedDate = DateTime.UtcNow;
             using (Stream stream = Program.ToStream<SalesOrder>(order))
             {
-                using (CosmosResponseMessage responseMessage = await container.ReplaceItemStreamAsync(
+                using (ResponseMessage responseMessage = await container.ReplaceItemStreamAsync(
                     partitionKey: new PartitionKey(order.AccountNumber),
                     id: order.Id,
                     streamPayload: stream))
@@ -358,7 +360,7 @@
             SalesOrder salesOrderV4 = GetSalesOrderSample("SalesOrder4");
             using (Stream stream = Program.ToStream<SalesOrder>(salesOrderV4))
             {
-                using (CosmosResponseMessage responseMessage = await container.UpsertItemStreamAsync(
+                using (ResponseMessage responseMessage = await container.UpsertItemStreamAsync(
                     partitionKey: new PartitionKey(salesOrderV4.AccountNumber),
                     streamPayload: stream))
                 {
@@ -584,7 +586,7 @@
             try
             {
                 itemResponse.Resource.TotalDue = 9999999;
-                updatedDoc = await container.ReplaceItemAsync<SalesOrder>(item.Id, itemResponse, new PartitionKey(item.AccountNumber), new ItemRequestOptions { IfMatchEtag = itemResponse.ETag });
+                updatedDoc = await container.ReplaceItemAsync<SalesOrder>(itemResponse, item.Id, new PartitionKey(item.AccountNumber), new ItemRequestOptions { IfMatchEtag = itemResponse.ETag });
             }
             catch (CosmosException cre)
             {
@@ -622,7 +624,7 @@
             // Now change something on the item, then do another get and this time we should get the item back
             response.Resource.TotalDue = 42;
 
-            response = await container.ReplaceItemAsync<SalesOrder>(item.Id, item, new PartitionKey(item.AccountNumber));
+            response = await container.ReplaceItemAsync<SalesOrder>(item, item.Id, new PartitionKey(item.AccountNumber));
 
             response = await container.ReadItemAsync<SalesOrder>(
                 partitionKey: new PartitionKey("Account2"),
@@ -685,7 +687,7 @@
             database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
 
             // Delete the existing container to prevent create item conflicts
-            await database.GetContainer(containerId).DeleteAsync();
+            await database.GetContainer(containerId).DeleteContainerAsync();
 
             // We create a partitioned collection here which needs a partition key. Partitioned collections
             // can be created with very high values of provisioned throughput (up to Throughput = 250,000)
@@ -694,12 +696,12 @@
             // For this demo, we create a collection to store SalesOrders. We set the partition key to the account
             // number so that we can retrieve all sales orders for an account efficiently from a single partition,
             // and perform transactions across multiple sales order for a single account number. 
-            CosmosContainerSettings containerSettings = new CosmosContainerSettings(containerId, partitionKeyPath: "/AccountNumber");
+            ContainerProperties containerProperties = new ContainerProperties(containerId, partitionKeyPath: "/AccountNumber");
 
             // Create with a throughput of 1000 RU/s
             container = await database.CreateContainerIfNotExistsAsync(
-                containerSettings,
-                requestUnitsPerSecond: 1000);
+                containerProperties,
+                throughput: 1000);
         }
     }
 }

@@ -109,15 +109,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.MaxResourceQuota);
             Assert.IsNotNull(response.CurrentResourceQuotaUsage);
 
-            ItemResponse<dynamic> readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue);
+            ItemResponse<dynamic> readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.None);
             Assert.IsNotNull(readResponse);
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
 
-            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue);
+            ItemResponse<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.None);
             Assert.IsNotNull(deleteResponse);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
-            readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue);
+            readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.None);
             Assert.IsNotNull(readResponse);
             Assert.AreEqual(HttpStatusCode.NotFound, readResponse.StatusCode);
         }
@@ -1047,7 +1047,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Reading item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 ItemResponse<ToDoActivity> response = await fixedContainer.ReadItemAsync<ToDoActivity>(
-                    partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue,
+                    partitionKey: Cosmos.PartitionKey.None,
                     id: nonPartitionItemId);
 
                 Assert.IsNotNull(response.Resource);
@@ -1058,7 +1058,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ToDoActivity itemWithoutPK = this.CreateRandomToDoActivity();
                 ItemResponse<ToDoActivity> createResponseWithoutPk = await fixedContainer.CreateItemAsync<ToDoActivity>(
                  item: itemWithoutPK,
-                 partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue);
+                 partitionKey: Cosmos.PartitionKey.None);
 
                 Assert.IsNotNull(createResponseWithoutPk.Resource);
                 Assert.AreEqual(HttpStatusCode.Created, createResponseWithoutPk.StatusCode);
@@ -1069,7 +1069,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<ToDoActivity> updateResponseWithoutPk = await fixedContainer.ReplaceItemAsync<ToDoActivity>(
                  id: itemWithoutPK.id,
                  item: itemWithoutPK,
-                 partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue);
+                 partitionKey: Cosmos.PartitionKey.None);
 
                 Assert.IsNotNull(updateResponseWithoutPk.Resource);
                 Assert.AreEqual(HttpStatusCode.OK, updateResponseWithoutPk.StatusCode);
@@ -1106,7 +1106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Quering items on fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 feedIterator = fixedContainer.GetItemQueryIterator<dynamic>(
                     new QueryDefinition("select * from r"),
-                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10 , PartitionKey = Cosmos.PartitionKey.NonePartitionKeyValue });
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10 , PartitionKey = Cosmos.PartitionKey.None });
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();
@@ -1125,7 +1125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Deleting item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 ItemResponse<ToDoActivity> deleteResponseWithoutPk = await fixedContainer.DeleteItemAsync<ToDoActivity>(
-                 partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue,
+                 partitionKey: Cosmos.PartitionKey.None,
                  id: itemWithoutPK.id);
 
                 Assert.IsNull(deleteResponseWithoutPk.Resource);
@@ -1141,7 +1141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Reading item from partitioned container with CosmosContainerSettings.NonePartitionKeyValue.
                 ItemResponse<ToDoActivity> undefinedItemResponse = await this.Container.ReadItemAsync<ToDoActivity>(
-                    partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue,
+                    partitionKey: Cosmos.PartitionKey.None,
                     id: undefinedPartitionItemId);
 
                 Assert.IsNotNull(undefinedItemResponse.Resource);
@@ -1176,6 +1176,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedResponse<ToDoActivity> queryResponse = await setIterator.ReadNextAsync();
                 resultsFetched += queryResponse.Count();
 
+                // For the items returned with NonePartitionKeyValue
                 var iter = queryResponse.GetEnumerator();
                 while (iter.MoveNext())
                 {
@@ -1185,22 +1186,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(2, resultsFetched);
             }
 
-            //V3 Asynchronous query execution with LINQ queryable extension method ToFeedIterator().
-            setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator();
-
-            resultsFetched = 0;
-            while (setIterator.HasMoreResults)
+            //Checking for exception in case of ToFeedIterator() use on non cosmos linq IQueryable.
+            try
             {
-                FeedResponse<ToDoActivity> queryResponse = await setIterator.ReadNextAsync();
-                resultsFetched += queryResponse.Count();
-
-                var iter = queryResponse.GetEnumerator();
-                while (iter.MoveNext())
-                {
-                    ToDoActivity activity = iter.Current;
-                    Assert.AreEqual(42, activity.taskNum);
-                }
-                Assert.AreEqual(2, resultsFetched);
+                IQueryable<ToDoActivity> nonLinqQueryable = (new List<ToDoActivity> { CreateRandomToDoActivity() }).AsQueryable();
+                setIterator = nonLinqQueryable.ToFeedIterator();
+                Assert.Fail("It should throw ArgumentOutOfRangeException as ToFeedIterator() only applicable to cosmos LINQ query");
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("ToFeedIterator is only supported on cosmos LINQ query operations"));
             }
 
             //LINQ query execution without partition key.
@@ -1239,7 +1234,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(exception.Message.Contains("To execute LINQ query please set allowSynchronousQueryExecution true"));
             }
         }
-
         // Move the data from None Partition to other logical partitions
         [TestMethod]
         public async Task MigrateDataInNonPartitionContainer()
@@ -1265,7 +1259,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 QueryDefinition sql = new QueryDefinition("select * from r");
                 FeedIterator<ToDoActivity> setIterator = fixedContainer.GetItemQueryIterator<ToDoActivity>(
                     sql, 
-                    requestOptions: new QueryRequestOptions() { MaxItemCount = 2, PartitionKey = Cosmos.PartitionKey.NonePartitionKeyValue });
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 2, PartitionKey = Cosmos.PartitionKey.None });
 
                 while (setIterator.HasMoreResults)
                 {
@@ -1287,7 +1281,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         // Deleting item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                         ItemResponse<ToDoActivity> deleteResponseWithoutPk = await fixedContainer.DeleteItemAsync<ToDoActivity>(
-                         partitionKey: Cosmos.PartitionKey.NonePartitionKeyValue,
+                         partitionKey: Cosmos.PartitionKey.None,
                          id: activity.id);
                         Assert.AreEqual(HttpStatusCode.NoContent, deleteResponseWithoutPk.StatusCode);
                     }
@@ -1299,7 +1293,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Re-Query the items on the container with NonePartitionKeyValue
                 setIterator = fixedContainer.GetItemQueryIterator<ToDoActivity>(
                     sql, 
-                    requestOptions: new QueryRequestOptions() { MaxItemCount = ItemsToCreate, PartitionKey = Cosmos.PartitionKey.NonePartitionKeyValue });
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = ItemsToCreate, PartitionKey = Cosmos.PartitionKey.None });
 
                 Assert.IsTrue(setIterator.HasMoreResults);
                 {
@@ -1554,13 +1548,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task TestNonePKForNonExistingContainer(Container container)
         {
             // Stream implementation should not throw
-            ResponseMessage response = await container.ReadItemStreamAsync("id1", Cosmos.PartitionKey.NonePartitionKeyValue);
+            ResponseMessage response = await container.ReadItemStreamAsync("id1", Cosmos.PartitionKey.None);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
             Assert.IsNotNull(response.Headers.ActivityId);
             Assert.IsNotNull(response.ErrorMessage);
 
             // FOr typed also its not error
-            var typedResponse = await container.ReadItemAsync<string>("id1", Cosmos.PartitionKey.NonePartitionKeyValue);
+            var typedResponse = await container.ReadItemAsync<string>("id1", Cosmos.PartitionKey.None);
             Assert.AreEqual(HttpStatusCode.NotFound, typedResponse.StatusCode);
             Assert.IsNotNull(typedResponse.Headers.ActivityId);
         }

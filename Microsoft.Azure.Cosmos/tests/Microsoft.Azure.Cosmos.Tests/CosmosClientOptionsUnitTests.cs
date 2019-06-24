@@ -80,8 +80,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(userAgentSuffix, clientOptions.ApplicationName);
             Assert.AreEqual(preProcessHandler, clientOptions.CustomHandlers[0]);
             Assert.AreEqual(apiType, clientOptions.ApiType);
-            Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnThrottledRequests);
-            Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnThrottledRequests);
+            Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnRateLimitedRequests);
+            Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnRateLimitedRequests);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();

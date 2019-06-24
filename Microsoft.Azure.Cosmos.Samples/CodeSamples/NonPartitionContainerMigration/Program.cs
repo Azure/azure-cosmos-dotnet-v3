@@ -53,7 +53,7 @@
             [JsonProperty(PropertyName = "deviceId")]
             public string DeviceId { get; set; }
 
-            [JsonProperty(PropertyName = "_partitionKey")]
+            [JsonProperty(PropertyName = "_partitionKey", NullValueHandling = NullValueHandling.Ignore)]
             public string PartitionKey { get; set; }
         }
 
@@ -82,16 +82,16 @@
 
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
                 {
-                    CosmosDatabase database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
+                    Database database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
 
                     // Create the container using REST API without a partition key definition
                     await Program.CreateNonPartitionedContainerAsync(endpoint, authKey);
 
-                    CosmosContainer container = database.GetContainer(containerId);
+                    Container container = database.GetContainer(containerId);
 
                     // Read back the same container and verify that partition key path is populated
                     // Partition key is returned when read from V3 SDK.
-                    ContainerResponse containerResposne = await container.ReadAsync();
+                    ContainerResponse containerResposne = await container.ReadContainerAsync();
                     if (containerResposne.Resource.PartitionKeyPath != null)
                     {
                         Console.WriteLine("Container Partition Key path {0}", containerResposne.Resource.PartitionKeyPath);
@@ -137,42 +137,45 @@
         /// for the partitionKey parameter
         /// New item CRUD could be performed using this NonePartitionKeyValue to target the same logical partition
         /// </summary>
-        private static async Task ItemOperationsWithNonePartitionKeyValue(CosmosContainer container)
+        private static async Task ItemOperationsWithNonePartitionKeyValue(Container container)
         {
             string itemid = Guid.NewGuid().ToString();
             DeviceInformationItem itemWithoutPK = GetDeviceWithNoPartitionKey(itemid);
 
             // Insert a new item with NonePartitionKeyValue
             ItemResponse<DeviceInformationItem> createResponse = await container.CreateItemAsync<DeviceInformationItem>(
-             partitionKey: PartitionKey.NonePartitionKeyValue,
-             item: itemWithoutPK);
+             item: itemWithoutPK,
+             partitionKey: PartitionKey.NonePartitionKeyValue);
             Console.WriteLine("Creating Item {0} Status Code {1}", itemid, createResponse.StatusCode);
 
             // Read an existing item with NonePartitionKeyValue
             ItemResponse<DeviceInformationItem> readResponse = await container.ReadItemAsync<DeviceInformationItem>(
-                partitionKey: PartitionKey.NonePartitionKeyValue,
-                id: itemid);
+                id: itemid,
+                partitionKey: PartitionKey.NonePartitionKeyValue
+                );
             Console.WriteLine("Reading Item {0} Status Code {1}", itemid, readResponse.StatusCode);
 
             // Replace the content of existing item with NonePartitionKeyValue
             itemWithoutPK.DeviceId = Guid.NewGuid().ToString();
             ItemResponse<DeviceInformationItem> replaceResponse = await container.ReplaceItemAsync<DeviceInformationItem>(
-                 partitionKey: PartitionKey.NonePartitionKeyValue,
+                 item: itemWithoutPK,
                  id: itemWithoutPK.Id,
-                 item: itemWithoutPK);
+                 partitionKey: PartitionKey.NonePartitionKeyValue
+                 );
             Console.WriteLine("Replacing Item {0} Status Code {1}", itemid, replaceResponse.StatusCode);
 
             // Delete an item with NonePartitionKeyValue.
             ItemResponse<DeviceInformationItem> deleteResponse = await container.DeleteItemAsync<DeviceInformationItem>(
-                partitionKey: PartitionKey.NonePartitionKeyValue,
-                id: itemid);
+                id: itemid,
+                partitionKey: PartitionKey.NonePartitionKeyValue
+                );
             Console.WriteLine("Deleting Item {0} Status Code {1}", itemid, deleteResponse.StatusCode);
         }
 
         /// <summary>
         /// The function demonstrates CRUD operations on the migrated collection supplying a value for the partition key
         /// <summary>
-        private static async Task ItemOperationsWithValidPartitionKeyValue(CosmosContainer container)
+        private static async Task ItemOperationsWithValidPartitionKeyValue(Container container)
         {
             string itemid = Guid.NewGuid().ToString();
             string partitionKey = "a";
@@ -209,7 +212,7 @@
         ///  The function demonstrates migrating documents that were inserted without a value for partition key, and those inserted
         ///  pre-migration to other logical partitions, those with a value for partition key.
         /// </summary>
-        private static async Task MigratedItemsFromNonePartitionKeyToValidPartitionKeyValue(CosmosContainer container)
+        private static async Task MigratedItemsFromNonePartitionKeyToValidPartitionKeyValue(Container container)
         {
             // Pre-create a few items in the container to demo the migration
             const int ItemsToCreate = 4;
@@ -219,18 +222,18 @@
                 string itemid = Guid.NewGuid().ToString();
                 DeviceInformationItem itemWithoutPK = GetDeviceWithNoPartitionKey(itemid);
                 ItemResponse<DeviceInformationItem> createResponse = await container.CreateItemAsync<DeviceInformationItem>(
-                     partitionKey: PartitionKey.NonePartitionKeyValue,
-                     item: itemWithoutPK);              
+                partitionKey: PartitionKey.NonePartitionKeyValue,
+                item: itemWithoutPK);
             }
 
             // Query items on the container that have no partition key value by supplying NonePartitionKeyValue
             // The operation is made in batches to not lose work in case of partial execution
             int resultsFetched = 0;
-            CosmosSqlQueryDefinition sql = new CosmosSqlQueryDefinition("select * from r");           
-            FeedIterator<DeviceInformationItem> setIterator = container.CreateItemQuery<DeviceInformationItem>(sql, partitionKey: PartitionKey.NonePartitionKeyValue, maxItemCount: 2);
+            QueryDefinition sql = new QueryDefinition("select * from r");      
+            FeedIterator<DeviceInformationItem> setIterator = container.GetItemQueryIterator<DeviceInformationItem>(sql, requestOptions: new QueryRequestOptions() { PartitionKey = PartitionKey.NonePartitionKeyValue, MaxItemCount = 2 });
             while (setIterator.HasMoreResults)
             {
-                FeedResponse<DeviceInformationItem> queryResponse = await setIterator.FetchNextSetAsync();
+                FeedResponse<DeviceInformationItem> queryResponse = await setIterator.ReadNextAsync();
                 resultsFetched += queryResponse.Count();
 
                 // For the items returned with NonePartitionKeyValue
@@ -274,7 +277,7 @@
             return new DeviceInformationItem
             {
                 Id = itemId,
-                DeviceId = Guid.NewGuid().ToString()
+                DeviceId = Guid.NewGuid().ToString(),
             };
         }
 

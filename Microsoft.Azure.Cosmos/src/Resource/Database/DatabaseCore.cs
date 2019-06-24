@@ -90,8 +90,15 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public async override Task<int?> ReadThroughputAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ThroughputResponse response = await this.ReadThroughputAsync(null, cancellationToken);
+            return response.Resource?.Throughput;
+        }
+
         public async override Task<ThroughputResponse> ReadThroughputAsync(
-            RequestOptions requestOptions = null,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             OfferV2 offerV2 = await this.GetRIDAsync(cancellationToken)
