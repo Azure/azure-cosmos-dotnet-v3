@@ -302,8 +302,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryDefinition sql = new QueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
                container.GetItemQueryIterator<TestDocument>(queryDefinition: sql, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
-            FeedResponse<TestDocument> queryResponse = await feedIterator.ReadNextAsync();
-            AssertEqual(testDocument, queryResponse.First());
+
+            List<TestDocument> allDocuments = new List<TestDocument>();
+            while (feedIterator.HasMoreResults)
+            {
+                allDocuments.AddRange(await feedIterator.ReadNextAsync());
+            }
+
+            AssertEqual(testDocument, allDocuments.First());
 
             //Will add LINQ test once it is available with new V3 OM 
             // // LINQ Lambda
