@@ -228,6 +228,17 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = partitionKey == null;
 
+            if (queryDefinition == null)
+            {
+                return new FeedStatelessIteratorCore(
+                    this.ClientContext,
+                    this.LinkUri,
+                    resourceType: ResourceType.Document,
+                    queryDefinition: null,
+                    continuationToken: continuationToken,
+                    options: requestOptions);
+            }
+
             CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
@@ -250,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
-            QueryDefinition sqlQueryDefinition,
+            QueryDefinition queryDefinition,
             PartitionKey partitionKey = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
@@ -259,12 +270,26 @@ namespace Microsoft.Azure.Cosmos
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = partitionKey == null;
 
+            if (queryDefinition == null)
+            {
+                FeedStatelessIteratorCore feedStatelessIterator = new FeedStatelessIteratorCore(
+                    this.ClientContext,
+                    this.LinkUri,
+                    resourceType: ResourceType.Document,
+                    queryDefinition: null,
+                    continuationToken: continuationToken,
+                    options: requestOptions);
+
+                return new FeedStatelessIteratorCore<T>(feedStatelessIterator,
+                    responseCreator: this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+            }
+
             CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
-                sqlQuerySpec: sqlQueryDefinition.ToSqlQuerySpec(),
+                sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
@@ -387,12 +412,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy requestRetryPolicy = null;
-            if (partitionKey == null)
-            {
-                requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.ClientContext.DocumentClient.GetCollectionCacheAsync(), requestRetryPolicy);
-            }
-
+            PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
             while (true)
             {
                 ResponseMessage responseMessage = await this.ProcessItemStreamAsync(
@@ -404,13 +424,17 @@ namespace Microsoft.Azure.Cosmos
                     extractPartitionKeyIfNeeded: true,
                     cancellationToken: cancellationToken);
 
-                ShouldRetryResult retryResult = ShouldRetryResult.NoRetry();
-                if (requestRetryPolicy != null &&
-                    !responseMessage.IsSuccessStatusCode)
+                if (responseMessage.IsSuccessStatusCode)
                 {
-                    retryResult = await requestRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
+                    return responseMessage;
                 }
 
+                if (requestRetryPolicy == null)
+                {
+                    requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.ClientContext.DocumentClient.GetCollectionCacheAsync(), null);
+                }
+
+                ShouldRetryResult retryResult = await requestRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
                 if (!retryResult.ShouldRetry)
                 {
                     return responseMessage;

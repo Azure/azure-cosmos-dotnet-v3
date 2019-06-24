@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@status", "Done");
             
              FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
-                 sqlQueryDefinition: sqlQuery);
+                 queryDefinition: sqlQuery);
 
             HashSet<string> iterIds = new HashSet<string>();
             while (feedIterator.HasMoreResults)

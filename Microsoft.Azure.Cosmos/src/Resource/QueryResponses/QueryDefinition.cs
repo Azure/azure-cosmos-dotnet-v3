@@ -74,6 +74,11 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="queryText">The query text</param>
         public static implicit operator QueryDefinition(string queryText)
         {
+            if (queryText == null)
+            {
+                return null;
+            }
+
             return new QueryDefinition(queryText);
         }
 
