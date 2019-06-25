@@ -46,6 +46,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public void MappedRegionsTest()
+        {
+            string[] cosmosRegions = typeof(Regions)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+
+            string[] locationNames = typeof(LocationNames)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+
+            CollectionAssert.AreEquivalent(locationNames, cosmosRegions);
+        }
+
+        [TestMethod]
         public void RMContractTest()
         {
             Trace.TraceInformation($"{Documents.RMResources.PartitionKeyAndEffectivePartitionKeyBothSpecified} " +
