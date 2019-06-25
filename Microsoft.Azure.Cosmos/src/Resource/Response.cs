@@ -12,13 +12,6 @@ namespace Microsoft.Azure.Cosmos
     public abstract class Response<T>
     {
         /// <summary>
-        /// Create an empty cosmos response for mock testing
-        /// </summary>
-        protected Response()
-        {
-        }
-
-        /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
         /// </summary>
         public abstract Headers Headers { get; }
