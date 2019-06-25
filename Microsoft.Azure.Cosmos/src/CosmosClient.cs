@@ -97,6 +97,7 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClient : IDisposable
     {
         private Lazy<CosmosOffers> offerSet;
+        private ConsistencyLevel? accountConsistencyLevel;
 
         static CosmosClient()
         {
@@ -291,7 +292,6 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
         internal RequestInvokerHandler RequestHandler { get; private set; }
-        internal ConsistencyLevel AccountConsistencyLevel { get; private set; }
         internal CosmosResponseFactory ResponseFactory { get; private set; }
         internal CosmosClientContext ClientContext { get; private set; }
 
@@ -534,9 +534,6 @@ namespace Microsoft.Azure.Cosmos
                 this.DocumentClient.ResetSessionTokenRetryPolicy,
                 this.ClientOptions.CustomHandlers);
 
-            // DocumentClient is not initialized with any consistency overrides so default is backend consistency
-            this.AccountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;
-
             this.RequestHandler = clientPipelineBuilder.Build();
 
             this.ResponseFactory = new CosmosResponseFactory(
@@ -554,6 +551,17 @@ namespace Microsoft.Azure.Cosmos
                 documentQueryClient: new DocumentQueryClient(this.DocumentClient));
 
             this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
+        }
+
+        internal async virtual Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
+        {
+            if (!this.accountConsistencyLevel.HasValue)
+            {
+                await this.DocumentClient.EnsureValidClientAsync();
+                this.accountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;
+            }
+
+            return this.accountConsistencyLevel.Value;
         }
 
         internal DatabaseProperties PrepareDatabaseProperties(string id)
