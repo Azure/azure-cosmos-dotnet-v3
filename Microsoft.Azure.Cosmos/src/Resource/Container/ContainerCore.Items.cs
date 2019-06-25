@@ -225,6 +225,11 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
+            if (requestOptions.PartitionKey != null)
+            {
+                throw new ArgumentException($"Please set {nameof(PartitionKey)} as a parameter on the method.");
+            }
+
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = partitionKey == null;
 
@@ -267,6 +272,11 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
+            if (requestOptions.PartitionKey != null)
+            {
+                throw new ArgumentException($"Please set {nameof(PartitionKey)} as a parameter on the method.");
+            }
+
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = partitionKey == null;
 
@@ -311,6 +321,11 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
+            if (requestOptions.PartitionKey != null)
+            {
+                throw new ArgumentException($"Please set {nameof(PartitionKey)} as a parameter on the method.");
+            }
+
             requestOptions.PartitionKey = partitionKey;
             requestOptions.EnableCrossPartitionQuery = partitionKey == null;
 
