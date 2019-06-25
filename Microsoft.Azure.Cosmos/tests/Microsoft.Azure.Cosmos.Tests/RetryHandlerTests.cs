@@ -232,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
+                request.OnBeforeSendRequestActions(request.ToDocumentServiceRequest());
                 if (handlerCalls == 0)
                 {
                     handlerCalls++;
@@ -246,6 +247,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
+            
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }
