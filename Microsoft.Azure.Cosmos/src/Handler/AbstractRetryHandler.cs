@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal abstract class AbstractRetryHandler : RequestHandler
@@ -17,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         internal abstract Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request);
 
         public override async Task<ResponseMessage> SendAsync(
-            RequestMessage request, 
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
@@ -108,4 +107,4 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
     }
-} 
+}

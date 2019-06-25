@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -49,8 +48,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             try
             {
                 RntdbEnumerationDirection rntdbEnumerationDirection = RntdbEnumerationDirection.Forward;
-                object direction;
-                if (request.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out direction))
+                if (request.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object direction))
                 {
                     rntdbEnumerationDirection = (byte)direction == (byte)RntdbEnumerationDirection.Reverse ? RntdbEnumerationDirection.Reverse : RntdbEnumerationDirection.Forward;
                 }
@@ -58,16 +56,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Headers.Remove(HttpConstants.HttpHeaders.IsContinuationExpected);
                 request.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.TrueString);
 
-                object startEpk;
-                object endEpk;
-                if (!request.Properties.TryGetValue(HandlerConstants.StartEpkString, out startEpk))
+                if (!request.Properties.TryGetValue(HandlerConstants.StartEpkString, out object startEpk))
                 {
                     startEpk = PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
                 }
-                if (!request.Properties.TryGetValue(HandlerConstants.EndEpkString, out endEpk))
+
+                if (!request.Properties.TryGetValue(HandlerConstants.EndEpkString, out object endEpk))
                 {
                     endEpk = PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
                 }
+
                 startEpk = startEpk ?? PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
                 endEpk = endEpk ?? PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
 
@@ -89,10 +87,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
-                List<CompositeContinuationToken> suppliedTokens;
                 //direction is not expected to change  between continuations.
                 Range<string> rangeFromContinuationToken =
-                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out suppliedTokens);
+                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out List<CompositeContinuationToken> suppliedTokens);
 
                 ResolvedRangeInfo resolvedRangeInfo =
                     await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
@@ -129,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    this.SetOriginalContinuationToken(request, response, originalContinuation);
+                    SetOriginalContinuationToken(request, response, originalContinuation);
                 }
                 else
                 {
@@ -148,16 +145,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
 
                 return response;
-            }            
+            }
             catch (DocumentClientException ex)
             {
                 ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
-                this.SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
             catch (AggregateException ex)
             {
-                this.SetOriginalContinuationToken(request, response, originalContinuation);
+                SetOriginalContinuationToken(request, response, originalContinuation);
 
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 

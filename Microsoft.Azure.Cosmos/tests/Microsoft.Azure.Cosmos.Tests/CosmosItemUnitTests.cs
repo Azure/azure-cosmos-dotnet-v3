@@ -158,9 +158,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
             }
 
-            //null should return Undefined
+            //null should return null
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { pk = (object)null }));
-            Assert.AreEqual(Cosmos.PartitionKey.NonePartitionKeyValue, pkValue);
+            Assert.AreEqual(Cosmos.PartitionKey.Null, pkValue);
         }
 
         [TestMethod]
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (dynamic poco in invalidNestedItems)
             {
                 object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
-                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.NonePartitionKeyValue, pk));
+                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.None, pk));
             }
         }
 

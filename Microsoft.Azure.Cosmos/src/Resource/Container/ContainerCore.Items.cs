@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
-        {   
+        {
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
@@ -316,16 +316,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
-            bool allowSynchronousQueryExecution = false, 
+            bool allowSynchronousQueryExecution = false,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
 
             return new CosmosLinqQuery<T>(
-                this, 
-                this.ClientContext.CosmosSerializer, 
-                (CosmosQueryClientCore)this.queryClient, 
-                requestOptions, 
+                this,
+                this.ClientContext.CosmosSerializer,
+                (CosmosQueryClientCore)this.queryClient,
+                requestOptions,
                 allowSynchronousQueryExecution);
         }
 
@@ -510,17 +510,17 @@ namespace Microsoft.Azure.Cosmos
                     pathTraversal = pathTraversal[tokens[i]] as CosmosObject;
                     if (pathTraversal == null)
                     {
-                        return PartitionKey.NonePartitionKeyValue;
+                        return PartitionKey.None;
                     }
                 }
 
                 CosmosElement partitionKeyValue = pathTraversal[tokens[tokens.Length - 1]];
-                if (partitionKeyValue == null || partitionKeyValue is CosmosNull)
+                if (partitionKeyValue == null)
                 {
-                    return PartitionKey.NonePartitionKeyValue;
+                    return PartitionKey.None;
                 }
 
-                return new PartitionKey(this.CosmosElementToPartitionKeyObject(partitionKeyValue));
+                return this.CosmosElementToPartitionKeyObject(partitionKeyValue);
             }
             finally
             {
@@ -529,26 +529,32 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private object CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
+        private PartitionKey CosmosElementToPartitionKeyObject(CosmosElement cosmosElement)
         {
             // TODO: Leverage original serialization and avoid re-serialization (bug)
             switch (cosmosElement.Type)
             {
                 case CosmosElementType.String:
                     CosmosString cosmosString = cosmosElement as CosmosString;
-                    return cosmosString.Value;
+                    return new PartitionKey(cosmosString.Value);
 
                 case CosmosElementType.Number:
                     CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                    return cosmosNumber.AsFloatingPoint();
+                    double? number = cosmosNumber.AsFloatingPoint();
+                    if (!number.HasValue)
+                    {
+                        throw new ArgumentException(
+                            string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
+                    }
+
+                    return new PartitionKey(cosmosNumber.AsFloatingPoint().Value);
 
                 case CosmosElementType.Boolean:
                     CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
-                    return cosmosBool.Value;
+                    return new PartitionKey(cosmosBool.Value);
 
-                case CosmosElementType.Guid:
-                    CosmosGuid cosmosGuid = cosmosElement as CosmosGuid;
-                    return cosmosGuid.Value;
+                case CosmosElementType.Null:
+                    return PartitionKey.Null;
 
                 default:
                     throw new ArgumentException(
@@ -615,7 +621,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 CosmosQueryExecutionContext cosmosQueryExecution = (CosmosQueryExecutionContext)state;
-                return (ResponseMessage)(await cosmosQueryExecution.ExecuteNextAsync(cancellationToken));
+                return await cosmosQueryExecution.ExecuteNextAsync(cancellationToken);
             }
             catch (DocumentClientException exception)
             {
@@ -624,7 +630,7 @@ namespace Microsoft.Azure.Cosmos
             catch (CosmosException exception)
             {
                 return new ResponseMessage(
-                    headers: exception.ResponseHeaders,
+                    headers: exception.Headers,
                     requestMessage: null,
                     errorMessage: exception.Message,
                     statusCode: exception.StatusCode,

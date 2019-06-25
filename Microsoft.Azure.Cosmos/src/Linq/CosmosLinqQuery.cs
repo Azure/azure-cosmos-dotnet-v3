@@ -155,6 +155,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             return container.LinkUri.ToString();
         }
 
+        public FeedIterator<T> ToFeedIterator()
+        {
+            return this.container.GetItemQueryIterator<T>(
+                sqlQueryDefinition: new QueryDefinition(ToSqlQueryText()),
+                continuationToken: null,
+                requestOptions: this.cosmosQueryRequestOptions);
+        }
+
         public void Dispose()
         {
             //NOTHING TO DISPOSE HERE

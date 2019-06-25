@@ -233,8 +233,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(RMResources.MissingPartitionKeyValue);
             }
 
-            bool partitonKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
-            if (partitonKeyRangeIdExists)
+            bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
+            if (partitionKeyRangeIdExists)
             {
                 // Assert operation type is not write
                 if (this.OperationType != OperationType.Query && this.OperationType != OperationType.ReadFeed)
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (pkExists && partitonKeyRangeIdExists)
+            if (pkExists && partitionKeyRangeIdExists)
             {
                 throw new ArgumentOutOfRangeException(RMResources.PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified);
             }

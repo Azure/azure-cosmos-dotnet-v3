@@ -143,6 +143,32 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <value>
+        /// The provisioned throughput for this container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// Null value indicates a container with no throughput provisioned.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// The following example shows how to get the throughput.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// int? throughput = await container.ReadThroughputAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>Provisioned throughput in request units per second</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-database"/>
+        public abstract Task<int?> ReadThroughputAsync(
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
+        /// </summary>
         /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <value>
@@ -154,16 +180,28 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <example>
-        /// The following example shows how to get the throughput.
+        /// The following example shows how to get the throughput
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputResponse throughput = await this.container.ReadThroughputAsync();
+        /// ThroughputProperties throughputProperties = await container.ReadThroughputAsync();
+        /// Console.WriteLine($"Throughput: {throughputProperties?.Throughput}");
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// The following example shows how to get throughput, MinThroughput and is replace in progress
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ThroughputResponse response = await container.ReadThroughputAsync();
+        /// Console.WriteLine($"Throughput: {response.Resource?.Throughput}");
+        /// Console.WriteLine($"MinThroughput: {response.MinThroughput}");
+        /// Console.WriteLine($"IsReplacePending: {response.IsReplacePending}");
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>The throughput response</returns>
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
-            RequestOptions requestOptions = null,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -425,7 +463,9 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the read resource record.
         /// </returns>
         /// <exception>
-        /// The Stream operation only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
+        /// The Stream operation only throws on client side exceptions. 
+        /// This is to increase performance and prevent the overhead of throwing exceptions. 
+        /// Check the HTTP status code on the response to check if the operation failed.
         /// </exception>
         /// <example>
         /// Upsert a Stream containing the item to Cosmos
@@ -521,7 +561,9 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the replace resource record.
         /// </returns>
         /// <exception>
-        /// The Stream operation only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
+        /// The Stream operation only throws on client side exceptions. 
+        /// This is to increase performance and prevent the overhead of throwing exceptions. 
+        /// Check the HTTP status code on the response to check if the operation failed.
         /// </exception>
         /// <example>
         /// Replace an item in Cosmos
@@ -770,7 +812,7 @@ namespace Microsoft.Azure.Cosmos
         /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
         /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     sqlQueryDefinition: sqlQuery, 
-        ///     partitionKey: "Error");
+        ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -796,7 +838,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetStreamIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
-        /// <param name="sqlQueryText">The cosmos SQL query string.</param>
+        /// <param name="sqlQueryText">The cosmos SQL query string. </param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <remarks>
@@ -814,11 +856,11 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
-        ///     partitionKey: "Error");
+        ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     using (CosmosResponseMessage response = await feedIterator.FetchNextSetAsync())
+        ///     using (CosmosResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
         ///         using (StreamReader sr = new StreamReader(response.Content))
         ///         using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -856,11 +898,11 @@ namespace Microsoft.Azure.Cosmos
         /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
         /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     sqlQueryDefinition: sqlQuery, 
-        ///     partitionKey: "Error");
+        ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(var item in await feedIterator.FetchNextSetAsync()){
+        ///     foreach(var item in await feedIterator.ReadNextAsync()){
         ///     {
         ///         Console.WriteLine(item.cost); 
         ///     }
@@ -892,12 +934,12 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-        ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
-        ///     partitionKey: "Error");
+        ///     sqlQueryText: "select * from ToDos t where t.cost > 9000",
+        ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     foreach(var item in await feedIterator.FetchNextSetAsync()){
+        ///     foreach(var item in await feedIterator.ReadNextAsync()){
         ///     {
         ///         Console.WriteLine(item.cost); 
         ///     }
@@ -913,8 +955,12 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
-        /// IQueryable extension method ToSqlQueryText() should be use for asynchronous execution with FeedIterator, please refer to example 2.
+        /// IQueryable extension method ToFeedIterator() should be use for asynchronous execution with FeedIterator, please refer to example 2.
         /// </summary>
+        /// <remarks>
+        /// LINQ execution is synchronous which will cause issues related to blocking calls. 
+        /// It is recommended to always use ToFeedIterator(), and to do the asynchronous execution.
+        /// </remarks>
         /// <typeparam name="T">The type of object to query.</typeparam>
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
         /// <param name="requestOptions">(Optional)The options for the item query request.<see cref="QueryRequestOptions"/></param>
@@ -965,19 +1011,16 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         ///
         /// // LINQ query generation
-        /// IQueryable<Book> queryable = container.Items.GetItemLinqQuery<Book>()
-        ///                      .Where(b => b.Title == "War and Peace");
+        /// var setIterator = container.Items.GetItemLinqQuery<Book>()
+        ///                      .Where(b => b.Title == "War and Peace")
+        ///                      .ToFeedIterator();
+        ///                      
         /// //Asynchronous query execution
-        /// string sqlQueryText = queriable.ToSqlQueryText();
-        /// FeedIterator<Book> setIterator = this.Container
-        ///           .GetItemQueryIterator<Book>(sqlQueryText, maxConcurrency: 1);
         /// while (setIterator.HasMoreResults)
         /// {
-        ///     FeedResponse<Book> queryResponse = await setIterator.FetchNextSetAsync();
-        ///     var iter = queryResponse.GetEnumerator();
-        ///     while (iter.MoveNext())
+        ///     foreach(var item in await feedIterator.ReadNextAsync()){
         ///     {
-        ///         Book book = iter.Current;
+        ///         Console.WriteLine(item.cost); 
         ///     }
         /// }
         ///

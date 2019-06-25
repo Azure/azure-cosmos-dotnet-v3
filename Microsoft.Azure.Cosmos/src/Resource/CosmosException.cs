@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = statusCode;
             this.Error = error;
+            this.Headers = new Headers();
         }
 
         internal CosmosException(
@@ -34,11 +35,17 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosResponseMessage != null)
             {
                 this.StatusCode = cosmosResponseMessage.StatusCode;
-                this.ResponseHeaders = cosmosResponseMessage.Headers;
-                this.ActivityId = this.ResponseHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
-                this.RequestCharge = this.ResponseHeaders == null ? 0 : this.ResponseHeaders.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
-                this.SubStatusCode = (int)this.ResponseHeaders.SubStatusCode;
-                if (cosmosResponseMessage.Headers.ContentLengthAsLong > 0)
+                this.Headers = cosmosResponseMessage.Headers;
+                if (this.Headers == null)
+                {
+                    this.Headers = new Headers();
+                }
+
+                this.ActivityId = this.Headers.ActivityId;
+                this.RequestCharge = this.Headers.RequestCharge;
+                this.RetryAfter = this.Headers.RetryAfter;
+                this.SubStatusCode = (int)this.Headers.SubStatusCode;
+                if (this.Headers.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
                     {
@@ -70,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
+            this.Headers = new Headers();
         }
 
         /// <summary>
@@ -106,14 +114,19 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ActivityId { get; }
 
         /// <summary>
+        /// Gets the retry after time. This tells how long a request should wait before doing a retry.
+        /// </summary>
+        public virtual TimeSpan? RetryAfter { get; }
+
+        /// <summary>
+        /// Gets the response headers
+        /// </summary>
+        public virtual Headers Headers { get; }
+
+        /// <summary>
         /// Gets the internal error object
         /// </summary>
         internal virtual Error Error { get; }
-
-        /// <summary>
-        /// Gets the internal headers
-        /// </summary>
-        internal virtual Headers ResponseHeaders { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message
@@ -123,13 +136,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A value indicating if the header was read.</returns>
         public virtual bool TryGetHeader(string headerName, out string value)
         {
-            if (this.ResponseHeaders == null)
+            if (this.Headers == null)
             {
                 value = null;
                 return false;
             }
 
-            return this.ResponseHeaders.TryGetValue(headerName, out value);
+            return this.Headers.TryGetValue(headerName, out value);
         }
 
         /// <summary>

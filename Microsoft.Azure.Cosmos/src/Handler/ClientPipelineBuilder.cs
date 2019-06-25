@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -133,13 +132,13 @@ namespace Microsoft.Azure.Cosmos
                 foreach (RequestHandler handler in this.CustomHandlers)
                 {
                     current.InnerHandler = handler;
-                    current = (RequestHandler)current.InnerHandler;
+                    current = current.InnerHandler;
                 }
             }
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;
-            current = (RequestHandler)current.InnerHandler;
+            current = current.InnerHandler;
 
             // Have a router handler
             RequestHandler feedHandler = this.CreateDocumentFeedPipeline();
@@ -151,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
                 pointOperationHandler: this.transportHandler);
 
             current.InnerHandler = routerHandler;
-            current = (RequestHandler)current.InnerHandler;
+            current = current.InnerHandler;
 
             return root;
         }
@@ -201,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
                     this.transportHandler,
                 };
 
-            return (RequestHandler)ClientPipelineBuilder.CreatePipeline(feedPipeline);
+            return ClientPipelineBuilder.CreatePipeline(feedPipeline);
         }
     }
 }
