@@ -828,11 +828,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     FeedIterator<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
                         queryDefinition: queryAndExpectedResult.Item1,
-                        partitionKey: new Cosmos.PartitionKey(keys[i]),
                         requestOptions: new QueryRequestOptions()
-                            {
-                                MaxItemCount = 1
-                            });
+                        {
+                            MaxItemCount = 1,
+                            PartitionKey = new Cosmos.PartitionKey(keys[i]),
+                        });
 
                     List<Document> result = new List<Document>();
                     while (resultSetIterator.HasMoreResults)
@@ -1042,10 +1042,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             returnedDoc = (await container.GetItemQueryIterator<SpecialPropertyDocument>(
                 query,
-                partitionKey: new Cosmos.PartitionKey(args.ValueToPartitionKey),
                 requestOptions: new QueryRequestOptions()
-                    {
-                        MaxItemCount = 1
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new Cosmos.PartitionKey(args.ValueToPartitionKey),
                 }).ReadNextAsync()).First();
 
             Assert.AreEqual(args.Value, getPropertyValueFunction(returnedDoc));

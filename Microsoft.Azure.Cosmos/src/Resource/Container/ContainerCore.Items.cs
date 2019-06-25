@@ -220,18 +220,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator GetItemQueryStreamIterator(
             QueryDefinition queryDefinition,
-            PartitionKey partitionKey = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
-            if (requestOptions.PartitionKey != null)
-            {
-                throw new ArgumentException($"Please set {nameof(PartitionKey)} as a parameter on the method.");
-            }
-
-            requestOptions.PartitionKey = partitionKey;
-            requestOptions.EnableCrossPartitionQuery = partitionKey == null;
 
             if (queryDefinition == null)
             {
@@ -267,18 +259,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
             QueryDefinition queryDefinition,
-            PartitionKey partitionKey = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
-            if (requestOptions.PartitionKey != null)
-            {
-                throw new ArgumentException($"Please set {nameof(PartitionKey)} as a parameter on the method.");
-            }
-
-            requestOptions.PartitionKey = partitionKey;
-            requestOptions.EnableCrossPartitionQuery = partitionKey == null;
 
             if (queryDefinition == null)
             {
@@ -317,17 +301,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
-            PartitionKey partitionKey = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
-            if (requestOptions.PartitionKey != null)
-            {
-                throw new ArgumentException($"Please set {nameof(PartitionKey)} as a parameter on the method.");
-            }
-
-            requestOptions.PartitionKey = partitionKey;
-            requestOptions.EnableCrossPartitionQuery = partitionKey == null;
 
             return new CosmosLinqQuery<T>(
                 this,

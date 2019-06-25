@@ -81,7 +81,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedItems.Setup(i => i.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
                 It.Is<QueryDefinition>(value => ("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')").Equals(value.ToSqlQuerySpec().QueryText)),
-                It.IsAny<Cosmos.PartitionKey>(),
                 It.IsAny<string>(), 
                 It.IsAny<QueryRequestOptions>()))
                 .Returns(()=>

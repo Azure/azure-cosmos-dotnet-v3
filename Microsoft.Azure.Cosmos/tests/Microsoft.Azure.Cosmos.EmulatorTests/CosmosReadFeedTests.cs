@@ -121,13 +121,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             lastKnownContinuationToken = null;
             iter = this.Container.Database.GetContainer(this.Container.Id)
-                    .GetItemQueryStreamIterator(null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                    .GetItemQueryStreamIterator(queryDefinition: null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
             while (iter.HasMoreResults)
             {
                 if (useStatelessIteration)
                 {
                     iter = this.Container.Database.GetContainer(this.Container.Id)
-                            .GetItemQueryStreamIterator(null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
+                            .GetItemQueryStreamIterator(queryDefinition: null, continuationToken: lastKnownContinuationToken, requestOptions: requestOptions);
                 }
 
                 using (ResponseMessage response = await iter.ReadNextAsync())

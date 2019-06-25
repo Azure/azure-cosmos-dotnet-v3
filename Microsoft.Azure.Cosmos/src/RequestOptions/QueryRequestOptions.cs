@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Globalization;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -82,6 +83,14 @@ namespace Microsoft.Azure.Cosmos
         public int? MaxConcurrency { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// Only applicable to Item operations
+        /// </remarks>
+        public PartitionKey PartitionKey { get; set; }
+
+        /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -135,19 +144,18 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableCrossPartitionSkipTake { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
-        /// </summary>
-        internal PartitionKey PartitionKey { get; set; }
-
-        internal bool EnableCrossPartitionQuery { get; set; }
-
-        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
         internal override void PopulateRequestOptions(RequestMessage request)
         {
-            if (EnableCrossPartitionQuery)
+            if (this.PartitionKey != null && request.ResourceType != ResourceType.Document)
+            {
+                throw new ArgumentException($"{nameof(this.PartitionKey)} can only be set for item operations");
+            }
+
+            // Cross partition is only applicable to item operations.
+            if (this.PartitionKey == null && request.ResourceType == ResourceType.Document)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
             }
