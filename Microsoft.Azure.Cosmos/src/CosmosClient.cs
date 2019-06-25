@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
     ///             "connection-string-from-portal", 
     ///             new CosmosClientOptions()
     ///             {
-    ///                 ApplicationRegion = "East US 2",
+    ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
     /// Database db = await client.CreateDatabaseAsync("database-id");
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
     ///             "account-key-from-portal", 
     ///             new CosmosClientOptions()
     ///             {
-    ///                 ApplicationRegion = "East US 2",
+    ///                 ApplicationRegion = Regions.EastUS2,
     ///             });
     /// 
     /// Database db = await client.CreateDatabaseAsync("database-id");
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         ///             "account-key-from-portal", 
         ///             new CosmosClientOptions()
         ///             {
-        ///                 ApplicationRegion = "East US 2",
+        ///                 ApplicationRegion = Regions.EastUS2,
         ///             });
         /// 
         /// // Dispose cosmosClient at application exit
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
         ///             "account-key-from-portal", 
         ///             new CosmosClientOptions()
         ///             {
-        ///                 ApplicationRegion = "East US 2",
+        ///                 ApplicationRegion = Regions.EastUS2,
         ///             });
         /// 
         /// // Dispose cosmosClient at application exit
