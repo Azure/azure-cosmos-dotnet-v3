@@ -68,20 +68,6 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
-        /// <summary>
-        /// Implicit converter
-        /// </summary>
-        /// <param name="queryText">The query text</param>
-        public static implicit operator QueryDefinition(string queryText)
-        {
-            if (queryText == null)
-            {
-                return null;
-            }
-
-            return new QueryDefinition(queryText);
-        }
-
         internal SqlQuerySpec ToSqlQuerySpec()
         {
             return new SqlQuerySpec(this.Query, new SqlParameterCollection(this.SqlParameters.Values));
