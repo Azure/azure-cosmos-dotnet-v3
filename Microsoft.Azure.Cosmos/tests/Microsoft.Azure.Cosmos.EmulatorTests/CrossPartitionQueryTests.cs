@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<DatabaseProperties> allDatabases = client.GetDatabaseQueryIterator<DatabaseProperties>(null);
+            FeedIterator<DatabaseProperties> allDatabases = client.GetDatabaseQueryIterator<DatabaseProperties>();
 
             while (allDatabases.HasMoreResults)
             {
@@ -591,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             do
             {
                 FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
-                   queryDefinition: query,
+                   queryText: query,
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken);
 
@@ -620,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<T> results = new List<T>();
             FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
-                queryDefinition: query,
+                queryText: query,
                 requestOptions: queryRequestOptions);
 
             while (itemQuery.HasMoreResults)
@@ -827,7 +827,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach ((string, string) queryAndExpectedResult in queries)
                 {
                     FeedIterator<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
-                        queryDefinition: queryAndExpectedResult.Item1,
+                        queryText: queryAndExpectedResult.Item1,
                         requestOptions: new QueryRequestOptions()
                         {
                             MaxItemCount = 1,
@@ -2166,7 +2166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<JToken> documentsFromWithoutDistinct = new List<JToken>();
 
                     FeedIterator<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
-                        queryDefinition: queryWithoutDistinct,
+                        queryText: queryWithoutDistinct,
                         requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
 
                     while (documentQueryWithoutDistinct.HasMoreResults)
@@ -2186,14 +2186,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     FeedIterator<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
-                       queryDefinition: queryWithDistinct,
+                       queryText: queryWithDistinct,
                        requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
 
                     string continuationToken = null;
                     do
                     {
                         FeedIterator<JToken> cosmosQuery = container.GetItemQueryIterator<JToken>(
-                                   queryDefinition: queryWithDistinct,
+                                   queryText: queryWithDistinct,
                                    continuationToken: continuationToken,
                                    requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
 

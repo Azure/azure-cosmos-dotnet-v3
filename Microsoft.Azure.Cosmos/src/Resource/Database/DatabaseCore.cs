@@ -304,6 +304,40 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetContainerQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator<T> GetContainerQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetContainerQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator GetContainerQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
@@ -317,7 +351,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions);
         }
 
-        public override FeedIterator<ContainerProperties> GetContainerQueryIterator(
+        public override FeedIterator<T> GetContainerQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
@@ -327,9 +361,9 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<ContainerProperties>(
+            return new FeedStatelessIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<ContainerProperties>);
+                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
         }
 
         public override ContainerBuilder DefineContainer(

@@ -447,27 +447,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets an iterator to go through all the databases for the account
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
-        /// <example>
-        /// Get an iterator for all the database under the cosmos account
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabasesIterator();
-        /// {
-        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.ReadNextAsync())
-        ///     {
-        ///         Console.WriteLine(databaseProperties.Id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual FeedIterator<DatabaseProperties> GetDatabaseQueryIterator<DatabaseProperties>(
+        public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
@@ -477,13 +464,14 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<DatabaseProperties>(
+            return new FeedStatelessIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<DatabaseProperties>);
+                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
         }
 
         /// <summary>
-        /// Gets an iterator to go through all the databases for the Cosmos DB account
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -501,6 +489,70 @@ namespace Microsoft.Azure.Cosmos
                queryDefinition,
                continuationToken,
                requestOptions);
+        }
+
+        /// <summary>
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <example>
+        /// Get an iterator for all the database under the cosmos account
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabaseQueryIterator();
+        /// {
+        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(databaseProperties.Id); 
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the databases.</returns>
+        public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetDatabaseQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        /// <summary>
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the databases</returns>
+        public virtual FeedIterator GetDatabaseQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetDatabaseQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
         }
 
         /// <summary>

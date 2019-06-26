@@ -449,34 +449,21 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the containers for the database
+        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
-        /// <example>
-        /// Get an iterator for all the containers under the database
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedIterator<ContainerProperties> feedIterator = this.cosmosDatabase.GetContainerQueryIterator();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     foreach(ContainerProperties containerProperties in await feedIterator.ReadNextAsync())
-        ///     {
-        ///          Console.WriteLine(containerProperties.Id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator<ContainerProperties> GetContainerQueryIterator(
+        public abstract FeedIterator<T> GetContainerQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        /// Gets an iterator to go through all the containers for the database
+        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
@@ -484,6 +471,32 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the containers</returns>
         public abstract FeedIterator GetContainerQueryStreamIterator(
             QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the containers</returns>
+        public abstract FeedIterator<T> GetContainerQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the containers</returns>
+        public abstract FeedIterator GetContainerQueryStreamIterator(
+            string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 

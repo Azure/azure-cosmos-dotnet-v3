@@ -37,15 +37,67 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<StoredProcedureProperties> GetStoredProcedureIterator(
-            int? maxItemCount = null,
-            string continuationToken = null)
+        public override FeedIterator GetStoredProcedureQueryStreamIterator(
+           string queryText = null,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore<StoredProcedureProperties>(
-                maxItemCount,
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetStoredProcedureQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
-                null,
-                this.StoredProcedureFeedRequestExecutorAsync);
+                requestOptions);
+        }
+
+        public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetStoredProcedureQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator GetStoredProcedureQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedStatelessIteratorCore(
+               this.clientContext,
+               this.container.LinkUri,
+               ResourceType.StoredProcedure,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator databaseStreamIterator = this.GetStoredProcedureQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+
+            return new FeedStatelessIteratorCore<T>(
+                databaseStreamIterator,
+                this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
         }
 
         public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -181,15 +233,67 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<TriggerProperties> GetTriggersIterator(
-            int? maxItemCount = null, 
-            string continuationToken = null)
+        public override FeedIterator GetTriggerQueryStreamIterator(
+           string queryText = null,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore<TriggerProperties>(
-                maxItemCount,
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetTriggerQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
-                null,
-                this.ContainerFeedRequestExecutorAsync);
+                requestOptions);
+        }
+
+        public override FeedIterator<T> GetTriggerQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetTriggerQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator GetTriggerQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedStatelessIteratorCore(
+               this.clientContext,
+               this.container.LinkUri,
+               ResourceType.Trigger,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        public override FeedIterator<T> GetTriggerQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator databaseStreamIterator = this.GetTriggerQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+
+            return new FeedStatelessIteratorCore<T>(
+                databaseStreamIterator,
+                this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
         }
 
         public override Task<TriggerResponse> ReadTriggerAsync(
@@ -284,15 +388,67 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionIterator(
-            int? maxItemCount = null, 
-            string continuationToken = null)
+        public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
+           string queryText = null,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore<UserDefinedFunctionProperties>(
-                maxItemCount,
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetUserDefinedFunctionQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
-                null,
-                this.UserDefinedFunctionFeedRequestExecutorAsync);
+                requestOptions);
+        }
+
+        public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetUserDefinedFunctionQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator GetUserDefinedFunctionQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedStatelessIteratorCore(
+               this.clientContext,
+               this.container.LinkUri,
+               ResourceType.UserDefinedFunction,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator databaseStreamIterator = this.GetUserDefinedFunctionQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+
+            return new FeedStatelessIteratorCore<T>(
+                databaseStreamIterator,
+                this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(

@@ -219,6 +219,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
+           string queryText = null,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetItemQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator GetItemQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
@@ -255,6 +272,23 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 this.QueryRequestExecutorAsync,
                 cosmosQueryExecution);
+        }
+
+        public override FeedIterator<T> GetItemQueryIterator<T>(
+           string queryText = null,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetItemQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(

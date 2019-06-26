@@ -75,7 +75,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string lastKnownContinuationToken = null;
             FeedIterator iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamIterator(
-                null,
                 continuationToken: lastKnownContinuationToken, 
                 requestOptions: requestOptions);
 
@@ -86,7 +85,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (useStatelessIteration)
                 {
                     iter = this.Container.Database.GetContainer(this.Container.Id).GetItemQueryStreamIterator(
-                        null,
                         continuationToken: lastKnownContinuationToken,
                         requestOptions: requestOptions);
                 }

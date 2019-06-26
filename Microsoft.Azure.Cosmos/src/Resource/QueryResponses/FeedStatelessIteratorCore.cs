@@ -137,25 +137,5 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
         }
-
-        internal static ReadFeedResponse<T> CreateCosmosQueryResponse(
-                ResponseMessage cosmosResponseMessage,
-                CosmosSerializer jsonSerializer)
-        {
-            using (cosmosResponseMessage)
-            {
-                // Throw the exception if the query failed.
-                cosmosResponseMessage.EnsureSuccessStatusCode();
-
-                string continuationToken = FeedIteratorCore.GetContinuationToken(cosmosResponseMessage);
-                bool hasMoreResults = FeedIteratorCore.GetHasMoreResults(continuationToken, cosmosResponseMessage.StatusCode);
-
-                return ReadFeedResponse<T>.CreateResponse<T>(
-                    responseMessageHeaders: cosmosResponseMessage.Headers,
-                    stream: cosmosResponseMessage.Content,
-                    jsonSerializer: jsonSerializer,
-                    hasMoreResults: hasMoreResults);
-            }
-        }
     }
 }

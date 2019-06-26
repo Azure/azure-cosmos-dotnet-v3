@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
         protected ReadFeedResponse(
-            IEnumerable<T> resource,
+            ICollection<T> resource,
             Headers responseMessageHeaders,
             bool hasMoreResults)
             : base(
@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
                 resource: resource)
         {
             this.HasMoreResults = hasMoreResults;
+            this.Count = resource.Count;
         }
 
         public override int Count { get; }
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             using (stream)
             {
                 CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream);
-                IEnumerable<TInput> resources = response.Data;
+                ICollection<TInput> resources = response.Data;
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     resource: resources,
                     responseMessageHeaders: responseMessageHeaders,
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
             Headers responseMessageHeaders,
-            IEnumerable<TInput> resources,
+            ICollection<TInput> resources,
             bool hasMoreResults)
         {
             ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(

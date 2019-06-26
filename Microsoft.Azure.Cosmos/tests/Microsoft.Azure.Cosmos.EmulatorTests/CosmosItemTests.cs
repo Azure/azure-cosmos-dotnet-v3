@@ -378,7 +378,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-                null,
                 continuationToken: lastContinuationToken,
                 requestOptions: requestOptions);
 
@@ -387,7 +386,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (useStatelessIterator)
                 {
                     feedIterator = this.Container.GetItemQueryStreamIterator(
-                        null,
                         continuationToken: lastContinuationToken,
                         requestOptions: requestOptions);
                 }
@@ -420,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
             HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
             FeedIterator<ToDoActivity> feedIterator =
-                this.Container.GetItemQueryIterator<ToDoActivity>(null);
+                this.Container.GetItemQueryIterator<ToDoActivity>();
             while (feedIterator.HasMoreResults)
             {
                 foreach (ToDoActivity toDoActivity in await feedIterator.ReadNextAsync(this.cancellationToken))
@@ -475,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // }
 
             FeedIterator setIterator =
-                this.Container.GetItemQueryStreamIterator(null);
+                this.Container.GetItemQueryStreamIterator();
             FeedIterators.Add(setIterator);
 
             QueryRequestOptions options = new QueryRequestOptions()
@@ -485,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             FeedIterator queryIterator = this.Container.GetItemQueryStreamIterator(
-                    queryDefinition: @"select * from t where t.id != """" ",
+                    queryText: @"select * from t where t.id != """" ",
                     requestOptions: options);
 
             FeedIterators.Add(queryIterator);
@@ -969,7 +967,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
-                    queryDefinition: "SELECT r.id FROM root r WHERE r._ts > 0",
+                    queryText: "SELECT r.id FROM root r WHERE r._ts > 0",
                     requestOptions: new QueryRequestOptions() { ResponseContinuationTokenLimitInKb = 0, MaxItemCount = 10, MaxConcurrency = 1 });
 
                 await resultSet.ReadNextAsync();
@@ -983,7 +981,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
-                    queryDefinition: "SELECT r.id FROM root r WHERE r._ts >!= 0",
+                    queryText: "SELECT r.id FROM root r WHERE r._ts >!= 0",
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 });
 
                 await resultSet.ReadNextAsync();
@@ -1094,7 +1092,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 //Reading all items on fixed container.
-                feedIterator = fixedContainer.GetItemQueryIterator<dynamic>(null, requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+                feedIterator = fixedContainer.GetItemQueryIterator<dynamic>( requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();
