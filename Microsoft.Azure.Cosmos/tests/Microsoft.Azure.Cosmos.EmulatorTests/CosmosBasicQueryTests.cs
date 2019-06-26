@@ -6,8 +6,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
+    using Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -16,9 +18,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private static readonly QueryRequestOptions RequestOptions = new QueryRequestOptions() { MaxItemCount = 1 };
         private static readonly CosmosSerializer CosmosSerializer = new CosmosJsonSerializerCore();
-        protected static CosmosClient CosmosClient;
-        protected static Database Database;
-        protected static Container Container;
+        private static CosmosClient CosmosClient;
+        private static Database Database;
+        private static Container Container;
 
         [ClassInitialize]
         public static async Task TestInit(TestContext textContext)
@@ -187,6 +189,150 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
         }
 
+        [TestMethod]
+        public async Task ScriptsStoredProcedureTest()
+        {
+            Scripts scripts = Container.Scripts;
+            HashSet<string> createdIds = new HashSet<string>();
+
+            StoredProcedureProperties properties = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
+            {
+                Id = "BasicQuery1",
+                Body = "function() {var x = 10;}"
+            });
+            createdIds.Add(properties.Id);
+
+            properties = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
+            {
+                Id = "BasicQuery2",
+                Body = "function() {var x = 20;}"
+            });
+            createdIds.Add(properties.Id);
+
+            properties = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
+            {
+                Id = "BasicQuery3",
+                Body = "function() {var x = 30;}"
+            });
+            createdIds.Add(properties.Id);
+
+            //Read All
+            List<StoredProcedureProperties> results = await this.ToListAsync(
+                scripts.GetStoredProcedureQueryStreamIterator,
+                scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
+                null);
+
+            IEnumerable<string> ids = results.Select(x => x.Id);
+            HashSet<string> resultIds = new HashSet<string>(ids);
+            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+
+            //Basic query
+            List<StoredProcedureProperties> queryResults = await this.ToListAsync(
+                scripts.GetStoredProcedureQueryStreamIterator,
+                scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
+                "select * from T where STARTSWITH(T.id, \"BasicQuery\"");
+
+            ids = queryResults.Select(x => x.Id);
+            resultIds = new HashSet<string>(ids);
+            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+        }
+
+        [TestMethod]
+        public async Task ScriptsUserDefinedFunctionTest()
+        {
+            Scripts scripts = Container.Scripts;
+            HashSet<string> createdIds = new HashSet<string>();
+
+            UserDefinedFunctionProperties properties = await scripts.CreateUserDefinedFunctionAsync(new UserDefinedFunctionProperties()
+            {
+                Id = "BasicQuery1",
+                Body = "function() {var x = 10;}"
+            });
+            createdIds.Add(properties.Id);
+
+            properties = await scripts.CreateUserDefinedFunctionAsync(new UserDefinedFunctionProperties()
+            {
+                Id = "BasicQuery2",
+                Body = "function() {var x = 20;}"
+            });
+            createdIds.Add(properties.Id);
+
+            properties = await scripts.CreateUserDefinedFunctionAsync(new UserDefinedFunctionProperties()
+            {
+                Id = "BasicQuery3",
+                Body = "function() {var x = 30;}"
+            });
+            createdIds.Add(properties.Id);
+
+            //Read All
+            List<UserDefinedFunctionProperties> results = await this.ToListAsync(
+                scripts.GetUserDefinedFunctionQueryStreamIterator,
+                scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
+                null);
+
+            IEnumerable<string> ids = results.Select(x => x.Id);
+            HashSet<string> resultIds = new HashSet<string>(ids);
+            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+
+            //Basic query
+            List<UserDefinedFunctionProperties> queryResults = await this.ToListAsync(
+                scripts.GetUserDefinedFunctionQueryStreamIterator,
+                scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
+                "select * from T where STARTSWITH(T.id, \"BasicQuery\"");
+
+            ids = queryResults.Select(x => x.Id);
+            resultIds = new HashSet<string>(ids);
+            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+        }
+
+        [TestMethod]
+        public async Task ScriptsTriggerTest()
+        {
+            Scripts scripts = Container.Scripts;
+            HashSet<string> createdIds = new HashSet<string>();
+
+            TriggerProperties properties = await scripts.CreateTriggerAsync(new TriggerProperties()
+            {
+                Id = "BasicQuery1",
+                Body = "function() {var x = 10;}"
+            });
+            createdIds.Add(properties.Id);
+
+            properties = await scripts.CreateTriggerAsync(new TriggerProperties()
+            {
+                Id = "BasicQuery2",
+                Body = "function() {var x = 20;}"
+            });
+            createdIds.Add(properties.Id);
+
+            properties = await scripts.CreateTriggerAsync(new TriggerProperties()
+            {
+                Id = "BasicQuery3",
+                Body = "function() {var x = 30;}"
+            });
+            createdIds.Add(properties.Id);
+
+            //Read All
+            List<TriggerProperties> results = await this.ToListAsync(
+                scripts.GetTriggerQueryStreamIterator,
+                scripts.GetTriggerQueryIterator<TriggerProperties>,
+                null);
+
+            IEnumerable<string> ids = results.Select(x => x.Id);
+            HashSet<string> resultIds = new HashSet<string>(ids);
+            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+
+            //Basic query
+            List<TriggerProperties> queryResults = await this.ToListAsync(
+                scripts.GetTriggerQueryStreamIterator,
+                scripts.GetTriggerQueryIterator<TriggerProperties>,
+                "select * from T where STARTSWITH(T.id, \"BasicQuery\"");
+
+            ids = queryResults.Select(x => x.Id);
+            resultIds = new HashSet<string>(ids);
+            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+        }
+
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);
         private delegate FeedIterator QueryStream(string querytext, string continuationToken, QueryRequestOptions options);
 
@@ -199,7 +345,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await feedStreamIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
 
-                ICollection<T> responseResults = CosmosSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                StreamReader sr = new StreamReader(response.Content);
+                string result = await sr.ReadToEndAsync();
+                ICollection<T> responseResults = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<T>>(result).Data;
                 Assert.AreEqual(1, responseResults.Count);
 
                 streamResults.AddRange(responseResults);

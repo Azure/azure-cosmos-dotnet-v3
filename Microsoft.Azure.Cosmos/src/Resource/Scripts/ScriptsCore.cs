@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         private readonly CosmosClientContext clientContext;
 
         internal ScriptsCore(
-            ContainerCore container, 
+            ContainerCore container,
             CosmosClientContext clientContext)
         {
             this.container = container;
@@ -142,8 +141,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessStoredProcedureOperationAsync(
-                id: id, 
-                operationType: OperationType.Delete, 
+                id: id,
+                operationType: OperationType.Delete,
                 streamPayload: null,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -206,8 +205,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
-            TriggerProperties triggerProperties, 
-            RequestOptions requestOptions = null, 
+            TriggerProperties triggerProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (triggerProperties == null)
@@ -298,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override Task<TriggerResponse> ReadTriggerAsync(
             string id,
-            RequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -315,8 +314,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
-            TriggerProperties triggerProperties, 
-            RequestOptions requestOptions = null, 
+            TriggerProperties triggerProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (triggerProperties == null)
@@ -344,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         public override Task<TriggerResponse> DeleteTriggerAsync(
             string id,
-            RequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -361,8 +360,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            UserDefinedFunctionProperties userDefinedFunctionProperties, 
-            RequestOptions requestOptions = null, 
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (userDefinedFunctionProperties == null)
@@ -452,8 +451,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
-            string id, 
-            RequestOptions requestOptions = null, 
+            string id,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -470,7 +469,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            UserDefinedFunctionProperties userDefinedFunctionProperties, 
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -498,8 +497,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
-            string id, 
-            RequestOptions requestOptions = null, 
+            string id,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -512,54 +511,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 operationType: OperationType.Delete,
                 streamPayload: null,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<FeedResponse<TriggerProperties>> ContainerFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            return this.GetIteratorAsync<TriggerProperties>(
-                maxItemCount: maxItemCount,
-                continuationToken: continuationToken,
-                state: state,
-                resourceType: ResourceType.Trigger,
-                options: options,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<FeedResponse<StoredProcedureProperties>> StoredProcedureFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            return this.GetIteratorAsync<StoredProcedureProperties>(
-                maxItemCount: maxItemCount,
-                continuationToken: continuationToken,
-                state: state,
-                resourceType: ResourceType.StoredProcedure,
-                options: options,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<FeedResponse<UserDefinedFunctionProperties>> UserDefinedFunctionFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            return this.GetIteratorAsync<UserDefinedFunctionProperties>(
-                maxItemCount: maxItemCount,
-                continuationToken: continuationToken,
-                state: state,
-                resourceType: ResourceType.UserDefinedFunction,
-                options: options,
                 cancellationToken: cancellationToken);
         }
 
@@ -699,33 +650,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateUserDefinedFunctionResponseAsync(response);
-        }
-
-        private Task<FeedResponse<T>> GetIteratorAsync<T>(
-            int? maxItemCount,
-            string continuationToken,
-            ResourceType resourceType,
-            object state,
-            RequestOptions options,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(state == null);
-
-            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<T>>(
-                resourceUri: this.container.LinkUri,
-                resourceType: resourceType,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: null,
-                requestEnricher: request =>
-                {
-                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>(response),
-                cancellationToken: cancellationToken);
         }
     }
 }
