@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> CreateItemStreamAsync(
                     Stream streamPayload,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
                     string id,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
             string id,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
                     Stream streamPayload,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ResponseMessage> ReplaceItemStreamAsync(
                     Stream streamPayload,
                     string id,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
             T item,
             string id,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> DeleteItemStreamAsync(
                     string id,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ItemResponse<T>> DeleteItemAsync<T>(
             string id,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.Cosmos
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
         // and partition-key is extracted again. 
         internal async Task<ResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync(
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
             OperationType operationType,
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal async Task<ResponseMessage> ProcessItemStreamAsync(
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
             OperationType operationType,

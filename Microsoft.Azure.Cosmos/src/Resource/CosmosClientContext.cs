@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken);
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
            OperationType operationType,
            RequestOptions requestOptions,
            ContainerCore cosmosContainerCore,
-           PartitionKey partitionKey,
+           PartitionKey? partitionKey,
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,

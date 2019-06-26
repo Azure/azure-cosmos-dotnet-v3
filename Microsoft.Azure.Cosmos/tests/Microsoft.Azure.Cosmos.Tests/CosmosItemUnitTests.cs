@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (dynamic poco in invalidNestedItems)
             {
                 object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
-                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.None, pk));
+                Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.None, pk) || object.Equals(Cosmos.PartitionKey.None, pk));
             }
         }
 

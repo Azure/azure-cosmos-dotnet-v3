@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="ConflictProperties"/>
         public abstract Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
             ConflictProperties conflict,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>

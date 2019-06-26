@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a partition key value in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class PartitionKey
+    public struct PartitionKey
     {
         private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Documents.PartitionKey(null).InternalKey;
         private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Documents.PartitionKey(true).InternalKey;
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the string representation of the partition key value.
         /// </summary>
         /// <returns>The string representation of the partition key value</returns>
-        public new string ToString()
+        public override string ToString()
         {
             return this.Value.ToJsonString();
         }

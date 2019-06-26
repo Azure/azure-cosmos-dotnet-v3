@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
-        public PartitionKey PartitionKey { get; set; }
+        public PartitionKey? PartitionKey { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.

@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> CreateItemStreamAsync(
                     Stream streamPayload,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> ReadItemStreamAsync(
                     string id,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> ReadItemAsync<T>(
             string id,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -493,7 +493,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> UpsertItemStreamAsync(
                     Stream streamPayload,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -592,7 +592,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> ReplaceItemStreamAsync(
                     Stream streamPayload,
                     string id,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -649,7 +649,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(
             T item,
             string id,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -683,7 +683,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> DeleteItemStreamAsync(
                     string id,
-                    PartitionKey partitionKey,
+                    PartitionKey? partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -720,7 +720,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> DeleteItemAsync<T>(
             string id,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
