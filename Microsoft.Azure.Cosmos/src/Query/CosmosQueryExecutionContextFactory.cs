@@ -354,13 +354,13 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 // Dis-ambiguate the NonePK if used 
                 PartitionKeyInternal partitionKeyInternal = null;
-                if (Object.ReferenceEquals(queryRequestOptions.PartitionKey, Cosmos.PartitionKey.NonePartitionKeyValue))
+                if (Object.ReferenceEquals(queryRequestOptions.PartitionKey, Cosmos.PartitionKey.None))
                 {
                     partitionKeyInternal = collection.GetNoneValue();
                 }
                 else
                 {
-                    partitionKeyInternal = new Documents.PartitionKey(queryRequestOptions.PartitionKey.Value).InternalKey;
+                    partitionKeyInternal = queryRequestOptions.PartitionKey.Value;
                 }
 
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(

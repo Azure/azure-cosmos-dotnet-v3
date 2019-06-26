@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.client = client;
         }
 
-        public override Task<ResponseMessage> SendAsync(
+        public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -59,30 +59,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (consistencyLevel.HasValue)
                 {
-                    if (!ValidationHelpers.ValidateConsistencyLevel(this.client.AccountConsistencyLevel, consistencyLevel.Value))
+                    Cosmos.ConsistencyLevel accountConsistency = await this.client.GetAccountConsistencyLevelAsync();
+                    if (!ValidationHelpers.ValidateConsistencyLevel(accountConsistency, consistencyLevel.Value))
                     {
                         throw new ArgumentException(string.Format(
                                 CultureInfo.CurrentUICulture,
                                 RMResources.InvalidConsistencyLevel,
                                 consistencyLevel.Value.ToString(),
-                                this.client.AccountConsistencyLevel));
+                                accountConsistency));
                     }
                 }
             }
 
-            return this.client.DocumentClient.EnsureValidClientAsync()
-                .ContinueWith(task => request.AssertPartitioningDetailsAsync(this.client, cancellationToken))
-                .ContinueWith(task =>
-                {
-                    if (task.IsFaulted)
-                    {
-                        throw task.Exception;
-                    }
-
-                    this.FillMultiMasterContext(request);
-                    return base.SendAsync(request, cancellationToken);
-                })
-                .Unwrap();
+            await this.client.DocumentClient.EnsureValidClientAsync();
+            await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
+            this.FillMultiMasterContext(request);
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<T> SendAsync<T>(
@@ -144,11 +136,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (partitionKey != null)
             {
-                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.NonePartitionKeyValue))
+                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                 {
                     throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
                 }
-                else if (Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.NonePartitionKeyValue))
+                else if (Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                 {
                     try
                     {

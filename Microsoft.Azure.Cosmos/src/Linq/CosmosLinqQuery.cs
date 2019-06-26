@@ -157,25 +157,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public FeedIterator<T> ToFeedIterator()
         {
-            CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
-                client: this.queryClient,
-                resourceTypeEnum: ResourceType.Document,
-                operationType: OperationType.Query,
-                resourceType: typeof(T),
-                sqlQuerySpec: DocumentQueryEvaluator.Evaluate(this.expression),
+            return this.container.GetItemQueryIterator<T>(
+                sqlQueryDefinition: new QueryDefinition(ToSqlQueryText()),
                 continuationToken: null,
-                queryRequestOptions: cosmosQueryRequestOptions,
-                resourceLink: container.LinkUri,
-                isContinuationExpected: true,
-                allowNonValueAggregateQuery: true,
-                correlatedActivityId: Guid.NewGuid());
-
-            return new FeedIteratorCore<T>(
-                cosmosQueryRequestOptions.MaxItemCount,
-                null,
-                cosmosQueryRequestOptions,
-                container.NextResultSetAsync<T>,
-                cosmosQueryExecution);
+                requestOptions: this.cosmosQueryRequestOptions);
         }
 
         public void Dispose()
