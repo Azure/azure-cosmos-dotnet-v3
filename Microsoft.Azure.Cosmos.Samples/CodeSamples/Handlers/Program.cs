@@ -28,7 +28,8 @@
 
     public class Program
     {
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             IConfigurationRoot configuration = new ConfigurationBuilder()
@@ -120,7 +121,9 @@
             // Delete
             await container.DeleteItemAsync<Item>(item.Id, new PartitionKey(item.Id));
         }
+        // </Main>
 
+        // <UpdateItemForConcurrency>
         private static Task<ItemResponse<Item>> UpdateItemForConcurrency(Container container, ItemRequestOptions itemRequestOptions, Item item)
         {
             item.Description = $"Updating description {Guid.NewGuid().ToString()}";
@@ -130,5 +133,6 @@
                 new PartitionKey(item.Id),
                 itemRequestOptions);
         }
+        // </UpdateItemForConcurrency>
     }
 }

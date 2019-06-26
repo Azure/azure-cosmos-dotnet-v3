@@ -21,7 +21,8 @@
         private static readonly string DatabaseId = "samples";
         private static readonly string ContainerId = "serversidejs-samples";
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -65,7 +66,9 @@
                 Console.ReadKey();
             }
         }
+        // </Main>
 
+        // <RunDemoAsync>
         private static async Task RunDemoAsync(
             CosmosClient client,
             string databaseId,
@@ -95,10 +98,12 @@
             //// Uncomment to Cleanup
             //await database.DeleteAsync();
         }
+        // </RunDemoAsync>
 
         /// <summary>
         /// Runs a simple script which just does a server side query
         /// </summary>
+        // <RunSimpleScript>
         private static async Task RunSimpleScript(Container container)
         {
             // 1. Create stored procedure for script.
@@ -129,10 +134,12 @@
 
             await container.DeleteItemAsync<SampleDocument>(doc.Id, new PartitionKey(doc.LastName));
         }
+        // </RunSimpleScript>
 
         /// <summary>
         /// Import many documents using stored procedure.
         /// </summary>
+        // <RunBulkImport>
         private static async Task RunBulkImport(Container container)
         {
             string inputDirectory = @".\Data\";
@@ -193,10 +200,12 @@
 
             Console.WriteLine("Found {0} documents in the collection. There were originally {1} files in the Data directory\r\n", numDocs, fileCount);
         }
+        // </RunBulkImport>
 
         /// <summary>
         /// Get documents ordered by some doc property. This is done using OrderBy stored procedure.
         /// </summary>
+        // <RunOrderBy>
         private static async Task RunOrderBy(Container container)
         {
             // 1. Create or get the stored procedure.
@@ -233,6 +242,7 @@
             } while (continuationToken != null);
             // 5. To take care of big response, loop until Response.continuation token is null (see OrderBy.js for details).
         }
+        // </RunOrderBy>
 
         public class Location
         {
@@ -291,6 +301,7 @@
         /// <param name="currentIndex">the current number of documents inserted. this marks the starting point for this script</param>
         /// <param name="maxScriptSize">the maximum number of characters that the script can have</param>
         /// <returns>Script as a string</returns>
+        // <CreateBulkInsertScriptArguments>
         private static string CreateBulkInsertScriptArguments(string[] docFileNames, int currentIndex, int maxCount, int maxScriptSize)
         {
             StringBuilder jsonDocumentArray = new StringBuilder();
@@ -316,13 +327,15 @@
             jsonDocumentArray.Append("]");
             return jsonDocumentArray.ToString();
         }
+        // </CreateBulkInsertScriptArguments>
 
         /// <summary>
         /// If a Stored Procedure is found on the DocumentCollection for the Id supplied it is deleted
         /// </summary>
         /// <param name="collectionLink">DocumentCollection to search for the Stored Procedure</param>
         /// <param name="sprocId">Id of the Stored Procedure to delete</param>
-        /// <returns></returns>
+        /// <returns></returns>\
+        // <TryDeleteStoredProcedure>
         private static async Task TryDeleteStoredProcedure(Container container, string sprocId)
         {
             Scripts cosmosScripts = container.Scripts;
@@ -332,5 +345,6 @@
                 await cosmosScripts.DeleteStoredProcedureAsync(sprocId);
             }
         }
+        // </TryDeleteStoredProcedure>
     }
 }

@@ -10,7 +10,8 @@
         //Read configuration
         private static readonly string databaseId = "samples";
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -54,11 +55,13 @@
                 Console.ReadKey();
             }
         }
+        // </Main>
 
         /// <summary>
         /// Run basic database meta data operations as a console application.
         /// </summary>
         /// <returns></returns>
+        // <RunDatabaseDemo>
         private static async Task RunDatabaseDemo(CosmosClient client)
         {
             // An object containing relevant information about the response
@@ -103,5 +106,6 @@
             await database.DeleteAsync();
             Console.WriteLine($"\n6. Database {database.Id} deleted.");
         }
+        // </RunDatabaseDemo>
     }
 }
