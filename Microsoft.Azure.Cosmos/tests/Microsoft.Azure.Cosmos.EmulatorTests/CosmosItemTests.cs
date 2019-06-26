@@ -1205,7 +1205,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //LINQ query execution with wrong partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 allowSynchronousQueryExecution: true,
-                new QueryRequestOptions() { PartitionKey = new Cosmos.PartitionKey("test") });
+                requestOptions: new QueryRequestOptions() { PartitionKey = new Cosmos.PartitionKey("test") });
             queriable = linqQueryable.Where(item => (item.taskNum < 100));
             Assert.AreEqual(0, queriable.Count());
 
