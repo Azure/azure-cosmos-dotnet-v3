@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
                 }
-                else if (Object.Equals(partitionKey, Cosmos.PartitionKey.None) || Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
+                else if (partitionKey.Value.IsNone)
                 {
                     try
                     {

@@ -96,6 +96,7 @@ namespace Microsoft.Azure.Cosmos
     /// </remarks>
     public class CosmosClient : IDisposable
     {
+        private readonly Uri DatabaseRootUri = new Uri(Paths.Databases_Root, UriKind.Relative);
         private Lazy<CosmosOffers> offerSet;
         private ConsistencyLevel? accountConsistencyLevel;
 
@@ -446,34 +447,98 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets an iterator to go through all the databases for the account
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
-        /// <param name="maxItemCount">The max item count to return as part of the query</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <example>
-        /// Get an iterator for all the database under the cosmos account
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabasesIterator();
-        /// {
-        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.ReadNextAsync())
-        ///     {
-        ///         Console.WriteLine(databaseProperties.Id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual FeedIterator<DatabaseProperties> GetDatabaseIterator(
-            int? maxItemCount = null,
-            string continuationToken = null)
+        public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore<DatabaseProperties>(
-                maxItemCount,
+            FeedIterator databaseStreamIterator = this.GetDatabaseQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
-                options: null,
-                nextDelegate: this.DatabaseFeedRequestExecutorAsync);
+                requestOptions);
+
+            return new FeedStatelessIteratorCore<T>(
+                databaseStreamIterator,
+                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+        }
+
+        /// <summary>
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the databases</returns>
+        public virtual FeedIterator GetDatabaseQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedStatelessIteratorCore(
+               this.ClientContext,
+               this.DatabaseRootUri,
+               ResourceType.Database,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        /// <summary>
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the databases.</returns>
+        public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetDatabaseQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        /// <summary>
+        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the databases</returns>
+        public virtual FeedIterator GetDatabaseQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetDatabaseQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
         }
 
         /// <summary>
@@ -601,9 +666,8 @@ namespace Microsoft.Azure.Cosmos
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default(CancellationToken))
         {
-            Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
             return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
+                resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
@@ -623,9 +687,8 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(state == null);
 
-            Uri resourceUri = new Uri(Paths.Databases_Root, UriKind.Relative);
             return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<DatabaseProperties>>(
-                resourceUri: resourceUri,
+                resourceUri: this.DatabaseRootUri,
                 resourceType: ResourceType.Database,
                 operationType: OperationType.ReadFeed,
                 requestOptions: options,

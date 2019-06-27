@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>
-        /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
+        /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
         /// </remarks>
         public string IfMatchEtag { get; set; }
 
@@ -31,6 +31,11 @@ namespace Microsoft.Azure.Cosmos
         /// Most commonly used to detect changes to the resource
         /// </remarks>
         public string IfNoneMatchEtag { get; set; }
+
+        /// <summary>
+        /// Gets or sets the effective partition key string in the cosmos db request.
+        /// </summary>
+        internal string EffectivePartitionKeyString { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -44,6 +49,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     request.Properties[property.Key] = property.Value;
                 }
+            }
+
+            if (this.EffectivePartitionKeyString != null)
+            {
+                request.Properties[WFConstants.BackendHeaders.EffectivePartitionKeyString] = this.EffectivePartitionKeyString;
             }
 
             if (this.IfMatchEtag != null)

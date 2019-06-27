@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> CreateItemStreamAsync(
                     Stream streamPayload,
-                    PartitionKey? partitionKey,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> ReadItemStreamAsync(
                     string id,
-                    PartitionKey? partitionKey,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> ReadItemAsync<T>(
             string id,
-            PartitionKey? partitionKey,
+            PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -493,7 +493,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> UpsertItemStreamAsync(
                     Stream streamPayload,
-                    PartitionKey? partitionKey,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -592,7 +592,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> ReplaceItemStreamAsync(
                     Stream streamPayload,
                     string id,
-                    PartitionKey? partitionKey,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -683,7 +683,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> DeleteItemStreamAsync(
                     string id,
-                    PartitionKey? partitionKey,
+                    PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -720,80 +720,15 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> DeleteItemAsync<T>(
             string id,
-            PartitionKey? partitionKey,
+            PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Gets an iterator to go through all the items for the container
-        /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <example>
-        /// Get an iterator for all the items under the cosmos container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        /// }
-        /// 
-        /// FeedIterator<ToDoActivity> feedIterator = this.container.GetItemIterator<ToDoActivity>();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     foreach(ToDoActivity item in await feedIterator.FetchNextSetAsync())
-        ///     {
-        ///          Console.WriteLine(item.id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator<T> GetItemIterator<T>(
-            int? maxItemCount = null,
-            string continuationToken = null);
-
-        /// <summary>
-        /// Gets an iterator to go through all the items for the container as the original CosmosResponseMessage
-        /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
-        /// <example>
-        /// Get an iterator for all the items under the cosmos container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        /// }
-        /// 
-        /// FeedIterator feedIterator = this.Container.Items.GetItemStreamIterator();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
-        ///     {
-        ///         using (StreamReader sr = new StreamReader(iterator.Content))
-        ///         {
-        ///             string content = await sr.ReadToEndAsync();
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator GetItemStreamIterator(
-            int? maxItemCount = null,
-            string continuationToken = null,
-            ItemRequestOptions requestOptions = null);
 
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetStreamIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
-        /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <remarks>
@@ -809,9 +744,9 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
         /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     sqlQueryDefinition: sqlQuery, 
+        ///     queryDefinition: queryDefinition, 
         ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
@@ -830,51 +765,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator GetItemQueryStreamIterator(
-            QueryDefinition sqlQueryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
-
-        /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetStreamIterator.
-        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
-        /// </summary>
-        /// <param name="sqlQueryText">The cosmos SQL query string. </param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
-        /// <remarks>
-        /// Query as a stream only supports single partition queries 
-        /// </remarks>
-        /// <example>
-        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
-        /// <code language="c#">
-        /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        ///     public int cost {get; set;}
-        /// }
-        /// 
-        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     sqlQueryText: "select * from ToDos t where t.cost > 9000", 
-        ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
-        ///     
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     using (CosmosResponseMessage response = await feedIterator.ReadNextAsync())
-        ///     {
-        ///         using (StreamReader sr = new StreamReader(response.Content))
-        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
-        ///         {
-        ///             JObject result = JObject.Load(jtr);
-        ///         }
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the items.</returns>
-        public abstract FeedIterator GetItemQueryStreamIterator(
-            string sqlQueryText,
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
@@ -882,7 +773,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
-        /// <param name="sqlQueryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <example>
@@ -912,7 +803,51 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            QueryDefinition sqlQueryDefinition,
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a CosmosResultSetStreamIterator.
+        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <remarks>
+        /// Query as a stream only supports single partition queries 
+        /// </remarks>
+        /// <example>
+        /// Create a query to get all the ToDoActivity that have a cost greater than 9000 for the specified partition
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        ///     public int cost {get; set;}
+        /// }
+        /// 
+        /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+        ///     queryText: "select * from ToDos t where t.cost > 9000", 
+        ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
+        ///     
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (CosmosResponseMessage response = await feedIterator.FetchNextSetAsync())
+        ///     {
+        ///         using (StreamReader sr = new StreamReader(response.Content))
+        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         {
+        ///             JObject result = JObject.Load(jtr);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the items.</returns>
+        public abstract FeedIterator GetItemQueryStreamIterator(
+            string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
@@ -920,7 +855,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
-        /// <param name="sqlQueryText">The cosmos SQL query text.</param>\
+        /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <example>
@@ -934,7 +869,7 @@ namespace Microsoft.Azure.Cosmos
         /// }
         /// 
         /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-        ///     sqlQueryText: "select * from ToDos t where t.cost > 9000",
+        ///     queryText: "select * from ToDos t where t.cost > 9000", 
         ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
@@ -949,7 +884,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>An iterator to go through the items.</returns>
         public abstract FeedIterator<T> GetItemQueryIterator<T>(
-            string sqlQueryText,
+            string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
@@ -1031,7 +966,7 @@ namespace Microsoft.Azure.Cosmos
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
-            bool allowSynchronousQueryExecution = false, 
+            bool allowSynchronousQueryExecution = false,
             QueryRequestOptions requestOptions = null);
 
         /// <summary>

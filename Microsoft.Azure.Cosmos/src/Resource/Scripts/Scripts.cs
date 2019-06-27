@@ -85,30 +85,56 @@ namespace Microsoft.Azure.Cosmos.Scripts
                     CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the stored procedures for the container
+        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
-        /// <example>
-        /// Get an iterator for all the stored procedures under the cosmos container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
-        /// FeedIterator<StoredProcedureProperties> setIterator = scripts.GetStoredProcedureIterator();
-        /// while (setIterator.HasMoreResults)
-        /// {
-        ///     foreach(StoredProcedureProperties storedProcedure in await setIterator.ReadNextAsync())
-        ///     {
-        ///          Console.WriteLine(storedProcedure.Id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator<StoredProcedureProperties> GetStoredProcedureIterator(
-            int? maxItemCount = null,
-            string continuationToken = null);
+        public abstract FeedIterator<T> GetStoredProcedureQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator GetStoredProcedureQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator<T> GetStoredProcedureQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for stored procedures under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator GetStoredProcedureQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Reads a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -402,30 +428,56 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the triggers for the container
+        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
-        /// <returns>An iterator to read through the existing triggers.</returns>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <example>
-        /// Get an iterator for all the triggers under the cosmos container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
-        /// FeedIterator<TriggerProperties> setIterator = scripts.Triggers.GetTriggerIterator();
-        /// while (setIterator.HasMoreResults)
-        /// {
-        ///     foreach(TriggerProperties triggerProperties in await setIterator.ReadNextAsync())
-        ///     {
-        ///          Console.WriteLine(triggerProperties.Id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator<TriggerProperties> GetTriggersIterator(
-            int? maxItemCount = null,
-            string continuationToken = null);
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator<T> GetTriggerQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator GetTriggerQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator<T> GetTriggerQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for triggers under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator GetTriggerQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Reads a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -587,30 +639,56 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the user defined functions for the container
+        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <returns>An iterator to read through the existing user defined functions.</returns>
-        /// <example>
-        /// Get an iterator for all the triggers under the cosmos container
-        /// <code language="c#">
-        /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
-        /// FeedIterator<UserDefinedFunctionProperties> setIterator = scripts.GetUserDefinedFunctionIterator();
-        /// while (setIterator.HasMoreResults)
-        /// {
-        ///     foreach(UserDefinedFunctionProperties usdfProperties in await setIterator.ReadNextAsync())
-        ///     {
-        ///          Console.WriteLine(udfProperties.Id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract FeedIterator<UserDefinedFunctionProperties> GetUserDefinedFunctionIterator(
-            int? maxItemCount = null,
-            string continuationToken = null);
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator GetUserDefinedFunctionQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for user defined functions under a container using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to read through the existing stored procedures.</returns>
+        public abstract FeedIterator GetUserDefinedFunctionQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Reads a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
