@@ -23,10 +23,11 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = statusCode;
             this.Error = error;
+            this.Headers = new Headers();
         }
 
         internal CosmosException(
-            CosmosResponseMessage cosmosResponseMessage, 
+            ResponseMessage cosmosResponseMessage, 
             string message,
             Error error = null)
             : base(message)
@@ -35,10 +36,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.StatusCode = cosmosResponseMessage.StatusCode;
                 this.Headers = cosmosResponseMessage.Headers;
-                this.ActivityId = this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.ActivityId);
-                this.RequestCharge = this.Headers == null ? 0 : this.Headers.GetHeaderValue<double>(HttpConstants.HttpHeaders.RequestCharge);
+                if (this.Headers == null)
+                {
+                    this.Headers = new Headers();
+                }
+
+                this.ActivityId = this.Headers.ActivityId;
+                this.RequestCharge = this.Headers.RequestCharge;
+                this.RetryAfter = this.Headers.RetryAfter;
                 this.SubStatusCode = (int)this.Headers.SubStatusCode;
-                if (cosmosResponseMessage.Headers.ContentLengthAsLong > 0)
+                if (this.Headers.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
                     {
@@ -70,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
+            this.Headers = new Headers();
         }
 
         /// <summary>
@@ -106,14 +114,19 @@ namespace Microsoft.Azure.Cosmos
         public virtual string ActivityId { get; }
 
         /// <summary>
+        /// Gets the retry after time. This tells how long a request should wait before doing a retry.
+        /// </summary>
+        public virtual TimeSpan? RetryAfter { get; }
+
+        /// <summary>
+        /// Gets the response headers
+        /// </summary>
+        public virtual Headers Headers { get; }
+
+        /// <summary>
         /// Gets the internal error object
         /// </summary>
         internal virtual Error Error { get; }
-
-        /// <summary>
-        /// Gets the internal headers
-        /// </summary>
-        internal virtual CosmosResponseMessageHeaders Headers { get; }
 
         /// <summary>
         /// Try to get a header from the cosmos response message

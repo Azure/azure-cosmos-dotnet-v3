@@ -22,29 +22,30 @@ namespace Microsoft.Azure.Cosmos
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
-        private readonly CosmosContainerCore cosmosContainer;
+        private readonly ContainerCore container;
         private readonly int? originalMaxItemCount;
         private string containerRid;
         private string continuationToken;
         private string partitionKeyRangeId;
         private int? maxItemCount;
+        private bool hasMoreResultsInternal;
 
         internal ChangeFeedResultSetIteratorCore(
             CosmosClientContext clientContext,
-            CosmosContainerCore cosmosContainer,
+            ContainerCore container,
             string continuationToken,
             int? maxItemCount,
             ChangeFeedRequestOptions options)
         {
-            if (cosmosContainer == null) throw new ArgumentNullException(nameof(cosmosContainer));
+            if (container == null) throw new ArgumentNullException(nameof(container));
 
             this.clientContext = clientContext;
-            this.cosmosContainer = cosmosContainer;
+            this.container = container;
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
             this.originalMaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
-            this.HasMoreResults = true;
+            this.hasMoreResultsInternal = true;
         }
 
         /// <summary>
@@ -52,19 +53,21 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         protected readonly ChangeFeedRequestOptions changeFeedOptions;
 
+        public override bool HasMoreResults => this.hasMoreResultsInternal;
+
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override async Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (this.compositeContinuationToken == null)
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                this.containerRid = await this.cosmosContainer.GetRIDAsync(cancellationToken);
+                this.containerRid = await this.container.GetRIDAsync(cancellationToken);
                 this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
@@ -72,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
 
-            CosmosResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -106,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         /// During Feed read, split can happen or Max Item count can go beyond the max response size
         /// </summary>
         internal async Task<bool> ShouldRetryFailureAsync(
-            CosmosResponseMessage response, 
+            ResponseMessage response, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
@@ -147,20 +150,20 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        internal virtual Task<CosmosResponseMessage> NextResultSetDelegateAsync(
+        internal virtual Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
             ChangeFeedRequestOptions options,
             CancellationToken cancellationToken)
         {
-            Uri resourceUri = this.cosmosContainer.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<CosmosResponseMessage>(
+            Uri resourceUri = this.container.LinkUri;
+            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
                 resourceUri: resourceUri,
                 resourceType: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
-                cosmosContainerCore: this.cosmosContainer,
+                cosmosContainerCore: this.container,
                 requestEnricher: request => 
                 {
                     ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);

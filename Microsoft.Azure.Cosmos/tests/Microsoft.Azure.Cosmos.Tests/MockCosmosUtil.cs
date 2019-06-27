@@ -33,20 +33,20 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return cosmosClientBuilder.Build(documentClient);
         }
 
-        public static Mock<CosmosContainerCore> CreateMockContainer(
+        public static Mock<ContainerCore> CreateMockContainer(
             string dbName = "myDb",
             string containerName = "myContainer")
         {
             Uri link = new Uri($"/dbs/{dbName}/colls/{containerName}" , UriKind.Relative);
-            Mock<CosmosContainerCore> mockContainer = new Mock<CosmosContainerCore>();
+            Mock<ContainerCore> mockContainer = new Mock<ContainerCore>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             return mockContainer;
         }
 
-        public static Mock<CosmosDatabaseCore> CreateMockDatabase(string dbName = "myDb")
+        public static Mock<DatabaseCore> CreateMockDatabase(string dbName = "myDb")
         {
             Uri link = new Uri($"/dbs/{dbName}", UriKind.Relative);
-            Mock<CosmosDatabaseCore> mockDB = new Mock<CosmosDatabaseCore>();
+            Mock<DatabaseCore> mockDB = new Mock<DatabaseCore>();
             mockDB.Setup(x => x.LinkUri).Returns(link);
             mockDB.Setup(x => x.GetRIDAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(dbName));
             return mockDB;
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
         public static CosmosClientOptions GetDefaultConfiguration()
         {
-            return new CosmosClientOptions(accountEndPoint: "http://localhost", accountKey: "MockedCosmosClientAccountKeyDummyValue");
+            return new CosmosClientOptions();
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

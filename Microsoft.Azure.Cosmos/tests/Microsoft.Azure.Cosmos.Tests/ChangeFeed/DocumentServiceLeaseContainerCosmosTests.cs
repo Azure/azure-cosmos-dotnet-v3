@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseContainerCosmosTests
     {
-        private static DocumentServiceLeaseStoreManagerSettings leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerSettings()
+        private static DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
         {
             ContainerNamePrefix = "prefix",
             HostName = "host"
@@ -61,13 +61,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             CollectionAssert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases.Where(l => l.Owner == DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.HostName).ToList(), readLeases.ToList());
         }
 
-        private static CosmosContainer GetMockedContainer(string containerName = "myColl")
+        private static Container GetMockedContainer(string containerName = "myColl")
         {
-            CosmosResponseMessageHeaders headers = new CosmosResponseMessageHeaders();
+            Headers headers = new Headers();
             headers.Continuation = string.Empty;
 
             Mock<FeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<FeedIterator<DocumentServiceLeaseCore>>();
-            mockedQuery.Setup(q => q.FetchNextSetAsync(It.IsAny<CancellationToken>()))
+            mockedQuery.Setup(q => q.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() => ReadFeedResponse<DocumentServiceLeaseCore>.CreateResponse(
                     responseMessageHeaders: headers,
                     resources: DocumentServiceLeaseContainerCosmosTests.allLeases,
@@ -76,12 +76,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns(true)
                 .Returns(false);
 
-            Mock<CosmosContainer> mockedItems = new Mock<CosmosContainer>();
-            mockedItems.Setup(i => i.CreateItemQuery<DocumentServiceLeaseCore>(
+            Mock<Container> mockedItems = new Mock<Container>();
+            mockedItems.Setup(i => i.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
                 It.Is<string>(value => ("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')").Equals(value)), 
-                It.IsAny<int>(), 
-                It.IsAny<int?>(), 
                 It.IsAny<string>(), 
                 It.IsAny<QueryRequestOptions>()))
                 .Returns(()=>

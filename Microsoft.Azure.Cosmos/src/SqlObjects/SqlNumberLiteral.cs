@@ -32,6 +32,21 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
+        public static SqlNumberLiteral Create(decimal number)
+        {
+            SqlNumberLiteral sqlNumberLiteral;
+            if ((number >= long.MinValue) && (number <= long.MaxValue) && (number % 1 == 0))
+            {
+                sqlNumberLiteral = Create(Convert.ToInt64(number));
+            }
+            else
+            {
+                sqlNumberLiteral = Create(Convert.ToDouble(number));
+            }
+
+            return sqlNumberLiteral;
+        }
+
         public static SqlNumberLiteral Create(double number)
         {
             SqlNumberLiteral sqlNumberLiteral;

@@ -763,14 +763,14 @@ namespace Microsoft.Azure.Cosmos
         private async Task OpenPrivateAsync(CancellationToken cancellationToken)
         {
             // Initialize caches for all databases and collections
-            ResourceFeedReader<Database> databaseFeedReader = this.CreateDatabaseFeedReader(
+            ResourceFeedReader<Documents.Database> databaseFeedReader = this.CreateDatabaseFeedReader(
                 new FeedOptions { MaxItemCount = -1 });
 
             try
             {
                 while (databaseFeedReader.HasMoreResults)
                 {
-                    foreach (Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
+                    foreach (Documents.Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
                     {
                         ResourceFeedReader<DocumentCollection> collectionFeedReader = this.CreateDocumentCollectionFeedReader(
                             database.SelfLink,
@@ -810,138 +810,146 @@ namespace Microsoft.Azure.Cosmos
 
             DefaultTrace.InitEventListener();
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
-            // For tests we want to allow stronger consistency during construction or per call
-            string allowOverrideStrongerConsistencyConfig = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.AllowOverrideStrongerConsistency];
-            if (!string.IsNullOrEmpty(allowOverrideStrongerConsistencyConfig))
+#if !(NETSTANDARD15 || NETSTANDARD16) 
+#if NETSTANDARD20
+            // GetEntryAssembly returns null when loaded from native netstandard2.0
+            if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
-                if (!bool.TryParse(allowOverrideStrongerConsistencyConfig, out this.allowOverrideStrongerConsistency))
+#endif
+                // For tests we want to allow stronger consistency during construction or per call
+                string allowOverrideStrongerConsistencyConfig = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.AllowOverrideStrongerConsistency];
+                if (!string.IsNullOrEmpty(allowOverrideStrongerConsistencyConfig))
                 {
-                    this.allowOverrideStrongerConsistency = false;
-                }
-            }
-
-            // We might want to override the defaults sometime
-            string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
-            if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
-            {
-                int maxConcurrentConnectionOpenRequestOverrideInt = 0;
-                if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
-                {
-                    this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
-                }
-            }
-
-            string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
-            if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
-            {
-                int openConnectionTimeoutInSecondsOverrideInt = 0;
-                if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
-                {
-                    this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
-                }
-            }
-
-            string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
-            if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
-            {
-                int idleConnectionTimeoutInSecondsOverrideInt = 0;
-                if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
-                {
-                    this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
-                }
-            }
-
-            string transportTimerPoolGranularityInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TransportTimerPoolGranularityInSecondsConfig];
-            if (!string.IsNullOrEmpty(transportTimerPoolGranularityInSecondsOverrideString))
-            {
-                int timerPoolGranularityInSecondsOverrideInt = 0;
-                if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out timerPoolGranularityInSecondsOverrideInt))
-                {
-                    // timeoutgranularity specified should be greater than min(5 seconds)
-                    if (timerPoolGranularityInSecondsOverrideInt > this.timerPoolGranularityInSeconds)
+                    if (!bool.TryParse(allowOverrideStrongerConsistencyConfig, out this.allowOverrideStrongerConsistency))
                     {
-                        this.timerPoolGranularityInSeconds = timerPoolGranularityInSecondsOverrideInt;
+                        this.allowOverrideStrongerConsistency = false;
                     }
                 }
-            }
 
-            string enableRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableTcpChannelConfig];
-            if (!string.IsNullOrEmpty(enableRntbdChannelOverrideString))
-            {
-                bool enableRntbdChannel = false;
-                if (bool.TryParse(enableRntbdChannelOverrideString, out enableRntbdChannel))
+                // We might want to override the defaults sometime
+                string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
+                if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
                 {
-                    this.enableRntbdChannel = enableRntbdChannel;
-                }
-            }
-
-            string maxRequestsPerRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxRequestsPerChannelConfig];
-            if (!string.IsNullOrEmpty(maxRequestsPerRntbdChannelOverrideString))
-            {
-                int maxRequestsPerChannel = DocumentClient.DefaultMaxRequestsPerRntbdChannel;
-                if (int.TryParse(maxRequestsPerRntbdChannelOverrideString, out maxRequestsPerChannel))
-                {
-                    this.maxRequestsPerRntbdChannel = maxRequestsPerChannel;
-                }
-            }
-
-            string rntbdPartitionCountOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TcpPartitionCount];
-            if (!string.IsNullOrEmpty(rntbdPartitionCountOverrideString))
-            {
-                int rntbdPartitionCount = DocumentClient.DefaultRntbdPartitionCount;
-                if (int.TryParse(rntbdPartitionCountOverrideString, out rntbdPartitionCount))
-                {
-                    this.rntbdPartitionCount = rntbdPartitionCount;
-                }
-            }
-
-            string maxRntbdChannelsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxChannelsPerHostConfig];
-            if (!string.IsNullOrEmpty(maxRntbdChannelsOverrideString))
-            {
-                int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
-                if (int.TryParse(maxRntbdChannelsOverrideString, out maxRntbdChannels))
-                {
-                    this.maxRntbdChannels = maxRntbdChannels;
-                }
-            }
-
-            string rntbdReceiveHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdReceiveHangDetectionTimeConfig];
-            if (!string.IsNullOrEmpty(rntbdReceiveHangDetectionTimeSecondsString))
-            {
-                int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
-                if (int.TryParse(rntbdReceiveHangDetectionTimeSecondsString, out rntbdReceiveHangDetectionTimeSeconds))
-                {
-                    this.rntbdReceiveHangDetectionTimeSeconds = rntbdReceiveHangDetectionTimeSeconds;
-                }
-            }
-
-            string rntbdSendHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdSendHangDetectionTimeConfig];
-            if (!string.IsNullOrEmpty(rntbdSendHangDetectionTimeSecondsString))
-            {
-                int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
-                if (int.TryParse(rntbdSendHangDetectionTimeSecondsString, out rntbdSendHangDetectionTimeSeconds))
-                {
-                    this.rntbdSendHangDetectionTimeSeconds = rntbdSendHangDetectionTimeSeconds;
-                }
-            }
-
-            if (enableCpuMonitor.HasValue)
-            {
-                this.enableCpuMonitor = enableCpuMonitor.Value;
-            }
-            else
-            {
-                string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableCpuMonitorConfig];
-                if (!string.IsNullOrEmpty(enableCpuMonitorString))
-                {
-                    bool enableCpuMonitorFlag = DefaultEnableCpuMonitor;
-                    if (bool.TryParse(enableCpuMonitorString, out enableCpuMonitorFlag))
+                    int maxConcurrentConnectionOpenRequestOverrideInt = 0;
+                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
                     {
-                        this.enableCpuMonitor = enableCpuMonitorFlag;
+                        this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
                     }
                 }
+
+                string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
+                if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
+                {
+                    int openConnectionTimeoutInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
+                    {
+                        this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
+                    }
+                }
+
+                string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
+                if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
+                {
+                    int idleConnectionTimeoutInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
+                    {
+                        this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
+                    }
+                }
+
+                string transportTimerPoolGranularityInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TransportTimerPoolGranularityInSecondsConfig];
+                if (!string.IsNullOrEmpty(transportTimerPoolGranularityInSecondsOverrideString))
+                {
+                    int timerPoolGranularityInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out timerPoolGranularityInSecondsOverrideInt))
+                    {
+                        // timeoutgranularity specified should be greater than min(5 seconds)
+                        if (timerPoolGranularityInSecondsOverrideInt > this.timerPoolGranularityInSeconds)
+                        {
+                            this.timerPoolGranularityInSeconds = timerPoolGranularityInSecondsOverrideInt;
+                        }
+                    }
+                }
+
+                string enableRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableTcpChannelConfig];
+                if (!string.IsNullOrEmpty(enableRntbdChannelOverrideString))
+                {
+                    bool enableRntbdChannel = false;
+                    if (bool.TryParse(enableRntbdChannelOverrideString, out enableRntbdChannel))
+                    {
+                        this.enableRntbdChannel = enableRntbdChannel;
+                    }
+                }
+
+                string maxRequestsPerRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxRequestsPerChannelConfig];
+                if (!string.IsNullOrEmpty(maxRequestsPerRntbdChannelOverrideString))
+                {
+                    int maxRequestsPerChannel = DocumentClient.DefaultMaxRequestsPerRntbdChannel;
+                    if (int.TryParse(maxRequestsPerRntbdChannelOverrideString, out maxRequestsPerChannel))
+                    {
+                        this.maxRequestsPerRntbdChannel = maxRequestsPerChannel;
+                    }
+                }
+
+                string rntbdPartitionCountOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TcpPartitionCount];
+                if (!string.IsNullOrEmpty(rntbdPartitionCountOverrideString))
+                {
+                    int rntbdPartitionCount = DocumentClient.DefaultRntbdPartitionCount;
+                    if (int.TryParse(rntbdPartitionCountOverrideString, out rntbdPartitionCount))
+                    {
+                        this.rntbdPartitionCount = rntbdPartitionCount;
+                    }
+                }
+
+                string maxRntbdChannelsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxChannelsPerHostConfig];
+                if (!string.IsNullOrEmpty(maxRntbdChannelsOverrideString))
+                {
+                    int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
+                    if (int.TryParse(maxRntbdChannelsOverrideString, out maxRntbdChannels))
+                    {
+                        this.maxRntbdChannels = maxRntbdChannels;
+                    }
+                }
+
+                string rntbdReceiveHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdReceiveHangDetectionTimeConfig];
+                if (!string.IsNullOrEmpty(rntbdReceiveHangDetectionTimeSecondsString))
+                {
+                    int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
+                    if (int.TryParse(rntbdReceiveHangDetectionTimeSecondsString, out rntbdReceiveHangDetectionTimeSeconds))
+                    {
+                        this.rntbdReceiveHangDetectionTimeSeconds = rntbdReceiveHangDetectionTimeSeconds;
+                    }
+                }
+
+                string rntbdSendHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdSendHangDetectionTimeConfig];
+                if (!string.IsNullOrEmpty(rntbdSendHangDetectionTimeSecondsString))
+                {
+                    int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
+                    if (int.TryParse(rntbdSendHangDetectionTimeSecondsString, out rntbdSendHangDetectionTimeSeconds))
+                    {
+                        this.rntbdSendHangDetectionTimeSeconds = rntbdSendHangDetectionTimeSeconds;
+                    }
+                }
+
+                if (enableCpuMonitor.HasValue)
+                {
+                    this.enableCpuMonitor = enableCpuMonitor.Value;
+                }
+                else
+                {
+                    string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableCpuMonitorConfig];
+                    if (!string.IsNullOrEmpty(enableCpuMonitorString))
+                    {
+                        bool enableCpuMonitorFlag = DefaultEnableCpuMonitor;
+                        if (bool.TryParse(enableCpuMonitorString, out enableCpuMonitorFlag))
+                        {
+                            this.enableCpuMonitor = enableCpuMonitorFlag;
+                        }
+                    }
+                }
+#if NETSTANDARD20
             }
+#endif            
 #endif
 
             // ConnectionPolicy always overrides appconfig
@@ -1112,7 +1120,7 @@ namespace Microsoft.Azure.Cosmos
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
-                CosmosContainerSettings resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 resolvedCollection.ResourceId,
                 new Range<string>(
@@ -1569,13 +1577,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> CreateDatabaseAsync(Database database, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> CreateDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> CreateDatabasePrivateAsync(Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> CreateDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -1597,7 +1605,7 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 SerializationFormattingPolicy.None))
             {
-                return new ResourceResponse<Database>(await this.CreateAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.CreateAsync(request, retryPolicyInstance));
             }
         }
 
@@ -1638,12 +1646,12 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsAsync(Database database, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => CreateDatabaseIfNotExistsPrivateAsync(database, options), null);
         }
 
-        private async Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsPrivateAsync(Database database,
+        private async Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsPrivateAsync(Documents.Database database,
             Documents.Client.RequestOptions options)
         {
             if (database == null)
@@ -2000,7 +2008,7 @@ namespace Microsoft.Azure.Cosmos
 
             // ReadDatabaseAsync call is needed to support this API that takes databaseLink as a parameter, to be consistent with CreateDocumentCollectionAsync. We need to construct the collectionLink to make
             // ReadDocumentCollectionAsync call, in case database selfLink got passed to this API. We cannot simply concat the database selfLink with /colls/{collectionId} to get the collectionLink.
-            Database database = await this.ReadDatabaseAsync(databaseLink);
+            Documents.Database database = await this.ReadDatabaseAsync(databaseLink);
 
             // Doing a Read before Create will give us better latency for existing collections.
             // Also, in emulator case when you hit the max allowed partition count and you use this API for a collection that already exists,
@@ -2535,13 +2543,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> DeleteDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> DeleteDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> DeleteDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> DeleteDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2558,7 +2566,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                return new ResourceResponse<Database>(await this.DeleteAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.DeleteAsync(request, retryPolicyInstance));
             }
         }
 
@@ -3529,13 +3537,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<Database>> ReadDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> ReadDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReadDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> ReadDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> ReadDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -3552,7 +3560,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                return new ResourceResponse<Database>(await this.ReadAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.ReadAsync(request, retryPolicyInstance));
             }
         }
 
@@ -4409,14 +4417,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<DocumentFeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
+        public Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDatabaseFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<DocumentFeedResponse<Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5316,13 +5324,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<Database>> UpsertDatabaseAsync(Database database, Documents.Client.RequestOptions options = null)
+        internal Task<ResourceResponse<Documents.Database>> UpsertDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> UpsertDatabasePrivateAsync(Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> UpsertDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5344,7 +5352,7 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 SerializationFormattingPolicy.None))
             {
-                return new ResourceResponse<Database>(await this.UpsertAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.UpsertAsync(request, retryPolicyInstance));
             }
         }
 
@@ -6246,31 +6254,31 @@ namespace Microsoft.Azure.Cosmos
         #endregion
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public Task<CosmosAccountSettings> GetDatabaseAccountAsync()
+        public Task<AccountProperties> GetDatabaseAccountAsync()
         {
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountSettings"/> as an asynchronous operation
+        /// Read the <see cref="AccountProperties"/> as an asynchronous operation
         /// given a specific reginal endpoint url.
         /// </summary>
         /// <param name="serviceEndpoint">The reginal url of the serice endpoint.</param>
         /// <param name="cancellationToken">The CancellationToken</param>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        Task<CosmosAccountSettings> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
+        Task<AccountProperties> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
         {
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
-        private async Task<CosmosAccountSettings> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
         {
             await this.EnsureValidClientAsync();
             GatewayStoreModel gatewayModel = this.gatewayStoreModel as GatewayStoreModel;
@@ -6304,7 +6312,7 @@ namespace Microsoft.Azure.Cosmos
                     request.Method = HttpMethod.Get;
                     request.RequestUri = serviceEndpoint;
 
-                    CosmosAccountSettings databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
+                    AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
 
                     this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
 
@@ -6454,9 +6462,10 @@ namespace Microsoft.Azure.Cosmos
                     this.maxRntbdChannels,
                     this.rntbdPartitionCount,
                     this.maxRequestsPerRntbdChannel,
-                    this.rntbdReceiveHangDetectionTimeSeconds,
-                    this.rntbdSendHangDetectionTimeSeconds,
-                    this.enableCpuMonitor);
+                    receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
+                    sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
+                    enableCpuMonitor: this.enableCpuMonitor,
+                    retryWithConfiguration: this.connectionPolicy.RetryOptions?.GetRetryWithConfiguration());
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6529,10 +6538,10 @@ namespace Microsoft.Azure.Cosmos
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
-            CosmosAccountSettings accountSettings = this.accountServiceConfiguration.AccountSettings;
-            this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountSettings.EnableMultipleWriteLocations;
+            AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
+            this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
-            await this.globalEndpointManager.RefreshLocationAsync(accountSettings);
+            await this.globalEndpointManager.RefreshLocationAsync(accountProperties);
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
@@ -6594,11 +6603,11 @@ namespace Microsoft.Azure.Cosmos
         private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
-            if (options != null && options.PartitionKey != null && options.PartitionKey.Equals(PartitionKey.None))
+            if (options != null && options.PartitionKey != null && options.PartitionKey.Equals(Documents.PartitionKey.None))
             {
                 partitionKey = collection.GetNoneValue();
             }
@@ -6617,7 +6626,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             // For backward compatibility, if collection doesn't have partition key defined, we assume all documents
@@ -6634,7 +6643,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException(RMResources.MissingPartitionKeyValue);
                 }
             }
-            else if (options.PartitionKey.Equals(PartitionKey.None))
+            else if (options.PartitionKey.Equals(Documents.PartitionKey.None))
             {
                 partitionKey = collection.GetNoneValue();
             }

@@ -15,13 +15,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal sealed class DocumentServiceLeaseStoreCosmos : DocumentServiceLeaseStore
     {
-        private readonly CosmosContainer container;
+        private readonly Container container;
         private readonly string containerNamePrefix;
         private readonly RequestOptionsFactory requestOptionsFactory;
         private string lockETag;
 
         public DocumentServiceLeaseStoreCosmos(
-            CosmosContainer container,
+            Container container,
             string containerNamePrefix,
             RequestOptionsFactory requestOptionsFactory)
         {
@@ -41,9 +41,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             string markerDocId = this.GetStoreMarkerName();
             var containerDocument = new { id = markerDocId };
+
             await this.container.CreateItemAsync<dynamic>(
-                this.requestOptionsFactory.GetPartitionKey(markerDocId),
-                containerDocument).ConfigureAwait(false);
+                item: containerDocument,
+                partitionKey: this.requestOptionsFactory.GetPartitionKey(markerDocId)).ConfigureAwait(false);
         }
 
         public override async Task<bool> AcquireInitializationLockAsync(TimeSpan lockTime)

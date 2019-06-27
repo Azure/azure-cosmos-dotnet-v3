@@ -679,8 +679,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 if (constantType == typeof(decimal))
                 {
-                    // We don't support decimal precision in the backend, so I am casting this to a double for now.
-                    SqlNumberLiteral literal = SqlNumberLiteral.Create(((double)inputExpression.Value));
+                    SqlNumberLiteral literal = SqlNumberLiteral.Create((decimal)inputExpression.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -716,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 if (constantType == typeof(ulong))
                 {
-                    SqlNumberLiteral literal = SqlNumberLiteral.Create((ulong)inputExpression.Value);
+                    SqlNumberLiteral literal = SqlNumberLiteral.Create((decimal)(ulong)inputExpression.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -1453,14 +1452,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlArrayScalarExpression arrayScalarExpression = SqlArrayScalarExpression.Create(query);
                     query = SqlQuery.Create(
                         SqlSelectClause.Create(SqlSelectValueSpec.Create(arrayScalarExpression)),
-                        fromClause: null, whereClause: null, orderbyClause: null, offsetLimitClause: null);
+                        fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, offsetLimitClause: null);
                     break;
 
                 case SqlObjectKind.ExistsScalarExpression:
                     SqlExistsScalarExpression existsScalarExpression = SqlExistsScalarExpression.Create(query);
                     query = SqlQuery.Create(
                         SqlSelectClause.Create(SqlSelectValueSpec.Create(existsScalarExpression)),
-                        fromClause: null, whereClause: null, orderbyClause: null, offsetLimitClause: null);
+                        fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, offsetLimitClause: null);
                     break;
 
                 case SqlObjectKind.SubqueryScalarExpression:

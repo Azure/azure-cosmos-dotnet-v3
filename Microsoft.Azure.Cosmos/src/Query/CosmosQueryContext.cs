@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
         internal virtual async Task<QueryResponse> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             CancellationToken cancellationToken,
-            Action<CosmosRequestMessage> requestEnricher = null)
+            Action<RequestMessage> requestEnricher = null)
         {
             QueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
 
@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query
                            this.ResourceLink,
                            this.ResourceTypeEnum,
                            this.OperationTypeEnum,
+                           this.ContainerResourceId,
                            requestOptions,
                            querySpecForInit,
                            requestEnricher,

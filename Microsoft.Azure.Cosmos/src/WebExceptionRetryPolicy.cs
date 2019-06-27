@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage, 
+            ResponseMessage cosmosResponseMessage, 
             CancellationToken cancellationToken)
         {
             throw new NotImplementedException();

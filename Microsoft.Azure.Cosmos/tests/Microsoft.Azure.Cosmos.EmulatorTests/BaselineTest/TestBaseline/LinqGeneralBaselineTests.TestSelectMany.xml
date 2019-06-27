@@ -237,7 +237,6 @@ JOIN (
     WHERE (LENGTH(r0["FamilyName"]) > 10)
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":61,"end":66},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -261,7 +260,6 @@ JOIN (
     WHERE (LENGTH(r0["FamilyName"]) > 10)
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":114,"end":138},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":61,"end":66},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

@@ -52,11 +52,11 @@ namespace Cosmos.Samples.AzureFunctions
                 data.Id = Guid.NewGuid().ToString();
             }
 
-            var container = this.cosmosClient.Databases["mydb"].Containers["mycoll"];
+            var container = this.cosmosClient.GetContainer("mydb", "mycoll");
 
             try
             {
-                var result = await container.Items.CreateItemAsync<Item>(data.Id, data);
+                var result = await container.CreateItemAsync<Item>(data, new PartitionKey(data.Id));
                 return new OkObjectResult(result.Resource.Id);
             }
             catch (CosmosException cosmosException)

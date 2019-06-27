@@ -37,11 +37,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 typeof(RouterHandler)
             };
 
-            CosmosRequestHandler handler = client.RequestHandler;
+            RequestHandler handler = client.RequestHandler;
             foreach (Type type in types)
             {
                 Assert.IsTrue(type.Equals(handler.GetType()));
-                handler = (CosmosRequestHandler)handler.InnerHandler;
+                handler = (RequestHandler)handler.InnerHandler;
             }
 
             Assert.IsNull(handler);
@@ -50,14 +50,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestPreProcessingHandler()
         {
-            CosmosRequestHandler preProcessHandler = new PreProcessingTestHandler();
+            RequestHandler preProcessHandler = new PreProcessingTestHandler();
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(preProcessHandler));
 
             Assert.IsTrue(typeof(RequestInvokerHandler).Equals(client.RequestHandler.GetType()));
             Assert.IsTrue(typeof(PreProcessingTestHandler).Equals(client.RequestHandler.InnerHandler.GetType()));
 
-            CosmosContainer container = client.Databases["testdb"]
-                                        .Containers["testcontainer"];
+            Container container = client.GetDatabase("testdb")
+                                        .GetContainer("testcontainer");
 
             HttpStatusCode[] testHttpStatusCodes = new HttpStatusCode[]
                                 {
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
-                ItemResponse<object> response = await container.ReadItemAsync<object>("pk1", "id1", options);
+                ItemResponse<object> response = await container.ReadItemAsync<object>("id1", new Cosmos.PartitionKey("pk1"), options);
                 Console.WriteLine($"Got status code {response.StatusCode}");
                 Assert.AreEqual(code, response.StatusCode);
             }
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 options.Properties = new Dictionary<string, object>();
                 options.Properties.Add(PreProcessingTestHandler.StatusCodeName, code);
 
-                ContainerResponse response = await container.DeleteAsync(options);
+                ContainerResponse response = await container.DeleteContainerAsync(options);
 
                 Console.WriteLine($"Got status code {response.StatusCode}");
                 Assert.AreEqual(code, response.StatusCode);
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = testHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
             requestMessage.OperationType = OperationType.Read;
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client);
             invoker.InnerHandler = testHandler;
-            CosmosRequestMessage requestMessage = new CosmosRequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
             requestMessage.ResourceType = ResourceType.Document;
             requestMessage.OperationType = OperationType.Read;
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             AggregateException ae = new AggregateException(message: "Test AE message", innerExceptions: exceptions);
 
-            CosmosResponseMessage response = TransportHandler.AggregateExceptionConverter(ae, null);
+            ResponseMessage response = TransportHandler.AggregateExceptionConverter(ae, null);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.IsTrue(response.ErrorMessage.StartsWith(errorMessage));

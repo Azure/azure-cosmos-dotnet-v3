@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage,
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = await this.retryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        CosmosContainerSettings collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                        ContainerProperties collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
 
                         if (collectionInfo == null)
                         {

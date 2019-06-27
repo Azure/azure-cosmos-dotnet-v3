@@ -17,15 +17,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     internal sealed class DocumentServiceLeaseUpdaterCosmos : DocumentServiceLeaseUpdater
     {
         private const int RetryCountOnConflict = 5;
-        private readonly CosmosContainer container;
+        private readonly Container container;
 
-        public DocumentServiceLeaseUpdaterCosmos(CosmosContainer container)
+        public DocumentServiceLeaseUpdaterCosmos(Container container)
         {
             if (container == null) throw new ArgumentNullException(nameof(container));
             this.container = container;
         }
 
-        public override async Task<DocumentServiceLease> UpdateLeaseAsync(DocumentServiceLease cachedLease, string itemId, object partitionKey, Func<DocumentServiceLease, DocumentServiceLease> updateLease)
+        public override async Task<DocumentServiceLease> UpdateLeaseAsync(
+            DocumentServiceLease cachedLease, 
+            string itemId, 
+            Cosmos.PartitionKey partitionKey, 
+            Func<DocumentServiceLease, DocumentServiceLease> updateLease)
         {
             DocumentServiceLease lease = cachedLease;
             for (int retryCount = RetryCountOnConflict; retryCount >= 0; retryCount--)
@@ -46,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 DefaultTrace.TraceInformation("Lease with token {0} update conflict. Reading the current version of lease.", lease.CurrentLeaseToken);
 
                 ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReadItemAsync<DocumentServiceLeaseCore>(
-                    partitionKey, itemId).ConfigureAwait(false);
+                    itemId, partitionKey).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     DefaultTrace.TraceInformation("Lease with token {0} no longer exists", lease.CurrentLeaseToken);
@@ -69,15 +73,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             throw new LeaseLostException(lease);
         }
 
-        private async Task<DocumentServiceLeaseCore> TryReplaceLeaseAsync(DocumentServiceLeaseCore lease, object partitionKey, string itemId)
+        private async Task<DocumentServiceLeaseCore> TryReplaceLeaseAsync(
+            DocumentServiceLeaseCore lease, 
+            Cosmos.PartitionKey partitionKey, 
+            string itemId)
         {
             try
             {
+                ItemRequestOptions itemRequestOptions = this.CreateIfMatchOptions(lease);
                 ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReplaceItemAsync<DocumentServiceLeaseCore>(
-                    partitionKey,
-                    itemId, 
-                    lease, 
-                    this.CreateIfMatchOptions(lease)).ConfigureAwait(false);
+                    id: itemId, 
+                    item: lease,
+                    partitionKey: partitionKey,
+                    requestOptions: itemRequestOptions).ConfigureAwait(false);
 
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {

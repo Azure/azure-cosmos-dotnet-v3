@@ -14,11 +14,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal class DocumentServiceLeaseStoreManagerBuilder
     {
-        private DocumentServiceLeaseStoreManagerSettings settings = new DocumentServiceLeaseStoreManagerSettings();
-        private CosmosContainer container;
+        private DocumentServiceLeaseStoreManagerOptions options = new DocumentServiceLeaseStoreManagerOptions();
+        private Container container;
         private RequestOptionsFactory requestOptionsFactory;
 
-        public DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(CosmosContainer leaseContainer)
+        public DocumentServiceLeaseStoreManagerBuilder WithLeaseContainer(Container leaseContainer)
         {
             if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             if (leasePrefix == null) throw new ArgumentNullException(nameof(leasePrefix));
 
-            this.settings.ContainerNamePrefix = leasePrefix;
+            this.options.ContainerNamePrefix = leasePrefix;
             return this;
         }
 
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             if (hostName == null) throw new ArgumentNullException(nameof(hostName));
 
-            this.settings.HostName = hostName;
+            this.options.HostName = hostName;
             return this;
         }
 
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (this.requestOptionsFactory == null)
                 throw new InvalidOperationException(nameof(this.requestOptionsFactory) + " was not specified");
 
-            var leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.settings, this.container, this.requestOptionsFactory);
+            var leaseStoreManager = new DocumentServiceLeaseStoreManagerCosmos(this.options, this.container, this.requestOptionsFactory);
             return Task.FromResult<DocumentServiceLeaseStoreManager>(leaseStoreManager);
         }
     }

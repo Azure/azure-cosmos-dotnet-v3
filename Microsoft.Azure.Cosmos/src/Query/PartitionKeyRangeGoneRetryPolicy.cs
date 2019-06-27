@@ -57,11 +57,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
+        /// <param name="cosmosResponseMessage"><see cref="ResponseMessage"/> in return of the request</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public async Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage,
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(cosmosResponseMessage?.StatusCode,
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                     null,
                     AuthorizationTokenType.PrimaryMasterKey))
                 {
-                    CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                    ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
                     CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, request, cancellationToken);
                     if (routingMap != null)
                     {

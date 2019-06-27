@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 else if (PhysicalPartitionKeyRangeIdProvided(this))
                 {
                     CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-                    CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                    ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
 
                     request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, base.PartitionKeyRangeId));
                     feedRespose = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         // Get the routing map provider
                         CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-                        CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                        ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                         QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync(cancellationToken);
                         IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task<Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>>> TryGetTargetPartitionKeyRangeAsync(
            DocumentServiceRequest request,
-           CosmosContainerSettings collection,
+           ContainerProperties collection,
            QueryPartitionProvider queryPartitionProvider,
            IRoutingMapProvider routingMapProvider,
            Range<string> rangeFromContinuationToken,
@@ -309,7 +309,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.QuerySpec,
                         enableCrossPartitionQuery,
                         false,
-                        isContinuationExpected,
+                        this.isContinuationExpected,
+                        false, //haslogicalpartitionkey
                         partitionKeyDefinition,
                         queryPartitionProvider,
                         version,

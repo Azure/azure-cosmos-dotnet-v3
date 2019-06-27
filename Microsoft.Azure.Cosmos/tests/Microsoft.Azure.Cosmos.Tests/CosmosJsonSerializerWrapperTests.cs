@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             var retval = handler.ToStream("testValue");
         }
 
-        private class CosmosJsonSerializerFails : CosmosJsonSerializer
+        private class CosmosJsonSerializerFails : CosmosSerializer
         {
             public override T FromStream<T>(Stream stream)
             {

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken token,
             Guid correlatedActivityId)
         {
-            CosmosContainerSettings collection = null;
+            ContainerProperties collection = null;
             if (resourceTypeEnum.IsCollectionChild())
             {
                 CollectionCache collectionCache = await client.GetCollectionCacheAsync();
@@ -50,9 +50,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     collection = await collectionCache.ResolveCollectionAsync(request, token);
                 }
 
-                if (feedOptions != null && feedOptions.PartitionKey != null && feedOptions.PartitionKey.Equals(PartitionKey.None))
+                if (feedOptions != null && feedOptions.PartitionKey != null && feedOptions.PartitionKey.Equals(Documents.PartitionKey.None))
                 {
-                    feedOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
+                    feedOptions.PartitionKey = Documents.PartitionKey.FromInternalKey(collection.GetNoneValue());
                 }
             }
 
@@ -106,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: isContinuationExpected,
                     allowNonValueAggregateQuery: false,
+                    hasLogicalPartitionKey: feedOptions.PartitionKey != null,
                     cancellationToken: token);
 
                 if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(
@@ -211,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Query
         internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             DefaultDocumentQueryExecutionContext queryExecutionContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             FeedOptions feedOptions)
         {
             List<PartitionKeyRange> targetRanges = null;

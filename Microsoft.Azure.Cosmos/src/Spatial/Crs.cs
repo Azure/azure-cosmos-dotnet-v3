@@ -5,12 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Represents Coordinate Reference System in the Azure Cosmos DB service.
     /// </summary>
+    [DataContract]
     [JsonConverter(typeof(CrsJsonConverter))]
     public abstract class Crs
     {
@@ -53,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Type of CRS.
         /// </value>
+        [DataMember(Name = "type")]
         public CrsType Type { get; private set; }
 
         /// <summary>

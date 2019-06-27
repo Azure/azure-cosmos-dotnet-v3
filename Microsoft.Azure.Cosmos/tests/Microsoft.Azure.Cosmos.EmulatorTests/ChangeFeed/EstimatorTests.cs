@@ -32,12 +32,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             long? receivedEstimation = 0;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await estimator.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
@@ -54,12 +54,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task WhenLeasesHaveContinuationTokenNullReturn0()
         {
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
@@ -67,12 +67,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await estimator.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
@@ -89,12 +89,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public async Task CountPendingDocuments()
         {
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
             // Letting processor initialize
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in Enumerable.Range(0, 10))
             {
-                await this.Container.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
             }
 
             // Waiting on all notifications to finish
@@ -111,18 +111,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             long? receivedEstimation = null;
             ChangeFeedProcessor estimator = this.Container
-                .CreateChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
                 {
                     receivedEstimation = estimation;
                     return Task.CompletedTask;
                 }, TimeSpan.FromSeconds(1))
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             
             // Inserting more documents
             foreach (int id in Enumerable.Range(11, 10))
             {
-                await this.Container.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
             }
 
             await estimator.StartAsync();

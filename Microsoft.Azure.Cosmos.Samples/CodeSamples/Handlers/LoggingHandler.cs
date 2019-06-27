@@ -9,7 +9,7 @@
     /// <summary>
     /// This handler will send telemetry to Application Insights
     /// </summary>
-    class LoggingHandler : CosmosRequestHandler
+    class LoggingHandler : RequestHandler
     {
         private readonly TelemetryClient telemetryClient;
         public LoggingHandler()
@@ -17,15 +17,15 @@
             this.telemetryClient = new TelemetryClient();
         }
 
-        public override async Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        public override async Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
 
             using (Microsoft.ApplicationInsights.Extensibility.IOperationHolder<RequestTelemetry> operation = this.telemetryClient.StartOperation<RequestTelemetry>("CosmosDBRequest"))
             {
                 this.telemetryClient.TrackTrace($"{request.Method.Method} - {request.RequestUri.ToString()}");
-                CosmosResponseMessage response = await base.SendAsync(request, cancellationToken);
+                ResponseMessage response = await base.SendAsync(request, cancellationToken);
 
                 operation.Telemetry.ResponseCode = ((int)response.StatusCode).ToString();
                 operation.Telemetry.Success = response.IsSuccessStatusCode;

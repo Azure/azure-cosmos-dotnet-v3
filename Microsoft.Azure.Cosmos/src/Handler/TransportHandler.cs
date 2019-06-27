@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
-    internal class TransportHandler : CosmosRequestHandler
+    internal class TransportHandler : RequestHandler
     {
         private readonly CosmosClient client;
 
@@ -26,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.client = client;
         }
 
-        public override async Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        public override async Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             try
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
                 // is removed this catch can be safely removed.
-                CosmosResponseMessage errorMessage = AggregateExceptionConverter(ex, request);
+                ResponseMessage errorMessage = AggregateExceptionConverter(ex, request);
                 if (errorMessage != null)
                 {
                     return errorMessage;
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         internal Task<DocumentServiceResponse> ProcessMessageAsync(
-            CosmosRequestMessage request,
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             if (request == null)
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        internal static CosmosResponseMessage AggregateExceptionConverter(AggregateException aggregateException, CosmosRequestMessage request)
+        internal static ResponseMessage AggregateExceptionConverter(AggregateException aggregateException, RequestMessage request)
         {
             AggregateException innerExceptions = aggregateException.Flatten();
             DocumentClientException docClientException = (DocumentClientException)innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosException cosmosException = exception as CosmosException;
             if (cosmosException != null)
             {
-                return new CosmosResponseMessage(
+                return new ResponseMessage(
                     headers: cosmosException.Headers,
                     requestMessage: request,
                     errorMessage: cosmosException.Message,

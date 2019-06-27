@@ -67,33 +67,6 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.ResolvedPartitionKeyRange = result.TargetPartitionKeyRange;
             request.RequestContext.RegionName = this.location;
 
-            if (request.RequestContext.TargetIdentity != null)
-            {
-                ServiceIdentity lastResolvedTargetIdentity = request.RequestContext.GetAndUpdateLastResolvedTargetIdentity();
-
-                if (lastResolvedTargetIdentity != null &&
-                    !string.Equals(
-                        lastResolvedTargetIdentity.FederationId,
-                        request.RequestContext.TargetIdentity.FederationId,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    DefaultTrace.TraceInformation(
-                        "AddressResolver.ResolveAsync RequestAuthorizationTokenType = {0}, LastResolvedTargetIdentity = {1}, " +
-                        "TargetIdentity = {2}, forceRefreshPartitionAddresses = {3}, ForceCollectionRoutingMapRefresh = {4}, " +
-                        "ForceMasterRefresh = {5}, OperationType = {6}, ResourceType = {7}",
-                        request.RequestAuthorizationTokenType,
-                        lastResolvedTargetIdentity,
-                        request.RequestContext.TargetIdentity,
-                        forceRefreshPartitionAddresses,
-                        request.ForceCollectionRoutingMapRefresh,
-                        request.ForceMasterRefresh,
-                        request.OperationType,
-                        request.ResourceType);
-
-                    await this.requestSigner.ReauthorizeSystemKeySignedRequestAsync(request, cancellationToken);
-                }
-            }
-
             await this.requestSigner.SignRequestAsync(request, cancellationToken);
 
             return result.Addresses;
@@ -105,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException("parent");
             }
-            
+
             if (newlyResolved == null)
             {
                 return false;
@@ -250,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
 
             bool collectionRoutingMapCacheIsUptoDate = false;
 
-            CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+            ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                 collection.ResourceId, null, request, cancellationToken);
 
@@ -371,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
         private static void EnsureRoutingMapPresent(
             DocumentServiceRequest request,
             CollectionRoutingMap routingMap,
-            CosmosContainerSettings collection)
+            ContainerProperties collection)
         {
             if (routingMap == null && request.IsNameBased && request.PartitionKeyRangeIdentity != null
                 && request.PartitionKeyRangeIdentity.CollectionRid != null)
@@ -398,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResolutionResult> TryResolveServerPartitionAsync(
             DocumentServiceRequest request,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap,
             bool collectionCacheIsUptodate,
             bool collectionRoutingMapCacheIsUptodate,
@@ -450,7 +423,7 @@ namespace Microsoft.Azure.Cosmos
                 out effectivePartitionKeyStringObject))
             {
                 // Allow EPK only for partitioned collection (excluding migrated fixed collections)
-                if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey)
+                if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
                 {
                     throw new ArgumentOutOfRangeException(nameof(collection));
                 }
@@ -553,7 +526,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResolutionResult> TryResolveServerPartitionByPartitionKeyRangeIdAsync(
             DocumentServiceRequest request,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap,
             bool collectionCacheIsUpToDate,
             bool routingMapCacheIsUpToDate,
@@ -591,7 +564,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             string partitionKeyString,
             bool collectionCacheUptoDate,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap)
         {
             if (request == null)

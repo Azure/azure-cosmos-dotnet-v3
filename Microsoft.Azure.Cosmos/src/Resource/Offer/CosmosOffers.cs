@@ -61,9 +61,23 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal async Task<OfferV2> GetOfferV2Async(
+            string targetRID,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrWhiteSpace(targetRID))
+            {
+                throw new ArgumentNullException(targetRID);
+            }
+
+            Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
+            OfferV2 offerV2 = offer as OfferV2;
+            return offerV2;
+        }
+
         internal async Task<CosmosOfferResult> ReplaceThroughputIfExistsAsync(
             string targetRID,
-            int targetThroughput,
+            int throughput,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             try
@@ -80,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new NotImplementedException();
                 }
 
-                OfferV2 newOffer = new OfferV2(offerV2, targetThroughput);
+                OfferV2 newOffer = new OfferV2(offerV2, throughput);
                 Offer replacedOffer = await this.ReplaceOfferAsync(targetRID, newOffer, cancellationToken);
                 offerV2 = replacedOffer as OfferV2;
                 Debug.Assert(offerV2 != null);

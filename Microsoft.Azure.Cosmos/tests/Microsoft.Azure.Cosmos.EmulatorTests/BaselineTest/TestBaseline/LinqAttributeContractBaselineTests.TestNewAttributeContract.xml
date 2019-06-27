@@ -7,7 +7,6 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: Constructor invocation is not supported., ]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

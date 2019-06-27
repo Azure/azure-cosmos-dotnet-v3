@@ -5,16 +5,17 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos container response
     /// </summary>
-    public class ContainerResponse : Response<CosmosContainerSettings>
+    public class ContainerResponse : Response<ContainerProperties>
     {
         /// <summary>
         /// Create a <see cref="ContainerResponse"/> as a no-op for mock testing
         /// </summary>
-        public ContainerResponse()
+        protected ContainerResponse()
             : base()
         {
         }
@@ -25,14 +26,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal ContainerResponse(
             HttpStatusCode httpStatusCode,
-            CosmosResponseMessageHeaders headers,
-            CosmosContainerSettings cosmosContainerSettings,
-            CosmosContainer container)
-            : base(
-                httpStatusCode,
-                headers,
-                cosmosContainerSettings)
+            Headers headers,
+            ContainerProperties containerProperties,
+            Container container)
         {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = containerProperties;
             this.Container = container;
         }
 
@@ -40,13 +40,37 @@ namespace Microsoft.Azure.Cosmos
         /// The reference to the cosmos container. This allows additional operations on the container
         /// or for easy access to other references like Items, StoredProcedures, etc..
         /// </summary>
-        public virtual CosmosContainer Container { get; private set; }
+        public virtual Container Container { get; private set; }
+
+        /// <inheritdoc/>
+        public override Headers Headers { get; }
+
+        /// <inheritdoc/>
+        public override ContainerProperties Resource { get; }
+
+        /// <inheritdoc/>
+        public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
+
+        /// <inheritdoc/>
+        public override string ActivityId => this.Headers?.ActivityId;
+
+        /// <inheritdoc/>
+        public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+
+        /// <inheritdoc/>
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
-        /// Get <see cref="CosmosContainer"/> implicitly from <see cref="ContainerResponse"/>
+        /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="ContainerResponse"/>
         /// </summary>
         /// <param name="response">ContainerResponse</param>
-        public static implicit operator CosmosContainer(ContainerResponse response)
+        public static implicit operator Container(ContainerResponse response)
         {
             return response.Container;
         }

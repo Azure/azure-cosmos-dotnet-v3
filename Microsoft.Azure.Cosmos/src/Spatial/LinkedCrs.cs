@@ -5,10 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using System.Runtime.Serialization;
 
     /// <summary>
     /// Coordinate Reference System which is identified by link in the Azure Cosmos DB service. 
     /// </summary>
+    [DataContract]
     public sealed class LinkedCrs : Crs, IEquatable<LinkedCrs>
     {
         /// <summary>
@@ -38,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Link which identifies the Coordinate Reference System.
         /// </value>
+        [DataMember(Name = "href")]
         public string Href { get; private set; }
 
         /// <summary>
@@ -46,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Optional string which hints at the format used to represent CRS parameters at the provided <see cref="Href"/>.
         /// </value>
+        [DataMember(Name = "hrefType")]
         public string HrefType { get; private set; }
 
         /// <summary>

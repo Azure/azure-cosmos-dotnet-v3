@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CancellationToken cancellationtoken = cancellationTokenSource.Token;
 
             Mock<CollectionCache> mockCollectionCache = new Mock<CollectionCache>();
-            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), cancellationtoken)).Returns(Task.FromResult(new CosmosContainerSettings("mockContainer", "/pk")));
+            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), cancellationtoken)).Returns(Task.FromResult(new ContainerProperties("mockContainer", "/pk")));
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             client.Setup(x => x.GetCollectionCacheAsync()).Returns(Task.FromResult(mockCollectionCache.Object));
@@ -80,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 true,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
+                false, // has logical partition key
                 cancellationtoken)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
 
             CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(
@@ -88,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQuerySpec,
+                continuationToken: null,
                 queryRequestOptions: queryRequestOptions,
                 resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,

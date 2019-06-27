@@ -20,13 +20,15 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly BinaryNode rootNode;
             private readonly LittleEndianBinaryReader binaryReader;
             private readonly byte[] buffer;
+            private readonly JsonStringDictionary jsonStringDictionary;
 
             /// <summary>
             /// Initializes a new instance of the JsonBinaryNavigator class
             /// </summary>
             /// <param name="buffer">The (UTF-8) buffer to navigate.</param>
+            /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
             /// <param name="skipValidation">whether to skip validation or not.</param>
-            public JsonBinaryNavigator(byte[] buffer, bool skipValidation = false)
+            public JsonBinaryNavigator(byte[] buffer, JsonStringDictionary jsonStringDictionary, bool skipValidation = false)
             {
                 if (buffer == null)
                 {
@@ -44,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // true, since buffer is visible
                 this.binaryReader = new LittleEndianBinaryReader(new MemoryStream(buffer, 0, buffer.Length, false, true));
                 this.buffer = buffer;
+                this.jsonStringDictionary = jsonStringDictionary;
             }
 
             /// <summary>
@@ -141,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 long offset = ((BinaryNode)stringNode).Offset;
                 this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
-                return JsonBinaryEncoding.GetStringValue(this.binaryReader);
+                return JsonBinaryEncoding.GetStringValue(this.binaryReader, this.jsonStringDictionary);
             }
 
             public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)

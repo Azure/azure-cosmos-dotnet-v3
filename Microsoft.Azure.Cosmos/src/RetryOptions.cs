@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// RetryOptions class defines the parameters an application can set to customize the
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
         internal const int DefaultMaxRetryWaitTimeInSeconds = 30;
         internal const int DefaultMaxRetryAttemptsOnThrottledRequests = 9;
 
+        private readonly RetryWithConfiguration retryWithConfiguration;
         private int maxRetryAttemptsOnThrottledRequests;
         private int maxRetryWaitTime;
 
@@ -31,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.maxRetryAttemptsOnThrottledRequests = RetryOptions.DefaultMaxRetryAttemptsOnThrottledRequests;
             this.maxRetryWaitTime = RetryOptions.DefaultMaxRetryWaitTimeInSeconds;
+            this.retryWithConfiguration = new RetryWithConfiguration();
         }
 
         /// <summary>
@@ -39,10 +42,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>
         /// The default value is 9. This means in the case where the request is rate limited,
-        /// the same request will be issued for a maximum of 10 times to the server before 
-        /// an error is returned to the application. If the value of this property is set to 0, 
+        /// the same request will be issued for a maximum of 10 times to the server before
+        /// an error is returned to the application. If the value of this property is set to 0,
         /// there will be no automatic retry on rate limiting requests from the client and the exception
-        /// needs to handled at the application level. 
+        /// needs to handled at the application level.
         /// For an example on how to set this value, please refer to <see cref="ConnectionPolicy.RetryOptions"/>.
         /// </value>
         /// <remarks>
@@ -50,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// When a client is sending requests faster than the allowed rate,
         /// the service will return HttpStatusCode 429 (Too Many Request) to rate limit the client. The current
         /// implementation in the SDK will then wait for the amount of time the service tells it to wait and
-        /// retry after the time has elapsed.  
+        /// retry after the time has elapsed.
         /// </para>
         /// <para>
         /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
@@ -69,6 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException("value must be a positive integer.");
                 }
+
                 this.maxRetryAttemptsOnThrottledRequests = value;
             }
         }
@@ -103,8 +107,132 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException("value must be a positive integer between the range of 0 to " + (int.MaxValue / 1000));
                 }
+
                 this.maxRetryWaitTime = value;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the initial delay retry time in milliseconds for the Azure Cosmos DB service
+        /// for requests that hit RetryWithExceptions. This covers errors that occur due to concurrency errors in the store.
+        /// </summary>
+        /// <value>
+        /// The default value is 1 second. For an example on how to set this value, please refer to <see cref="ConnectionPolicy.RetryOptions"/>.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures the client
+        /// to delay the time specified before retrying the request.
+        /// </para>
+        /// </remarks>
+        internal int? InitialRetryForRetryWithMilliseconds
+        {
+            get
+            {
+                return this.retryWithConfiguration.InitialRetryIntervalMilliseconds;
+            }
+            set
+            {
+                if (value != null && (value < 0 || value > int.MaxValue / 1000))
+                {
+                    throw new ArgumentException("value must be a positive integer between the range of 0 to " + (int.MaxValue / 1000));
+                }
+
+                this.retryWithConfiguration.InitialRetryIntervalMilliseconds = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum delay retry time in milliseconds for the Azure Cosmos DB service
+        /// for requests that hit RetryWithExceptions. This covers errors that occur due to concurrency errors in the store.
+        /// </summary>
+        /// <value>
+        /// The default value is 30 seconds. For an example on how to set this value, please refer to <see cref="ConnectionPolicy.RetryOptions"/>.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures the maximum time
+        /// the client should delay before failing the request.
+        /// </para>
+        /// </remarks>
+        internal int? MaximumRetryForRetryWithMilliseconds
+        {
+            get
+            {
+                return this.retryWithConfiguration.MaximumRetryIntervalMilliseconds;
+            }
+            set
+            {
+                if (value != null && (value < 0 || value > int.MaxValue / 1000))
+                {
+                    throw new ArgumentException("value must be a positive integer between the range of 0 to " + (int.MaxValue / 1000));
+                }
+
+                this.retryWithConfiguration.MaximumRetryIntervalMilliseconds = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the interval to salt retrywith retries with. This will spread the retry values from 1..n from the exponential backoff
+        /// subscribed.
+        /// </summary>
+        /// <value>
+        /// The default value is to not salt.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures the jitter on the retry attempted.
+        /// </para>
+        /// </remarks>
+        internal int? RandomSaltForRetryWithMilliseconds
+        {
+            get
+            {
+                return this.retryWithConfiguration.RandomSaltMaxValueMilliseconds;
+            }
+            set
+            {
+                if (value != null && (value < 0 || value > int.MaxValue / 1000))
+                {
+                    throw new ArgumentException("value must be a positive integer between the range of 0 to " + (int.MaxValue / 1000));
+                }
+
+                this.retryWithConfiguration.RandomSaltMaxValueMilliseconds = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the total time to wait before failing the request for retrywith failures.
+        /// subscribed.
+        /// </summary>
+        /// <value>
+        /// The default value 30 seconds.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures total time spent waiting on the request.
+        /// </para>
+        /// </remarks>
+        internal int? TotalWaitTimeForRetryWithMilliseconds
+        {
+            get
+            {
+                return this.retryWithConfiguration.TotalWaitTimeMilliseconds;
+            }
+            set
+            {
+                if (value != null && (value < 0 || value > int.MaxValue / 1000))
+                {
+                    throw new ArgumentException("value must be a positive integer between the range of 0 to " + (int.MaxValue / 1000));
+                }
+
+                this.retryWithConfiguration.TotalWaitTimeMilliseconds = value;
+            }
+        }
+
+        internal RetryWithConfiguration GetRetryWithConfiguration()
+        {
+            return this.retryWithConfiguration;
         }
     }
 }

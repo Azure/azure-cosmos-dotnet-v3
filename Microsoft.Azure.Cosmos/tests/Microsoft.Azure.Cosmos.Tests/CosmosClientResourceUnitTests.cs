@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
-            CosmosClientContext context = new CosmosClientContextCore(
+            CosmosClientContext context = new ClientContextCore(
                 client: null,
                 clientOptions: null,
                 userJsonSerializer: null,
@@ -32,11 +32,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 documentClient: null,
                 documentQueryClient: new Mock<IDocumentQueryClient>().Object);
 
-            CosmosDatabaseCore db = new CosmosDatabaseCore(context, databaseId);
-            Assert.AreEqual(db.LinkUri.OriginalString, "/dbs/" + databaseId);
+            DatabaseCore db = new DatabaseCore(context, databaseId);
+            Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
 
-            CosmosContainerCore container = new CosmosContainerCore(context, db, crId);
-            Assert.AreEqual(container.LinkUri.OriginalString, "/dbs/" + databaseId + "/colls/" + crId);
+            ContainerCore container = new ContainerCore(context, db, crId);
+            Assert.AreEqual(container.LinkUri.OriginalString, "dbs/" + databaseId + "/colls/" + crId);
         }
 
         [TestMethod]
@@ -55,11 +55,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 }
             };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
-            options.FillRequestOptions(httpRequest);
+            options.PopulateRequestOptions(httpRequest);
 
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out string preTriggerHeader));
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));
@@ -88,11 +88,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 }
             };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
-            options.FillRequestOptions(httpRequest);
+            options.PopulateRequestOptions(httpRequest);
 
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out string preTriggerHeader));
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));
@@ -105,11 +105,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             options.PreTriggers = new List<string>() { "preTrigger" };
             options.PostTriggers = new List<string>() { "postTrigger" };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
-            options.FillRequestOptions(httpRequest);
+            options.PopulateRequestOptions(httpRequest);
 
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out string preTriggerHeader));
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));

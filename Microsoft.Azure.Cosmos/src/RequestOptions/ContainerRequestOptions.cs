@@ -19,20 +19,20 @@ namespace Microsoft.Azure.Cosmos
         /// PopulateQuotaInfo is used to enable/disable getting document collection quota related stats for document collection read requests.
         /// </para>
         /// </remarks>
-        public virtual bool PopulateQuotaInfo { get; set; }
+        public bool PopulateQuotaInfo { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        public override void FillRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal override void PopulateRequestOptions(RequestMessage request)
         {
             if (this.PopulateQuotaInfo)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PopulateQuotaInfo, bool.TrueString);
             }
 
-            base.FillRequestOptions(request);
+            base.PopulateRequestOptions(request);
         }
     }
 }

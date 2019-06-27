@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// The database used for all the tests.
         /// </summary>
-        private static readonly CosmosDatabase database = cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString()).Result;
+        private static readonly Cosmos.Database database = cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString()).Result;
 
         private static readonly IndexingPolicyEqualityComparer indexingPolicyEqualityComparer = new IndexingPolicyEqualityComparer();
 
@@ -321,9 +321,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task DoubleRoundTrip()
         {
-            await cosmosClient.Databases.CreateDatabaseIfNotExistsAsync(database.Id);
+            await cosmosClient.CreateDatabaseIfNotExistsAsync(database.Id);
             Cosmos.IndexingPolicy indexingPolicy = IndexingPolicyTests.CreateDefaultIndexingPolicy();
-            CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings()
+            ContainerProperties cosmosContainerSettings = new ContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
@@ -335,15 +335,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static async Task RoundTripWithLocal(Cosmos.IndexingPolicy indexingPolicy)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-            CosmosContainerSettings containerSetting = new CosmosContainerSettings()
+            ContainerProperties containerSetting = new ContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 IndexingPolicy = indexingPolicy,
                 PartitionKey = partitionKeyDefinition
             };
 
-            CosmosDatabase cosmosDatabase = await cosmosClient.Databases.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
-            ContainerResponse cosmosContainerResponse = await cosmosDatabase.Containers.CreateContainerAsync(containerSetting);
+            Cosmos.Database cosmosDatabase = await cosmosClient.CreateDatabaseIfNotExistsAsync(IndexingPolicyTests.database.Id);
+            ContainerResponse cosmosContainerResponse = await cosmosDatabase.CreateContainerAsync(containerSetting);
 
             Assert.IsTrue(IndexingPolicyTests.indexingPolicyEqualityComparer.Equals(indexingPolicy, containerSetting.IndexingPolicy));
         }

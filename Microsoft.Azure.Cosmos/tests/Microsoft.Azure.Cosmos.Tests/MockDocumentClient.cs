@@ -125,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null);
+            const string pkPath = "/pk";
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
@@ -133,17 +134,29 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                     )
                 ).Returns(() =>
                 {
-                    CosmosContainerSettings cosmosContainerSetting = CosmosContainerSettings.CreateWithResourceId("test");
+                    ContainerProperties cosmosContainerSetting = ContainerProperties.CreateWithResourceId("test");
                     cosmosContainerSetting.PartitionKey = new PartitionKeyDefinition()
                     {
                         Kind = PartitionKind.Hash,
                         Paths = new Collection<string>()
                         {
-                            "/pk"
+                            pkPath
                         }
                     };
 
                     return Task.FromResult(cosmosContainerSetting);
+                });
+            this.collectionCache.Setup
+                    (m =>
+                        m.ResolveByNameAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<CancellationToken>()
+                    )
+                ).Returns(() => {
+                    ContainerProperties containerSettings = ContainerProperties.CreateWithResourceId("test");
+                    containerSettings.PartitionKey.Paths = new Collection<string>() { pkPath };
+                    return Task.FromResult(containerSettings);
                 });
 
             this.collectionCache.Setup
@@ -155,13 +168,13 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                     )
                 ).Returns(() =>
                 {
-                    CosmosContainerSettings cosmosContainerSetting = CosmosContainerSettings.CreateWithResourceId("test");
+                    ContainerProperties cosmosContainerSetting = ContainerProperties.CreateWithResourceId("test");
                     cosmosContainerSetting.PartitionKey = new PartitionKeyDefinition()
                     {
                         Kind = PartitionKind.Hash,
                         Paths = new Collection<string>()
                         {
-                            "/pk"
+                            pkPath
                         }
                     };
 

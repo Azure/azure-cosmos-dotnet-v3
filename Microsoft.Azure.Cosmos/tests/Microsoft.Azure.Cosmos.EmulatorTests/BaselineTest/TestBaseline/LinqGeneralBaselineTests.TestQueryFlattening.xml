@@ -125,7 +125,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[object creation -> conditional]]></Description>
-      <Expression><![CDATA[query.Select(f => new AnonymousType(parentCount = f.Parents.Count(), childrenCount = f.Children.Count())).Select(r => IIF((r.parentCount > 0), Floor((Convert(r.childrenCount) / Convert(r.parentCount))), 0))]]></Expression>
+      <Expression><![CDATA[query.Select(f => new AnonymousType(parentCount = f.Parents.Count(), childrenCount = f.Children.Count())).Select(r => IIF((r.parentCount > 0), Floor((Convert(r.childrenCount, Double) / Convert(r.parentCount, Double))), 0))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -147,7 +147,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[conditional -> object creation]]></Description>
-      <Expression><![CDATA[query.Select(f => IIF((f.Parents.Count() > 0), f.Parents, new Microsoft.Azure.Documents.Services.Management.Tests.Parent[](0))).Select(p => new AnonymousType(parentCount = p.Count()))]]></Expression>
+      <Expression><![CDATA[query.Select(f => IIF((f.Parents.Count() > 0), f.Parents, new Microsoft.Azure.Cosmos.Services.Management.Tests.Parent[](0))).Select(p => new AnonymousType(parentCount = p.Count()))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

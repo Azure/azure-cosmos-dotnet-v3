@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// <summary>
     /// HttpMessageHandler can only be invoked by derived classed or internal classes inside http assembly
     /// </summary>
-    internal class RequestInvokerHandler : CosmosRequestHandler
+    internal class RequestInvokerHandler : RequestHandler
     {
         private readonly CosmosClient client;
 
@@ -26,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.client = client;
         }
 
-        public override Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        public override async Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             if (request == null)
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (promotedRequestOptions != null)
             {
                 // Fill request options
-                promotedRequestOptions.FillRequestOptions(request);
+                promotedRequestOptions.PopulateRequestOptions(request);
 
                 // Validate the request consistency compatibility with account consistency
                 // Type based access context for requested consistency preferred for performance
@@ -59,30 +59,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (consistencyLevel.HasValue)
                 {
-                    if (!ValidationHelpers.ValidateConsistencyLevel(this.client.AccountConsistencyLevel, consistencyLevel.Value))
+                    Cosmos.ConsistencyLevel accountConsistency = await this.client.GetAccountConsistencyLevelAsync();
+                    if (!ValidationHelpers.ValidateConsistencyLevel(accountConsistency, consistencyLevel.Value))
                     {
                         throw new ArgumentException(string.Format(
                                 CultureInfo.CurrentUICulture,
                                 RMResources.InvalidConsistencyLevel,
                                 consistencyLevel.Value.ToString(),
-                                this.client.AccountConsistencyLevel));
+                                accountConsistency));
                     }
                 }
             }
 
-            return this.client.DocumentClient.EnsureValidClientAsync()
-                .ContinueWith(task => request.AssertPartitioningDetailsAsync(this.client, cancellationToken))
-                .ContinueWith(task =>
-                {
-                    if (task.IsFaulted)
-                    {
-                        throw task.Exception;
-                    }
-
-                    this.FillMultiMasterContext(request);
-                    return base.SendAsync(request, cancellationToken);
-                })
-                .Unwrap();
+            await this.client.DocumentClient.EnsureValidClientAsync();
+            await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
+            this.FillMultiMasterContext(request);
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<T> SendAsync<T>(
@@ -90,11 +82,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
-            object partitionKey,
+            ContainerCore cosmosContainerCore,
+            Cosmos.PartitionKey partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Action<RequestMessage> requestEnricher,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (responseCreator == null)
@@ -102,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(responseCreator));
             }
 
-            CosmosResponseMessage responseMessage = await this.SendAsync(
+            ResponseMessage responseMessage = await this.SendAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
@@ -116,15 +108,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return responseCreator(responseMessage);
         }
 
-        public virtual async Task<CosmosResponseMessage> SendAsync(
+        public virtual async Task<ResponseMessage> SendAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
-            object partitionKey,
+            ContainerCore cosmosContainerCore,
+            Cosmos.PartitionKey partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (resourceUri == null)
@@ -134,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
 
-            CosmosRequestMessage request = new CosmosRequestMessage(method, resourceUri)
+            RequestMessage request = new RequestMessage(method, resourceUri)
             {
                 OperationType = operationType,
                 ResourceType = resourceType,
@@ -144,11 +136,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (partitionKey != null)
             {
-                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                 {
                     throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
                 }
-                else if (Object.ReferenceEquals(partitionKey, CosmosContainerSettings.NonePartitionKeyValue))
+                else if (Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                 {
                     try
                     {
@@ -162,8 +154,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 else
                 {
-                    PartitionKey pk = new PartitionKey(partitionKey);
-                    request.Headers.PartitionKey = pk.InternalKey.ToJsonString();
+                    request.Headers.PartitionKey = partitionKey.ToString();
                 }
             }
 
@@ -209,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private void FillMultiMasterContext(CosmosRequestMessage request)
+        private void FillMultiMasterContext(RequestMessage request)
         {
             if (this.client.DocumentClient.UseMultipleWriteLocations)
             {

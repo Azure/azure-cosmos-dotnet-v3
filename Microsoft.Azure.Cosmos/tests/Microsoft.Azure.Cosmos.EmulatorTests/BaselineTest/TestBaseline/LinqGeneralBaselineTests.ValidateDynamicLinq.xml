@@ -37,7 +37,7 @@ WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (ro
   <Result>
     <Input>
       <Description><![CDATA[Where w/ parameters]]></Description>
-      <Expression><![CDATA[query.Where("FamilyId = @0 AND IsRegistered = @1 OR Int > @2", new [] {"some id", Convert(True), Convert(101)})]]></Expression>
+      <Expression><![CDATA[query.Where("FamilyId = @0 AND IsRegistered = @1 OR Int > @2", new [] {"some id", Convert(True, Object), Convert(101, Object)})]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

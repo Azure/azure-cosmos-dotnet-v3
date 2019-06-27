@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.HasMoreResults = false;
         }
 
-        private void PopulatePartitionKeyRangeInfo(CosmosRequestMessage request)
+        private void PopulatePartitionKeyRangeInfo(RequestMessage request)
         {
             if (request == null)
             {

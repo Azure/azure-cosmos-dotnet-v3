@@ -24,8 +24,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await base.ChangeFeedTestInit();
 
             string PartitionKey = "/pk";
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);
             this.Container = response;
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
                     foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
@@ -55,14 +55,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             // Start the processor, insert 1 document to generate a checkpoint
             await processor.StartAsync();
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             foreach (int id in Enumerable.Range(0, 10))
             {
-                await this.Container.CreateItemAsync<dynamic>(partitionKey, new { id = id.ToString(), pk = partitionKey });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
             }
 
             var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
@@ -72,7 +72,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
-        [Ignore("Emulator is failing due to socket issues")]
         public async Task TestReducePageSizeScenario()
         {
             int partitionKey = 0;
@@ -85,17 +84,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                             err => { if (err) throw err;}
                         );}";
 
-            CosmosScripts scripts = this.Container.GetScripts();
+            Scripts scripts = this.Container.Scripts;
 
             StoredProcedureResponse storedProcedureResponse =
-                await scripts.CreateStoredProcedureAsync(new CosmosStoredProcedureSettings(sprocId, sprocBody));
+                await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
 
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
                     foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
@@ -106,15 +105,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithStartFromBeginning()
                 .WithInstanceName("random")
                 .WithMaxItems(6)
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             // Generate the payload
-            await scripts.ExecuteStoredProcedureAsync<int, object>(partitionKey, sprocId, 0);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 0);
             // Create 3 docs each 1.5MB. All 3 do not fit into MAX_RESPONSE_SIZE (4 MB). 2nd and 3rd are in same transaction.
             var content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
-            await this.Container.CreateItemAsync(partitionKey, JsonConvert.DeserializeObject<dynamic>(content));
+            await this.Container.CreateItemAsync(JsonConvert.DeserializeObject<dynamic>(content), new PartitionKey(partitionKey));
 
-            await scripts.ExecuteStoredProcedureAsync<int, object>(partitionKey, sprocId, 3);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 3);
 
             await processor.StartAsync();
             // Letting processor initialize and pickup changes

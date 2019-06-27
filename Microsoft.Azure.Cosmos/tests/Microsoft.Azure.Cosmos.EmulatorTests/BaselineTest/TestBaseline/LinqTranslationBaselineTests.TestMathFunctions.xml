@@ -2,18 +2,18 @@
   <Result>
     <Input>
       <Description><![CDATA[Abs decimal]]></Description>
-      <Expression><![CDATA[query.Select(doc => Abs(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Abs(doc.DecimalField))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ABS(root["NumericField"]) 
+SELECT VALUE ABS(root["DecimalField"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Abs double]]></Description>
-      <Expression><![CDATA[query.Select(doc => Abs(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Abs(Convert(doc.NumericField, Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -24,7 +24,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Abs float]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField > -1000000) AndAlso (doc.NumericField < 1000000))).Select(doc => Abs(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField > -1000000) AndAlso (doc.NumericField < 1000000))).Select(doc => Abs(Convert(doc.NumericField, Single)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -36,31 +36,31 @@ WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]
   <Result>
     <Input>
       <Description><![CDATA[Abs int]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -2147483648) AndAlso (doc.NumericField <= 2147483647))).Select(doc => Abs(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.IntField >= -2147483648) AndAlso (doc.IntField <= 2147483647))).Select(doc => Abs(Convert(doc.IntField, Int32)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ABS(root["NumericField"]) 
+SELECT VALUE ABS(root["IntField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -2147483648) AND (root["NumericField"] <= 2147483647)) ]]></SqlQuery>
+WHERE ((root["IntField"] >= -2147483648) AND (root["IntField"] <= 2147483647)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Abs long]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -9.22337203685478E+18) AndAlso (doc.NumericField <= 9.22337203685478E+18))).Select(doc => Abs(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -9.22337203685478E+18) AndAlso (doc.NumericField <= 9.22337203685478E+18))).Select(doc => Abs(Convert(doc.NumericField, Int64)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -9.22337203685478E+18) AND (root["NumericField"] <= 9.22337203685478E+18)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -9.2233720368547758E+18) AND (root["NumericField"] <= 9.2233720368547758E+18)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Abs sbyte]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -128) AndAlso (doc.NumericField <= 127))).Select(doc => Abs(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -128) AndAlso (doc.NumericField <= 127))).Select(doc => Abs(Convert(doc.NumericField, SByte)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -72,7 +72,7 @@ WHERE ((root["NumericField"] >= -128) AND (root["NumericField"] <= 127)) ]]></Sq
   <Result>
     <Input>
       <Description><![CDATA[Abs short]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -32768) AndAlso (doc.NumericField <= 32767))).Select(doc => Abs(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -32768) AndAlso (doc.NumericField <= 32767))).Select(doc => Abs(Convert(doc.NumericField, Int16)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -119,7 +119,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Ceiling decimal]]></Description>
-      <Expression><![CDATA[query.Select(doc => Ceiling(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Ceiling(Convert(doc.NumericField, Decimal)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -130,7 +130,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Ceiling double]]></Description>
-      <Expression><![CDATA[query.Select(doc => Ceiling(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Ceiling(Convert(doc.NumericField, Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -141,7 +141,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Ceiling float]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField > -1000000) AndAlso (doc.NumericField < 1000000))).Select(doc => Ceiling(Convert(Convert(doc.NumericField))))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField > -1000000) AndAlso (doc.NumericField < 1000000))).Select(doc => Ceiling(Convert(Convert(doc.NumericField, Single), Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -176,7 +176,7 @@ WHERE ((root["NumericField"] >= -3) AND (root["NumericField"] <= 3)) ]]></SqlQue
   <Result>
     <Input>
       <Description><![CDATA[Floor decimal]]></Description>
-      <Expression><![CDATA[query.Select(doc => Floor(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Floor(Convert(doc.NumericField, Decimal)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -187,7 +187,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Floor double]]></Description>
-      <Expression><![CDATA[query.Select(doc => Floor(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Floor(Convert(doc.NumericField, Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -198,7 +198,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Floor float]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField > -1000000) AndAlso (doc.NumericField < 1000000))).Select(doc => Floor(Convert(Convert(doc.NumericField))))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField > -1000000) AndAlso (doc.NumericField < 1000000))).Select(doc => Floor(Convert(Convert(doc.NumericField, Single), Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -257,7 +257,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Round double]]></Description>
-      <Expression><![CDATA[query.Select(doc => Round(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Round(Convert(doc.NumericField, Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -268,7 +268,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Sign decimal]]></Description>
-      <Expression><![CDATA[query.Select(doc => Sign(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Sign(Convert(doc.NumericField, Decimal)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -279,7 +279,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Sign double]]></Description>
-      <Expression><![CDATA[query.Select(doc => Sign(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Sign(Convert(doc.NumericField, Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -290,7 +290,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Sign float]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField > -1000000) AndAlso (doc.NumericField < 1000000))).Select(doc => Sign(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField > -1000000) AndAlso (doc.NumericField < 1000000))).Select(doc => Sign(Convert(doc.NumericField, Single)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -302,7 +302,7 @@ WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]
   <Result>
     <Input>
       <Description><![CDATA[Sign int]]></Description>
-      <Expression><![CDATA[query.Select(doc => Sign(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Sign(Convert(doc.NumericField, Int32)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -313,7 +313,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Sign long]]></Description>
-      <Expression><![CDATA[query.Select(doc => Sign(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Sign(Convert(doc.NumericField, Int64)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -324,7 +324,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Sign sbyte]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -128) AndAlso (doc.NumericField <= 127))).Select(doc => Sign(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -128) AndAlso (doc.NumericField <= 127))).Select(doc => Sign(Convert(doc.NumericField, SByte)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -336,7 +336,7 @@ WHERE ((root["NumericField"] >= -128) AND (root["NumericField"] <= 127)) ]]></Sq
   <Result>
     <Input>
       <Description><![CDATA[Sign short]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -32768) AndAlso (doc.NumericField <= 32767))).Select(doc => Sign(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -32768) AndAlso (doc.NumericField <= 32767))).Select(doc => Sign(Convert(doc.NumericField, Int16)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -370,7 +370,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Truncate decimal]]></Description>
-      <Expression><![CDATA[query.Select(doc => Truncate(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Truncate(Convert(doc.NumericField, Decimal)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -381,7 +381,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Truncate double]]></Description>
-      <Expression><![CDATA[query.Select(doc => Truncate(Convert(doc.NumericField)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Truncate(Convert(doc.NumericField, Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

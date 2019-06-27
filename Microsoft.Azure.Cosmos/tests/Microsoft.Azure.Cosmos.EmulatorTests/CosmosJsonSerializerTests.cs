@@ -15,15 +15,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosJsonSerializerTests : BaseCosmosClientHelper
     {
         private CosmosJsonSerializerCore jsonSerializer = null;
-        private CosmosContainer container = null;
+        private Container container = null;
 
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.TestInit();
             string PartitionKey = "/status";
-            ContainerResponse response = await this.database.Containers.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             this.container = response;
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int toStreamCount = 0;
             int fromStreamCount = 0;
             
-            Mock<CosmosJsonSerializer> mockJsonSerializer = new Mock<CosmosJsonSerializer>();
+            Mock<CosmosSerializer> mockJsonSerializer = new Mock<CosmosSerializer>();
 
             //The item object will be serialized with the custom json serializer.
             ToDoActivity testItem = CreateRandomToDoActivity();
@@ -51,18 +51,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Create a new cosmos client with the mocked cosmos json serializer
             CosmosClient mockClient = TestCommon.CreateCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.WithCustomJsonSerializer(mockJsonSerializer.Object));
-            CosmosContainer mockContainer = mockClient.Databases[this.database.Id].Containers[this.container.Id];
+                (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer.Object));
+            Container mockContainer = mockClient.GetContainer(this.database.Id, this.container.Id);
 
             //Validate that the custom json serializer is used for creating the item
-            ItemResponse<ToDoActivity> response = await mockContainer.CreateItemAsync<ToDoActivity>(partitionKey: testItem.status, item: testItem);
+            ItemResponse<ToDoActivity> response = await mockContainer.CreateItemAsync<ToDoActivity>(item: testItem);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
 
             Assert.AreEqual(1, toStreamCount);
             Assert.AreEqual(1, fromStreamCount);
 
-            await mockContainer.DeleteItemAsync<ToDoActivity>(testItem.status, testItem.id);
+            await mockContainer.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.status));
+        }
+
+        /// <summary>
+        /// Verify that null attributes get serialized by default.
+        /// </summary>
+        [TestMethod]
+        public async Task DefaultNullValueHandling()
+        {
+            ToDoActivity document = new ToDoActivity()
+            {
+                id = Guid.NewGuid().ToString(),
+                description = default(string),
+                status = "TBD",
+                taskNum = 42,
+                cost = double.MaxValue
+            };
+
+            await container.UpsertItemAsync(document);
+
+            ResponseMessage cosmosResponseMessage = await container.ReadItemStreamAsync(document.id, new PartitionKey(document.status));
+            StreamReader reader = new StreamReader(cosmosResponseMessage.Content);
+            string text = reader.ReadToEnd();
+
+            Assert.IsTrue(text.IndexOf(nameof(document.description)) > -1, "Stored item doesn't contains null attributes");
         }
         
         private ToDoActivity CreateRandomToDoActivity(string pk = null)
