@@ -57,6 +57,7 @@
             public string PartitionKey { get; set; }
         }
 
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -129,6 +130,7 @@
                 Console.ReadKey();
             }
         }
+        // </Main>
 
         /// <summary>
         /// The function demonstrates the Item CRUD operation using the NonePartitionKeyValue
@@ -137,6 +139,7 @@
         /// for the partitionKey parameter
         /// New item CRUD could be performed using this NonePartitionKeyValue to target the same logical partition
         /// </summary>
+        // <ItemOperationsWithNonePartitionKeyValue>
         private static async Task ItemOperationsWithNonePartitionKeyValue(Container container)
         {
             string itemid = Guid.NewGuid().ToString();
@@ -171,10 +174,12 @@
                 );
             Console.WriteLine("Deleting Item {0} Status Code {1}", itemid, deleteResponse.StatusCode);
         }
+        // </ItemOperationsWithNonePartitionKeyValue>
 
         /// <summary>
         /// The function demonstrates CRUD operations on the migrated collection supplying a value for the partition key
         /// <summary>
+        // <ItemOperationsWithValidPartitionKeyValue>
         private static async Task ItemOperationsWithValidPartitionKeyValue(Container container)
         {
             string itemid = Guid.NewGuid().ToString();
@@ -207,11 +212,13 @@
                 id: itemid);
             Console.WriteLine("Deleting Item {0} with Partition Key Status Code {1}", itemid, deleteResponse.StatusCode);
         }
+        // </ItemOperationsWithValidPartitionKeyValue>
 
         /// <summary>
         ///  The function demonstrates migrating documents that were inserted without a value for partition key, and those inserted
         ///  pre-migration to other logical partitions, those with a value for partition key.
         /// </summary>
+        // <MigratedItemsFromNonePartitionKeyToValidPartitionKeyValue>
         private static async Task MigratedItemsFromNonePartitionKeyToValidPartitionKeyValue(Container container)
         {
             // Pre-create a few items in the container to demo the migration
@@ -261,6 +268,7 @@
                 }
             }
         }
+        // </MigratedItemsFromNonePartitionKeyToValidPartitionKeyValue>
 
         private static DeviceInformationItem GetDeviceWithPartitionKey(string itemId, string partitionKey)
         {
