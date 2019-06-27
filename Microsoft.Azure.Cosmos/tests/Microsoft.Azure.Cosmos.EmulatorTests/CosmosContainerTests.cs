@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
 
             HashSet<string> containerIds = new HashSet<string>();
-            FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerIterator();
+            FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>();
             while (resultSet.HasMoreResults)
             {
                 foreach (ContainerProperties setting in await resultSet.ReadNextAsync())
@@ -301,6 +301,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(containerIds.Count > 0, "The iterator did not find any containers.");
             Assert.IsTrue(containerIds.Contains(containerName), "The iterator did not find the created container");
+
+            resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>($"select * from c where c.id = \"{containerName}\"");
+            FeedResponse<ContainerProperties> queryProperties = await resultSet.ReadNextAsync();
+
+            Assert.AreEqual(1, queryProperties.Resource.Count());
+            Assert.AreEqual(containerName, queryProperties.First().Id);
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
@@ -324,9 +330,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
 
             HashSet<string> containerIds = new HashSet<string>();
-            FeedIterator resultSet = this.cosmosDatabase.GetContainerStreamIterator(
-                    maxItemCount:1,
-                    requestOptions: new QueryRequestOptions());
+            FeedIterator resultSet = this.cosmosDatabase.GetContainerQueryStreamIterator(
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+
             while (resultSet.HasMoreResults)
             {
                 using (ResponseMessage message = await resultSet.ReadNextAsync())

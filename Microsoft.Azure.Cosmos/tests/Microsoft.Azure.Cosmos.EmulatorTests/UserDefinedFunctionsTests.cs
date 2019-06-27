@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .UseParameter("@status", "Done");
             
              FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
-                 sqlQueryDefinition: sqlQuery);
+                 queryDefinition: sqlQuery);
 
             HashSet<string> iterIds = new HashSet<string>();
             while (feedIterator.HasMoreResults)
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             UserDefinedFunctionProperties cosmosUserDefinedFunction = await CreateRandomUdf();
 
             HashSet<string> settings = new HashSet<string>();
-            FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionIterator(); ;
+            FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(); ;
             while (iter.HasMoreResults)
             {
                 foreach (UserDefinedFunctionProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
