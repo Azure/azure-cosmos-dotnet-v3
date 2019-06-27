@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public FeedIterator<T> ToFeedIterator()
         {
             return this.container.GetItemQueryIterator<T>(
-                sqlQueryDefinition: new QueryDefinition(ToSqlQueryText()),
+                queryDefinition: new QueryDefinition(ToSqlQueryText()),
                 continuationToken: null,
                 requestOptions: this.cosmosQueryRequestOptions);
         }

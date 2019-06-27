@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             var query = this.container.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
+                continuationToken: null,
                 requestOptions: queryRequestOptions);
 
             var leases = new List<DocumentServiceLeaseCore>();
