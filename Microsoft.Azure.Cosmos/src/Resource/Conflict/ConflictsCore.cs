@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
             ConflictProperties cosmosConflict, 
-            PartitionKey? partitionKey, 
+            PartitionKey partitionKey, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (partitionKey == null)
