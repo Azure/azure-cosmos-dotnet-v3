@@ -239,12 +239,10 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             string continuationToken)
         {
-            if (continuationToken == null)
+            if (!string.IsNullOrWhiteSpace(continuationToken))
             {
-                continuationToken = string.Empty;
+                request.Headers.Continuation = continuationToken;
             }
-
-            request.Headers.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
         }
 
         internal static void FillMaxItemCount(

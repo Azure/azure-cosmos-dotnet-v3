@@ -498,20 +498,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
-        /// <example>
-        /// Get an iterator for all the database under the cosmos account
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedIterator<DatabaseProperties> feedIterator = this.cosmosClient.GetDatabaseQueryIterator();
-        /// {
-        ///     foreach (DatabaseProperties databaseProperties in  await feedIterator.ReadNextAsync())
-        ///     {
-        ///         Console.WriteLine(databaseProperties.Id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
         /// <returns>An iterator to go through the databases.</returns>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             string queryText = null,
