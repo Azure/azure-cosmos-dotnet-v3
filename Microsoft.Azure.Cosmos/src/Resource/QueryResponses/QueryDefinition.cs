@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>An instace of <see cref="QueryDefinition"/>.</returns>
+        /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
         public QueryDefinition UseParameter(string name, object value)
         {
             if (string.IsNullOrEmpty(name))

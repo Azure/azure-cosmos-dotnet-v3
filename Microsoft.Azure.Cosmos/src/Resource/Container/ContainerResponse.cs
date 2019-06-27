@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos container response
@@ -14,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="ContainerResponse"/> as a no-op for mock testing
         /// </summary>
-        public ContainerResponse()
+        protected ContainerResponse()
             : base()
         {
         }
@@ -28,11 +29,10 @@ namespace Microsoft.Azure.Cosmos
             Headers headers,
             ContainerProperties containerProperties,
             Container container)
-            : base(
-                httpStatusCode,
-                headers,
-                containerProperties)
         {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = containerProperties;
             this.Container = container;
         }
 
@@ -41,6 +41,30 @@ namespace Microsoft.Azure.Cosmos
         /// or for easy access to other references like Items, StoredProcedures, etc..
         /// </summary>
         public virtual Container Container { get; private set; }
+
+        /// <inheritdoc/>
+        public override Headers Headers { get; }
+
+        /// <inheritdoc/>
+        public override ContainerProperties Resource { get; }
+
+        /// <inheritdoc/>
+        public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
+
+        /// <inheritdoc/>
+        public override string ActivityId => this.Headers?.ActivityId;
+
+        /// <inheritdoc/>
+        public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+
+        /// <inheritdoc/>
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="ContainerResponse"/>

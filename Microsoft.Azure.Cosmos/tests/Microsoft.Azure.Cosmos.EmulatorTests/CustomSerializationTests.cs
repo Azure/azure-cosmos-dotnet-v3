@@ -301,15 +301,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryDefinition sql = new QueryDefinition("select * from r");
             FeedIterator<TestDocument> feedIterator =
-               container.GetItemQueryIterator<TestDocument>(
-                    sqlQueryDefinition: sql, 
-                    requestOptions: new QueryRequestOptions()
-                    {
-                        MaxItemCount = 1,
-                        PartitionKey = new Cosmos.PartitionKey(testDocument.Name),
-                    });
-            FeedResponse<TestDocument> queryResponse = await feedIterator.ReadNextAsync();
-            AssertEqual(testDocument, queryResponse.First());
+               container.GetItemQueryIterator<TestDocument>(queryDefinition: sql, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+
+            List<TestDocument> allDocuments = new List<TestDocument>();
+            while (feedIterator.HasMoreResults)
+            {
+                allDocuments.AddRange(await feedIterator.ReadNextAsync());
+            }
+
+            AssertEqual(testDocument, allDocuments.First());
 
             //Will add LINQ test once it is available with new V3 OM 
             // // LINQ Lambda
@@ -466,12 +466,10 @@ function bulkImport(docs) {
             }
 
             QueryDefinition cosmosSqlQueryDefinition1 = new QueryDefinition("SELECT * FROM root");
-            FeedIterator<MyObject> setIterator1 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition1, 
-                requestOptions: new QueryRequestOptions { MaxConcurrency = -1, MaxItemCount =-1 });
+            FeedIterator<MyObject> setIterator1 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition1, requestOptions: new QueryRequestOptions { MaxConcurrency = -1, MaxItemCount =-1 });
 
             QueryDefinition cosmosSqlQueryDefinition2 = new QueryDefinition("SELECT * FROM root ORDER BY root[\"" + numberFieldName + "\"] DESC");
-            FeedIterator<MyObject> setIterator2 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition2, 
-                requestOptions: new QueryRequestOptions { MaxConcurrency = -1, MaxItemCount = -1 });
+            FeedIterator<MyObject> setIterator2 = container.GetItemQueryIterator<MyObject>(cosmosSqlQueryDefinition2, requestOptions: new QueryRequestOptions { MaxConcurrency = -1, MaxItemCount = -1 });
 
             List<MyObject> list1 = new List<MyObject>();
             List<MyObject> list2 = new List<MyObject>();

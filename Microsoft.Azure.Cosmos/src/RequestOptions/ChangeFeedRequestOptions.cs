@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// In order to read the Change Feed from the beginning, set this to DateTime.MinValue.
         /// </remarks>
-        public virtual DateTime? StartTime { get; set; }
+        public DateTime? StartTime { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

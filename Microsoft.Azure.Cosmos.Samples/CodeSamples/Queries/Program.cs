@@ -25,7 +25,8 @@
 
         private static Database cosmosDatabase = null;
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -69,7 +70,9 @@
                 Console.ReadKey();
             }
         }
+        // </Main>
 
+        // <RunDemoAsync>
         private static async Task RunDemoAsync(CosmosClient client)
         {
             cosmosDatabase = await client.CreateDatabaseIfNotExistsAsync(CosmosDatabaseId);
@@ -90,7 +93,9 @@
             // Uncomment to Cleanup
             //await cosmosDatabase.DeleteAsync();
         }
+        // </RunDemoAsync>
 
+        // <ItemFeed>
         private static async Task ItemFeed(Container container)
         {
             List<Family> families = new List<Family>();
@@ -109,7 +114,9 @@
 
             Assert("Expected two families", families.ToList().Count == 2);
         }
+        // </ItemFeed>
 
+        // <ItemStreamFeed>
         private static async Task ItemStreamFeed(Container container)
         {
             int totalCount = 0;
@@ -136,7 +143,9 @@
 
             Assert("Expected two families", totalCount == 2);
         }
+        // </ItemStreamFeed>
 
+        // <QueryItemsInPartitionAsStreams>
         private static async Task QueryItemsInPartitionAsStreams(Container container)
         {
             // SQL
@@ -169,7 +178,9 @@
 
             Assert("Expected 1 family", count == 1);
         }
+        // </QueryItemsInPartitionAsStreams>
 
+        // <QueryWithSqlParameters>
         private static async Task QueryWithSqlParameters(Container container)
         {
             // Query using two properties within each item. WHERE Id == "" AND Address.City == ""
@@ -188,7 +199,9 @@
 
             Assert("Expected only 1 family", results.Count == 1);
         }
+        // </QueryWithSqlParameters>
 
+        // <QueryPartitionedContainerInParallelAsync>
         private static async Task QueryPartitionedContainerInParallelAsync(Container container)
         {
             List<Family> familiesSerial = new List<Family>();
@@ -249,12 +262,14 @@
             Assert("Parallel Query expected two families", familiesParallel10.ToList().Count == 2);
             AssertSequenceEqual("Parallel query returns result out of order compared to serial execution", familiesSerial, familiesParallel10);
         }
+        // </QueryPartitionedContainerInParallelAsync>
 
         /// <summary>
         /// Creates the items used in this Sample
         /// </summary>
         /// <param name="container">The selfLink property for the CosmosContainer where items will be created.</param>
         /// <returns>None</returns>
+        // <CreateItems>
         private static async Task CreateItems(Container container)
         {
             Family AndersonFamily = new Family
@@ -320,12 +335,14 @@
 
             await container.UpsertItemAsync<Family>(WakefieldFamily, new PartitionKey(WakefieldFamily.PartitionKey));
         }
+        // </CreateItems>
 
         /// <summary>
         /// Get a DocuemntContainer by id, or create a new one if one with the id provided doesn't exist.
         /// </summary>
         /// <param name="id">The id of the CosmosContainer to search for, or create.</param>
         /// <returns>The matched, or created, CosmosContainer object</returns>
+        // <GetOrCreateContainerAsync>
         private static async Task<Container> GetOrCreateContainerAsync(Database database, string containerId)
         {
             ContainerProperties containerProperties = new ContainerProperties(id: containerId, partitionKeyPath: "/LastName");
@@ -334,6 +351,7 @@
                 containerProperties: containerProperties,
                 throughput: 400);
         }
+        // </GetOrCreateContainerAsync>
 
         private static void Assert(string message, bool condition)
         {

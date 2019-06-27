@@ -14,7 +14,8 @@
 
         private static Database database = null;
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -58,11 +59,13 @@
                 Console.ReadKey();
             }
         }
+        // </Main>
 
         /// <summary>
         /// Run through basic container access methods as a console app demo.
         /// </summary>
         /// <returns></returns>
+        // <RunContainerDemo>
         private static async Task RunContainerDemo(CosmosClient client)
         {
             // Create the database if necessary
@@ -83,12 +86,14 @@
             // Uncomment to delete container!
             // await Program.DeleteContainer();
         }
+        // </RunContainerDemo>
 
         private static async Task Setup(CosmosClient client)
         {
             database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
         }
 
+        // <CreateContainer>
         private static async Task<Container> CreateContainer()
         {
             // Set throughput to the minimum value of 400 RU/s
@@ -100,7 +105,9 @@
             Console.WriteLine($"\n1.1. Created container :{simpleContainer.Container.Id}");
             return simpleContainer;
         }
+        // </CreateContainer>
 
+        // <CreateContainerWithCustomIndexingPolicy>
         private static async Task CreateContainerWithCustomIndexingPolicy()
         {
             // Create a container with custom index policy (consistent indexing)
@@ -118,7 +125,9 @@
 
             await containerWithConsistentIndexing.DeleteContainerAsync();
         }
+        // </CreateContainerWithCustomIndexingPolicy>
 
+        // <CreateContainerWithTtlExpiration>
         private static async Task CreateContainerWithTtlExpiration()
         {
             ContainerProperties properties = new ContainerProperties
@@ -134,7 +143,9 @@
 
             await ttlEnabledContainerResponse.Container.DeleteContainerAsync();
         }
+        // </CreateContainerWithTtlExpiration>
 
+        // <GetAndChangeContainerPerformance>
         private static async Task GetAndChangeContainerPerformance(Container simpleContainer)
         {
 
@@ -159,7 +170,9 @@
 
             Console.WriteLine($"3. Found throughput \n{throughputResponse.Resource.Throughput.Value}\n using container's ResourceId {simpleContainer.Id}.\n");
         }
+        // </GetAndChangeContainerPerformance>
 
+        // <ReadContainerProperties>
         private static async Task ReadContainerProperties()
         {
             //*************************************************
@@ -170,11 +183,13 @@
 
             Console.WriteLine($"\n4. Found Container \n{containerProperties.Id}\n");
         }
+        // </ReadContainerProperties>
 
         /// <summary>
         /// List the container within a database by calling the GetContainerIterator (scan) API.
         /// </summary>
         /// <returns></returns>
+        // <ListContainersInDatabase>
         private static async Task ListContainersInDatabase()
         {
             Console.WriteLine("\n5. Reading all CosmosContainer resources for a database");
@@ -188,16 +203,19 @@
                 }
             }
         }
+        // </ListContainersInDatabase>
 
         /// <summary>
         /// Delete a container
         /// </summary>
         /// <param name="simpleContainer"></param>
+        // <DeleteContainer>
         private static async Task DeleteContainer()
         {
             await database.GetContainer(containerId).DeleteContainerAsync();
             Console.WriteLine("\n6. Deleted Container\n");
         }
+        // </DeleteContainer>
     }
 
     public class ToDoActivity
