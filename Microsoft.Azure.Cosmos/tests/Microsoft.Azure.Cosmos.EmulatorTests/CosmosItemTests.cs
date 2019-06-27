@@ -1408,7 +1408,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task ExecuteReadFeedAsync(Container container, HttpStatusCode expected)
         {
-            FeedIterator iterator = container.GetItemStreamIterator();
+            FeedIterator iterator = container.GetItemQueryStreamIterator();
             while (iterator.HasMoreResults)
             {
                 ResponseMessage response = await iterator.ReadNextAsync();
