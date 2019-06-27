@@ -35,14 +35,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict, 
-            PartitionKey? partitionKey,
+            PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
-
             if (conflict == null)
             {
                 throw new ArgumentNullException(nameof(conflict));
