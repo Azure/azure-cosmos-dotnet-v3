@@ -99,7 +99,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 bool isPartitioned =
                     containerProperties.PartitionKey != null &&
                     containerProperties.PartitionKey.Paths != null &&
-                    containerProperties.PartitionKey.Paths.Count > 0;
+                    containerProperties.PartitionKey.Paths.Count > 0 &&
+                    (!containerProperties.PartitionKey.IsSystemKey.HasValue || !containerProperties.PartitionKey.IsSystemKey.Value);
                 if (isPartitioned &&
                     (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
                 {
