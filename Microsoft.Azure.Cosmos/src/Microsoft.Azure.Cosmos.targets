@@ -21,33 +21,11 @@ Copyright (C) Microsoft Corporation. All rights reserved.
       <Visible>False</Visible>
     </ContentWithTargetPath>
   </ItemGroup>
+  
   <ItemGroup>
     <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Cosmos.CRTCompat.dll</TargetPath>
-      <Visible>False</Visible>
-    </ContentWithTargetPath>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>Microsoft.Azure.Cosmos.Direct.dll</TargetPath>
-      <Visible>False</Visible>
-    </ContentWithTargetPath>
-  </ItemGroup>
-  
-  <ItemGroup>
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>Microsoft.Azure.Cosmos.Core.dll</TargetPath>
-      <Visible>False</Visible>
-    </ContentWithTargetPath>
-  </ItemGroup>
-  <ItemGroup>
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>Microsoft.Azure.Cosmos.Serialization.HybridRow.dll</TargetPath>
       <Visible>False</Visible>
     </ContentWithTargetPath>
   </ItemGroup>
