@@ -7,10 +7,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -55,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
             List<Database> deleteList = new List<Database>();
-            HashSet<string> createdIds = new HashSet<string>();
+            List<string> createdIds = new List<string>();
 
             try
             {
@@ -77,16 +79,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     client.GetDatabaseQueryIterator<DatabaseProperties>,
                     null);
 
-                HashSet<string> resultIds = new HashSet<string>(results.Select(x => x.Id));
-                Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+                CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
                 //Basic query
                 List<DatabaseProperties> queryResults = await this.ToListAsync(
                     client.GetDatabaseQueryStreamIterator,
                     client.GetDatabaseQueryIterator<DatabaseProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryDb\")");
-                resultIds = new HashSet<string>(queryResults.Select(x => x.Id));
-                Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+
+                CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
             }
             finally
             {
@@ -104,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
             Database database = client.GetDatabase(DatabaseId);
-            HashSet<string> createdIds = new HashSet<string>();
+            List<string> createdIds = new List<string>();
 
             try
             {
@@ -123,8 +124,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     database.GetContainerQueryIterator<ContainerProperties>,
                     null);
 
-                HashSet<string> resultIds = new HashSet<string>(results.Select(x => x.Id));
-                Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+                CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
                 //Basic query
                 List<ContainerProperties> queryResults = await this.ToListAsync(
@@ -132,8 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     database.GetContainerQueryIterator<ContainerProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryContainer\")");
 
-                resultIds = new HashSet<string>(queryResults.Select(x => x.Id));
-                Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+                CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
             }
             finally
             {
@@ -152,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
             Container container = client.GetContainer(DatabaseId, ContainerId);
-            HashSet<string> createdIds = new HashSet<string>()
+            List<string> createdIds = new List<string>()
             {
                 "BasicQueryItem",
                 "BasicQueryItem2",
@@ -183,9 +182,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")");
             }
 
-            IEnumerable<string> ids = queryResults.Select(x => (string)x.id);
-            HashSet<string> resultIds = new HashSet<string>(ids);
-            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+            List<string> ids = queryResults.Select(x => (string)x.id).ToList();
+            CollectionAssert.AreEquivalent(createdIds, ids);
 
             //Read All
             List<dynamic> results = await this.ToListAsync(
@@ -193,9 +191,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container.GetItemQueryIterator<dynamic>,
                 null);
 
-            ids = results.Select(x => (string)x.id);
-            resultIds = new HashSet<string>(ids);
-            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+            ids = results.Select(x => (string)x.id).ToList();
+            CollectionAssert.IsSubsetOf(createdIds, ids);
         }
 
         [TestMethod]
@@ -206,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
             Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
-            HashSet<string> createdIds = new HashSet<string>()
+            List<string> createdIds = new List<string>()
             {
                 "BasicQuerySp1",
                 "BasicQuerySp2",
@@ -236,9 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")");
             }
 
-            IEnumerable<string> ids = queryResults.Select(x => x.Id);
-            HashSet<string> resultIds = new HashSet<string>(ids);
-            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+            CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
 
             //Read All
             List<StoredProcedureProperties> results = await this.ToListAsync(
@@ -246,9 +241,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
                 null);
 
-            ids = results.Select(x => x.Id);
-            resultIds = new HashSet<string>(ids);
-            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+            CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
         }
 
         [TestMethod]
@@ -259,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
             Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
-            HashSet<string> createdIds = new HashSet<string>()
+            List<string> createdIds = new List<string>()
             {
                 "BasicQueryUdf1",
                 "BasicQueryUdf2",
@@ -289,9 +282,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")");
             }
 
-            IEnumerable<string> ids = queryResults.Select(x => x.Id);
-            HashSet<string> resultIds = new HashSet<string>(ids);
-            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+            CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
 
             //Read All
             List<UserDefinedFunctionProperties> results = await this.ToListAsync(
@@ -299,9 +290,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
                 null);
 
-            ids = results.Select(x => x.Id);
-            resultIds = new HashSet<string>(ids);
-            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+            CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
         }
 
         [TestMethod]
@@ -312,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
             Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
-            HashSet<string> createdIds = new HashSet<string>()
+            List<string> createdIds = new List<string>()
             {
                 "BasicQueryTrigger1",
                 "BasicQueryTrigger2",
@@ -342,9 +331,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")");
             }
 
-            IEnumerable<string> ids = queryResults.Select(x => x.Id);
-            HashSet<string> resultIds = new HashSet<string>(ids);
-            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+            CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
 
             //Read All
             List<TriggerProperties> results = await this.ToListAsync(
@@ -352,9 +339,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 scripts.GetTriggerQueryIterator<TriggerProperties>,
                 null);
 
-            ids = results.Select(x => x.Id);
-            resultIds = new HashSet<string>(ids);
-            Assert.IsTrue(createdIds.All(x => resultIds.Contains(x)));
+            CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
         }
 
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);

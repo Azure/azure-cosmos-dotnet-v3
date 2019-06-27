@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.DocumentServiceRequest == null)
             {
                 DocumentServiceRequest serviceRequest;
-                if ((this.OperationType == OperationType.ReadFeed) && this.ResourceType == ResourceType.Database)
+                if (this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Database)
                 {
                     serviceRequest = new DocumentServiceRequest(
                         operationType: this.OperationType,
