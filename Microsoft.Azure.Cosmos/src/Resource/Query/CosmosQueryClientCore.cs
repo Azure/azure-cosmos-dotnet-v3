@@ -198,6 +198,12 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
+        internal override void ClearSessionTokenCache(string collectionFullName)
+        {
+            ISessionContainer sessionContainer = this.clientContext.DocumentClient.sessionContainer;
+            sessionContainer.ClearTokenByCollectionFullname(collectionFullName);
+        }
+
         private QueryResponse GetCosmosElementResponse(
             QueryRequestOptions requestOptions,
             ResourceType resourceType,

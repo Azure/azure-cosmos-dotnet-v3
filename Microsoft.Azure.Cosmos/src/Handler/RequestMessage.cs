@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal OperationType OperationType { get; set; }
 
-        internal string PartitionKeyRangeId { get; set; }
+        internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
 
         /// <summary>
         /// Used to override the client default. This is used for scenarios
@@ -87,11 +87,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal DocumentServiceRequest DocumentServiceRequest { get; set; }
 
-        internal IDocumentClientRetryPolicy DocumentClientRetryPolicy { get; set; }
+        internal Action<DocumentServiceRequest> OnBeforeSendRequestActions { get; set; }
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
-        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && string.IsNullOrEmpty(this.PartitionKeyRangeId);
+        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && 
+            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && 
+            this.PartitionKeyRangeId == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -188,16 +190,16 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
-                // Routing to a particular PartitionKeyRangeId
-                if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
-                {
-                    serviceRequest.RouteTo(new PartitionKeyRangeIdentity(this.PartitionKeyRangeId));
-                }
-
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;
                 this.DocumentServiceRequest = serviceRequest;
+            }
+
+            // Routing to a particular PartitionKeyRangeId
+            if (this.PartitionKeyRangeId != null)
+            {
+                this.DocumentServiceRequest.RouteTo(this.PartitionKeyRangeId);
             }
 
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);
@@ -216,9 +218,9 @@ namespace Microsoft.Azure.Cosmos
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
         {
-            if (this.DocumentClientRetryPolicy != null)
+            if (this.OnBeforeSendRequestActions != null)
             {
-                this.DocumentClientRetryPolicy.OnBeforeSendRequest(serviceRequest);
+                this.OnBeforeSendRequestActions(serviceRequest);
             }
         }
 

@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 FeedOptions feedOptions = new FeedOptions
                 {
                     MaxItemCount = this.maxBatchSize,
-                    RequestContinuation = response?.ResponseContinuation,
+                    RequestContinuationToken = response?.ResponseContinuation,
                 };
 
                 response = await this.container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(containerUri, feedOptions).ConfigureAwait(false);
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         /// </summary>
         private async Task CreateLeasesAsync(HashSet<string> partitionIds)
         {
-            // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
+            // Get leases after getting ranges, to make sure that no other hosts checked in continuation token for split partition after we got leases.
             IEnumerable<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
             HashSet<string> existingPartitionIds = new HashSet<string>(leases.Select(lease => lease.CurrentLeaseToken));
             HashSet<string> addedPartitionIds = new HashSet<string>(partitionIds);

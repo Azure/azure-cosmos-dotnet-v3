@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedIterator<DatabaseProperties> feedIterator =
                     this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
                         new QueryDefinition("select c.id From c where c.id = @id ")
-                        .UseParameter("@id", createResponse.Database.Id),
+                        .WithParameter("@id", createResponse.Database.Id),
                         requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
 
                 FeedResponse<DatabaseProperties> iterator = await feedIterator.ReadNextAsync(this.cancellationToken);

@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the Continuation Token in the current <see cref="ResponseMessage"/>.
         /// </summary>
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.Continuation)]
-        public virtual string Continuation { get; internal set; }
+        public virtual string ContinuationToken { get; internal set; }
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
