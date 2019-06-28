@@ -74,7 +74,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(storedProcedure);
         /// 
         /// // Execute the stored procedure
-        /// CosmosItemResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(testPartitionId, "appendString", "Item as a string: ");
+        /// CosmosItemResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(
+        ///                               id, 
+        ///                               "Item as a string: ", 
+        ///                               new PartitionKey(testPartitionId));
         /// Console.WriteLine("sprocResponse.Resource");
         /// ]]>
         /// </code>
@@ -287,12 +290,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///    }";
         ///    
         /// Scripts scripts = this.container.GetScripts();
+        /// string sprocId = "appendString";
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
-        ///         id: "appendString",
+        ///         id: sprocId,
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(testPartitionId, "Item as a string: ");
+        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(
+        ///                         sprocId,
+        ///                         "Item as a string: ",
+        ///                         new PartitionKey(testPartitionId));
         /// Console.WriteLine(sprocResponse.Resource);
         /// /// ]]>
         /// </code>
@@ -339,12 +346,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///    }";
         ///    
         /// Scripts scripts = this.container.GetScripts();
+        /// string sprocId = "appendString";
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
-        ///         id: "appendString",
+        ///         id: sprocId,
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(testPartitionId, streamPayload: stream);
+        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
+        ///                         sprocId,
+        ///                         stream,
+        ///                         new PartitionKey(testPartitionId)), 
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
         ///     string stringResponse = await sr.ReadToEndAsync();
