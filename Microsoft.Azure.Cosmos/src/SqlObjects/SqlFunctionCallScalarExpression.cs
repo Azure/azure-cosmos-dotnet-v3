@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             { Names.InternalCompareBsonBinaryData, Identifiers.InternalCompareBsonBinaryData },
             { Names.InternalCompareObjects, Identifiers.InternalCompareObjects },
+            { Names.InternalObjectToArray, Identifiers.InternalObjectToArray },
             { Names.InternalProxyProjection, Identifiers.InternalProxyProjection },
             { Names.InternalRegexMatch, Identifiers.InternalRegexMatch },
             { Names.InternalStDistance, Identifiers.InternalStDistance },
@@ -235,6 +236,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             public const string InternalCompareBsonBinaryData = "_COMPARE_BSON_BINARYDATA";
             public const string InternalCompareObjects = "_COMPARE_OBJECTS";
+            public const string InternalObjectToArray = "_ObjectToArray";
             public const string InternalProxyProjection = "_PROXY_PROJECTION";
             public const string InternalRegexMatch = "_REGEX_MATCH";
             public const string InternalStDistance = "_ST_DISTANCE";
@@ -316,6 +318,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             public static readonly SqlIdentifier InternalCompareBsonBinaryData = SqlIdentifier.Create(Names.InternalCompareBsonBinaryData);
             public static readonly SqlIdentifier InternalCompareObjects = SqlIdentifier.Create(Names.InternalCompareObjects);
+            public static readonly SqlIdentifier InternalObjectToArray = SqlIdentifier.Create(Names.InternalObjectToArray);
             public static readonly SqlIdentifier InternalProxyProjection = SqlIdentifier.Create(Names.InternalProxyProjection);
             public static readonly SqlIdentifier InternalRegexMatch = SqlIdentifier.Create(Names.InternalRegexMatch);
             public static readonly SqlIdentifier InternalStDistance = SqlIdentifier.Create(Names.InternalStDistance);
