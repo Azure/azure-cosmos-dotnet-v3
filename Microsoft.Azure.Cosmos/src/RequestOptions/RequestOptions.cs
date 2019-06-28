@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos
         public string IfNoneMatchEtag { get; set; }
 
         /// <summary>
-        /// Gets or sets the effective partition key string in the cosmos db request.
+        /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
-        internal virtual string EffectivePartitionKeyString { get; set; }
+        internal bool IsEffectivePartitionKeyRouting { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -49,11 +49,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     request.Properties[property.Key] = property.Value;
                 }
-            }
-
-            if (this.EffectivePartitionKeyString != null)
-            {
-                request.Properties[WFConstants.BackendHeaders.EffectivePartitionKeyString] = this.EffectivePartitionKeyString;
             }
 
             if (this.IfMatchEtag != null)

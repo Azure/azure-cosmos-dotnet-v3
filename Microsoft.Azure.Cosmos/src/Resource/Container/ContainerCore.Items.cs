@@ -243,6 +243,11 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
+
             if (queryDefinition == null)
             {
                 return new FeedStatelessIteratorCore(
@@ -298,6 +303,11 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
+
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
 
             if (queryDefinition == null)
             {
@@ -477,7 +487,7 @@ namespace Microsoft.Azure.Cosmos
             bool extractPartitionKeyIfNeeded,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (requestOptions?.EffectivePartitionKeyString != null)
+            if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
             {
                 partitionKey = null;
             }
@@ -699,7 +709,7 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (requestOptions?.EffectivePartitionKeyString != null)
+            if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
             {
                 return;
             }

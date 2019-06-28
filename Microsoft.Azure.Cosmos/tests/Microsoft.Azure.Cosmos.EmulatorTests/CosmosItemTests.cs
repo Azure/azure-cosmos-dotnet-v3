@@ -778,8 +778,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions
             {
-                EffectivePartitionKeyString = epk
+                IsEffectivePartitionKeyRouting = true,
+                Properties = new Dictionary<string, object>()
             };
+            itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             ResponseMessage response = await this.Container.ReadItemStreamAsync(
                 Guid.NewGuid().ToString(),
@@ -797,8 +799,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
-                EffectivePartitionKeyString = epk
+                IsEffectivePartitionKeyRouting = true,
+                Properties = new Dictionary<string, object>()
             };
+            queryRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
                     queryText: "SELECT * FROM root",
