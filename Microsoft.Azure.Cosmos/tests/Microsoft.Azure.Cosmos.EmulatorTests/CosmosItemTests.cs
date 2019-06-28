@@ -778,18 +778,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions
             {
+                IsEffectivePartitionKeyRouting = true,
                 Properties = new Dictionary<string, object>()
             };
             itemRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
 
             ResponseMessage response = await this.Container.ReadItemStreamAsync(
                 Guid.NewGuid().ToString(),
-                null,
+                Cosmos.PartitionKey.Null,
                 itemRequestOptions);
 
             // Ideally it should be NotFound
             // BadReqeust bcoz collection is regular and not binary 
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+
+            await this.Container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString() , status = "test"});
+            epk = new PartitionKey("test")
+                           .InternalKey
+                           .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                IsEffectivePartitionKeyRouting = true,
+                Properties = new Dictionary<string, object>()
+            };
+            queryRequestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
+
+            FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
+                    queryText: "SELECT * FROM root",
+                    requestOptions: queryRequestOptions);
+            FeedResponse<dynamic> feedresponse = await resultSet.ReadNextAsync();
+            Assert.IsNotNull(feedresponse.Resource);
+            Assert.AreEqual(1, feedresponse.Count());
+
         }
 
         /// <summary>

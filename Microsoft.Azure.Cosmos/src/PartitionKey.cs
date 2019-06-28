@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a partition key value in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class PartitionKey
+    public struct PartitionKey
     {
         private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Documents.PartitionKey(null).InternalKey;
         private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Documents.PartitionKey(true).InternalKey;
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         /// The returned object represents a partition key value that allows creating and accessing items
         /// without a value for partition key.
         /// </summary>
-        public static readonly PartitionKey None = new PartitionKey(Documents.PartitionKey.None.InternalKey);
+        public static readonly PartitionKey None = new PartitionKey(Documents.PartitionKey.None.InternalKey, true);
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing items
@@ -40,7 +40,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the value provided at initialization.
         /// </summary>
-        internal PartitionKeyInternal Value { get; }
+        internal PartitionKeyInternal InternalKey { get; }
+
+        /// <summary>
+        /// Gets the boolean to verify partitionKey is None.
+        /// </summary>
+        internal bool IsNone { get; }
 
         /// <summary>
         /// Creates a new partition key value.
@@ -50,12 +55,13 @@ namespace Microsoft.Azure.Cosmos
         {
             if (partitionKeyValue == null)
             {
-                this.Value = PartitionKey.NullPartitionKeyInternal;
+                this.InternalKey = PartitionKey.NullPartitionKeyInternal;
             }
             else
             {
-                this.Value = new Documents.PartitionKey(partitionKeyValue).InternalKey;
+                this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
             }
+            this.IsNone = false;
         }
 
         /// <summary>
@@ -64,7 +70,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
         public PartitionKey(bool partitionKeyValue)
         {
-            this.Value = partitionKeyValue ? TruePartitionKeyInternal : FalsePartitionKeyInternal;
+            this.InternalKey = partitionKeyValue ? TruePartitionKeyInternal : FalsePartitionKeyInternal;
+            this.IsNone = false;
         }
 
         /// <summary>
@@ -73,7 +80,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
         public PartitionKey(double partitionKeyValue)
         {
-            this.Value = new Documents.PartitionKey(partitionKeyValue).InternalKey;
+            this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
+            this.IsNone = false;
         }
 
         /// <summary>
@@ -82,25 +90,28 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">The value to use as partition key.</param>
         internal PartitionKey(object value)
         {
-            this.Value = new Documents.PartitionKey(value).InternalKey;
+            this.InternalKey = new Documents.PartitionKey(value).InternalKey;
+            this.IsNone = false;
         }
 
         /// <summary>
         /// Creates a new partition key value.
         /// </summary>
         /// <param name="partitionKeyInternal">The value to use as partition key.</param>
-        private PartitionKey(PartitionKeyInternal partitionKeyInternal)
+        /// <param name="isNone">The value to decide partitionKey is None.</param>
+        private PartitionKey(PartitionKeyInternal partitionKeyInternal, bool isNone = false)
         {
-            this.Value = partitionKeyInternal;
+            this.InternalKey = partitionKeyInternal;
+            this.IsNone = isNone;
         }
 
         /// <summary>
         /// Gets the string representation of the partition key value.
         /// </summary>
         /// <returns>The string representation of the partition key value</returns>
-        public new string ToString()
+        public override string ToString()
         {
-            return this.Value.ToJsonString();
+            return this.InternalKey.ToJsonString();
         }
     }
 }

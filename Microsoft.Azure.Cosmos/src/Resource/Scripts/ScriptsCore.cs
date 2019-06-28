@@ -596,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            Cosmos.PartitionKey partitionKey,
+            Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
