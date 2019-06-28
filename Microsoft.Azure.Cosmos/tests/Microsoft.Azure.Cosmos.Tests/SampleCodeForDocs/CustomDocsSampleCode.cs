@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
                 FeedResponse<dynamic> feedResponse = await feedIterator.ReadNextAsync();
                 requestCharge = feedResponse.RequestCharge;
             }
-            // <GetRequestCharge>
+            // </GetRequestCharge>
         }
     }
 }

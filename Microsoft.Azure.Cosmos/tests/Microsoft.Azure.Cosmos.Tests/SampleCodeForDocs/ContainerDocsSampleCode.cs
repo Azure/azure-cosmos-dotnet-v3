@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
                 id: containerName,
                 partitionKeyPath: partitionKeyPath,
                 throughput: 1000);
-            // <ContainerCreateWithThroughput>
+            // </ContainerCreateWithThroughput>
         }
     }
 }
