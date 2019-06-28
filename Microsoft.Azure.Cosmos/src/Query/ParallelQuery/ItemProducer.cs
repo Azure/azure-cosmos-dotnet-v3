@@ -407,11 +407,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 bool hasPartitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey) != null;
                 if (!hasPartitionKey)
                 {
-                    request
-                        .ToDocumentServiceRequest()
-                        .RouteTo(new PartitionKeyRangeIdentity(
+                    request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(
                             this.queryContext.ContainerResourceId,
-                            this.PartitionKeyRange.Id));
+                            this.PartitionKeyRange.Id);
                 }
             }
         }

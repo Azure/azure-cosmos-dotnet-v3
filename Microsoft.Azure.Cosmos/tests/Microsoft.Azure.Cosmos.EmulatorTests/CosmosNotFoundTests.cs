@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             var queryResponse = await crossPartitionQueryIterator.ReadNextAsync();
             Assert.IsNotNull(queryResponse);
-            Assert.AreEqual(HttpStatusCode.Gone, queryResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
 
             var queryIterator = container.GetItemQueryStreamIterator(
                 "select * from t where true",

@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
                count: count,
                responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
-               statusCode: HttpStatusCode.Accepted,
+               statusCode: HttpStatusCode.OK,
                errorMessage: null,
                error: null,
                requestMessage: null);

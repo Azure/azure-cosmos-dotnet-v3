@@ -1333,6 +1333,89 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(sessionToken, readResponse.Headers.Session);
         }
 
+        /// <summary>
+        /// Stateless container re-create test. 
+        /// Create two client instances and do meta data operations through a single client
+        /// but do all validation using both clients.
+        /// </summary>
+        /// [DataRow(true)]
+        [DataRow(false)]
+        [DataTestMethod]
+        public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate)
+        {
+            List<Func<Container, HttpStatusCode, Task>> operations = new List<Func<Container, HttpStatusCode, Task>>();
+            operations.Add(ExecuteQueryAsync);
+            operations.Add(ExecuteReadFeedAsync);
+
+            foreach (var operation in operations)
+            {
+                CosmosClient cc1 = TestCommon.CreateCosmosClient();
+                CosmosClient cc2 = TestCommon.CreateCosmosClient();
+                Cosmos.Database db1 = null;
+                try
+                {
+                    string dbName = Guid.NewGuid().ToString();
+                    string containerName = Guid.NewGuid().ToString();
+
+                    db1 = await cc1.CreateDatabaseAsync(dbName);
+                    ContainerCore container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+
+                    await operation(container1, HttpStatusCode.OK);
+
+                    // Read through client2 -> return 404
+                    Container container2 = cc2.GetDatabase(dbName).GetContainer(containerName);
+                    await operation(container2, HttpStatusCode.OK);
+
+                    // Delete container 
+                    await container1.DeleteContainerAsync();
+
+                    if (operationBetweenRecreate)
+                    {
+                        // Read on deleted container through client1
+                        await operation(container1, HttpStatusCode.NotFound);
+
+                        // Read on deleted container through client2
+                        await operation(container2, HttpStatusCode.NotFound);
+                    }
+
+                    // Re-create again 
+                    container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+
+                    // Read through client1
+                    await operation(container1, HttpStatusCode.OK);
+
+                    // Read through client2
+                    await operation(container2, HttpStatusCode.OK);  
+                }
+                finally
+                {
+                    await db1.DeleteAsync();
+                    cc1.Dispose();
+                    cc2.Dispose();
+                }
+            }
+        }
+
+        private static async Task ExecuteQueryAsync(Container container, HttpStatusCode expected)
+        {
+            FeedIterator iterator = container.GetItemQueryStreamIterator("select * from r");
+            while (iterator.HasMoreResults)
+            {
+                ResponseMessage response = await iterator.ReadNextAsync();
+                Assert.AreEqual(expected, response.StatusCode, $"ExecuteQueryAsync substatuscode: {response.Headers.SubStatusCode} ");
+            }
+        }
+
+        private static async Task ExecuteReadFeedAsync(Container container, HttpStatusCode expected)
+        {
+            FeedIterator iterator = container.GetItemQueryStreamIterator();
+            while (iterator.HasMoreResults)
+            {
+                ResponseMessage response = await iterator.ReadNextAsync();
+                Assert.AreEqual(expected, response.StatusCode, $"ExecuteReadFeedAsync substatuscode: {response.Headers.SubStatusCode} ");
+            }
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && pkCount > 1);

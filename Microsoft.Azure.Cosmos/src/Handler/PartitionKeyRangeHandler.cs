@@ -78,6 +78,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         isMaxInclusive: false)
                 };
 
+                // Reset the partition key range id to null in case this is retry and the values have changed.
+                request.PartitionKeyRangeId = null;
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
                 PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
@@ -118,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             ).ToCosmosResponseMessage(request);
                 }
 
-                serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
+                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id);
 
                 response = await base.SendAsync(request, cancellationToken);
 
