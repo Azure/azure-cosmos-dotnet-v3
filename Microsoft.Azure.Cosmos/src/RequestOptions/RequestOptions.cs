@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the effective partition key string in the cosmos db request.
         /// </summary>
-        internal string EffectivePartitionKeyString { get; set; }
+        internal virtual string EffectivePartitionKeyString { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

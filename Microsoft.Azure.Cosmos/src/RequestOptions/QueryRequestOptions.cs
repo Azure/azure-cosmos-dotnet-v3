@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryRequestOptions : RequestOptions
     {
+        private PartitionKey? partitionKey;
+
         /// <summary>
         ///  Gets or sets the <see cref="ResponseContinuationTokenLimitInKb"/> request option for document query requests in the Azure Cosmos DB service.
         /// </summary>
@@ -88,7 +90,33 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Only applicable to Item operations
         /// </remarks>
-        public PartitionKey? PartitionKey { get; set; }
+        public PartitionKey? PartitionKey
+        {
+            get => partitionKey;
+            set
+            {
+                if (this.EffectivePartitionKeyString != null)
+                {
+                    throw new ArgumentException($"{nameof(this.PartitionKey)} can not be set because it conflicts with the existing {nameof(this.EffectivePartitionKeyString)} property. Only one of these properties can be set per a request.");
+                }
+
+                partitionKey = value;
+            }
+        }
+
+        internal override string EffectivePartitionKeyString
+        {
+            get => base.EffectivePartitionKeyString;
+            set
+            {
+                if (this.PartitionKey != null)
+                {
+                    throw new ArgumentException($"{nameof(this.EffectivePartitionKeyString)} can not be set because it conflicts with the existing {nameof(this.PartitionKey)} property. Only one of these properties can be set per a request.");
+                }
+
+                base.EffectivePartitionKeyString = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.

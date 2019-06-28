@@ -243,11 +243,6 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
-            if (requestOptions.EffectivePartitionKeyString != null)
-            {
-                requestOptions.PartitionKey = null;
-            }
-
             if (queryDefinition == null)
             {
                 return new FeedStatelessIteratorCore(
@@ -303,11 +298,6 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
-
-            if (requestOptions.EffectivePartitionKeyString != null)
-            {
-                requestOptions.PartitionKey = null;
-            }
 
             if (queryDefinition == null)
             {
