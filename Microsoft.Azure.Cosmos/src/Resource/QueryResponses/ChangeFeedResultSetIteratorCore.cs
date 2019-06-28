@@ -92,6 +92,12 @@ namespace Microsoft.Azure.Cosmos
             bool hasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
             if (!hasMoreResults)
             {
+                // If this is the first ever request for the range (StartTime = null), we initialize the Token even though we had no results
+                if (currentRangeToken.Token == null)
+                {
+                    currentRangeToken.Token = responseContinuationToken;
+                }
+
                 // Current Range is done, push it to the end
                 this.compositeContinuationToken.MoveToNextToken();
             }
