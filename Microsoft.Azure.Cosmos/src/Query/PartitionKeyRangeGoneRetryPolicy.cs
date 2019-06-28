@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void OnBeforeSendRequest(DocumentServiceRequest request)
         {
-            this.nextRetryPolicy.OnBeforeSendRequest(request);
+            this.nextRetryPolicy?.OnBeforeSendRequest(request);
         }
 
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(

@@ -72,6 +72,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        public async Task TestWithFixedLeaseContainer()
+        {
+            await CosmosItemTests.CreateNonPartitionedContainer(
+                    this.database.Id,
+                    "fixedLeases");
+
+            Container fixedLeasesContainer = this.cosmosClient.GetContainer(this.database.Id, "fixedLeases");
+
+            try
+            {
+
+                int partitionKey = 0;
+                ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+                int processedDocCount = 0;
+                string accumulator = string.Empty;
+                ChangeFeedProcessor processor = this.Container
+                    .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                    {
+                        processedDocCount += docs.Count();
+                        foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
+                        if (processedDocCount == 10) allDocsProcessed.Set();
+
+                        return Task.CompletedTask;
+                    })
+                    .WithInstanceName("random")
+                    .WithLeaseContainer(fixedLeasesContainer).Build();
+
+                // Start the processor, insert 1 document to generate a checkpoint
+                await processor.StartAsync();
+                await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+                foreach (int id in Enumerable.Range(0, 10))
+                {
+                    await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
+                }
+
+                var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+                await processor.StopAsync();
+                Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+                Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+            }
+            finally
+            {
+                await fixedLeasesContainer.DeleteContainerAsync();
+            }
+        }
+
+        [TestMethod]
         public async Task TestReducePageSizeScenario()
         {
             int partitionKey = 0;
@@ -108,12 +156,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
             // Generate the payload
-            await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 0);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(sprocId, 0, new PartitionKey(partitionKey));
             // Create 3 docs each 1.5MB. All 3 do not fit into MAX_RESPONSE_SIZE (4 MB). 2nd and 3rd are in same transaction.
             var content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
             await this.Container.CreateItemAsync(JsonConvert.DeserializeObject<dynamic>(content), new PartitionKey(partitionKey));
 
-            await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 3);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(sprocId, 3, new PartitionKey(partitionKey));
 
             await processor.StartAsync();
             // Letting processor initialize and pickup changes

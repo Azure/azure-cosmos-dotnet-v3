@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
             internalClient.DocumentClient.StoreModel = MockServerStoreModel(internalClient.DocumentClient.Session, sendDirectFunc);
 
 
-            RetryHandler retryHandler = new RetryHandler(internalClient.DocumentClient.ResetSessionTokenRetryPolicy);
+            RetryHandler retryHandler = new RetryHandler(internalClient);
             MockTransportHandler transportHandler = new MockTransportHandler(internalClient);
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(

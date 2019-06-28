@@ -38,11 +38,6 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
-
             if (conflict == null)
             {
                 throw new ArgumentNullException(nameof(conflict));
@@ -133,11 +128,6 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
-
             if (cosmosConflict == null)
             {
                 throw new ArgumentNullException(nameof(cosmosConflict));

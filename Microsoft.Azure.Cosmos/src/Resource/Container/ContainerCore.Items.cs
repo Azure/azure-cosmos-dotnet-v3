@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -122,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -162,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
             T item,
             string id,
-            PartitionKey partitionKey = null,
+            PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -242,6 +243,11 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
 
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
+
             if (queryDefinition == null)
             {
                 return new FeedStatelessIteratorCore(
@@ -297,6 +303,11 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions ?? new QueryRequestOptions();
+
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
 
             if (queryDefinition == null)
             {
@@ -430,7 +441,7 @@ namespace Microsoft.Azure.Cosmos
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
         // and partition-key is extracted again. 
         internal async Task<ResponseMessage> ExtractPartitionKeyAndProcessItemStreamAsync(
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
             OperationType operationType,
@@ -468,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal async Task<ResponseMessage> ProcessItemStreamAsync(
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             string itemId,
             Stream streamPayload,
             OperationType operationType,
@@ -476,6 +487,11 @@ namespace Microsoft.Azure.Cosmos
             bool extractPartitionKeyIfNeeded,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                partitionKey = null;
+            }
+
             if (extractPartitionKeyIfNeeded && partitionKey == null)
             {
                 partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
@@ -693,10 +709,7 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (requestOptions?.Properties != null
-                && requestOptions.Properties.TryGetValue(
-                    WFConstants.BackendHeaders.EffectivePartitionKeyString, out object effectivePartitionKeyValue)
-                && effectivePartitionKeyValue != null)
+            if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
             {
                 return;
             }

@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
-            Cosmos.PartitionKey partitionKey,
+            Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
-            Cosmos.PartitionKey partitionKey,
+            Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
                 }
-                else if (Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
+                else if (partitionKey.Value.IsNone)
                 {
                     try
                     {
