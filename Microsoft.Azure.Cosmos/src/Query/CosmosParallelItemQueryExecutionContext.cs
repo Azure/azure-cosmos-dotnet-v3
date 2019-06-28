@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initialize the execution context.
         /// </summary>
-        /// <param name="sqlQuerySpec">sql query spec.</param>
+        /// <param name="sqlQuerySpec">SQL query spec.</param>
         /// <param name="collectionRid">The collection rid.</param>
         /// <param name="partitionKeyRanges">The partition key ranges to drain documents from.</param>
         /// <param name="initialPageSize">The initial page size.</param>
@@ -195,32 +195,18 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         if (suppliedCompositeContinuationToken.Range == null || suppliedCompositeContinuationToken.Range.IsEmpty)
                         {
-                            this.TraceWarning(string.Format(
-                                CultureInfo.InvariantCulture,
-                                "Invalid Range in the continuation token {0} for Parallel~Context.",
-                                requestContinuation));
-                            throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
+                            throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid Range in the continuation token {requestContinuation} for Parallel~Context.");
                         }
                     }
 
                     if (suppliedCompositeContinuationTokens.Length == 0)
                     {
-                        this.TraceWarning(string.Format(
-                            CultureInfo.InvariantCulture,
-                            "Invalid format for continuation token {0} for Parallel~Context.",
-                            requestContinuation));
-                        throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
+                        throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid format for continuation token {requestContinuation} for Parallel~Context.");
                     }
                 }
                 catch (JsonException ex)
                 {
-                    this.TraceWarning(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Invalid JSON in continuation token {0} for Parallel~Context, exception: {1}",
-                        requestContinuation,
-                        ex.Message));
-
-                    throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
+                    throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid JSON in continuation token {requestContinuation} for Parallel~Context, exception: {ex.Message}");
                 }
 
                 filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);

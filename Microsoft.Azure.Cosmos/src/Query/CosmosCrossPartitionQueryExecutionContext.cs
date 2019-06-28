@@ -8,15 +8,14 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
-    using Common;
     using ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
     using ParallelQuery;
 
     /// <summary>
@@ -370,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of documents to drain.</param>
         /// <param name="cancellationToken">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        public async override Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -428,16 +427,6 @@ namespace Microsoft.Azure.Cosmos.Query
             Func<ItemProducerTree, Task> filterCallback,
             CancellationToken token)
         {
-            CollectionCache collectionCache = await this.queryContext.QueryClient.GetCollectionCacheAsync();
-            this.TraceInformation(string.Format(
-                CultureInfo.InvariantCulture,
-                "parallel~contextbase.initializeasync, queryspec {0}, maxbuffereditemcount: {1}, target partitionkeyrange count: {2}, maximumconcurrencylevel: {3}, documentproducer initial page size {4}",
-                JsonConvert.SerializeObject(querySpecForInit, DefaultJsonSerializationSettings.Value),
-                this.actualMaxBufferedItemCount,
-                partitionKeyRanges.Count,
-                this.comparableTaskScheduler.MaximumConcurrencyLevel,
-                initialPageSize));
-
             List<ItemProducerTree> itemProducerTrees = new List<ItemProducerTree>();
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
@@ -466,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 itemProducerTrees.Add(itemProducerTree);
             }
 
-            // Using loop fisson so that we can load the document producers in parallel
+            // Using loop fission so that we can load the document producers in parallel
             foreach (ItemProducerTree itemProducerTree in itemProducerTrees)
             {
                 if (!deferFirstPage)
@@ -572,11 +561,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
-                this.TraceWarning(string.Format(
-                    CultureInfo.InvariantCulture,
-                    "Could not find continuation token: {0}",
-                    firstContinuationToken.ToString()));
-                throw new BadRequestException(RMResources.InvalidContinuationToken);
+                throw new CosmosException(HttpStatusCode.BadRequest, $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
             }
 
             foreach (Tuple<TContinuationToken, Range<string>> suppledContinuationToken in suppliedContinuationTokens)
@@ -594,11 +579,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Could not find the child ranges
                 if (replacementRanges.Count() == 0)
                 {
-                    this.TraceWarning(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Could not find continuation token: {0}",
-                        continuationToken.ToString()));
-                    throw new BadRequestException(RMResources.InvalidContinuationToken);
+                    throw new CosmosException(HttpStatusCode.BadRequest, $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
                 }
 
                 // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
@@ -615,11 +596,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    this.TraceWarning(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "PMax = C2Max > C2Min > C1Max > C1Min = PMin: {0}",
-                        continuationToken.ToString()));
-                    throw new BadRequestException(RMResources.InvalidContinuationToken);
+                    throw new CosmosException(HttpStatusCode.BadRequest, $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
                 }
 
                 foreach (PartitionKeyRange partitionKeyRange in replacementRanges)
@@ -642,34 +619,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         /// <summary>
-        /// Traces a warning with the proper formatting.
-        /// </summary>
-        /// <param name="message">The message to trace.</param>
-        protected void TraceWarning(string message)
-        {
-            DefaultTrace.TraceWarning(this.GetTrace(message));
-        }
-
-        /// <summary>
-        /// Traces a verbose message with the proper formatting.
-        /// </summary>
-        /// <param name="message">The message to trace.</param>
-        protected void TraceVerbose(string message)
-        {
-            DefaultTrace.TraceVerbose(this.GetTrace(message));
-        }
-
-        /// <summary>
-        /// Traces information with the proper formatting.
-        /// </summary>
-        /// <param name="message">The message to trace.</param>
-        protected void TraceInformation(string message)
-        {
-            DefaultTrace.TraceInformation(this.GetTrace(message));
-        }
-
-        /// <summary>
-        /// Since query metrics are being aggregated asynchronously to the feed reponses as explained in the member documentation,
+        /// Since query metrics are being aggregated asynchronously to the feed responses as explained in the member documentation,
         /// this function allows us to take a snapshot of the query metrics.
         /// </summary>
         private void SetQueryMetrics()
@@ -724,28 +674,19 @@ namespace Microsoft.Azure.Cosmos.Query
             // Adjust the producer page size so that we reach the optimal page size.
             producer.PageSize = Math.Min((long)(producer.PageSize * DynamicPageSizeAdjustmentFactor), this.actualMaxPageSize);
 
-            // Adjust Max Degree Of Paralleism if neccesary
-            // (needs to wait for comparable task scheudler refactor).
+            // Adjust Max Degree Of Parallelism if necessary
+            // (needs to wait for comparable task scheduler refactor).
 
             // Fetch again if necessary
             if (producer.HasMoreBackendResults)
             {
-                // 4mb is the max reponse size
+                // 4mb is the max response size
                 long expectedResponseSize = Math.Min(producer.PageSize, 4 * 1024 * 1024);
                 if (this.CanPrefetch && this.FreeItemSpace > expectedResponseSize)
                 {
                     this.TryScheduleFetch(producer);
                 }
             }
-
-            this.TraceVerbose(string.Format(
-                CultureInfo.InvariantCulture,
-                "Id: {0}, size: {1}, resourceUnitUsage: {2}, taskScheduler.CurrentRunningTaskCount: {3}",
-                producer.PartitionKeyRange.Id,
-                itemsBuffered,
-                resourceUnitUsage,
-                this.comparableTaskScheduler.CurrentRunningTaskCount,
-                this.queryContext.CorrelatedActivityId));
         }
 
         /// <summary>
@@ -817,7 +758,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (initialPageSize <= 0)
                 {
-                    throw new ArgumentOutOfRangeException($"{nameof(initialPageSize)} must be atleast 1.");
+                    throw new ArgumentOutOfRangeException($"{nameof(initialPageSize)} must be at least 1.");
                 }
 
                 //// Request continuation is allowed to be null

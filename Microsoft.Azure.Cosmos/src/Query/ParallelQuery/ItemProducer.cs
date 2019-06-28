@@ -94,12 +94,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private bool hasStartedFetching;
 
         /// <summary>
-        /// An enumerator is positioned before the first element of the collection and the first call to MoveNextAsync will move the enumerator over the first element of the collection.
-        /// This flag keeps track of whether we are in that scenario.
-        /// </summary>
-        private bool hasInitialized;
-
-        /// <summary>
         /// Need this flag so that the document producer stops buffering more results after a fatal exception.
         /// </summary>
         private bool hitException;
@@ -263,6 +257,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             CosmosElement originalCurrent = this.Current;
             (bool successfullyMovedNext, QueryResponse failureResponse) movedNext = await this.MoveNextAsyncImplementationAsync(token);
+
             if (!movedNext.successfullyMovedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {
                 this.IsActive = false;
@@ -431,29 +426,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 return ItemProducer.IsDoneResponse;
             }
 
-            await this.BufferMoreIfEmptyAsync(token);
-
-            if (!this.hasInitialized)
-            {
-                // First time calling move next async so we are just going to call movenextpage to get the ball rolling
-                this.hasInitialized = true;
-                (bool successfullyMovedNext, QueryResponse failureResponse) response = await this.TryMoveNextPageAsync(token);
-                if (!response.successfullyMovedNext)
-                {
-                    this.HasMoreResults = false;
-                }
-
-                return response;
-            }
-
-            Interlocked.Decrement(ref this.bufferedItemCount);
-            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
-            this.IsAtBeginningOfPage = false;
-
             // Always try reading from current page first
             if (this.MoveNextDocumentWithinCurrentPage())
             {
-                this.Current = this.CurrentPage.Current;
                 return ItemProducer.IsSuccessResponse;
             }
             else
@@ -469,11 +444,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        /// <summary>
-        /// Tries to moved to the next document within the current page that we are reading from.
-        /// </summary>
-        /// <returns>Whether the operation was successful.</returns>
-        private bool MoveNextDocumentWithinCurrentPage()
+        private bool MoveToFirstDocumentInPage()
         {
             if (this.CurrentPage == null || !this.CurrentPage.MoveNext())
             {
@@ -481,7 +452,30 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             this.Current = this.CurrentPage.Current;
+            this.IsAtBeginningOfPage = true;
+
             return true;
+        }
+
+        /// <summary>
+        /// Tries to moved to the next document within the current page that we are reading from.
+        /// </summary>
+        /// <returns>Whether the operation was successful.</returns>
+        private bool MoveNextDocumentWithinCurrentPage()
+        {
+            if (this.CurrentPage == null)
+            {
+                return false;
+            }
+
+            bool movedNext = this.CurrentPage.MoveNext();
+            this.Current = this.CurrentPage.Current;
+            this.IsAtBeginningOfPage = false;
+
+            Interlocked.Decrement(ref this.bufferedItemCount);
+            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
+
+            return movedNext;
         }
 
         /// <summary>
@@ -493,20 +487,27 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             token.ThrowIfCancellationRequested();
 
+            if (this.itemsLeftInCurrentPage != 0)
+            {
+                throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
+            }
+
+            // We need to buffer pages if empty, since that how we know there are no more pages left.
+            await this.BufferMoreIfEmptyAsync(token);
+
             if (this.bufferedPages.Count == 0)
             {
                 return ItemProducer.IsDoneResponse;
             }
 
-            if (this.ItemsLeftInCurrentPage != 0)
-            {
-                throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
-            }
-
+            // Pull a FeedResponse using TryMonad (we could have buffered an exception).
             QueryResponse queryResponse = await this.bufferedPages.TakeAsync(token);
+
+            // Update the state.
             this.PreviousContinuationToken = this.currentContinuationToken;
             this.currentContinuationToken = queryResponse.Headers.Continuation;
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
+            this.IsAtBeginningOfPage = true;
             this.itemsLeftInCurrentPage = queryResponse.Count;
 
             if (!queryResponse.IsSuccessStatusCode)
@@ -514,13 +515,21 @@ namespace Microsoft.Azure.Cosmos.Query
                 return (false, queryResponse);
             }
 
-            if (this.MoveNextDocumentWithinCurrentPage())
+            // Prime the enumerator,
+            // so that current is pointing to the first document instead of one before.
+            if (this.MoveToFirstDocumentInPage())
             {
                 this.IsAtBeginningOfPage = true;
                 return ItemProducer.IsSuccessResponse;
             }
             else
             {
+                // We got an empty page
+                if (this.currentContinuationToken != null)
+                {
+                    return await this.TryMoveNextPageAsync(token);
+                }
+
                 return ItemProducer.IsDoneResponse;
             }
         }

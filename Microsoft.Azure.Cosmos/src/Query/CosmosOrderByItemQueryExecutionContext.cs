@@ -123,9 +123,9 @@ namespace Microsoft.Azure.Cosmos.Query
                         filter);
                 }),
                     new JsonSerializerSettings()
-                {
-                    StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-                }) : null;
+                    {
+                        StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
+                    }) : null;
             }
         }
 
@@ -269,86 +269,79 @@ namespace Microsoft.Azure.Cosmos.Query
             string[] orderByExpressions,
             CancellationToken cancellationToken)
         {
-            try
+            if (requestContinuation == null)
             {
-                if (requestContinuation == null)
+                SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
+                    sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
+                    sqlQuerySpec.Parameters);
+
+                await base.InitializeAsync(
+                    collectionRid,
+                    partitionKeyRanges,
+                    initialPageSize,
+                    sqlQuerySpecForInit,
+                    token: cancellationToken,
+                    targetRangeToContinuationMap: null,
+                    deferFirstPage: false,
+                    filter: null,
+                    filterCallback: null);
+            }
+            else
+            {
+                OrderByContinuationToken[] suppliedContinuationTokens = this.ValidateAndExtractContinuationToken(
+                    requestContinuation,
+                    sortOrders,
+                    orderByExpressions);
+                Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = null;
+
+                RangeFilterInitializationInfo[] orderByInfos = this.GetPartitionKeyRangesInitializationInfo(
+                    suppliedContinuationTokens,
+                    partitionKeyRanges,
+                    sortOrders,
+                    orderByExpressions,
+                    out targetRangeToOrderByContinuationMap);
+
+                Debug.Assert(targetRangeToOrderByContinuationMap != null, "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
+
+                // For ascending order-by, left of target partition has filter expression > value,
+                // right of target partition has filter expression >= value, 
+                // and target partition takes the previous filter from continuation (or true if no continuation)
+                foreach (RangeFilterInitializationInfo info in orderByInfos)
                 {
+                    if (info.StartIndex > info.EndIndex)
+                    {
+                        continue;
+                    }
+
+                    PartialReadOnlyList<PartitionKeyRange> partialRanges =
+                        new PartialReadOnlyList<PartitionKeyRange>(partitionKeyRanges, info.StartIndex, info.EndIndex - info.StartIndex + 1);
+
                     SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
-                        sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: True),
+                        sqlQuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
                         sqlQuerySpec.Parameters);
 
                     await base.InitializeAsync(
                         collectionRid,
-                        partitionKeyRanges,
+                        partialRanges,
                         initialPageSize,
                         sqlQuerySpecForInit,
-                        token: cancellationToken,
-                        targetRangeToContinuationMap: null,
-                        deferFirstPage: false,
-                        filter: null,
-                        filterCallback: null);
-                }
-                else
-                {
-                    OrderByContinuationToken[] suppliedContinuationTokens = this.ValidateAndExtractContinuationToken(
-                        requestContinuation,
-                        sortOrders,
-                        orderByExpressions);
-                    Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = null;
-
-                    RangeFilterInitializationInfo[] orderByInfos = this.GetPartitionKeyRangesInitializationInfo(
-                        suppliedContinuationTokens,
-                        partitionKeyRanges,
-                        sortOrders,
-                        orderByExpressions,
-                        out targetRangeToOrderByContinuationMap);
-
-                    Debug.Assert(targetRangeToOrderByContinuationMap != null, "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
-
-                    // For ascending order-by, left of target partition has filter expression > value,
-                    // right of target partition has filter expression >= value, 
-                    // and target partition takes the previous filter from continuation (or true if no continuation)
-                    foreach (RangeFilterInitializationInfo info in orderByInfos)
-                    {
-                        if (info.StartIndex > info.EndIndex)
+                        targetRangeToOrderByContinuationMap.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompositeContinuationToken.Token),
+                        false,
+                        info.Filter,
+                        async (itemProducerTree) =>
                         {
-                            continue;
-                        }
-
-                        PartialReadOnlyList<PartitionKeyRange> partialRanges =
-                            new PartialReadOnlyList<PartitionKeyRange>(partitionKeyRanges, info.StartIndex, info.EndIndex - info.StartIndex + 1);
-
-                        SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
-                            sqlQuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
-                            sqlQuerySpec.Parameters);
-
-                        await base.InitializeAsync(
-                            collectionRid,
-                            partialRanges,
-                            initialPageSize,
-                            sqlQuerySpecForInit,
-                            targetRangeToOrderByContinuationMap.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.CompositeContinuationToken.Token),
-                            false,
-                            info.Filter,
-                            async (itemProducerTree) =>
+                            OrderByContinuationToken continuationToken;
+                            if (targetRangeToOrderByContinuationMap.TryGetValue(itemProducerTree.Root.PartitionKeyRange.Id, out continuationToken))
                             {
-                                OrderByContinuationToken continuationToken;
-                                if (targetRangeToOrderByContinuationMap.TryGetValue(itemProducerTree.Root.PartitionKeyRange.Id, out continuationToken))
-                                {
-                                    await this.FilterAsync(
-                                        itemProducerTree,
-                                        sortOrders,
-                                        continuationToken,
-                                        cancellationToken);
-                                }
-                            },
-                            cancellationToken);
-                    }
+                                await this.FilterAsync(
+                                    itemProducerTree,
+                                    sortOrders,
+                                    continuationToken,
+                                    cancellationToken);
+                            }
+                        },
+                        cancellationToken);
                 }
-            }
-            finally
-            {
-                this.TraceInformation("OrderBy~Context.InitializeAsync");
             }
         }
 
@@ -383,16 +376,14 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (suppliedOrderByContinuationTokens.Length == 0)
                 {
-                    this.TraceWarning($"Order by continuation token can not be empty: {requestContinuation}.");
-                    throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
+                    throw new CosmosException(HttpStatusCode.BadRequest, $"Order by continuation token can not be empty: {requestContinuation}.");
                 }
 
                 foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
                 {
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
-                        this.TraceWarning($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
-                        throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
+                        throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
                     }
                 }
 
@@ -400,9 +391,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             catch (JsonException ex)
             {
-                this.TraceWarning($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
-
-                throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
+                throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
             }
         }
 
@@ -431,11 +420,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
-                    this.TraceWarning(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Invalid Rid in the continuation token {0} for OrderBy~Context.",
-                        continuationToken.CompositeContinuationToken.Token));
-                    throw new BadRequestException(RMResources.InvalidContinuationToken);
+                    throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
                 }
 
                 Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
@@ -473,11 +458,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         {
                             if (!ResourceId.TryParse(orderByResult.Rid, out rid))
                             {
-                                this.TraceWarning(string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    "Invalid Rid in the continuation token {0} for OrderBy~Context.",
-                                    continuationToken.CompositeContinuationToken.Token));
-                                throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
+                                throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse.");
                             }
 
                             resourceIds.Add(orderByResult.Rid, rid);
@@ -487,11 +468,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         {
                             if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
                             {
-                                this.TraceWarning(string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    "Invalid Rid in the continuation token {0} for OrderBy~Context.",
-                                    continuationToken.CompositeContinuationToken.Token));
-                                throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
+                                throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
                             }
 
                             continuationRidVerified = true;
