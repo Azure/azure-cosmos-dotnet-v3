@@ -99,15 +99,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 bool isPartitioned =
                     containerProperties.PartitionKey != null &&
                     containerProperties.PartitionKey.Paths != null &&
-                    containerProperties.PartitionKey.Paths.Count > 0 &&
-                    !(containerProperties.PartitionKey.IsSystemKey == true);
-                if (isPartitioned &&
-                    (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
+                    containerProperties.PartitionKey.Paths.Count > 0;
+                bool isMigratedFixed = (containerProperties.PartitionKey?.IsSystemKey == true);
+                if (isPartitioned
+                    && !isMigratedFixed
+                    && (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
                 {
                     throw new ArgumentException("The lease collection, if partitioned, must have partition key equal to id.");
                 }
 
-                RequestOptionsFactory requestOptionsFactory = isPartitioned ?
+                RequestOptionsFactory requestOptionsFactory = isPartitioned && !isMigratedFixed ?
                     (RequestOptionsFactory)new PartitionedByIdCollectionRequestOptionsFactory() :
                     (RequestOptionsFactory)new SinglePartitionRequestOptionsFactory();
 
