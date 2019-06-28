@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    lastcontinuation = responseMessage.Headers.Continuation;
+                    lastcontinuation = responseMessage.Headers.ContinuationToken;
                     List<CompositeContinuationToken> deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation);
                     currentRange = deserializedToken[0].Range;
                     Assert.AreEqual(pkRangesCount, deserializedToken.Count);
