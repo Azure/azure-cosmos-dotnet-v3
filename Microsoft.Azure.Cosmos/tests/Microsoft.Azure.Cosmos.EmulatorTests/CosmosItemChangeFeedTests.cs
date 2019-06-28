@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    lastcontinuation = responseMessage.Headers.Continuation;
+                    lastcontinuation = responseMessage.Headers.ContinuationToken;
                     List<CompositeContinuationToken> deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation);
                     currentRange = deserializedToken[0].Range;
                     Assert.AreEqual(pkRangesCount, deserializedToken.Count);
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage responseMessage =
                     await setIteratorNew.ReadNextAsync(this.cancellationToken))
                 {
-                    lastcontinuation = responseMessage.Headers.Continuation;
+                    lastcontinuation = responseMessage.Headers.ContinuationToken;
                     currentRange = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation)[0].Range;
 
                     if (responseMessage.IsSuccessStatusCode)
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    continuationToken = responseMessage.Headers.Continuation;
+                    continuationToken = responseMessage.Headers.ContinuationToken;
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;

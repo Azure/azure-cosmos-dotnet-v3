@@ -103,8 +103,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
              QueryDefinition sqlQuery = new QueryDefinition(
              "SELECT t.id, t.status, t.cost, udf.calculateTax(t.cost) as total FROM toDoActivity t where t.cost > @expensive and t.status = @status")
-                 .UseParameter("@expensive", 9000)
-                 .UseParameter("@status", "Done");
+                 .WithParameter("@expensive", 9000)
+                 .WithParameter("@status", "Done");
             
              FeedIterator<dynamic> feedIterator = this.container.GetItemQueryIterator<dynamic>(
                  queryDefinition: sqlQuery);

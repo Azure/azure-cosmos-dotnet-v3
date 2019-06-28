@@ -87,14 +87,14 @@ namespace Microsoft.Azure.Cosmos
                },
                cancellationToken: cancellationToken);
 
-            this.continuationToken = response.Headers.Continuation;
+            this.continuationToken = response.Headers.ContinuationToken;
             this.hasMoreResultsInternal = GetHasMoreResults(this.continuationToken, response.StatusCode);
             return response;
         }
 
         internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
         {
-            return httpResponseMessage.Headers.Continuation;
+            return httpResponseMessage.Headers.ContinuationToken;
         }
 
         internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)

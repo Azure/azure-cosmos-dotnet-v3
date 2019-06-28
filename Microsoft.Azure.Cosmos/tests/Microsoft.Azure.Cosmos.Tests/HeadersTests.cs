@@ -118,10 +118,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string value3 = Guid.NewGuid().ToString();
                 string value4 = Guid.NewGuid().ToString();
                 var Headers = new Headers();
-                Headers.Continuation = value1;
+                Headers.ContinuationToken = value1;
                 Headers.PartitionKey = value2;
                 Headers.PartitionKeyRangeId = value3;
-                Assert.AreEqual(value1, Headers.Continuation);
+                Assert.AreEqual(value1, Headers.ContinuationToken);
                 Assert.AreEqual(value2, Headers.PartitionKey);
                 Assert.AreEqual(value3, Headers.PartitionKeyRangeId);
                 Assert.AreEqual(value1, Headers[HttpConstants.HttpHeaders.Continuation]);
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.Continuation] = value1;
                 Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.PartitionKey] = value2;
                 Headers.CosmosMessageHeaders[WFConstants.BackendHeaders.PartitionKeyRangeId] = value3;
-                Assert.AreEqual(value1, Headers.Continuation);
+                Assert.AreEqual(value1, Headers.ContinuationToken);
                 Assert.AreEqual(value2, Headers.PartitionKey);
                 Assert.AreEqual(value3, Headers.PartitionKeyRangeId);
                 Assert.AreEqual(value1, Headers[HttpConstants.HttpHeaders.Continuation]);
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestHeaders.CosmosMessageHeaders[WFConstants.BackendHeaders.SubStatus] = value2;
                 requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = value3;
                 requestHeaders.CosmosMessageHeaders[HttpConstants.HttpHeaders.SessionToken] = value4;
-                Assert.AreEqual(value1, requestHeaders.Continuation);
+                Assert.AreEqual(value1, requestHeaders.ContinuationToken);
                 Assert.AreEqual(int.Parse(value2), (int)requestHeaders.SubStatusCode);
                 Assert.AreEqual(TimeSpan.FromMilliseconds(20), requestHeaders.RetryAfter);
                 Assert.AreEqual(value4, requestHeaders.Session);
@@ -169,12 +169,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             var Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Headers.PartitionKey = Guid.NewGuid().ToString();
-            Headers.Continuation = Guid.NewGuid().ToString();
+            Headers.ContinuationToken = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
             Headers.CosmosMessageHeaders.Clear();
             Assert.IsNull(Headers[Key]);
             Assert.IsNull(Headers.PartitionKey);
-            Assert.IsNull(Headers.Continuation);
+            Assert.IsNull(Headers.ContinuationToken);
             Assert.IsNull(Headers.RetryAfter);
         }
 
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             var Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
             Headers.PartitionKey = Guid.NewGuid().ToString();
-            Headers.Continuation = Guid.NewGuid().ToString();
+            Headers.ContinuationToken = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
             Assert.AreEqual(4, Headers.CosmosMessageHeaders.Count());
         }
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             var Headers = new Headers();
             Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
-            Headers.Continuation = Guid.NewGuid().ToString();
+            Headers.ContinuationToken = Guid.NewGuid().ToString();
             Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
             Headers.Add(WFConstants.BackendHeaders.SubStatus, "1002");
             Headers.PartitionKey = Guid.NewGuid().ToString();

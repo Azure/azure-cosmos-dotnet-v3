@@ -597,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
                 results.AddRange(cosmosQueryResponse);
-                continuationToken = cosmosQueryResponse.Continuation;
+                continuationToken = cosmosQueryResponse.ContinuationToken;
             } while (continuationToken != null);
 
             return results;
@@ -877,14 +877,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             FeedResponse<dynamic> response = await resultSetIterator.ReadNextAsync();
             Assert.AreEqual(1, response.Count());
-            Assert.IsNull(response.Continuation);
+            Assert.IsNull(response.ContinuationToken);
 
             resultSetIterator = container.GetItemQueryIterator<dynamic>(
                "SELECT * FROM c WHERE c.pk = 'doc10'");
 
             response = await resultSetIterator.ReadNextAsync();
             Assert.AreEqual(0, response.Count());
-            Assert.IsNull(response.Continuation);
+            Assert.IsNull(response.ContinuationToken);
         }
 
         private struct QueryWithSpecialPartitionKeysArgs
@@ -1202,7 +1202,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(Container container, IEnumerable<Document> documents, QueryCrossPartitionWithLargeNumberOfKeysArgs args)
         {
             QueryDefinition query = new QueryDefinition(
-                $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").UseParameter("@keys", args.ExpectedPartitionKeyValues);
+                $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").WithParameter("@keys", args.ExpectedPartitionKeyValues);
 
             HashSet<int> actualPartitionKeyValues = new HashSet<int>();
             FeedIterator<int> documentQuery = container.GetItemQueryIterator<int>(
@@ -2131,7 +2131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             documentsFromWithDistinct.Add(jToken);
                         }
 
-                        continuationToken = cosmosQueryResponse.Continuation;
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
 
                     }
                     while (continuationToken != null);
@@ -2199,7 +2199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         FeedResponse<JToken> cosmosQueryResponse = await cosmosQuery.ReadNextAsync();
                         documentsFromWithDistinct.AddRange(cosmosQueryResponse);
-                        continuationToken = cosmosQueryResponse.Continuation;
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
                     }
                     while (continuationToken != null);
 
@@ -2887,7 +2887,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     {
                                         if (hasTop)
                                         {
-                                            querySpec.UseParameter(topValueName, top);
+                                            querySpec.WithParameter(topValueName, top);
                                         }
                                     }
 
@@ -3236,7 +3236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 10, MaxItemCount = -1 }).ReadNextAsync();
 
-            Assert.AreEqual(null, responseWithEmptyContinuationExpected.Continuation);
+            Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
 
             string[] queries = new[]
             {

@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 updatedContinuationToken = new DistinctContinuationToken(
                     this.lastHash,
-                    cosmosQueryResponse.Headers.Continuation).ToString();
+                    cosmosQueryResponse.Headers.ContinuationToken).ToString();
             }
             else
             {

@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
-                    lastContinuationToken = responseMessage.Headers.Continuation;
+                    lastContinuationToken = responseMessage.Headers.ContinuationToken;
 
                     Collection<ToDoActivity> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in response)
@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = deleteList = await this.CreateRandomItems(pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
             ToDoActivity find = deleteList.First();
 
-            QueryDefinition sql = new QueryDefinition("select * from r where r.status = @status").UseParameter("@status", find.status);
+            QueryDefinition sql = new QueryDefinition("select * from r where r.status = @status").WithParameter("@status", find.status);
 
             int iterationCount = 0;
             int totalReadItem = 0;
@@ -569,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     });
 
                 ResponseMessage response = await feedIterator.ReadNextAsync();
-                lastContinuationToken = response.Headers.Continuation;
+                lastContinuationToken = response.Headers.ContinuationToken;
                 Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 JsonSerializer serializer = new JsonSerializer();
 
@@ -740,7 +740,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> findItems = await this.CreateRandomItems(pkCount: 1, perPKItemCount: 10, randomPartitionKey: false);
 
             string findPkValue = findItems.First().status;
-            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t where t.status = @pkValue").UseParameter("@pkValue", findPkValue);
+            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t where t.status = @pkValue").WithParameter("@pkValue", findPkValue);
 
 
             double totalRequstCharge = 0;
@@ -922,7 +922,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity toDoActivity = deleteList.First();
             QueryDefinition sql = new QueryDefinition(
                 "select * from toDoActivity t where t.status = @status")
-                .UseParameter("@status", toDoActivity.status);
+                .WithParameter("@status", toDoActivity.status);
 
             // Test max size at 1
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(

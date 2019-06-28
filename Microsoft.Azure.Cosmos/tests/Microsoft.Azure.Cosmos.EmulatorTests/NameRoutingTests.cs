@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // query documents 
                     {
                         bool bFound = false;
-                        QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
+                        QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from c where c.id = @id").WithParameter("@id", doc1Id);
                         FeedIterator<Document> docServiceQuery = container.GetItemQueryIterator<Document>(
                             queryDefinition: sqlQueryDefinition);
                         while (docServiceQuery.HasMoreResults)

@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                             break;
                         }
 
-                        lastContinuation = response.Headers.Continuation;
+                        lastContinuation = response.Headers.ContinuationToken;
                         if (this.resultSetIterator.HasMoreResults)
                         {
                             await this.DispatchChangesAsync(response, cancellationToken).ConfigureAwait(false);

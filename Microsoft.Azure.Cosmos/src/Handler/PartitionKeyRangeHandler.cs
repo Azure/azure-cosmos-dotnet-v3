@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = null;
-            string originalContinuation = request.Headers.Continuation;
+            string originalContinuation = request.Headers.ContinuationToken;
             try
             {
                 RntdbEnumerationDirection rntdbEnumerationDirection = RntdbEnumerationDirection.Forward;
@@ -170,10 +170,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private void SetOriginalContinuationToken(RequestMessage request, ResponseMessage response, string originalContinuation)
         {
-            request.Headers.Continuation = originalContinuation;
+            request.Headers.ContinuationToken = originalContinuation;
             if (response != null)
             {
-                response.Headers.Continuation = originalContinuation;
+                response.Headers.ContinuationToken = originalContinuation;
             }
         }
     }
