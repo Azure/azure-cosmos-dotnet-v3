@@ -100,12 +100,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         private string filter;
 
-        /// <summary>
-        /// An enumerator is positioned before the first element of the collection and the first call to MoveNextAsync will move the enumerator over the first element of the collection.
-        /// This flag keeps track of whether we are in that scenario.
-        /// </summary>
-        private bool hasInitialized;
-
         private readonly CosmosQueryContext queryContext;
 
         private readonly SqlQuerySpec querySpecForInit;
@@ -272,6 +266,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             CosmosElement originalCurrent = this.Current;
             bool movedNext = await this.MoveNextAsyncImplementation(token);
+
             if (!movedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.Current)))
             {
                 this.IsActive = false;
@@ -320,9 +315,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 IDocumentClientRetryPolicy retryPolicy = this.createRetryPolicyFunc();
 
                 // Custom backoff and retry
+                int retries = 0;
                 while (true)
                 {
-                    int retries = 0;
                     try
                     {
                         FeedResponse<CosmosElement> feedResponse = await this.queryContext.ExecuteQueryAsync(
@@ -468,31 +463,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 return false;
             }
 
-            await this.BufferMoreIfEmpty(token);
-
-            if (!this.hasInitialized)
-            {
-                // First time calling move next async so we are just going to call movenextpage to get the ball rolling
-                this.hasInitialized = true;
-                if (await this.MoveNextPage(token))
-                {
-                    return true;
-                }
-                else
-                {
-                    this.HasMoreResults = false;
-                    return false;
-                }
-            }
-
-            Interlocked.Decrement(ref this.bufferedItemCount);
-            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
-            this.IsAtBeginningOfPage = false;
-
             // Always try reading from current page first
             if (this.MoveNextDocumentWithinCurrentPage())
             {
-                this.Current = this.CurrentPage.Current;
                 return true;
             }
             else
@@ -510,11 +483,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        /// <summary>
-        /// Tries to moved to the next document within the current page that we are reading from.
-        /// </summary>
-        /// <returns>Whether the operation was successful.</returns>
-        private bool MoveNextDocumentWithinCurrentPage()
+        private bool MoveToFirstDocumentInPage()
         {
             if (this.CurrentPage == null || !this.CurrentPage.MoveNext())
             {
@@ -522,7 +491,30 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             this.Current = this.CurrentPage.Current;
+            this.IsAtBeginningOfPage = true;
+
             return true;
+        }
+
+        /// <summary>
+        /// Tries to moved to the next document within the current page that we are reading from.
+        /// </summary>
+        /// <returns>Whether the operation was successful.</returns>
+        private bool MoveNextDocumentWithinCurrentPage()
+        {
+            if (this.CurrentPage == null)
+            {
+                return false;
+            }
+
+            bool movedNext = this.CurrentPage.MoveNext();
+            this.Current = this.CurrentPage.Current;
+            this.IsAtBeginningOfPage = false;
+
+            Interlocked.Decrement(ref this.bufferedItemCount);
+            Interlocked.Decrement(ref this.itemsLeftInCurrentPage);
+
+            return movedNext;
         }
 
         /// <summary>
@@ -534,16 +526,20 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             token.ThrowIfCancellationRequested();
 
-            if (this.bufferedPages.Count == 0)
-            {
-                return false;
-            }
-
             if (this.ItemsLeftInCurrentPage != 0)
             {
                 throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
             }
 
+            // We need to buffer pages if empty, since that how we know there are no more pages left.
+            await this.BufferMoreIfEmpty(token);
+
+            if (this.bufferedPages.Count == 0)
+            {
+                return false;
+            }
+
+            // Pull a FeedResponse using TryMonad (we could have buffered an exception).
             TryMonad<FeedResponse<CosmosElement>> tryMonad = await this.bufferedPages.TakeAsync(token);
             FeedResponse<CosmosElement> feedResponse = tryMonad.Match<FeedResponse<CosmosElement>>(
                 onSuccess: ((page) =>
@@ -556,17 +552,27 @@ namespace Microsoft.Azure.Cosmos.Query
                     return null;
                 }));
 
+            // Update the state.
             this.PreviousContinuationToken = this.currentContinuationToken;
             this.currentContinuationToken = feedResponse.ResponseContinuation;
             this.CurrentPage = feedResponse.GetEnumerator();
+            this.IsAtBeginningOfPage = true;
             this.itemsLeftInCurrentPage = feedResponse.Count;
-            if (this.MoveNextDocumentWithinCurrentPage())
+
+            // Prime the enumerator,
+            // so that current is pointing to the first document instead of one before.
+            if (this.MoveToFirstDocumentInPage())
             {
-                this.IsAtBeginningOfPage = true;
                 return true;
             }
             else
             {
+                // We got an empty page
+                if (this.currentContinuationToken != null)
+                {
+                    return await this.MoveNextPage(token);
+                }
+
                 return false;
             }
         }
