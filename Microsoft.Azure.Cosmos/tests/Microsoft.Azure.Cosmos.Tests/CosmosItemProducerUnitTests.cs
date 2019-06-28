@@ -55,7 +55,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 RequestCharge = 42
             };
 
-            mockQueryContext.Setup(x => x.ExecuteQueryAsync(sqlQuerySpec, cancellationTokenSource.Token, It.IsAny<Action<RequestMessage>>())).Returns(
+            mockQueryContext.Setup(x => x.ExecuteQueryAsync(
+                sqlQuerySpec,
+                It.IsAny<string>(),
+                It.IsAny<PartitionKeyRangeIdentity>(),
+                It.IsAny<bool>(),
+                It.IsAny<int>(),
+                cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponse.CreateSuccess(cosmosElements, 1, 500, headers)));
 
             ItemProducerTree itemProducerTree = new ItemProducerTree(
@@ -75,7 +81,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
             // Buffer a failure
-            mockQueryContext.Setup(x => x.ExecuteQueryAsync(sqlQuerySpec, cancellationTokenSource.Token, It.IsAny<Action<RequestMessage>>())).Returns(
+            mockQueryContext.Setup(x => x.ExecuteQueryAsync(
+                sqlQuerySpec, 
+                It.IsAny<string>(),
+                It.IsAny<PartitionKeyRangeIdentity>(),
+                It.IsAny<bool>(),
+                It.IsAny<int>(), 
+                cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponse.CreateFailure(headers, HttpStatusCode.InternalServerError, null, "Error message", null)));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
@@ -99,7 +111,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(itemProducerTree.HasMoreResults);
 
             // Try to buffer after failure. It should return the previous cached failure and not try to buffer again.
-            mockQueryContext.Setup(x => x.ExecuteQueryAsync(sqlQuerySpec, cancellationTokenSource.Token, It.IsAny<Action<RequestMessage>>())).
+            mockQueryContext.Setup(x => x.ExecuteQueryAsync(
+                sqlQuerySpec, 
+                It.IsAny<string>(),
+                It.IsAny<PartitionKeyRangeIdentity>(),
+                It.IsAny<bool>(),
+                It.IsAny<int>(), 
+                cancellationTokenSource.Token)).
                 Throws(new Exception("Previous buffer failed. Operation should return original failure and not try again"));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);

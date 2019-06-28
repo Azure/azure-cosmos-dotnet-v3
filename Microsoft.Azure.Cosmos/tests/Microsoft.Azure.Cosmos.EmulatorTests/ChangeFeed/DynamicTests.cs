@@ -108,12 +108,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
             // Generate the payload
-            await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 0);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(0, sprocId, new PartitionKey(partitionKey));
             // Create 3 docs each 1.5MB. All 3 do not fit into MAX_RESPONSE_SIZE (4 MB). 2nd and 3rd are in same transaction.
             var content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
             await this.Container.CreateItemAsync(JsonConvert.DeserializeObject<dynamic>(content), new PartitionKey(partitionKey));
 
-            await scripts.ExecuteStoredProcedureAsync<int, object>(new PartitionKey(partitionKey), sprocId, 3);
+            await scripts.ExecuteStoredProcedureAsync<int, object>(3, sprocId, new PartitionKey(partitionKey));
 
             await processor.StartAsync();
             // Letting processor initialize and pickup changes

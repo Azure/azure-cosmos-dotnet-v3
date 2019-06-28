@@ -304,23 +304,14 @@ namespace Microsoft.Azure.Cosmos.Query
                 int pageSize = (int)Math.Min(this.pageSize, int.MaxValue);
 
                 QueryResponse feedResponse = await this.queryContext.ExecuteQueryAsync(
-                    this.querySpecForInit,
-                    token,
-                    requestEnricher: (cosmosRequestMessage) =>
-                    {
-                        this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage);
-                        cosmosRequestMessage.Headers.Add(
-                            HttpConstants.HttpHeaders.IsContinuationExpected,
-                            this.queryContext.IsContinuationExpected.ToString());
-                        QueryRequestOptions.FillContinuationToken(
-                            cosmosRequestMessage,
-                            this.BackendContinuationToken);
-                        QueryRequestOptions.FillMaxItemCount(
-                            cosmosRequestMessage,
-                            pageSize);
-                        cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-                        cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                    });
+                    querySpecForInit: this.querySpecForInit,
+                    continuationToken: this.BackendContinuationToken,
+                    partitionKeyRange: new PartitionKeyRangeIdentity(
+                            this.queryContext.ContainerResourceId,
+                            this.PartitionKeyRange.Id),
+                    isContinuationExpected: this.queryContext.IsContinuationExpected,
+                    pageSize: pageSize,
+                    cancellationToken: token);
 
                 this.fetchExecutionRangeAccumulator.EndFetchRange(
                     partitionIdentifier: this.PartitionKeyRange.Id,
@@ -385,30 +376,6 @@ namespace Microsoft.Azure.Cosmos.Query
         public void Shutdown()
         {
             this.HasMoreResults = false;
-        }
-
-        private void PopulatePartitionKeyRangeInfo(RequestMessage request)
-        {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            if (this.queryContext.ResourceTypeEnum.IsPartitioned())
-            {
-                // If the request already has the logical partition key,
-                // then we shouldn't add the physical partition key range id.
-
-                bool hasPartitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey) != null;
-                if (!hasPartitionKey)
-                {
-                    request
-                        .ToDocumentServiceRequest()
-                        .RouteTo(new PartitionKeyRangeIdentity(
-                            this.queryContext.ContainerResourceId,
-                            this.PartitionKeyRange.Id));
-                }
-            }
         }
 
         /// <summary>
