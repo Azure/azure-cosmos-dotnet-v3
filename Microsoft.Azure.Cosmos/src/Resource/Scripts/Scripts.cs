@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="input">The JSON serializable input parameters.</param>
-        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="streamPayload">The stream representing the input for the stored procedure.</param>
-        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
