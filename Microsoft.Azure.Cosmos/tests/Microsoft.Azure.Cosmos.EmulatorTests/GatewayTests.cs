@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(retrievedStoredProcedure);
             Assert.AreEqual(storedProcedure.Id, retrievedStoredProcedure.Resource.Id);
 
-            response = collection.Scripts.ExecuteStoredProcedureAsync<object, TValue>(new Cosmos.PartitionKey(partitionKey), storedProcedure.Id, null).Result;
+            response = collection.Scripts.ExecuteStoredProcedureAsync<object, TValue>(storedProcedure.Id, null, new Cosmos.PartitionKey(partitionKey)).Result;
             Assert.IsNotNull(response);
 
             // delete
@@ -1476,7 +1476,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Scripts scripts = collection.Scripts;
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
-                string result = await scripts.ExecuteStoredProcedureAsync<object, string>(new Cosmos.PartitionKey(document.Id), "scriptId", input: null);
+                string result = await scripts.ExecuteStoredProcedureAsync<object, string>("scriptId", input: null, partitionKey: new Cosmos.PartitionKey(document.Id));
             }
             catch (DocumentClientException exception)
             {
@@ -1515,7 +1515,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string result = string.Empty;
             try
             {
-                result = scripts.ExecuteStoredProcedureAsync<string, string>(new Cosmos.PartitionKey("anyPk"), "__.sys.echo", input).Result;
+                result = scripts.ExecuteStoredProcedureAsync<string, string>("__.sys.echo", input, new Cosmos.PartitionKey("anyPk")).Result;
             }
             catch (DocumentClientException exception)
             {
@@ -3012,7 +3012,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 string continuation = null;
-                Func<FeedOptions> fnCreateFeedOptions = () => new FeedOptions { RequestContinuation = continuation };
+                Func<FeedOptions> fnCreateFeedOptions = () => new FeedOptions { RequestContinuationToken = continuation };
                 Task<DocumentFeedResponse<PartitionKeyRange>>[] tasks = new Task<DocumentFeedResponse<PartitionKeyRange>>[]
                 {
                     client.ReadPartitionKeyRangeFeedAsync(coll.AltLink, fnCreateFeedOptions()),

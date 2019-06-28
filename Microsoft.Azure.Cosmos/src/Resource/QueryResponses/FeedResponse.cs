@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The continuation token to be used for continuing enumeration.
         /// </value>
-        public abstract string Continuation { get; }
+        public abstract string ContinuationToken { get; }
 
         /// <summary>
         /// The number of items in the stream.

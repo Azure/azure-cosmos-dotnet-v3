@@ -149,9 +149,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
-            Cosmos.PartitionKey partitionKey,
             string storedProcedureId,
             TInput input,
+            Cosmos.PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -176,9 +176,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
-            Cosmos.PartitionKey partitionKey,
             string storedProcedureId,
             Stream streamPayload,
+            Cosmos.PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {

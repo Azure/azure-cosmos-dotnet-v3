@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.fetchSchedulingMetrics.Stop();
                 this.hasStartedFetching = true;
-                this.BackendContinuationToken = feedResponse.Headers.Continuation;
+                this.BackendContinuationToken = feedResponse.Headers.ContinuationToken;
                 this.ActivityId = Guid.Parse(feedResponse.Headers.ActivityId);
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccessStatusCode)
@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryResponse queryResponse = await this.bufferedPages.TakeAsync(token);
             this.PreviousContinuationToken = this.currentContinuationToken;
-            this.currentContinuationToken = queryResponse.Headers.Continuation;
+            this.currentContinuationToken = queryResponse.Headers.ContinuationToken;
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
             this.itemsLeftInCurrentPage = queryResponse.Count;
 

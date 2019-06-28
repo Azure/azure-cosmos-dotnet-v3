@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition query = new QueryDefinition(
         ///     "select * from t where t.Account = @account")
-        ///     .UseParameter("@account", "12345");
+        ///     .WithParameter("@account", "12345");
         /// ]]>
         /// </code>
         /// </example>
@@ -52,12 +52,12 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition query = new QueryDefinition(
         ///     "select * from t where t.Account = @account")
-        ///     .UseParameter("@account", "12345");
+        ///     .WithParameter("@account", "12345");
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
-        public QueryDefinition UseParameter(string name, object value)
+        public QueryDefinition WithParameter(string name, object value)
         {
             if (string.IsNullOrEmpty(name))
             {

@@ -42,16 +42,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(resultSetIterator.HasMoreResults);
 
             ResponseMessage response = await resultSetIterator.ReadNextAsync(this.CancellationToken);
-            this.ContinuationToken = response.Headers.Continuation;
+            this.ContinuationToken = response.Headers.ContinuationToken;
 
             Assert.IsTrue(resultSetIterator.HasMoreResults);
             this.ContinueNextExecution = false;
 
             response = await resultSetIterator.ReadNextAsync(this.CancellationToken);
-            this.ContinuationToken = response.Headers.Continuation;
+            this.ContinuationToken = response.Headers.ContinuationToken;
 
             Assert.IsFalse(resultSetIterator.HasMoreResults);
-            Assert.IsNull(response.Headers.Continuation);
+            Assert.IsNull(response.Headers.ContinuationToken);
         }
 
         [TestMethod]

@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(responseResults.Count <= 1);
 
                 pagedStreamResults.AddRange(responseResults);
-                continuationToken = response.Headers.Continuation;
+                continuationToken = response.Headers.ContinuationToken;
             } while (continuationToken != null);
 
             Assert.AreEqual(pagedStreamResults.Count, streamResults.Count);
@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(iterator.Count <= 1);
                 Assert.IsTrue(iterator.Resource.Count() <= 1);
                 pagedResults.AddRange(iterator);
-                continuationToken = iterator.Continuation;
+                continuationToken = iterator.ContinuationToken;
             } while (continuationToken != null);
 
             Assert.AreEqual(pagedResults.Count, results.Count);

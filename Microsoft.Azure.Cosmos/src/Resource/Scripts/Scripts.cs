@@ -74,7 +74,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(storedProcedure);
         /// 
         /// // Execute the stored procedure
-        /// CosmosItemResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(testPartitionId, "appendString", "Item as a string: ");
+        /// CosmosItemResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(
+        ///                               id, 
+        ///                               "Item as a string: ", 
+        ///                               new PartitionKey(testPartitionId));
         /// Console.WriteLine("sprocResponse.Resource");
         /// ]]>
         /// </code>
@@ -255,9 +258,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <typeparam name="TInput">The input type that is JSON serializable.</typeparam>
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
-        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="input">The JSON serializable input parameters.</param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
@@ -287,29 +290,33 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///    }";
         ///    
         /// Scripts scripts = this.container.GetScripts();
+        /// string sprocId = "appendString";
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
-        ///         id: "appendString",
+        ///         id: sprocId,
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(testPartitionId, "Item as a string: ");
+        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(
+        ///                         sprocId,
+        ///                         "Item as a string: ",
+        ///                         new PartitionKey(testPartitionId));
         /// Console.WriteLine(sprocResponse.Resource);
         /// /// ]]>
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
-            PartitionKey partitionKey,
             string storedProcedureId,
             TInput input,
+            PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item. <see cref="Microsoft.Azure.Documents.PartitionKey"/></param>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="streamPayload">The stream representing the input for the stored procedure.</param>
+        /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
@@ -339,12 +346,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///    }";
         ///    
         /// Scripts scripts = this.container.GetScripts();
+        /// string sprocId = "appendString";
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
-        ///         id: "appendString",
+        ///         id: sprocId,
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(testPartitionId, streamPayload: stream);
+        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
+        ///                         sprocId,
+        ///                         stream,
+        ///                         new PartitionKey(testPartitionId)), 
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
         ///     string stringResponse = await sr.ReadToEndAsync();
@@ -355,9 +366,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
-            PartitionKey partitionKey,
             string storedProcedureId,
             Stream streamPayload,
+            PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -616,8 +627,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///
         /// QueryDefinition sqlQuery = new QueryDefinition(
         ///     "SELECT VALUE udf.calculateTax(t.cost) FROM toDoActivity t where t.cost > @expensive and t.status = @status")
-        ///     .UseParameter("@expensive", 9000)
-        ///     .UseParameter("@status", "Done");
+        ///     .WithParameter("@expensive", 9000)
+        ///     .WithParameter("@status", "Done");
         ///
         /// FeedIterator<double> setIterator = this.container.Items.GetItemsQueryIterator<double>(
         ///     sqlQueryDefinition: sqlQuery,

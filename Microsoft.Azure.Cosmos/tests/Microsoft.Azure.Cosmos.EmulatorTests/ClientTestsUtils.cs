@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static Task<List<Database>> ReadFeedDatabases(DocumentClient client, int trys = 1)
         {
             Func<string, Task<DocumentFeedResponse<Database>>> listFn = (continuation) =>
-                client.ReadDatabaseFeedAsync(new FeedOptions { RequestContinuation = continuation });
+                client.ReadDatabaseFeedAsync(new FeedOptions { RequestContinuationToken = continuation });
 
             Console.WriteLine("ReadFeedDatabases");
             return ReadFeedAllRetry<Database>(listFn, trys);
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static Task<List<DocumentCollection>> ReadFeedCollections(DocumentClient client, string databaseLink, int trys = 1)
         {
             Func<string, Task<DocumentFeedResponse<DocumentCollection>>> listFn = (continuation) =>
-                client.ReadDocumentCollectionFeedAsync(databaseLink, new FeedOptions { RequestContinuation = continuation });
+                client.ReadDocumentCollectionFeedAsync(databaseLink, new FeedOptions { RequestContinuationToken = continuation });
 
             Console.WriteLine("ReadFeedCollections");
             return ReadFeedAllRetry(listFn, trys);
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Func<string, Task<DocumentFeedResponse<dynamic>>> listFn =
                 continuation =>
-                    client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuation = continuation });
+                    client.ReadDocumentFeedAsync(collectionLink, new FeedOptions { RequestContinuationToken = continuation });
 
             Console.WriteLine("ReadFeedDocuments");
             return ReadFeedAllRetry<dynamic>(listFn, trys);
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Func<string, Task<DocumentFeedResponse<StoredProcedure>>> listFn =
                 continuation =>
                     client.ReadStoredProcedureFeedAsync(collectionLink,
-                        new FeedOptions { RequestContinuation = continuation });
+                        new FeedOptions { RequestContinuationToken = continuation });
 
             Console.WriteLine("ReadFeedStoredProcedures");
             return ReadFeedAllRetry(listFn, trys);
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Func<string, Task<DocumentFeedResponse<UserDefinedFunction>>> listFn =
                 continuation =>
                     client.ReadUserDefinedFunctionFeedAsync(collectionLink,
-                        new FeedOptions { RequestContinuation = continuation });
+                        new FeedOptions { RequestContinuationToken = continuation });
 
             Console.WriteLine("ReadFeedUserDefinedFunctions");
             return ReadFeedAllRetry(listFn, trys);
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Func<string, Task<DocumentFeedResponse<Trigger>>> listFn =
                 continuation =>
-                    client.ReadTriggerFeedAsync(collectionLink, new FeedOptions { RequestContinuation = continuation });
+                    client.ReadTriggerFeedAsync(collectionLink, new FeedOptions { RequestContinuationToken = continuation });
 
             Console.WriteLine("ReadFeedTriggers");
             return ReadFeedAllRetry(listFn, trys);

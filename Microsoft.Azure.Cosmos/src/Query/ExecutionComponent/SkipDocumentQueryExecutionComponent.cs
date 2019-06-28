@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 {
                     updatedContinuationToken = new OffsetContinuationToken(
                         this.skipCount,
-                        sourcePage.Headers.Continuation).ToString();
+                        sourcePage.Headers.ContinuationToken).ToString();
                 }
             }
 

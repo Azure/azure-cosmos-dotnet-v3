@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool GetHasMoreResults()
         {
-            return !string.IsNullOrEmpty(this.Headers.Continuation);
+            return !string.IsNullOrEmpty(this.Headers.ContinuationToken);
         }
 
         internal static QueryResponse CreateSuccess(
@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the continuation token
         /// </summary>
-        public override string Continuation => this.Headers.Continuation;
+        public override string ContinuationToken => this.Headers.ContinuationToken;
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.

@@ -744,7 +744,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive").WithParameter("@expensive", 9000);
         /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
         ///     queryDefinition: queryDefinition, 
         ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
@@ -786,7 +786,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").UseParameter("@expensive", 9000);
+        /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").WithParameter("@expensive", 9000);
         /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     sqlQueryDefinition: sqlQuery, 
         ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
