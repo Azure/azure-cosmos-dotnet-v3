@@ -23,22 +23,26 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
         {
             // <GetRequestCharge>
             Container container = this.cosmosClient.GetContainer("database", "container");
+            string itemId = "myItem";
+            string partitionKey = "partitionKey";
+            string storedProcedureId = "storedProcedureId";
+            string queryText = "SELECT * FROM c";
 
             ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(
-                item: new { id = "myItem", pk = "partitionKey" },
-                partitionKey: new PartitionKey("partitionKey"));
+                item: new { id = itemId, pk = partitionKey },
+                partitionKey: new PartitionKey(partitionKey));
             var requestCharge = itemResponse.RequestCharge;
 
             Scripts scripts = container.Scripts;
             StoredProcedureExecuteResponse<object> sprocResponse = await scripts.ExecuteStoredProcedureAsync<object, object>(
-                storedProcedureId: "storedProcedureId",
+                storedProcedureId: storedProcedureId,
                 input: new object(),
-                partitionKey: new PartitionKey("partitionKey"));
+                partitionKey: new PartitionKey(partitionKey));
             requestCharge = sprocResponse.RequestCharge;
 
             FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(
-                 queryText: "SELECT * FROM c",
-                 requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey("partitionKey") });
+                 queryText: queryText,
+                 requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey(partitionKey) });
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<dynamic> feedResponse = await feedIterator.ReadNextAsync();
