@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
         public async Task DatabaseCreateWithThroughput()
         {
             // <DatabaseCreateWithThroughput>
+            //create the database with throughput
             string databaseName = "MyDatabaseName";
             await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
                     id: databaseName,

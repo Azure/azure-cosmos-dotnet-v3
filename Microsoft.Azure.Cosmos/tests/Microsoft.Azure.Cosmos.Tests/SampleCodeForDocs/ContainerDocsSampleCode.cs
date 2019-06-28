@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
         public async Task ContainerCreateWithThroughput()
         {
             // <ContainerCreateWithThroughput>
+            // Create a container with a partition key and provision throughput of 1000 RU/s
             string containerName = "myContainerName";
             string partitionKeyPath = "/myPartitionKey";
 
