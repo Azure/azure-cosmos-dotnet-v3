@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Send to the user the composite state for all ranges
-            response.Headers.Continuation = this.compositeContinuationToken.ToString();
+            response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
             return response;
         }
 

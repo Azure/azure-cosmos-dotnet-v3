@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync();
 
+        internal abstract void ClearSessionTokenCache(string collectionFullName);
+
         internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,

@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private async Task<DocumentServiceLeaseCore> TryReplaceLeaseAsync(
             DocumentServiceLeaseCore lease, 
-            Cosmos.PartitionKey partitionKey, 
+            Cosmos.PartitionKey? partitionKey, 
             string itemId)
         {
             try

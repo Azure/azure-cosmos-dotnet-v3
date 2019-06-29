@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task CleanUp(CosmosClient client)
         {
-            FeedIterator<DatabaseProperties> allDatabases = client.GetDatabaseIterator();
+            FeedIterator<DatabaseProperties> allDatabases = client.GetDatabaseQueryIterator<DatabaseProperties>();
 
             while (allDatabases.HasMoreResults)
             {
@@ -591,13 +591,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             do
             {
                 FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
-                   sqlQueryText: query,
+                   queryText: query,
                    requestOptions: queryRequestOptions,
                    continuationToken: continuationToken);
 
                 FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
                 results.AddRange(cosmosQueryResponse);
-                continuationToken = cosmosQueryResponse.Continuation;
+                continuationToken = cosmosQueryResponse.ContinuationToken;
             } while (continuationToken != null);
 
             return results;
@@ -620,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<T> results = new List<T>();
             FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
-                sqlQueryText: query,
+                queryText: query,
                 requestOptions: queryRequestOptions);
 
             while (itemQuery.HasMoreResults)
@@ -827,12 +827,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 foreach ((string, string) queryAndExpectedResult in queries)
                 {
                     FeedIterator<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
-                        sqlQueryText: queryAndExpectedResult.Item1,
+                        queryText: queryAndExpectedResult.Item1,
                         requestOptions: new QueryRequestOptions()
-                            {
-                                MaxItemCount = 1,
-                                PartitionKey = new Cosmos.PartitionKey(keys[i])
-                            });
+                        {
+                            MaxItemCount = 1,
+                            PartitionKey = new Cosmos.PartitionKey(keys[i]),
+                        });
 
                     List<Document> result = new List<Document>();
                     while (resultSetIterator.HasMoreResults)
@@ -877,14 +877,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             FeedResponse<dynamic> response = await resultSetIterator.ReadNextAsync();
             Assert.AreEqual(1, response.Count());
-            Assert.IsNull(response.Continuation);
+            Assert.IsNull(response.ContinuationToken);
 
             resultSetIterator = container.GetItemQueryIterator<dynamic>(
                "SELECT * FROM c WHERE c.pk = 'doc10'");
 
             response = await resultSetIterator.ReadNextAsync();
             Assert.AreEqual(0, response.Count());
-            Assert.IsNull(response.Continuation);
+            Assert.IsNull(response.ContinuationToken);
         }
 
         private struct QueryWithSpecialPartitionKeysArgs
@@ -1043,9 +1043,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             returnedDoc = (await container.GetItemQueryIterator<SpecialPropertyDocument>(
                 query,
                 requestOptions: new QueryRequestOptions()
-                    {
-                        MaxItemCount = 1,
-                        PartitionKey = new Cosmos.PartitionKey(args.ValueToPartitionKey),
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new Cosmos.PartitionKey(args.ValueToPartitionKey),
                 }).ReadNextAsync()).First();
 
             Assert.AreEqual(args.Value, getPropertyValueFunction(returnedDoc));
@@ -1202,11 +1202,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task TestQueryCrossPartitionWithLargeNumberOfKeysHelper(Container container, IEnumerable<Document> documents, QueryCrossPartitionWithLargeNumberOfKeysArgs args)
         {
             QueryDefinition query = new QueryDefinition(
-                $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").UseParameter("@keys", args.ExpectedPartitionKeyValues);
+                $"SELECT VALUE r.{args.PartitionKey} FROM r WHERE ARRAY_CONTAINS(@keys, r.{args.PartitionKey})").WithParameter("@keys", args.ExpectedPartitionKeyValues);
 
             HashSet<int> actualPartitionKeyValues = new HashSet<int>();
             FeedIterator<int> documentQuery = container.GetItemQueryIterator<int>(
-                    sqlQueryDefinition: query,
+                    queryDefinition: query,
                     requestOptions: new QueryRequestOptions() { MaxItemCount = -1, MaxConcurrency = 100 });
 
             while (documentQuery.HasMoreResults)
@@ -2131,7 +2131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             documentsFromWithDistinct.Add(jToken);
                         }
 
-                        continuationToken = cosmosQueryResponse.Continuation;
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
 
                     }
                     while (continuationToken != null);
@@ -2166,7 +2166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     List<JToken> documentsFromWithoutDistinct = new List<JToken>();
 
                     FeedIterator<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
-                        sqlQueryText: queryWithoutDistinct,
+                        queryText: queryWithoutDistinct,
                         requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
 
                     while (documentQueryWithoutDistinct.HasMoreResults)
@@ -2186,20 +2186,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     FeedIterator<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
-                       sqlQueryText: queryWithDistinct,
+                       queryText: queryWithDistinct,
                        requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
 
                     string continuationToken = null;
                     do
                     {
                         FeedIterator<JToken> cosmosQuery = container.GetItemQueryIterator<JToken>(
-                                   sqlQueryText: queryWithDistinct,
+                                   queryText: queryWithDistinct,
                                    continuationToken: continuationToken,
                                    requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
 
                         FeedResponse<JToken> cosmosQueryResponse = await cosmosQuery.ReadNextAsync();
                         documentsFromWithDistinct.AddRange(cosmosQueryResponse);
-                        continuationToken = cosmosQueryResponse.Continuation;
+                        continuationToken = cosmosQueryResponse.ContinuationToken;
                     }
                     while (continuationToken != null);
 
@@ -2887,7 +2887,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     {
                                         if (hasTop)
                                         {
-                                            querySpec.UseParameter(topValueName, top);
+                                            querySpec.WithParameter(topValueName, top);
                                         }
                                     }
 
@@ -3236,7 +3236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string.Format(CultureInfo.InvariantCulture, "SELECT TOP 1 * FROM r ORDER BY r.{0}", partitionKey),
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 10, MaxItemCount = -1 }).ReadNextAsync();
 
-            Assert.AreEqual(null, responseWithEmptyContinuationExpected.Continuation);
+            Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
 
             string[] queries = new[]
             {

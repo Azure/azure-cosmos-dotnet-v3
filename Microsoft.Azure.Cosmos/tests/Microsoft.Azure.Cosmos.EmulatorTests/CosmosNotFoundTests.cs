@@ -60,15 +60,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             var queryResponse = await crossPartitionQueryIterator.ReadNextAsync();
             Assert.IsNotNull(queryResponse);
-            Assert.AreEqual(HttpStatusCode.Gone, queryResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
 
             var queryIterator = container.GetItemQueryStreamIterator(
-                "select * from t where true", 
+                "select * from t where true",
                 requestOptions: new QueryRequestOptions()
                     {
                         MaxConcurrency = 1,
-                        PartitionKey = new Cosmos.PartitionKey("testpk")
-                    });
+                        PartitionKey = new Cosmos.PartitionKey("testpk"),
+                });
 
             this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());
 
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());
 
-                var feedIterator = container.GetItemStreamIterator();
+                var feedIterator = container.GetItemQueryStreamIterator();
                 this.VerifyNotFoundResponse(await feedIterator.ReadNextAsync());
 
                 dynamic randomUpsertItem = new { id = DoesNotExist, pk = DoesNotExist, status = 42 };

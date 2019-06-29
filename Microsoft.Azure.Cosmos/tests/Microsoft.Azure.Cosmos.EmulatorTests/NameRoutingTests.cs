@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = await container.ReadContainerAsync();
 
                 // read documentCollection feed.
-                FeedIterator<ContainerProperties> rr = database.GetContainerIterator();
+                FeedIterator<ContainerProperties> rr = database.GetContainerQueryIterator<ContainerProperties>();
                 List<ContainerProperties> settings = new List<ContainerProperties>();
                 while (rr.HasMoreResults)
                 {
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     doc3 = await container.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(resourceRandomId), id: resourceRandomId);
 
                     // read databaseCollection feed.
-                    FeedIterator<dynamic> itemIterator = container.GetItemIterator<dynamic>();
+                    FeedIterator<dynamic> itemIterator = container.GetItemQueryIterator<dynamic>(queryDefinition: null);
                     int count = 0;
                     while (itemIterator.HasMoreResults)
                     {
@@ -161,9 +161,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // query documents 
                     {
                         bool bFound = false;
-                        QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from c where c.id = @id").UseParameter("@id", doc1Id);
+                        QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from c where c.id = @id").WithParameter("@id", doc1Id);
                         FeedIterator<Document> docServiceQuery = container.GetItemQueryIterator<Document>(
-                            sqlQueryDefinition: sqlQueryDefinition);
+                            queryDefinition: sqlQueryDefinition);
                         while (docServiceQuery.HasMoreResults)
                         {
                             FeedResponse<Document> r = await docServiceQuery.ReadNextAsync();
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     // 
                     // read databaseCollection feed.
-                    FeedIterator<StoredProcedureProperties> storedProcedureIter = scripts.GetStoredProcedureIterator();
+                    FeedIterator<StoredProcedureProperties> storedProcedureIter = scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>();
                     List<StoredProcedureProperties> storedProcedures = new List<StoredProcedureProperties>();
                     while (storedProcedureIter.HasMoreResults)
                     {
@@ -454,11 +454,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions options = new QueryRequestOptions() { MaxConcurrency = 1, MaxItemCount = 1 };
             string sqlQueryText = @"select * from root r where r.title = ""My Book""";
-            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, requestOptions: options);
+            FeedIterator<LinqGeneralBaselineTests.Book> cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
             Assert.AreEqual(0, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             sqlQueryText = @"select * from root r where r.title = ""My new Book""";
-            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, requestOptions: options);
+            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
 
             myDocument.Title = "My old Book";
@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await collection.ReplaceItemAsync(myDocument, myDocument.Id);
 
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
-            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(sqlQueryText: sqlQueryText, requestOptions: options);
+            cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
         }
 

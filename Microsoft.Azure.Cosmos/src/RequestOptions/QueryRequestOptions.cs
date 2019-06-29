@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Globalization;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -84,7 +85,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
-        public PartitionKey PartitionKey { get; set; }
+        /// <remarks>
+        /// Only applicable to Item operations
+        /// </remarks>
+        public PartitionKey? PartitionKey { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -132,8 +136,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal ConsistencyLevel? ConsistencyLevel { get; set; }
 
-        internal bool EnableCrossPartitionQuery { get; set; }
-
         internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
 
         /// <summary>
@@ -147,9 +149,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="RequestMessage"/></param>
         internal override void PopulateRequestOptions(RequestMessage request)
         {
-            request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-            request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+            if (this.PartitionKey != null && request.ResourceType != ResourceType.Document)
+            {
+                throw new ArgumentException($"{nameof(this.PartitionKey)} can only be set for item operations");
+            }
+
+            // Cross partition is only applicable to item operations.
+            if (this.PartitionKey == null && !this.IsEffectivePartitionKeyRouting && request.ResourceType == ResourceType.Document)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+            }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
             RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
@@ -205,7 +214,8 @@ namespace Microsoft.Azure.Cosmos
                 PartitionKey = this.PartitionKey,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
-                Properties = this.Properties
+                Properties = this.Properties,
+                IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting
             };
 
             return queryRequestOptions;
@@ -232,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
+                request.Headers.ContinuationToken = continuationToken;
             }
         }
 

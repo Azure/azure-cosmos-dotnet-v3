@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
     /// The ItemProducer is the base unit of buffering and iterating through documents.
@@ -322,6 +323,8 @@ namespace Microsoft.Azure.Cosmos.Query
                         QueryRequestOptions.FillMaxItemCount(
                             cosmosRequestMessage,
                             pageSize);
+                        cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
+                        cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     });
 
                 this.fetchExecutionRangeAccumulator.EndFetchRange(
@@ -332,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.fetchSchedulingMetrics.Stop();
                 this.hasStartedFetching = true;
-                this.BackendContinuationToken = feedResponse.Headers.Continuation;
+                this.BackendContinuationToken = feedResponse.Headers.ContinuationToken;
                 this.ActivityId = Guid.Parse(feedResponse.Headers.ActivityId);
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccessStatusCode)
@@ -404,11 +407,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 bool hasPartitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey) != null;
                 if (!hasPartitionKey)
                 {
-                    request
-                        .ToDocumentServiceRequest()
-                        .RouteTo(new PartitionKeyRangeIdentity(
+                    request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(
                             this.queryContext.ContainerResourceId,
-                            this.PartitionKeyRange.Id));
+                            this.PartitionKeyRange.Id);
                 }
             }
         }
@@ -502,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryResponse queryResponse = await this.bufferedPages.TakeAsync(token);
             this.PreviousContinuationToken = this.currentContinuationToken;
-            this.currentContinuationToken = queryResponse.Headers.Continuation;
+            this.currentContinuationToken = queryResponse.Headers.ContinuationToken;
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
             this.itemsLeftInCurrentPage = queryResponse.Count;
 

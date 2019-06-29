@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
     ///
     /// QueryDefinition sqlQuery = new QueryDefinition(
     ///     "SELECT VALUE udf.calculateTax(t.cost) FROM toDoActivity t where t.cost > @expensive and t.status = @status")
-    ///     .UseParameter("@expensive", 9000)
-    ///     .UseParameter("@status", "Done");
+    ///     .WithParameter("@expensive", 9000)
+    ///     .WithParameter("@status", "Done");
     ///
     /// FeedIterator<double> feedIterator = this.container.Items.GetItemsQueryIterator<double>(
     ///     sqlQueryDefinition: sqlQuery,
