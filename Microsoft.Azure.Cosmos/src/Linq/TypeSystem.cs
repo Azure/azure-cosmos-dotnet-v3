@@ -24,7 +24,17 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static string GetMemberName(this MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
-            string memberName = null;
+            //!HACK START
+            if (memberInfo is PropertyInfo propertyInfo)
+            {
+                var name = (string)memberInfo.DeclaringType?
+                    .GetMethod("GetJsonName", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy)?
+                    .Invoke(null, new object[] {propertyInfo});
+                if (name != null)
+                    return name;
+            }
+            //!HACK END
+            
             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
             // So we check for JsonPropertyAttribute first.
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);

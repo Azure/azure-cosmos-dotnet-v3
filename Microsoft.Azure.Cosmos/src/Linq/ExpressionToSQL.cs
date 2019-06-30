@@ -685,6 +685,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlStringLiteral literal = SqlStringLiteral.Create(guidValue.ToString());
                     return SqlLiteralScalarExpression.Create(literal);
                 }
+                
+                //!HACK START
+                if (constantType == typeof(DateTimeOffset))
+                {
+                    SqlStringLiteral literal = SqlStringLiteral.Create(((DateTimeOffset)inputExpression.Value).UtcDateTime.ToString("O", CultureInfo.InvariantCulture));
+                    return SqlLiteralScalarExpression.Create(literal);
+                }
+                //!HACK END
             }
 
             if (inputExpression.Value is string stringValue)
