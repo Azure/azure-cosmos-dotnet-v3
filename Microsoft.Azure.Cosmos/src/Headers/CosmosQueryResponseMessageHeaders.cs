@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             string containerRid)
         {
-            base.Continuation = continauationToken;
+            base.ContinuationToken = continauationToken;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
             this.ResourceType = resourceType;
             this.ContainerRid = containerRid;
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal string DisallowContinuationTokenMessage { get; }
 
-        public override string Continuation
+        public override string ContinuationToken
         {
             get
             {
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException(this.DisallowContinuationTokenMessage);
                 }
 
-                return base.Continuation;
+                return base.ContinuationToken;
             }
 
             internal set
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual ResourceType ResourceType { get; }
 
-        internal string InternalContinuationToken => base.Continuation;
+        internal string InternalContinuationToken => base.ContinuationToken;
 
         internal CosmosQueryResponseMessageHeaders CloneKnownProperties()
         {
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new CosmosQueryResponseMessageHeaders(
-                continauationToken: sourceHeaders.Continuation,
+                continauationToken: sourceHeaders.ContinuationToken,
                 disallowContinuationTokenMessage: null,
                 resourceType: resourceType,
                 containerRid: containerRid)

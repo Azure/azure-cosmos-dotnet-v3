@@ -115,9 +115,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
             StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string, string>(
+                sprocId, 
                 Guid.NewGuid().ToString(),
-                sprocId,
-                new Cosmos.PartitionKey(testPartitionId),
+                new Cosmos.PartitionKey(testPartitionId), 
                 new StoredProcedureRequestOptions()
                 {
                     EnableScriptLogging = true
@@ -146,8 +146,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
             ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
-                cosmosJsonSerializer.ToStream(new string[] { Guid.NewGuid().ToString() }),
                 sprocId,
+                cosmosJsonSerializer.ToStream(new string[] { Guid.NewGuid().ToString() }),
                 new Cosmos.PartitionKey(testPartitionId),
                 new StoredProcedureRequestOptions()
                 {
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
-            StoredProcedureExecuteResponse<JArray> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<object, JArray>(null, sprocId, new Cosmos.PartitionKey(testPartitionId));
+            StoredProcedureExecuteResponse<JArray> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<object, JArray>(sprocId, null, new Cosmos.PartitionKey(testPartitionId));
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
             JArray jArray = sprocResponse;
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
-            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(null, sprocId, new Cosmos.PartitionKey(testPartitionId));
+            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(sprocId, null, new Cosmos.PartitionKey(testPartitionId));
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
             using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))
@@ -326,14 +326,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-           StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string[], string>(new string[] { "one" }, sprocId, new Cosmos.PartitionKey(testPartitionId));
+           StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string[], string>(sprocId, new string[] { "one" }, new Cosmos.PartitionKey(testPartitionId));
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
             string stringResponse = sprocResponse.Resource;
             Assert.IsNotNull(stringResponse);
             Assert.AreEqual("one", stringResponse);
 
-            StoredProcedureExecuteResponse<string> sprocResponse2 = await this.scripts.ExecuteStoredProcedureAsync<string, string>("one", sprocId, new Cosmos.PartitionKey(testPartitionId));
+            StoredProcedureExecuteResponse<string> sprocResponse2 = await this.scripts.ExecuteStoredProcedureAsync<string, string>(sprocId, "one", new Cosmos.PartitionKey(testPartitionId));
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse2.StatusCode);
 
             string stringResponse2 = sprocResponse2.Resource;

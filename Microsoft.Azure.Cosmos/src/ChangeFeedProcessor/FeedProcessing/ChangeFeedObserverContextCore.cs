@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// <exception cref="Exceptions.LeaseLostException">Thrown if other host acquired the lease or the lease was deleted</exception>
         public override Task CheckpointAsync()
         {
-            return this.checkpointer.CheckpointPartitionAsync(this.DocumentFeedResponse.Headers.Continuation);
+            return this.checkpointer.CheckpointPartitionAsync(this.DocumentFeedResponse.Headers.ContinuationToken);
         }
     }
 }

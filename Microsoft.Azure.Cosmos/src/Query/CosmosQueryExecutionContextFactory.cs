@@ -7,12 +7,14 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Net;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -110,15 +112,41 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
         {
-            if (this.innerExecutionContext == null)
+            bool isFirstExecute = false;
+            QueryResponse response = null;
+            while (true)
             {
-                this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(token);
-            }
+                // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
+                // execute context has incorrect values and should be recreated. This should only be done for the first 
+                // execution. If results have already been pulled an error should be returned to the user since it's 
+                // not possible to combine query results from multiple containers.
+                if (this.innerExecutionContext == null)
+                {
+                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                    isFirstExecute = true;
+                }
 
-            QueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
-            response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+                response = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
+                response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    break;
+                }
+
+                if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.Headers.SubStatusCode == SubStatusCodes.NameCacheIsStale)
+                {
+                    await this.ForceRefreshCollectionCacheAsync(cancellationToken);
+                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                    isFirstExecute = false;
+                }
+                else
+                {
+                    break;
+                }
+            }
 
             return response;
         }
@@ -129,6 +157,22 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 this.innerExecutionContext.Dispose();
             }
+        }
+
+        private async Task ForceRefreshCollectionCacheAsync(CancellationToken cancellationToken)
+        {
+            CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+               OperationType.Query,
+               this.cosmosQueryContext.ResourceTypeEnum,
+               this.cosmosQueryContext.ResourceLink.OriginalString,
+               AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
+            {
+                request.ForceNameCacheRefresh = true;
+                await collectionCache.ResolveCollectionAsync(request, cancellationToken);
+            }
+
+            this.cosmosQueryContext.QueryClient.ClearSessionTokenCache(this.cosmosQueryContext.ResourceLink.OriginalString);
         }
 
         private async Task<ContainerProperties> GetContainerPropertiesAsync(CancellationToken cancellationToken)
@@ -354,13 +398,13 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 // Dis-ambiguate the NonePK if used 
                 PartitionKeyInternal partitionKeyInternal = null;
-                if (Object.ReferenceEquals(queryRequestOptions.PartitionKey, Cosmos.PartitionKey.None))
+                if (queryRequestOptions.PartitionKey.Value.IsNone)
                 {
                     partitionKeyInternal = collection.GetNoneValue();
                 }
                 else
                 {
-                    partitionKeyInternal = queryRequestOptions.PartitionKey.Value;
+                    partitionKeyInternal = queryRequestOptions.PartitionKey.Value.InternalKey;
                 }
 
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(

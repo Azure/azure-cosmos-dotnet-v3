@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
-    public class CosmosItemProducerUnitTests
+    public class ItemProducerTreeUnitTests
     {
         [TestMethod]
         public async Task TestItemProducerTreeWithFailure()

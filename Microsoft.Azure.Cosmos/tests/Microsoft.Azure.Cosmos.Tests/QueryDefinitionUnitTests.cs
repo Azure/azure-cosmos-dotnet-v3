@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string paramName = "@account";
             string paramValue = "12345";
             QueryDefinition sqlQueryDefinition = new QueryDefinition(query)
-                .UseParameter(paramName, paramValue);
+                .WithParameter(paramName, paramValue);
 
             SqlQuerySpec sqlQuerySpec = sqlQueryDefinition.ToSqlQuerySpec();
             Assert.AreEqual(query, sqlQuerySpec.QueryText);
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(paramValue, sqlParameter.Value);
 
             string newParamValue = "9001";
-            sqlQueryDefinition.UseParameter(paramName, newParamValue);
+            sqlQueryDefinition.WithParameter(paramName, newParamValue);
             sqlQuerySpec = sqlQueryDefinition.ToSqlQuerySpec();
             Assert.AreEqual(query, sqlQuerySpec.QueryText);
             Assert.AreEqual(1, sqlQuerySpec.Parameters.Count);
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnNullConnectionString()
         {
             QueryDefinition sqlQueryDefinition = new QueryDefinition("select * from s where s.Account = 1234");
-            sqlQueryDefinition.UseParameter(null, null);
+            sqlQueryDefinition.WithParameter(null, null);
         }
     }
 }

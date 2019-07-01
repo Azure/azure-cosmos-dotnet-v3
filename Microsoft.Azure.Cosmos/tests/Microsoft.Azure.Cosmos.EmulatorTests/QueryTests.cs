@@ -1436,8 +1436,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 response = await client.ReadDocumentFeedAsync(coll, feedOptions);
                 result.AddRange(response);
-                feedOptions.RequestContinuation = response.ResponseContinuation;
-            } while (!string.IsNullOrEmpty(feedOptions.RequestContinuation));
+                feedOptions.RequestContinuationToken = response.ResponseContinuation;
+            } while (!string.IsNullOrEmpty(feedOptions.RequestContinuationToken));
             double totalMillParallelReedFeed2 = (DateTime.Now - startTime).TotalMilliseconds;
 
             var enumerableIds2 = result.Select(doc => ((Document)doc).Id).ToArray();
@@ -1642,7 +1642,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             {
                                 EnableCrossPartitionQuery = true,
                                 MaxItemCount = 1,
-                                RequestContinuation = continuationToken,
+                                RequestContinuationToken = continuationToken,
                                 MaxDegreeOfParallelism = maxDop
                             }).AsDocumentQuery().ExecuteNextAsync();
                     Assert.Fail("Expected exception");
@@ -2473,7 +2473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             EnableCrossPartitionQuery = true,
                             MaxDegreeOfParallelism = -1,
-                            RequestContinuation = continuationToken,
+                            RequestContinuationToken = continuationToken,
                             MaxItemCount = pageSize,
                             PopulateQueryMetrics = true
                         };

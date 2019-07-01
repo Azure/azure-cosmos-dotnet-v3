@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Only applicable to Item operations
         /// </remarks>
-        public PartitionKey PartitionKey { get; set; }
+        public PartitionKey? PartitionKey { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Cross partition is only applicable to item operations.
-            if (this.PartitionKey == null && request.ResourceType == ResourceType.Document)
+            if (this.PartitionKey == null && !this.IsEffectivePartitionKeyRouting && request.ResourceType == ResourceType.Document)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
             }
@@ -214,7 +214,8 @@ namespace Microsoft.Azure.Cosmos
                 PartitionKey = this.PartitionKey,
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
-                Properties = this.Properties
+                Properties = this.Properties,
+                IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting
             };
 
             return queryRequestOptions;
@@ -241,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
-                request.Headers.Continuation = continuationToken;
+                request.Headers.ContinuationToken = continuationToken;
             }
         }
 

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
 
             Headers headers = new Headers();
-            headers.Continuation = continuationToken;
+            headers.ContinuationToken = continuationToken;
             headers.ActivityId = Guid.NewGuid().ToString();
 
             QueryResponse message = QueryResponse.CreateSuccess(

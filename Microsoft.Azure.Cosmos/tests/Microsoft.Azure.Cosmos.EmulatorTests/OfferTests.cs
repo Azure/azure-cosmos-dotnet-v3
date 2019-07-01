@@ -432,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     FeedOptions options = new FeedOptions
                     {
-                        RequestContinuation = continuation,
+                        RequestContinuationToken = continuation,
                         MaxItemCount = pageSize
                     };
 
@@ -687,7 +687,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     IDocumentQuery<dynamic> invalidQuery = client.CreateOfferQuery(
                         "select * from root",
-                        new FeedOptions() { RequestContinuation = "-tEGAI2wSgAoAAAAAAAAAA==#count3" })
+                        new FeedOptions() { RequestContinuationToken = "-tEGAI2wSgAoAAAAAAAAAA==#count3" })
                         .AsDocumentQuery();
 
                     DocumentFeedResponse<dynamic> invalidResult = invalidQuery.ExecuteNextAsync().Result;
