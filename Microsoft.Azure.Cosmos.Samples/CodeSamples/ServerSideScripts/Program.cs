@@ -128,7 +128,7 @@
 
             // 3. Run the script. Pass "Hello, " as parameter. 
             // The script will take the 1st document and echo: Hello, <document as json>.
-            StoredProcedureExecuteResponse<string> response = await container.Scripts.ExecuteStoredProcedureAsync<string, string>(new PartitionKey(doc.LastName), scriptId, "Hello");
+            StoredProcedureExecuteResponse<string> response = await container.Scripts.ExecuteStoredProcedureAsync<string, string>(scriptId, "Hello", new PartitionKey(doc.LastName));
 
             Console.WriteLine("Result from script: {0}\r\n", response.Resource);
 
@@ -181,7 +181,7 @@
                 dynamic[] args = new dynamic[] { JsonConvert.DeserializeObject<dynamic>(argsJson) };
 
                 // 6. execute the batch.
-                StoredProcedureExecuteResponse<int> scriptResult = await cosmosScripts.ExecuteStoredProcedureAsync<dynamic, int>(new PartitionKey("Andersen"), scriptId, args);
+                StoredProcedureExecuteResponse<int> scriptResult = await cosmosScripts.ExecuteStoredProcedureAsync<dynamic, int>(scriptId, args, new PartitionKey("Andersen"));
 
                 // 7. Prepare for next batch.
                 int currentlyInserted = scriptResult.Resource;
@@ -191,7 +191,7 @@
             // 8. Validate
             int numDocs = 0;
 
-            FeedIterator<dynamic> setIterator = container.GetItemIterator<dynamic>();
+            FeedIterator<dynamic> setIterator = container.GetItemQueryIterator<dynamic>();
             while (setIterator.HasMoreResults)
             {
                 FeedResponse<dynamic> response = await setIterator.ReadNextAsync();
@@ -227,9 +227,9 @@
             {
                 // 3. Run the stored procedure.
                 StoredProcedureExecuteResponse<OrderByResult> response = await cosmosScripts.ExecuteStoredProcedureAsync<object, OrderByResult>(
-                    new PartitionKey("Andersen"),
                     scriptId,
-                    new { filterQuery, orderByFieldName, continuationToken });
+                    new { filterQuery, orderByFieldName, continuationToken },
+                    new PartitionKey("Andersen"));
 
                 // 4. Process stored procedure response.
                 continuationToken = response.Resource.Continuation;
