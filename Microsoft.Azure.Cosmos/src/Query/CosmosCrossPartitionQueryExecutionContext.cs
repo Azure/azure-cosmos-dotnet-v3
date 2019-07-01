@@ -414,14 +414,6 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken token)
         {
             CollectionCache collectionCache = await this.queryContext.QueryClient.GetCollectionCacheAsync();
-            this.TraceInformation(string.Format(
-                CultureInfo.InvariantCulture,
-                "parallel~contextbase.initializeasync, queryspec {0}, maxbuffereditemcount: {1}, target partitionkeyrange count: {2}, maximumconcurrencylevel: {3}, documentproducer initial page size {4}",
-                JsonConvert.SerializeObject(querySpecForInit, DefaultJsonSerializationSettings.Value),
-                this.actualMaxBufferedItemCount,
-                partitionKeyRanges.Count,
-                this.comparableTaskScheduler.MaximumConcurrencyLevel,
-                initialPageSize));
 
             List<ItemProducerTree> itemProducerTrees = new List<ItemProducerTree>();
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
@@ -550,11 +542,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
-                this.TraceWarning(string.Format(
-                    CultureInfo.InvariantCulture,
-                    "Could not find continuation token: {0}",
-                    firstContinuationToken.ToString()));
-                throw new BadRequestException(RMResources.InvalidContinuationToken);
+                throw new BadRequestException($"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
             }
 
             foreach (Tuple<TContinuationToken, Range<string>> suppledContinuationToken in suppliedContinuationTokens)
@@ -572,11 +560,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Could not find the child ranges
                 if (replacementRanges.Count() == 0)
                 {
-                    this.TraceWarning(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Could not find continuation token: {0}",
-                        continuationToken.ToString()));
-                    throw new BadRequestException(RMResources.InvalidContinuationToken);
+                    throw new BadRequestException($"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
                 }
 
                 // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
@@ -593,11 +577,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    this.TraceWarning(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "PMax = C2Max > C2Min > C1Max > C1Min = PMin: {0}",
-                        continuationToken.ToString()));
-                    throw new BadRequestException(RMResources.InvalidContinuationToken);
+                    throw new BadRequestException($"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
                 }
 
                 foreach (PartitionKeyRange partitionKeyRange in replacementRanges)
@@ -617,33 +597,6 @@ namespace Microsoft.Azure.Cosmos.Query
         protected virtual long IncrementResponseLengthBytes(long incrementValue)
         {
             return Interlocked.Add(ref this.totalResponseLengthBytes, incrementValue);
-        }
-
-        /// <summary>
-        /// Traces a warning with the proper formatting.
-        /// </summary>
-        /// <param name="message">The message to trace.</param>
-        protected void TraceWarning(string message)
-        {
-            DefaultTrace.TraceWarning(this.GetTrace(message));
-        }
-
-        /// <summary>
-        /// Traces a verbose message with the proper formatting.
-        /// </summary>
-        /// <param name="message">The message to trace.</param>
-        protected void TraceVerbose(string message)
-        {
-            DefaultTrace.TraceVerbose(this.GetTrace(message));
-        }
-
-        /// <summary>
-        /// Traces information with the proper formatting.
-        /// </summary>
-        /// <param name="message">The message to trace.</param>
-        protected void TraceInformation(string message)
-        {
-            DefaultTrace.TraceInformation(this.GetTrace(message));
         }
 
         /// <summary>
@@ -715,15 +668,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.TryScheduleFetch(producer);
                 }
             }
-
-            this.TraceVerbose(string.Format(
-                CultureInfo.InvariantCulture,
-                "Id: {0}, size: {1}, resourceUnitUsage: {2}, taskScheduler.CurrentRunningTaskCount: {3}",
-                producer.PartitionKeyRange.Id,
-                itemsBuffered,
-                resourceUnitUsage,
-                this.comparableTaskScheduler.CurrentRunningTaskCount,
-                this.queryContext.CorrelatedActivityId));
         }
 
         /// <summary>

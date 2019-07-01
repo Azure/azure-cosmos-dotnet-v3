@@ -201,32 +201,18 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         if (suppliedCompositeContinuationToken.Range == null || suppliedCompositeContinuationToken.Range.IsEmpty)
                         {
-                            this.TraceWarning(string.Format(
-                                CultureInfo.InvariantCulture,
-                                "Invalid Range in the continuation token {0} for Parallel~Context.",
-                                requestContinuation));
-                            throw new BadRequestException(RMResources.InvalidContinuationToken);
+                            throw new BadRequestException($"Invalid Range in the continuation token {requestContinuation} for Parallel~Context.");
                         }
                     }
 
                     if (suppliedCompositeContinuationTokens.Length == 0)
                     {
-                        this.TraceWarning(string.Format(
-                            CultureInfo.InvariantCulture,
-                            "Invalid format for continuation token {0} for Parallel~Context.",
-                            requestContinuation));
-                        throw new BadRequestException(RMResources.InvalidContinuationToken);
+                        throw new BadRequestException($"Invalid format for continuation token {requestContinuation} for Parallel~Context.");
                     }
                 }
                 catch (JsonException ex)
                 {
-                    this.TraceWarning(string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Invalid JSON in continuation token {0} for Parallel~Context, exception: {1}",
-                        requestContinuation,
-                        ex.Message));
-
-                    throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
+                    throw new BadRequestException($"Invalid JSON in continuation token {requestContinuation} for Parallel~Context, exception: {ex.Message}");
                 }
 
                 filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);
