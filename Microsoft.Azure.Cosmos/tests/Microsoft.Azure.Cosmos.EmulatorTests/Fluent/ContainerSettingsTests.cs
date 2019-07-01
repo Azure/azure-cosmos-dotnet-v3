@@ -118,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
 
-        [Ignore]
         [TestMethod]
         public async Task TestConflictResolutionPolicy()
         {

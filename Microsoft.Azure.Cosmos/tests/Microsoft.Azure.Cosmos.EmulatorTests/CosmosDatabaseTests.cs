@@ -434,9 +434,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void ValidateHeaders(DatabaseResponse cosmosDatabaseResponse)
         {
-            // Test emulator is regression and commented out to unblock
-            // Assert.IsNotNull(cosmosDatabaseResponse.MaxResourceQuota);
-            // Assert.IsNotNull(cosmosDatabaseResponse.CurrentResourceQuotaUsage);
+            Assert.IsNotNull(cosmosDatabaseResponse.MaxResourceQuota);
+            Assert.IsNotNull(cosmosDatabaseResponse.CurrentResourceQuotaUsage);
         }
     }
 }
