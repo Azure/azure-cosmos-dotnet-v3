@@ -14,34 +14,31 @@ namespace Microsoft.Azure.Cosmos.Query
         public bool isDone { get; set; }
         public int count { get; set; }
 
-        public static ToDoItem Create(string id = null, string pk = null)
+        public static ToDoItem Create(string idPrefix)
         {
-            if (id == null)
+            if(idPrefix == null)
             {
-                id = Guid.NewGuid().ToString();
+                idPrefix = string.Empty;
             }
 
-            if (pk == null)
-            {
-                pk = Guid.NewGuid().ToString();
-            }
+            string id = idPrefix + Guid.NewGuid().ToString();
 
             return new ToDoItem()
             {
                 id = id,
-                pk = pk,
+                pk = Guid.NewGuid().ToString(),
                 cost = 9000.00001,
                 isDone = true,
                 count = 42
             };
         }
 
-        public static ReadOnlyCollection<ToDoItem> CreateItems(int count)
+        public static ReadOnlyCollection<ToDoItem> CreateItems(int count, string idPrefix)
         {
             List<ToDoItem> items = new List<ToDoItem>();
             for (int i = 0; i < count; i++)
             {
-                items.Add(ToDoItem.Create());
+                items.Add(ToDoItem.Create(idPrefix));
             }
 
             return items.AsReadOnly();

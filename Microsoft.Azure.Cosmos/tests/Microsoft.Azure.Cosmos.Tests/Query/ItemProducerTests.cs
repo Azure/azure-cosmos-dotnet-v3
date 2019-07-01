@@ -4,15 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -35,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new int[] { pageSize },
                 new int[] { pageSize, 0 },
                 new int[] { 0, pageSize },
+                new int[] { pageSize, pageSize },
                 new int[] { pageSize, 0, 0 },
                 new int[] {0, pageSize, 0 },
                 new int[] {0, 0, pageSize },
@@ -42,12 +42,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new int[] { pageSize, pageSize, pageSize },
             };
 
-            foreach (var combination in combinations)
+            foreach (int[] combination in combinations)
             {
                 (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(
                     responseMessagePageSizes: combination,
                     maxPageSize: maxPageSize,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: this.cancellationToken);
 
                 ItemProducer itemProducer = itemFactory.itemProducer;
 
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.IsTrue(itemProducer.HasMoreResults);
 
-                while ((await itemProducer.MoveNextAsync(cancellationToken)).successfullyMovedNext)
+                while ((await itemProducer.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
                 {
                     Assert.IsTrue(itemProducer.HasMoreResults);
                     string jsonValue = itemProducer.Current.ToString();
@@ -71,156 +71,119 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        //        [TestMethod]
-        //        [Owner("brchon")]
-        //        public async Task BufferMore()
-        //        {
-        //            for (int iteration = 0; iteration < iterations; iteration++)
-        //            {
-        //                int pageSize = 100;
-        //                int numPages = (int)Math.Ceiling(((double)MockItemProducerFactory.Dataset.Count / pageSize));
-        //                ItemProducer ItemProducer = MockItemProducerFactory.Create(initialPageSize: pageSize);
-        //                Assert.AreEqual(0, ItemProducer.BufferedItemCount);
+        [TestMethod]
+        [DataRow(50, new int[] { 2, 4, 0, 5, 1, 6, 3, 2, 50, 0 })]
+        [DataRow(5, new int[] { 0, 1 })]
+        [DataRow(5, new int[] { 5, 0, 4 })]
+        public async Task BufferMore(int maxPageSize, int[] pageSizes)
+        {
+            (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(
+                responseMessagePageSizes: pageSizes,
+                maxPageSize: maxPageSize,
+                cancellationToken: this.cancellationToken);
 
-        //                // Single thread
-        //                for (int iterations = 0; iterations < 10; iterations++)
-        //                {
-        //                    // Only first buffer more should go through
-        //                    await ItemProducer.BufferMoreIfEmpty(CancellationToken.None);
-        //                    Assert.AreEqual(pageSize, ItemProducer.BufferedItemCount);
-        //                }
+            ItemProducer itemProducer = itemFactory.itemProducer;
+            int currentItemCount = pageSizes[0];
 
-        //                for (int roundTrip = 1; roundTrip < numPages; roundTrip++)
-        //                {
-        //                    await ItemProducer.BufferMoreItems(CancellationToken.None);
-        //                    Assert.AreEqual(pageSize * (roundTrip + 1), ItemProducer.BufferedItemCount);
-        //                }
+            // Single thread
+            for (int iterations = 0; iterations < 10; iterations++)
+            {
+                // Only first buffer more should go through
+                await itemProducer.BufferMoreIfEmptyAsync(this.cancellationToken);
+                Assert.AreEqual(currentItemCount, itemProducer.BufferedItemCount);
+            }
 
-        //                for (int roundTrip = 0; roundTrip < numPages; roundTrip++)
-        //                {
-        //                    await ItemProducer.BufferMoreItems(CancellationToken.None);
-        //                    Assert.AreEqual(MockItemProducerFactory.Dataset.Count, ItemProducer.BufferedItemCount);
-        //                }
+            for (int roundTrip = 1; roundTrip < pageSizes.Length; roundTrip++)
+            {
+                await itemProducer.BufferMoreDocumentsAsync(this.cancellationToken);
+                currentItemCount += pageSizes[roundTrip];
+                Assert.AreEqual(currentItemCount, itemProducer.BufferedItemCount);
+            }
 
-        //                // Parallel
-        //                List<Task> tasks = new List<Task>();
-        //                ItemProducer = MockItemProducerFactory.Create(initialPageSize: pageSize);
-        //                for (int i = 0; i < numPages / 2; i++)
-        //                {
-        //                    tasks.Add(Task.Run(async () => { await ItemProducer.BufferMoreItems(CancellationToken.None); }));
-        //                }
+            Assert.AreEqual(itemFactory.allItems.Count, itemProducer.BufferedItemCount);
 
-        //                await Task.WhenAll(tasks);
-        //                Assert.AreEqual(pageSize * (numPages / 2), ItemProducer.BufferedItemCount);
-        //            }
-        //        }
+            // Verify that Buffer More does nothing after all pages are already loaded
+            for (int roundTrip = 0; roundTrip < pageSizes.Length; roundTrip++)
+            {
+                await itemProducer.BufferMoreDocumentsAsync(this.cancellationToken);
+                Assert.AreEqual(itemFactory.allItems.Count, itemProducer.BufferedItemCount);
+            }
 
-        //        [TestMethod]
-        //        [Owner("brchon")]
-        //        public async Task ConcurrentMoveNextAndBufferMore()
-        //        {
-        //            Random random = new Random();
-        //            for (int iteration = 0; iteration < iterations; iteration++)
-        //            {
-        //                ItemProducer ItemProducer = MockItemProducerFactory.Create(initialPageSize: 1);
+            // Parallel
+            itemFactory = MockItemProducerFactory.Create(
+               responseMessagePageSizes: pageSizes,
+               maxPageSize: 10,
+               cancellationToken: this.cancellationToken);
+            itemProducer = itemFactory.itemProducer;
 
-        //                // BufferMore
-        //                // Fire and Forget this task.
-        //#pragma warning disable 4014
-        //                Task.Run(() => BufferMoreInBackground(ItemProducer));
-        //#pragma warning restore 4014
+            List<Task> tasks = new List<Task>();
+            for (int i = 0; i < pageSizes.Length; i++)
+            {
+                tasks.Add(Task.Run(async () => { await itemProducer.BufferMoreDocumentsAsync(this.cancellationToken); }));
+            }
 
-        //                // MoveNextAsync
-        //                List ItemsRead = new List();
-        //                while (await ItemProducer.MoveNextAsync(CancellationToken.None))
-        //                {
-        //                    ItemsRead.Add(ItemProducer.Current);
-        //                    await Task.Delay(random.Next(0, 10));
-        //                }
+            await Task.WhenAll(tasks);
+            Assert.AreEqual(currentItemCount, itemProducer.BufferedItemCount);
+        }
 
-        //                Assert.IsTrue(ItemsRead.SequenceEqual(MockItemProducerFactory.Dataset));
-        //            }
-        //        }
+        [TestMethod]
+        public async Task ConcurrentMoveNextAndBufferMore()
+        {
+            int[] pageSizes = new int[] { 2, 3, 1, 4 };
+            (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(
+               responseMessagePageSizes: pageSizes,
+               maxPageSize: 10,
+               responseDelay: TimeSpan.FromSeconds(1),
+               cancellationToken: this.cancellationToken);
 
-        //        [TestMethod]
-        //        [Owner("brchon")]
-        //        public async Task TestForUnobservedExceptions()
-        //        {
-        //            this.unhandledException = false;
-        //            TaskScheduler.UnobservedTaskException += this.TaskScheduler_UnobservedTaskException;
+            ItemProducer itemProducer = itemFactory.itemProducer;
 
-        //            Random random = new Random();
-        //            for (int iteration = 0; iteration < iterations; iteration++)
-        //            {
-        //                ItemProducer ItemProducer = MockItemProducerFactory.Create(
-        //                    initialPageSize: 1,
-        //                    throwExceptions: true);
+            // BufferMore
+            // Fire and Forget this task.
+#pragma warning disable 4014
+            Task.Run(() => itemProducer.BufferMoreDocumentsAsync(this.cancellationToken));
+#pragma warning restore 4014
 
-        //                // BufferMore
-        //                // Fire and Forget this task.
-        //#pragma warning disable 4014
-        //                Task.Run(async () => await BufferMoreInBackground(ItemProducer));
-        //#pragma warning restore 4014
+            List<ToDoItem> itemsRead = new List<ToDoItem>();
+            Assert.AreEqual(0, itemProducer.BufferedItemCount, "Mocked response should be delayed until after move next is called.");
 
-        //                bool ItemProducerFaulted = false;
-        //                bool hasMoreResults = true;
-        //                // MoveNextAsync
-        //                while (hasMoreResults && !ItemProducerFaulted)
-        //                {
-        //                    try
-        //                    {
-        //                        hasMoreResults = await ItemProducer.MoveNextAsync(CancellationToken.None);
-        //                        await Task.Delay(10);
-        //                    }
-        //                    catch (Exception)
-        //                    {
-        //                        ItemProducerFaulted = true;
-        //                    }
-        //                }
-        //            }
+            int itemsToRead = pageSizes[0] + pageSizes[1];
+            // Call move next while buffer more is waiting for response. 
+            // Move next should wait for buffer more to complete then use the results of the buffer more.
+            List<ToDoItem> currentPage = await this.ReadItemProducer(itemProducer, itemsToRead);
+            itemsRead.AddRange(currentPage);
 
-        //            this.AssertNoUnhandledException();
-        //        }
+            Assert.AreEqual(itemsToRead, itemsRead.Count, "All of the first and 2nd page should be read.");
+            Assert.AreEqual(1, itemProducer.BufferedItemCount, "The last element should still be buffered. Moving next will cause another buffer.");
 
-        //        private async Task BufferMoreInBackground(ItemProducer ItemProducer)
-        //        {
-        //            while (true)
-        //            {
-        //                await ItemProducer.BufferMoreItems(CancellationToken.None);
-        //                await Task.Delay(10);
-        //            }
-        //        }
+            itemsToRead = pageSizes[2] + pageSizes[3];
+#pragma warning disable 4014
+            Task.Run(() => itemProducer.MoveNextAsync(this.cancellationToken));
+#pragma warning restore 4014
 
-        //        [SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", Justification = "Function Reviewed")]
-        //        private void AssertNoUnhandledException()
-        //        {
-        //            GC.Collect();
-        //            GC.WaitForPendingFinalizers();
-        //            Assert.IsFalse(this.unhandledException, "Caught unhandled exception");
-        //        }
+            await itemProducer.BufferMoreDocumentsAsync(this.cancellationToken);
+            Assert.AreEqual(itemsToRead, itemProducer.BufferedItemCount, "2nd Page should be loaded.");
+        }
 
-        //        private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
-        //        {
-        //            this.unhandledException = true;
-        //        }
+        private async Task<List<ToDoItem>> ReadItemProducer(ItemProducer itemProducer, int numItems)
+        {
+            List<ToDoItem> itemsRead = new List<ToDoItem>();
+            for (int i = 0; i < numItems; i++)
+            {
+                (bool successfullyMovedNext, QueryResponse failureResponse) movedNext = await itemProducer.MoveNextAsync(this.cancellationToken);
+                Assert.IsTrue(movedNext.successfullyMovedNext);
+                Assert.IsTrue(itemProducer.HasMoreResults);
+                itemsRead.Add(this.ConvertCosmosElement(itemProducer.Current));
+            }
 
-        //[TestMethod]
-        //public async Task TestEmptyPages()
-        //{
-        //        ItemProducer ItemProducer = MockItemProducerFactory.Create(
-        //            initialPageSize: 10,
-        //            returnEmptyPages: true);
+            return itemsRead;
+        }
 
-        //        List ItemsRead = new List();
-        //        await ItemProducer.MoveNextAsync(CancellationToken.None);
-        //        while (ItemProducer.HasMoreResults)
-        //        {
-        //            ItemsRead.Add(ItemProducer.Current);
-        //            await ItemProducer.MoveNextAsync(CancellationToken.None);
-        //        }
-
-        //        Assert.IsTrue(ItemsRead.SequenceEqual(MockItemProducerFactory.Dataset));
-        //    }
-        //}
+        private ToDoItem ConvertCosmosElement(CosmosElement element)
+        {
+            string jsonValue = element.ToString();
+            ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+            return item;
+        }
     }
 }

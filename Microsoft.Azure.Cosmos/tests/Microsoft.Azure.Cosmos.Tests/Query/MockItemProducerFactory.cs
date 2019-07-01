@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuationToken = null,
             int maxPageSize = 50,
             ItemProducer.ProduceAsyncCompleteDelegate completeDelegate = null,
+            TimeSpan? responseDelay = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if(responseMessagePageSizes == null)
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     newContinuationToken = Guid.NewGuid().ToString();
                 }
 
-                (QueryResponse response, ReadOnlyCollection<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(newContinuationToken, responseMessagePageSizes[i]);
+                (QueryResponse response, ReadOnlyCollection<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create( $"page{i}-", newContinuationToken, responseMessagePageSizes[i]);
 
                 allItems.AddRange(queryResponse.items);
 
@@ -80,7 +81,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<PartitionKeyRangeIdentity>(),
                         It.IsAny<bool>(),
                         It.IsAny<int>(),
-                        cancellationToken)).Returns(Task.FromResult(queryResponse.response));
+                        cancellationToken))
+                        .Callback(() =>
+                        {
+                            if (responseDelay.HasValue)
+                            {
+                                Thread.Sleep(responseDelay.Value);
+                            }
+                        })
+                        .Returns(Task.FromResult(queryResponse.response));
                 previousContinuationToken = newContinuationToken;
             }
 

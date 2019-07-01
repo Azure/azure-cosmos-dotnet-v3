@@ -23,10 +23,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static readonly CosmosSerializer cosmosSerializer = new CosmosJsonSerializerCore();
 
         public static (QueryResponse queryResponse, ReadOnlyCollection<ToDoItem> items) Create(
+            string itemIdPrefix,
             string continuationToken,
             int itemCount = 50)
         {
-            ReadOnlyCollection<ToDoItem> items = ToDoItem.CreateItems(itemCount);
+            ReadOnlyCollection<ToDoItem> items = ToDoItem.CreateItems(itemCount, itemIdPrefix);
             MemoryStream memoryStream = (MemoryStream)cosmosSerializer.ToStream<IList<ToDoItem>>(items);
             long responseLengthBytes = memoryStream.Length;
 
