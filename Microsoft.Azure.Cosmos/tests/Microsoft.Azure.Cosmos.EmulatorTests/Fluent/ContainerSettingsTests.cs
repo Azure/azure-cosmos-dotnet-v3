@@ -145,9 +145,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Re-create with custom policy
             string sprocName = "customresolsproc";
+            Uri sprocPath = UriFactory.CreateStoredProcedureUri(this.database.Id, containerName, sprocName);
             containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithConflictResolution()
-                        .WithCustomStoredProcedureResolution(sprocName)
+                        .WithCustomStoredProcedureResolution(sprocPath.ToString())
                         .Attach()
                     .CreateAsync();
 
