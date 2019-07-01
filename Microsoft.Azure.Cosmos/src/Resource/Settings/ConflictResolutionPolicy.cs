@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <example>
         /// <![CDATA[
-        /// conflictResolutionPolicy.ConflictResolutionProcedure = "/name/first";
+        /// conflictResolutionPolicy.ConflictResolutionProcedure = "dbs/databaseName/colls/containerName/sprocs/storedProcedureName";
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
