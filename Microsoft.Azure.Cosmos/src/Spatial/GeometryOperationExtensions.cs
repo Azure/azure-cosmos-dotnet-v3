@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Operations supported on <see cref="Geometry" /> type in the Azure Cosmos DB service. These operations are to be used in LINQ expressions only
     /// and will be evaluated on server. There's no implementation provided in the client library.
     /// </summary>
-    internal static class GeometryOperationExtensions
+    public static class GeometryOperationExtensions
     {
         /// <summary>
         /// Distance in meters between two geometries in the Azure Cosmos DB service.

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [DataContract]
     [JsonObject(MemberSerialization.OptIn)]
-    internal class GeometryValidationResult
+    public class GeometryValidationResult
     {
         /// <summary>
         /// Returns a value indicating whether geometry for which <see cref="GeometryOperationExtensions.IsValidDetailed"/>

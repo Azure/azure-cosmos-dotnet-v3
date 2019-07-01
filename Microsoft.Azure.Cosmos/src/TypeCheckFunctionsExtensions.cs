@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.SystemFunctions
     /// These methods are to be used in LINQ expressions only and will be evaluated on server.
     /// There's no implementation provided in the client library.
     /// </summary>
-    internal static class TypeCheckFunctionsExtensions
+    public static class TypeCheckFunctionsExtensions
     {
         /// <summary>
         /// Determines if a certain property is defined or not.
