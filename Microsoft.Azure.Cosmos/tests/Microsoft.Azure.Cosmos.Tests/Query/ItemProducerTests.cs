@@ -17,8 +17,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ItemProducerTests
     {
-        private static readonly int iterations = 1;
-        private bool unhandledException = false;
         private CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]

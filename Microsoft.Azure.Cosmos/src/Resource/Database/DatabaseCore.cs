@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedStatelessIteratorCore(
+            return new FeedIteratorCore(
                this.ClientContext,
                this.LinkUri,
                ResourceType.Collection,
@@ -361,9 +361,9 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<T>(
+            return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+                this.ClientContext.ResponseFactory.CreateReadFeedResponse<T>);
         }
 
         public override ContainerBuilder DefineContainer(

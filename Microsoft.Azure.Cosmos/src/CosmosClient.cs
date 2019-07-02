@@ -464,9 +464,9 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<T>(
+            return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+                this.ClientContext.ResponseFactory.CreateReadFeedResponse<T>);
         }
 
         /// <summary>
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedStatelessIteratorCore(
+            return new FeedIteratorCore(
                this.ClientContext,
                this.DatabaseRootUri,
                ResourceType.Database,
@@ -699,7 +699,7 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(request, continuationToken);
                     QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
                 },
-                responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<DatabaseProperties>(response),
+                responseCreator: response => this.ClientContext.ResponseFactory.CreateReadFeedResponse<DatabaseProperties>(response),
                 cancellationToken: cancellationToken);
         }
 

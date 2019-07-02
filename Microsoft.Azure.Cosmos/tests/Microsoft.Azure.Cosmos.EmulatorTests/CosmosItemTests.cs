@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestOptions: requestOptions);
                 }
 
-                using (ResponseMessage responseMessage =
+                using ( ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastContinuationToken = responseMessage.Headers.ContinuationToken;
@@ -406,6 +406,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 }
 
+            }
+
+            Assert.IsNull(lastContinuationToken);
+            Assert.AreEqual(itemIds.Count, 0);
+        }
+
+        [TestMethod]
+        public async Task ItemDistinctStreamIterator()
+        {
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+
+            string lastContinuationToken = null;
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1
+            };
+
+            FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+                queryText: "select DISTINCT t.id from t",
+                continuationToken: lastContinuationToken,
+                requestOptions: requestOptions);
+
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    Collection<ToDoActivity> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    foreach (ToDoActivity toDoActivity in response)
+                    {
+                        if (itemIds.Contains(toDoActivity.id))
+                        {
+                            itemIds.Remove(toDoActivity.id);
+                        }
+                    }
+                }
             }
 
             Assert.IsNull(lastContinuationToken);

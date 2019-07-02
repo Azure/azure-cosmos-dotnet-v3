@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
     /// </summary>
-    internal sealed class CosmosQueryExecutionContextFactory : CosmosQueryExecutionContext
+    internal sealed class CosmosQueryExecutionContextFactory : FeedIterator
     {
         internal const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const int PageSizeFactorForTop = 5;
@@ -104,19 +105,19 @@ namespace Microsoft.Azure.Cosmos.Query
                   correlatedActivityId: correlatedActivityId);
         }
 
-        public override bool IsDone
+        public override bool HasMoreResults
         {
             get
             {
-                return this.innerExecutionContext != null ? this.innerExecutionContext.IsDone : false;
+                return this.innerExecutionContext != null ? !this.innerExecutionContext.IsDone : true;
             }
         }
 
-        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken)
         {
             bool isFirstExecute = false;
-            QueryResponse response = null;
-            while (true)
+            ResponseMessage response = null;
+            for (int i = 0; i < 1; i++)
             {
                 // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
                 // execute context has incorrect values and should be recreated. This should only be done for the first 
@@ -128,9 +129,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     isFirstExecute = true;
                 }
 
-                response = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
-                response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
-
+                response = await this.ExecuteNextHelperAsync(cancellationToken);
+                
                 if (response.IsSuccessStatusCode)
                 {
                     break;
@@ -151,11 +151,41 @@ namespace Microsoft.Azure.Cosmos.Query
             return response;
         }
 
-        public override void Dispose()
+        /// <summary>
+        /// This is a helper function to catch any remaining exceptions that should not be thrown.
+        /// TODO: Remove all throws that are not argument exceptions
+        /// </summary>
+        private async Task<ResponseMessage> ExecuteNextHelperAsync(CancellationToken cancellationToken)
         {
-            if (this.innerExecutionContext != null)
+            // This catches exception thrown by the caches and converts it to QueryResponse
+            try
             {
-                this.innerExecutionContext.Dispose();
+                QueryResponse queryResponse = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
+                queryResponse.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+                return queryResponse;
+            }
+            catch (DocumentClientException exception)
+            {
+                return exception.ToCosmosResponseMessage(request: null);
+            }
+            catch (CosmosException exception)
+            {
+                return new ResponseMessage(
+                    headers: exception.Headers,
+                    requestMessage: null,
+                    errorMessage: exception.Message,
+                    statusCode: exception.StatusCode,
+                    error: exception.Error);
+            }
+            catch (AggregateException ae)
+            {
+                ResponseMessage errorMessage = TransportHandler.AggregateExceptionConverter(ae, null);
+                if (errorMessage != null)
+                {
+                    return errorMessage;
+                }
+
+                throw;
             }
         }
 

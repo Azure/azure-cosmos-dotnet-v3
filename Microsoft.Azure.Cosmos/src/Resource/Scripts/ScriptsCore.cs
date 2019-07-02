@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedStatelessIteratorCore(
+            return new FeedIteratorCore(
                this.clientContext,
                this.container.LinkUri,
                ResourceType.StoredProcedure,
@@ -94,9 +94,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<T>(
+            return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+                this.clientContext.ResponseFactory.CreateReadFeedResponse<T>);
         }
 
         public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedStatelessIteratorCore(
+            return new FeedIteratorCore(
                this.clientContext,
                this.container.LinkUri,
                ResourceType.Trigger,
@@ -290,9 +290,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<T>(
+            return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+                this.clientContext.ResponseFactory.CreateReadFeedResponse<T>);
         }
 
         public override Task<TriggerResponse> ReadTriggerAsync(
@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedStatelessIteratorCore(
+            return new FeedIteratorCore(
                this.clientContext,
                this.container.LinkUri,
                ResourceType.UserDefinedFunction,
@@ -445,9 +445,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<T>(
+            return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+                this.clientContext.ResponseFactory.CreateReadFeedResponse<T>);
         }
 
         public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
