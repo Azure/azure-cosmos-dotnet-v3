@@ -101,7 +101,7 @@
             List<Family> families = new List<Family>();
 
             // SQL
-            FeedIterator<Family> setIterator = container.GetItemIterator<Family>(maxItemCount: 1);
+            FeedIterator<Family> setIterator = container.GetItemQueryIterator<Family>(requestOptions: new QueryRequestOptions { MaxItemCount =  1});
             while (setIterator.HasMoreResults)
             {
                 int count = 0;
@@ -122,7 +122,7 @@
             int totalCount = 0;
 
             // SQL
-            FeedIterator setIterator = container.GetItemStreamIterator();
+            FeedIterator setIterator = container.GetItemQueryStreamIterator();
             while (setIterator.HasMoreResults)
             {
                 int count = 0;
@@ -187,8 +187,8 @@
             // notice here how we are doing an equality comparison on the string value of City
 
             QueryDefinition query = new QueryDefinition("SELECT * FROM Families f WHERE f.id = @id AND f.Address.City = @city")
-                .UseParameter("@id", "AndersonFamily")
-                .UseParameter("@city", "Seattle");
+                .WithParameter("@id", "AndersonFamily")
+                .WithParameter("@city", "Seattle");
 
             List<Family> results = new List<Family>();
             FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(query, requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey("Anderson")});
