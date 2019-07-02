@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </example>
         /// ]]>
         /// </code>
+        /// </example>
         public ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure)
         {
             if (string.IsNullOrEmpty(conflictResolutionProcedure))
