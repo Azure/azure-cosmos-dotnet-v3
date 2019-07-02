@@ -1,25 +1,19 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CrossPartitionQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Linq;
-    using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
     using Common;
     using ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -126,8 +120,8 @@ namespace Microsoft.Azure.Cosmos.Query
             string rewrittenQuery,
             IComparer<DocumentProducerTree> moveNextComparer,
             Func<DocumentProducerTree, int> fetchPrioirtyFunction,
-            IEqualityComparer<CosmosElement> equalityComparer) :
-            base(initParams)
+            IEqualityComparer<CosmosElement> equalityComparer)
+            : base(initParams)
         {
             if (!string.IsNullOrWhiteSpace(rewrittenQuery))
             {
@@ -267,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
             }
 
-            CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(continuationToken, null);
+            CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(continuationToken, null, this.ResourceTypeEnum, this.ResourceLink);
             this.SetQueryMetrics();
 
             IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics = this.GetQueryMetrics();
@@ -351,7 +345,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Pushes a document producer back to the queue.
         /// </summary>
-        /// <returns>The current document producer tree that should be drained from.</returns>
         public void PushCurrentDocumentProducerTree(DocumentProducerTree documentProducerTree)
         {
             this.documentProducerForest.Enqueue(documentProducerTree);
@@ -389,7 +382,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements to drain (you might get less).</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task that when awaited on will return a feed response.</returns>
-        public abstract Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token);
+        public abstract Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.
@@ -474,7 +467,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    await documentProducerTree.MoveNextIfNotSplit(token);
+                    await documentProducerTree.MoveNextIfNotSplitAsync(token);
                 }
 
                 if (filterCallback != null)
@@ -641,7 +634,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token that doesn't get used.</param>
         /// <returns>A dummy task to await on.</returns>
-        protected override Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
+        protected override Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken token)
         {
             throw new NotImplementedException();
         }
@@ -892,7 +885,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>A task to await on.</returns>
             public override Task StartAsync(CancellationToken token)
             {
-                return this.producer.BufferMoreDocuments(token);
+                return this.producer.BufferMoreDocumentsAsync(token);
             }
 
             /// <summary>

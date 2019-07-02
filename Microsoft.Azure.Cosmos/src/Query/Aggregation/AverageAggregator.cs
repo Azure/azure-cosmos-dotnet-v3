@@ -1,16 +1,14 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="AverageAggregator.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Aggregation
 {
     using System;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// Concrete implementation of IAggregator that can take the global weighted average from the local weighted average of multiple partitions and continuations.

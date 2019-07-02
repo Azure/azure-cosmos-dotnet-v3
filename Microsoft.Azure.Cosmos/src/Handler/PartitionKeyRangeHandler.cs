@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -21,18 +20,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using static Microsoft.Azure.Documents.RntbdConstants;
 
     /// <summary>
-    /// Handler which manages the continution token and partion-key-range-id selection depending on a provided start and end epk and direction. 
+    /// Handler which manages the continuation token and partition-key-range-id selection depending on a provided start and end epk and direction. 
     /// By default start is 00, end is FF and direction is forward. 
-    /// It doesn't participates in split logic direclty but on split retry, will select the new 
-    /// appropriate partiton-key-range id after a forced refresh of the CollectionRoutingMap.
+    /// It doesn't participates in split logic directly but on split retry, will select the new 
+    /// appropriate partition-key-range id after a forced refresh of the CollectionRoutingMap.
     /// </summary>
-    internal class PartitionKeyRangeHandler : CosmosRequestHandler
+    internal class PartitionKeyRangeHandler : RequestHandler
     {
         private readonly CosmosClient client;
         private PartitionRoutingHelper partitionRoutingHelper;
         public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
         {
-            if(client == null)
+            if (client == null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -40,38 +39,38 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.partitionRoutingHelper = partitionRoutingHelper ?? new PartitionRoutingHelper();
         }
 
-        public override async Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        public override async Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
-            CosmosResponseMessage response = null;
-            string originalContinuation = request.Headers.Continuation;
+            ResponseMessage response = null;
+            string originalContinuation = request.Headers.ContinuationToken;
             try
             {
                 RntdbEnumerationDirection rntdbEnumerationDirection = RntdbEnumerationDirection.Forward;
-                object direction;
-                if (request.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out direction))
+                if (request.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object direction))
                 {
-                    rntdbEnumerationDirection = (byte)RntdbEnumerationDirection.Reverse == (byte)direction ? RntdbEnumerationDirection.Reverse : RntdbEnumerationDirection.Forward;
+                    rntdbEnumerationDirection = (byte)direction == (byte)RntdbEnumerationDirection.Reverse ? RntdbEnumerationDirection.Reverse : RntdbEnumerationDirection.Forward;
                 }
 
                 request.Headers.Remove(HttpConstants.HttpHeaders.IsContinuationExpected);
                 request.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.TrueString);
 
-                object startEpk;
-                object endEpk;
-                if (!request.Properties.TryGetValue(HandlerConstants.StartEpkString, out startEpk))
+                if (!request.Properties.TryGetValue(HandlerConstants.StartEpkString, out object startEpk))
                 {
                     startEpk = PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
                 }
-                if (!request.Properties.TryGetValue(HandlerConstants.EndEpkString, out endEpk))
+
+                if (!request.Properties.TryGetValue(HandlerConstants.EndEpkString, out object endEpk))
                 {
                     endEpk = PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
                 }
+
                 startEpk = startEpk ?? PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey;
                 endEpk = endEpk ?? PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
 
-                List<Range<string>> providedRanges = new List<Range<string>> {
+                List<Range<string>> providedRanges = new List<Range<string>>
+                {
                     new Range<string>(
                         (string)startEpk,
                         (string)endEpk,
@@ -79,20 +78,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         isMaxInclusive: false)
                 };
 
+                // Reset the partition key range id to null in case this is retry and the values have changed.
+                request.PartitionKeyRangeId = null;
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
                 PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
-                CosmosContainerSettings collectionFromCache =
+                ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 
-                List<CompositeContinuationToken> suppliedTokens;
                 //direction is not expected to change  between continuations.
                 Range<string> rangeFromContinuationToken =
-                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out suppliedTokens);
+                    this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out List<CompositeContinuationToken> suppliedTokens);
 
                 ResolvedRangeInfo resolvedRangeInfo =
-                    await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+                    await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     serviceRequest.ForceNameCacheRefresh = true;
                     collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
-                    resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRange(
+                    resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
@@ -115,19 +115,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
                 {
-                    return ((DocumentClientException)
-                        new NotFoundException(
+                    return ((DocumentClientException)new NotFoundException(
                             $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
                             ).ToCosmosResponseMessage(request);
                 }
 
-                serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
+                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id);
 
                 response = await base.SendAsync(request, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    this.SetOriginalContinuationToken(request, response, originalContinuation);
+                    SetOriginalContinuationToken(request, response, originalContinuation);
                 }
                 else
                 {
@@ -139,24 +138,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         resolvedRangeInfo: resolvedRangeInfo,
                         direction: rntdbEnumerationDirection))
                     {
-                        return ((DocumentClientException)
-                            new NotFoundException(
+                        return ((DocumentClientException)new NotFoundException(
                                 $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Call to TryAddPartitionKeyRangeToContinuationTokenAsync failed to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
                             ).ToCosmosResponseMessage(request);
                     }
                 }
 
                 return response;
-            }            
+            }
             catch (DocumentClientException ex)
             {
-                CosmosResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
-                this.SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
+                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
             catch (AggregateException ex)
             {
-                this.SetOriginalContinuationToken(request, response, originalContinuation);
+                SetOriginalContinuationToken(request, response, originalContinuation);
 
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
@@ -172,12 +170,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private void SetOriginalContinuationToken(CosmosRequestMessage request, CosmosResponseMessage response, string originalContinuation)
+        private void SetOriginalContinuationToken(RequestMessage request, ResponseMessage response, string originalContinuation)
         {
-            request.Headers.Continuation = originalContinuation;
+            request.Headers.ContinuationToken = originalContinuation;
             if (response != null)
             {
-                response.Headers.Continuation = originalContinuation;
+                response.Headers.ContinuationToken = originalContinuation;
             }
         }
     }

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public abstract class BaseCosmosClientHelper
     {
         protected CosmosClient cosmosClient = null;
-        protected CosmosDatabase database = null;
+        protected Database database = null;
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
 
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cancellationToken = this.cancellationTokenSource.Token;
 
             this.cosmosClient = TestCommon.CreateCosmosClient();
-            this.database = await this.cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
         }
 

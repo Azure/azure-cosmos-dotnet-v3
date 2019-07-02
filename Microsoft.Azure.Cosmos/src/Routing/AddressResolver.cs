@@ -24,16 +24,16 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class AddressResolver : IAddressResolver
     {
-        private CollectionCache collectionCache;
-        private ICollectionRoutingMapCache collectionRoutingMapCache;
-        private IAddressCache addressCache;
-
         private readonly IMasterServiceIdentityProvider masterServiceIdentityProvider;
 
         private readonly IRequestSigner requestSigner;
         private readonly string location;
 
         private readonly PartitionKeyRangeIdentity masterPartitionKeyRangeIdentity = new PartitionKeyRangeIdentity(PartitionKeyRange.MasterPartitionKeyRangeId);
+
+        private CollectionCache collectionCache;
+        private ICollectionRoutingMapCache collectionRoutingMapCache;
+        private IAddressCache addressCache;
 
         public AddressResolver(IMasterServiceIdentityProvider masterServiceIdentityProvider, IRequestSigner requestSigner, string location)
         {
@@ -67,33 +67,6 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.ResolvedPartitionKeyRange = result.TargetPartitionKeyRange;
             request.RequestContext.RegionName = this.location;
 
-            if (request.RequestContext.TargetIdentity != null)
-            {
-                ServiceIdentity lastResolvedTargetIdentity = request.RequestContext.GetAndUpdateLastResolvedTargetIdentity();
-
-                if (lastResolvedTargetIdentity != null &&
-                    !string.Equals(
-                        lastResolvedTargetIdentity.FederationId,
-                        request.RequestContext.TargetIdentity.FederationId,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    DefaultTrace.TraceInformation(
-                        "AddressResolver.ResolveAsync RequestAuthorizationTokenType = {0}, LastResolvedTargetIdentity = {1}, " +
-                        "TargetIdentity = {2}, forceRefreshPartitionAddresses = {3}, ForceCollectionRoutingMapRefresh = {4}, " +
-                        "ForceMasterRefresh = {5}, OperationType = {6}, ResourceType = {7}",
-                        request.RequestAuthorizationTokenType,
-                        lastResolvedTargetIdentity,
-                        request.RequestContext.TargetIdentity,
-                        forceRefreshPartitionAddresses,
-                        request.ForceCollectionRoutingMapRefresh,
-                        request.ForceMasterRefresh,
-                        request.OperationType,
-                        request.ResourceType);
-
-                    await this.requestSigner.ReauthorizeSystemKeySignedRequestAsync(request, cancellationToken);
-                }
-            }
-
             await this.requestSigner.SignRequestAsync(request, cancellationToken);
 
             return result.Addresses;
@@ -105,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException("parent");
             }
-            
+
             if (newlyResolved == null)
             {
                 return false;
@@ -184,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">Request for which the partition endpoint resolution is to be performed</param>
         /// <param name="forceRefreshPartitionAddresses">Force refresh the partition's endpoint</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns></returns>
+        /// <returns>An instance of <see cref="ResolutionResult"/>.</returns>
         private async Task<ResolutionResult> ResolveAddressesAndIdentityAsync(
             DocumentServiceRequest request,
             bool forceRefreshPartitionAddresses,
@@ -202,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
                 //     3. Requests which target specific partition of an existing collection will use x-ms-documentdb-partitionkeyrangeid header
                 //        to send request to specific partition and will not set request.ServiceIdentity
                 ServiceIdentity identity = request.ServiceIdentity;
-                PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
+                PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(request, null, identity, forceRefreshPartitionAddresses, cancellationToken);
                 if (addresses == null)
                 {
                     DefaultTrace.TraceInformation("Could not get addresses for explicitly specified ServiceIdentity {0}", identity);
@@ -228,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 ServiceIdentity serviceIdentity = this.masterServiceIdentityProvider?.MasterServiceIdentity;
                 PartitionKeyRangeIdentity partitionKeyRangeIdentity = this.masterPartitionKeyRangeIdentity;
-                PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
+                PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
                     request,
                     partitionKeyRangeIdentity,
                     serviceIdentity,
@@ -250,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
 
             bool collectionRoutingMapCacheIsUptoDate = false;
 
-            CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+            ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                 collection.ResourceId, null, request, cancellationToken);
 
@@ -309,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
                     request.ForceNameCacheRefresh = true;
                     collectionCacheIsUptoDate = true;
                     collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                    if(collection.ResourceId != routingMap.CollectionUniqueId)
+                    if (collection.ResourceId != routingMap.CollectionUniqueId)
                     {
                         // Collection cache was stale. We resolved to new Rid. routing map cache is potentially stale
                         // for this new collection rid. Mark it as such.
@@ -371,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
         private static void EnsureRoutingMapPresent(
             DocumentServiceRequest request,
             CollectionRoutingMap routingMap,
-            CosmosContainerSettings collection)
+            ContainerProperties collection)
         {
             if (routingMap == null && request.IsNameBased && request.PartitionKeyRangeIdentity != null
                 && request.PartitionKeyRangeIdentity.CollectionRid != null)
@@ -396,10 +369,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-
         private async Task<ResolutionResult> TryResolveServerPartitionAsync(
             DocumentServiceRequest request,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap,
             bool collectionCacheIsUptodate,
             bool collectionRoutingMapCacheIsUptodate,
@@ -451,7 +423,7 @@ namespace Microsoft.Azure.Cosmos
                 out effectivePartitionKeyStringObject))
             {
                 // Allow EPK only for partitioned collection (excluding migrated fixed collections)
-                if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey)
+                if (!collection.HasPartitionKey || collection.PartitionKey.IsSystemKey.GetValueOrDefault(false))
                 {
                     throw new ArgumentOutOfRangeException(nameof(collection));
                 }
@@ -478,7 +450,7 @@ namespace Microsoft.Azure.Cosmos
 
             ServiceIdentity serviceIdentity = routingMap.TryGetInfoByPartitionKeyRangeId(range.Id);
 
-            PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
+            PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
                 request,
                 new PartitionKeyRangeIdentity(collection.ResourceId, range.Id),
                 serviceIdentity,
@@ -554,7 +526,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResolutionResult> TryResolveServerPartitionByPartitionKeyRangeIdAsync(
             DocumentServiceRequest request,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap,
             bool collectionCacheIsUpToDate,
             bool routingMapCacheIsUpToDate,
@@ -571,7 +543,7 @@ namespace Microsoft.Azure.Cosmos
 
             ServiceIdentity identity = routingMap.TryGetInfoByPartitionKeyRangeId(request.PartitionKeyRangeIdentity.PartitionKeyRangeId);
 
-            PartitionAddressInformation addresses = await this.addressCache.TryGetAddresses(
+            PartitionAddressInformation addresses = await this.addressCache.TryGetAddressesAsync(
                 request,
                 new PartitionKeyRangeIdentity(collection.ResourceId, request.PartitionKeyRangeIdentity.PartitionKeyRangeId),
                 identity,
@@ -592,7 +564,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             string partitionKeyString,
             bool collectionCacheUptoDate,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CollectionRoutingMap routingMap)
         {
             if (request == null)

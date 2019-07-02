@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
@@ -18,10 +18,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedProcessorCore<T> : ChangeFeedProcessor
     {
         private readonly ChangeFeedObserverFactory<T> observerFactory;
-        private CosmosContainerCore leaseContainer;
+        private ContainerCore leaseContainer;
         private string monitoredContainerRid;
         private string instanceName;
-        private CosmosContainerCore monitoredContainer;
+        private ContainerCore monitoredContainer;
         private PartitionManager partitionManager;
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private ChangeFeedProcessorOptions changeFeedProcessorOptions;
@@ -37,12 +37,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            CosmosContainerCore leaseContainer,
+            ContainerCore leaseContainer,
             string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            CosmosContainerCore monitoredContainer)
+            ContainerCore monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (customDocumentServiceLeaseStoreManager == null && leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
@@ -87,26 +87,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         internal static async Task<DocumentServiceLeaseStoreManager> InitializeLeaseStoreManagerAsync(
             DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager,
-            CosmosContainerCore leaseContainer,
+            ContainerCore leaseContainer,
             string leaseContainerPrefix,
             string instanceName)
         {
             if (documentServiceLeaseStoreManager == null)
             {
-                CosmosContainerResponse cosmosContainerResponse = await leaseContainer.ReadAsync().ConfigureAwait(false);
-                CosmosContainerSettings containerSettings = cosmosContainerResponse.Resource;
+                ContainerResponse cosmosContainerResponse = await leaseContainer.ReadContainerAsync().ConfigureAwait(false);
+                ContainerProperties containerProperties = cosmosContainerResponse.Resource;
 
                 bool isPartitioned =
-                    containerSettings.PartitionKey != null &&
-                    containerSettings.PartitionKey.Paths != null &&
-                    containerSettings.PartitionKey.Paths.Count > 0;
-                if (isPartitioned &&
-                    (containerSettings.PartitionKey.Paths.Count != 1 || containerSettings.PartitionKey.Paths[0] != "/id"))
+                    containerProperties.PartitionKey != null &&
+                    containerProperties.PartitionKey.Paths != null &&
+                    containerProperties.PartitionKey.Paths.Count > 0;
+                bool isMigratedFixed = (containerProperties.PartitionKey?.IsSystemKey == true);
+                if (isPartitioned
+                    && !isMigratedFixed
+                    && (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
                 {
                     throw new ArgumentException("The lease collection, if partitioned, must have partition key equal to id.");
                 }
 
-                RequestOptionsFactory requestOptionsFactory = isPartitioned ?
+                RequestOptionsFactory requestOptionsFactory = isPartitioned && !isMigratedFixed ?
                     (RequestOptionsFactory)new PartitionedByIdCollectionRequestOptionsFactory() :
                     (RequestOptionsFactory)new SinglePartitionRequestOptionsFactory();
 
@@ -135,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             PartitionSupervisorFactoryCore<T> partitionSuperviserFactory = new PartitionSupervisorFactoryCore<T>(
                 factory,
                 this.documentServiceLeaseStoreManager.LeaseManager,
-                new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, this.documentServiceLeaseStoreManager.LeaseCheckpointer, this.monitoredContainer.ClientContext.JsonSerializer),
+                new FeedProcessorFactoryCore<T>(this.monitoredContainer, this.changeFeedProcessorOptions, this.documentServiceLeaseStoreManager.LeaseCheckpointer, this.monitoredContainer.ClientContext.CosmosSerializer),
                 this.changeFeedLeaseOptions);
 
             EqualPartitionsBalancingStrategy loadBalancingStrategy = new EqualPartitionsBalancingStrategy(

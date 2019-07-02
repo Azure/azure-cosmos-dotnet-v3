@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.ObjectModel;
     using System.Threading;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -25,25 +23,25 @@ namespace Microsoft.Azure.Cosmos
         public void EndpointFailureMockTest()
         {
             // Setup dummpy read locations for the database account
-            Collection<CosmosAccountLocation> readableLocations = new Collection<CosmosAccountLocation>();
+            Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
-            CosmosAccountLocation writeLocation = new CosmosAccountLocation();
+            AccountRegion writeLocation = new AccountRegion();
             writeLocation.Name = "WriteLocation";
-            writeLocation.DatabaseAccountEndpoint = "https://writeendpoint.net/";
+            writeLocation.Endpoint = "https://writeendpoint.net/";
 
-            CosmosAccountLocation readLocation1 = new CosmosAccountLocation();
+            AccountRegion readLocation1 = new AccountRegion();
             readLocation1.Name = "ReadLocation1";
-            readLocation1.DatabaseAccountEndpoint = "https://readendpoint1.net/";
+            readLocation1.Endpoint = "https://readendpoint1.net/";
 
-            CosmosAccountLocation readLocation2 = new CosmosAccountLocation();
+            AccountRegion readLocation2 = new AccountRegion();
             readLocation2.Name = "ReadLocation2";
-            readLocation2.DatabaseAccountEndpoint = "https://readendpoint2.net/";
+            readLocation2.Endpoint = "https://readendpoint2.net/";
 
             readableLocations.Add(writeLocation);
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            CosmosAccountSettings databaseAccount = new CosmosAccountSettings();
+            AccountProperties databaseAccount = new AccountProperties();
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             //Setup mock owner "document client"
@@ -59,21 +57,21 @@ namespace Microsoft.Azure.Cosmos
             GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
 
             globalEndpointManager.RefreshLocationAsync(databaseAccount).Wait();
-            Assert.IsTrue(globalEndpointManager.ReadEndpoints[0] == new Uri(readLocation1.DatabaseAccountEndpoint));
+            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
             //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
             globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
             globalEndpointManager.RefreshLocationAsync(null).Wait();
-            Assert.IsTrue(globalEndpointManager.ReadEndpoints[0] == new Uri(readLocation2.DatabaseAccountEndpoint));
+            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
 
             globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
             globalEndpointManager.RefreshLocationAsync(null).Wait();
-            Assert.IsTrue(globalEndpointManager.ReadEndpoints[0] == globalEndpointManager.WriteEndpoints[0]);
+            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], globalEndpointManager.WriteEndpoints[0]);
 
             //Sleep a second for the unavailable endpoint entry to expire and background refresh timer to kick in
             Thread.Sleep(1000);
             globalEndpointManager.RefreshLocationAsync(null).Wait();
-            Assert.IsTrue(globalEndpointManager.ReadEndpoints[0] == new Uri(readLocation1.DatabaseAccountEndpoint));
+            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
         }
 
         /// <summary>
@@ -102,25 +100,25 @@ namespace Microsoft.Azure.Cosmos
         public void ReadLocationRemoveAndAddMockTest()
         {
             // Setup dummpy read locations for the database account
-            Collection<CosmosAccountLocation> readableLocations = new Collection<CosmosAccountLocation>();
+            Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
-            CosmosAccountLocation writeLocation = new CosmosAccountLocation();
+            AccountRegion writeLocation = new AccountRegion();
             writeLocation.Name = "WriteLocation";
-            writeLocation.DatabaseAccountEndpoint = "https://writeendpoint.net/";
+            writeLocation.Endpoint = "https://writeendpoint.net/";
 
-            CosmosAccountLocation readLocation1 = new CosmosAccountLocation();
+            AccountRegion readLocation1 = new AccountRegion();
             readLocation1.Name = "ReadLocation1";
-            readLocation1.DatabaseAccountEndpoint = "https://readendpoint1.net/";
+            readLocation1.Endpoint = "https://readendpoint1.net/";
 
-            CosmosAccountLocation readLocation2 = new CosmosAccountLocation();
+            AccountRegion readLocation2 = new AccountRegion();
             readLocation2.Name = "ReadLocation2";
-            readLocation2.DatabaseAccountEndpoint = "https://readendpoint2.net/";
+            readLocation2.Endpoint = "https://readendpoint2.net/";
 
             readableLocations.Add(writeLocation);
             readableLocations.Add(readLocation1);
             readableLocations.Add(readLocation2);
 
-            CosmosAccountSettings databaseAccount = new CosmosAccountSettings();
+            AccountProperties databaseAccount = new AccountProperties();
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             //Setup mock owner "document client"
@@ -136,14 +134,14 @@ namespace Microsoft.Azure.Cosmos
             GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
 
             globalEndpointManager.RefreshLocationAsync(databaseAccount).Wait();
-            Assert.IsTrue(globalEndpointManager.ReadEndpoints[0] == new Uri(readLocation1.DatabaseAccountEndpoint));
+            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
             //Remove location 1 from read locations and validate that the read endpoint switches to the next preferred location
             readableLocations.Remove(readLocation1);
             databaseAccount.ReadLocationsInternal = readableLocations;
 
             globalEndpointManager.RefreshLocationAsync(databaseAccount).Wait();
-            Assert.IsTrue(globalEndpointManager.ReadEndpoints[0] == new Uri(readLocation2.DatabaseAccountEndpoint));
+            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
 
             //Add location 1 back to read locations and validate that location 1 becomes the read endpoint again.
             readableLocations.Add(readLocation1);
@@ -151,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
 
             //Sleep a bit for the refresh timer to kick in and rediscover location 1
             Thread.Sleep(2000);
-            Assert.IsTrue(globalEndpointManager.ReadEndpoints[0] == new Uri(readLocation1.DatabaseAccountEndpoint));
+            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
         }
     }
 }

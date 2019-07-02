@@ -15,7 +15,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -53,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
-            return new CosmosClientBuilder(accountEndPoint: endpoint, accountKey: authKey);
+            return new CosmosClientBuilder(accountEndpoint: endpoint, accountKey: authKey);
         }
 
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
@@ -73,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
             if (useGateway)
             {
-                cosmosClientBuilder.UseConnectionModeGateway();
+                cosmosClientBuilder.WithConnectionModeGateway();
             }
 
             return cosmosClientBuilder.Build();
@@ -231,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string continuationToken = null;
-            FeedResponse<T> pagedResult = null;
+            DocumentFeedResponse<T> pagedResult = null;
             do
             {
                 if (!string.IsNullOrEmpty(continuationToken))
@@ -298,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static void RouteToTheOnlyPartition(DocumentClient client, DocumentServiceRequest request)
         {
             ClientCollectionCache collectionCache = client.GetCollectionCacheAsync().Result;
-            CosmosContainerSettings collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None).Result;
+            ContainerProperties collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None).Result;
             IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
             IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(
                 collection.ResourceId,
@@ -403,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             string continuationToken = null;
-            FeedResponse<T> pagedResult = null;
+            DocumentFeedResponse<T> pagedResult = null;
             do
             {
                 if (!string.IsNullOrEmpty(continuationToken))
@@ -454,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // todo: elasticcollections remove this when scripts are created directly in server again.
         // For now we need it for some low level tests which need direct access.
-        private static FeedResponse<T> ReadScriptFeedDirect<T>(
+        private static DocumentFeedResponse<T> ReadScriptFeedDirect<T>(
             DocumentClient client,
             string resourceIdOrFullName,
             INameValueCollection localHeaders) where T : Resource, new()
@@ -484,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         DocumentServiceResponse response = client.StoreModel.ProcessMessageAsync(request).Result;
 
                         FeedResource<T> feedResource = response.GetResource<FeedResource<T>>();
-                        return new FeedResponse<T>(feedResource, feedResource.Count, response.Headers);
+                        return new DocumentFeedResponse<T>(feedResource, feedResource.Count, response.Headers);
                     }
                 }
             }
@@ -688,12 +690,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task.Delay(TestCommon.serverStalenessIntervalInSeconds * 1000);
             }
         }
-        public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
+        public static DocumentFeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, INameValueCollection headers = null) where T : Resource, new()
         {
             return client.ReadFeedWithRetry<T>(resourceIdOrFullName, out INameValueCollection ignored, headers);
         }
 
-        public static FeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
+        public static DocumentFeedResponse<T> ReadFeedWithRetry<T>(this DocumentClient client, string resourceIdOrFullName, out INameValueCollection responseHeaders, INameValueCollection headers = null) where T : Resource, new()
         {
             int nMaxRetry = 5;
 
@@ -1079,7 +1081,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        public static FeedResponse<T> ReadFeed<T>(
+        public static DocumentFeedResponse<T> ReadFeed<T>(
             this DocumentClient client,
             string resourceIdOrFullName,
             INameValueCollection headers = null) where T : Resource, new()
@@ -1087,7 +1089,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return client.ReadFeed<T>(resourceIdOrFullName, out INameValueCollection ignored, headers);
         }
 
-        public static FeedResponse<T> ReadFeed<T>(
+        public static DocumentFeedResponse<T> ReadFeed<T>(
             this DocumentClient client,
             string resourceIdOrFullName,
             out INameValueCollection responseHeaders,
@@ -1118,7 +1120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (request.ResourceType.IsPartitioned())
                 {
                     ClientCollectionCache collectionCache = client.GetCollectionCacheAsync().Result;
-                    CosmosContainerSettings collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None).Result;
+                    ContainerProperties collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None).Result;
                     IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
                     IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMapProvider.TryGetOverlappingRangesAsync(
                         collection.ResourceId,
@@ -1131,7 +1133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 responseHeaders = result.Headers;
                 FeedResource<T> feedResource = result.GetResource<FeedResource<T>>();
 
-                return new FeedResponse<T>(feedResource,
+                return new DocumentFeedResponse<T>(feedResource,
                     feedResource.Count,
                     result.Headers);
             }
@@ -1217,9 +1219,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private static CosmosConsistencySettings GetServerConsistencyPolicy()
+        private static AccountConsistency GetServerConsistencyPolicy()
         {
-            CosmosConsistencySettings consistencyPolicy = new CosmosConsistencySettings
+            AccountConsistency consistencyPolicy = new AccountConsistency
             {
                 DefaultConsistencyLevel = (Cosmos.ConsistencyLevel)ConsistencyLevel.Strong
             };
@@ -1319,7 +1321,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await TestCommon.DeleteAllDatabasesAsyncWorker(client);
 
                     // Offer read feed not supported in v3 SDK
-                    //FeedResponse<Offer> offerResponse = client.ReadOffersFeedAsync().Result;
+                    //DoucmentFeedResponse<Offer> offerResponse = client.ReadOffersFeedAsync().Result;
                     //if (offerResponse.Count != 0)
                     //{
                     //    // Number of offers should have been 0 after deleting all the databases
@@ -1381,16 +1383,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static async Task DeleteAllDatabasesAsyncWorker(CosmosClient client)
         {
-            IList<CosmosDatabase> databases = new List<CosmosDatabase>();
+            IList<Cosmos.Database> databases = new List<Cosmos.Database>();
 
-            CosmosFeedIterator<CosmosDatabaseSettings> resultSetIterator = client.Databases.GetDatabaseIterator(maxItemCount: 10);
+            FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
+                queryDefinition: null,
+                continuationToken: null, 
+                requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
             int totalCount = 0;
             while (resultSetIterator.HasMoreResults)
             {
-                foreach (CosmosDatabaseSettings database in await resultSetIterator.FetchNextSetAsync())
+                foreach (DatabaseProperties database in await resultSetIterator.ReadNextAsync())
                 {
-                    deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, client.Databases[database.Id]));
+                    deleteTasks.Add(TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(database.Id)));
                     totalCount++;
                 }
 
@@ -1401,24 +1407,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Logger.LogLine("Number of database to delete {0}", totalCount);
         }
 
-        public static async Task DeleteDatabaseAsync(CosmosClient client, CosmosDatabase database)
+        public static async Task DeleteDatabaseAsync(CosmosClient client, Cosmos.Database database)
         {
             await TestCommon.DeleteDatabaseCollectionAsync(client, database);
 
             await TestCommon.AsyncRetryRateLimiting(() => database.DeleteAsync());
         }
 
-        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, CosmosDatabase database)
+        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, Cosmos.Database database)
         {
             //Delete them in chunks of 10.
-            CosmosFeedIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator(maxItemCount: 10);
+            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
             while (resultSetIterator.HasMoreResults)
             {
                 List<Task> deleteCollectionTasks = new List<Task>(10);
-                foreach (CosmosContainerSettings container in await resultSetIterator.FetchNextSetAsync())
+                foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())
                 {
                     Logger.LogLine("Deleting Collection with following info Id:{0}, database Id: {1}", container.Id, database.Id);
-                    deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.Containers[container.Id].DeleteAsync()));
+                    deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.GetContainer(container.Id).DeleteContainerAsync()));
                 }
 
                 await Task.WhenAll(deleteCollectionTasks);
@@ -1506,11 +1512,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.Conflict;
             }
-            else if (type == typeof(Database) || type == typeof(CosmosDatabaseSettings))
+            else if (type == typeof(Database) || type == typeof(DatabaseProperties))
             {
                 return ResourceType.Database;
             }
-            else if (type == typeof(DocumentCollection) || type == typeof(CosmosContainerSettings))
+            else if (type == typeof(DocumentCollection) || type == typeof(ContainerProperties))
             {
                 return ResourceType.Collection;
             }
@@ -1522,15 +1528,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 return ResourceType.Permission;
             }
-            else if (type == typeof(StoredProcedure) || type == typeof(CosmosStoredProcedureSettings))
+            else if (type == typeof(StoredProcedure) || type == typeof(StoredProcedureProperties))
             {
                 return ResourceType.StoredProcedure;
             }
-            else if (type == typeof(Trigger) || type == typeof(CosmosTriggerSettings))
+            else if (type == typeof(Trigger) || type == typeof(TriggerProperties))
             {
                 return ResourceType.Trigger;
             }
-            else if (type == typeof(UserDefinedFunction) || type == typeof(CosmosUserDefinedFunctionSettings))
+            else if (type == typeof(UserDefinedFunction) || type == typeof(UserDefinedFunctionProperties))
             {
                 return ResourceType.UserDefinedFunction;
             }

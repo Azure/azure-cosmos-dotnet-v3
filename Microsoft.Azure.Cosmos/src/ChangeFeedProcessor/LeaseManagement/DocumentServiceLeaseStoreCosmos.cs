@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
@@ -15,13 +15,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal sealed class DocumentServiceLeaseStoreCosmos : DocumentServiceLeaseStore
     {
-        private readonly CosmosContainer container;
+        private readonly Container container;
         private readonly string containerNamePrefix;
         private readonly RequestOptionsFactory requestOptionsFactory;
         private string lockETag;
 
         public DocumentServiceLeaseStoreCosmos(
-            CosmosContainer container,
+            Container container,
             string containerNamePrefix,
             RequestOptionsFactory requestOptionsFactory)
         {
@@ -41,16 +41,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             string markerDocId = this.GetStoreMarkerName();
             var containerDocument = new { id = markerDocId };
-            await this.container.Items.CreateItemAsync<dynamic>(
-                this.requestOptionsFactory.GetPartitionKey(markerDocId),
-                containerDocument
-                ).ConfigureAwait(false);
+
+            await this.container.CreateItemAsync<dynamic>(
+                item: containerDocument,
+                partitionKey: this.requestOptionsFactory.GetPartitionKey(markerDocId)).ConfigureAwait(false);
         }
 
         public override async Task<bool> AcquireInitializationLockAsync(TimeSpan lockTime)
         {
             string lockId = this.GetStoreLockName();
-            var containerDocument = new LockDocument (){ Id = lockId, TimeToLive = (int)lockTime.TotalSeconds };
+            var containerDocument = new LockDocument(){ Id = lockId, TimeToLive = (int)lockTime.TotalSeconds };
             var document = await this.container.TryCreateItemAsync<LockDocument>(
                 this.requestOptionsFactory.GetPartitionKey(lockId),
                 containerDocument).ConfigureAwait(false);
@@ -67,9 +67,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task<bool> ReleaseInitializationLockAsync()
         {
             string lockId = this.GetStoreLockName();
-            var requestOptions = new CosmosItemRequestOptions()
+            var requestOptions = new ItemRequestOptions()
             {
-                AccessCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = this.lockETag }
+                IfMatchEtag = this.lockETag,
             };
 
             var document = await this.container.TryDeleteItemAsync<LockDocument>(

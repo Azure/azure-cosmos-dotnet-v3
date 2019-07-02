@@ -19,15 +19,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
-                    builder.UseTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
+                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
                 });
 
-            CosmosDatabase database = await cosmosClient.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            CosmosContainer container = await database.Containers.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
             string id1 = Guid.NewGuid().ToString();
-            TestPayload payload1 = await container.Items.CreateItemAsync<TestPayload>(id1, new TestPayload { id = id1 });
-            payload1 = await container.Items.ReadItemAsync<TestPayload>(id1, id1);
+            TestPayload payload1 = await container.CreateItemAsync<TestPayload>(new TestPayload { id = id1 });
+            payload1 = await container.ReadItemAsync<TestPayload>(id1, new Cosmos.PartitionKey(id1));
         }
 
         private static void Interceptor(
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string id { get; set; }
         }
 
-        private class TransportClientWrapper : TransportClient
+        internal class TransportClientWrapper : TransportClient
         {
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;

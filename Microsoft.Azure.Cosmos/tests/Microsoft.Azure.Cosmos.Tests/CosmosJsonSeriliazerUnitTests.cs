@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Core.Tests
 {
-    using System;
-    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
-    using Microsoft.Azure.Cosmos.Handlers;
+    using System.Net;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -30,34 +30,116 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateSerializer()
         {
-            CosmosDefaultJsonSerializer cosmosDefaultJsonSerializer = new CosmosDefaultJsonSerializer();
-            using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(toDoActivity))
+            CosmosJsonSerializerCore cosmosDefaultJsonSerializer = new CosmosJsonSerializerCore();
+            using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
                 ToDoActivity result = cosmosDefaultJsonSerializer.FromStream<ToDoActivity>(stream);
                 Assert.IsNotNull(result);
-                Assert.AreEqual(toDoActivity.id, result.id);
-                Assert.AreEqual(toDoActivity.taskNum, result.taskNum);
-                Assert.AreEqual(toDoActivity.cost, result.cost);
-                Assert.AreEqual(toDoActivity.description, result.description);
-                Assert.AreEqual(toDoActivity.status, result.status);
+                Assert.AreEqual(this.toDoActivity.id, result.id);
+                Assert.AreEqual(this.toDoActivity.taskNum, result.taskNum);
+                Assert.AreEqual(this.toDoActivity.cost, result.cost);
+                Assert.AreEqual(this.toDoActivity.description, result.description);
+                Assert.AreEqual(this.toDoActivity.status, result.status);
             }
         }
 
         [TestMethod]
         public void ValidateJson()
         {
-            CosmosDefaultJsonSerializer cosmosDefaultJsonSerializer = new CosmosDefaultJsonSerializer();
-            using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(toDoActivity))
+            CosmosJsonSerializerCore cosmosDefaultJsonSerializer = new CosmosJsonSerializerCore();
+            using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
                 using (StreamReader reader = new StreamReader(stream))
                 {
                     string responseAsString = reader.ReadToEnd();
                     Assert.IsNotNull(responseAsString);
-                    Assert.AreEqual(toDoActivityJson, responseAsString);
+                    Assert.AreEqual(this.toDoActivityJson, responseAsString);
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task ValidateResponseFactoryJsonSerializer()
+        {
+            ResponseMessage databaseResponse = this.CreateResponse();
+            ResponseMessage containerResponse = this.CreateResponse();
+            ResponseMessage storedProcedureExecuteResponse = this.CreateResponse();
+            ResponseMessage storedProcedureResponse = this.CreateResponse();
+            ResponseMessage triggerResponse = this.CreateResponse();
+            ResponseMessage udfResponse = this.CreateResponse();
+            ResponseMessage itemResponse = this.CreateResponse();
+            ResponseMessage feedResponse = this.CreateResponse();
+
+            Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
+            Mock<CosmosSerializer> mockDefaultJsonSerializer = new Mock<CosmosSerializer>();
+            CosmosResponseFactory cosmosResponseFactory = new CosmosResponseFactory(
+               defaultJsonSerializer: mockDefaultJsonSerializer.Object,
+               userJsonSerializer: mockUserJsonSerializer.Object);
+
+            // Test the user specified response
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Returns(new ToDoActivity());
+            mockUserJsonSerializer.Setup(x => x.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(feedResponse.Content)).Returns(new CosmosFeedResponseUtil<ToDoActivity>() { Data = new Collection<ToDoActivity>() });
+
+            // Verify all the user types use the user specified version
+            await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse));
+            await cosmosResponseFactory.CreateStoredProcedureExecuteResponseAsync<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
+            cosmosResponseFactory.CreateResultSetQueryResponse<ToDoActivity>(feedResponse);
+
+            // Throw if the setups were not called
+            mockUserJsonSerializer.VerifyAll();
+
+            // Test the system specified response
+            ContainerProperties containerSettings = new ContainerProperties("mockId", "/pk");
+            DatabaseProperties databaseSettings = new DatabaseProperties()
+            {
+                Id = "mock"
+            };
+
+            StoredProcedureProperties cosmosStoredProcedureSettings = new StoredProcedureProperties()
+            {
+                Id = "mock"
+            };
+
+            TriggerProperties cosmosTriggerSettings = new TriggerProperties()
+            {
+                Id = "mock"
+            };
+
+            UserDefinedFunctionProperties cosmosUserDefinedFunctionSettings = new UserDefinedFunctionProperties()
+            {
+                Id = "mock"
+            };
+
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<DatabaseProperties>(databaseResponse.Content)).Returns(databaseSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<ContainerProperties>(containerResponse.Content)).Returns(containerSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<StoredProcedureProperties>(storedProcedureResponse.Content)).Returns(cosmosStoredProcedureSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<TriggerProperties>(triggerResponse.Content)).Returns(cosmosTriggerSettings);
+            mockDefaultJsonSerializer.Setup(x => x.FromStream<UserDefinedFunctionProperties>(udfResponse.Content)).Returns(cosmosUserDefinedFunctionSettings);
+
+            Mock<Container> mockContainer = new Mock<Container>();
+            Mock<Database> mockDatabase = new Mock<Database>();
+
+            // Verify all the system types that should always use default
+            await cosmosResponseFactory.CreateContainerResponseAsync(mockContainer.Object, Task.FromResult(containerResponse));
+            await cosmosResponseFactory.CreateDatabaseResponseAsync(mockDatabase.Object, Task.FromResult(databaseResponse));
+            await cosmosResponseFactory.CreateStoredProcedureResponseAsync(Task.FromResult(storedProcedureResponse));
+            await cosmosResponseFactory.CreateTriggerResponseAsync(Task.FromResult(triggerResponse));
+            await cosmosResponseFactory.CreateUserDefinedFunctionResponseAsync(Task.FromResult(udfResponse));
+
+            // Throw if the setups were not called
+            mockDefaultJsonSerializer.VerifyAll();
+        }
+
+        private ResponseMessage CreateResponse()
+        {
+            ResponseMessage cosmosResponse = new ResponseMessage(statusCode: HttpStatusCode.OK)
+            {
+                Content = new MemoryStream()
+            };
+            return cosmosResponse;
         }
 
         public class ToDoActivity

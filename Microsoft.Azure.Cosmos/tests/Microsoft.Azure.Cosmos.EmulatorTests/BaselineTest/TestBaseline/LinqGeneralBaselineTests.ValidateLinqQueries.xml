@@ -182,7 +182,7 @@ WHERE (root["NullableInt"] = null) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter family nullable int =]]></Description>
-      <Expression><![CDATA[query.Where(f => (f.NullableInt == Convert(5)))]]></Expression>
+      <Expression><![CDATA[query.Where(f => (f.NullableInt == Convert(5, Nullable`1)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -206,7 +206,7 @@ WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter nullableInt = nullInt value]]></Description>
-      <Expression><![CDATA[query.Where(f => (f.NullableInt == Convert(DisplayClass.nullableIntVal.Value)))]]></Expression>
+      <Expression><![CDATA[query.Where(f => (f.NullableInt == Convert(DisplayClass.nullableIntVal.Value, Nullable`1)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -218,7 +218,7 @@ WHERE (root["NullableInt"] = 5) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter int = nullInt]]></Description>
-      <Expression><![CDATA[query.Where(f => (Convert(f.Int) == DisplayClass.nullableIntVal))]]></Expression>
+      <Expression><![CDATA[query.Where(f => (Convert(f.Int, Nullable`1) == DisplayClass.nullableIntVal))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -242,7 +242,7 @@ WHERE (root["Int"] = 5) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter int = nullInt]]></Description>
-      <Expression><![CDATA[query.Where(f => (Convert(f.Int) == DisplayClass.nullIntVal))]]></Expression>
+      <Expression><![CDATA[query.Where(f => (Convert(f.Int, Nullable`1) == DisplayClass.nullIntVal))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -254,7 +254,7 @@ WHERE (root["Int"] = null) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Filter int < nullInt]]></Description>
-      <Expression><![CDATA[query.Where(f => (Convert(f.Int) < DisplayClass.nullIntVal))]]></Expression>
+      <Expression><![CDATA[query.Where(f => (Convert(f.Int, Nullable`1) < DisplayClass.nullIntVal))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

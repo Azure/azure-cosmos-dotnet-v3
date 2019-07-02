@@ -47,7 +47,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// foreach(Database db in client.CreateDatabaseQuery()) {}        
         /// </summary>
         /// <param name="expression"></param>
-        /// <returns></returns>
         private static SqlQuerySpec HandleEmptyQuery(ConstantExpression expression)
         {
             if (expression.Value == null)
@@ -59,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             Type expressionValueType = expression.Value.GetType();
-            if (!expressionValueType.IsGenericType || expressionValueType.GetGenericTypeDefinition() != typeof(DocumentQuery<bool>).GetGenericTypeDefinition())
+            if (!expressionValueType.IsGenericType || !(expressionValueType.GetGenericTypeDefinition() == typeof(DocumentQuery<bool>).GetGenericTypeDefinition() || expressionValueType.GetGenericTypeDefinition() == typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition()))
             {
                 throw new DocumentQueryException(
                     string.Format(CultureInfo.CurrentUICulture,
@@ -94,7 +93,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// foreach(string record in client.CreateDocumentQuery().Navigate("Raw JQuery"))
         /// </summary>
         /// <param name="expression"></param>
-        /// <returns></returns>
         private static SqlQuerySpec HandleAsSqlTransformExpression(MethodCallExpression expression)
         {
             Expression paramExpression = expression.Arguments[1];

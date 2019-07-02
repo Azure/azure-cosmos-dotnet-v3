@@ -22,10 +22,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
-    using Newtonsoft.Json;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json;
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public static readonly FeedResponse<dynamic> EmptyFeedResponse = new FeedResponse<dynamic>(
+        public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(
             Enumerable.Empty<dynamic>(),
             Enumerable.Empty<dynamic>().Count(),
             new StringKeyValueCollection());
@@ -98,9 +98,9 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly FeedOptions feedOptions;
         private readonly string resourceLink;
         private readonly bool getLazyFeedResponse;
-        private bool isExpressionEvaluated;
-        private FeedResponse<CosmosElement> lastPage;
         private readonly Guid correlatedActivityId;
+        private bool isExpressionEvaluated;
+        private DocumentFeedResponse<CosmosElement> lastPage;
 
         protected DocumentQueryExecutionContextBase(
            InitParams initParams)
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         protected string PartitionKeyRangeId => this.feedOptions.PartitionKeyRangeId;
 
-        protected virtual string ContinuationToken => this.lastPage == null ? this.feedOptions.RequestContinuation : this.lastPage.ResponseContinuation;
+        protected virtual string ContinuationToken => this.lastPage == null ? this.feedOptions.RequestContinuationToken : this.lastPage.ResponseContinuation;
 
         public virtual bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
@@ -161,6 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
             CancellationToken cancellationToken)
         {
             // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
@@ -171,10 +172,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
-                allowNonValueAggregateQuery);
+                allowNonValueAggregateQuery,
+                hasLogicalPartitionKey);
         }
 
-        public virtual async Task<FeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken cancellationToken)
+        public virtual async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken cancellationToken)
         {
             if (this.IsDone)
             {
@@ -188,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public FeedOptions GetFeedOptions(string continuationToken)
         {
             FeedOptions options = new FeedOptions(this.feedOptions);
-            options.RequestContinuation = continuationToken;
+            options.RequestContinuationToken = continuationToken;
             return options;
         }
 
@@ -215,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            requestHeaders[HttpConstants.HttpHeaders.Continuation] = feedOptions.RequestContinuation;
+            requestHeaders[HttpConstants.HttpHeaders.Continuation] = feedOptions.RequestContinuationToken;
             requestHeaders[HttpConstants.HttpHeaders.IsQuery] = bool.TrueString;
 
             // Flow the pageSize only when we are not doing client eval
@@ -258,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.feedOptions.ConsistencyLevel.HasValue)
             {
-                await this.client.EnsureValidOverwrite((Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value);
+                await this.client.EnsureValidOverwriteAsync((Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value);
                 requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.feedOptions.ConsistencyLevel.Value.ToString());
             }
             else if (desiredConsistencyLevel.HasValue)
@@ -335,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return request;
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteRequestLazyAsync(
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestLazyAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -348,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse(request, documentServiceResponse);
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteRequestAsync(
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -358,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.ExecuteReadFeedRequestAsync(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteRequestAsync<T>(
+        public async Task<DocumentFeedResponse<T>> ExecuteRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -368,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.ExecuteReadFeedRequestAsync<T>(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteQueryRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -376,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse(request, await this.ExecuteQueryRequestInternalAsync(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteQueryRequestAsync<T>(
+        public async Task<DocumentFeedResponse<T>> ExecuteQueryRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -384,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse<T>(await this.ExecuteQueryRequestInternalAsync(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<CosmosElement>> ExecuteReadFeedRequestAsync(
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteReadFeedRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -392,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return this.GetFeedResponse(request, await this.client.ReadFeedAsync(request, retryPolicyInstance, cancellationToken));
         }
 
-        public async Task<FeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
+        public async Task<DocumentFeedResponse<T>> ExecuteReadFeedRequestAsync<T>(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -418,7 +420,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public async Task<PartitionKeyRange> GetTargetPartitionKeyRangeById(string collectionResourceId, string partitionKeyRangeId)
+        public async Task<PartitionKeyRange> GetTargetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId)
         {
             IRoutingMapProvider routingMapProvider = await this.client.GetRoutingMapProviderAsync();
 
@@ -442,16 +444,16 @@ namespace Microsoft.Azure.Cosmos.Query
             return range;
         }
 
-        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(string collectionResourceId, string effectivePartitionKeyString)
+        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(string collectionResourceId, string effectivePartitionKeyString)
         {
-            return this.GetTargetPartitionKeyRanges(collectionResourceId,
+            return this.GetTargetPartitionKeyRangesAsync(collectionResourceId,
                 new List<Range<string>>
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
                 });
         }
 
-        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(string collectionResourceId, List<Range<string>> providedRanges)
+        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string collectionResourceId, List<Range<string>> providedRanges)
         {
             if (string.IsNullOrEmpty(nameof(collectionResourceId)))
             {
@@ -487,9 +489,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public abstract void Dispose();
 
-        protected abstract Task<FeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
+        protected abstract Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
 
-        protected async Task<List<PartitionKeyRange>> GetReplacementRanges(PartitionKeyRange targetRange, string collectionRid)
+        protected async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
         {
             IRoutingMapProvider routingMapProvider = await this.client.GetRoutingMapProviderAsync();
             List<PartitionKeyRange> replacementRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();
@@ -627,16 +629,15 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private FeedResponse<T> GetFeedResponse<T>(DocumentServiceResponse response)
+        private DocumentFeedResponse<T> GetFeedResponse<T>(DocumentServiceResponse response)
         {
-
             long responseLengthBytes = response.ResponseBody.CanSeek ? response.ResponseBody.Length : 0;
             IEnumerable<T> responseFeed = response.GetQueryResponse<T>(this.resourceType, this.getLazyFeedResponse, out int itemCount);
 
-            return new FeedResponse<T>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
+            return new DocumentFeedResponse<T>(responseFeed, itemCount, response.Headers, response.RequestStats, responseLengthBytes);
         }
 
-        private FeedResponse<CosmosElement> GetFeedResponse(
+        private DocumentFeedResponse<CosmosElement> GetFeedResponse(
             DocumentServiceRequest documentServiceRequest,
             DocumentServiceResponse documentServiceResponse)
         {
@@ -695,7 +696,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             int itemCount = cosmosArray.Count;
-            return new FeedResponse<CosmosElement>(
+            return new DocumentFeedResponse<CosmosElement>(
                 cosmosArray,
                 itemCount,
                 documentServiceResponse.Headers,

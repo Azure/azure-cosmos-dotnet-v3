@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -18,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class DocumentServiceLeaseContainerCosmosTests
     {
-        private static DocumentServiceLeaseStoreManagerSettings leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerSettings()
+        private static DocumentServiceLeaseStoreManagerOptions leaseStoreManagerSettings = new DocumentServiceLeaseStoreManagerOptions()
         {
             ContainerNamePrefix = "prefix",
             HostName = "host"
@@ -60,14 +62,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             CollectionAssert.AreEqual(DocumentServiceLeaseContainerCosmosTests.allLeases.Where(l => l.Owner == DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.HostName).ToList(), readLeases.ToList());
         }
 
-        private static CosmosContainer GetMockedContainer(string containerName = "myColl")
+        private static Container GetMockedContainer(string containerName = "myColl")
         {
-            CosmosResponseMessageHeaders headers = new CosmosResponseMessageHeaders();
-            headers.Continuation = string.Empty;
+            Headers headers = new Headers();
+            headers.ContinuationToken = string.Empty;
 
-            Mock<CosmosFeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<CosmosFeedIterator<DocumentServiceLeaseCore>>();
-            mockedQuery.Setup(q => q.FetchNextSetAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => CosmosReadFeedResponse<DocumentServiceLeaseCore>.CreateResponse(
+            Mock<FeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<FeedIterator<DocumentServiceLeaseCore>>();
+            mockedQuery.Setup(q => q.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => ReadFeedResponse<DocumentServiceLeaseCore>.CreateResponse(
                     responseMessageHeaders: headers,
                     resources: DocumentServiceLeaseContainerCosmosTests.allLeases,
                     hasMoreResults: false));
@@ -75,24 +77,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Returns(true)
                 .Returns(false);
 
-            Mock<CosmosItems> mockedItems = new Mock<CosmosItems>();
-            mockedItems.Setup(i => i.CreateItemQuery<DocumentServiceLeaseCore>(
+            Mock<Container> mockedItems = new Mock<Container>();
+            mockedItems.Setup(i => i.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
-                It.Is<string>(value => ("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')").Equals(value)), 
-                It.IsAny<int>(), 
-                It.IsAny<int?>(), 
+                It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),
                 It.IsAny<string>(), 
-                It.IsAny<CosmosQueryRequestOptions>()))
+                It.IsAny<QueryRequestOptions>()))
                 .Returns(()=>
                 {
                     return mockedQuery.Object;
                 });
 
-            Mock<CosmosContainer> mockedContainer = new Mock<CosmosContainer>();
-            //mockedContainer.Setup(c => c.LinkUri).Returns(new Uri("/dbs/myDb/colls/" + containerName, UriKind.Relative));
-            //mockedContainer.Setup(c => c.Client).Returns(DocumentServiceLeaseContainerCosmosTests.GetMockedClient());
-            mockedContainer.Setup(c => c.Items).Returns(mockedItems.Object);
-            return mockedContainer.Object;
+            return mockedItems.Object;
         }
 
         private static CosmosClient GetMockedClient()

@@ -12,9 +12,10 @@
         private static readonly string containerId = "container-samples";
         private static readonly string partitionKey = "/activityId";
 
-        private static CosmosDatabase database = null;
+        private static Database database = null;
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -58,17 +59,19 @@
                 Console.ReadKey();
             }
         }
+        // </Main>
 
         /// <summary>
         /// Run through basic container access methods as a console app demo.
         /// </summary>
         /// <returns></returns>
+        // <RunContainerDemo>
         private static async Task RunContainerDemo(CosmosClient client)
         {
             // Create the database if necessary
             await Program.Setup(client);
 
-            CosmosContainer simpleContainer = await Program.CreateContainer();
+            Container simpleContainer = await Program.CreateContainer();
 
             await Program.CreateContainerWithCustomIndexingPolicy();
 
@@ -83,16 +86,18 @@
             // Uncomment to delete container!
             // await Program.DeleteContainer();
         }
+        // </RunContainerDemo>
 
         private static async Task Setup(CosmosClient client)
         {
-            database = await client.Databases.CreateDatabaseIfNotExistsAsync(databaseId);
+            database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
         }
 
-        private static async Task<CosmosContainer> CreateContainer()
+        // <CreateContainer>
+        private static async Task<Container> CreateContainer()
         {
             // Set throughput to the minimum value of 400 RU/s
-            CosmosContainerResponse simpleContainer = await database.Containers.CreateContainerIfNotExistsAsync(
+            ContainerResponse simpleContainer = await database.CreateContainerIfNotExistsAsync(
                 id: containerId,
                 partitionKeyPath: partitionKey,
                 throughput: 400);
@@ -100,104 +105,117 @@
             Console.WriteLine($"\n1.1. Created container :{simpleContainer.Container.Id}");
             return simpleContainer;
         }
+        // </CreateContainer>
 
+        // <CreateContainerWithCustomIndexingPolicy>
         private static async Task CreateContainerWithCustomIndexingPolicy()
         {
-            // Create a container with custom index policy (lazy indexing)
+            // Create a container with custom index policy (consistent indexing)
             // We cover index policies in detail in IndexManagement sample project
-            CosmosContainerSettings containerSettings = new CosmosContainerSettings(
+            ContainerProperties containerProperties = new ContainerProperties(
                 id: "SampleContainerWithCustomIndexPolicy",
                 partitionKeyPath: partitionKey);
-            containerSettings.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
+            containerProperties.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
 
-            CosmosContainer containerWithLazyIndexing = await database.Containers.CreateContainerIfNotExistsAsync(
-                containerSettings,
+            Container containerWithConsistentIndexing = await database.CreateContainerIfNotExistsAsync(
+                containerProperties,
                 throughput: 400);
 
-            Console.WriteLine($"1.2. Created Container {containerWithLazyIndexing.Id}, with custom index policy \n");
+            Console.WriteLine($"1.2. Created Container {containerWithConsistentIndexing.Id}, with custom index policy \n");
 
-            await containerWithLazyIndexing.DeleteAsync();
+            await containerWithConsistentIndexing.DeleteContainerAsync();
         }
+        // </CreateContainerWithCustomIndexingPolicy>
 
+        // <CreateContainerWithTtlExpiration>
         private static async Task CreateContainerWithTtlExpiration()
         {
-            CosmosContainerSettings settings = new CosmosContainerSettings
+            ContainerProperties properties = new ContainerProperties
                 (id: "TtlExpiryContainer",
                 partitionKeyPath: partitionKey);
-            settings.DefaultTimeToLive = (int)TimeSpan.FromDays(1).TotalSeconds; //expire in 1 day
+            properties.DefaultTimeToLive = (int)TimeSpan.FromDays(1).TotalSeconds; //expire in 1 day
 
-            CosmosContainerResponse ttlEnabledContainerResponse = await database.Containers.CreateContainerIfNotExistsAsync(
-                containerSettings: settings);
-            CosmosContainerSettings returnedSettings = ttlEnabledContainerResponse;
+            ContainerResponse ttlEnabledContainerResponse = await database.CreateContainerIfNotExistsAsync(
+                containerProperties: properties);
+            ContainerProperties returnedProperties = ttlEnabledContainerResponse;
 
-            Console.WriteLine($"\n1.3. Created Container \n{returnedSettings.Id} with TTL expiration of {returnedSettings.DefaultTimeToLive}");
+            Console.WriteLine($"\n1.3. Created Container \n{returnedProperties.Id} with TTL expiration of {returnedProperties.DefaultTimeToLive}");
 
-            await ttlEnabledContainerResponse.Container.DeleteAsync();
+            await ttlEnabledContainerResponse.Container.DeleteContainerAsync();
         }
+        // </CreateContainerWithTtlExpiration>
 
-        private static async Task GetAndChangeContainerPerformance(CosmosContainer simpleContainer)
+        // <GetAndChangeContainerPerformance>
+        private static async Task GetAndChangeContainerPerformance(Container simpleContainer)
         {
 
             //*********************************************************************************************
             // Get configured performance (reserved throughput) of a CosmosContainer
             //**********************************************************************************************
-            int? throughput = await simpleContainer.ReadProvisionedThroughputAsync();
+            int? throughputResponse = await simpleContainer.ReadThroughputAsync();
 
-            Console.WriteLine($"\n2. Found throughput \n{throughput.Value}\nusing container's id \n{simpleContainer.Id}");
+            Console.WriteLine($"\n2. Found throughput \n{throughputResponse}\nusing container's id \n{simpleContainer.Id}");
 
             //******************************************************************************************************************
             // Change performance (reserved throughput) of CosmosContainer
             //    Let's change the performance of the container to 500 RU/s
             //******************************************************************************************************************
 
-            await simpleContainer.ReplaceProvisionedThroughputAsync(500);
+            await simpleContainer.ReplaceThroughputAsync(500);
 
             Console.WriteLine("\n3. Replaced throughput. Throughput is now 500.\n");
 
             // Get the offer again after replace
-            int? throughputAfterReplace = await simpleContainer.ReadProvisionedThroughputAsync();
+            throughputResponse = await simpleContainer.ReadThroughputAsync();
 
-            Console.WriteLine($"3. Found throughput \n{throughputAfterReplace.Value}\n using container's ResourceId {simpleContainer.Id}.\n");
+            Console.WriteLine($"3. Found throughput \n{throughputResponse}\n using container's ResourceId {simpleContainer.Id}.\n");
         }
+        // </GetAndChangeContainerPerformance>
 
+        // <ReadContainerProperties>
         private static async Task ReadContainerProperties()
         {
             //*************************************************
             // Get a CosmosContainer by its Id property
             //*************************************************
-            CosmosContainer container = database.Containers[containerId];
-            CosmosContainerSettings containerSettings = await container.ReadAsync();
+            Container container = database.GetContainer(containerId);
+            ContainerProperties containerProperties = await container.ReadContainerAsync();
 
-            Console.WriteLine($"\n4. Found Container \n{containerSettings.Id}\n");
+            Console.WriteLine($"\n4. Found Container \n{containerProperties.Id}\n");
         }
+        // </ReadContainerProperties>
 
         /// <summary>
         /// List the container within a database by calling the GetContainerIterator (scan) API.
         /// </summary>
         /// <returns></returns>
+        // <ListContainersInDatabase>
         private static async Task ListContainersInDatabase()
         {
             Console.WriteLine("\n5. Reading all CosmosContainer resources for a database");
 
-            CosmosResultSetIterator<CosmosContainerSettings> resultSetIterator = database.Containers.GetContainerIterator();
+            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>();
             while (resultSetIterator.HasMoreResults)
             {
-                foreach (CosmosContainerSettings container in await resultSetIterator.FetchNextSetAsync())
+                foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())
                 {
                     Console.WriteLine(container.Id);
                 }
             }
         }
+        // </ListContainersInDatabase>
 
         /// <summary>
         /// Delete a container
         /// </summary>
         /// <param name="simpleContainer"></param>
+        // <DeleteContainer>
         private static async Task DeleteContainer()
         {
-            await database.Containers[containerId].DeleteAsync();
+            await database.GetContainer(containerId).DeleteContainerAsync();
             Console.WriteLine("\n6. Deleted Container\n");
         }
+        // </DeleteContainer>
     }
 
     public class ToDoActivity

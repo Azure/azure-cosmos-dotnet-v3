@@ -10,18 +10,17 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosQueryRequestOptionsUniTests
+    public class QueryRequestOptionsUniTests
     {
         [TestMethod]
         public void StatelessTest()
         {
-            CosmosQueryRequestOptions requestOption = new CosmosQueryRequestOptions();
-            requestOption.RequestContinuation = "SomeToken";
+            QueryRequestOptions requestOption = new QueryRequestOptions();
 
-            CosmosRequestMessage testMessage = new CosmosRequestMessage();
-            requestOption.FillRequestOptions(testMessage);
+            RequestMessage testMessage = new RequestMessage();
+            requestOption.PopulateRequestOptions(testMessage);
 
-            Assert.IsNull(testMessage.Headers.Continuation);
+            Assert.IsNull(testMessage.Headers.ContinuationToken);
         }
     }
 }

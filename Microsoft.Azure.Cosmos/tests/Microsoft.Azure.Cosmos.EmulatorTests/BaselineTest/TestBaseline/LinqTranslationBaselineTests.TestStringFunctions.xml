@@ -292,7 +292,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[TrimStart]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimStart(new [] {}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimStart())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -325,7 +325,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[TrimEnd]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimEnd(new [] {}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimEnd())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

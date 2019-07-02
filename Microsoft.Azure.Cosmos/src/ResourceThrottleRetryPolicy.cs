@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (maxWaitTimeInSeconds > int.MaxValue / 1000)
             {
-                throw new ArgumentException("maxWaitTimeInSeconds", "maxWaitTimeInSeconds must be less than " + int.MaxValue / 1000);
+                throw new ArgumentException("maxWaitTimeInSeconds", "maxWaitTimeInSeconds must be less than " + (int.MaxValue / 1000));
             }
 
             this.maxAttemptCount = maxAttemptCount;
@@ -75,11 +75,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
+        /// <param name="cosmosResponseMessage"><see cref="ResponseMessage"/> in return of the request</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage,
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -137,7 +137,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="request">The request being sent to the service.</param>
         public void OnBeforeSendRequest(DocumentServiceRequest request)
-        { }
+        {
+        }
 
         /// <summary>
         /// Returns True if the given <paramref name="retryAfter"/> is within retriable bounds

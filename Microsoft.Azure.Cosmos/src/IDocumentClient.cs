@@ -83,12 +83,12 @@ namespace Microsoft.Azure.Cosmos
         #region Account operation
 
         /// <summary>
-        /// Read the <see cref="Microsoft.Azure.Cosmos.CosmosAccountSettings"/> as an asynchronous operation in the Azure Cosmos DB service.
+        /// Read the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        Task<CosmosAccountSettings> GetDatabaseAccountAsync();
+        Task<AccountProperties> GetDatabaseAccountAsync();
 
         #endregion
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="database">The specification for the <see cref="Database"/> to create.</param>
-        /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
+        /// <param name="options">(Optional) The <see cref="Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The <see cref="Database"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
@@ -142,14 +142,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Database>> CreateDatabaseAsync(Database database, RequestOptions options = null);
+        Task<ResourceResponse<Documents.Database>> CreateDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates(if doesn't exist) or gets(if already exists) a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// You can check the status code from the response to determine whether the database was newly created(201) or existing database was returned(200)
         /// </summary>
         /// <param name="database">The specification for the <see cref="Database"/> to create.</param>
-        /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
+        /// <param name="options">(Optional) The <see cref="Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The <see cref="Database"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
@@ -181,8 +181,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsAsync(Database database, RequestOptions options = null);
-
+        Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsAsync(Documents.Database database, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates a collection as an asychronous operation in the Azure Cosmos DB service.
@@ -229,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates (if doesn't exist) or gets (if already exists) a collection as an asychronous operation in the Azure Cosmos DB service.
@@ -274,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(string databaseLink, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates a collection as an asychronous operation in the Azure Cosmos DB service.
@@ -286,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(
             Uri databaseUri,
             DocumentCollection documentCollection,
-            RequestOptions options = null);
+            Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates (if doesn't exist) or gets (if already exists) a collection as an asychronous operation in the Azure Cosmos DB service.
@@ -298,15 +297,14 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(
             Uri databaseUri,
             DocumentCollection documentCollection,
-            RequestOptions options = null);
-
+            Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates a Document as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="DocumentCollection"/> to create the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
         /// <param name="document">The document object to create.</param>
-        /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="RequestOptions"/></param>
+        /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="Documents.Client.RequestOptions"/></param>
         /// <param name="disableAutomaticIdGeneration">(Optional) Disables the automatic id generation, If this is True the system will throw an exception if the id property is missing from the Document.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The <see cref="Microsoft.Azure.Documents.Document"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
@@ -399,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> CreateDocumentAsync(string collectionLink, object document, RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> CreateDocumentAsync(string collectionLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Creates a document as an asychronous operation in the Azure Cosmos DB service.
@@ -413,10 +411,9 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<Document>> CreateDocumentAsync(
             Uri documentCollectionUri,
             object document,
-            RequestOptions options = null,
+            Documents.Client.RequestOptions options = null,
             bool disableAutomaticIdGeneration = false,
             CancellationToken cancellationToken = default(CancellationToken));
-
 
         /// <summary>
         /// Creates a stored procedure as an asychronous operation in the Azure Cosmos DB service.
@@ -466,7 +463,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates a stored procedure as an asychronous operation in the Azure Cosmos DB service.
@@ -478,8 +475,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(
             Uri documentCollectionUri,
             StoredProcedure storedProcedure,
-            RequestOptions options = null);
-
+            Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates a trigger as an asychronous operation in the Azure Cosmos DB service.
@@ -541,7 +537,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Trigger>> CreateTriggerAsync(string collectionLink, Trigger trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> CreateTriggerAsync(string collectionLink, Trigger trigger, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates a trigger as an asychronous operation in the Azure Cosmos DB service.
@@ -550,7 +546,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="trigger">The <see cref="Trigger"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Trigger>> CreateTriggerAsync(Uri documentCollectionUri, Trigger trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> CreateTriggerAsync(Uri documentCollectionUri, Trigger trigger, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates a user defined function as an asychronous operation in the Azure Cosmos DB service.
@@ -599,7 +595,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Creates a user defined function as an asychronous operation in the Azure Cosmos DB service.
@@ -611,7 +607,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(
             Uri documentCollectionUri,
             UserDefinedFunction function,
-            RequestOptions options = null);
+            Documents.Client.RequestOptions options = null);
 
         #endregion
 
@@ -646,7 +642,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Database>> DeleteDatabaseAsync(string databaseLink, RequestOptions options = null);
+        Task<ResourceResponse<Documents.Database>> DeleteDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a database as an asynchronous operation in the Azure Cosmos DB service.
@@ -654,7 +650,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">The URI of the database to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Database>> DeleteDatabaseAsync(Uri databaseUri, RequestOptions options = null);
+        Task<ResourceResponse<Documents.Database>> DeleteDatabaseAsync(Uri databaseUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a <see cref="DocumentCollection"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -686,7 +682,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(string documentCollectionLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -694,7 +690,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the document collection to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(Uri documentCollectionUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a <see cref="Microsoft.Azure.Documents.Document"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -727,7 +723,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> DeleteDocumentAsync(string documentLink, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> DeleteDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Delete a document as an asynchronous operation in the Azure Cosmos DB service.
@@ -736,7 +732,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> DeleteDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Delete a <see cref="StoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -768,7 +764,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(string storedProcedureLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
@@ -776,7 +772,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storedProcedureUri">The URI of the stored procedure to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(Uri storedProcedureUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a <see cref="Trigger"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -808,7 +804,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Trigger>> DeleteTriggerAsync(string triggerLink, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> DeleteTriggerAsync(string triggerLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a trigger as an asynchronous operation in the Azure Cosmos DB service.
@@ -816,7 +812,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="triggerUri">The URI of the trigger to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Trigger>> DeleteTriggerAsync(Uri triggerUri, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> DeleteTriggerAsync(Uri triggerUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a <see cref="UserDefinedFunction"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -848,7 +844,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(string functionLink, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(string functionLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a user defined function as an asynchronous operation in the Azure Cosmos DB service.
@@ -856,7 +852,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="functionUri">The URI of the user defined function to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(Uri functionUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a <see cref="Microsoft.Azure.Documents.Conflict"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -888,7 +884,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Conflict>> DeleteConflictAsync(string conflictLink, RequestOptions options = null);
+        Task<ResourceResponse<Conflict>> DeleteConflictAsync(string conflictLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Delete a conflict as an asynchronous operation in the Azure Cosmos DB service.
@@ -896,7 +892,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="conflictUri">The URI of the conflict to delete.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Conflict>> DeleteConflictAsync(Uri conflictUri, RequestOptions options = null);
+        Task<ResourceResponse<Conflict>> DeleteConflictAsync(Uri conflictUri, Documents.Client.RequestOptions options = null);
 
         #endregion
 
@@ -910,7 +906,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="DocumentCollection"/> containing the updated resource record.
         /// </returns>
-        Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(DocumentCollection documentCollection, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(DocumentCollection documentCollection, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Replaces a document collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -922,7 +918,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(
             Uri documentCollectionUri,
             DocumentCollection documentCollection,
-            RequestOptions options = null);
+            Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Replaces a <see cref="Microsoft.Azure.Documents.Document"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -976,7 +972,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> ReplaceDocumentAsync(string documentLink, object document, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReplaceDocumentAsync(string documentLink, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Replaces a document as an asynchronous operation in the Azure Cosmos DB service.
@@ -986,7 +982,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Document>> ReplaceDocumentAsync(Uri documentUri, object document, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReplaceDocumentAsync(Uri documentUri, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Replaces a <see cref="Microsoft.Azure.Documents.Document"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1030,7 +1026,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Replaces a <see cref="StoredProcedure"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1072,7 +1068,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(StoredProcedure storedProcedure, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Replace the specified stored procedure in the Azure Cosmos DB service.
@@ -1084,7 +1080,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(
             Uri storedProcedureUri,
             StoredProcedure storedProcedure,
-            RequestOptions options = null);
+            Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Replaces a <see cref="Trigger"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1126,7 +1122,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Trigger trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Trigger trigger, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Replaces a trigger as an asynchronous operation in the Azure Cosmos DB service.
@@ -1135,7 +1131,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="trigger">The updated trigger.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Uri triggerUri, Trigger trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Uri triggerUri, Trigger trigger, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Replaces a <see cref="UserDefinedFunction"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1177,7 +1173,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(UserDefinedFunction function, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(UserDefinedFunction function, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Replaces a user defined function as an asynchronous operation in the Azure Cosmos DB service.
@@ -1189,7 +1185,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(
             Uri userDefinedFunctionUri,
             UserDefinedFunction function,
-            RequestOptions options = null);
+            Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Replaces a <see cref="Microsoft.Azure.Documents.Offer"/> in the Azure Cosmos DB service as an asynchronous operation.
@@ -1285,7 +1281,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<Database>> ReadDatabaseAsync(string databaseLink, RequestOptions options = null);
+        Task<ResourceResponse<Documents.Database>> ReadDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="Database"/> as an asynchronous operation from the Azure Cosmos DB service.
@@ -1324,11 +1320,11 @@ namespace Microsoft.Azure.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the service. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        /// <seealso cref="Database"/> 
+        /// <seealso cref="Documents.Database"/> 
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Database>> ReadDatabaseAsync(Uri databaseUri, RequestOptions options = null);
+        Task<ResourceResponse<Documents.Database>> ReadDatabaseAsync(Uri databaseUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="DocumentCollection"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1380,7 +1376,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(string documentCollectionLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="DocumentCollection"/> as an asynchronous operation from the Azure Cosmos DB service.
@@ -1424,7 +1420,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(Uri documentCollectionUri, RequestOptions options = null);
+        Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(Uri documentCollectionUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1478,7 +1474,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<Document>> ReadDocumentAsync(string documentLink, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReadDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> as an asynchronous operation from the Azure Cosmos DB service.
@@ -1524,7 +1520,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> ReadDocumentAsync(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> as a generic type T from the Azure Cosmos DB service as an asynchronous operation.
@@ -1578,7 +1574,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<DocumentResponse<T>> ReadDocumentAsync<T>(string documentLink, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentResponse<T>> ReadDocumentAsync<T>(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Document"/> as a generic type T from the Azure Cosmos DB service as an asynchronous operation.
@@ -1624,7 +1620,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentResponse<T>> ReadDocumentAsync<T>(Uri documentUri, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads a <see cref="StoredProcedure"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1677,7 +1673,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(string storedProcedureLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="StoredProcedure"/> as an asynchronous operation from the Azure Cosmos DB service.
@@ -1722,7 +1718,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(Uri storedProcedureUri, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(Uri storedProcedureUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="Trigger"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1775,7 +1771,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<Trigger>> ReadTriggerAsync(string triggerLink, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> ReadTriggerAsync(string triggerLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="Trigger"/> as an asynchronous operation from the Azure Cosmos DB service.
@@ -1820,7 +1816,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Trigger>> ReadTriggerAsync(Uri triggerUri, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> ReadTriggerAsync(Uri triggerUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="UserDefinedFunction"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1873,7 +1869,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(string functionLink, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(string functionLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="UserDefinedFunction"/> as an asynchronous operation from the Azure Cosmos DB service.
@@ -1918,7 +1914,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(Uri functionUri, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(Uri functionUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Conflict"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -1971,7 +1967,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        Task<ResourceResponse<Conflict>> ReadConflictAsync(string conflictLink, RequestOptions options = null);
+        Task<ResourceResponse<Conflict>> ReadConflictAsync(string conflictLink, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Conflict"/> as an asynchronous operation from the Azure Cosmos DB service.
@@ -2016,7 +2012,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Conflict>> ReadConflictAsync(Uri conflictUri, RequestOptions options = null);
+        Task<ResourceResponse<Conflict>> ReadConflictAsync(Uri conflictUri, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Reads an <see cref="Microsoft.Azure.Documents.Offer"/> from the Azure Cosmos DB service as an asynchronous operation.
@@ -2096,7 +2092,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Database> response = await client.ReadDatabaseFeedAsync(new FeedOptions
+        ///     DoucmentFeedResponse<Database> response = await client.ReadDatabaseFeedAsync(new FeedOptions
         ///                                                                 {
         ///                                                                     MaxItemCount = 10,
         ///                                                                     RequestContinuation = continuation
@@ -2115,13 +2111,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null);
+        Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedAsync(FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="options">(Optional) The request options for the request.</param>
         /// <param name="partitionKeyRangesOrCollectionLink">The link of the resources to be read, or owner collection link, SelfLink or AltLink. E.g. /dbs/db_rid/colls/coll_rid/pkranges</param>
+        /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
         /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Database"/> containing the read resource record.
         /// </returns>
@@ -2138,7 +2134,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedResponse<PartitionKeyRange> response = null;
+        /// DoucmentFeedResponse<PartitionKeyRange> response = null;
         /// List<string> ids = new List<string>();
         /// do
         /// {
@@ -2154,9 +2150,9 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentFeedResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(string partitionKeyRangesOrCollectionLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(string partitionKeyRangesOrCollectionLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
@@ -2170,7 +2166,7 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Uri partitionKeyRangesUri = UriFactory.CreatePartitionKeyRangesUri(database.Id, collection.Id);
-        /// FeedResponse<PartitionKeyRange> response = null;
+        /// DoucmentFeedResponse<PartitionKeyRange> response = null;
         /// List<string> ids = new List<string>();
         /// do
         /// {
@@ -2186,10 +2182,10 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentFeedResponse{T}"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.UriFactory.CreatePartitionKeyRangesUri(string, string)"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(Uri partitionKeyRangesOrCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(Uri partitionKeyRangesOrCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="DocumentCollection"/> for a database from the Azure Cosmos DB service as an asynchronous operation.
@@ -2221,7 +2217,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<DocumentCollection> response = await client.ReadDocumentCollectionFeedAsync("/dbs/db_rid/colls/",
+        ///     DoucmentFeedResponse<DocumentCollection> response = await client.ReadDocumentCollectionFeedAsync("/dbs/db_rid/colls/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2241,7 +2237,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of collections for a database as an asynchronous operation in the Azure Cosmos DB service.
@@ -2249,7 +2245,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">The URI of the parent Database.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(Uri databaseUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(Uri databaseUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of documents for a specified collection from the Azure Cosmos DB service.
@@ -2283,7 +2279,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<dynamic> response = await client.ReadDocumentFeedAsync("/dbs/db_rid/colls/coll_rid/docs/",
+        ///     DoucmentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync("/dbs/db_rid/colls/coll_rid/docs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2300,13 +2296,13 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// Instead of FeedResponse{Document} this method takes advantage of dynamic objects in .NET. This way a single feed result can contain any kind of Document, or POCO object.
+        /// Instead of DoucmentFeedResponse{Document} this method takes advantage of dynamic objects in .NET. This way a single feed result can contain any kind of Document, or POCO object.
         /// This is important becuse a DocumentCollection can contain different kinds of documents.
         /// </remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the feed (sequence) of documents for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2315,7 +2311,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentCollectionUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(Uri documentCollectionUri, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="StoredProcedure"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2347,7 +2343,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<StoredProcedure> response = await client.ReadStoredProcedureFeedAsync("/dbs/db_rid/colls/col_rid/sprocs/",
+        ///     DoucmentFeedResponse<StoredProcedure> response = await client.ReadStoredProcedureFeedAsync("/dbs/db_rid/colls/col_rid/sprocs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2367,7 +2363,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of stored procedures for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2375,7 +2371,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Trigger"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2407,7 +2403,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Trigger> response = await client.ReadTriggerFeedAsync("/dbs/db_rid/colls/col_rid/triggers/",
+        ///     DoucmentFeedResponse<Trigger> response = await client.ReadTriggerFeedAsync("/dbs/db_rid/colls/col_rid/triggers/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2427,7 +2423,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of triggers for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2435,7 +2431,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="UserDefinedFunction"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2467,7 +2463,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<UserDefinedFunction> response = await client.ReadUserDefinedFunctionFeedAsync("/dbs/db_rid/colls/col_rid/udfs/",
+        ///     DoucmentFeedResponse<UserDefinedFunction> response = await client.ReadUserDefinedFunctionFeedAsync("/dbs/db_rid/colls/col_rid/udfs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2487,7 +2483,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of user defined functions for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2495,7 +2491,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.Conflict"/> for a collection from the Azure Cosmos DB service as an asynchronous operation.
@@ -2527,7 +2523,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Conflict> response = await client.ReadConflictAsync("/dbs/db_rid/colls/coll_rid/conflicts/",
+        ///     DoucmentFeedResponse<Conflict> response = await client.ReadConflictAsync("/dbs/db_rid/colls/coll_rid/conflicts/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -2547,7 +2543,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<Conflict>> ReadConflictFeedAsync(string conflictsLink, FeedOptions options = null);
+        Task<DocumentFeedResponse<Conflict>> ReadConflictFeedAsync(string conflictsLink, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of conflicts for a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2555,7 +2551,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="documentCollectionUri">The URI of the parent document collection.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Cosmos.FeedOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<FeedResponse<Conflict>> ReadConflictFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
+        Task<DocumentFeedResponse<Conflict>> ReadConflictFeedAsync(Uri documentCollectionUri, FeedOptions options = null);
 
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.Offer"/> for a database account from the Azure Cosmos DB service
@@ -2583,7 +2579,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Offer> response = await client.ReadOfferAsync(new FeedOptions
+        ///     DoucmentFeedResponse<Offer> response = await client.ReadOfferAsync(new FeedOptions
         ///                                                                 {
         ///                                                                     MaxItemCount = 10,
         ///                                                                     RequestContinuation = continuation
@@ -2602,7 +2598,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<FeedResponse<Offer>> ReadOffersFeedAsync(FeedOptions options = null);
+        Task<DocumentFeedResponse<Offer>> ReadOffersFeedAsync(FeedOptions options = null);
 
         #endregion
 
@@ -2672,7 +2668,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, RequestOptions options, params dynamic[] procedureParams);
+        Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, Documents.Client.RequestOptions options, params dynamic[] procedureParams);
 
         /// <summary>
         /// Executes a stored procedure against a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2684,7 +2680,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
         Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(
             Uri storedProcedureUri,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             params dynamic[] procedureParams);
 
         /// <summary>
@@ -2716,7 +2712,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, RequestOptions options, CancellationToken cancellationToken, params dynamic[] procedureParams);
+        Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, Documents.Client.RequestOptions options, CancellationToken cancellationToken, params dynamic[] procedureParams);
 
         /// <summary>
         /// Executes a stored procedure against a collection as an asynchronous operation in the Azure Cosmos DB service.
@@ -2729,7 +2725,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
         Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(
             Uri storedProcedureUri,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             CancellationToken cancellationToken,
             params dynamic[] procedureParams);
 
@@ -2741,7 +2737,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="collectionLink">The link of the <see cref="DocumentCollection"/> to upsert the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
         /// <param name="document">The document object to upsert.</param>
-        /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="RequestOptions"/></param>
+        /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="Documents.Client.RequestOptions"/></param>
         /// <param name="disableAutomaticIdGeneration">(Optional) Disables the automatic id generation, If this is True the system will throw an exception if the id property is missing from the Document.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The <see cref="Document"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
@@ -2834,7 +2830,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Document>> UpsertDocumentAsync(string collectionLink, object document, RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken));
+        Task<ResourceResponse<Document>> UpsertDocumentAsync(string collectionLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Upserts a document as an asychronous operation in the Azure Cosmos DB service.
@@ -2848,7 +2844,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<Document>> UpsertDocumentAsync(
             Uri documentCollectionUri,
             object document,
-            RequestOptions options = null,
+            Documents.Client.RequestOptions options = null,
             bool disableAutomaticIdGeneration = false,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -2900,7 +2896,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, RequestOptions options = null);
+        Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Upserts a stored procedure as an asychronous operation in the Azure Cosmos DB service.
@@ -2912,7 +2908,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(
             Uri documentCollectionUri,
             StoredProcedure storedProcedure,
-            RequestOptions options = null);
+            Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Upserts a trigger as an asychronous operation in the Azure Cosmos DB service.
@@ -2974,7 +2970,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<Trigger>> UpsertTriggerAsync(string collectionLink, Trigger trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> UpsertTriggerAsync(string collectionLink, Trigger trigger, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Upserts a trigger as an asychronous operation in the Azure Cosmos DB service.
@@ -2983,7 +2979,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="trigger">The <see cref="Trigger"/> object.</param>
         /// <param name="options">(Optional) The <see cref="Microsoft.Azure.Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        Task<ResourceResponse<Trigger>> UpsertTriggerAsync(Uri documentCollectionUri, Trigger trigger, RequestOptions options = null);
+        Task<ResourceResponse<Trigger>> UpsertTriggerAsync(Uri documentCollectionUri, Trigger trigger, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Upserts a user defined function as an asychronous operation in the Azure Cosmos DB service.
@@ -3032,7 +3028,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, RequestOptions options = null);
+        Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, Documents.Client.RequestOptions options = null);
 
         /// <summary>
         /// Upserts a user defined function as an asychronous operation in the Azure Cosmos DB service.
@@ -3044,7 +3040,7 @@ namespace Microsoft.Azure.Cosmos
         Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(
             Uri documentCollectionUri,
             UserDefinedFunction function,
-            RequestOptions options = null);
+            Documents.Client.RequestOptions options = null);
 
         #endregion
 
@@ -3275,7 +3271,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        IOrderedQueryable<Database> CreateDatabaseQuery(FeedOptions feedOptions = null);
+        IOrderedQueryable<Documents.Database> CreateDatabaseQuery(FeedOptions feedOptions = null);
 
         /// <summary>
         /// Overloaded. This method creates a query for database resources under an Azure Cosmos DB database account by using a SQL statement. It returns an IQueryable{dynamic}.
@@ -3292,7 +3288,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>Refer to https://msdn.microsoft.com/en-us/library/azure/dn782250.aspx and http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.</remarks>
-        /// <seealso cref="Database"/>
+        /// <seealso cref="Documents.Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
         IQueryable<dynamic> CreateDatabaseQuery(string sqlExpression, FeedOptions feedOptions = null);
 

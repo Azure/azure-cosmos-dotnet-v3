@@ -5,19 +5,21 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using System.Runtime.Serialization;
 
     /// <summary>
     /// Unspecified CRS. If a geometry has this CRS, no CRS can be assumed for it according to GeoJSON spec.
     /// </summary>
+    [DataContract]
     internal class UnspecifiedCrs : Crs, IEquatable<UnspecifiedCrs>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="UnspecifiedCrs"/> class.
         /// </summary>
-        public UnspecifiedCrs() : base(CrsType.Unspecified)
+        public UnspecifiedCrs()
+            : base(CrsType.Unspecified)
         {
         }
-
 
         /// <summary>
         /// Determines whether the specified <see cref="LinkedCrs"/> is equal to the current <see cref="LinkedCrs"/>.

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task RetriesIfCannotFind()
         {
             string itemId = "1";
-            object partitionKey = "1";
+            string partitionKey = "1";
             
             List<KeyValuePair<string, DocumentServiceLease>> state = new List<KeyValuePair<string, DocumentServiceLease>>();
 
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>(state);
 
             DocumentServiceLeaseUpdaterInMemory updater = new DocumentServiceLeaseUpdaterInMemory(container);
-            DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
+            DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, new Cosmos.PartitionKey(partitionKey), serverLease =>
             {
                 serverLease.Owner = "newHost";
                 return serverLease;
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task UpdatesLease()
         {
             string itemId = "1";
-            object partitionKey = "1";
+            string partitionKey = "1";
             
             List<KeyValuePair<string, DocumentServiceLease>> state = new List<KeyValuePair<string, DocumentServiceLease>>()
             {
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ConcurrentDictionary<string, DocumentServiceLease> container = new ConcurrentDictionary<string, DocumentServiceLease>(state);
 
             DocumentServiceLeaseUpdaterInMemory updater = new DocumentServiceLeaseUpdaterInMemory(container);
-            DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, partitionKey, serverLease =>
+            DocumentServiceLease updatedLease = await updater.UpdateLeaseAsync(leaseToUpdate, itemId, new Cosmos.PartitionKey(partitionKey), serverLease =>
             {
                 serverLease.Owner = "newHost";
                 return serverLease;

@@ -37,7 +37,6 @@ JOIN (
     )
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":105,"end":142},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -58,7 +57,6 @@ JOIN (
     )
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -191,7 +189,6 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -211,7 +208,6 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -232,7 +228,6 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -291,7 +286,6 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":124,"end":162},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -352,7 +346,6 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":136,"end":173},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -374,7 +367,6 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -396,7 +388,6 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -438,7 +429,6 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":121,"end":145},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -463,7 +453,6 @@ JOIN (
     )
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":150,"end":187},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":88,"end":93},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -545,7 +534,6 @@ JOIN (
 ) AS v1 
 WHERE (v1 > 0) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":159,"end":183},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":69,"end":74},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -568,7 +556,6 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -589,7 +576,6 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -609,7 +595,6 @@ JOIN (
 ) AS v1 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -623,14 +608,16 @@ ORDER BY v1 ASC
 SELECT VALUE root 
 FROM root 
 JOIN (
-    SELECT TOP 2 VALUE SUM(c0["Grade"]) 
-    FROM root 
-    JOIN c0 IN root["Children"] 
-    ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
+    SELECT VALUE SUM(r0["Grade"]) 
+    FROM (
+        SELECT TOP 2 VALUE c0 
+        FROM root 
+        JOIN c0 IN root["Children"] 
+        ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
+    ) AS r0
 ) AS v1 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":108,"end":145},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":41,"end":46},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1037,13 +1024,12 @@ JOIN (
 ) AS v1 
 WHERE (v0 >= 2) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":13,"end":53},"code":"SC2990","message":"The specified query includes 'member indexer' which is currently not supported."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select(Floor(sum(map), sum(map)))]]></Description>
-      <Expression><![CDATA[query.Select(f => Floor(((1 * Convert(f.Children.Sum(c => c.Grade))) / Convert((f.Children.Sum(c => c.Pets.Count()) + 1)))))]]></Expression>
+      <Expression><![CDATA[query.Select(f => Floor(((1 * Convert(f.Children.Sum(c => c.Grade), Double)) / Convert((f.Children.Sum(c => c.Pets.Count()) + 1), Double))))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1065,7 +1051,7 @@ JOIN (
   <Result>
     <Input>
       <Description><![CDATA[Select(Pow(Sum(map), Count(Any)))]]></Description>
-      <Expression><![CDATA[query.Select(f => Pow(Convert(f.Children.Sum(c => c.Pets.Count())), Convert(f.Children.Count(c => c.Pets.Any(p => ((p.GivenName.Count() == 0) OrElse (p.GivenName.Substring(0, 1) == "A")))))))]]></Expression>
+      <Expression><![CDATA[query.Select(f => Pow(Convert(f.Children.Sum(c => c.Pets.Count()), Double), Convert(f.Children.Count(c => c.Pets.Any(p => ((p.GivenName.Count() == 0) OrElse (p.GivenName.Substring(0, 1) == "A")))), Double)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1096,7 +1082,7 @@ JOIN (
   <Result>
     <Input>
       <Description><![CDATA[OrderBy(Log(Where -> Count))]]></Description>
-      <Expression><![CDATA[query.OrderBy(f => Log(Convert(f.Children.Where(c => (c.Pets.Count() > 0)).Count())))]]></Expression>
+      <Expression><![CDATA[query.OrderBy(f => Log(Convert(f.Children.Where(c => (c.Pets.Count() > 0)).Count(), Double)))]]></Expression>
       <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
@@ -1111,7 +1097,6 @@ JOIN (
 ) AS v0 
 ORDER BY LOG(v0) ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1160,32 +1145,6 @@ FROM (
 ) AS r0 
 WHERE ((r0["FamilyId"] > "ABC") AND (ARRAY_LENGTH(r0["SmartChildren"]) > 0)) 
 ORDER BY r0["ChildrenCount"] ASC 
-]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[Select(new w/ Where) -> Where -> OrderBy -> Take]]></Description>
-      <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => (c.Grade > 90)))).Where(f => ((f.ChildrenCount > 2) AndAlso (f.SmartChildren.Count() > 1))).OrderBy(f => f.FamilyId).Take(10)]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT TOP 10 VALUE r0 
-FROM (
-    SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenCount": ARRAY_LENGTH(root["Children"]), "SmartChildren": v0} 
-    FROM root 
-    JOIN (
-        SELECT VALUE ARRAY(
-            SELECT VALUE c0 
-            FROM root 
-            JOIN c0 IN root["Children"] 
-            WHERE (c0["Grade"] > 90)
-        )
-    ) AS v0
-) AS r0 
-WHERE ((r0["ChildrenCount"] > 2) AND (ARRAY_LENGTH(r0["SmartChildren"]) > 1)) 
-ORDER BY r0["FamilyId"] ASC 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1240,7 +1199,6 @@ JOIN (
 ) AS v6 
 WHERE (r0["FirstChild"] != null) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":403,"end":408},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1402,7 +1360,6 @@ JOIN (
 WHERE (v0 AND root["IsRegistered"]) 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1509,7 +1466,6 @@ JOIN (
 ) AS v3 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":110,"end":115},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":252,"end":276},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1838,7 +1794,6 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.Linq.DocumentQueryException: Input is not of type IDocumentQuery., ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2018,7 +1973,6 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2037,7 +1991,6 @@ JOIN (
     JOIN v0 IN root["Children"]
 ) AS v2 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2057,7 +2010,6 @@ JOIN (
     ORDER BY c0["Grade"] ASC
 ) AS v0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":86,"end":110},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2077,7 +2029,6 @@ JOIN (
     WHERE (LENGTH(c0["FamilyName"]) > 10)
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -2097,7 +2048,6 @@ JOIN (
     WHERE (LENGTH(c0["FamilyName"]) > 10)
 ) AS v1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

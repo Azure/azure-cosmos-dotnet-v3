@@ -12,14 +12,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// <summary>
     /// Handler which selects the piepline for the requested resource operation
     /// </summary>
-    internal class RouterHandler : CosmosRequestHandler
+    internal class RouterHandler : RequestHandler
     {
-        private readonly CosmosRequestHandler documentFeedHandler;
-        private readonly CosmosRequestHandler pointOperationHandler;
+        private readonly RequestHandler documentFeedHandler;
+        private readonly RequestHandler pointOperationHandler;
 
         public RouterHandler(
-            CosmosRequestHandler documentFeedHandler, 
-            CosmosRequestHandler pointOperationHandler)
+            RequestHandler documentFeedHandler, 
+            RequestHandler pointOperationHandler)
         {
             if (documentFeedHandler == null)
             {
@@ -35,12 +35,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.pointOperationHandler = pointOperationHandler;
         }
 
-        public override Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request, 
+        public override Task<ResponseMessage> SendAsync(
+            RequestMessage request, 
             CancellationToken cancellationToken)
         {
-            CosmosRequestHandler targetHandler = null;
-            if (request.IsDocumentFeedOperation)
+            RequestHandler targetHandler = null;
+            if (request.IsPartitionedFeedOperation)
             {
                 targetHandler = documentFeedHandler;
             }

@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal abstract class RequestOptionsFactory
     {
-        public abstract string GetPartitionKey(string itemId);
+        public abstract PartitionKey GetPartitionKey(string itemId);
 
         public abstract FeedOptions CreateFeedOptions();
     }

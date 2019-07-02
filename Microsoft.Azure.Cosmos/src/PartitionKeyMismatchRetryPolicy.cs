@@ -14,10 +14,10 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class PartitionKeyMismatchRetryPolicy : IDocumentClientRetryPolicy
     {
+        private const int MaxRetries = 1;
+
         private readonly CollectionCache clientCollectionCache;
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
-
-        private const int MaxRetries = 1;
 
         private int retriesAttempted;
 
@@ -28,11 +28,6 @@ namespace Microsoft.Azure.Cosmos
             if (clientCollectionCache == null)
             {
                 throw new ArgumentNullException("clientCollectionCache");
-            }
-
-            if (nextRetryPolicy == null)
-            {
-                throw new ArgumentNullException("nextRetryPolicy");
             }
 
             this.clientCollectionCache = clientCollectionCache;
@@ -61,17 +56,22 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(shouldRetryResult);
             }
 
+            if (this.nextRetryPolicy == null)
+            {
+                return Task.FromResult(ShouldRetryResult.NoRetry());
+            }
+
             return this.nextRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
         }
 
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
+        /// <param name="cosmosResponseMessage"><see cref="ResponseMessage"/> in return of the request</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage,
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(cosmosResponseMessage?.StatusCode,
@@ -80,6 +80,11 @@ namespace Microsoft.Azure.Cosmos
             if (shouldRetryResult != null)
             {
                 return Task.FromResult(shouldRetryResult);
+            }
+
+            if (this.nextRetryPolicy == null)
+            {
+                return Task.FromResult(ShouldRetryResult.NoRetry());
             }
 
             return this.nextRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
@@ -115,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (!string.IsNullOrEmpty(resourceIdOrFullName))
                 {
-                    this.clientCollectionCache.Refresh(resourceIdOrFullName);
+                    this.clientCollectionCache.Refresh(resourceIdOrFullName, HttpConstants.Versions.CurrentVersion);
                 }
 
                 this.retriesAttempted++;

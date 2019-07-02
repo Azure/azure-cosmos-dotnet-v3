@@ -21,8 +21,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class GatewayStoreClient : TransportClient
     {
-        private HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
+        private HttpClient httpClient;
         private JsonSerializerSettings SerializerSettings;
 
         public GatewayStoreClient(
@@ -53,7 +53,9 @@ namespace Microsoft.Azure.Cosmos
                 requestOperationType == OperationType.Upsert ||
                 requestOperationType == OperationType.ReadFeed ||
                 requestOperationType == OperationType.Query ||
-                requestOperationType == OperationType.SqlQuery;
+                requestOperationType == OperationType.SqlQuery ||
+                requestOperationType == OperationType.QueryPlan ||
+                requestOperationType == OperationType.Batch;
         }
 
         internal override async Task<StoreResponse> InvokeStoreAsync(Uri baseAddress, ResourceOperation resourceOperation, DocumentServiceRequest request)
@@ -97,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    throw await GatewayStoreClient.CreateDocumentClientException(responseMessage);
+                    throw await GatewayStoreClient.CreateDocumentClientExceptionAsync(responseMessage);
                 }
             }
         }
@@ -148,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
             return headers;
         }
 
-        internal static async Task<DocumentClientException> CreateDocumentClientException(HttpResponseMessage responseMessage)
+        internal static async Task<DocumentClientException> CreateDocumentClientExceptionAsync(HttpResponseMessage responseMessage)
         {
             // ensure there is no local ActivityId, since in Gateway mode ActivityId
             // should always come from message headers
@@ -234,6 +236,7 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.Upsert ||
                 request.OperationType == OperationType.Query ||
                 request.OperationType == OperationType.SqlQuery ||
+                request.OperationType == OperationType.Batch ||
                 request.OperationType == OperationType.ExecuteJavaScript || 
                 request.OperationType == OperationType.QueryPlan)
             {

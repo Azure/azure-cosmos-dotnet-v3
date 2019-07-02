@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -94,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
 
+        private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
         private ConnectionPolicy connectionPolicy;
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
@@ -110,7 +111,6 @@ namespace Microsoft.Azure.Cosmos
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
 
         //Auth
-        private readonly IDictionary<string, List<PartitionKeyAndResourceTokenPair>> resourceTokens;
         private IComputeHash authKeyHashFunction;
 
         //Consistency
@@ -507,7 +507,6 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="JsonSerializerSettings"/>
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="ConsistencyLevel"/>
-
         public DocumentClient(Uri serviceEndpoint,
                               string authKeyOrResourceToken,
                               JsonSerializerSettings serializerSettings,
@@ -545,7 +544,8 @@ namespace Microsoft.Azure.Cosmos
                     GetResourceTokens(permissionFeed),
                     connectionPolicy,
                     desiredConsistencyLevel)
-        { }
+        {
+        }
 
         private static List<ResourceToken> GetResourceTokens(IList<Permission> permissionFeed)
         {
@@ -751,26 +751,26 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public Task OpenAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.InlineIfPossible(() => OpenPrivateInlineAsync(cancellationToken), null, cancellationToken);
+            return TaskHelper.InlineIfPossibleAsync(() => OpenPrivateInlineAsync(cancellationToken), null, cancellationToken);
         }
 
         private async Task OpenPrivateInlineAsync(CancellationToken cancellationToken)
         {
             await this.EnsureValidClientAsync();
-            await TaskHelper.InlineIfPossible(() => this.OpenPrivateAsync(cancellationToken), this.ResetSessionTokenRetryPolicy.GetRequestPolicy(), cancellationToken);
+            await TaskHelper.InlineIfPossibleAsync(() => this.OpenPrivateAsync(cancellationToken), this.ResetSessionTokenRetryPolicy.GetRequestPolicy(), cancellationToken);
         }
 
         private async Task OpenPrivateAsync(CancellationToken cancellationToken)
         {
             // Initialize caches for all databases and collections
-            ResourceFeedReader<Database> databaseFeedReader = this.CreateDatabaseFeedReader(
+            ResourceFeedReader<Documents.Database> databaseFeedReader = this.CreateDatabaseFeedReader(
                 new FeedOptions { MaxItemCount = -1 });
 
             try
             {
                 while (databaseFeedReader.HasMoreResults)
                 {
-                    foreach (Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
+                    foreach (Documents.Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
                     {
                         ResourceFeedReader<DocumentCollection> collectionFeedReader = this.CreateDocumentCollectionFeedReader(
                             database.SelfLink,
@@ -810,138 +810,146 @@ namespace Microsoft.Azure.Cosmos
 
             DefaultTrace.InitEventListener();
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
-            // For tests we want to allow stronger consistency during construction or per call
-            string allowOverrideStrongerConsistencyConfig = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.AllowOverrideStrongerConsistency];
-            if (!string.IsNullOrEmpty(allowOverrideStrongerConsistencyConfig))
+#if !(NETSTANDARD15 || NETSTANDARD16) 
+#if NETSTANDARD20
+            // GetEntryAssembly returns null when loaded from native netstandard2.0
+            if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
-                if (!bool.TryParse(allowOverrideStrongerConsistencyConfig, out this.allowOverrideStrongerConsistency))
+#endif
+                // For tests we want to allow stronger consistency during construction or per call
+                string allowOverrideStrongerConsistencyConfig = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.AllowOverrideStrongerConsistency];
+                if (!string.IsNullOrEmpty(allowOverrideStrongerConsistencyConfig))
                 {
-                    this.allowOverrideStrongerConsistency = false;
-                }
-            }
-
-            // We might want to override the defaults sometime
-            string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
-            if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
-            {
-                int maxConcurrentConnectionOpenRequestOverrideInt = 0;
-                if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
-                {
-                    this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
-                }
-            }
-
-            string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
-            if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
-            {
-                int openConnectionTimeoutInSecondsOverrideInt = 0;
-                if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
-                {
-                    this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
-                }
-            }
-
-            string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
-            if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
-            {
-                int idleConnectionTimeoutInSecondsOverrideInt = 0;
-                if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
-                {
-                    this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
-                }
-            }
-
-            string transportTimerPoolGranularityInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TransportTimerPoolGranularityInSecondsConfig];
-            if (!string.IsNullOrEmpty(transportTimerPoolGranularityInSecondsOverrideString))
-            {
-                int timerPoolGranularityInSecondsOverrideInt = 0;
-                if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out timerPoolGranularityInSecondsOverrideInt))
-                {
-                    // timeoutgranularity specified should be greater than min(5 seconds)
-                    if (timerPoolGranularityInSecondsOverrideInt > this.timerPoolGranularityInSeconds)
+                    if (!bool.TryParse(allowOverrideStrongerConsistencyConfig, out this.allowOverrideStrongerConsistency))
                     {
-                        this.timerPoolGranularityInSeconds = timerPoolGranularityInSecondsOverrideInt;
+                        this.allowOverrideStrongerConsistency = false;
                     }
                 }
-            }
 
-            string enableRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableTcpChannelConfig];
-            if (!string.IsNullOrEmpty(enableRntbdChannelOverrideString))
-            {
-                bool enableRntbdChannel = false;
-                if (bool.TryParse(enableRntbdChannelOverrideString, out enableRntbdChannel))
+                // We might want to override the defaults sometime
+                string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
+                if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
                 {
-                    this.enableRntbdChannel = enableRntbdChannel;
-                }
-            }
-
-            string maxRequestsPerRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxRequestsPerChannelConfig];
-            if (!string.IsNullOrEmpty(maxRequestsPerRntbdChannelOverrideString))
-            {
-                int maxRequestsPerChannel = DocumentClient.DefaultMaxRequestsPerRntbdChannel;
-                if (int.TryParse(maxRequestsPerRntbdChannelOverrideString, out maxRequestsPerChannel))
-                {
-                    this.maxRequestsPerRntbdChannel = maxRequestsPerChannel;
-                }
-            }
-
-            string rntbdPartitionCountOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TcpPartitionCount];
-            if (!string.IsNullOrEmpty(rntbdPartitionCountOverrideString))
-            {
-                int rntbdPartitionCount = DocumentClient.DefaultRntbdPartitionCount;
-                if (int.TryParse(rntbdPartitionCountOverrideString, out rntbdPartitionCount))
-                {
-                    this.rntbdPartitionCount = rntbdPartitionCount;
-                }
-            }
-
-            string maxRntbdChannelsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxChannelsPerHostConfig];
-            if (!string.IsNullOrEmpty(maxRntbdChannelsOverrideString))
-            {
-                int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
-                if (int.TryParse(maxRntbdChannelsOverrideString, out maxRntbdChannels))
-                {
-                    this.maxRntbdChannels = maxRntbdChannels;
-                }
-            }
-
-            string rntbdReceiveHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdReceiveHangDetectionTimeConfig];
-            if (!string.IsNullOrEmpty(rntbdReceiveHangDetectionTimeSecondsString))
-            {
-                int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
-                if (int.TryParse(rntbdReceiveHangDetectionTimeSecondsString, out rntbdReceiveHangDetectionTimeSeconds))
-                {
-                    this.rntbdReceiveHangDetectionTimeSeconds = rntbdReceiveHangDetectionTimeSeconds;
-                }
-            }
-
-            string rntbdSendHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdSendHangDetectionTimeConfig];
-            if (!string.IsNullOrEmpty(rntbdSendHangDetectionTimeSecondsString))
-            {
-                int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
-                if (int.TryParse(rntbdSendHangDetectionTimeSecondsString, out rntbdSendHangDetectionTimeSeconds))
-                {
-                    this.rntbdSendHangDetectionTimeSeconds = rntbdSendHangDetectionTimeSeconds;
-                }
-            }
-
-            if (enableCpuMonitor.HasValue)
-            {
-                this.enableCpuMonitor = enableCpuMonitor.Value;
-            }
-            else
-            {
-                string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableCpuMonitorConfig];
-                if (!string.IsNullOrEmpty(enableCpuMonitorString))
-                {
-                    bool enableCpuMonitorFlag = DefaultEnableCpuMonitor;
-                    if (bool.TryParse(enableCpuMonitorString, out enableCpuMonitorFlag))
+                    int maxConcurrentConnectionOpenRequestOverrideInt = 0;
+                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
                     {
-                        this.enableCpuMonitor = enableCpuMonitorFlag;
+                        this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
                     }
                 }
+
+                string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
+                if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
+                {
+                    int openConnectionTimeoutInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
+                    {
+                        this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
+                    }
+                }
+
+                string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
+                if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
+                {
+                    int idleConnectionTimeoutInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
+                    {
+                        this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
+                    }
+                }
+
+                string transportTimerPoolGranularityInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TransportTimerPoolGranularityInSecondsConfig];
+                if (!string.IsNullOrEmpty(transportTimerPoolGranularityInSecondsOverrideString))
+                {
+                    int timerPoolGranularityInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out timerPoolGranularityInSecondsOverrideInt))
+                    {
+                        // timeoutgranularity specified should be greater than min(5 seconds)
+                        if (timerPoolGranularityInSecondsOverrideInt > this.timerPoolGranularityInSeconds)
+                        {
+                            this.timerPoolGranularityInSeconds = timerPoolGranularityInSecondsOverrideInt;
+                        }
+                    }
+                }
+
+                string enableRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableTcpChannelConfig];
+                if (!string.IsNullOrEmpty(enableRntbdChannelOverrideString))
+                {
+                    bool enableRntbdChannel = false;
+                    if (bool.TryParse(enableRntbdChannelOverrideString, out enableRntbdChannel))
+                    {
+                        this.enableRntbdChannel = enableRntbdChannel;
+                    }
+                }
+
+                string maxRequestsPerRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxRequestsPerChannelConfig];
+                if (!string.IsNullOrEmpty(maxRequestsPerRntbdChannelOverrideString))
+                {
+                    int maxRequestsPerChannel = DocumentClient.DefaultMaxRequestsPerRntbdChannel;
+                    if (int.TryParse(maxRequestsPerRntbdChannelOverrideString, out maxRequestsPerChannel))
+                    {
+                        this.maxRequestsPerRntbdChannel = maxRequestsPerChannel;
+                    }
+                }
+
+                string rntbdPartitionCountOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TcpPartitionCount];
+                if (!string.IsNullOrEmpty(rntbdPartitionCountOverrideString))
+                {
+                    int rntbdPartitionCount = DocumentClient.DefaultRntbdPartitionCount;
+                    if (int.TryParse(rntbdPartitionCountOverrideString, out rntbdPartitionCount))
+                    {
+                        this.rntbdPartitionCount = rntbdPartitionCount;
+                    }
+                }
+
+                string maxRntbdChannelsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxChannelsPerHostConfig];
+                if (!string.IsNullOrEmpty(maxRntbdChannelsOverrideString))
+                {
+                    int maxRntbdChannels = DefaultMaxRntbdChannelsPerHost;
+                    if (int.TryParse(maxRntbdChannelsOverrideString, out maxRntbdChannels))
+                    {
+                        this.maxRntbdChannels = maxRntbdChannels;
+                    }
+                }
+
+                string rntbdReceiveHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdReceiveHangDetectionTimeConfig];
+                if (!string.IsNullOrEmpty(rntbdReceiveHangDetectionTimeSecondsString))
+                {
+                    int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
+                    if (int.TryParse(rntbdReceiveHangDetectionTimeSecondsString, out rntbdReceiveHangDetectionTimeSeconds))
+                    {
+                        this.rntbdReceiveHangDetectionTimeSeconds = rntbdReceiveHangDetectionTimeSeconds;
+                    }
+                }
+
+                string rntbdSendHangDetectionTimeSecondsString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.RntbdSendHangDetectionTimeConfig];
+                if (!string.IsNullOrEmpty(rntbdSendHangDetectionTimeSecondsString))
+                {
+                    int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
+                    if (int.TryParse(rntbdSendHangDetectionTimeSecondsString, out rntbdSendHangDetectionTimeSeconds))
+                    {
+                        this.rntbdSendHangDetectionTimeSeconds = rntbdSendHangDetectionTimeSeconds;
+                    }
+                }
+
+                if (enableCpuMonitor.HasValue)
+                {
+                    this.enableCpuMonitor = enableCpuMonitor.Value;
+                }
+                else
+                {
+                    string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableCpuMonitorConfig];
+                    if (!string.IsNullOrEmpty(enableCpuMonitorString))
+                    {
+                        bool enableCpuMonitorFlag = DefaultEnableCpuMonitor;
+                        if (bool.TryParse(enableCpuMonitorString, out enableCpuMonitorFlag))
+                        {
+                            this.enableCpuMonitor = enableCpuMonitorFlag;
+                        }
+                    }
+                }
+#if NETSTANDARD20
             }
+#endif            
 #endif
 
             // ConnectionPolicy always overrides appconfig
@@ -1023,8 +1031,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.eventSource = DocumentClientEventSource.Instance;
 
-            this.initializeTask = TaskHelper.InlineIfPossible(
-                () => this.GetInitializationTask(storeClientFactory: storeClientFactory),
+            this.initializeTask = TaskHelper.InlineIfPossibleAsync(
+                () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                 new ResourceThrottleRetryPolicy(
                     this.connectionPolicy.RetryOptions.MaxRetryAttemptsOnThrottledRequests,
                     this.connectionPolicy.RetryOptions.MaxRetryWaitTimeInSeconds));
@@ -1035,7 +1043,9 @@ namespace Microsoft.Azure.Cosmos
             // be a blocking call. In such cases, the recommended approach is to "handle" the
             // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
             // and accessing the Exception property on the target task.
+#pragma warning disable VSTHRD110 // Observe result of async calls
             this.initializeTask.ContinueWith(t =>
+#pragma warning restore VSTHRD110 // Observe result of async calls
             {
                 DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception);
             }, TaskContinuationOptions.OnlyOnFaulted);
@@ -1054,9 +1064,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Always called from under the lock except when called from Intilialize method during construction.
-        private async Task GetInitializationTask(IStoreClientFactory storeClientFactory)
+        private async Task GetInitializationTaskAsync(IStoreClientFactory storeClientFactory)
         {
-            await this.InitializeGatewayConfigurationReader();
+            await this.InitializeGatewayConfigurationReaderAsync();
 
             if (this.desiredConsistencyLevel.HasValue)
             {
@@ -1110,7 +1120,7 @@ namespace Microsoft.Azure.Cosmos
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
-                CosmosContainerSettings resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 resolvedCollection.ResourceId,
                 new Range<string>(
@@ -1178,7 +1188,7 @@ namespace Microsoft.Azure.Cosmos
         /// The session token used for version tracking when the consistency level is set to Session.
         /// </value>
         /// <remarks>
-        /// The session token can be saved and supplied to a request via <see cref="RequestOptions.SessionToken"/>.
+        /// The session token can be saved and supplied to a request via <see cref="Documents.Client.RequestOptions.SessionToken"/>.
         /// </remarks>
         internal string GetSessionToken(string collectionLink)
         {
@@ -1193,7 +1203,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or Sets the Api type
+        /// Gets the Api type
         /// </summary>
         internal ApiType ApiType
         {
@@ -1303,7 +1313,9 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                TaskHelper.InlineIfPossible(() => this.EnsureValidClientAsync(), null).Wait();
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+                TaskHelper.InlineIfPossibleAsync(() => this.EnsureValidClientAsync(), null).Wait();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
                     this.accountServiceConfiguration.DefaultConsistencyLevel;
             }
@@ -1425,7 +1437,7 @@ namespace Microsoft.Azure.Cosmos
             set { this.onExecuteScalarQueryCallback = value; }
         }
 
-        internal async Task<IDictionary<string, object>> GetQueryEngineConfiguration()
+        internal async Task<IDictionary<string, object>> GetQueryEngineConfigurationAsync()
         {
             await this.EnsureValidClientAsync();
             return this.accountServiceConfiguration.QueryEngineConfiguration;
@@ -1506,7 +1518,7 @@ namespace Microsoft.Azure.Cosmos
                 // if the task has not been updated by another caller, update it
                 if (object.ReferenceEquals(this.initializeTask, initTask))
                 {
-                    this.initializeTask = this.GetInitializationTask(storeClientFactory: null);
+                    this.initializeTask = this.GetInitializationTaskAsync(storeClientFactory: null);
                 }
 
                 initTask = this.initializeTask;
@@ -1521,7 +1533,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="database">The specification for the <see cref="Database"/> to create.</param>
-        /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
+        /// <param name="options">(Optional) The <see cref="Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The <see cref="Database"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
@@ -1565,13 +1577,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> CreateDatabaseAsync(Database database, RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> CreateDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> CreateDatabasePrivateAsync(Database database, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> CreateDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -1593,7 +1605,7 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 SerializationFormattingPolicy.None))
             {
-                return new ResourceResponse<Database>(await this.CreateAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.CreateAsync(request, retryPolicyInstance));
             }
         }
 
@@ -1602,7 +1614,7 @@ namespace Microsoft.Azure.Cosmos
         /// You can check the status code from the response to determine whether the database was newly created(201) or existing database was returned(200)
         /// </summary>
         /// <param name="database">The specification for the <see cref="Database"/> to create.</param>
-        /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
+        /// <param name="options">(Optional) The <see cref="Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The <see cref="Database"/> that was created within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
@@ -1634,13 +1646,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsAsync(Database database, RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => CreateDatabaseIfNotExistsPrivateAsync(database, options), null);
         }
 
-        private async Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsPrivateAsync(Database database,
-            RequestOptions options)
+        private async Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsPrivateAsync(Documents.Database database,
+            Documents.Client.RequestOptions options)
         {
             if (database == null)
             {
@@ -1682,7 +1694,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="documentsFeedOrDatabaseLink">The link of the <see cref="DocumentCollection"/> to create the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
         /// <param name="document">The document object to create.</param>
-        /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="RequestOptions"/></param>
+        /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="Documents.Client.RequestOptions"/></param>
         /// <param name="disableAutomaticIdGeneration">(Optional) Disables the automatic id generation, If this is True the system will throw an exception if the id property is missing from the Document.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The <see cref="Microsoft.Azure.Documents.Document"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
@@ -1776,14 +1788,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         public Task<ResourceResponse<Document>> CreateDocumentAsync(string documentsFeedOrDatabaseLink,
-            object document, RequestOptions options = null, bool disableAutomaticIdGeneration = false,
+            object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             // This call is to just run CreateDocumentInlineAsync in a SynchronizationContext aware environment
             return TaskHelper.InlineIfPossible(() => CreateDocumentInlineAsync(documentsFeedOrDatabaseLink, document, options, disableAutomaticIdGeneration, cancellationToken), null, cancellationToken);
         }
 
-        private async Task<ResourceResponse<Document>> CreateDocumentInlineAsync(string documentsFeedOrDatabaseLink, object document, RequestOptions options, bool disableAutomaticIdGeneration, CancellationToken cancellationToken)
+        private async Task<ResourceResponse<Document>> CreateDocumentInlineAsync(string documentsFeedOrDatabaseLink, object document, Documents.Client.RequestOptions options, bool disableAutomaticIdGeneration, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             if (options == null || options.PartitionKey == null)
@@ -1803,7 +1815,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<Document>> CreateDocumentPrivateAsync(
             string documentCollectionLink,
             object document,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             bool disableAutomaticIdGeneration,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -1890,7 +1902,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateDocumentCollectionPrivateAsync(databaseLink, documentCollection, options, retryPolicyInstance), retryPolicyInstance);
@@ -1899,7 +1911,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionPrivateAsync(
             string databaseLink,
             DocumentCollection documentCollection,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
@@ -1976,13 +1988,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsAsync(string databaseLink, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => CreateDocumentCollectionIfNotExistsPrivateAsync(databaseLink, documentCollection, options), null);
         }
 
         private async Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionIfNotExistsPrivateAsync(
-            string databaseLink, DocumentCollection documentCollection, RequestOptions options)
+            string databaseLink, DocumentCollection documentCollection, Documents.Client.RequestOptions options)
         {
             if (string.IsNullOrEmpty(databaseLink))
             {
@@ -1996,7 +2008,7 @@ namespace Microsoft.Azure.Cosmos
 
             // ReadDatabaseAsync call is needed to support this API that takes databaseLink as a parameter, to be consistent with CreateDocumentCollectionAsync. We need to construct the collectionLink to make
             // ReadDocumentCollectionAsync call, in case database selfLink got passed to this API. We cannot simply concat the database selfLink with /colls/{collectionId} to get the collectionLink.
-            Database database = await this.ReadDatabaseAsync(databaseLink);
+            Documents.Database database = await this.ReadDatabaseAsync(databaseLink);
 
             // Doing a Read before Create will give us better latency for existing collections.
             // Also, in emulator case when you hit the max allowed partition count and you use this API for a collection that already exists,
@@ -2036,15 +2048,15 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="sourceDocumentCollectionLink">The link to the source <see cref="DocumentCollection"/> object.</param>
         /// <param name="targetDocumentCollection">The target <see cref="DocumentCollection"/> object.</param>
         /// <param name="restoreTime">(optional)The point in time to restore. If null, use the latest restorable time. </param>
-        /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
+        /// <param name="options">(Optional) The <see cref="Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        internal Task<ResourceResponse<DocumentCollection>> RestoreDocumentCollectionAsync(string sourceDocumentCollectionLink, DocumentCollection targetDocumentCollection, DateTimeOffset? restoreTime = null, RequestOptions options = null)
+        internal Task<ResourceResponse<DocumentCollection>> RestoreDocumentCollectionAsync(string sourceDocumentCollectionLink, DocumentCollection targetDocumentCollection, DateTimeOffset? restoreTime = null, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.RestoreDocumentCollectionPrivateAsync(sourceDocumentCollectionLink, targetDocumentCollection, restoreTime, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<DocumentCollection>> RestoreDocumentCollectionPrivateAsync(string sourceDocumentCollectionLink, DocumentCollection targetDocumentCollection, DateTimeOffset? restoreTime, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<DocumentCollection>> RestoreDocumentCollectionPrivateAsync(string sourceDocumentCollectionLink, DocumentCollection targetDocumentCollection, DateTimeOffset? restoreTime, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2090,7 +2102,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (options == null)
             {
-                options = new RequestOptions();
+                options = new Documents.Client.RequestOptions();
             }
             if (!options.RemoteStorageType.HasValue)
             {
@@ -2140,7 +2152,7 @@ namespace Microsoft.Azure.Cosmos
 
             ResourceResponse<DocumentCollection> response = await this.ReadDocumentCollectionPrivateAsync(
                 targetDocumentCollectionLink,
-                new RequestOptions { PopulateRestoreStatus = true },
+                new Documents.Client.RequestOptions { PopulateRestoreStatus = true },
                 retryPolicyInstance);
             string restoreState = response.ResponseHeaders.Get(WFConstants.BackendHeaders.RestoreState);
             if (restoreState == null)
@@ -2204,7 +2216,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> CreateStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateStoredProcedurePrivateAsync(collectionLink, storedProcedure, options, retryPolicyInstance), retryPolicyInstance);
@@ -2213,7 +2225,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<StoredProcedure>> CreateStoredProcedurePrivateAsync(
             string collectionLink,
             StoredProcedure storedProcedure,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
@@ -2304,13 +2316,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Trigger>> CreateTriggerAsync(string collectionLink, Trigger trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> CreateTriggerAsync(string collectionLink, Trigger trigger, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateTriggerPrivateAsync(collectionLink, trigger, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Trigger>> CreateTriggerPrivateAsync(string collectionLink, Trigger trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Trigger>> CreateTriggerPrivateAsync(string collectionLink, Trigger trigger, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2386,7 +2398,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateUserDefinedFunctionPrivateAsync(collectionLink, function, options, retryPolicyInstance), retryPolicyInstance);
@@ -2395,7 +2407,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<UserDefinedFunction>> CreateUserDefinedFunctionPrivateAsync(
             string collectionLink,
             UserDefinedFunction function,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
@@ -2463,13 +2475,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<UserDefinedType>> CreateUserDefinedTypeAsync(string databaseLink, UserDefinedType userDefinedType, RequestOptions options = null)
+        internal Task<ResourceResponse<UserDefinedType>> CreateUserDefinedTypeAsync(string databaseLink, UserDefinedType userDefinedType, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateUserDefinedTypePrivateAsync(databaseLink, userDefinedType, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<UserDefinedType>> CreateUserDefinedTypePrivateAsync(string databaseLink, UserDefinedType userDefinedType, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<UserDefinedType>> CreateUserDefinedTypePrivateAsync(string databaseLink, UserDefinedType userDefinedType, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2531,13 +2543,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> DeleteDatabaseAsync(string databaseLink, RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> DeleteDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> DeleteDatabasePrivateAsync(string databaseLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> DeleteDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2554,7 +2566,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                return new ResourceResponse<Database>(await this.DeleteAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.DeleteAsync(request, retryPolicyInstance));
             }
         }
 
@@ -2589,13 +2601,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> DeleteDocumentAsync(string documentLink, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> DeleteDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDocumentPrivateAsync(documentLink, options, retryPolicyInstance, cancellationToken), retryPolicyInstance, cancellationToken);
         }
 
-        private async Task<ResourceResponse<Document>> DeleteDocumentPrivateAsync(string documentLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<ResourceResponse<Document>> DeleteDocumentPrivateAsync(string documentLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             await this.EnsureValidClientAsync();
 
@@ -2648,13 +2660,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionAsync(string documentCollectionLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDocumentCollectionPrivateAsync(documentCollectionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionPrivateAsync(string documentCollectionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionPrivateAsync(string documentCollectionLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2705,13 +2717,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedureAsync(string storedProcedureLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteStoredProcedurePrivateAsync(storedProcedureLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedurePrivateAsync(string storedProcedureLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedurePrivateAsync(string storedProcedureLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2762,13 +2774,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Trigger>> DeleteTriggerAsync(string triggerLink, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> DeleteTriggerAsync(string triggerLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteTriggerPrivateAsync(triggerLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Trigger>> DeleteTriggerPrivateAsync(string triggerLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Trigger>> DeleteTriggerPrivateAsync(string triggerLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2819,13 +2831,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(string functionLink, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionAsync(string functionLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteUserDefinedFunctionPrivateAsync(functionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionPrivateAsync(string functionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionPrivateAsync(string functionLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2876,13 +2888,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Conflict>> DeleteConflictAsync(string conflictLink, RequestOptions options = null)
+        public Task<ResourceResponse<Conflict>> DeleteConflictAsync(string conflictLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteConflictPrivateAsync(conflictLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Conflict>> DeleteConflictPrivateAsync(string conflictLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Conflict>> DeleteConflictPrivateAsync(string conflictLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2914,7 +2926,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.DocumentCollection"/> containing the updated resource record.
         /// </returns>
-        public Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(DocumentCollection documentCollection, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionAsync(DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceDocumentCollectionPrivateAsync(documentCollection, options, retryPolicyInstance), retryPolicyInstance);
@@ -2922,7 +2934,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<DocumentCollection>> ReplaceDocumentCollectionPrivateAsync(
             DocumentCollection documentCollection,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
         {
@@ -3006,13 +3018,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(string documentLink, object document, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(string documentLink, object document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             // This call is to just run ReplaceDocumentInlineAsync in a SynchronizationContext aware environment
             return TaskHelper.InlineIfPossible(() => ReplaceDocumentInlineAsync(documentLink, document, options, cancellationToken), null, cancellationToken);
         }
 
-        private async Task<ResourceResponse<Document>> ReplaceDocumentInlineAsync(string documentLink, object document, RequestOptions options, CancellationToken cancellationToken)
+        private async Task<ResourceResponse<Document>> ReplaceDocumentInlineAsync(string documentLink, object document, Documents.Client.RequestOptions options, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             if (options == null || options.PartitionKey == null)
@@ -3022,7 +3034,7 @@ namespace Microsoft.Azure.Cosmos
             return await TaskHelper.InlineIfPossible(() => this.ReplaceDocumentPrivateAsync(documentLink, document, options, requestRetryPolicy, cancellationToken), requestRetryPolicy, cancellationToken);
         }
 
-        private Task<ResourceResponse<Document>> ReplaceDocumentPrivateAsync(string documentLink, object document, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private Task<ResourceResponse<Document>> ReplaceDocumentPrivateAsync(string documentLink, object document, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(documentLink))
             {
@@ -3081,7 +3093,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReplaceDocumentAsync(Document document, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceDocumentPrivateAsync(
@@ -3094,7 +3106,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        private async Task<ResourceResponse<Document>> ReplaceDocumentPrivateAsync(string documentLink, Document document, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<ResourceResponse<Document>> ReplaceDocumentPrivateAsync(string documentLink, Document document, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             await this.EnsureValidClientAsync();
 
@@ -3160,7 +3172,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(StoredProcedure storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedureAsync(StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceStoredProcedurePrivateAsync(storedProcedure, options, retryPolicyInstance), retryPolicyInstance);
@@ -3168,7 +3180,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<StoredProcedure>> ReplaceStoredProcedurePrivateAsync(
             StoredProcedure storedProcedure,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
         {
@@ -3234,13 +3246,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Trigger trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> ReplaceTriggerAsync(Trigger trigger, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceTriggerPrivateAsync(trigger, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Trigger>> ReplaceTriggerPrivateAsync(Trigger trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, string altLink = null)
+        private async Task<ResourceResponse<Trigger>> ReplaceTriggerPrivateAsync(Trigger trigger, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, string altLink = null)
         {
             await this.EnsureValidClientAsync();
 
@@ -3304,7 +3316,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(UserDefinedFunction function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionAsync(UserDefinedFunction function, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceUserDefinedFunctionPrivateAsync(function, options, retryPolicyInstance), retryPolicyInstance);
@@ -3312,7 +3324,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<UserDefinedFunction>> ReplaceUserDefinedFunctionPrivateAsync(
             UserDefinedFunction function,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
         {
@@ -3443,13 +3455,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<UserDefinedType>> ReplaceUserDefinedTypeAsync(UserDefinedType userDefinedType, RequestOptions options = null)
+        internal Task<ResourceResponse<UserDefinedType>> ReplaceUserDefinedTypeAsync(UserDefinedType userDefinedType, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceUserDefinedTypePrivateAsync(userDefinedType, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<UserDefinedType>> ReplaceUserDefinedTypePrivateAsync(UserDefinedType userDefinedType, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, string altLink = null)
+        private async Task<ResourceResponse<UserDefinedType>> ReplaceUserDefinedTypePrivateAsync(UserDefinedType userDefinedType, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, string altLink = null)
         {
             await this.EnsureValidClientAsync();
 
@@ -3525,13 +3537,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<Database>> ReadDatabaseAsync(string databaseLink, RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> ReadDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReadDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> ReadDatabasePrivateAsync(string databaseLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> ReadDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -3548,7 +3560,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                return new ResourceResponse<Database>(await this.ReadAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.ReadAsync(request, retryPolicyInstance));
             }
         }
 
@@ -3604,14 +3616,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<Document>> ReadDocumentAsync(string documentLink, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> ReadDocumentAsync(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentPrivateAsync(documentLink, options, retryPolicyInstance, cancellationToken), retryPolicyInstance, cancellationToken);
         }
 
-        private async Task<ResourceResponse<Document>> ReadDocumentPrivateAsync(string documentLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<ResourceResponse<Document>> ReadDocumentPrivateAsync(string documentLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             await this.EnsureValidClientAsync();
 
@@ -3686,14 +3698,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<DocumentResponse<T>> ReadDocumentAsync<T>(string documentLink, RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentResponse<T>> ReadDocumentAsync<T>(string documentLink, Documents.Client.RequestOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentPrivateAsync<T>(documentLink, options, retryPolicyInstance, cancellationToken), retryPolicyInstance, cancellationToken);
         }
 
-        private async Task<DocumentResponse<T>> ReadDocumentPrivateAsync<T>(string documentLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<DocumentResponse<T>> ReadDocumentPrivateAsync<T>(string documentLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             await this.EnsureValidClientAsync();
 
@@ -3766,7 +3778,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(string documentCollectionLink, RequestOptions options = null)
+        public Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionAsync(string documentCollectionLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
@@ -3775,7 +3787,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<DocumentCollection>> ReadDocumentCollectionPrivateAsync(
             string documentCollectionLink,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
@@ -3848,14 +3860,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(string storedProcedureLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
-                () => this._ReadStoredProcedureAsync(storedProcedureLink, options, retryPolicyInstance), retryPolicyInstance);
+                () => this.ReadStoredProcedureAsync(storedProcedureLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<StoredProcedure>> _ReadStoredProcedureAsync(string storedProcedureLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(string storedProcedureLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -3927,14 +3939,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<Trigger>> ReadTriggerAsync(string triggerLink, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> ReadTriggerAsync(string triggerLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadTriggerPrivateAsync(triggerLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Trigger>> ReadTriggerPrivateAsync(string triggerLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Trigger>> ReadTriggerPrivateAsync(string triggerLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4006,14 +4018,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(string functionLink, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionAsync(string functionLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadUserDefinedFunctionPrivateAsync(functionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionPrivateAsync(string functionLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionPrivateAsync(string functionLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4085,14 +4097,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<Conflict>> ReadConflictAsync(string conflictLink, RequestOptions options = null)
+        public Task<ResourceResponse<Conflict>> ReadConflictAsync(string conflictLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadConflictPrivateAsync(conflictLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Conflict>> ReadConflictPrivateAsync(string conflictLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Conflict>> ReadConflictPrivateAsync(string conflictLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
             
@@ -4250,14 +4262,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        internal Task<ResourceResponse<Schema>> ReadSchemaAsync(string documentSchemaLink, RequestOptions options = null)
+        internal Task<ResourceResponse<Schema>> ReadSchemaAsync(string documentSchemaLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadSchemaPrivateAsync(documentSchemaLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Schema>> ReadSchemaPrivateAsync(string documentSchemaLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Schema>> ReadSchemaPrivateAsync(string documentSchemaLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4330,14 +4342,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        internal Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypeAsync(string userDefinedTypeLink, RequestOptions options = null)
+        internal Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypeAsync(string userDefinedTypeLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadUserDefinedTypePrivateAsync(userDefinedTypeLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypePrivateAsync(string userDefinedTypeLink, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypePrivateAsync(string userDefinedTypeLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4386,7 +4398,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Database> response = await client.ReadDatabaseFeedAsync(new FeedOptions
+        ///     DoucmentFeedResponse<Database> response = await client.ReadDatabaseFeedAsync(new FeedOptions
         ///                                                                 {
         ///                                                                     MaxItemCount = 10,
         ///                                                                     RequestContinuation = continuation
@@ -4405,14 +4417,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
+        public Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDatabaseFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4422,8 +4434,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.PartitionKeyRange"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
-        /// <param name="options">(Optional) The request options for the request.</param>
         /// <param name="partitionKeyRangesOrCollectionLink">The link of the resources to be read, or owner collection link, SelfLink or AltLink. E.g. /dbs/db_rid/colls/coll_rid/pkranges</param>
+        /// <param name="options">(Optional) The request options for the request.</param>
         /// <returns>
         /// A <see cref="System.Threading.Tasks"/> containing a <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> which wraps a <see cref="Microsoft.Azure.Documents.Database"/> containing the read resource record.
         /// </returns>
@@ -4440,7 +4452,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedResponse<PartitionKeyRange> response = null;
+        /// DoucmentFeedResponse<PartitionKeyRange> response = null;
         /// List<string> ids = new List<string>();
         /// do
         /// {
@@ -4456,16 +4468,16 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyRange"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.FeedOptions"/>
-        /// <seealso cref="Microsoft.Azure.Cosmos.FeedResponse{T}"/>
+        /// <seealso cref="Microsoft.Azure.Cosmos.DocumentFeedResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(string partitionKeyRangesOrCollectionLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedAsync(string partitionKeyRangesOrCollectionLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadPartitionKeyRangeFeedPrivateAsync(partitionKeyRangesOrCollectionLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedPrivateAsync(string partitionKeyRangesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedPrivateAsync(string partitionKeyRangesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4507,7 +4519,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<DocumentCollection> response = await client.ReadDocumentCollectionFeedAsync("/dbs/db_rid/colls/",
+        ///     DoucmentFeedResponse<DocumentCollection> response = await client.ReadDocumentCollectionFeedAsync("/dbs/db_rid/colls/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4527,14 +4539,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(string collectionsLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentCollectionFeedPrivateAsync(collectionsLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<DocumentCollection>> ReadDocumentCollectionFeedPrivateAsync(string collectionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedPrivateAsync(string collectionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4576,7 +4588,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<StoredProcedure> response = await client.ReadStoredProcedureFeedAsync("/dbs/db_rid/colls/col_rid/sprocs/",
+        ///     DoucmentFeedResponse<StoredProcedure> response = await client.ReadStoredProcedureFeedAsync("/dbs/db_rid/colls/col_rid/sprocs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4596,14 +4608,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedAsync(string storedProceduresLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadStoredProcedureFeedPrivateAsync(storedProceduresLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<StoredProcedure>> ReadStoredProcedureFeedPrivateAsync(string storedProceduresLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedPrivateAsync(string storedProceduresLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4645,7 +4657,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Trigger> response = await client.ReadTriggerFeedAsync("/dbs/db_rid/colls/col_rid/triggers/",
+        ///     DoucmentFeedResponse<Trigger> response = await client.ReadTriggerFeedAsync("/dbs/db_rid/colls/col_rid/triggers/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4665,15 +4677,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-
-        public Task<FeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedAsync(string triggersLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadTriggerFeedPrivateAsync(triggersLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<Trigger>> ReadTriggerFeedPrivateAsync(string triggersLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedPrivateAsync(string triggersLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4715,7 +4726,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<UserDefinedFunction> response = await client.ReadUserDefinedFunctionFeedAsync("/dbs/db_rid/colls/col_rid/udfs/",
+        ///     DoucmentFeedResponse<UserDefinedFunction> response = await client.ReadUserDefinedFunctionFeedAsync("/dbs/db_rid/colls/col_rid/udfs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4735,14 +4746,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedAsync(string userDefinedFunctionsLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadUserDefinedFunctionFeedPrivateAsync(userDefinedFunctionsLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedPrivateAsync(string userDefinedFunctionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedPrivateAsync(string userDefinedFunctionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4786,7 +4797,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<dynamic> response = await client.ReadDocumentFeedAsync("/dbs/db_rid/colls/coll_rid/docs/",
+        ///     DoucmentFeedResponse<dynamic> response = await client.ReadDocumentFeedAsync("/dbs/db_rid/colls/coll_rid/docs/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4803,18 +4814,18 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// Instead of FeedResponse{Document} this method takes advantage of dynamic objects in .NET. This way a single feed result can contain any kind of Document, or POCO object.
+        /// Instead of DoucmentFeedResponse{Document} this method takes advantage of dynamic objects in .NET. This way a single feed result can contain any kind of Document, or POCO object.
         /// This is important becuse a DocumentCollection can contain different kinds of documents.
         /// </remarks>
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedAsync(string documentsLink, FeedOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             return TaskHelper.InlineIfPossible(() => ReadDocumentFeedInlineAsync(documentsLink, options, cancellationToken), null, cancellationToken);
         }
 
-        private async Task<FeedResponse<dynamic>> ReadDocumentFeedInlineAsync(string documentsLink, FeedOptions options, CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedInlineAsync(string documentsLink, FeedOptions options, CancellationToken cancellationToken)
         {
             await this.EnsureValidClientAsync();
 
@@ -4823,8 +4834,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentsLink");
             }
 
-            FeedResponse<Document> response = await this.CreateDocumentFeedReader(documentsLink, options).ExecuteNextAsync(cancellationToken);
-            return new FeedResponse<dynamic>(
+            DocumentFeedResponse<Document> response = await this.CreateDocumentFeedReader(documentsLink, options).ExecuteNextAsync(cancellationToken);
+            return new DocumentFeedResponse<dynamic>(
                 response.Cast<dynamic>(), 
                 response.Count, 
                 response.Headers, 
@@ -4864,7 +4875,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Conflict> response = await client.ReadConflictAsync("/dbs/db_rid/colls/coll_rid/conflicts/",
+        ///     DoucmentFeedResponse<Conflict> response = await client.ReadConflictAsync("/dbs/db_rid/colls/coll_rid/conflicts/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -4884,12 +4895,12 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<Conflict>> ReadConflictFeedAsync(string conflictsLink, FeedOptions options = null)
+        public Task<DocumentFeedResponse<Conflict>> ReadConflictFeedAsync(string conflictsLink, FeedOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => ReadConflictFeedInlineAsync(conflictsLink, options), null);
         }
 
-        private async Task<FeedResponse<Conflict>> ReadConflictFeedInlineAsync(string conflictsLink, FeedOptions options)
+        private async Task<DocumentFeedResponse<Conflict>> ReadConflictFeedInlineAsync(string conflictsLink, FeedOptions options)
         {
             await this.EnsureValidClientAsync();
 
@@ -4927,7 +4938,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<Offer> response = await client.ReadOfferAsync(new FeedOptions
+        ///     DoucmentFeedResponse<Offer> response = await client.ReadOfferAsync(new FeedOptions
         ///                                                                 {
         ///                                                                     MaxItemCount = 10,
         ///                                                                     RequestContinuation = continuation
@@ -4946,14 +4957,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<FeedResponse<Offer>> ReadOffersFeedAsync(FeedOptions options = null)
+        public Task<DocumentFeedResponse<Offer>> ReadOffersFeedAsync(FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadOfferFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<Offer>> ReadOfferFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Offer>> ReadOfferFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -4989,7 +5000,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<User> response = await client.ReadUserFeedAsync("/dbs/db_rid/colls/coll_rid/schemas",
+        ///     DoucmentFeedResponse<User> response = await client.ReadUserFeedAsync("/dbs/db_rid/colls/coll_rid/schemas",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -5009,13 +5020,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<FeedResponse<Schema>> ReadSchemaFeedAsync(string documentCollectionSchemaLink, FeedOptions options = null)
+        internal Task<DocumentFeedResponse<Schema>> ReadSchemaFeedAsync(string documentCollectionSchemaLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReadSchemaFeedPrivateAsync(documentCollectionSchemaLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<Schema>> ReadSchemaFeedPrivateAsync(string documentCollectionSchemaLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Schema>> ReadSchemaFeedPrivateAsync(string documentCollectionSchemaLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5057,7 +5068,7 @@ namespace Microsoft.Azure.Cosmos
         /// do
         /// {
         ///     // Read the feed 10 items at a time until there are no more items to read
-        ///     FeedResponse<UserDefinedType> response = await client.ReadUserDefinedTypeFeedAsync("/dbs/db_rid/udts/",
+        ///     DoucmentFeedResponse<UserDefinedType> response = await client.ReadUserDefinedTypeFeedAsync("/dbs/db_rid/udts/",
         ///                                                     new FeedOptions
         ///                                                     {
         ///                                                         MaxItemCount = 10,
@@ -5077,14 +5088,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<FeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedAsync(string userDefinedTypesLink, FeedOptions options = null)
+        internal Task<DocumentFeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedAsync(string userDefinedTypesLink, FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadUserDefinedTypeFeedPrivateAsync(userDefinedTypesLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<FeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedPrivateAsync(string userDefinedTypesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedPrivateAsync(string userDefinedTypesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5157,7 +5168,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, RequestOptions options, params dynamic[] procedureParams)
+        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, Documents.Client.RequestOptions options, params dynamic[] procedureParams)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
@@ -5199,7 +5210,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.StoredProcedureResponse{TValue}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, RequestOptions options, CancellationToken cancellationToken, params dynamic[] procedureParams)
+        public Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedureAsync<TValue>(string storedProcedureLink, Documents.Client.RequestOptions options, CancellationToken cancellationToken, params dynamic[] procedureParams)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
@@ -5214,8 +5225,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<StoredProcedureResponse<TValue>> ExecuteStoredProcedurePrivateAsync<TValue>(
-            string storedProcedureLink, 
-            RequestOptions options,
+            string storedProcedureLink,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance, 
             CancellationToken cancellationToken, 
             params dynamic[] procedureParams)
@@ -5235,8 +5246,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (StreamWriter writer = new StreamWriter(storedProcedureInputStream))
                 {
-                    writer.Write(storedProcedureInput);
-                    writer.Flush();
+                    await writer.WriteAsync(storedProcedureInput);
+                    await writer.FlushAsync();
                     storedProcedureInputStream.Position = 0;
 
                     INameValueCollection headers = this.GetRequestHeaders(options);
@@ -5279,7 +5290,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upserts a database resource as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="database">The specification for the <see cref="Database"/> to upsert.</param>
-        /// <param name="options">(Optional) The <see cref="RequestOptions"/> for the request.</param>
+        /// <param name="options">(Optional) The <see cref="Documents.Client.RequestOptions"/> for the request.</param>
         /// <returns>The <see cref="Database"/> that was upserted within a task object representing the service response for the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="database"/> is not set</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occured during async processing. Look within InnerExceptions to find the actual exception(s)</exception>
@@ -5313,13 +5324,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<Database>> UpsertDatabaseAsync(Database database, RequestOptions options = null)
+        internal Task<ResourceResponse<Documents.Database>> UpsertDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> UpsertDatabasePrivateAsync(Database database, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> UpsertDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5341,7 +5352,7 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 SerializationFormattingPolicy.None))
             {
-                return new ResourceResponse<Database>(await this.UpsertAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.UpsertAsync(request, retryPolicyInstance));
             }
         }
 
@@ -5350,7 +5361,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="documentsFeedOrDatabaseLink">The link of the <see cref="DocumentCollection"/> to upsert the document in. E.g. dbs/db_rid/colls/coll_rid/ </param>
         /// <param name="document">The document object to upsert.</param>
-        /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="RequestOptions"/></param>
+        /// <param name="options">(Optional) Any request options you wish to set. E.g. Specifying a Trigger to execute when creating the document. <see cref="Documents.Client.RequestOptions"/></param>
         /// <param name="disableAutomaticIdGeneration">(Optional) Disables the automatic id generation, If this is True the system will throw an exception if the id property is missing from the Document.</param>
         /// <param name="cancellationToken">(Optional) A <see cref="CancellationToken"/> that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The <see cref="Document"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
@@ -5443,13 +5454,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Document>> UpsertDocumentAsync(string documentsFeedOrDatabaseLink, object document, RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ResourceResponse<Document>> UpsertDocumentAsync(string documentsFeedOrDatabaseLink, object document, Documents.Client.RequestOptions options = null, bool disableAutomaticIdGeneration = false, CancellationToken cancellationToken = default(CancellationToken))
         {
             // This call is to just run UpsertDocumentInlineAsync in a SynchronizationContext aware environment
             return TaskHelper.InlineIfPossible(() => UpsertDocumentInlineAsync(documentsFeedOrDatabaseLink, document, options, disableAutomaticIdGeneration, cancellationToken), null, cancellationToken);
         }
 
-        private async Task<ResourceResponse<Document>> UpsertDocumentInlineAsync(string documentsFeedOrDatabaseLink, object document, RequestOptions options, bool disableAutomaticIdGeneration, CancellationToken cancellationToken)
+        private async Task<ResourceResponse<Document>> UpsertDocumentInlineAsync(string documentsFeedOrDatabaseLink, object document, Documents.Client.RequestOptions options, bool disableAutomaticIdGeneration, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             if (options == null || options.PartitionKey == null)
@@ -5469,7 +5480,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<Document>> UpsertDocumentPrivateAsync(
             string documentCollectionLink,
             object document,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             bool disableAutomaticIdGeneration,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
@@ -5556,7 +5567,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<DocumentCollection>> UpsertDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, RequestOptions options = null)
+        internal Task<ResourceResponse<DocumentCollection>> UpsertDocumentCollectionAsync(string databaseLink, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
         {
             // To be implemented.
             throw new NotImplementedException();
@@ -5610,7 +5621,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, RequestOptions options = null)
+        public Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedureAsync(string collectionLink, StoredProcedure storedProcedure, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertStoredProcedurePrivateAsync(collectionLink, storedProcedure, options, retryPolicyInstance), retryPolicyInstance);
@@ -5619,7 +5630,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<StoredProcedure>> UpsertStoredProcedurePrivateAsync(
             string collectionLink,
             StoredProcedure storedProcedure,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
@@ -5710,13 +5721,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Trigger>> UpsertTriggerAsync(string collectionLink, Trigger trigger, RequestOptions options = null)
+        public Task<ResourceResponse<Trigger>> UpsertTriggerAsync(string collectionLink, Trigger trigger, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertTriggerPrivateAsync(collectionLink, trigger, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Trigger>> UpsertTriggerPrivateAsync(string collectionLink, Trigger trigger, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Trigger>> UpsertTriggerPrivateAsync(string collectionLink, Trigger trigger, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5792,7 +5803,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, RequestOptions options = null)
+        public Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionAsync(string collectionLink, UserDefinedFunction function, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertUserDefinedFunctionPrivateAsync(collectionLink, function, options, retryPolicyInstance), retryPolicyInstance);
@@ -5801,7 +5812,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<UserDefinedFunction>> UpsertUserDefinedFunctionPrivateAsync(
             string collectionLink,
             UserDefinedFunction function,
-            RequestOptions options,
+            Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
@@ -5869,13 +5880,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<UserDefinedType>> UpsertUserDefinedTypeAsync(string databaseLink, UserDefinedType userDefinedType, RequestOptions options = null)
+        internal Task<ResourceResponse<UserDefinedType>> UpsertUserDefinedTypeAsync(string databaseLink, UserDefinedType userDefinedType, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertUserDefinedTypePrivateAsync(databaseLink, userDefinedType, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<UserDefinedType>> UpsertUserDefinedTypePrivateAsync(string databaseLink, UserDefinedType userDefinedType, RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<UserDefinedType>> UpsertUserDefinedTypePrivateAsync(string databaseLink, UserDefinedType userDefinedType, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5925,14 +5936,6 @@ namespace Microsoft.Azure.Cosmos
             return false;
         }
 
-        /// <summary>
-        /// </summary>
-        /// <param name="resourceAddress"></param>
-        /// <param name="resourceType"></param>
-        /// <param name="requestVerb"></param>
-        /// <param name="headers"></param>
-        /// <param name="tokenType">unused, use token based upon what is passed in constructor</param>
-        /// <returns></returns>
         string IAuthorizationTokenProvider.GetUserAuthorizationToken(
             string resourceAddress,
             string resourceType,
@@ -6251,31 +6254,31 @@ namespace Microsoft.Azure.Cosmos
         #endregion
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public Task<CosmosAccountSettings> GetDatabaseAccountAsync()
+        public Task<AccountProperties> GetDatabaseAccountAsync()
         {
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountSettings"/> as an asynchronous operation
+        /// Read the <see cref="AccountProperties"/> as an asynchronous operation
         /// given a specific reginal endpoint url.
         /// </summary>
         /// <param name="serviceEndpoint">The reginal url of the serice endpoint.</param>
         /// <param name="cancellationToken">The CancellationToken</param>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        Task<CosmosAccountSettings> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
+        Task<AccountProperties> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
         {
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
-        private async Task<CosmosAccountSettings> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
         {
             await this.EnsureValidClientAsync();
             GatewayStoreModel gatewayModel = this.gatewayStoreModel as GatewayStoreModel;
@@ -6309,7 +6312,7 @@ namespace Microsoft.Azure.Cosmos
                     request.Method = HttpMethod.Get;
                     request.RequestUri = serviceEndpoint;
 
-                    CosmosAccountSettings databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
+                    AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
 
                     this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
 
@@ -6327,7 +6330,6 @@ namespace Microsoft.Azure.Cosmos
         /// For e.g., DocumentCollection creation. This method returns the <see cref="IStoreModel"/> based
         /// on the input <paramref name="request"/>.
         /// </summary>
-        /// <param name="request"></param>
         /// <returns>Returns <see cref="IStoreModel"/> to which the request must be sent</returns>
         internal IStoreModel GetStoreProxy(DocumentServiceRequest request)
         {
@@ -6407,7 +6409,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The preferred link used in replace operation in SDK.
         /// </summary>
-        /// <returns></returns>
         private string GetLinkForRouting(Resource resource)
         {
             // we currently prefer the selflink
@@ -6461,9 +6462,10 @@ namespace Microsoft.Azure.Cosmos
                     this.maxRntbdChannels,
                     this.rntbdPartitionCount,
                     this.maxRequestsPerRntbdChannel,
-                    this.rntbdReceiveHangDetectionTimeSeconds,
-                    this.rntbdSendHangDetectionTimeSeconds,
-                    this.enableCpuMonitor);
+                    receiveHangDetectionTimeSeconds: this.rntbdReceiveHangDetectionTimeSeconds,
+                    sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
+                    enableCpuMonitor: this.enableCpuMonitor,
+                    retryWithConfiguration: this.connectionPolicy.RetryOptions?.GetRetryWithConfiguration());
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6500,9 +6502,7 @@ namespace Microsoft.Azure.Cosmos
                 this.accountServiceConfiguration,
                 this,
                 true,
-                this.connectionPolicy.EnableReadRequestsFallback ??
-                    (this.accountServiceConfiguration.DefaultConsistencyLevel !=
-                     Documents.ConsistencyLevel.BoundedStaleness),
+                this.connectionPolicy.EnableReadRequestsFallback ?? (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.BoundedStaleness),
                 !this.enableRntbdChannel,
                 this.useMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true);
@@ -6524,7 +6524,7 @@ namespace Microsoft.Azure.Cosmos
             this.CreateStoreModel(subscribeRntbdStatus: false);
         }
 
-        private async Task InitializeGatewayConfigurationReader()
+        private async Task InitializeGatewayConfigurationReaderAsync()
         {
             GatewayAccountReader accountReader = new GatewayAccountReader(
                     this.ServiceEndpoint,
@@ -6538,10 +6538,10 @@ namespace Microsoft.Azure.Cosmos
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
-            CosmosAccountSettings accountSettings = this.accountServiceConfiguration.AccountSettings;
-            this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountSettings.EnableMultipleWriteLocations;
+            AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
+            this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
-            await this.globalEndpointManager.RefreshLocationAsync(accountSettings);
+            await this.globalEndpointManager.RefreshLocationAsync(accountProperties);
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
@@ -6590,27 +6590,24 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException(string.Format(
                                 CultureInfo.CurrentUICulture,
                                 RMResources.InvalidCharacterInResourceName,
-                                resourceId[match]
-                                ));
+                                resourceId[match]));
                 }
 
                 if (resourceId[resourceId.Length - 1] == ' ')
                 {
-                    throw new ArgumentException(
-                                RMResources.InvalidSpaceEndingInResourceName
-                                );
+                    throw new ArgumentException(RMResources.InvalidSpaceEndingInResourceName);
                 }
             }
         }
 
-        private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, RequestOptions options)
+        private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
-            if(options != null && options.PartitionKey != null && options.PartitionKey.Equals(PartitionKey.None))
+            if (options != null && options.PartitionKey != null && options.PartitionKey.Equals(Documents.PartitionKey.None))
             {
                 partitionKey = collection.GetNoneValue();
             }
@@ -6626,10 +6623,10 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.ToJsonString());
         }
 
-        internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, RequestOptions options)
+        internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             // For backward compatibility, if collection doesn't have partition key defined, we assume all documents
@@ -6646,7 +6643,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new InvalidOperationException(RMResources.MissingPartitionKeyValue);
                 }
             }
-            else if (options.PartitionKey.Equals(PartitionKey.None))
+            else if (options.PartitionKey.Equals(Documents.PartitionKey.None))
             {
                 partitionKey = collection.GetNoneValue();
             }
@@ -6658,12 +6655,12 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.ToJsonString());
         }
 
-        private JsonSerializerSettings GetSerializerSettingsForRequest(RequestOptions requestOptions)
+        private JsonSerializerSettings GetSerializerSettingsForRequest(Documents.Client.RequestOptions requestOptions)
         {
             return requestOptions?.JsonSerializerSettings ?? this.serializerSettings;
         }
 
-        private INameValueCollection GetRequestHeaders(RequestOptions options)
+        private INameValueCollection GetRequestHeaders(Documents.Client.RequestOptions options)
         {
             Debug.Assert(
                 this.initializeTask.IsCompleted,

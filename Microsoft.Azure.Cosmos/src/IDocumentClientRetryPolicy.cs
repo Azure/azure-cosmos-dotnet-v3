@@ -9,14 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
-    internal interface IRetryPolicyFactory
-    {
-        /// <summary>
-        /// Method that is called to get the retry policy for a non-query request.
-        /// </summary>
-        IDocumentClientRetryPolicy GetRequestPolicy();
-    }
-
     internal interface IDocumentClientRetryPolicy : IRetryPolicy
     {
         /// <summary>
@@ -33,9 +25,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Method that is called to determine from the policy that needs to retry on the a particular status code
         /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
+        /// <param name="cosmosResponseMessage"><see cref="ResponseMessage"/> in return of the request</param>
         /// <param name="cancellationToken"></param>
         /// <returns>If the retry needs to be attempted or not</returns>
-        Task<ShouldRetryResult> ShouldRetryAsync(CosmosResponseMessage cosmosResponseMessage, CancellationToken cancellationToken);
+        Task<ShouldRetryResult> ShouldRetryAsync(ResponseMessage cosmosResponseMessage, CancellationToken cancellationToken);
+    }
+
+    internal interface IRetryPolicyFactory
+    {
+        /// <summary>
+        /// Method that is called to get the retry policy for a non-query request.
+        /// </summary>
+        IDocumentClientRetryPolicy GetRequestPolicy();
     }
 }

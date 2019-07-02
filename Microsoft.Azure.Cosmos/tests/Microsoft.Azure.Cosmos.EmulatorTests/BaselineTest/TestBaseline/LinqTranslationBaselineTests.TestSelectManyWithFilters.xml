@@ -98,17 +98,16 @@ WHERE ((root["NumericField"] > 0) AND (number0 > 10)) ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE r0 
+SELECT VALUE number0 
 FROM (
-    SELECT TOP 10 VALUE number0 
+    SELECT TOP 10 VALUE root 
     FROM root 
-    JOIN number0 IN root["EnumerableField"] 
     WHERE (root["NumericField"] > 0) 
     ORDER BY root["StringField"] ASC
 ) AS r0 
-WHERE (r0 > 10) 
+JOIN number0 IN r0["EnumerableField"] 
+WHERE (number0 > 10) 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":133,"end":165},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":29,"end":35},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

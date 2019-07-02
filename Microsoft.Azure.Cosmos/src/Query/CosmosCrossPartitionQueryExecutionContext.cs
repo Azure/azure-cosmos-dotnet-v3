@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosCrossPartitionQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -31,10 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal abstract class CosmosCrossPartitionQueryExecutionContext : CosmosQueryExecutionComponent, IDocumentQueryExecutionComponent
     {
-        private CosmosQueryContext queryContext;
-
-        private CosmosQueryRequestOptions queryRequestOptions;
-
         /// <summary>
         /// When a document producer tree successfully fetches a page we increase the page size by this factor so that any particular document producer will only ever make O(log(n)) roundtrips, while also only ever grabbing at most twice the number of documents needed.
         /// </summary>
@@ -74,6 +68,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The actual max buffered item count after all the optimizations have been made it in the create document query execution context layer.
         /// </summary>
         private readonly long actualMaxBufferedItemCount;
+
+        private CosmosQueryContext queryContext;
+
+        private QueryRequestOptions queryRequestOptions;
 
         /// <summary>
         /// This stores all the query metrics which have been grouped by partition id.
@@ -185,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// If a failure is hit store it and return it on the next drain call.
         /// This allows returning the results computed before the failure.
         /// </summary>
-        public CosmosQueryResponse FailureResponse
+        public QueryResponse FailureResponse
         {
             get;
             protected set;
@@ -231,7 +229,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
             }
 
-            CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(continuation, null);
+            CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(
+                continauationToken: continuation,
+                disallowContinuationTokenMessage: null,
+                resourceType: this.queryContext.ResourceTypeEnum,
+                containerRid: this.queryContext.ContainerResourceId);
+
             this.SetQueryMetrics();
 
             IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics = this.GetQueryMetrics();
@@ -314,7 +317,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Pushes a document producer back to the queue.
         /// </summary>
-        /// <returns>The current document producer tree that should be drained from.</returns>
         public void PushCurrentItemProducerTree(ItemProducerTree itemProducerTree)
         {
             this.itemProducerForest.Enqueue(itemProducerTree);
@@ -353,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>True if it move next failed. It can fail from an error or hitting the end of the tree</returns>
         protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
         {
-            (bool successfullyMovedNext, CosmosQueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
+            (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
             if (moveNextResponse.failureResponse != null)
             {
                 this.FailureResponse = moveNextResponse.failureResponse;
@@ -368,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of documents to drain.</param>
         /// <param name="cancellationToken">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        public async override Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public async override Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -387,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return this.FailureResponse;
             }
 
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 result: results,
                 count: results.Count,
                 responseHeaders: this.GetResponseHeaders(),
@@ -469,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    (bool successfullyMovedNext, CosmosQueryResponse failureResponse) response = await itemProducerTree.MoveNextIfNotSplit(token);
+                    (bool successfullyMovedNext, QueryResponse failureResponse) response = await itemProducerTree.MoveNextIfNotSplitAsync(token);
                     if (response.failureResponse != null)
                     {
                         // Set the failure so on drain it can be returned.
@@ -885,7 +887,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>A task to await on.</returns>
             public override Task StartAsync(CancellationToken token)
             {
-                return this.producer.BufferMoreDocuments(token);
+                return this.producer.BufferMoreDocumentsAsync(token);
             }
 
             /// <summary>

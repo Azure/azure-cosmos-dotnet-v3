@@ -19,7 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query
     internal sealed class QueryPartitionProvider : IDisposable
     {
         private static readonly int InitialBufferSize = 1024;
+#pragma warning disable SA1310 // Field names should not contain underscore
         private static readonly uint DISP_E_BUFFERTOOSMALL = 0x80020013;
+#pragma warning restore SA1310 // Field names should not contain underscore
         private static readonly PartitionedQueryExecutionInfoInternal DefaultInfoInternal = new PartitionedQueryExecutionInfoInternal
         {
             QueryInfo = new QueryInfo(),
@@ -104,14 +106,16 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
-            bool allowNonValueAggregateQuery)
+            bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey)
         {
             PartitionedQueryExecutionInfoInternal queryInfoInternal = this.GetPartitionedQueryExecutionInfoInternal(
                 querySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
                 isContinuationExpected,
-                allowNonValueAggregateQuery);
+                allowNonValueAggregateQuery,
+                hasLogicalPartitionKey);
 
             return this.ConvertPartitionedQueryExecutionInfo(queryInfoInternal, partitionKeyDefinition);
         }
@@ -144,7 +148,8 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
-            bool allowNonValueAggregateQuery)
+            bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey)
         {
             if (querySpec == null || partitionKeyDefinition == null)
             {
@@ -182,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         requireFormattableOrderByQuery,
                         isContinuationExpected,
                         allowNonValueAggregateQuery,
+                        hasLogicalPartitionKey,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
@@ -201,6 +207,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 requireFormattableOrderByQuery,
                                 isContinuationExpected,
                                 allowNonValueAggregateQuery,
+                                hasLogicalPartitionKey, // has logical partition key
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,
@@ -219,9 +226,10 @@ namespace Microsoft.Azure.Cosmos.Query
             if (exception != null)
             {
                 DefaultTrace.TraceInformation("QueryEngineConfiguration: " + this.queryengineConfiguration);
-                throw new BadRequestException(
-                    "Message: " + serializedQueryExecutionInfo,
-                    exception);
+
+                throw new CosmosException(
+                    HttpStatusCode.BadRequest,
+                    "Message: " + serializedQueryExecutionInfo);
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =

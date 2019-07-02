@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="OrderByDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -14,10 +12,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using ParallelQuery;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.CosmosElements;
 
     /// <summary>
     /// OrderByDocumentQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -76,8 +74,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private OrderByDocumentQueryExecutionContext(
             DocumentQueryExecutionContextBase.InitParams initPararms,
             string rewrittenQuery,
-            OrderByConsumeComparer consumeComparer) :
-            base(
+            OrderByConsumeComparer consumeComparer)
+            : base(
                 initPararms,
                 rewrittenQuery,
                 consumeComparer,
@@ -126,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.ShouldIncrementSkipCount(documentProducer) ? this.skipCount + 1 : 0,
                         filter);
                 }),
-                DefaultJsonSerializationSettings.Value) : null;
+                    DefaultJsonSerializationSettings.Value) : null;
             }
         }
 
@@ -169,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             //// In order to maintain the continuation toke for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
@@ -226,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
             }
 
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 result: results,
                 count: results.Count,
                 responseHeaders: this.GetResponseHeaders(),
@@ -702,7 +700,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.AppendToBuilders(builders, inequality);
                             if (lastPrefix)
                             {
-                                this.AppendToBuilders(builders, "", "=", "=");
+                                this.AppendToBuilders(builders, string.Empty, "=", "=");
                             }
                         }
                         else

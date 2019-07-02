@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="DocumentProducer.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -27,10 +25,10 @@ namespace Microsoft.Azure.Cosmos.Query
     {
         /// <summary>
         /// The buffered pages that is thread safe, since the producer and consumer of the queue can be on different threads.
-        /// We buffer TryMonad of FeedResponse of T, since we want to buffer exceptions,
+        /// We buffer TryMonad of DoucmentFeedResponse of T, since we want to buffer exceptions,
         /// so that the exception is thrown on the consumer thread (instead of the background producer thread), thus observing the exception.
         /// </summary>
-        private readonly AsyncCollection<TryMonad<FeedResponse<CosmosElement>>> bufferedPages;
+        private readonly AsyncCollection<TryMonad<DocumentFeedResponse<CosmosElement>>> bufferedPages;
 
         /// <summary>
         /// The document producer can only be fetching one page at a time.
@@ -44,9 +42,9 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc;
 
         /// <summary>
-        /// The callback used to take a <see cref="DocumentServiceRequest"/> and retrieve a page of documents as a <see cref="FeedResponse{T}"/>
+        /// The callback used to take a <see cref="DocumentServiceRequest"/> and retrieve a page of documents as a <see cref="DocumentFeedResponse{T}"/>
         /// </summary>
-        private readonly Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc;
+        private readonly Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<DocumentFeedResponse<CosmosElement>>> executeRequestFunc;
 
         /// <summary>
         /// Callback used to create a retry policy that will be used to determine when and how to retry fetches.
@@ -165,14 +163,14 @@ namespace Microsoft.Azure.Cosmos.Query
         public DocumentProducer(
             PartitionKeyRange partitionKeyRange,
             Func<PartitionKeyRange, string, int, DocumentServiceRequest> createRequestFunc,
-            Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<FeedResponse<CosmosElement>>> executeRequestFunc,
+            Func<DocumentServiceRequest, IDocumentClientRetryPolicy, CancellationToken, Task<DocumentFeedResponse<CosmosElement>>> executeRequestFunc,
             Func<IDocumentClientRetryPolicy> createRetryPolicyFunc,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IEqualityComparer<CosmosElement> equalityComparer,
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            this.bufferedPages = new AsyncCollection<TryMonad<FeedResponse<CosmosElement>>>();
+            this.bufferedPages = new AsyncCollection<TryMonad<DocumentFeedResponse<CosmosElement>>>();
             // We use a binary semaphore to get the behavior of a mutex,
             // since fetching documents from the backend using a continuation token is a critical section.
             this.fetchSemaphore = new SemaphoreSlim(1, 1);
@@ -398,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Query
             token.ThrowIfCancellationRequested();
 
             CosmosElement originalCurrent = this.current;
-            bool movedNext = await this.MoveNextAsyncImplementation(token);
+            bool movedNext = await this.MoveNextAsyncImplementationAsync(token);
             if (!movedNext || (originalCurrent != null && !this.equalityComparer.Equals(originalCurrent, this.current)))
             {
                 this.isActive = false;
@@ -412,13 +410,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreIfEmpty(CancellationToken token)
+        public async Task BufferMoreIfEmptyAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
             if (this.bufferedPages.Count == 0)
             {
-                await this.BufferMoreDocuments(token);
+                await this.BufferMoreDocumentsAsync(token);
             }
         }
 
@@ -427,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        public async Task BufferMoreDocuments(CancellationToken token)
+        public async Task BufferMoreDocumentsAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -453,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         int retries = 0;
                         try
                         {
-                            FeedResponse<CosmosElement> feedResponse = await this.executeRequestFunc(request, retryPolicy, token);
+                            DocumentFeedResponse<CosmosElement> feedResponse = await this.executeRequestFunc(request, retryPolicy, token);
                             this.fetchExecutionRangeAccumulator.EndFetchRange(
                                 this.PartitionKeyRange.Id,
                                 feedResponse.ActivityId,
@@ -463,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.hasStartedFetching = true;
                             this.backendContinuationToken = feedResponse.ResponseContinuation;
                             this.activityId = Guid.Parse(feedResponse.ActivityId);
-                            await this.bufferedPages.AddAsync(TryMonad<FeedResponse<CosmosElement>>.FromResult(feedResponse));
+                            await this.bufferedPages.AddAsync(TryMonad<DocumentFeedResponse<CosmosElement>>.FromResult(feedResponse));
                             Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
 
                             QueryMetrics queryMetrics = QueryMetrics.Zero;
@@ -518,7 +516,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 }
 
                                 // Buffer the exception instead of throwing, since we don't want an unobserved exception.
-                                await this.bufferedPages.AddAsync(TryMonad<FeedResponse<CosmosElement>>.FromException(exceptionToBuffer));
+                                await this.bufferedPages.AddAsync(TryMonad<DocumentFeedResponse<CosmosElement>>.FromException(exceptionToBuffer));
 
                                 // null out the backend continuation token, 
                                 // so that people stop trying to buffer more on this producer.
@@ -553,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether or not we successfully moved to the next document in the producer.</returns>
-        private async Task<bool> MoveNextAsyncImplementation(CancellationToken token)
+        private async Task<bool> MoveNextAsyncImplementationAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -562,13 +560,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 return false;
             }
 
-            await this.BufferMoreIfEmpty(token);
+            await this.BufferMoreIfEmptyAsync(token);
 
             if (!this.hasInitialized)
             {
                 // First time calling move next async so we are just going to call movenextpage to get the ball rolling
                 this.hasInitialized = true;
-                if (await this.MoveNextPage(token))
+                if (await this.MoveNextPageAsync(token))
                 {
                     return true;
                 }
@@ -592,7 +590,7 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 // We might be at a continuation boundary so we need to move to the next page
-                if (await this.MoveNextPage(token))
+                if (await this.MoveNextPageAsync(token))
                 {
                     return true;
                 }
@@ -624,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>Whether the operation was successful.</returns>
-        private async Task<bool> MoveNextPage(CancellationToken token)
+        private async Task<bool> MoveNextPageAsync(CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -638,17 +636,17 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Tried to move onto the next page before finishing the first page.");
             }
 
-            TryMonad<FeedResponse<CosmosElement>> tryMonad = await this.bufferedPages.TakeAsync(token);
-            FeedResponse<CosmosElement> feedResponse = tryMonad.Match<FeedResponse<CosmosElement>>(
+            TryMonad<DocumentFeedResponse<CosmosElement>> tryMonad = await this.bufferedPages.TakeAsync(token);
+            DocumentFeedResponse<CosmosElement> feedResponse = tryMonad.Match<DocumentFeedResponse<CosmosElement>>(
                 onSuccess: ((page) => 
                 {
                     return page;
                 }),
-                onError: ((exceptionDispatchInfo) => 
+                onError: (exceptionDispatchInfo) => 
                 {
                     exceptionDispatchInfo.Throw();
                     return null;
-                }));
+                });
 
             this.previousContinuationToken = this.currentContinuationToken;
             this.currentContinuationToken = feedResponse.ResponseContinuation;

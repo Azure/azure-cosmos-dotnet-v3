@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
 
             long numberOfBytesRead = 0;
 
-            while(true)
+            while (true)
             {
                 int bytesRead = await srcStream.ReadAsync(buffer, 0, RuntimeConstants.Serialization.ChunkSize1K);
 
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
 
                 numberOfBytesRead += bytesRead;
                 
-                if(numberOfBytesRead > maxSizeToCopy)
+                if (numberOfBytesRead > maxSizeToCopy)
                 {
                     throw new RequestEntityTooLargeException(
                         RMResources.RequestTooLarge);

@@ -1,10 +1,9 @@
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//-----------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Linq
 {
-    using Microsoft.Azure.Cosmos.Sql;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -12,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Microsoft.Azure.Cosmos.Sql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     internal static class StringBuiltinFunctions
@@ -109,6 +109,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
+                bool validInNet = false;
+                bool validInNetCore = false;
+
                 if (methodCallExpression.Arguments.Count == 1 &&
                     methodCallExpression.Arguments[0].NodeType == ExpressionType.Constant &&
                     methodCallExpression.Arguments[0].Type == typeof(char[]))
@@ -116,9 +119,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                     char[] argumentsExpressions = (char[])((ConstantExpression)methodCallExpression.Arguments[0]).Value;
                     if (argumentsExpressions.Length == 0)
                     {
-                        SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
-                        return SqlFunctionCallScalarExpression.CreateBuiltin("LTRIM", str);
+                        validInNet = true;
                     }
+                }
+                else if (methodCallExpression.Arguments.Count == 0)
+                {
+                    validInNetCore = true;
+                }
+
+                if (validInNet || validInNetCore)
+                {
+                    SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("LTRIM", str);
                 }
 
                 return null;
@@ -157,6 +169,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
+                bool validInNet = false;
+                bool validInNetCore = false;
+
                 if (methodCallExpression.Arguments.Count == 1 &&
                     methodCallExpression.Arguments[0].NodeType == ExpressionType.Constant &&
                     methodCallExpression.Arguments[0].Type == typeof(char[]))
@@ -164,9 +179,19 @@ namespace Microsoft.Azure.Cosmos.Linq
                     char[] argumentsExpressions = (char[])((ConstantExpression)methodCallExpression.Arguments[0]).Value;
                     if (argumentsExpressions.Length == 0)
                     {
-                        SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
-                        return SqlFunctionCallScalarExpression.CreateBuiltin("RTRIM", str);
+                        validInNet = true;
                     }
+                }
+                else if (methodCallExpression.Arguments.Count == 0)
+                {
+                    validInNetCore = true;
+
+                }
+
+                if (validInNet || validInNetCore)
+                {
+                    SqlScalarExpression str = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin("RTRIM", str);
                 }
 
                 return null;
@@ -181,7 +206,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlScalarExpression memberExpression = ExpressionToSql.VisitScalarExpression(methodCallExpression.Object, context);
                     SqlScalarExpression indexExpression = ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context);
-                    SqlScalarExpression[] arguments = new SqlScalarExpression[] {
+                    SqlScalarExpression[] arguments = new SqlScalarExpression[] 
+                    {
                         memberExpression,
                         indexExpression,
                         ExpressionToSql.VisitScalarExpression(Expression.Constant(1), context)

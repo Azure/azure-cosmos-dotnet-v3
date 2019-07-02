@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
     using Newtonsoft.Json;
+    using System;
     using System.Collections.Generic;
 
     #region Family classes
@@ -26,12 +27,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     public class Family : LinqTestObject
     {
         public string FamilyId;
+        public string[] Tags;
         public Parent[] Parents;
         public Child[] Children;
         public bool IsRegistered;
         public object NullObject;
         public int Int;
         public int? NullableInt;
+        public Logs Records;
+        [JsonProperty(PropertyName = "id")]
+        public string Id;
+        public string Pk;
     }
 
     public class Parent : LinqTestObject
@@ -55,6 +61,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         public string GivenName;
     }
 
+    public class Logs : LinqTestObject
+    {
+        public string LogId;
+        public Transaction[] Transactions;
+    }
+
+    public class Transaction : LinqTestObject
+    {
+        public DateTime Date;
+        public long Amount;
+        public TransactionType Type; 
+    }
+
+    public enum TransactionType
+    {
+        Debit,
+        Credit
+    }
+
     #endregion
 
     #region Simple Data classes
@@ -66,6 +91,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         public int Number { get; set; }
 
+        public string Pk { get; set; }
         public bool Flag { get; set; }
 
         public int[] Multiples { get; set; }

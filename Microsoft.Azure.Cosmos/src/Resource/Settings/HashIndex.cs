@@ -4,12 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+    using System.Globalization;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System;
-    using System.Globalization;
 
     /// <summary>
     /// Represents details of the hash index setting in an Azure Cosmos DB service.

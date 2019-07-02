@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JsonReader.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -68,9 +66,10 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Creates a JsonReader that can read a supplied stream (assumes UTF-8 encoding).
         /// </summary>
         /// <param name="stream">the stream to read.</param>
+        /// <param name="jsonStringDictionary">The dictionary to use for binary user string encoding.</param>
         /// <param name="skipvalidation">whether or not to skip validation.</param>
         /// <returns>a concrete JsonReader that can read the supplied stream.</returns>
-        public static IJsonReader Create(Stream stream, bool skipvalidation = false)
+        public static IJsonReader Create(Stream stream, JsonStringDictionary jsonStringDictionary = null, bool skipvalidation = false)
         {
             if (stream == null)
             {
@@ -89,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Json
             switch ((JsonSerializationFormat)firstbyte)
             {
                 case JsonSerializationFormat.Binary:
-                    return new JsonBinaryReader(stream, skipvalidation);
+                    return new JsonBinaryReader(stream, jsonStringDictionary, skipvalidation);
                 default:
                     return new JsonTextReader(stream, Encoding.UTF8, skipvalidation);
             }
@@ -121,9 +120,10 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Creates a JsonReader that can read from the supplied byte array (assumes utf-8 encoding).
         /// </summary>
         /// <param name="buffer">The byte array to read from.</param>
+        /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <param name="skipValidation">Whether or not to skip validation.</param>
         /// <returns>A concrete JsonReader that can read the supplied byte array.</returns>
-        public static IJsonReader Create(byte[] buffer, bool skipValidation = false)
+        public static IJsonReader Create(byte[] buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
         {
             if (buffer == null)
             {
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Json
             switch ((JsonSerializationFormat)firstByte)
             {
                 case JsonSerializationFormat.Binary:
-                    return new JsonBinaryReader(buffer, skipValidation);
+                    return new JsonBinaryReader(buffer, jsonStringDictionary, skipValidation);
                 default:
                     return new JsonTextReader(buffer, skipValidation);
             }

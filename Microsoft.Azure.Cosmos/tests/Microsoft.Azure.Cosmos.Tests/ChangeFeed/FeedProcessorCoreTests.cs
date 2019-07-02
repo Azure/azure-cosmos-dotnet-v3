@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class FeedProcessorCoreTests
     {
-        private static ProcessorSettings DefaultSettings = new ProcessorSettings() {
+        private static ProcessorOptions DefaultSettings = new ProcessorOptions() {
             FeedPollDelay = TimeSpan.FromSeconds(0)
         };
 
@@ -35,8 +35,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     It.Is<IReadOnlyList<MyDocument>>(list => list[0].id.Equals("test")),
                     It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
-            Mock<CosmosFeedIterator> mockIterator = new Mock<CosmosFeedIterator>();
-            mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializer serializer = new CustomSerializer();
@@ -68,8 +68,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
-            Mock<CosmosFeedIterator> mockIterator = new Mock<CosmosFeedIterator>();
-            mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializerFails serializer = new CustomSerializerFails();
@@ -89,19 +89,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
-            Mock<CosmosFeedIterator> mockIterator = new Mock<CosmosFeedIterator>();
-            mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
+            Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosDefaultJsonSerializer());
+            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosJsonSerializerCore());
 
             await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
 
-        private static CosmosResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)
+        private static ResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)
         {
-            CosmosResponseMessage message = new CosmosResponseMessage(statusCode);
-            message.Headers.Continuation = "someContinuation";
+            ResponseMessage message = new ResponseMessage(statusCode);
+            message.Headers.ContinuationToken = "someContinuation";
             if (subStatusCode > 0)
             {
                 message.Headers.SubStatusCode = (Documents.SubStatusCodes)subStatusCode;
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     document
                 };
 
-                message.Content = (new CosmosDefaultJsonSerializer()).ToStream(cosmosFeedResponse);
+                message.Content = (new CosmosJsonSerializerCore()).ToStream(cosmosFeedResponse);
             }
 
             return message;
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             public string id { get; set; }
         }
 
-        private class CustomSerializer : CosmosDefaultJsonSerializer
+        private class CustomSerializer : CosmosJsonSerializerCore
         {
             public int FromStreamCalled = 0;
             public int ToStreamCalled = 0;
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
-        private class CustomSerializerFails : CosmosDefaultJsonSerializer
+        private class CustomSerializerFails : CosmosJsonSerializerCore
         {
             public override T FromStream<T>(Stream stream)
             {

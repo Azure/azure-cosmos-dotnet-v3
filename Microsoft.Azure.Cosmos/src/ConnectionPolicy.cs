@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
 
             List<string> proximityBasedPreferredLocations = RegionProximityUtil.GeneratePreferredRegionList(location);
 
-            if(proximityBasedPreferredLocations != null)
+            if (proximityBasedPreferredLocations != null)
             {
                 this.preferredLocations.Clear();
                 foreach (string preferredLocation in proximityBasedPreferredLocations)
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
 
             set
             {
-                if(value != Protocol.Https && value != Protocol.Tcp)
+                if (value != Protocol.Https && value != Protocol.Tcp)
                 {
                     throw new ArgumentOutOfRangeException("value");
                 }
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos
         /// When the value of this property is true, the SDK will direct write operations to
         /// available writable locations of geo-replicated database account. Writable locations
         /// are ordered by <see cref="PreferredLocations"/> property. Setting the property value
-        /// to true has no effect until <see cref="CosmosAccountSettings.EnableMultipleWriteLocations"/> 
+        /// to true has no effect until <see cref="AccountProperties.EnableMultipleWriteLocations"/> 
         /// is also set to true.
         /// <value>Default value is false indicating that writes are only directed to
         /// first region in <see cref="PreferredLocations"/> property.</value>

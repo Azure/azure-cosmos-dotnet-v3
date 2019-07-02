@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="Resource"/>
     /// <seealso cref="DocumentClient"/>
     /// <seealso cref="ResourceFeedReaderClientExtensions"/>
-    internal sealed class ResourceFeedReader<T> : IEnumerable<T> where T : JsonSerializable, new()
+    internal sealed class ResourceFeedReader<T> : IEnumerable<T>
+        where T : JsonSerializable, new()
     {
         private readonly DocumentQuery<T> documentQuery;
 
@@ -106,12 +107,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The response from a single call to ReadFeed for the specified resource.</returns>
-        public Task<FeedResponse<T>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<T>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return TaskHelper.InlineIfPossible(() => this.ExecuteNextAsyncInternal(cancellationToken), null, cancellationToken);
+            return TaskHelper.InlineIfPossible(() => this.InternalExecuteNextAsync(cancellationToken), null, cancellationToken);
         }
 
-        private async Task<FeedResponse<T>> ExecuteNextAsyncInternal(CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<T>> InternalExecuteNextAsync(CancellationToken cancellationToken)
         {
             return await this.documentQuery.ExecuteNextAsync<T>(cancellationToken);
         }

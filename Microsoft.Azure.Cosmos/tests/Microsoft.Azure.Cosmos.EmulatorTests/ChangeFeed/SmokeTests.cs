@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
-            ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
                 {
                     foreach (TestClass doc in docs)
                     {
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
             // Letting processor initialize
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
             }
 
             // Waiting on all notifications to finish
@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
-            ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     foreach (dynamic doc in docs)
                     {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
-                .WithCosmosLeaseContainer(this.LeaseContainer).Build();
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
             // Letting processor initialize
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
             }
 
             // Waiting on all notifications to finish
@@ -99,8 +99,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
-            ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
                 {
                     foreach (TestClass doc in docs)
                     {
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
             }
 
             // Waiting on all notifications to finish
@@ -133,8 +133,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
             List<int> receivedIds = new List<int>();
-            ChangeFeedProcessor processor = this.Container.Items
-                .CreateChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     foreach (dynamic doc in docs)
                     {
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Inserting documents
             foreach (int id in expectedIds)
             {
-                await this.Container.Items.CreateItemAsync<dynamic>(id.ToString(), new { id = id.ToString() });
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
             }
 
             // Waiting on all notifications to finish

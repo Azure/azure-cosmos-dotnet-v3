@@ -11,8 +11,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
     using System.IO;
     using System.Linq;
     using System.Runtime.CompilerServices;
+    using System.Text.RegularExpressions;
     using System.Xml;
     using VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents;
+    using System.Text;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Base class for all baseline tests.
@@ -99,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 writer.WriteStartElement("Results");
                 foreach (BaselineTestResult baselineTestResult in baselineTestResults)
                 {
-                    baselineTestResult.SerializeAsXML(writer);
+                    baselineTestResult.SerializeAsXml(writer);
                 }
 
                 writer.WriteEndElement();
@@ -107,9 +111,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             }
 
             // Compare the output to the baseline and fail if they differ.
-            string outputText = File.ReadAllText(outputPath);
-            string baselineText = File.ReadAllText(baselinePath);
-            Assert.AreEqual(baselineText, outputText);
+            string outputText = Regex.Replace(File.ReadAllText(outputPath), @"\s+", "");
+            string baselineText = Regex.Replace(File.ReadAllText(baselinePath), @"\s+", "");
+            int commonPrefixLength = 0;
+            foreach (Tuple<char, char> characters in outputText.Zip(baselineText, (first, second) => new Tuple<char, char>(first, second)))
+            {
+                if(characters.Item1 == characters.Item2)
+                {
+                    commonPrefixLength++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            string baselineTextSuffix = new string(baselineText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+            string outputTextSuffix = new string(outputText.Skip(Math.Max(commonPrefixLength - 10, 0)).Take(100).ToArray());
+
+            bool matched = baselineText.Equals(outputText);
+            if (!matched)
+            {
+                Debug.WriteLine("Expected: {0}, Actual: {1}", baselineText, outputText);
+            }
+
+            Assert.IsTrue(
+                matched,
+                $@"
+                    Expected: {baselineTextSuffix},
+                    Actual:   {outputTextSuffix}");
         }
 
         /// <summary>
@@ -160,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             /// Serializes the result to the provided xml writer.
             /// </summary>
             /// <param name="xmlWriter">The xml writer to write with.</param>
-            public void SerializeAsXML(XmlWriter xmlWriter)
+            public void SerializeAsXml(XmlWriter xmlWriter)
             {
                 if (xmlWriter == null)
                 {
@@ -169,12 +199,59 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
 
                 xmlWriter.WriteStartElement("Result");
                 xmlWriter.WriteStartElement("Input");
-                this.Input.SerializeAsXML(xmlWriter);
+                this.Input.SerializeAsXml(xmlWriter);
                 xmlWriter.WriteEndElement();
                 xmlWriter.WriteStartElement("Output");
-                this.Output.SerializeAsXML(xmlWriter);
+                this.Output.SerializeAsXml(xmlWriter);
                 xmlWriter.WriteEndElement();
                 xmlWriter.WriteEndElement();
+            }
+        }
+
+        public class CustomJsonSerializer : CosmosSerializer
+        {
+            private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+            private JsonSerializer serializer;
+            public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
+            {
+                serializer = JsonSerializer.Create(jsonSerializerSettings);
+            }
+
+            public override T FromStream<T>(Stream stream)
+            {
+                using (stream)
+                {
+                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    {
+                        return (T)(object)(stream);
+                    }
+
+                    using (StreamReader sr = new StreamReader(stream))
+                    {
+                        using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+                        {
+                            return serializer.Deserialize<T>(jsonTextReader);
+                        }
+                    }
+                }
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                MemoryStream streamPayload = new MemoryStream();
+                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CustomJsonSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+                {
+                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
+                    {
+                        writer.Formatting = Newtonsoft.Json.Formatting.None;
+                        serializer.Serialize(writer, input);
+                        writer.Flush();
+                        streamWriter.Flush();
+                    }
+                }
+
+                streamPayload.Position = 0;
+                return streamPayload;
             }
         }
     }

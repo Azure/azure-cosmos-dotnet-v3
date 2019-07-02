@@ -58,10 +58,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            CosmosQueryResponse sourcePage = await base.DrainAsync(maxElements, token);
+            QueryResponse sourcePage = await base.DrainAsync(maxElements, token);
             if (!sourcePage.IsSuccessStatusCode)
             {
                 return sourcePage;
@@ -80,15 +80,15 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 {
                     updatedContinuationToken = new OffsetContinuationToken(
                         this.skipCount,
-                        sourcePage.Headers.Continuation).ToString();
+                        sourcePage.Headers.ContinuationToken).ToString();
                 }
             }
 
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                     result: documentsAfterSkip,
                     count: documentsAfterSkip.Count(),
                     responseHeaders: sourcePage.QueryHeaders.CloneKnownProperties(updatedContinuationToken, sourcePage.QueryHeaders.DisallowContinuationTokenMessage),
-                    responseLengthBytes: sourcePage.ResponseLengthBytes); ;
+                    responseLengthBytes: sourcePage.ResponseLengthBytes);
         }
 
         /// <summary>

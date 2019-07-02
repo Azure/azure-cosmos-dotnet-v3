@@ -8,12 +8,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Geometry which is comprised of multiple polygons.
     /// </summary>
     /// <seealso cref="Polygon"/>
+    [DataContract]
     internal sealed class MultiPolygon : Geometry, IEquatable<MultiPolygon>
     {
         /// <summary>
@@ -22,7 +24,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="polygons">
         /// List of <see cref="PolygonCoordinates"/> instances. Each <see cref="PolygonCoordinates"/> represents separate polygon.
         /// </param>
-        public MultiPolygon(IList<PolygonCoordinates> polygons) : this(polygons, new GeometryParams())
+        public MultiPolygon(IList<PolygonCoordinates> polygons)
+            : this(polygons, new GeometryParams())
         {
         }
 
@@ -50,7 +53,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal MultiPolygon() : base(GeometryType.MultiPolygon, new GeometryParams())
+        internal MultiPolygon()
+            : base(GeometryType.MultiPolygon, new GeometryParams())
         {
         }
 
@@ -60,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Collection of <see cref="PolygonCoordinates"/> instances. Each <see cref="PolygonCoordinates"/> represents separate polygon.
         /// </value>
+        [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public ReadOnlyCollection<PolygonCoordinates> Polygons { get; private set; }
 

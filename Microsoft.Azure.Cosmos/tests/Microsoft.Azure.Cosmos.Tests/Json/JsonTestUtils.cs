@@ -8,9 +8,9 @@
 
     internal static class JsonTestUtils
     {
-        public static byte[] ConvertTextToBinary(string text)
+        public static byte[] ConvertTextToBinary(string text, JsonStringDictionary jsonStringDictionary = null)
         {
-            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
             binaryWriter.WriteAll(textReader);
             return binaryWriter.GetResult();

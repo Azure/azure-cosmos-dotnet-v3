@@ -1,6 +1,6 @@
-//----------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
@@ -20,16 +20,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.LeaseToken = leaseToken;
         }
 
-        internal ChangeFeedObserverContextCore(string leaseToken, CosmosResponseMessage feedResponse, PartitionCheckpointer checkpointer)
+        internal ChangeFeedObserverContextCore(string leaseToken, ResponseMessage feedResponse, PartitionCheckpointer checkpointer)
         {
             this.LeaseToken = leaseToken;
-            this.FeedResponse = feedResponse;
+            this.DocumentFeedResponse = feedResponse;
             this.checkpointer = checkpointer;
         }
 
         public override string LeaseToken { get; }
 
-        public CosmosResponseMessage FeedResponse { get; }
+        public ResponseMessage DocumentFeedResponse { get; }
 
         /// <summary>
         /// Checkpoints progress of a stream. This method is valid only if manual checkpoint was configured.
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// <exception cref="Exceptions.LeaseLostException">Thrown if other host acquired the lease or the lease was deleted</exception>
         public override Task CheckpointAsync()
         {
-            return this.checkpointer.CheckpointPartitionAsync(this.FeedResponse.Headers.Continuation);
+            return this.checkpointer.CheckpointPartitionAsync(this.DocumentFeedResponse.Headers.ContinuationToken);
         }
     }
 }

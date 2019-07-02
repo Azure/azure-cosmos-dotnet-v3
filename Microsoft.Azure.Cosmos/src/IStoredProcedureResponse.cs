@@ -4,9 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Collections;
     using System.Collections.Specialized;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     /// <summary>
     /// Interface exposed for mocking purposes for the Azure Cosmos DB service.
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is exposed for mocking purposes for the Azure Cosmos DB service.
         /// </remarks>
-        /// <seealso cref="CosmosStoredProcedureRequestOptions.EnableScriptLogging"/>
+        /// <seealso cref="StoredProcedureRequestOptions.EnableScriptLogging"/>
         string ScriptLog { get; }
 
         /// <summary>

@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         };
 
         private ReadOnlyCollection<string> preferredLocations;
-        private CosmosAccountSettings databaseAccount;
+        private AccountProperties databaseAccount;
         private LocationCache cache;
         private GlobalEndpointManager endpointManager;
         private Mock<IDocumentClientInternal> mockedClient;
@@ -64,14 +64,14 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             Assert.AreEqual(this.databaseAccount.WriteLocationsInternal.First().Name, this.cache.GetLocation(LocationCacheTests.DefaultEndpoint));
 
-            foreach (CosmosAccountLocation databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.WriteLocationsInternal)
             {
-                Assert.AreEqual(databaseAccountLocation.Name, this.cache.GetLocation(new Uri(databaseAccountLocation.DatabaseAccountEndpoint)));
+                Assert.AreEqual(databaseAccountLocation.Name, this.cache.GetLocation(new Uri(databaseAccountLocation.Endpoint)));
             }
 
-            foreach (CosmosAccountLocation databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
+            foreach (AccountRegion databaseAccountLocation in this.databaseAccount.ReadLocationsInternal)
             {
-                Assert.AreEqual(databaseAccountLocation.Name, this.cache.GetLocation(new Uri(databaseAccountLocation.DatabaseAccountEndpoint)));
+                Assert.AreEqual(databaseAccountLocation.Name, this.cache.GetLocation(new Uri(databaseAccountLocation.Endpoint)));
             }
         }
 
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             if (retryCount == 0)
                             {
                                 Uri expectedEndpoint = isPreferredLocationsListEmpty ?
-                                    new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint) : // All requests go to write endpoint
+                                    new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint) : // All requests go to write endpoint
                                     LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             else if (retryCount == 1)
                             {
                                 // Second request must go to write endpoint
-                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint);
+                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             else if (retryCount == 1)
                             {
                                 // Second request must go to first write endpoint
-                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint);
+                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             else if (retryCount == 1)
                             {
                                 // Second request must go to first write endpoint
-                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint);
+                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
@@ -513,22 +513,22 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
-        private static CosmosAccountSettings CreateDatabaseAccount(bool useMultipleWriteLocations)
+        private static AccountProperties CreateDatabaseAccount(bool useMultipleWriteLocations)
         {
-            CosmosAccountSettings databaseAccount = new CosmosAccountSettings()
+            AccountProperties databaseAccount = new AccountProperties()
             {
                 EnableMultipleWriteLocations = useMultipleWriteLocations,
-                ReadLocationsInternal = new Collection<CosmosAccountLocation>()
+                ReadLocationsInternal = new Collection<AccountRegion>()
                 {
-                    { new CosmosAccountLocation() { Name = "location1", DatabaseAccountEndpoint = LocationCacheTests.Location1Endpoint.ToString() } },
-                    { new CosmosAccountLocation() { Name = "location2", DatabaseAccountEndpoint = LocationCacheTests.Location2Endpoint.ToString() } },
-                    { new CosmosAccountLocation() { Name = "location4", DatabaseAccountEndpoint = LocationCacheTests.Location4Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location4", Endpoint = LocationCacheTests.Location4Endpoint.ToString() } },
                 },
-                WriteLocationsInternal = new Collection<CosmosAccountLocation>()
+                WriteLocationsInternal = new Collection<AccountRegion>()
                 {
-                    { new CosmosAccountLocation() { Name = "location1", DatabaseAccountEndpoint = LocationCacheTests.Location1Endpoint.ToString() } },
-                    { new CosmosAccountLocation() { Name = "location2", DatabaseAccountEndpoint = LocationCacheTests.Location2Endpoint.ToString() } },
-                    { new CosmosAccountLocation() { Name = "location3", DatabaseAccountEndpoint = LocationCacheTests.Location3Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = LocationCacheTests.Location3Endpoint.ToString() } },
                 }
             };
 
@@ -595,23 +595,23 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                     for (int i = 0; i < readLocationIndex; i++)
                     {
-                        this.cache.MarkEndpointUnavailableForRead(new Uri(this.databaseAccount.ReadLocationsInternal[i].DatabaseAccountEndpoint));
-                        this.endpointManager.MarkEndpointUnavailableForRead(new Uri(this.databaseAccount.ReadLocationsInternal[i].DatabaseAccountEndpoint));
+                        this.cache.MarkEndpointUnavailableForRead(new Uri(this.databaseAccount.ReadLocationsInternal[i].Endpoint));
+                        this.endpointManager.MarkEndpointUnavailableForRead(new Uri(this.databaseAccount.ReadLocationsInternal[i].Endpoint));
                     }
 
                     for (int i = 0; i < writeLocationIndex; i++)
                     {
-                        this.cache.MarkEndpointUnavailableForWrite(new Uri(this.databaseAccount.WriteLocationsInternal[i].DatabaseAccountEndpoint));
-                        this.endpointManager.MarkEndpointUnavailableForWrite(new Uri(this.databaseAccount.WriteLocationsInternal[i].DatabaseAccountEndpoint));
+                        this.cache.MarkEndpointUnavailableForWrite(new Uri(this.databaseAccount.WriteLocationsInternal[i].Endpoint));
+                        this.endpointManager.MarkEndpointUnavailableForWrite(new Uri(this.databaseAccount.WriteLocationsInternal[i].Endpoint));
                     }
 
                     Dictionary<string, Uri> writeEndpointByLocation = this.databaseAccount.WriteLocationsInternal.ToDictionary(
                         location => location.Name,
-                        location => new Uri(location.DatabaseAccountEndpoint));
+                        location => new Uri(location.Endpoint));
 
-                    Dictionary<string, Uri> readEndpointByLocation = this.databaseAccount.ReadableLocations.ToDictionary(
+                    Dictionary<string, Uri> readEndpointByLocation = this.databaseAccount.ReadableRegions.ToDictionary(
                         location => location.Name,
-                        location => new Uri(location.DatabaseAccountEndpoint));
+                        location => new Uri(location.Endpoint));
 
                     Uri[] preferredAvailableWriteEndpoints = this.preferredLocations.Skip(writeLocationIndex)
                         .Where(location => writeEndpointByLocation.ContainsKey(location))
@@ -670,11 +670,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             bool isMostPreferredLocationUnavailableForWrite = useMultipleWriteLocations ? false : isFirstWriteEndpointUnavailable;
             if (this.preferredLocations.Count > 0)
             {
-                string mostPreferredReadLocationName = this.preferredLocations.First(location => databaseAccount.ReadableLocations.Any(readLocation => readLocation.Name == location));
+                string mostPreferredReadLocationName = this.preferredLocations.First(location => databaseAccount.ReadableRegions.Any(readLocation => readLocation.Name == location));
                 Uri mostPreferredReadEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredReadLocationName];
                 isMostPreferredLocationUnavailableForRead = preferredAvailableReadEndpoints.Length == 0 ? true : (preferredAvailableReadEndpoints[0] != mostPreferredReadEndpoint);
 
-                string mostPreferredWriteLocationName = this.preferredLocations.First(location => databaseAccount.WritableLocations.Any(writeLocation => writeLocation.Name == location));
+                string mostPreferredWriteLocationName = this.preferredLocations.First(location => databaseAccount.WritableRegions.Any(writeLocation => writeLocation.Name == location));
                 Uri mostPreferredWriteEndpoint = LocationCacheTests.EndpointByLocation[mostPreferredWriteLocationName];
 
                 if (useMultipleWriteLocations)
@@ -739,8 +739,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
             else if (!useMultipleWriteLocations)
             {
-                firstAvailableWriteEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint);
-                secondAvailableWriteEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[1].DatabaseAccountEndpoint);
+                firstAvailableWriteEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
+                secondAvailableWriteEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
             }
             else if (availableWriteEndpoints.Length > 1)
             {
@@ -751,9 +751,9 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             {
                 firstAvailableWriteEndpoint = availableWriteEndpoints[0];
                 secondAvailableWriteEndpoint =
-                    this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint != firstAvailableWriteEndpoint.ToString() ?
-                    new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint) :
-                    new Uri(this.databaseAccount.WriteLocationsInternal[1].DatabaseAccountEndpoint);
+                    this.databaseAccount.WriteLocationsInternal[0].Endpoint != firstAvailableWriteEndpoint.ToString() ?
+                    new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint) :
+                    new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
             }
             else
             {
@@ -782,11 +782,11 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             Uri firstWriteEnpoint = !endpointDiscoveryEnabled ?
                 LocationCacheTests.DefaultEndpoint :
-                new Uri(this.databaseAccount.WriteLocationsInternal[0].DatabaseAccountEndpoint);
+                new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
 
             Uri secondWriteEnpoint = !endpointDiscoveryEnabled ?
                 LocationCacheTests.DefaultEndpoint :
-                new Uri(this.databaseAccount.WriteLocationsInternal[1].DatabaseAccountEndpoint);
+                new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
 
             // If current write endpoint is unavailable, write endpoints order doesn't change
             // All write requests flip-flop between current write and alternate write endpoint

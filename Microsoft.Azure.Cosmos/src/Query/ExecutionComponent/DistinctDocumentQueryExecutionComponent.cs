@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="DistinctDocumentQueryExecutionComponent.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 {
     using System;
@@ -100,10 +98,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">The maximum number of items to drain.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A page of distinct results.</returns>
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             List<CosmosElement> distinctResults = new List<CosmosElement>();
-            CosmosQueryResponse cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
+            QueryResponse cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
             if (!cosmosQueryResponse.IsSuccessStatusCode)
             {
                 return cosmosQueryResponse;
@@ -122,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 updatedContinuationToken = new DistinctContinuationToken(
                     this.lastHash,
-                    cosmosQueryResponse.Headers.Continuation).ToString();
+                    cosmosQueryResponse.Headers.ContinuationToken).ToString();
             }
             else
             {
@@ -131,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken;
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 distinctResults,
                 distinctResults.Count,
                 cosmosQueryResponse.ResponseLengthBytes,

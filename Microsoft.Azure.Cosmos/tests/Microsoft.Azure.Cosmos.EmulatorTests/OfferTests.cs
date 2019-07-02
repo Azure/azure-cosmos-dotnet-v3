@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Tuple.Create(collResponse.Resource.SelfLink, new OfferV2((i + 1) * 1000) { OfferType = "Invalid" }));
                 }
 
-                FeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
+                DocumentFeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
                 OfferTests.ValidateOfferCount(offerResponse, collectionsLink);
 
                 string collectionLink = null;
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     while (documentQuery.HasMoreResults)
                     {
-                        FeedResponse<Offer> pagedResponse = await documentQuery.ExecuteNextAsync<Offer>();
+                        DocumentFeedResponse<Offer> pagedResponse = await documentQuery.ExecuteNextAsync<Offer>();
                         Assert.IsNotNull(pagedResponse.ResponseHeaders, "ResponseHeaders cannot be null");
                         queryResults.AddRange(pagedResponse);
                     }
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                               }, headers)).ToArray());
                 }
 
-                FeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
+                DocumentFeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
                 OfferTests.ValidateOfferCount(offerResponse, collections.Select(collection => collection.SelfLink).ToList());
                 List<Offer> offers = offerResponse.ToList<Offer>();
 
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     collectionsLink.Add(collResponse.Resource.SelfLink);
                 }
 
-                FeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
+                DocumentFeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
                 OfferTests.ValidateOfferCount(offerResponse, collectionsLink);
 
                 string collectionLink = null;
@@ -432,11 +432,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     FeedOptions options = new FeedOptions
                     {
-                        RequestContinuation = continuation,
+                        RequestContinuationToken = continuation,
                         MaxItemCount = pageSize
                     };
 
-                    FeedResponse<Offer> response = await client.ReadOffersFeedAsync(options);
+                    DocumentFeedResponse<Offer> response = await client.ReadOffersFeedAsync(options);
                     Assert.IsTrue(response.Count <= pageSize, string.Format(CultureInfo.InvariantCulture, "Number of offers read {0} greater than desired value {1}. Activity Id: {2}",
                         response.Count, pageSize, response.ActivityId));
 
@@ -578,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
 
-                FeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
+                DocumentFeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
                 OfferTests.ValidateOfferCount(offerResponse, linksSet);
 
                 string offerLink = null;
@@ -687,10 +687,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     IDocumentQuery<dynamic> invalidQuery = client.CreateOfferQuery(
                         "select * from root",
-                        new FeedOptions() { RequestContinuation = "-tEGAI2wSgAoAAAAAAAAAA==#count3" })
+                        new FeedOptions() { RequestContinuationToken = "-tEGAI2wSgAoAAAAAAAAAA==#count3" })
                         .AsDocumentQuery();
 
-                    FeedResponse<dynamic> invalidResult = invalidQuery.ExecuteNextAsync().Result;
+                    DocumentFeedResponse<dynamic> invalidResult = invalidQuery.ExecuteNextAsync().Result;
                     Assert.Fail("Should throw an exception");
                 }
                 catch (Exception ex)
@@ -731,7 +731,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                               })).ToArray());
                 }
 
-                FeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
+                DocumentFeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
                 OfferTests.ValidateOfferCount(offerResponse, collections.Select(collection => collection.SelfLink).ToList());
                 List<Offer> offers = offerResponse.ToList<Offer>();
 
@@ -788,7 +788,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 while (paginationQuery.HasMoreResults)
                 {
-                    FeedResponse<Offer> response = await paginationQuery.ExecuteNextAsync<Offer>();
+                    DocumentFeedResponse<Offer> response = await paginationQuery.ExecuteNextAsync<Offer>();
                     queryResults.AddRange(response);
                     Assert.IsTrue(response.Count <= pageSize, " No. of results greater than page size");
                 }
@@ -823,7 +823,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     while (paginationQuery.HasMoreResults)
                     {
-                        FeedResponse<Offer> response = await paginationQuery.ExecuteNextAsync<Offer>();
+                        DocumentFeedResponse<Offer> response = await paginationQuery.ExecuteNextAsync<Offer>();
                         queryResults.AddRange(response);
                         Assert.IsTrue(response.Count <= pageSize, " No. of results greater than page size");
                     }
@@ -849,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     while (paginationQuery.HasMoreResults)
                     {
-                        FeedResponse<Offer> response = await paginationQuery.ExecuteNextAsync<Offer>();
+                        DocumentFeedResponse<Offer> response = await paginationQuery.ExecuteNextAsync<Offer>();
                         queryResults.AddRange(response);
                         Assert.IsTrue(response.Count <= pageSize, " No. of results greater than page size");
                     }
@@ -901,7 +901,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     while (documentQuery.HasMoreResults)
                     {
-                        FeedResponse<Offer> pagedResponse = await documentQuery.ExecuteNextAsync<Offer>();
+                        DocumentFeedResponse<Offer> pagedResponse = await documentQuery.ExecuteNextAsync<Offer>();
                         Assert.IsNotNull(pagedResponse.ResponseHeaders, "ResponseHeaders cannot be null");
                         queryResults.AddRange(pagedResponse);
                     }
@@ -1026,7 +1026,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     collectionsLink.Add(collResponse.Resource.SelfLink);
                 }
 
-                FeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
+                DocumentFeedResponse<Offer> offerResponse = await client.ReadOffersFeedAsync();
                 OfferTests.ValidateOfferCount(offerResponse, collectionsLink);
 
                 foreach (Offer offer in offerResponse)
@@ -1172,7 +1172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        internal static void ValidateOfferCount(FeedResponse<Offer> offerResponse, ICollection<string> collectionsLink)
+        internal static void ValidateOfferCount(DocumentFeedResponse<Offer> offerResponse, ICollection<string> collectionsLink)
         {
             if (offerResponse.Count != collectionsLink.Count)
             {

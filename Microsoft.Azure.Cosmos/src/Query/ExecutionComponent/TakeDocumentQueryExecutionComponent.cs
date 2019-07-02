@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (limitContinuationToken.Limit > limitCount)
             {
-                throw new BadRequestException($"limit count in continuation token: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}.");
+                throw new CosmosException(HttpStatusCode.BadRequest, $"limit count in continuation token: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}.");
             }
 
             return new TakeDocumentQueryExecutionComponent(
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (topContinuationToken.Top > topCount)
             {
-                throw new BadRequestException($"top count in continuation token: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}.");
+                throw new CosmosException(HttpStatusCode.BadRequest, $"top count in continuation token: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}.");
             }
 
             return new TakeDocumentQueryExecutionComponent(
@@ -92,10 +93,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            CosmosQueryResponse results = await base.DrainAsync(maxElements, token);
+            QueryResponse results = await base.DrainAsync(maxElements, token);
             if (!results.IsSuccessStatusCode)
             {
                 return results;
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 if (!this.IsDone)
                 {
-                    string sourceContinuation = results.Headers.Continuation;
+                    string sourceContinuation = results.Headers.ContinuationToken;
                     TakeContinuationToken takeContinuationToken;
                     switch (this.takeEnum)
                     {
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 takedDocuments,
                 takedDocuments.Count,
                 results.ResponseLengthBytes,
@@ -212,11 +213,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             /// Tries to parse out the LimitContinuationToken.
             /// </summary>
             /// <param name="value">The value to parse from.</param>
-            /// <param name="LimitContinuationToken">The result of parsing out the token.</param>
+            /// <param name="limitContinuationToken">The result of parsing out the token.</param>
             /// <returns>Whether or not the LimitContinuationToken was successfully parsed out.</returns>
-            public static bool TryParse(string value, out LimitContinuationToken LimitContinuationToken)
+            public static bool TryParse(string value, out LimitContinuationToken limitContinuationToken)
             {
-                LimitContinuationToken = default(LimitContinuationToken);
+                limitContinuationToken = default(LimitContinuationToken);
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     return false;
@@ -224,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
                 try
                 {
-                    LimitContinuationToken = JsonConvert.DeserializeObject<LimitContinuationToken>(value);
+                    limitContinuationToken = JsonConvert.DeserializeObject<LimitContinuationToken>(value);
                     return true;
                 }
                 catch (JsonException ex)

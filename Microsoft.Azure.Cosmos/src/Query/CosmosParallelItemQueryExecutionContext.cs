@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosParallelItemQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -10,13 +8,14 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Collections.Generic;
-    using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// CosmosParallelItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.
@@ -47,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="constructorParams">The parameters for constructing the base class.</param>
         private CosmosParallelItemQueryExecutionContext(
-            CosmosQueryContext constructorParams) :
-            base(
+            CosmosQueryContext constructorParams)
+            : base(
                 constructorParams,
                 CosmosParallelItemQueryExecutionContext.MoveNextComparer,
                 CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
@@ -120,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drains.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that when awaited on returns a FeedResponse of results.</returns>
+        /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
         public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             // In order to maintain the continuation token for the user we must drain with a few constraints
@@ -200,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 CultureInfo.InvariantCulture,
                                 "Invalid Range in the continuation token {0} for Parallel~Context.",
                                 requestContinuation));
-                            throw new BadRequestException(RMResources.InvalidContinuationToken);
+                            throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                         }
                     }
 
@@ -210,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             CultureInfo.InvariantCulture,
                             "Invalid format for continuation token {0} for Parallel~Context.",
                             requestContinuation));
-                        throw new BadRequestException(RMResources.InvalidContinuationToken);
+                        throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                     }
                 }
                 catch (JsonException ex)
@@ -221,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         requestContinuation,
                         ex.Message));
 
-                    throw new BadRequestException(RMResources.InvalidContinuationToken, ex);
+                    throw new CosmosException(HttpStatusCode.BadRequest, RMResources.InvalidContinuationToken);
                 }
 
                 filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);

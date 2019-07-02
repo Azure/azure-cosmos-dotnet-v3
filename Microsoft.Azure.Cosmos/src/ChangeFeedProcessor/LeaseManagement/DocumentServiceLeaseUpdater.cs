@@ -1,6 +1,6 @@
-//----------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
@@ -9,6 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
     internal abstract class DocumentServiceLeaseUpdater
     {
-        public abstract Task<DocumentServiceLease> UpdateLeaseAsync(DocumentServiceLease cachedLease, string leaseId, object leasePartitionKey, Func<DocumentServiceLease, DocumentServiceLease> updateLease);
+        public abstract Task<DocumentServiceLease> UpdateLeaseAsync(DocumentServiceLease cachedLease, string leaseId, PartitionKey leasePartitionKey, Func<DocumentServiceLease, DocumentServiceLease> updateLease);
     }
 }

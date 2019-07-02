@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JsonNavigator.JsonBinaryNavigator.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -22,20 +20,22 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly BinaryNode rootNode;
             private readonly LittleEndianBinaryReader binaryReader;
             private readonly byte[] buffer;
+            private readonly JsonStringDictionary jsonStringDictionary;
 
             /// <summary>
             /// Initializes a new instance of the JsonBinaryNavigator class
             /// </summary>
             /// <param name="buffer">The (UTF-8) buffer to navigate.</param>
+            /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
             /// <param name="skipValidation">whether to skip validation or not.</param>
-            public JsonBinaryNavigator(byte[] buffer, bool skipValidation = false)
+            public JsonBinaryNavigator(byte[] buffer, JsonStringDictionary jsonStringDictionary, bool skipValidation = false)
             {
                 if (buffer == null)
                 {
                     throw new ArgumentNullException($"{nameof(buffer)} can not be null");
                 }
 
-                if(buffer.Length < 1)
+                if (buffer.Length < 1)
                 {
                     throw new ArgumentException($"{nameof(buffer)} must have at least one byte.");
                 }
@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // true, since buffer is visible
                 this.binaryReader = new LittleEndianBinaryReader(new MemoryStream(buffer, 0, buffer.Length, false, true));
                 this.buffer = buffer;
+                this.jsonStringDictionary = jsonStringDictionary;
             }
 
             /// <summary>
@@ -143,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 long offset = ((BinaryNode)stringNode).Offset;
                 this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
-                return JsonBinaryEncoding.GetStringValue(this.binaryReader);
+                return JsonBinaryEncoding.GetStringValue(this.binaryReader, this.jsonStringDictionary);
             }
 
             public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)
@@ -454,9 +455,20 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="jsonNode">The json node of interest</param>
             /// <param name="bufferedRawJson">The raw json.</param>
             /// <returns>True if bufferedRawJson was set. False otherwise.</returns>
-            public override bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out IReadOnlyList<byte> bufferedRawJson)
+            public override bool TryGetBufferedRawJson(
+                IJsonNavigatorNode jsonNode,
+                out IReadOnlyList<byte> bufferedRawJson)
             {
-                throw new NotImplementedException();
+                if (jsonNode == null || !(jsonNode is BinaryNode jsonBinaryNode))
+                {
+                    bufferedRawJson = default(IReadOnlyList<byte>);
+                    return false;
+                }
+
+                int nodeLength = (int)JsonBinaryEncoding.GetValueLength(this.buffer, (long)jsonBinaryNode.Offset);
+                bufferedRawJson = new ArraySegment<byte>(this.buffer, jsonBinaryNode.Offset, nodeLength);
+
+                return true;
             }
 
             private int GetValueCount(long offset, long length)

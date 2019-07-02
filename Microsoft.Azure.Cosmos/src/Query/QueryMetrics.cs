@@ -1,8 +1,6 @@
-//-----------------------------------------------------------------------
-// <copyright file="QueryMetrics.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -512,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
     /// Query engine time in the Azure DocumentDB database service.
     /// (dummy class that will be deprecated).
     /// </summary>
-    public sealed class QueryEngineTimes
+    internal sealed class QueryEngineTimes
     {
         private readonly TimeSpan indexLookupTime;
         private readonly TimeSpan documentLoadTime;

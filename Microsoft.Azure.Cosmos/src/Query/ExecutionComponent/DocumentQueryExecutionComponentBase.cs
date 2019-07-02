@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="DocumentQueryExecutionComponentBase.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 {
     using System;
@@ -60,8 +58,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </summary>
         /// <param name="maxElements">Upper bound for the number of documents you wish to receive.</param>
         /// <param name="token">The cancellation token to use.</param>
-        /// <returns>A FeedResponse of documents.</returns>
-        public virtual Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        /// <returns>A DoucmentFeedResponse of documents.</returns>
+        public virtual Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
             return this.Source.DrainAsync(maxElements, token);

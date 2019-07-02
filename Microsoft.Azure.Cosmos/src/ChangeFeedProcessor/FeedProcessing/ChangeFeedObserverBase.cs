@@ -1,19 +1,19 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
-    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using static Microsoft.Azure.Cosmos.Container;
 
     internal sealed class ChangeFeedObserverBase<T> : ChangeFeedObserver<T>
     {
-        private readonly Func<IReadOnlyCollection<T>, CancellationToken, Task> onChanges;
+        private readonly ChangesHandler<T> onChanges;
 
-        public ChangeFeedObserverBase(Func<IReadOnlyCollection<T>, CancellationToken, Task> onChanges)
+        public ChangeFeedObserverBase(ChangesHandler<T> onChanges)
         {
             this.onChanges = onChanges;
         }

@@ -4,17 +4,17 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Globalization;
+    using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
-    using System.Diagnostics;
-    using System.Net;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Globalization;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -23,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// Provides interface for historical change feed.
     /// </summary>
     /// <typeparam name="TResource">Source Resource Type (e.g. Document)</typeparam>
-    internal sealed class ChangeFeedQuery<TResource> : IDocumentQuery<TResource> where TResource : new()
+    internal sealed class ChangeFeedQuery<TResource> : IDocumentQuery<TResource>
+        where TResource : new()
     {
         #region Fields
         private const string IfNoneMatchAllHeaderValue = "*";   // This means start from current.
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <typeparam name="TResult">The type of the object returned in the query result.</typeparam>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<FeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<TResult>> ExecuteNextAsync<TResult>(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ReadDocumentChangeFeedAsync<TResult>(this.resourceLink, cancellationToken);
         }
@@ -106,21 +107,21 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="cancellationToken">(Optional) The <see cref="CancellationToken"/> allows for notification that operations should be cancelled.</param>
         /// <returns>The Task object for the asynchronous response from query execution.</returns>
-        public Task<FeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentFeedResponse<dynamic>> ExecuteNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ExecuteNextAsync<dynamic>(cancellationToken);
         }
         #endregion IDocumentQuery<TResource>
 
         #region Private
-        public Task<FeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellationToken)
+        public Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedAsync<TResult>(string resourceLink, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy retryPolicy = this.client.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDocumentChangeFeedPrivateAsync<TResult>(resourceLink, retryPolicy, cancellationToken), retryPolicy, cancellationToken);
         }
 
-        private async Task<FeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
+        private async Task<DocumentFeedResponse<TResult>> ReadDocumentChangeFeedPrivateAsync<TResult>(string link, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
             using (DocumentServiceResponse response = await this.GetFeedResponseAsync(link, resourceType, retryPolicyInstance, cancellationToken))
             {
@@ -131,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     long responseLengthInBytes = response.ResponseBody.Length;
                     int itemCount = 0;
                     IEnumerable<dynamic> feedResource = response.GetQueryResponse(typeof(TResource), out itemCount);
-                    FeedResponse<dynamic> feedResponse = new FeedResponse<dynamic>(
+                    DocumentFeedResponse<dynamic> feedResponse = new DocumentFeedResponse<dynamic>(
                         feedResource,
                         itemCount,
                         response.Headers,
@@ -143,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
                 else
                 {
-                    return new FeedResponse<TResult>(
+                    return new DocumentFeedResponse<TResult>(
                         Enumerable.Empty<TResult>(),
                         0,
                         response.Headers,

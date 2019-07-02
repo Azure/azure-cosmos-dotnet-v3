@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CompositePath.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
     using System;
@@ -40,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
     {
         /// <summary>
         /// Gets or sets the full path in a document used for composite indexing.
-        /// We do not support wildcards in the path.
+        /// We do not support wild cards in the path.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.Path)]
         public string Path { get; set; }

@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public async Task OpenAsync(
             string databaseName,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             CancellationToken cancellationToken)
         {
             CollectionRoutingMap routingMap =
@@ -118,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// ReplicatedResourceClient will use this API to get the direct connectivity AddressCache for given request.
         /// </summary>
         /// <param name="request"></param>
-        /// <returns></returns>
         private IAddressResolver GetAddressResolver(DocumentServiceRequest request)
         {
             Uri endpoint = this.endpointManager.ResolveServiceEndpoint(request);

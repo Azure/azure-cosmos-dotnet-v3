@@ -3,13 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
     using System.Net;
-    using System.Text;
-    using System.Threading.Tasks;
-    
+
     internal class CosmosOfferResult
     {
         public CosmosOfferResult(int? throughput)

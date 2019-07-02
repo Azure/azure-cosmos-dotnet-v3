@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Converters;
     using Newtonsoft.Json;
 
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// Any number of additional elements are allowed - interpretation and meaning of additional elements is up to the application.
     /// </para>
     /// </summary>
+    [DataContract]
     [JsonConverter(typeof(PositionJsonConverter))]
     public sealed class Position : IEquatable<Position>
     {
@@ -32,7 +34,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="latitude">
         /// Latitude value.
         /// </param>
-        public Position(double longitude, double latitude) : this(longitude, latitude, null)
+        public Position(double longitude, double latitude)
+            : this(longitude, latitude, null)
         {
         }
 
@@ -73,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
                 throw new ArgumentException("coordinates");
             }
 
-           this.Coordinates = new ReadOnlyCollection<double>(coordinates);
+            this.Coordinates = new ReadOnlyCollection<double>(coordinates);
         }
 
         /// <summary>
@@ -82,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Coordinate values.
         /// </value>
+        [DataMember(Name = "Coordinates")]
         public ReadOnlyCollection<double> Coordinates { get; private set; }
 
         /// <summary>

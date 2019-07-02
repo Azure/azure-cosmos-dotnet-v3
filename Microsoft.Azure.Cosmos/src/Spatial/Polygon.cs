@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -56,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// ]]>        
     /// </code>
     /// </example>
+    [DataContract]
     public sealed class Polygon : Geometry, IEquatable<Polygon>
     {
         /// <summary>
@@ -81,7 +83,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// First ring is external ring. Following rings define 'holes' in the polygon.
         /// </para>
         /// </param>
-        public Polygon(IList<LinearRing> rings) : this(rings, new GeometryParams())
+        public Polygon(IList<LinearRing> rings)
+            : this(rings, new GeometryParams())
         {
         }
 
@@ -111,7 +114,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal Polygon() : base(GeometryType.Polygon, new GeometryParams())
+        internal Polygon()
+            : base(GeometryType.Polygon, new GeometryParams())
         {
         }
 
@@ -121,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Polygon rings.
         /// </value>
+        [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public ReadOnlyCollection<LinearRing> Rings { get; private set; }
 

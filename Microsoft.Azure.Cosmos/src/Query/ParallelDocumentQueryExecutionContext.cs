@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="ParallelDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -48,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="rewrittenQuery">The rewritten query.</param>
         private ParallelDocumentQueryExecutionContext(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
-            string rewrittenQuery) :
-            base(
+            string rewrittenQuery)
+            : base(
                 constructorParams,
                 rewrittenQuery,
                 ParallelDocumentQueryExecutionContext.MoveNextComparer,
@@ -122,8 +120,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="maxElements">The maximum number of documents to drains.</param>
         /// <param name="token">The cancellation token.</param>
-        /// <returns>A task that when awaited on returns a FeedResponse of results.</returns>
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        /// <returns>A task that when awaited on returns a DoucmentFeedResponse of results.</returns>
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             // In order to maintain the continuation token for the user we must drain with a few constraints
             // 1) We fully drain from the left most partition before moving on to the next partition
@@ -152,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.PushCurrentDocumentProducerTree(currentDocumentProducerTree);
 
             // At this point the document producer tree should have internally called MoveNextPage, since we fully drained a page.
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 result: results,
                 count: results.Count,
                 responseLengthBytes: this.GetAndResetResponseLengthBytes(),

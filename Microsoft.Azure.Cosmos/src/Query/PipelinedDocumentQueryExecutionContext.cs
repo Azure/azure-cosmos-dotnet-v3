@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="PipelinedDocumentQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Query
 {
@@ -185,8 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return (IDocumentQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                 partitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
-               requestContinuation,
-                constructorParams.FeedOptions.EnableCrossPartitionSkipTake,
+                requestContinuation,
                 createOrderByComponentFunc,
                 createParallelComponentFunc));
         }
@@ -252,7 +249,6 @@ namespace Microsoft.Azure.Cosmos.Query
                partitionedQueryExecutionInfo.QueryInfo,
                initialPageSize,
                requestContinuation,
-               constructorParams.QueryRequestOptions.EnableCrossPartitionSkipTake,
                createOrderByComponentFunc,
                createParallelComponentFunc));
         }
@@ -261,7 +257,6 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryInfo queryInfo,
             int initialPageSize,
             string requestContinuation,
-            bool enableCrossPartitionSkipTake,
             Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
             Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
         {
@@ -301,11 +296,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasOffset)
             {
-                if (!enableCrossPartitionSkipTake)
-                {
-                    throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
-                }
-
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
@@ -318,11 +308,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasLimit)
             {
-                if (!enableCrossPartitionSkipTake)
-                {
-                    throw new ArgumentException("Cross Partition OFFSET / LIMIT is not supported.");
-                }
-
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
@@ -361,11 +346,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the next page of results from this context.
         /// </summary>
         /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on that in turn returns a FeedResponse of results.</returns>
-        public async Task<FeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
+        /// <returns>A task to await on that in turn returns a DoucmentFeedResponse of results.</returns>
+        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
         {
-            CosmosQueryResponse feedResponse = await this.ExecuteNextAsync(token);
-            return new FeedResponse<CosmosElement>(
+            QueryResponse feedResponse = await this.ExecuteNextAsync(token);
+            return new DocumentFeedResponse<CosmosElement>(
                 result: feedResponse.CosmosElements,
                 count: feedResponse.Count,
                 responseHeaders: feedResponse.Headers.CosmosMessageHeaders,
@@ -380,12 +365,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the next page of results from this context.
         /// </summary>
         /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on that in turn returns a FeedResponse of results.</returns>
-        public override async Task<CosmosQueryResponse> ExecuteNextAsync(CancellationToken token)
+        /// <returns>A task to await on that in turn returns a DoucmentFeedResponse of results.</returns>
+        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             try
             {
-                CosmosQueryResponse queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
+                QueryResponse queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
                 if (!queryResponse.IsSuccessStatusCode)
                 {
                     this.component.Stop();
@@ -398,7 +383,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     dynamics.Add(element);
                 }
 
-                return CosmosQueryResponse.CreateSuccess(
+                return QueryResponse.CreateSuccess(
                     dynamics,
                     queryResponse.Count,
                     queryResponse.ResponseLengthBytes,

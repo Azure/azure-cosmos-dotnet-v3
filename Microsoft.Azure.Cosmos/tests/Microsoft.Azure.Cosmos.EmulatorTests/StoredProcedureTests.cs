@@ -6,16 +6,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
     public sealed class StoredProcedureTests : BaseCosmosClientHelper
     {
-        private CosmosContainer container = null;
-        private CosmosStoredProcedureRequestOptions requestOptions = new CosmosStoredProcedureRequestOptions();
+        private static CosmosSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
+        private Container container = null;
+        private Scripts scripts = null;
+        private StoredProcedureRequestOptions requestOptions = new StoredProcedureRequestOptions();
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -23,9 +28,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestInit();
 
             string containerName = Guid.NewGuid().ToString();
-            CosmosContainerResponse cosmosContainerResponse = await this.database.Containers
+            ContainerResponse cosmosContainerResponse = await this.database
                 .CreateContainerIfNotExistsAsync(containerName, "/user");
             this.container = cosmosContainerResponse;
+            this.scripts = this.container.Scripts;
         }
 
         [TestCleanup]
@@ -40,13 +46,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sprocId = Guid.NewGuid().ToString();
             string sprocBody = "function() { { var x = 42; } }";
 
-            CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
 
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             Assert.IsTrue(storedProcedureResponse.RequestCharge > 0);
 
-            CosmosStoredProcedureSettings sprocSettings = storedProcedureResponse;
+            StoredProcedureProperties sprocSettings = storedProcedureResponse;
             Assert.AreEqual(sprocId, sprocSettings.Id);
             Assert.IsNotNull(sprocSettings.ResourceId);
             Assert.IsNotNull(sprocSettings.ETag);
@@ -61,14 +67,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sprocId = Guid.NewGuid().ToString();
             string sprocBody = "function() { { var x = 42; } }";
 
-            CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
             double requestCharge = storedProcedureResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
-            storedProcedureResponse = await storedProcedureResponse.StoredProcedure.ReadAsync();
+            storedProcedureResponse = await this.scripts.ReadStoredProcedureAsync(sprocId);
             requestCharge = storedProcedureResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, storedProcedureResponse.StatusCode);
@@ -78,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     var response = context.getResponse();
                     response.setBody(""hello there "" + name);
                 }";
-            CosmosStoredProcedureResponse replaceResponse = await storedProcedureResponse.StoredProcedure.ReplaceAsync(updatedBody);
+            StoredProcedureResponse replaceResponse = await this.scripts.ReplaceStoredProcedureAsync(new StoredProcedureProperties(sprocId, updatedBody));
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, updatedBody, replaceResponse);
             requestCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
@@ -86,10 +92,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, updatedBody, replaceResponse);
 
 
-            storedProcedureResponse = await replaceResponse.StoredProcedure.DeleteAsync();
-            requestCharge = storedProcedureResponse.RequestCharge;
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            requestCharge = deleteResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
-            Assert.AreEqual(HttpStatusCode.NoContent, storedProcedureResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecutionLogsTests()
+        {
+            const string testLogsText = "this is a test";
+            const string testPartitionId = "1";
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(name) { var context = getContext(); console.log('"+ testLogsText + "'); var response = context.getResponse(); response.setBody('hello there ' + name); }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            double requestCharge = storedProcedureResponse.RequestCharge;
+            Assert.IsTrue(requestCharge > 0);
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            StoredProcedureProperties storedProcedure = storedProcedureResponse;
+            StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string, string>(
+                sprocId, 
+                Guid.NewGuid().ToString(),
+                new Cosmos.PartitionKey(testPartitionId), 
+                new StoredProcedureRequestOptions()
+                {
+                    EnableScriptLogging = true
+                });
+
+            Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
+            Assert.AreEqual(testLogsText, sprocResponse.ScriptLog);
+        }
+
+        [TestMethod]
+        public async Task ExecutionLogsAsStreamTests()
+        {
+            const string testLogsText = "this is a test";
+            const string testPartitionId = "1";
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function(name) { var context = getContext(); console.log('" + testLogsText + "'); var response = context.getResponse(); response.setBody('hello there ' + name); }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            double requestCharge = storedProcedureResponse.RequestCharge;
+            Assert.IsTrue(requestCharge > 0);
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+
+
+            StoredProcedureProperties storedProcedure = storedProcedureResponse;
+            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                sprocId,
+                cosmosJsonSerializer.ToStream(new string[] { Guid.NewGuid().ToString() }),
+                new Cosmos.PartitionKey(testPartitionId),
+                new StoredProcedureRequestOptions()
+                {
+                    EnableScriptLogging = true
+                });
+
+            Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
+            Assert.AreEqual(testLogsText, Uri.UnescapeDataString(sprocResponse.Headers["x-ms-documentdb-script-log-results"]));
         }
 
         [TestMethod]
@@ -104,18 +170,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string sprocId = Guid.NewGuid().ToString();
                 sprocIds[i] = sprocId;
 
-                CosmosStoredProcedureResponse storedProcedureResponse =
-                    await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
+                StoredProcedureResponse storedProcedureResponse =
+                    await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
                 Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             }
 
             List<string> readSprocIds = new List<string>();
-            CosmosFeedIterator<CosmosStoredProcedureSettings> iter = this.container.StoredProcedures.GetStoredProcedureIterator();
+            FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>();
             while (iter.HasMoreResults)
             {
-                CosmosFeedResponse<CosmosStoredProcedureSettings> currentResultSet = await iter.FetchNextSetAsync();
+                FeedResponse<StoredProcedureProperties> currentResultSet = await iter.ReadNextAsync();
                 {
-                    foreach (CosmosStoredProcedureSettings storedProcedureSettingsEntry in currentResultSet)
+                    foreach (StoredProcedureProperties storedProcedureSettingsEntry in currentResultSet)
                     {
                         readSprocIds.Add(storedProcedureSettingsEntry.Id);
                     }
@@ -144,26 +210,71 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 );
             }";
 
-            CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
             // Insert document and then query
             string testPartitionId = Guid.NewGuid().ToString();
             var payload = new { id = testPartitionId, user = testPartitionId };
-            CosmosItemResponse<dynamic> createItemResponse = await this.container.Items.CreateItemAsync<dynamic>(testPartitionId, payload);
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-            CosmosStoredProcedure storedProcedure = storedProcedureResponse;
-            CosmosItemResponse<JArray> sprocResponse = await storedProcedure.ExecuteAsync<object, JArray>(testPartitionId, null);
+            StoredProcedureProperties storedProcedure = storedProcedureResponse;
+            StoredProcedureExecuteResponse<JArray> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<object, JArray>(sprocId, null, new Cosmos.PartitionKey(testPartitionId));
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
             JArray jArray = sprocResponse;
             Assert.AreEqual(1, jArray.Count);
 
-            storedProcedureResponse = await storedProcedureResponse.StoredProcedure.DeleteAsync();
-            Assert.AreEqual(HttpStatusCode.NoContent, storedProcedureResponse.StatusCode);
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ExecuteTestAsStream()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = @"function() {
+                var context = getContext();
+                var response = context.getResponse();
+                var collection = context.getCollection();
+                var collectionLink = collection.getSelfLink();
+
+                var filterQuery = 'SELECT * FROM c';
+
+                collection.queryDocuments(collectionLink, filterQuery, { },
+                    function(err, documents) {
+                        response.setBody(documents);
+                    }
+                );
+            }";
+
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
+
+            // Insert document and then query
+            string testPartitionId = Guid.NewGuid().ToString();
+            var payload = new { id = testPartitionId, user = testPartitionId };
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
+            Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
+
+            StoredProcedureProperties storedProcedure = storedProcedureResponse;
+            ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(sprocId, null, new Cosmos.PartitionKey(testPartitionId));
+            Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
+
+            using (StreamReader sr = new System.IO.StreamReader(sprocResponse.Content))
+            {
+                string stringResponse = sr.ReadToEnd();
+                JArray jArray = JArray.Parse(stringResponse);
+                Assert.AreEqual(1, jArray.Count);
+            }
+
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
         [TestMethod]
@@ -171,8 +282,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string sprocId = Guid.NewGuid().ToString();
 
-            CosmosStoredProcedure storedProcedure = this.container.StoredProcedures[sprocId];
-            CosmosStoredProcedureResponse storedProcedureResponse = storedProcedureResponse = await storedProcedure.DeleteAsync();
+            StoredProcedureResponse storedProcedureResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
             Assert.AreEqual(HttpStatusCode.NotFound, storedProcedureResponse.StatusCode);
         }
 
@@ -182,20 +292,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sprocId = Guid.NewGuid().ToString();
             string sprocBody = "function() { { var x = 42; } }";
 
-            CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
-            CosmosStoredProcedure cosmosStoredProcedure = storedProcedureResponse;
-            CosmosStoredProcedureSettings cosmosStoredProcedureSettings = storedProcedureResponse;
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+            StoredProcedureProperties cosmosStoredProcedure = storedProcedureResponse;
+            StoredProcedureProperties cosmosStoredProcedureSettings = storedProcedureResponse;
 
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             Assert.IsNotNull(cosmosStoredProcedure);
             Assert.IsNotNull(cosmosStoredProcedureSettings);
 
-            storedProcedureResponse = await storedProcedureResponse.StoredProcedure.DeleteAsync();
-            cosmosStoredProcedure = storedProcedureResponse;
-            cosmosStoredProcedureSettings = storedProcedureResponse;
-            Assert.IsNotNull(cosmosStoredProcedure);
-            Assert.IsNull(cosmosStoredProcedureSettings);
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
         [TestMethod]
@@ -208,48 +315,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 response.setBody(param1);
             }";
 
-            CosmosStoredProcedureResponse storedProcedureResponse =
-                await this.container.StoredProcedures.CreateStoredProcedureAsync(sprocId, sprocBody);
+            StoredProcedureResponse storedProcedureResponse =
+                await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
             // Insert document and then query
             string testPartitionId = Guid.NewGuid().ToString();
             var payload = new { id = testPartitionId, user = testPartitionId };
-            CosmosItemResponse<dynamic> createItemResponse = await this.container.Items.CreateItemAsync<dynamic>(testPartitionId, payload);
+            ItemResponse<dynamic> createItemResponse = await this.container.CreateItemAsync<dynamic>(payload);
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
-            CosmosStoredProcedure storedProcedure = storedProcedureResponse.StoredProcedure;
-            CosmosItemResponse<string> sprocResponse = await storedProcedure.ExecuteAsync<string[], string>(testPartitionId, new string[] { "one" });
+           StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string[], string>(sprocId, new string[] { "one" }, new Cosmos.PartitionKey(testPartitionId));
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
             string stringResponse = sprocResponse.Resource;
             Assert.IsNotNull(stringResponse);
             Assert.AreEqual("one", stringResponse);
 
-            CosmosItemResponse<string> sprocResponse2 = await storedProcedure.ExecuteAsync<string, string>(testPartitionId, "one");
+            StoredProcedureExecuteResponse<string> sprocResponse2 = await this.scripts.ExecuteStoredProcedureAsync<string, string>(sprocId, "one", new Cosmos.PartitionKey(testPartitionId));
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse2.StatusCode);
 
             string stringResponse2 = sprocResponse2.Resource;
             Assert.IsNotNull(stringResponse2);
             Assert.AreEqual("one", stringResponse2);
 
-            storedProcedureResponse = await storedProcedureResponse.StoredProcedure.DeleteAsync();
-            Assert.AreEqual(HttpStatusCode.NoContent, storedProcedureResponse.StatusCode);
+            StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
         }
 
-        private static void ValidateStoredProcedureSettings(string id, string body, CosmosStoredProcedureResponse cosmosResponse)
+        private static void ValidateStoredProcedureSettings(string id, string body, StoredProcedureResponse cosmosResponse)
         {
-            CosmosStoredProcedureSettings settings = cosmosResponse.Resource;
+            StoredProcedureProperties settings = cosmosResponse.Resource;
             Assert.AreEqual(id, settings.Id,
                 "Stored Procedure id do not match");
             Assert.AreEqual(body, settings.Body,
                 "Stored Procedure functions do not match");
         }
 
-        private void ValidateStoredProcedureSettings(CosmosStoredProcedureSettings storedProcedureSettings, CosmosStoredProcedureResponse cosmosResponse)
+        private void ValidateStoredProcedureSettings(StoredProcedureProperties storedProcedureSettings, StoredProcedureResponse cosmosResponse)
         {
-            CosmosStoredProcedureSettings settings = cosmosResponse.Resource;
+            StoredProcedureProperties settings = cosmosResponse.Resource;
             Assert.AreEqual(storedProcedureSettings.Body, settings.Body,
                 "Stored Procedure functions do not match");
             Assert.AreEqual(storedProcedureSettings.Id, settings.Id,

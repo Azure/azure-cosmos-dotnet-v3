@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="AggregateDocumentQueryExecutionComponent.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 {
     using System;
@@ -98,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.
         /// This means that if you have a long running query this function will take a very long time to return.
         /// </remarks>
-        public override async Task<CosmosQueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
 
@@ -108,15 +106,19 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             List<Uri> replicaUris = new List<Uri>();
             ClientSideRequestStatistics requestStatistics = new ClientSideRequestStatistics();
             PartitionedQueryMetrics partitionedQueryMetrics = new PartitionedQueryMetrics();
+            ResourceType resourceType = ResourceType.Document;
+            string containerRid = null;
 
             while (!this.IsDone)
             {
-                CosmosQueryResponse result = await base.DrainAsync(int.MaxValue, token);
+                QueryResponse result = await base.DrainAsync(int.MaxValue, token);
                 if (!result.IsSuccessStatusCode)
                 {
                     return result;
                 }
 
+                containerRid = result.QueryHeaders.ContainerRid;
+                resourceType = result.QueryHeaders.ResourceType;
                 requestCharge += result.Headers.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
                 //partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
@@ -155,11 +157,15 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             // The replicaUris may have duplicates.
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
 
-            return CosmosQueryResponse.CreateSuccess(
+            return QueryResponse.CreateSuccess(
                 result: finalResult,
                 count: finalResult.Count,
                 responseLengthBytes: responseLengthBytes,
-                responseHeaders: new CosmosQueryResponseMessageHeaders(continauationToken: null, disallowContinuationTokenMessage: null)
+                responseHeaders: new CosmosQueryResponseMessageHeaders(
+                    continauationToken: null, 
+                    disallowContinuationTokenMessage: null, 
+                    resourceType: resourceType, 
+                    containerRid: containerRid)
                 {
                     RequestCharge = requestCharge
                 });
@@ -184,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             List<CosmosElement> result = new List<CosmosElement>();
-            foreach(CosmosElement aggregateResult in aggregateResults)
+            foreach (CosmosElement aggregateResult in aggregateResults)
             {
                 if (aggregateResult != null)
                 {

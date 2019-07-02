@@ -376,7 +376,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore /* This test fails without an understandable reason, it expects an exception that doesn't happen */]
         public void ValidateEmitVerboseTracesInQueryHttps()
         {
             var client = TestCommon.CreateClient(false, Protocol.Https);
@@ -494,19 +493,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateCurrentWriteQuorumAndReplicaSetHeader()
         {
             CosmosClient client = TestCommon.CreateCosmosClient(false);
-            CosmosDatabase db = null;
+            Cosmos.Database db = null;
             try
             {
-                db = await client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-                CosmosContainerSettings containerSetting = new CosmosContainerSettings()
+                ContainerProperties containerSetting = new ContainerProperties()
                 {
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = partitionKeyDefinition
                 };
-                CosmosContainer coll = await db.Containers.CreateContainerAsync(containerSetting);
+                Container coll = await db.CreateContainerAsync(containerSetting);
                 Document documentDefinition = new Document { Id = Guid.NewGuid().ToString() };
-                CosmosItemResponse<Document> docResult = await coll.Items.CreateItemAsync<Document>(documentDefinition.Id, documentDefinition);
+                ItemResponse<Document> docResult = await coll.CreateItemAsync<Document>(documentDefinition);
                 Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentWriteQuorum], CultureInfo.InvariantCulture) > 0);
                 Assert.IsTrue(int.Parse(docResult.Headers[WFConstants.BackendHeaders.CurrentReplicaSetSize], CultureInfo.InvariantCulture) > 0);
             }
@@ -539,33 +538,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task ValidateCollectionIndexProgressHeaders(CosmosClient client)
         {
-            CosmosDatabase db = await client.Databases.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Cosmos.Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
             try
             {
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
-                var lazyCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
+                var lazyCollection = new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 lazyCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Lazy;
-                CosmosContainer lazyContainer = await db.Containers.CreateContainerAsync(lazyCollection);
+                Container lazyContainer = await db.CreateContainerAsync(lazyCollection);
 
-                var consistentCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
+                var consistentCollection = new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 consistentCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Consistent;
-                CosmosContainer consistentContainer = await db.Containers.CreateContainerAsync(consistentCollection);
+                Container consistentContainer = await db.CreateContainerAsync(consistentCollection);
 
-                var noneIndexCollection = new CosmosContainerSettings() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
+                var noneIndexCollection = new ContainerProperties() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition };
                 noneIndexCollection.IndexingPolicy.Automatic = false;
                 noneIndexCollection.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.None;
-                CosmosContainer noneIndexContainer = await db.Containers.CreateContainerAsync(noneIndexCollection);
+                Container noneIndexContainer = await db.CreateContainerAsync(noneIndexCollection);
 
                 var doc = new Document() { Id = Guid.NewGuid().ToString() };
-                await lazyContainer.Items.CreateItemAsync<Document>(doc.Id, doc);
-                await consistentContainer.Items.CreateItemAsync<Document>(doc.Id, doc);
-                await noneIndexContainer.Items.CreateItemAsync<Document>(doc.Id, doc);
+                await lazyContainer.CreateItemAsync<Document>(doc);
+                await consistentContainer.CreateItemAsync<Document>(doc);
+                await noneIndexContainer.CreateItemAsync<Document>(doc);
 
 
                 // Lazy-indexing collection.
                 {
-                    CosmosContainerResponse collectionResponse = await lazyContainer.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                    ContainerResponse collectionResponse = await lazyContainer.ReadContainerAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                     Assert.IsTrue(int.Parse(collectionResponse.Headers[HttpConstants.HttpHeaders.CollectionLazyIndexingProgress], CultureInfo.InvariantCulture) >= 0,
                         "Expect lazy indexer progress when reading lazy collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),
@@ -574,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Consistent-indexing collection.
                 {
-                    CosmosContainerResponse collectionResponse = await consistentContainer.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                    ContainerResponse collectionResponse = await consistentContainer.ReadContainerAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                     Assert.IsFalse(collectionResponse.Headers.AllKeys().Contains(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress),
                         "No lazy indexer progress when reading consistent collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),
@@ -583,7 +582,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // None-indexing collection.
                 {
-                    CosmosContainerResponse collectionResponse = await noneIndexContainer.ReadAsync(requestOptions: new CosmosContainerRequestOptions { PopulateQuotaInfo = true });
+                    ContainerResponse collectionResponse = await noneIndexContainer.ReadContainerAsync(requestOptions: new ContainerRequestOptions { PopulateQuotaInfo = true });
                     Assert.IsFalse(collectionResponse.Headers.AllKeys().Contains(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress),
                         "No lazy indexer progress when reading none-index collection.");
                     Assert.AreEqual(100, int.Parse(collectionResponse.Headers[HttpConstants.HttpHeaders.CollectionIndexTransformationProgress], CultureInfo.InvariantCulture),

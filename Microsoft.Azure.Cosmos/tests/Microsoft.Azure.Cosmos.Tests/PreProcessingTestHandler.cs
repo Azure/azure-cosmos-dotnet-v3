@@ -9,16 +9,16 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
 
-    public class PreProcessingTestHandler : CosmosRequestHandler
+    public class PreProcessingTestHandler : RequestHandler
     {
         internal const string StatusCodeName = "x-test-requesting-statuscode";
 
-        public override Task<CosmosResponseMessage> SendAsync(CosmosRequestMessage request, CancellationToken cancellationToken)
+        public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
         {
-            CosmosResponseMessage httpResponse = null;
+            ResponseMessage httpResponse = null;
             if (request.Properties.TryGetValue(PreProcessingTestHandler.StatusCodeName, out object statusCodeOut))
             {
-                httpResponse = new CosmosResponseMessage((HttpStatusCode)statusCodeOut);
+                httpResponse = new ResponseMessage((HttpStatusCode)statusCodeOut);
             }
 
             return Task.FromResult(httpResponse);

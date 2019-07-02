@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Microsoft.Azure.Cosmos.Scripts;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
     /// in case writes from different regions result in conflicts on items in the container in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class ConflictResolutionPolicy
+    public class ConflictResolutionPolicy
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ConflictResolutionPolicy"/> class for the Azure Cosmos DB service.
@@ -28,15 +29,15 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// One of the values of the <see cref="ConflictResolutionMode"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.Mode)]
+        [JsonProperty(PropertyName = Documents.Constants.Properties.Mode, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(StringEnumConverter))]
         public ConflictResolutionMode Mode { get; set; }
 
         /// <summary>
         /// Gets or sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution.
         /// This path must be present in each item and must be an integer value.
-        /// In case of a conflict occuring on a item, the item with the higher integer value in the specified path will be picked.
-        /// If the path is unspecified, by default the Timestamp path will be used.
+        /// In case of a conflict occurring on a item, the item with the higher integer value in the specified path will be picked.
+        /// If the path is unspecified, by default the time stamp path will be used.
         /// </summary>
         /// <remarks>
         /// This value should only be set when using <see cref="ConflictResolutionMode.LastWriterWins"/>
@@ -49,12 +50,12 @@ namespace Microsoft.Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionPath = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionPath)]
-        public string ConflictResolutionPath { get; set; }
+        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionPath, NullValueHandling = NullValueHandling.Ignore)]
+        public string ResolutionPath { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="CosmosStoredProcedure"/> which is used for conflict resolution in the Azure Cosmos DB service.
-        /// This stored procedure may be created after the <see cref="CosmosContainer"/> is created and can be changed as required. 
+        /// Gets or sets the <see cref="StoredProcedureProperties"/> which is used for conflict resolution in the Azure Cosmos DB service.
+        /// This stored procedure may be created after the <see cref="Container"/> is created and can be changed as required. 
         /// </summary>
         /// <remarks>
         /// 1. This value should only be set when using <see cref="ConflictResolutionMode.Custom"/>
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionProcedure = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure)]
-        public string ConflictResolutionProcedure { get; set; }
+        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
+        public string ResolutionProcedure { get; set; }
     }
 }

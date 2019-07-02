@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
             internalClient.DocumentClient.StoreModel = MockServerStoreModel(internalClient.DocumentClient.Session, sendDirectFunc);
 
 
-            RetryHandler retryHandler = new RetryHandler(internalClient.DocumentClient.ResetSessionTokenRetryPolicy);
+            RetryHandler retryHandler = new RetryHandler(internalClient);
             MockTransportHandler transportHandler = new MockTransportHandler(internalClient);
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
@@ -235,11 +235,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (goThroughGateway)
                 {
-                    CosmosDatabaseResponse response = await client.Databases.CreateDatabaseAsync("test");
+                    DatabaseResponse response = await client.CreateDatabaseAsync("test");
                 }
                 else
                 {
-                    CosmosItemResponse<dynamic> response = await client.Databases["test"].Containers["test"].Items.CreateItemAsync<dynamic>(partitionKey: "id", item: new { id = "id" });
+                    ItemResponse<dynamic> response = await client.GetContainer("test", "test").CreateItemAsync<dynamic>(item: new { id = "id" }, partitionKey: new Cosmos.PartitionKey("id"));
                 }
             }
             catch (CosmosException)
@@ -384,8 +384,8 @@ namespace Microsoft.Azure.Cosmos
             {
             }
 
-            public override async Task<CosmosResponseMessage> SendAsync(
-                CosmosRequestMessage request,
+            public override async Task<ResponseMessage> SendAsync(
+                RequestMessage request,
                 CancellationToken cancellationToken)
             {
                 this.ProcessMessagesAsyncThrew = false;

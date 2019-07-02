@@ -1,5 +1,4 @@
 //------------------------------------------------------------
-//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -8,127 +7,149 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     internal class CosmosResponseFactory
     {
         /// <summary>
         /// Cosmos JSON converter. This allows custom JSON parsers.
         /// </summary>
-        private CosmosJsonSerializer jsonSerializer { get; }
+        private readonly CosmosSerializer cosmosSerializer;
 
-        internal CosmosResponseFactory(CosmosJsonSerializer cosmosJsonSerializer)
+        /// <summary>
+        /// This is used for all meta data types
+        /// </summary>
+        private readonly CosmosSerializer propertiesSerializer;
+
+        internal CosmosResponseFactory(
+            CosmosSerializer defaultJsonSerializer,
+            CosmosSerializer userJsonSerializer)
         {
-            this.jsonSerializer = cosmosJsonSerializer;
+            this.propertiesSerializer = defaultJsonSerializer;
+            this.cosmosSerializer = userJsonSerializer;
         }
 
-        internal CosmosFeedResponse<T> CreateResultSetQueryResponse<T>(
-            CosmosResponseMessage cosmosResponseMessage)
+        internal FeedResponse<T> CreateResultSetQueryResponse<T>(
+            ResponseMessage cosmosResponseMessage)
         {
-            return CosmosDefaultResultSetIterator<T>.CreateCosmosQueryResponse(
+            return FeedIteratorCore<T>.CreateCosmosQueryResponse(
                 cosmosResponseMessage,
-                this.jsonSerializer);
+                this.cosmosSerializer);
         }
 
-        internal Task<CosmosItemResponse<T>> CreateItemResponse<T>(
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
+            Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                T item = this.ToObjectInternal<T>(cosmosResponseMessage);
-                return new CosmosItemResponse<T>(
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
+                return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item);
             });
         }
 
-        internal Task<CosmosContainerResponse> CreateContainerResponse(
-            CosmosContainer container,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<ContainerResponse> CreateContainerResponseAsync(
+            Container container,
+            Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosContainerSettings settings = this.ToObjectInternal<CosmosContainerSettings>(cosmosResponseMessage);
-                return new CosmosContainerResponse(
+                ContainerProperties containerProperties = this.ToObjectInternal<ContainerProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
+                    containerProperties,
                     container);
             });
         }
 
-        internal Task<CosmosDatabaseResponse> CreateDatabaseResponse(
-            CosmosDatabase database,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
+            Database database,
+            Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosDatabaseSettings settings = this.ToObjectInternal<CosmosDatabaseSettings>(cosmosResponseMessage);
-                return new CosmosDatabaseResponse(
+                DatabaseProperties databaseProperties = this.ToObjectInternal<DatabaseProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
+                    databaseProperties,
                     database);
             });
         }
 
-        internal Task<CosmosStoredProcedureResponse> CreateStoredProcedureResponse(
-            CosmosStoredProcedure storedProcedure,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<ThroughputResponse> CreateThroughputResponseAsync(
+            Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosStoredProcedureSettings settings = this.ToObjectInternal<CosmosStoredProcedureSettings>(cosmosResponseMessage);
-                return new CosmosStoredProcedureResponse(
+                ThroughputProperties throughputProperties = this.ToObjectInternal<ThroughputProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new ThroughputResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
-                    storedProcedure);
+                    throughputProperties);
             });
         }
 
-        internal Task<CosmosTriggerResponse> CreateTriggerResponse(
-            CosmosTrigger trigger,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<StoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponseAsync<T>(Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosTriggerSettings settings = this.ToObjectInternal<CosmosTriggerSettings>(cosmosResponseMessage);
-                return new CosmosTriggerResponse(
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
+                return new StoredProcedureExecuteResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
-                    trigger);
+                    item);
             });
         }
 
-        internal Task<CosmosUserDefinedFunctionResponse> CreateUserDefinedFunctionResponse(
-            CosmosUserDefinedFunction userDefinedFunction,
-            Task<CosmosResponseMessage> cosmosResponseMessageTask)
+        internal Task<StoredProcedureResponse> CreateStoredProcedureResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return this.MessageHelper(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                CosmosUserDefinedFunctionSettings settings = this.ToObjectInternal<CosmosUserDefinedFunctionSettings>(cosmosResponseMessage);
-                return new CosmosUserDefinedFunctionResponse(
+                StoredProcedureProperties cosmosStoredProcedure = this.ToObjectInternal<StoredProcedureProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new StoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings,
-                    userDefinedFunction);
+                    cosmosStoredProcedure);
             });
         }
 
-        internal Task<T> MessageHelper<T>(Task<CosmosResponseMessage> cosmosResponseTask, Func<CosmosResponseMessage, T> createResponse)
+        internal Task<TriggerResponse> CreateTriggerResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
         {
-            return cosmosResponseTask.ContinueWith((action) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                using (CosmosResponseMessage message = action.Result)
-                {
-                    return createResponse(message);
-                }
+                TriggerProperties triggerProperties = this.ToObjectInternal<TriggerProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new TriggerResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    triggerProperties);
             });
         }
 
-        internal T ToObjectInternal<T>(CosmosResponseMessage cosmosResponseMessage)
+        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponseAsync(Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                UserDefinedFunctionProperties settings = this.ToObjectInternal<UserDefinedFunctionProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new UserDefinedFunctionResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    settings);
+            });
+        }
+
+        internal async Task<T> ProcessMessageAsync<T>(Task<ResponseMessage> cosmosResponseTask, Func<ResponseMessage, T> createResponse)
+        {
+            using (ResponseMessage message = await cosmosResponseTask)
+            {
+                return createResponse(message);
+            }
+        }
+
+        internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
         {
             // Not finding something is part of a normal work-flow and should not be an exception.
             // This prevents the unnecessary overhead of an exception
@@ -145,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 return default(T);
             }
 
-            return this.jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
+            return jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
         }
     }
 }

@@ -2,7 +2,7 @@
   <Result>
     <Input>
       <Description><![CDATA[Filter]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.NullableField == Convert(5)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.NullableField == Convert(5, Nullable`1)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[

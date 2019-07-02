@@ -1,50 +1,31 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="CosmosCrossPartitionQueryExecutionContext.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Globalization;
-    using System.Linq;
-    using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Collections.Generic;
-    using Common;
-    using ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
-    using ParallelQuery;
-    using Routing;
 
-    /// <summary>
-    /// 
-    /// </summary>
     internal class CosmosQueryContext
     {
         public virtual CosmosQueryClient QueryClient { get; }
         public virtual ResourceType ResourceTypeEnum { get; }
         public virtual OperationType OperationTypeEnum { get; }
         public virtual Type ResourceType { get; }
-        public virtual SqlQuerySpec SqlQuerySpec { get; }
-        public virtual CosmosQueryRequestOptions QueryRequestOptions { get; }
+        public SqlQuerySpec SqlQuerySpec { get; internal set; }
+        public virtual QueryRequestOptions QueryRequestOptions { get; }
         public virtual bool IsContinuationExpected { get; }
         public virtual bool AllowNonValueAggregateQuery { get; }
         public virtual Uri ResourceLink { get; }
         public virtual string ContainerResourceId { get; set; }
         public virtual Guid CorrelatedActivityId { get; }
 
-        internal CosmosQueryContext() { }
+        internal CosmosQueryContext()
+        {
+        }
 
         public CosmosQueryContext(
             CosmosQueryClient client,
@@ -52,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query
             OperationType operationType,
             Type resourceType,
             SqlQuerySpec sqlQuerySpecFromUser,
-            CosmosQueryRequestOptions queryRequestOptions,
+            QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             bool getLazyFeedResponse,
             Guid correlatedActivityId,
@@ -98,17 +79,18 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CorrelatedActivityId = correlatedActivityId;
         }
 
-        internal virtual async Task<CosmosQueryResponse> ExecuteQueryAsync(
+        internal virtual async Task<QueryResponse> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             CancellationToken cancellationToken,
-            Action<CosmosRequestMessage> requestEnricher = null)
+            Action<RequestMessage> requestEnricher = null)
         {
-            CosmosQueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
+            QueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
 
             return await this.QueryClient.ExecuteItemQueryAsync(
                            this.ResourceLink,
                            this.ResourceTypeEnum,
                            this.OperationTypeEnum,
+                           this.ContainerResourceId,
                            requestOptions,
                            querySpecForInit,
                            requestEnricher,

@@ -5,9 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
-    using System.Net.Http;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -26,11 +24,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.client = client;
         }
 
-        internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicy(CosmosRequestMessage request)
+        internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
-            return  new PartitionKeyRangeGoneRetryPolicy(
-                await client.DocumentClient.GetCollectionCacheAsync(),
-                await client.DocumentClient.GetPartitionKeyRangeCacheAsync(),
+            return new PartitionKeyRangeGoneRetryPolicy(
+                await this.client.DocumentClient.GetCollectionCacheAsync(),
+                await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(),
                 PathsHelper.GetCollectionPath(request.RequestUri.ToString()),
                 null);
         }

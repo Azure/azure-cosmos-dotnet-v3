@@ -16,13 +16,13 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class GatewayAccountReader 
     {
-        private Uri serviceEndpoint;
-        private ApiType apiType;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IComputeHash authKeyHashFunction;
         private readonly bool hasAuthKeyResourceToken = false;
         private readonly string authKeyResourceToken = string.Empty;
         private readonly HttpMessageHandler messageHandler;
+        private Uri serviceEndpoint;
+        private ApiType apiType;
 
         public GatewayAccountReader(Uri serviceEndpoint,
                                                  IComputeHash stringHMACSHA256Helper,
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
             this.apiType = apiType;
         }
 
-        private async Task<CosmosAccountSettings> GetDatabaseAccountAsync(Uri serviceEndpoint)
+        private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
             HttpClient httpClient = this.messageHandler == null ? new HttpClient() : new HttpClient(this.messageHandler);
 
@@ -63,8 +63,8 @@ namespace Microsoft.Azure.Cosmos
                 string xDate = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
                 httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
 
-                    INameValueCollection headersCollection = new StringKeyValueCollection();
-                    headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
+                INameValueCollection headersCollection = new StringKeyValueCollection();
+                headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
 
                 authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                     HttpConstants.HttpMethods.Get,
@@ -80,14 +80,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
-                    return CosmosResource.FromStream<CosmosAccountSettings>(documentServiceResponse);
+                    return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                 }
             }
         }
 
-        public async Task<CosmosAccountSettings> InitializeReaderAsync()
+        public async Task<AccountProperties> InitializeReaderAsync()
         {
-            CosmosAccountSettings databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+            AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                 this.serviceEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync);
 
             return databaseAccount;

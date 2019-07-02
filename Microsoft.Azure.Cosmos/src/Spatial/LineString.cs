@@ -8,11 +8,13 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a geometry consisting of connected line segments.
     /// </summary>
+    [DataContract]
     public sealed class LineString : Geometry, IEquatable<LineString>
     {
         /// <summary>
@@ -21,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="coordinates">
         /// List of positions through which the line string goes.
         /// </param>
-        public LineString(IList<Position> coordinates) : this(coordinates, new GeometryParams())
+        public LineString(IList<Position> coordinates)
+            : this(coordinates, new GeometryParams())
         {
         }
 
@@ -51,7 +54,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal LineString() : base(GeometryType.LineString, new GeometryParams())
+        internal LineString()
+            : base(GeometryType.LineString, new GeometryParams())
         {
         }
 
@@ -61,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Positions of the line string.
         /// </value>
+        [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public ReadOnlyCollection<Position> Positions { get; private set; }
 

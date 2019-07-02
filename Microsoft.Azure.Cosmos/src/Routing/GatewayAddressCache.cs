@@ -47,7 +47,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
 
-
         public GatewayAddressCache(
             Uri serviceEndpoint,
             Protocol protocol,
@@ -71,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.suboptimalPartitionForceRefreshIntervalInSeconds = suboptimalPartitionForceRefreshIntervalInSeconds;
 
             this.httpClient = messageHandler == null ? new HttpClient() : new HttpClient(messageHandler);
-            if(requestTimeout != null)
+            if (requestTimeout != null)
             {
                 this.httpClient.Timeout = requestTimeout;
             }
@@ -101,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]
         public async Task OpenAsync(
             string databaseName,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
             CancellationToken cancellationToken)
         {
@@ -150,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task<PartitionAddressInformation> TryGetAddresses(
+        public async Task<PartitionAddressInformation> TryGetAddressesAsync(
             DocumentServiceRequest request,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
             ServiceIdentity serviceIdentity,
@@ -192,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         partitionKeyRangeIdentity,
                         null,
-                        () => this.GetAddressesForRangeId(
+                        () => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
@@ -208,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     addresses = await this.serverPartitionAddressCache.GetAsync(
                         partitionKeyRangeIdentity,
                         null,
-                        () => this.GetAddressesForRangeId(
+                        () => this.GetAddressesForRangeIdAsync(
                             request,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
@@ -297,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return masterAddressAndRange;
         }
 
-        private async Task<PartitionAddressInformation> GetAddressesForRangeId(
+        private async Task<PartitionAddressInformation> GetAddressesForRangeIdAsync(
             DocumentServiceRequest request,
             string collectionRid,
             string partitionKeyRangeId,

@@ -17,11 +17,11 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly char[] NewLineCharacters = new[] { '\r', '\n' };
 
-        internal static CosmosResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse response, CosmosRequestMessage requestMessage)
+        internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse response, RequestMessage requestMessage)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
 
-            CosmosResponseMessage cosmosResponse = new CosmosResponseMessage(response.StatusCode, requestMessage);
+            ResponseMessage cosmosResponse = new ResponseMessage(response.StatusCode, requestMessage);
             if (response.ResponseBody != null)
             {
                 cosmosResponse.Content = response.ResponseBody;
@@ -38,16 +38,16 @@ namespace Microsoft.Azure.Cosmos
             return cosmosResponse;
         }
 
-        internal static CosmosResponseMessage ToCosmosResponseMessage(this DocumentClientException dce, CosmosRequestMessage request)
+        internal static ResponseMessage ToCosmosResponseMessage(this DocumentClientException dce, RequestMessage request)
         {
-            //if StatusCode is null it is a client business logic error and it never hit the backend, so throw
+            // if StatusCode is null it is a client business logic error and it never hit the backend, so throw
             if (dce.StatusCode == null)
             {
                 throw dce;
             }
 
-            //if there is a status code then it came from the backend, return error as http error instead of throwing the exception
-            CosmosResponseMessage cosmosResponse = new CosmosResponseMessage(dce.StatusCode ?? HttpStatusCode.InternalServerError, request);
+            // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
+            ResponseMessage cosmosResponse = new ResponseMessage(dce.StatusCode ?? HttpStatusCode.InternalServerError, request);
             string reasonPhraseString = string.Empty;
             if (!string.IsNullOrEmpty(dce.Message))
             {
@@ -75,15 +75,19 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            request.Properties.Remove(nameof(DocumentClientException));
-            request.Properties.Add(nameof(DocumentClientException), dce);
+            if (request != null)
+            {
+                request.Properties.Remove(nameof(DocumentClientException));
+                request.Properties.Add(nameof(DocumentClientException), dce);
+            }
+
             return cosmosResponse;
         }
 
-        internal static CosmosResponseMessage ToCosmosResponseMessage(this StoreResponse response, CosmosRequestMessage request)
+        internal static ResponseMessage ToCosmosResponseMessage(this StoreResponse response, RequestMessage request)
         {
             // Is status code conversion lossy? 
-            CosmosResponseMessage httpResponse = new CosmosResponseMessage((HttpStatusCode)response.Status, request);
+            ResponseMessage httpResponse = new ResponseMessage((HttpStatusCode)response.Status, request);
             if (response.ResponseBody != null)
             {
                 httpResponse.Content = response.ResponseBody;

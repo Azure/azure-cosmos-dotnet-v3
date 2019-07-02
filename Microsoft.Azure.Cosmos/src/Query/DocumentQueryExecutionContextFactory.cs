@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="DocumentQueryExecutionContextFactory.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -38,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CancellationToken token,
             Guid correlatedActivityId)
         {
-            CosmosContainerSettings collection = null;
+            ContainerProperties collection = null;
             if (resourceTypeEnum.IsCollectionChild())
             {
                 CollectionCache collectionCache = await client.GetCollectionCacheAsync();
@@ -52,9 +50,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     collection = await collectionCache.ResolveCollectionAsync(request, token);
                 }
 
-                if (feedOptions != null && feedOptions.PartitionKey != null && feedOptions.PartitionKey.Equals(PartitionKey.None))
+                if (feedOptions != null && feedOptions.PartitionKey != null && feedOptions.PartitionKey.Equals(Documents.PartitionKey.None))
                 {
-                    feedOptions.PartitionKey = PartitionKey.FromInternalKey(collection.GetNoneValue());
+                    feedOptions.PartitionKey = Documents.PartitionKey.FromInternalKey(collection.GetNoneValue());
                 }
             }
 
@@ -76,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // which will be used to send the query to Gateway and on getting 400(bad request) with 1004(cross partition query not servable), we initialize it with
                 // PipelinedDocumentQueryExecutionContext by providing the partition query execution info that's needed(which we get from the exception returned from Gateway).
                 ProxyDocumentQueryExecutionContext proxyQueryExecutionContext =
-                    ProxyDocumentQueryExecutionContext.CreateAsync(
+                    ProxyDocumentQueryExecutionContext.Create(
                         client,
                         resourceTypeEnum,
                         resourceType,
@@ -108,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: isContinuationExpected,
                     allowNonValueAggregateQuery: false,
+                    hasLogicalPartitionKey: feedOptions.PartitionKey != null,
                     cancellationToken: token);
 
                 if (DocumentQueryExecutionContextFactory.ShouldCreateSpecializedDocumentQueryExecutionContext(
@@ -117,14 +116,13 @@ namespace Microsoft.Azure.Cosmos.Query
                         collection.PartitionKey,
                         isContinuationExpected))
                 {
-
-                    List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRanges(
+                    List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRangesAsync(
                         queryExecutionContext,
                         partitionedQueryExecutionInfo,
                         collection,
                         feedOptions);
 
-                    return await CreateSpecializedDocumentQueryExecutionContext(
+                    return await CreateSpecializedDocumentQueryExecutionContextAsync(
                         constructorParams,
                         partitionedQueryExecutionInfo,
                         targetRanges,
@@ -137,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return queryExecutionContext;
         }
 
-        public static async Task<IDocumentQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContext(
+        public static async Task<IDocumentQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
             DocumentQueryExecutionContextBase.InitParams constructorParams,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
@@ -200,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 (int)initialPageSize,
-                constructorParams.FeedOptions.RequestContinuation,
+                constructorParams.FeedOptions.RequestContinuationToken,
                 cancellationToken);
         }
 
@@ -211,10 +209,10 @@ namespace Microsoft.Azure.Cosmos.Query
         /// 3. Check the effective partition key
         /// 4. Get the range from the PartitionedQueryExecutionInfo
         /// </summary>
-        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             DefaultDocumentQueryExecutionContext queryExecutionContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            CosmosContainerSettings collection,
+            ContainerProperties collection,
             FeedOptions feedOptions)
         {
             List<PartitionKeyRange> targetRanges = null;
@@ -222,26 +220,26 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 targetRanges = new List<PartitionKeyRange>()
                 {
-                    await queryExecutionContext.GetTargetPartitionKeyRangeById(
+                    await queryExecutionContext.GetTargetPartitionKeyRangeByIdAsync(
                                     collection.ResourceId,
                                     feedOptions.PartitionKeyRangeId)
                 };
             }
             else if (feedOptions.PartitionKey != null)
             {
-                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesByEpkString(
+                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesByEpkStringAsync(
                     collection.ResourceId,
                     feedOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
             }
             else if (TryGetEpkProperty(feedOptions, out string effectivePartitionKeyString))
             {
-                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesByEpkString(
+                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesByEpkStringAsync(
                     collection.ResourceId,
                     effectivePartitionKeyString);
             }
             else
             {
-                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRanges(
+                targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesAsync(
                     collection.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges);
             }

@@ -8,12 +8,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a geometry consisting of multiple <see cref="LineString"/>.
     /// </summary>
     /// <seealso cref="LineString"/>.
+    [DataContract]
     internal sealed class MultiLineString : Geometry, IEquatable<MultiLineString>
     {
         /// <summary>
@@ -22,7 +24,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="lineStrings">
         /// List of <see cref="LineStringCoordinates"/> instances representing individual line strings.
         /// </param>
-        public MultiLineString(IList<LineStringCoordinates> lineStrings) : this(lineStrings, new GeometryParams())
+        public MultiLineString(IList<LineStringCoordinates> lineStrings)
+            : this(lineStrings, new GeometryParams())
         {
         }
 
@@ -52,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal MultiLineString() : base(GeometryType.MultiLineString, new GeometryParams())
+        internal MultiLineString()
+            : base(GeometryType.MultiLineString, new GeometryParams())
         {
         }
 
@@ -62,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Collection of <see cref="LineStringCoordinates"/> representing individual line strings.
         /// </value>
+        [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public ReadOnlyCollection<LineStringCoordinates> LineStrings { get; private set; }
 

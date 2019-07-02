@@ -17,37 +17,53 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class CosmosQueryClient
     {
-        internal abstract IDocumentClientRetryPolicy GetRetryPolicy();
-
         internal abstract Task<CollectionCache> GetCollectionCacheAsync();
 
         internal abstract Task<IRoutingMapProvider> GetRoutingMapProviderAsync();
 
-        internal abstract Task<QueryPartitionProvider> GetQueryPartitionProviderAsync(CancellationToken cancellationToken);
+        internal abstract Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKeyDefinition partitionKeyDefinition,
+            bool requireFormattableOrderByQuery,
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
+            CancellationToken cancellationToken);
 
-        internal abstract Task<CosmosQueryResponse> ExecuteItemQueryAsync(
+        internal abstract Task<QueryResponse> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            CosmosQueryRequestOptions requestOptions,
+            string containerResourceId,
+            QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken);
+
+        internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            SqlQuerySpec sqlQuerySpec,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken);
 
         internal abstract Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
 
         internal abstract Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
 
-        internal abstract Task EnsureValidOverwrite(Documents.ConsistencyLevel desiredConsistencyLevel);
+        internal abstract Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel);
 
-        internal abstract Task<PartitionKeyRangeCache> GetPartitionKeyRangeCache();
+        internal abstract Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync();
 
-        internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkString(
+        internal abstract void ClearSessionTokenCache(string collectionFullName);
+
+        internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
             string effectivePartitionKeyString);
 
-        internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRanges(
+        internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
             List<Range<string>> providedRanges);

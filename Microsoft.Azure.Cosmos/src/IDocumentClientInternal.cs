@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Threading;
@@ -6,6 +10,6 @@
 
     internal interface IDocumentClientInternal : IDocumentClient
     {
-        Task<CosmosAccountSettings> GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken));
+        Task<AccountProperties> GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken));
     }
 }

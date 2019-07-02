@@ -1,6 +1,6 @@
-﻿//----------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//----------------------------------------------------------------
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
@@ -13,17 +13,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.Container;
 
     internal sealed class ChangeFeedEstimatorCore : ChangeFeedProcessor
     {
         private const string EstimatorDefaultHostName = "Estimator";
 
-        private readonly Func<long, CancellationToken, Task> initialEstimateDelegate;
+        private readonly ChangesEstimationHandler initialEstimateDelegate;
         private CancellationTokenSource shutdownCts;
-        private CosmosContainerCore leaseContainer;
+        private ContainerCore leaseContainer;
         private string monitoredContainerRid;
         private TimeSpan? estimatorPeriod = null;
-        private CosmosContainerCore monitoredContainer;
+        private ContainerCore monitoredContainer;
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private FeedEstimator feedEstimator;
         private RemainingWorkEstimator remainingWorkEstimator;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private Task runAsync;
 
         public ChangeFeedEstimatorCore(
-            Func<long, CancellationToken, Task> initialEstimateDelegate, 
+            ChangesEstimationHandler initialEstimateDelegate, 
             TimeSpan? estimatorPeriod)
         {
             if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));
@@ -44,21 +45,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         internal ChangeFeedEstimatorCore(
-            Func<long, CancellationToken, Task> initialEstimateDelegate,
+            ChangesEstimationHandler initialEstimateDelegate,
             TimeSpan? estimatorPeriod,
-            RemainingWorkEstimator remainingWorkEstimator): this(initialEstimateDelegate, estimatorPeriod)
+            RemainingWorkEstimator remainingWorkEstimator)
+            : this(initialEstimateDelegate, estimatorPeriod)
         {
             this.remainingWorkEstimator = remainingWorkEstimator;
         }
 
         public void ApplyBuildConfiguration(
             DocumentServiceLeaseStoreManager customDocumentServiceLeaseStoreManager,
-            CosmosContainerCore leaseContainer,
+            ContainerCore leaseContainer,
             string monitoredContainerRid,
             string instanceName,
             ChangeFeedLeaseOptions changeFeedLeaseOptions,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            CosmosContainerCore monitoredContainer)
+            ContainerCore monitoredContainer)
         {
             if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null) throw new ArgumentNullException(nameof(leaseContainer));
@@ -109,13 +111,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (this.remainingWorkEstimator == null)
             {
-                Func<string, string, bool, CosmosFeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
+                Func<string, string, bool, FeedIterator> feedCreator = (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) =>
                 {
                     return ResultSetIteratorUtils.BuildResultSetIterator(
                         partitionKeyRangeId: partitionKeyRangeId,
                         continuationToken: continuationToken,
                         maxItemCount: 1,
-                        cosmosContainer: this.monitoredContainer,
+                        container: this.monitoredContainer,
                         startTime: null,
                         startFromBeginning: string.IsNullOrEmpty(continuationToken));
                 };
@@ -123,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.remainingWorkEstimator = new RemainingWorkEstimatorCore(
                    this.documentServiceLeaseStoreManager.LeaseContainer,
                    feedCreator,
-                   this.monitoredContainer.ClientContext.Client.Configuration?.MaxConnectionLimit ?? 1);
+                   this.monitoredContainer.ClientContext.Client.ClientOptions?.GatewayModeMaxConnectionLimit ?? 1);
             }
 
             ChangeFeedEstimatorDispatcher estimatorDispatcher = new ChangeFeedEstimatorDispatcher(this.initialEstimateDelegate, this.estimatorPeriod);

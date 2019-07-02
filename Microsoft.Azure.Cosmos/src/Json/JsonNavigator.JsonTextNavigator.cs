@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JsonNavigator.JsonTextNavigator.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -22,13 +20,13 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly JsonTextNode rootNode;
 
             /// <summary>
-            /// Initializes a new instance of the JsonTextNavigator class
+            /// Initializes a new instance of the <see cref="JsonTextNavigator"/> class.
             /// </summary>
             /// <param name="buffer">The (UTF-8) buffer to navigate.</param>
             /// <param name="skipValidation">whether to skip validation or not.</param>
             public JsonTextNavigator(byte[] buffer, bool skipValidation = false)
             {
-                IJsonReader jsonTextReader = JsonReader.Create(buffer, skipValidation);
+                IJsonReader jsonTextReader = JsonReader.Create(buffer: buffer, jsonStringDictionary: null, skipValidation: skipValidation);
                 if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
                 {
                     throw new ArgumentException("jsonTextReader's serialization format must actually be text");

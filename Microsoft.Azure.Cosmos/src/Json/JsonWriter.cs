@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="JsonWriter.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
@@ -69,16 +67,20 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Creates a JsonWriter that can write in a particular JsonSerializationFormat (utf8 if text)
         /// </summary>
         /// <param name="jsonSerializationFormat">The JsonSerializationFormat of the writer.</param>
+        /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <param name="skipValidation">Whether or not to skip validation</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
-        public static IJsonWriter Create(JsonSerializationFormat jsonSerializationFormat, bool skipValidation = false)
+        public static IJsonWriter Create(
+            JsonSerializationFormat jsonSerializationFormat, 
+            JsonStringDictionary jsonStringDictionary = null, 
+            bool skipValidation = false)
         {
             switch (jsonSerializationFormat)
             {
                 case JsonSerializationFormat.Text:
                     return new JsonTextWriter(Encoding.UTF8, skipValidation);
                 case JsonSerializationFormat.Binary:
-                    return new JsonBinaryWriter(skipValidation, false);
+                    return new JsonBinaryWriter(skipValidation, jsonStringDictionary, serializeCount: false);
                 default:
                     throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, RMResources.UnexpectedJsonSerializationFormat, jsonSerializationFormat));
             }
@@ -177,8 +179,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException("jsonReader can not be null");
             }
 
-            // For now short circuit this to false until we figure out how to optimize this.
-            bool sameFormat = jsonReader.SerializationFormat == this.SerializationFormat && false;
+            // For now we don't optimize for text, since the reader could be UTF-8 and the writer could be UTF-16.
+            // We need to add more enums for the different serialization formats.
+            bool sameFormat = jsonReader.SerializationFormat == this.SerializationFormat && (this.SerializationFormat == JsonSerializationFormat.Binary || this.SerializationFormat == JsonSerializationFormat.HybridRow);
 
             JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
             switch (jsonTokenType)
@@ -294,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             // For now short circuit this to false until we figure out how to optimize this.
-            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat && false;
+            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat && (this.SerializationFormat == JsonSerializationFormat.Binary || this.SerializationFormat == JsonSerializationFormat.HybridRow);
 
             JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
 

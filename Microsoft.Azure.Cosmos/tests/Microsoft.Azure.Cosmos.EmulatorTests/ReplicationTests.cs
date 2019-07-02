@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 BackoffRetryUtility<bool>.ExecuteAsync((bool isInRetry) =>
                 {
-                    var feeds = new FeedResponse<T>[replicaClients.Length];
+                    var feeds = new DocumentFeedResponse<T>[replicaClients.Length];
                     var allHeaders = new StringKeyValueCollection[replicaClients.Length];
                     for (int i = 0; i < replicaClients.Length; i++)
                     {
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static void ValidateCollection<T>(FeedResponse<T>[] collectionResponses) where T : Resource, new()
+        private static void ValidateCollection<T>(DocumentFeedResponse<T>[] collectionResponses) where T : Resource, new()
         {
             for (int i = 0; i < collectionResponses.Length - 1; i++)
             {
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             const int minIndexInterval = 5000; // 5 seconds
             while (maxTries-- > 0)
             {
-                FeedResponse<dynamic> resourceFeed = null;
+                DocumentFeedResponse<dynamic> resourceFeed = null;
                 IDocumentQuery<dynamic> queryService = null;
                 string queryString = @"select * from root r where r." + queryProperty + @"=""" + queryPropertyValue + @"""";
                 if (typeof(T) == typeof(Database))

@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
     using System.Collections.Concurrent;
@@ -32,7 +36,7 @@
             return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                null /*partitionKey*/,
+                Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
                     serverLease.Properties = lease.Properties;
@@ -81,7 +85,7 @@
             return this.leaseUpdater.UpdateLeaseAsync(
                 refreshedLease,
                 refreshedLease.Id,
-                null /*partitionKey*/,
+                Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
                     serverLease.Owner = null;
@@ -116,7 +120,7 @@
             return this.leaseUpdater.UpdateLeaseAsync(
                 refreshedLease,
                 refreshedLease.Id,
-                null /*partitionKey*/,
+                Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
                     return serverLease;
@@ -130,7 +134,7 @@
             return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                null /*partitionKey*/,
+                Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
                     serverLease.Properties = lease.Properties;

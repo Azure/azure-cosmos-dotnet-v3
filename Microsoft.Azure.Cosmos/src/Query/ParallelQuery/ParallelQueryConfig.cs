@@ -1,8 +1,6 @@
-﻿//-----------------------------------------------------------------------
-// <copyright file="ParallelQueryConfig.cs" company="Microsoft Corporation">
-//     Copyright (c) Microsoft Corporation.  All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
 {
     /// <summary>
@@ -46,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
             numberOfNetworkCallsPerProcessor: 1);
 
         /// <summary>
-        /// Initializes a new instance of the ParallelQueryConfig class.
+        /// Initializes a new instance of the <see cref="ParallelQueryConfig"/> class.
         /// </summary>
         /// <param name="clientInternalMaxItemCount">The client's internal max item count.</param>
         /// <param name="defaultMaximumBufferSize">The default maximum buffer size.</param>

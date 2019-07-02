@@ -149,7 +149,6 @@ FROM (
     FROM root
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -191,7 +190,6 @@ FROM (
 ) AS r1 
 ORDER BY r1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -209,7 +207,6 @@ FROM (
     ORDER BY root["Int"] ASC
 ) AS r1 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":73,"end":97},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -418,7 +415,6 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -439,7 +435,6 @@ JOIN (
 WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -460,7 +455,6 @@ JOIN (
 WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -484,7 +478,6 @@ FROM (
     ORDER BY v2 ASC
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":224,"end":239},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -505,7 +498,6 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -529,7 +521,6 @@ FROM (
     ORDER BY v2 ASC
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":186,"end":201},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -570,7 +561,6 @@ FROM (
     WHERE (LENGTH(v2["FamilyName"]) > 10)
 ) AS r0 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.BadRequestException: Message: {"errors":[{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}, ]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -591,7 +581,6 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -612,7 +601,6 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -633,7 +621,6 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2["GivenName"]["Length"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -654,7 +641,6 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2["GivenName"]["Length"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -675,7 +661,6 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -696,7 +681,6 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -734,7 +718,6 @@ JOIN (
 ) AS v2 
 ORDER BY v2["FamilyName"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -754,7 +737,6 @@ JOIN (
 ) AS v2 
 ORDER BY v2["FamilyName"] ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -825,7 +807,6 @@ JOIN (
 ) AS v1 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -846,7 +827,6 @@ JOIN (
 WHERE (LENGTH(v1) > 10) 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
