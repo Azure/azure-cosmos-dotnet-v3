@@ -8,6 +8,10 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
     <AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests</AssemblyName>
+    <DirectVersion>3.0.0.34-preview</DirectVersion>
+    <HybridRowVersion>1.0.0-preview</HybridRowVersion>
+    <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
+    <DirectPackageName Condition=" '$(SignAssembly)' != 'true' ">Microsoft.Azure.Cosmos.Direct.MyGet</DirectPackageName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="$(DirectPackageName)" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
     <PackageReference Include="System.Security.SecureString" Version="4.3.0" />
