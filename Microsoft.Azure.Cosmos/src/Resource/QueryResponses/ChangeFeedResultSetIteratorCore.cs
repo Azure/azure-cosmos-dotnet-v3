@@ -93,6 +93,7 @@ namespace Microsoft.Azure.Cosmos
             currentRangeToken.Token = responseContinuationToken;
             if (!hasMoreResults)
             {
+                // Current Range is done, push it to the end
                 this.compositeContinuationToken.MoveToNextToken();
             }
 
