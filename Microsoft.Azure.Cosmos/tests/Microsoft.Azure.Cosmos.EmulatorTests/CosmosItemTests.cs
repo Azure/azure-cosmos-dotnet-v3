@@ -1396,7 +1396,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Create two client instances and do meta data operations through a single client
         /// but do all validation using both clients.
         /// </summary>
-        /// [DataRow(true)]
+        [DataRow(true)]
         [DataRow(false)]
         [DataTestMethod]
         public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate)
