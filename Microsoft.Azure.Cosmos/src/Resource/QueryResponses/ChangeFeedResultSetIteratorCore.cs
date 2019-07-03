@@ -90,20 +90,10 @@ namespace Microsoft.Azure.Cosmos
             // Change Feed read uses Etag for continuation
             string responseContinuationToken = response.Headers.ETag;
             bool hasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
+            currentRangeToken.Token = responseContinuationToken;
             if (!hasMoreResults)
             {
-                // If this is the first ever request for the range (StartTime = null), we initialize the Token even though we had no results
-                if (currentRangeToken.Token == null)
-                {
-                    currentRangeToken.Token = responseContinuationToken;
-                }
-
-                // Current Range is done, push it to the end
                 this.compositeContinuationToken.MoveToNextToken();
-            }
-            else if (response.IsSuccessStatusCode)
-            {
-                currentRangeToken.Token = responseContinuationToken;
             }
 
             // Send to the user the composite state for all ranges
