@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             // Verify all the user types use the user specified version
             await cosmosResponseFactory.CreateItemResponseAsync<ToDoActivity>(Task.FromResult(itemResponse));
             await cosmosResponseFactory.CreateStoredProcedureExecuteResponseAsync<ToDoActivity>(Task.FromResult(storedProcedureExecuteResponse));
-            cosmosResponseFactory.CreateReadFeedResponse<ToDoActivity>(feedResponse);
+            cosmosResponseFactory.CreateQueryFeedResponse<ToDoActivity>(feedResponse);
 
             // Throw if the setups were not called
             mockUserJsonSerializer.VerifyAll();

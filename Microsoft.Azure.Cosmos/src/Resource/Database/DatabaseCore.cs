@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateReadFeedResponse<T>);
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
         public override ContainerBuilder DefineContainer(

@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
                 ResponseMessage responseMessage = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ReadNextAsync(CancellationToken.None), null).GetAwaiter().GetResult();
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                FeedResponse<T> items = this.container.ClientContext.ResponseFactory.CreateReadFeedResponse<T>(responseMessage);
+                FeedResponse<T> items = this.container.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(responseMessage);
 
                 foreach (T item in items)
                 {
