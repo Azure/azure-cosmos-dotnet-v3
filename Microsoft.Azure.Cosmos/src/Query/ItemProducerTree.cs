@@ -216,8 +216,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     // If the partition has split and there are no more results in the parent buffer
                     // then just pull from the highest priority child (with recursive decent).
 
-                    // Need to pop push to force an update in priority
-                    this.children.Enqueue(this.children.Dequeue());
                     return this.children.Peek().CurrentItemProducerTree;
                 }
                 else
@@ -565,7 +563,23 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                return await this.CurrentItemProducerTree.MoveNextAsync(token);
+                // Keep track of the current tree
+                ItemProducerTree itemProducerTree = this.CurrentItemProducerTree;
+                var response = await itemProducerTree.MoveNextAsync(token);
+
+                // Update the priority queue for the new values
+                this.children.Enqueue(this.children.Dequeue());
+
+                // If the current tree is done, but other trees still have a result
+                // then return true.
+                if (!response.successfullyMovedNext && 
+                    response.failureResponse == null && 
+                    this.HasMoreResults)
+                {
+                    return ItemProducer.IsSuccessResponse;
+                }
+
+                return response;
             }
         }
 

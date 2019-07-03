@@ -80,6 +80,212 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task TestSplitAsync()
+        {
+            int maxPageSize = 10;
+            const string collectionRid = "MockTestSplitContainerRid";
+            SqlQuerySpec sqlQuerySpec = MockItemProducerFactory.DefaultQuerySpec;
+
+            // pkRange1 is the original range, newPkRange2/newPkRange3 are the ranges after the split
+            PartitionKeyRange pkRange1 = new PartitionKeyRange() { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+            PartitionKeyRange newPkRange2 = new PartitionKeyRange() { Id = "1", MinInclusive = "", MaxExclusive = "BB" };
+            PartitionKeyRange newPkRange3 = new PartitionKeyRange() { Id = "2", MinInclusive = "BB", MaxExclusive = "FF" };
+            IReadOnlyList<PartitionKeyRange> newPkRanges = new List<PartitionKeyRange>()
+            {
+                newPkRange2,
+                newPkRange3,
+            };
+
+            // Setup the necessary partition key range update calls
+            Mock<IRoutingMapProvider> mockRoutingMap = new Mock<IRoutingMapProvider>();
+            mockRoutingMap.Setup(x =>
+                x.TryGetOverlappingRangesAsync(
+                    collectionRid,
+                    pkRange1.ToRange(),
+                    true)).Returns(Task.FromResult(newPkRanges));
+
+            Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
+            mockQueryClient.Setup(x => x.GetRoutingMapProviderAsync()).Returns(Task.FromResult(mockRoutingMap.Object));
+
+            Mock<CosmosQueryContext> mockContext = new Mock<CosmosQueryContext>();
+            mockContext.Setup(x => x.QueryClient).Returns(mockQueryClient.Object);
+            List<ToDoItem> allMockedToDoItems = new List<ToDoItem>();
+
+
+            // Setup the mocks for the new partitions ranges
+            List<ToDoItem> itemsFromPkRange2 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
+                mockContext,
+                responseMessagesPageSize: new int[] { 1 },
+                sqlQuerySpec: sqlQuerySpec,
+                partitionKeyRange: newPkRange2,
+                continuationToken: null,
+                maxPageSize: maxPageSize,
+                collectionRid: collectionRid,
+                responseDelay: null,
+                cancellationToken: cancellationToken);
+            
+
+            List<ToDoItem> itemsFromPkRange3 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
+                 mockContext,
+                 responseMessagesPageSize: new int[] { 1 },
+                 sqlQuerySpec: sqlQuerySpec,
+                 partitionKeyRange: newPkRange3,
+                 continuationToken: null,
+                 maxPageSize: maxPageSize,
+                 collectionRid: collectionRid,
+                 responseDelay: null,
+                 cancellationToken: cancellationToken);
+           
+
+            // Setup the item producer tree with a split response
+            (ItemProducerTree itemProducerTree, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.CreateTree(
+                mockQueryContext: mockContext,
+                responseMessagesPageSize: new int[] { 2, QueryResponseMessageFactory.SPLIT },
+                sqlQuerySpec: sqlQuerySpec,
+                partitionKeyRange: pkRange1,
+                collectionRid: collectionRid,
+                maxPageSize: maxPageSize,
+                deferFirstPage: true,
+                cancellationToken: this.cancellationToken);
+
+            allMockedToDoItems.AddRange(itemFactory.allItems);
+            allMockedToDoItems.AddRange(itemsFromPkRange2);
+            allMockedToDoItems.AddRange(itemsFromPkRange3);
+
+            ItemProducerTree itemProducerTree = itemFactory.itemProducerTree;
+
+            // Read all the pages from both splits
+            List<ToDoItem> itemsRead = new List<ToDoItem>();
+            Assert.IsTrue(itemProducerTree.HasMoreResults);
+
+            while ((await itemProducerTree.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
+            {
+                Assert.IsTrue(itemProducerTree.HasMoreResults);
+                if (itemProducerTree.Current != null)
+                {
+                    string jsonValue = itemProducerTree.Current.ToString();
+                    ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                    itemsRead.Add(item);
+                }
+            }
+
+            Assert.IsFalse(itemProducerTree.HasMoreResults);
+
+            Assert.AreEqual(allMockedToDoItems.Count, itemsRead.Count);
+
+            CollectionAssert.AreEqual(itemsRead, allMockedToDoItems, new ToDoItemComparer());
+        }
+
+
+        [TestMethod]
+        public async Task TestSplitWithExecutionContextAsync()
+        {
+            int maxPageSize = 10;
+            const string collectionRid = "MockTestSplitContainerRid";
+            SqlQuerySpec sqlQuerySpec = MockItemProducerFactory.DefaultQuerySpec;
+
+            // pkRange1 is the original range, newPkRange2/newPkRange3 are the ranges after the split
+            PartitionKeyRange pkRange1 = new PartitionKeyRange() { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+            PartitionKeyRange newPkRange2 = new PartitionKeyRange() { Id = "1", MinInclusive = "", MaxExclusive = "BB" };
+            PartitionKeyRange newPkRange3 = new PartitionKeyRange() { Id = "2", MinInclusive = "BB", MaxExclusive = "FF" };
+            IReadOnlyList<PartitionKeyRange> newPkRanges = new List<PartitionKeyRange>()
+            {
+                newPkRange2,
+                newPkRange3,
+            };
+
+            // Setup the necessary partition key range update calls
+            Mock<IRoutingMapProvider> mockRoutingMap = new Mock<IRoutingMapProvider>();
+            mockRoutingMap.Setup(x =>
+                x.TryGetOverlappingRangesAsync(
+                    collectionRid,
+                    pkRange1.ToRange(),
+                    true)).Returns(Task.FromResult(newPkRanges));
+
+            Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
+            mockQueryClient.Setup(x => x.GetRoutingMapProviderAsync()).Returns(Task.FromResult(mockRoutingMap.Object));
+
+            Mock<CosmosQueryContext> mockContext = new Mock<CosmosQueryContext>();
+            mockContext.Setup(x => x.QueryClient).Returns(mockQueryClient.Object);
+            mockContext.Setup(x => x.ContainerResourceId).Returns(collectionRid);
+            mockContext.Setup(x => x.SqlQuerySpec).Returns(sqlQuerySpec);
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions();
+            mockContext.Setup(x => x.QueryRequestOptions).Returns(requestOptions);
+            List<ToDoItem> allMockedToDoItems = new List<ToDoItem>();
+
+
+            // Setup the mocks for the new partitions ranges
+            List<ToDoItem> itemsFromPkRange1 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
+                 mockContext,
+                 responseMessagesPageSize: new int[] { 2, QueryResponseMessageFactory.SPLIT },
+                 sqlQuerySpec: sqlQuerySpec,
+                 partitionKeyRange: pkRange1,
+                 continuationToken: null,
+                 maxPageSize: maxPageSize,
+                 collectionRid: collectionRid,
+                 responseDelay: null,
+                 cancellationToken: cancellationToken);
+            allMockedToDoItems.AddRange(itemsFromPkRange1);
+
+            List<ToDoItem> itemsFromPkRange2 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
+                mockContext,
+                responseMessagesPageSize: new int[] { 1 },
+                sqlQuerySpec: sqlQuerySpec,
+                partitionKeyRange: newPkRange2,
+                continuationToken: null,
+                maxPageSize: maxPageSize,
+                collectionRid: collectionRid,
+                responseDelay: null,
+                cancellationToken: cancellationToken);
+            allMockedToDoItems.AddRange(itemsFromPkRange2);
+
+            List<ToDoItem> itemsFromPkRange3 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
+                 mockContext,
+                 responseMessagesPageSize: new int[] { 1 },
+                 sqlQuerySpec: sqlQuerySpec,
+                 partitionKeyRange: newPkRange3,
+                 continuationToken: null,
+                 maxPageSize: maxPageSize,
+                 collectionRid: collectionRid,
+                 responseDelay: null,
+                 cancellationToken: cancellationToken);
+            allMockedToDoItems.AddRange(itemsFromPkRange3);
+
+            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    collectionRid,
+                    new PartitionedQueryExecutionInfo() { QueryInfo = new QueryInfo() },
+                    new List<PartitionKeyRange>() { pkRange1 },
+                    maxPageSize,
+                    null);
+
+            CosmosParallelItemQueryExecutionContext executionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                mockContext.Object,
+                initParams,
+                cancellationToken);
+
+            // Read all the pages from both splits
+            List<ToDoItem> itemsRead = new List<ToDoItem>();
+            Assert.IsTrue(!executionContext.IsDone);
+
+            while (!executionContext.IsDone)
+            {
+                QueryResponse queryResponse = await executionContext.DrainAsync(maxPageSize, cancellationToken);
+
+                foreach (CosmosElement element in queryResponse.CosmosElements)
+                {
+                    string jsonValue = element.ToString();
+                    ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                    itemsRead.Add(item);
+                }
+            }
+
+            Assert.AreEqual(allMockedToDoItems.Count, itemsRead.Count);
+
+            CollectionAssert.AreEqual(itemsRead, allMockedToDoItems, new ToDoItemComparer());
+        }
+
+        [TestMethod]
         public async Task TestItemProducerTreeWithFailure()
         {
             int callBackCount = 0;
