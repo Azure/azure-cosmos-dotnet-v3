@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="path">Property path for the current definition. Example: /path/*</param>
         /// <returns>An instance of the current <see cref="PathsDefinition{T}"/>.</returns>
-        public virtual PathsDefinition<T> Path(string path)
+        public PathsDefinition<T> Path(string path)
         {
             this.paths.Add(path);
             return this;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual T Attach()
+        public T Attach()
         {
             this.attachCallback(this.paths);
             return this.parent;

@@ -15,21 +15,21 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delete a conflict from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the conflict.</param>
         /// <param name="conflict">The conflict to delete.</param>
+        /// <param name="partitionKey">The partition key for the conflict.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         /// <seealso cref="ConflictProperties"/>
-        public abstract Task<CosmosResponseMessage> DeleteConflictAsync(
-            PartitionKey partitionKey,
+        public abstract Task<ResponseMessage> DeleteAsync(
             ConflictProperties conflict,
+            PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Reads the item that originated the conflict.
         /// </summary>
-        /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="conflict">The conflict for which we want to read the item.</param>
+        /// <param name="partitionKey">The partition key for the item.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The current state of the item associated with the conflict.</returns>
         /// <seealso cref="ConflictProperties"/>
@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ItemResponse<T>> ReadCurrentAsync<T>(
-            PartitionKey partitionKey,
             ConflictProperties conflict,
+            PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -79,13 +79,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Obtains an iterator to go through the <see cref="ConflictProperties"/> on an Azure Cosmos container.
         /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the conflicts.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictsIterator();
+        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     foreach(ConflictProperties item in await conflictIterator.FetchNextSetAsync())
@@ -95,20 +96,22 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator<ConflictProperties> GetConflictsIterator(
-            int? maxItemCount = null,
-            string continuationToken = null);
+        public abstract FeedIterator<T> GetConflictQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// Gets an iterator to go through all the conflicts for the container as the original CosmosResponseMessage
         /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the conflicts.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator conflictIterator = await conflicts.GetConflictsStreamIterator();
+        /// FeedIterator conflictIterator = await conflicts.GetConflictStreamIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
@@ -118,8 +121,59 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract FeedIterator GetConflictsStreamIterator(
-            int? maxItemCount = null,
-            string continuationToken = null);
+        public abstract FeedIterator GetConflictQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Obtains an iterator to go through the <see cref="ConflictProperties"/> on an Azure Cosmos container.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the conflicts.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictIterator();
+        /// while (conflictIterator.HasMoreResults)
+        /// {
+        ///     foreach(ConflictProperties item in await conflictIterator.FetchNextSetAsync())
+        ///     {
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator<T> GetConflictQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Gets an iterator to go through all the conflicts for the container as the original CosmosResponseMessage
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the conflicts.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator conflictIterator = await conflicts.GetConflictStreamIterator();
+        /// while (conflictIterator.HasMoreResults)
+        /// {
+        ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
+        ///     {
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator GetConflictQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
     }
 }

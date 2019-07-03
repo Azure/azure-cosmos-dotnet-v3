@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static CosmosClient cosmosClient;
-        private static CosmosDatabase testDb;
+        private static Cosmos.Database testDb;
         private static Container testContainer;
         private static Func<bool, IQueryable<Family>> getQuery;
 
@@ -1716,7 +1716,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             fList.Add(family);
 
             container.CreateItemAsync<Family>(family).Wait();
-            IOrderedQueryable<Family> query = container.GetItemLinqQuery<Family>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Family> query = container.GetItemLinqQueryable<Family>(allowSynchronousQueryExecution : true);
 
             IEnumerable<string> q1 = query.Select(f => f.Parents[0].FamilyName);
             Assert.AreEqual(q1.FirstOrDefault(), family.Parents[0].FamilyName);
@@ -1763,7 +1763,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             container.CreateItemAsync(guidObject).Wait();
             var guidData = new List<GuidClass>() { guidObject };
 
-            var guid = container.GetItemLinqQuery<GuidClass>(allowSynchronousQueryExecution: true);
+            var guid = container.GetItemLinqQueryable<GuidClass>(allowSynchronousQueryExecution: true);
 
             IQueryable<GuidClass> q11 = guid.Where(g => g.Id == guidObject.Id);
             Assert.AreEqual(((IEnumerable<GuidClass>)q11).FirstOrDefault().Id, guidObject.Id);
@@ -1774,7 +1774,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             ListArrayClass arrayObject = new ListArrayClass() { Id = "arrayObject", ArrayField = new int[] { 1, 2, 3 } };
             container.CreateItemAsync(arrayObject).Wait();
 
-            var listArrayQuery = container.GetItemLinqQuery<ListArrayClass>(allowSynchronousQueryExecution : true);
+            var listArrayQuery = container.GetItemLinqQueryable<ListArrayClass>(allowSynchronousQueryExecution : true);
 
             IEnumerable<dynamic> q13 = listArrayQuery.Where(a => a.ArrayField == arrayObject.ArrayField);
             Assert.AreEqual(q13.FirstOrDefault().Id, arrayObject.Id);
@@ -1826,7 +1826,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Document doubleQoutesDocument = new Document() { Id = doc1Id };
             container.CreateItemAsync(doubleQoutesDocument).Wait();
 
-            var docQuery = from book in container.GetItemLinqQuery<Document>(allowSynchronousQueryExecution : true)
+            var docQuery = from book in container.GetItemLinqQueryable<Document>(allowSynchronousQueryExecution : true)
                            where book.Id == doc1Id
                            select book;
 
@@ -1837,7 +1837,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             container.CreateItemAsync(greatGreatFamily).Wait();
             var greatGreatFamilyData = new List<GreatGreatFamily>() { greatGreatFamily };
 
-            IOrderedQueryable<GreatGreatFamily> queryable = container.GetItemLinqQuery<GreatGreatFamily>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<GreatGreatFamily> queryable = container.GetItemLinqQueryable<GreatGreatFamily>(allowSynchronousQueryExecution : true);
 
             IEnumerable<GreatGreatFamily> q16 = queryable.SelectMany(gf => gf.GreatFamily.Family.Children.Where(c => c.GivenName == "Jesse").Select(c => gf));
 
@@ -1847,7 +1847,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             container.CreateItemAsync(sport).Wait();
             var sportData = new List<Sport>() { sport };
 
-            var sportQuery = container.GetItemLinqQuery<Sport>(allowSynchronousQueryExecution : true);
+            var sportQuery = container.GetItemLinqQueryable<Sport>(allowSynchronousQueryExecution : true);
 
             IEnumerable<Sport> q17 = sportQuery.Where(s => s.SportName == "Tennis");
 
@@ -1857,7 +1857,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             container.CreateItemAsync(sport2).Wait();
             var sport2Data = new List<Sport2>() { sport2 };
 
-            var sport2Query = container.GetItemLinqQuery<Sport2>(allowSynchronousQueryExecution: true);
+            var sport2Query = container.GetItemLinqQueryable<Sport2>(allowSynchronousQueryExecution: true);
 
             Func<bool, IQueryable<GuidClass>> getGuidQuery = useQuery => useQuery ? guid : guidData.AsQueryable();
             Func<bool, IQueryable<ListArrayClass>> getListArrayQuery = useQuery => useQuery ? listArrayQuery : listArrayObjectData.AsQueryable();
@@ -1936,16 +1936,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private async Task ValidateBasicQueryAsync()
         {
             DocumentClient client = TestCommon.CreateClient(true);
-            Database database = await client.ReadDatabaseAsync(string.Format("dbs/{0}", testDb.Id));
+            Documents.Database database = await client.ReadDatabaseAsync(string.Format("dbs/{0}", testDb.Id));
 
             string databaseName = database.Id;
 
             List<Database> queryResults = new List<Database>();
             //Simple Equality
-            IQueryable<Database> dbQuery = from db in client.CreateDatabaseQuery()
+            IQueryable<Documents.Database> dbQuery = from db in client.CreateDatabaseQuery()
                                            where db.Id == databaseName
                                            select db;
-            IDocumentQuery<Database> documentQuery = dbQuery.AsDocumentQuery();
+            IDocumentQuery<Documents.Database> documentQuery = dbQuery.AsDocumentQuery();
 
             while (documentQuery.HasMoreResults)
             {
@@ -2053,7 +2053,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             //Unfiltered execution.
-            IOrderedQueryable<Book> bookDocQuery = testContainer.GetItemLinqQuery<Book>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Book> bookDocQuery = testContainer.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<Book>> getBookQuery = useQuery => useQuery ? bookDocQuery : new List<Book>().AsQueryable();
 
             var inputs = new List<LinqTestInput>();
@@ -2099,7 +2099,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateDynamicAttachmentQuery() //Ensure query on custom property of attachment.
         {
-            IOrderedQueryable<SpecialAttachment2> attachmentQuery = testContainer.GetItemLinqQuery<SpecialAttachment2>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<SpecialAttachment2> attachmentQuery = testContainer.GetItemLinqQueryable<SpecialAttachment2>(allowSynchronousQueryExecution : true);
             var myDocument = new Document();
             Func<bool, IQueryable<SpecialAttachment2>> getAttachmentQuery = useQuery => useQuery ? attachmentQuery : new List<SpecialAttachment2>().AsQueryable();
 
@@ -2166,7 +2166,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public IQueryable<T> Query<T>() where T : BaseDocument
             {
-                var query = this.container.GetItemLinqQuery<T>(allowSynchronousQueryExecution : true)
+                var query = this.container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution : true)
                                        .Where(d => d.TypeName == "Hello");
                 var queryString = query.ToString();
                 return query;
@@ -2189,7 +2189,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual(doc.Id, baseDocument.Id);
 
             BaseDocument iDocument = doc;
-            IOrderedQueryable<DataDocument> q = container.GetItemLinqQuery<DataDocument>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataDocument> q = container.GetItemLinqQueryable<DataDocument>(allowSynchronousQueryExecution : true);
 
             IEnumerable<DataDocument> iresult = from f in q
                                                 where f.Id == iDocument.Id
@@ -2269,7 +2269,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             StoredProcedureExecuteResponse<int> scriptResponse = null;
             int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteCosmosProcedure(collection, script, out scriptResponse, "My Book");
 
-            IOrderedQueryable<Book> linqQueryable = collection.GetItemLinqQuery<Book>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Book> linqQueryable = collection.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution : true);
             int totalHit = linqQueryable.Where(book => book.Title == "My Book").Count();
             Assert.AreEqual(totalHit, totalNumberOfDocuments, "Didnt get all the documents");
 

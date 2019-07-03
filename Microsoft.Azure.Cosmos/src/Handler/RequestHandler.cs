@@ -14,21 +14,21 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Custom implementations are required to be stateless.
     /// </remarks>
-    public abstract class CosmosRequestHandler
+    public abstract class RequestHandler
     {
         /// <summary>
         /// Defines a next handler to be called in the chain.
         /// </summary>
-        public CosmosRequestHandler InnerHandler { get; set; }
+        public RequestHandler InnerHandler { get; set; }
 
         /// <summary>
-        /// Processes the current <see cref="CosmosRequestMessage"/> in the current handler and sends the current <see cref="CosmosRequestMessage"/> to the next handler in the chain.
+        /// Processes the current <see cref="RequestMessage"/> in the current handler and sends the current <see cref="RequestMessage"/> to the next handler in the chain.
         /// </summary>
-        /// <param name="request"><see cref="CosmosRequestMessage"/> received by the handler.</param>
+        /// <param name="request"><see cref="RequestMessage"/> received by the handler.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> received by the handler.</param>
-        /// <returns>An instance of <see cref="CosmosResponseMessage"/>.</returns>
-        public virtual Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request,
+        /// <returns>An instance of <see cref="ResponseMessage"/>.</returns>
+        public virtual Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             if (this.InnerHandler == null)

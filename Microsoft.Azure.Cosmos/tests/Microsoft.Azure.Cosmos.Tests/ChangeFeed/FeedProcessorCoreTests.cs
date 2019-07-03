@@ -98,10 +98,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
 
-        private static CosmosResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)
+        private static ResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)
         {
-            CosmosResponseMessage message = new CosmosResponseMessage(statusCode);
-            message.Headers.Continuation = "someContinuation";
+            ResponseMessage message = new ResponseMessage(statusCode);
+            message.Headers.ContinuationToken = "someContinuation";
             if (subStatusCode > 0)
             {
                 message.Headers.SubStatusCode = (Documents.SubStatusCodes)subStatusCode;

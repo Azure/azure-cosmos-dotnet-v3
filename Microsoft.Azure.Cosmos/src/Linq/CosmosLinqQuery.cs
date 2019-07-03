@@ -155,6 +155,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             return container.LinkUri.ToString();
         }
 
+        public FeedIterator<T> ToFeedIterator()
+        {
+            return this.container.GetItemQueryIterator<T>(
+                queryDefinition: new QueryDefinition(ToSqlQueryText()),
+                continuationToken: null,
+                requestOptions: this.cosmosQueryRequestOptions);
+        }
+
         public void Dispose()
         {
             //NOTHING TO DISPOSE HERE
@@ -178,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
                 sqlQuerySpec: DocumentQueryEvaluator.Evaluate(expression),
+                continuationToken: null,
                 queryRequestOptions: this.cosmosQueryRequestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: false,

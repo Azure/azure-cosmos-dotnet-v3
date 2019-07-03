@@ -12,13 +12,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class ConflictResolutionDefinition
     {
-        private readonly CreateContainerDefinition parent;
+        private readonly ContainerBuilder parent;
         private readonly Action<ConflictResolutionPolicy> attachCallback;
         private string conflictResolutionPath;
         private string conflictResolutionProcedure;
 
         internal ConflictResolutionDefinition(
-            CreateContainerDefinition parent,
+            ContainerBuilder parent,
             Action<ConflictResolutionPolicy> attachCallback)
         {
             this.parent = parent;
@@ -28,9 +28,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the path used to resolve LastWrtierWins resolution mode <see cref="ConflictResolutionPolicy"/>.
         /// </summary>
-        /// <param name="conflictResolutionPath"> sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution. <see cref="ConflictResolutionPolicy.ConflictResolutionPath"/>.</param>
+        /// <param name="conflictResolutionPath"> sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution. <see cref="ConflictResolutionPolicy.ResolutionPath"/>.</param>
         /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
-        public virtual ConflictResolutionDefinition WithLastWriterWinsResolution(string conflictResolutionPath)
+        public ConflictResolutionDefinition WithLastWriterWinsResolution(string conflictResolutionPath)
         {
             if (string.IsNullOrEmpty(conflictResolutionPath))
             {
@@ -45,9 +45,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the stored procedure to be used as custom conflict resolution mode <see cref="ConflictResolutionPolicy"/>.
         /// </summary>
-        /// <param name="conflictResolutionProcedure"> sets the stored procedure to be used for conflict-resolution. <see cref="ConflictResolutionPolicy.ConflictResolutionProcedure"/>.</param>
+        /// <param name="conflictResolutionProcedure"> sets the stored procedure to be used for conflict-resolution. <see cref="ConflictResolutionPolicy.ResolutionProcedure"/>.</param>
         /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
-        public virtual ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure)
+        public ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure)
         {
             if (string.IsNullOrEmpty(conflictResolutionProcedure))
             {
@@ -63,19 +63,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
-        public virtual CreateContainerDefinition Attach()
+        public ContainerBuilder Attach()
         {
             ConflictResolutionPolicy resolutionPolicy = new ConflictResolutionPolicy();
             if (this.conflictResolutionPath != null)
             {
                 resolutionPolicy.Mode = ConflictResolutionMode.LastWriterWins;
-                resolutionPolicy.ConflictResolutionPath = this.conflictResolutionPath;
+                resolutionPolicy.ResolutionPath = this.conflictResolutionPath;
             }
 
             if (this.conflictResolutionProcedure != null)
             {
                 resolutionPolicy.Mode = ConflictResolutionMode.Custom;
-                resolutionPolicy.ConflictResolutionProcedure = this.conflictResolutionProcedure;
+                resolutionPolicy.ResolutionProcedure = this.conflictResolutionProcedure;
             }
 
             this.attachCallback(resolutionPolicy);

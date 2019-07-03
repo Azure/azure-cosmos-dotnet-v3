@@ -22,13 +22,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ConflictsFeedSetsPartitionKeyRangeIdentity()
         {
             ContainerCore container = CosmosConflictTests.GetMockedContainer((request, cancellationToken) => {
-                Assert.IsNotNull(request.DocumentServiceRequest.PartitionKeyRangeIdentity);
+                Assert.IsNotNull(request.PartitionKeyRangeId);
+                Assert.IsNotNull(request.ToDocumentServiceRequest().PartitionKeyRangeIdentity);
                 return TestHandler.ReturnSuccess();
             });
-            FeedIterator iterator = container.Conflicts.GetConflictsStreamIterator();
+            FeedIterator iterator = container.Conflicts.GetConflictQueryStreamIterator();
             while (iterator.HasMoreResults)
             {
-                CosmosResponseMessage responseMessage = await iterator.ReadNextAsync();
+                ResponseMessage responseMessage = await iterator.ReadNextAsync();
             }
         }
 
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.SourceResourceId = expectedRID;
 
-            await container.Conflicts.ReadCurrentAsync<JObject>(partitionKey, conflictSettings);
+            await container.Conflicts.ReadCurrentAsync<JObject>(conflictSettings, partitionKey);
         }
 
         [TestMethod]
@@ -85,17 +86,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.Id = expectedId;
 
-            await container.Conflicts.DeleteConflictAsync(partitionKey, conflictSettings);
+            await container.Conflicts.DeleteAsync(conflictSettings, partitionKey);
         }
 
-        private static ContainerCore GetMockedContainer(Func<CosmosRequestMessage,
-            CancellationToken, Task<CosmosResponseMessage>> handlerFunc)
+        private static ContainerCore GetMockedContainer(Func<RequestMessage,
+            CancellationToken, Task<ResponseMessage>> handlerFunc)
         {
             return new ContainerCore(CosmosConflictTests.GetMockedClientContext(handlerFunc), MockCosmosUtil.CreateMockDatabase("conflictsDb").Object, "conflictsColl");
         }
 
         private static CosmosClientContext GetMockedClientContext(
-            Func<CosmosRequestMessage, CancellationToken, Task<CosmosResponseMessage>> handlerFunc)
+            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> handlerFunc)
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler(handlerFunc);
             partitionKeyRangeHandler.InnerHandler = testHandler;
 
-            CosmosRequestHandler handler = client.RequestHandler.InnerHandler;
+            RequestHandler handler = client.RequestHandler.InnerHandler;
             while (handler != null)
             {
                 if (handler.InnerHandler is RouterHandler)

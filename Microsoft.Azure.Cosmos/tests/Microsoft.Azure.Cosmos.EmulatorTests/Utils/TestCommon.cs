@@ -1383,9 +1383,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static async Task DeleteAllDatabasesAsyncWorker(CosmosClient client)
         {
-            IList<CosmosDatabase> databases = new List<CosmosDatabase>();
+            IList<Cosmos.Database> databases = new List<Cosmos.Database>();
 
-            FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabasesIterator(maxItemCount: 10);
+            FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
+                queryDefinition: null,
+                continuationToken: null, 
+                requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
             int totalCount = 0;
             while (resultSetIterator.HasMoreResults)
@@ -1403,24 +1407,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Logger.LogLine("Number of database to delete {0}", totalCount);
         }
 
-        public static async Task DeleteDatabaseAsync(CosmosClient client, CosmosDatabase database)
+        public static async Task DeleteDatabaseAsync(CosmosClient client, Cosmos.Database database)
         {
             await TestCommon.DeleteDatabaseCollectionAsync(client, database);
 
             await TestCommon.AsyncRetryRateLimiting(() => database.DeleteAsync());
         }
 
-        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, CosmosDatabase database)
+        public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, Cosmos.Database database)
         {
             //Delete them in chunks of 10.
-            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainersIterator(maxItemCount: 10);
+            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
             while (resultSetIterator.HasMoreResults)
             {
                 List<Task> deleteCollectionTasks = new List<Task>(10);
                 foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())
                 {
                     Logger.LogLine("Deleting Collection with following info Id:{0}, database Id: {1}", container.Id, database.Id);
-                    deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.GetContainer(container.Id).DeleteAsync()));
+                    deleteCollectionTasks.Add(TestCommon.AsyncRetryRateLimiting(() => database.GetContainer(container.Id).DeleteContainerAsync()));
                 }
 
                 await Task.WhenAll(deleteCollectionTasks);

@@ -19,25 +19,25 @@ namespace Microsoft.Azure.Cosmos
     /// Represents a request in the processing pipeline of the Azure Cosmos DB SDK.
     /// </summary>
     /// <remarks>
-    /// It is expected that direct property access is used for properties that will be read and used within the Azure Cosmos SDK pipeline, for example <see cref="CosmosRequestMessage.OperationType"/>.
-    /// <see cref="CosmosRequestMessage.Properties"/> should be used for any other property that needs to be sent to the backend but will not be read nor used within the Azure Cosmos DB SDK pipeline.
-    /// <see cref="CosmosRequestMessage.Headers"/> should be used for HTTP headers that need to be passed down and sent to the backend.
+    /// It is expected that direct property access is used for properties that will be read and used within the Azure Cosmos SDK pipeline, for example <see cref="RequestMessage.OperationType"/>.
+    /// <see cref="RequestMessage.Properties"/> should be used for any other property that needs to be sent to the backend but will not be read nor used within the Azure Cosmos DB SDK pipeline.
+    /// <see cref="RequestMessage.Headers"/> should be used for HTTP headers that need to be passed down and sent to the backend.
     /// </remarks>
-    public class CosmosRequestMessage : IDisposable
+    public class RequestMessage : IDisposable
     {
         /// <summary>
-        /// Create a <see cref="CosmosRequestMessage"/>
+        /// Create a <see cref="RequestMessage"/>
         /// </summary>
-        public CosmosRequestMessage()
+        public RequestMessage()
         {
         }
 
         /// <summary>
-        /// Create a <see cref="CosmosRequestMessage"/>
+        /// Create a <see cref="RequestMessage"/>
         /// </summary>
         /// <param name="method">The http method</param>
         /// <param name="requestUri">The requested URI</param>
-        public CosmosRequestMessage(HttpMethod method, Uri requestUri)
+        public RequestMessage(HttpMethod method, Uri requestUri)
         {
             this.Method = method;
             this.RequestUri = requestUri;
@@ -54,12 +54,12 @@ namespace Microsoft.Azure.Cosmos
         public virtual Uri RequestUri { get; private set; }
 
         /// <summary>
-        /// Gets the current <see cref="CosmosRequestMessage"/> HTTP headers.
+        /// Gets the current <see cref="RequestMessage"/> HTTP headers.
         /// </summary>
-        public virtual CosmosRequestMessageHeaders Headers => this.headers.Value;
+        public virtual Headers Headers => this.headers.Value;
 
         /// <summary>
-        /// Gets or sets the current <see cref="CosmosRequestMessage"/> payload.
+        /// Gets or sets the current <see cref="RequestMessage"/> payload.
         /// </summary>
         public virtual Stream Content
         {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal OperationType OperationType { get; set; }
 
-        internal string PartitionKeyRangeId { get; set; }
+        internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
 
         /// <summary>
         /// Used to override the client default. This is used for scenarios
@@ -87,11 +87,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal DocumentServiceRequest DocumentServiceRequest { get; set; }
 
-        internal IDocumentClientRetryPolicy DocumentClientRetryPolicy { get; set; }
+        internal Action<DocumentServiceRequest> OnBeforeSendRequestActions { get; set; }
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
-        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && string.IsNullOrEmpty(this.PartitionKeyRangeId);
+        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && 
+            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && 
+            this.PartitionKeyRangeId == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -99,16 +101,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual Dictionary<string, object> Properties => this.properties.Value;
 
-        private readonly Lazy<Dictionary<string, object>> properties = new Lazy<Dictionary<string, object>>(CosmosRequestMessage.CreateDictionary);
+        private readonly Lazy<Dictionary<string, object>> properties = new Lazy<Dictionary<string, object>>(RequestMessage.CreateDictionary);
 
-        private readonly Lazy<CosmosRequestMessageHeaders> headers = new Lazy<CosmosRequestMessageHeaders>(CosmosRequestMessage.CreateHeaders);
+        private readonly Lazy<Headers> headers = new Lazy<Headers>(RequestMessage.CreateHeaders);
 
         private bool disposed;
 
         private Stream content;
 
         /// <summary>
-        /// Disposes the current <see cref="CosmosRequestMessage"/>.
+        /// Disposes the current <see cref="RequestMessage"/>.
         /// </summary>
         public void Dispose()
         {
@@ -169,7 +171,14 @@ namespace Microsoft.Azure.Cosmos
                 DocumentServiceRequest serviceRequest;
                 if (this.OperationType == OperationType.ReadFeed && this.ResourceType == ResourceType.Database)
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, null, this.ResourceType, this.Content, this.Headers.CosmosMessageHeaders, false, AuthorizationTokenType.PrimaryMasterKey);
+                    serviceRequest = new DocumentServiceRequest(
+                        operationType: this.OperationType,
+                        resourceIdOrFullName: null,
+                        resourceType: this.ResourceType,
+                        body: this.Content,
+                        headers: this.Headers.CosmosMessageHeaders,
+                        isNameBased: false,
+                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
                 }
                 else
                 {
@@ -181,16 +190,16 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
-                // Routing to a particular PartitionKeyRangeId
-                if (!string.IsNullOrEmpty(this.PartitionKeyRangeId))
-                {
-                    serviceRequest.RouteTo(new PartitionKeyRangeIdentity(this.PartitionKeyRangeId));
-                }
-
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;
                 this.DocumentServiceRequest = serviceRequest;
+            }
+
+            // Routing to a particular PartitionKeyRangeId
+            if (this.PartitionKeyRangeId != null)
+            {
+                this.DocumentServiceRequest.RouteTo(this.PartitionKeyRangeId);
             }
 
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);
@@ -202,16 +211,16 @@ namespace Microsoft.Azure.Cosmos
             return new Dictionary<string, object>();
         }
 
-        private static CosmosRequestMessageHeaders CreateHeaders()
+        private static Headers CreateHeaders()
         {
-            return new CosmosRequestMessageHeaders();
+            return new Headers();
         }
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
         {
-            if (this.DocumentClientRetryPolicy != null)
+            if (this.OnBeforeSendRequestActions != null)
             {
-                this.DocumentClientRetryPolicy.OnBeforeSendRequest(serviceRequest);
+                this.OnBeforeSendRequestActions(serviceRequest);
             }
         }
 
@@ -231,8 +240,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(RMResources.MissingPartitionKeyValue);
             }
 
-            bool partitonKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
-            if (partitonKeyRangeIdExists)
+            bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
+            if (partitionKeyRangeIdExists)
             {
                 // Assert operation type is not write
                 if (this.OperationType != OperationType.Query && this.OperationType != OperationType.ReadFeed)
@@ -241,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (pkExists && partitonKeyRangeIdExists)
+            if (pkExists && partitionKeyRangeIdExists)
             {
                 throw new ArgumentOutOfRangeException(RMResources.PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified);
             }

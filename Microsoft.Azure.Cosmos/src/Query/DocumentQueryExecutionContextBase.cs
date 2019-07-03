@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         protected string PartitionKeyRangeId => this.feedOptions.PartitionKeyRangeId;
 
-        protected virtual string ContinuationToken => this.lastPage == null ? this.feedOptions.RequestContinuation : this.lastPage.ResponseContinuation;
+        protected virtual string ContinuationToken => this.lastPage == null ? this.feedOptions.RequestContinuationToken : this.lastPage.ResponseContinuation;
 
         public virtual bool IsDone => this.lastPage != null && string.IsNullOrEmpty(this.lastPage.ResponseContinuation);
 
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public FeedOptions GetFeedOptions(string continuationToken)
         {
             FeedOptions options = new FeedOptions(this.feedOptions);
-            options.RequestContinuation = continuationToken;
+            options.RequestContinuationToken = continuationToken;
             return options;
         }
 
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            requestHeaders[HttpConstants.HttpHeaders.Continuation] = feedOptions.RequestContinuation;
+            requestHeaders[HttpConstants.HttpHeaders.Continuation] = feedOptions.RequestContinuationToken;
             requestHeaders[HttpConstants.HttpHeaders.IsQuery] = bool.TrueString;
 
             // Flow the pageSize only when we are not doing client eval

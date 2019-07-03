@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
         /// Parses a Session Token and extracts the LSN.
         /// </summary>
         /// <param name="sessionToken">A Session Token</param>
-        /// <returns>Lsn value</returns>
+        /// <returns>LSN value</returns>
         internal static string ExtractLsnFromSessionToken(string sessionToken)
         {
             if (string.IsNullOrEmpty(sessionToken))
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             return parsed;
         }
 
-        private static Collection<JObject> GetItemsFromResponse(CosmosResponseMessage response)
+        private static Collection<JObject> GetItemsFromResponse(ResponseMessage response)
         {
             if (response.Content == null)
             {
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
             try
             {
-                CosmosResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                ResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
                 if (response.StatusCode != HttpStatusCode.NotModified)
                 {
                     response.EnsureSuccessStatusCode();

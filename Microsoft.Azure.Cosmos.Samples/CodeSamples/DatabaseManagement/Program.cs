@@ -10,7 +10,8 @@
         //Read configuration
         private static readonly string databaseId = "samples";
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -54,23 +55,25 @@
                 Console.ReadKey();
             }
         }
+        // </Main>
 
         /// <summary>
         /// Run basic database meta data operations as a console application.
         /// </summary>
         /// <returns></returns>
+        // <RunDatabaseDemo>
         private static async Task RunDatabaseDemo(CosmosClient client)
         {
             // An object containing relevant information about the response
             DatabaseResponse databaseResponse = await client.CreateDatabaseIfNotExistsAsync(databaseId, 10000);
 
             // A client side reference object that allows additional operations like ReadAsync
-            CosmosDatabase database = databaseResponse;
+            Database database = databaseResponse;
 
             // The response from Azure Cosmos
-            CosmosDatabaseSettings settings = databaseResponse;
+            DatabaseProperties properties = databaseResponse;
 
-            Console.WriteLine($"\n1. Create a database resource with id: {settings.Id} and last modified time stamp: {settings.LastModified}");
+            Console.WriteLine($"\n1. Create a database resource with id: {properties.Id} and last modified time stamp: {properties.LastModified}");
             Console.WriteLine($"\n2. Create a database resource request charge: {databaseResponse.RequestCharge} and Activity Id: {databaseResponse.ActivityId}");
 
             // Read the database from Azure Cosmos
@@ -80,20 +83,20 @@
             await readResponse.Database.CreateContainerAsync("testContainer", "/pk");
 
             // Get the current throughput for the database
-            int? throughput = await database.ReadProvisionedThroughputAsync();
-            if (throughput.HasValue)
+            int? throughputResponse = await database.ReadThroughputAsync();
+            if (throughputResponse.HasValue)
             {
-                Console.WriteLine($"\n4. Read a database throughput: {throughput.Value}");
+                Console.WriteLine($"\n4. Read a database throughput: {throughputResponse}");
 
                 // Update the current throughput for the database
-                await database.ReplaceProvisionedThroughputAsync(11000);
+                await database.ReplaceThroughputAsync(11000);
             }
 
             Console.WriteLine("\n5. Reading all databases resources for an account");
-            FeedIterator<CosmosDatabaseSettings> iterator = client.GetDatabasesIterator();
+            FeedIterator<DatabaseProperties> iterator = client.GetDatabaseQueryIterator<DatabaseProperties>();
             do
             {
-                foreach (CosmosDatabaseSettings db in await iterator.FetchNextSetAsync())
+                foreach (DatabaseProperties db in await iterator.ReadNextAsync())
                 {
                     Console.WriteLine(db.Id);
                 }
@@ -103,5 +106,6 @@
             await database.DeleteAsync();
             Console.WriteLine($"\n6. Database {database.Id} deleted.");
         }
+        // </RunDatabaseDemo>
     }
 }

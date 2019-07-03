@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
         protected ReadFeedResponse(
-            IEnumerable<T> resource,
-            CosmosResponseMessageHeaders responseMessageHeaders,
+            ICollection<T> resource,
+            Headers responseMessageHeaders,
             bool hasMoreResults)
             : base(
                 httpStatusCode: HttpStatusCode.Accepted,
@@ -19,13 +19,14 @@ namespace Microsoft.Azure.Cosmos
                 resource: resource)
         {
             this.HasMoreResults = hasMoreResults;
+            this.Count = resource.Count;
         }
 
         public override int Count { get; }
 
-        public override string Continuation => this.Headers.Continuation;
+        public override string ContinuationToken => this.Headers?.ContinuationToken;
 
-        internal override string InternalContinuationToken => this.Continuation;
+        internal override string InternalContinuationToken => this.ContinuationToken;
 
         internal override bool HasMoreResults { get; }
 
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            CosmosResponseMessageHeaders responseMessageHeaders,
+            Headers responseMessageHeaders,
             Stream stream,
             CosmosSerializer jsonSerializer,
             bool hasMoreResults)
@@ -43,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
             using (stream)
             {
                 CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream);
-                IEnumerable<TInput> resources = response.Data;
+                ICollection<TInput> resources = response.Data;
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     resource: resources,
                     responseMessageHeaders: responseMessageHeaders,
@@ -54,8 +55,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            CosmosResponseMessageHeaders responseMessageHeaders,
-            IEnumerable<TInput> resources,
+            Headers responseMessageHeaders,
+            ICollection<TInput> resources,
             bool hasMoreResults)
         {
             ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(

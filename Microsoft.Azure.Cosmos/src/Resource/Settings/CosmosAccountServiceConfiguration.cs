@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
 
         public ReplicationPolicy SystemReplicationPolicy => this.AccountProperties.SystemReplicationPolicy;
 
-        public Documents.ConsistencyLevel DefaultConsistencyLevel => (Documents.ConsistencyLevel)this.AccountProperties.ConsistencySetting.DefaultConsistencyLevel;
+        public Documents.ConsistencyLevel DefaultConsistencyLevel => (Documents.ConsistencyLevel)this.AccountProperties.Consistency.DefaultConsistencyLevel;
 
         public ReadPolicy ReadPolicy => this.AccountProperties.ReadPolicy;
 
@@ -58,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.AccountProperties == null)
             {
-                this.AccountProperties = await accountPropertiesTaskFunc();
+                this.AccountProperties = await this.accountPropertiesTaskFunc();
             }
         }
     }

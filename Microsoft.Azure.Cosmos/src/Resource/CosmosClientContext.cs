@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
 
-        internal abstract ClientOptions ClientOptions { get; }
+        internal abstract CosmosClientOptions ClientOptions { get; }
 
         /// <summary>
         /// Generates the URI link for the resource
@@ -57,19 +57,19 @@ namespace Microsoft.Azure.Cosmos
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
         /// in a resource can be unit tested.
         /// </summary>
-        internal abstract Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+        internal abstract Task<ResponseMessage> ProcessResourceOperationStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken);
 
         /// <summary>
-        /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
+        /// This is a wrapper around request invoker method. This allows the calls to be mocked so logic done 
         /// in a resource can be unit tested.
         /// </summary>
         internal abstract Task<T> ProcessResourceOperationAsync<T>(
@@ -78,10 +78,10 @@ namespace Microsoft.Azure.Cosmos
            OperationType operationType,
            RequestOptions requestOptions,
            ContainerCore cosmosContainerCore,
-           PartitionKey partitionKey,
+           PartitionKey? partitionKey,
            Stream streamPayload,
-           Action<CosmosRequestMessage> requestEnricher,
-           Func<CosmosResponseMessage, T> responseCreator,
+           Action<RequestMessage> requestEnricher,
+           Func<ResponseMessage, T> responseCreator,
            CancellationToken cancellationToken);
     }
 }

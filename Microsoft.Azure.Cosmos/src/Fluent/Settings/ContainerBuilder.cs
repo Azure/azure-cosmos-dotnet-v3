@@ -9,21 +9,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="Container"/> fluent definition for creation flows.
     /// </summary>
-    public class CreateContainerDefinition : ContainerDefinition<CreateContainerDefinition>
+    public class ContainerBuilder : ContainerDefinition<ContainerBuilder>
     {
-        private readonly CosmosDatabase cosmosContainers;
+        private readonly Database cosmosContainers;
         private UniqueKeyPolicy uniqueKeyPolicy;
         private ConflictResolutionPolicy conflictResolutionPolicy;
 
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public CreateContainerDefinition()
+        public ContainerBuilder()
         {
         }
 
-        internal CreateContainerDefinition(
-            CosmosDatabase cosmosContainers,
+        internal ContainerBuilder(
+            Database cosmosContainers,
             string name,
             string partitionKeyPath = null)
             : base(name, partitionKeyPath)
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines a Unique Key policy for this Azure Cosmos container.
         /// </summary>
         /// <returns>An instance of <see cref="UniqueKeyDefinition"/>.</returns>
-        public virtual UniqueKeyDefinition WithUniqueKey()
+        public UniqueKeyDefinition WithUniqueKey()
         {
             return new UniqueKeyDefinition(
                 this,
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defined the conflict resoltuion for Azure Cosmos container
         /// </summary>
         /// <returns>An instance of <see cref="ConflictResolutionDefinition"/>.</returns>
-        public virtual ConflictResolutionDefinition WithConflictResolution()
+        public ConflictResolutionDefinition WithConflictResolution()
         {
             return new ConflictResolutionDefinition(
                 this,
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual async Task<ContainerResponse> CreateAsync(int? throughput = null)
+        public async Task<ContainerResponse> CreateAsync(int? throughput = null)
         {
             ContainerProperties containerProperties = this.Build();
 
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Applies the current Fluent definition and creates a container configuration.
         /// </summary>
         /// <returns>Builds the current Fluent configuration into an instance of <see cref="ContainerProperties"/>.</returns>
-        public virtual new ContainerProperties Build()
+        public new ContainerProperties Build()
         {
             ContainerProperties containerProperties = base.Build();
 

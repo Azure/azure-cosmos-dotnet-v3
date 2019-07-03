@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             string containerResourceId,
             QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken);
 
         internal abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken);
 
         internal abstract Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
@@ -55,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
         internal abstract Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel);
 
         internal abstract Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync();
+
+        internal abstract void ClearSessionTokenCache(string collectionFullName);
 
         internal abstract Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,

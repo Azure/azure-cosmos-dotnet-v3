@@ -10,6 +10,10 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
+    <DirectVersion>3.0.0.34-preview</DirectVersion>
+    <HybridRowVersion>1.0.0-preview</HybridRowVersion>
+    <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
+    <DirectPackageName Condition=" '$(SignAssembly)' != 'true' ">Microsoft.Azure.Cosmos.Direct.MyGet</DirectPackageName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,8 +21,10 @@
     <EmbeddedResource Remove="Query\TestBaseline\**" />
     <None Remove="Query\TestBaseline\**" />
   </ItemGroup>
-  
+
   <ItemGroup>
+    <PackageReference Include="$(DirectPackageName)" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
     <PackageReference Include="Moq" Version="4.8.2" />

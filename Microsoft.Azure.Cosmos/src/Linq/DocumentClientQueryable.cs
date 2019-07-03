@@ -27,9 +27,9 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="Database"/>
         /// <seealso cref="Microsoft.Azure.Cosmos.Linq.IDocumentQuery"/>
-        public IOrderedQueryable<Database> CreateDatabaseQuery(FeedOptions feedOptions = null)
+        public IOrderedQueryable<Documents.Database> CreateDatabaseQuery(FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<Database>(this, ResourceType.Database, typeof(Database), Paths.Databases_Root, feedOptions);
+            return new DocumentQuery<Documents.Database>(this, ResourceType.Database, typeof(Database), Paths.Databases_Root, feedOptions);
         }
 
         /// <summary>
@@ -85,10 +85,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="feedOptions">The options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        internal IDocumentQuery<Database> CreateDatabaseChangeFeedQuery(ChangeFeedOptions feedOptions)
+        internal IDocumentQuery<Documents.Database> CreateDatabaseChangeFeedQuery(ChangeFeedOptions feedOptions)
         {
             ValidateChangeFeedOptionsForNotPartitionedResource(feedOptions);
-            return new ChangeFeedQuery<Database>(this, ResourceType.Database, null, feedOptions);
+            return new ChangeFeedQuery<Documents.Database>(this, ResourceType.Database, null, feedOptions);
         }
 
         /// <summary>
