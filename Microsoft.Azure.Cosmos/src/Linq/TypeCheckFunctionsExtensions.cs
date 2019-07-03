@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SystemFunctions
+namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
 
@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.SystemFunctions
     /// </summary>
     public static class TypeCheckFunctionsExtensions
     {
+        private static readonly string ErrorMessage = "Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.";
+        
         /// <summary>
         /// Determines if a certain property is defined or not.
         /// </summary>
@@ -27,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.SystemFunctions
         /// </example>
         public static bool IsDefined(this object obj)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(ErrorMessage);
         }
 
         /// <summary>
@@ -44,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SystemFunctions
         /// </example>s>
         public static bool IsNull(this object obj)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(ErrorMessage);
         }
 
         /// <summary>
@@ -64,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.SystemFunctions
         /// </example>s>
         public static bool IsPrimitive(this object obj)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(ErrorMessage);
         }
     }
 }
