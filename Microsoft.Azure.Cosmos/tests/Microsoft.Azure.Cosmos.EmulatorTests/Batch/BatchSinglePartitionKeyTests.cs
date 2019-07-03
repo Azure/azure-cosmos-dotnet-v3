@@ -444,6 +444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         [Owner("abpai")]
         [Description("Verify batch with a large set of read operations that is expected to be rate limited.")]
         public async Task BatchRateLimitingAsync()
