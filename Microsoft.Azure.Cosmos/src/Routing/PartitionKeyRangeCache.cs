@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.collectionCache = collectionCache;
         }
 
-        public async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionRid,
             Range<string> range,
             bool forceRefresh = false)
