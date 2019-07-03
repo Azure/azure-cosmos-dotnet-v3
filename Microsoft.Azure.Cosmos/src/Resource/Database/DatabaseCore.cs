@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            return new ContainerBuilder(this, name, partitionKeyPath);
+            return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
         internal void ValidateContainerProperties(ContainerProperties containerProperties)
