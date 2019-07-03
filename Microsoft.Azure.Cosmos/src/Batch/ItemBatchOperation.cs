@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string id = null,
             Stream resourceStream = null,
-            ItemRequestOptions requestOptions = null)
+            BatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
             int operationIndex,
             string id = null,
             Stream resourceStream = null,
-            ItemRequestOptions requestOptions = null)
+            BatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Stream ResourceStream { get; protected set; }
 
-        public ItemRequestOptions RequestOptions { get; }
+        public BatchItemRequestOptions RequestOptions { get; }
 
         public int OperationIndex { get; }
 
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (operation.RequestOptions != null)
             {
-                ItemRequestOptions options = operation.RequestOptions;
+                BatchItemRequestOptions options = operation.RequestOptions;
                 if (options.IndexingDirective.HasValue)
                 {
                     string indexingDirectiveString = IndexingDirectiveStrings.FromIndexingDirective(options.IndexingDirective.Value);
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             T resource,
             string id = null,
-            ItemRequestOptions requestOptions = null)
+            BatchItemRequestOptions requestOptions = null)
             : base(operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos
             int operationIndex,
             T resource,
             string id = null,
-            ItemRequestOptions requestOptions = null)
+            BatchItemRequestOptions requestOptions = null)
             : base(operationType, operationIndex, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;

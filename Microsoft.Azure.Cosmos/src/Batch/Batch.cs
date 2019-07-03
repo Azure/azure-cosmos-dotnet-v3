@@ -37,16 +37,16 @@ namespace Microsoft.Azure.Cosmos
         /// Adds an operation to create an item into the batch.
         /// </summary>
         /// <param name="item">A JSON serializable object that must contain an id property.<see cref="CosmosSerializer"/> to implement a custom serializer.</param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
         /// <typeparam name="T">The type of item to be created.</typeparam>
-        public virtual Batch CreateItem<T>(T item, ItemRequestOptions itemRequestOptions = null)
+        public virtual Batch CreateItem<T>(T item, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation<T>(
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resource: item,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }
@@ -58,15 +58,15 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Stream"/> containing the payload of the item.
         /// The stream must have a UTF-8 encoded JSON object which contains an id property.
         /// </param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
-        public virtual Batch CreateItemStream(Stream resourceStream, ItemRequestOptions itemRequestOptions = null)
+        public virtual Batch CreateItemStream(Stream resourceStream, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                     operationType: OperationType.Create,
                     operationIndex: this.operations.Count,
                     resourceStream: resourceStream,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }
@@ -75,15 +75,15 @@ namespace Microsoft.Azure.Cosmos
         /// Adds an operation to read an item into the batch.
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
-        public virtual Batch ReadItem(string id, ItemRequestOptions itemRequestOptions = null)
+        public virtual Batch ReadItem(string id, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                     operationType: OperationType.Read,
                     operationIndex: this.operations.Count,
                     id: id,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }
@@ -92,16 +92,16 @@ namespace Microsoft.Azure.Cosmos
         /// Adds an operation to upsert an item into the batch.
         /// </summary>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
         /// <typeparam name="T">The type of item to be created.</typeparam>
-        public virtual Batch UpsertItem<T>(T item, ItemRequestOptions itemRequestOptions = null)
+        public virtual Batch UpsertItem<T>(T item, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation<T>(
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resource: item,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }
@@ -113,15 +113,15 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Stream"/> containing the payload of the item.
         /// The stream must have a UTF-8 encoded JSON object which contains an id property.
         /// </param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
-        public virtual Batch UpsertItemStream(Stream resourceStream, ItemRequestOptions itemRequestOptions = null)
+        public virtual Batch UpsertItemStream(Stream resourceStream, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                     operationType: OperationType.Upsert,
                     operationIndex: this.operations.Count,
                     resourceStream: resourceStream,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }
@@ -131,17 +131,17 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
         /// <typeparam name="T">The type of item to be created.</typeparam>
-        public virtual Batch ReplaceItem<T>(string id, T item, ItemRequestOptions itemRequestOptions = null)
+        public virtual Batch ReplaceItem<T>(string id, T item, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation<T>(
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
                     id: id,
                     resource: item,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }
@@ -154,16 +154,16 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Stream"/> containing the payload of the item.
         /// The stream must have a UTF-8 encoded JSON object which contains an id property.
         /// </param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
-        public virtual Batch ReplaceItemStream(string id, Stream resourceStream, ItemRequestOptions itemRequestOptions = null)
+        public virtual Batch ReplaceItemStream(string id, Stream resourceStream, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                     operationType: OperationType.Replace,
                     operationIndex: this.operations.Count,
                     id: id,
                     resourceStream: resourceStream,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }
@@ -172,15 +172,15 @@ namespace Microsoft.Azure.Cosmos
         /// Adds an operation to delete an item into the batch.
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
-        public virtual Batch DeleteItem(string id, ItemRequestOptions itemRequestOptions = null)
+        public virtual Batch DeleteItem(string id, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                     operationType: OperationType.Delete,
                     operationIndex: this.operations.Count,
                     id: id,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }
@@ -200,16 +200,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
         /// <param name="patchStream">A <see cref="Stream"/> containing the patch specification.</param>
-        /// <param name="itemRequestOptions">(Optional) The options for the item request. <see cref="ItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
-        internal virtual Batch PatchItemStream(string id, Stream patchStream, ItemRequestOptions itemRequestOptions = null)
+        internal virtual Batch PatchItemStream(string id, Stream patchStream, BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                     operationType: OperationType.Patch,
                     operationIndex: this.operations.Count,
                     id: id,
                     resourceStream: patchStream,
-                    requestOptions: itemRequestOptions));
+                    requestOptions: requestOptions));
 
             return this;
         }

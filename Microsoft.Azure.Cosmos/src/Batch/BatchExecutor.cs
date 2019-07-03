@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                       new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
                       this.maxServerRequestBodyLength,
                       this.maxServerRequestOperationCount,
-                      serializer: this.clientContext.ClientOptions.CosmosSerializerWithWrapperOrDefault,
+                      serializer: this.clientContext.CosmosSerializer,
                       cancellationToken: cancellationToken);
             }
             catch (RequestEntityTooLargeException ex)
@@ -120,14 +120,14 @@ namespace Microsoft.Azure.Cosmos
                     return await BatchResponse.FromResponseMessageAsync(
                         cosmosResponseMessage,
                         serverRequest,
-                        this.clientContext.ClientOptions.CosmosSerializerWithWrapperOrDefault);
+                        this.clientContext.CosmosSerializer);
                 }
             }
             catch (CosmosException ex)
             {
                 return new BatchResponse(
-                    HttpStatusCode.ServiceUnavailable,
-                    SubStatusCodes.Unknown,
+                    ex.StatusCode,
+                    (SubStatusCodes)ex.SubStatusCode,
                     ex.Message, 
                     serverRequest.Operations);
             }

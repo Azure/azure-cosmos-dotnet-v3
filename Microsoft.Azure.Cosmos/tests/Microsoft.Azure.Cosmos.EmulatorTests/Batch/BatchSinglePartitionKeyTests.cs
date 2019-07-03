@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     this.TestDocPk1ExistingA.Id,
                     BatchTestBase.GetPartitionKey(this.PartitionKey1));
 
-                ItemRequestOptions firstReplaceOptions = new ItemRequestOptions()
+                BatchItemRequestOptions firstReplaceOptions = new BatchItemRequestOptions()
                 {
                     IfMatchEtag = readResponse.ETag
                 };
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingB);
                 testDocToReplace.Cost++;
 
-                ItemRequestOptions replaceOptions = new ItemRequestOptions()
+                BatchItemRequestOptions replaceOptions = new BatchItemRequestOptions()
                 {
                     IfMatchEtag = BatchTestBase.Random.Next().ToString()
                 };
@@ -196,17 +196,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                    .CreateItemStream(
                         BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(testDocToCreate, isSchematized, ttlInSeconds: ttlInSeconds))
+                        BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized, ttlInSeconds: ttlInSeconds))
                    .CreateItemStream(
                         BatchTestBase.TestDocToStream(anotherTestDocToCreate, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(anotherTestDocToCreate, isSchematized))
+                        BatchTestBase.GetBatchItemRequestOptions(anotherTestDocToCreate, isSchematized))
                    .ReplaceItemStream(
                         BatchTestBase.GetId(testDocToReplace, isSchematized),
                         BatchTestBase.TestDocToStream(testDocToReplace, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(testDocToReplace, isSchematized, ttlInSeconds: ttlInSeconds))
+                        BatchTestBase.GetBatchItemRequestOptions(testDocToReplace, isSchematized, ttlInSeconds: ttlInSeconds))
                    .UpsertItemStream(
                         BatchTestBase.TestDocToStream(testDocToUpsert, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(testDocToUpsert, isSchematized, ttlInSeconds: infiniteTtl))
+                        BatchTestBase.GetBatchItemRequestOptions(testDocToUpsert, isSchematized, ttlInSeconds: infiniteTtl))
                    .ExecuteAsync(BatchTestBase.GetUpdatedBatchRequestOptions(isSchematized: true));
 
                 BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 4);
@@ -396,23 +396,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1, useEpk))
                     .CreateItemStream(
                         BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(testDocToCreate, isSchematized))
+                        BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized))
                     .ReadItem(
                         BatchTestBase.GetId(this.TestDocPk1ExistingC, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(this.TestDocPk1ExistingC, isSchematized))
+                        BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingC, isSchematized))
                     .ReplaceItemStream(
                         BatchTestBase.GetId(testDocToReplace, isSchematized),
                         BatchTestBase.TestDocToStream(testDocToReplace, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(testDocToReplace, isSchematized))
+                        BatchTestBase.GetBatchItemRequestOptions(testDocToReplace, isSchematized))
                     .UpsertItemStream(
                         BatchTestBase.TestDocToStream(testDocToUpsert, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(testDocToUpsert, isSchematized))
+                        BatchTestBase.GetBatchItemRequestOptions(testDocToUpsert, isSchematized))
                     .UpsertItemStream(
                         BatchTestBase.TestDocToStream(anotherTestDocToUpsert, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(anotherTestDocToUpsert, isSchematized))
+                        BatchTestBase.GetBatchItemRequestOptions(anotherTestDocToUpsert, isSchematized))
                     .DeleteItem(
                         BatchTestBase.GetId(this.TestDocPk1ExistingD, isSchematized),
-                        BatchTestBase.GetItemRequestOptions(this.TestDocPk1ExistingD, isSchematized))
+                        BatchTestBase.GetBatchItemRequestOptions(this.TestDocPk1ExistingD, isSchematized))
                     .ExecuteAsync(batchOptions);
             }
 
@@ -576,7 +576,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             TestDoc staleTestDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingA);
             staleTestDocToReplace.Cost++;
-            ItemRequestOptions staleReplaceOptions = new ItemRequestOptions()
+            BatchItemRequestOptions staleReplaceOptions = new BatchItemRequestOptions()
             {
                 IfMatchEtag = Guid.NewGuid().ToString()
             };

@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     id: "id2",
                     operationType: OperationType.Replace,
                     operationIndex: 1,
-                    requestOptions: new ItemRequestOptions()
+                    requestOptions: new BatchItemRequestOptions()
                     {
                         IfMatchEtag = "theCondition"
                     })
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     && x.ResourceBody.Span.SequenceEqual(y.ResourceBody.Span);
             }
 
-            private bool Equals(ItemRequestOptions x, ItemRequestOptions y)
+            private bool Equals(BatchItemRequestOptions x, BatchItemRequestOptions y)
             {
                 if (x == null && y == null)
                 {
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 int hashCode = 1660235553;
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(obj.Id);
                 hashCode = (hashCode * -1521134295) + obj.OperationType.GetHashCode();
-                hashCode = (hashCode * -1521134295) + EqualityComparer<ItemRequestOptions>.Default.GetHashCode(obj.RequestOptions);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<BatchItemRequestOptions>.Default.GetHashCode(obj.RequestOptions);
                 hashCode = (hashCode * -1521134295) + obj.OperationIndex.GetHashCode();
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Memory<byte>>.Default.GetHashCode(obj.ResourceBody);
                 return hashCode;

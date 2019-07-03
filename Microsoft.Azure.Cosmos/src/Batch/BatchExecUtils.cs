@@ -116,34 +116,24 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (ItemBatchOperation operation in operations)
                 {
-                    if (operation.RequestOptions != null)
+                    if (operation.RequestOptions != null
+                        && operation.RequestOptions.Properties != null
+                        && (operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
+                            | operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
                     {
-                        if (operation.RequestOptions.ConsistencyLevel.HasValue
-                            || operation.RequestOptions.PreTriggers != null
-                            || operation.RequestOptions.PostTriggers != null
-                            || operation.RequestOptions.SessionToken != null)
+                        byte[] epk = epkObj as byte[];
+                        string epkStr = epkStrObj as string;
+                        if (epk == null || epkStr == null)
                         {
-                            errorMessage = ClientResources.BatchItemRequestOptionNotSupported;
+                            errorMessage = string.Format(
+                                ClientResources.EpkPropertiesPairingExpected,
+                                WFConstants.BackendHeaders.EffectivePartitionKey,
+                                WFConstants.BackendHeaders.EffectivePartitionKeyString);
                         }
 
-                        if (operation.RequestOptions.Properties != null
-                            && (operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
-                            | operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
+                        if (operation.PartitionKey != null)
                         {
-                            byte[] epk = epkObj as byte[];
-                            string epkStr = epkStrObj as string;
-                            if (epk == null || epkStr == null)
-                            {
-                                errorMessage = string.Format(
-                                    ClientResources.EpkPropertiesPairingExpected,
-                                    WFConstants.BackendHeaders.EffectivePartitionKey,
-                                    WFConstants.BackendHeaders.EffectivePartitionKeyString);
-                            }
-
-                            if (operation.PartitionKey != null)
-                            {
-                                errorMessage = ClientResources.PKAndEpkSetTogether;
-                            }
+                            errorMessage = ClientResources.PKAndEpkSetTogether;
                         }
                     }
                 }
