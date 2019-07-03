@@ -27,8 +27,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             //!HACK START
             if (memberInfo is PropertyInfo propertyInfo)
             {
-                var name = (string)memberInfo.DeclaringType?
-                    .GetMethod("GetJsonName", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy)?
+                var name = (string)memberInfo.DeclaringType?.GetMethod("GetJsonName",
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                        BindingFlags.FlattenHierarchy, null, new[] {typeof(PropertyInfo)}, null)?
                     .Invoke(null, new object[] {propertyInfo});
                 if (name != null)
                     return name;
