@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             Uri link = new Uri($"/dbs/{dbName}/colls/{containerName}" , UriKind.Relative);
             Mock<ContainerCore> mockContainer = new Mock<ContainerCore>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
+            mockContainer.Setup(x => x.GetRIDAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(containerName));
             return mockContainer;
         }
 
