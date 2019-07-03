@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             maxServerRequestOperationCount = Constants.MaxOperationsInDirectModeBatchRequest;
         }
 
-        public static CosmosResponseMessage Validate(
+        public static ResponseMessage Validate(
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,
             int? maxOperationCount = null)
@@ -141,10 +141,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (errorMessage != null)
             {
-                return new CosmosResponseMessage(HttpStatusCode.BadRequest, errorMessage: errorMessage);
+                return new ResponseMessage(HttpStatusCode.BadRequest, errorMessage: errorMessage);
             }
 
-            return new CosmosResponseMessage(HttpStatusCode.OK);
+            return new ResponseMessage(HttpStatusCode.OK);
         }
     }
 }

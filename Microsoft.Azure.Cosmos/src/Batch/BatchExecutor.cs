@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<BatchResponse> ExecuteAsync(CancellationToken cancellationToken)
         {
-            CosmosResponseMessage validationResult = BatchExecUtils.Validate(
+            ResponseMessage validationResult = BatchExecUtils.Validate(
                 this.inputOperations,
                 this.batchOptions,
                 this.maxServerRequestOperationCount);
@@ -66,8 +66,14 @@ namespace Microsoft.Azure.Cosmos
             SinglePartitionKeyServerBatchRequest serverRequest;
             try
             {
+                PartitionKey? serverRequestPartitionKey = this.partitionKey;
+                if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
+                {
+                    serverRequestPartitionKey = null;
+                }
+
                 serverRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                      this.partitionKey,
+                      serverRequestPartitionKey,
                       new ArraySegment<ItemBatchOperation>(this.inputOperations.ToArray()),
                       this.maxServerRequestBodyLength,
                       this.maxServerRequestOperationCount,
@@ -101,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
                 using (Stream serverRequestPayload = serverRequest.TransferBodyStream())
                 {
                     Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
-                    CosmosResponseMessage cosmosResponseMessage = await clientContext.ProcessResourceOperationStreamAsync(
+                    ResponseMessage responseMessage = await clientContext.ProcessResourceOperationStreamAsync(
                         this.container.LinkUri,
                         ResourceType.Document,
                         OperationType.Batch,
@@ -118,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
                         cancellationToken);
 
                     return await BatchResponse.FromResponseMessageAsync(
-                        cosmosResponseMessage,
+                        responseMessage,
                         serverRequest,
                         this.clientContext.CosmosSerializer);
                 }

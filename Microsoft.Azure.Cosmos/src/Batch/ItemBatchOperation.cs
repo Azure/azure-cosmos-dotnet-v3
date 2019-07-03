@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         public ItemBatchOperation(
             OperationType operationType,
             int operationIndex,
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             string id = null,
             Stream resourceStream = null,
             BatchItemRequestOptions requestOptions = null)
@@ -36,8 +36,6 @@ namespace Microsoft.Azure.Cosmos
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
             this.PartitionKey = partitionKey;
-            this.ParsedPartitionKey = new Documents.PartitionKey(partitionKey.Value);
-            this.PartitionKeyJson = this.ParsedPartitionKey.ToString();
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
@@ -57,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestOptions = requestOptions;
         }
 
-        public PartitionKey PartitionKey { get; }
+        public PartitionKey? PartitionKey { get; }
 
         public string Id { get; }
 
@@ -69,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
         public int OperationIndex { get; }
 
-        internal string PartitionKeyJson { get; }
+        internal string PartitionKeyJson { get; set; }
 
         internal Documents.PartitionKey ParsedPartitionKey { get; set; }
 

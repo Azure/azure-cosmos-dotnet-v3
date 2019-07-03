@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
         /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
         private SinglePartitionKeyServerBatchRequest(
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             int maxBodyLength,
             int maxOperationCount,
             CosmosSerializer serializer)
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         ///  PartitionKey that applies to all operations in this request.
         /// </summary>
-        public PartitionKey PartitionKey { get; }
+        public PartitionKey? PartitionKey { get; }
 
         /// <summary>
         /// Creates an instance of <see cref="SinglePartitionKeyServerBatchRequest"/>.
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A newly created instance of <see cref="SinglePartitionKeyServerBatchRequest"/>.</returns>
         public static async Task<SinglePartitionKeyServerBatchRequest> CreateAsync(
-            PartitionKey partitionKey,
+            PartitionKey? partitionKey,
             ArraySegment<ItemBatchOperation> operations,
             int maxBodyLength,
             int maxOperationCount,

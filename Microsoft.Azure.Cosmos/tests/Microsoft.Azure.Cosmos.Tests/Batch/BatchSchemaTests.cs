@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosSerializer serializer = new CosmosJsonSerializerCore();
             SinglePartitionKeyServerBatchRequest batchResponse = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                partitionKey: null,
+                partitionKey: Cosmos.PartitionKey.None,
                 operations: new ArraySegment<ItemBatchOperation>(
                     new ItemBatchOperation[]
                     {
@@ -162,12 +162,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: serializer,
                 cancellationToken: CancellationToken.None);
             BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
-                new CosmosResponseMessage(HttpStatusCode.OK) { Content = responseContent },
+                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchResponse,
                 serializer);
 
             Assert.IsNotNull(batchresponse);
-            Assert.IsTrue(batchresponse.IsSuccessStatusCode, "batchresponse.IsSuccessStatusCode" + batchresponse.StatusCode);
+            Assert.IsTrue(batchresponse.IsSuccessStatusCode);
             Assert.AreEqual(3, batchresponse.Count);
 
             CosmosBatchOperationResultEqualityComparer comparer = new CosmosBatchOperationResultEqualityComparer();
@@ -195,8 +195,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 else if (x != null && y != null)
                 {
-                    CosmosRequestMessage xMessage = new CosmosRequestMessage();
-                    CosmosRequestMessage yMessage = new CosmosRequestMessage();
+                    RequestMessage xMessage = new RequestMessage();
+                    RequestMessage yMessage = new RequestMessage();
                     x.PopulateRequestOptions(xMessage);
                     y.PopulateRequestOptions(yMessage);
 

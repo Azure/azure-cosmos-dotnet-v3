@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static async Task<BatchResponse> FromResponseMessageAsync(
-            CosmosResponseMessage responseMessage, 
+            ResponseMessage responseMessage, 
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static async Task<BatchResponse> PopulateFromContentAsync(
-            CosmosResponseMessage responseMessage,
+            ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {

@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     BatchUnitTests.VerifyBatchItemRequestOptionsAreEqual(hasItemRequestOptions ? upsertRequestOptions : null, operation.RequestOptions);
                 }
 
-                return Task.FromResult(new CosmosResponseMessage(HttpStatusCode.OK));
+                return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });
 
             Container container = BatchUnitTests.GetCosmosContainer(testHandler);
@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler(async (request, cancellationToken) =>
             {
-                CosmosResponseMessage responseMessage = new CosmosResponseMessage(HttpStatusCode.OK, requestMessage: null, errorMessage: null)
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK, requestMessage: null, errorMessage: null)
                 {
                     Content = await new BatchResponsePayloadWriter(expectedResults).GeneratePayloadAsync()
                 };
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(OperationType.Batch.IsWriteOperation());
         }
 
-        private static async Task<CosmosResponseMessage> GetBatchResponseMessageAsync(List<ItemBatchOperation> operations, int rateLimitedOperationCount = 0)
+        private static async Task<ResponseMessage> GetBatchResponseMessageAsync(List<ItemBatchOperation> operations, int rateLimitedOperationCount = 0)
         {
             BatchOperationResult okOperationResult = new BatchOperationResult(HttpStatusCode.OK);
             BatchOperationResult rateLimitedOperationResult = new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             HttpStatusCode batchStatus = rateLimitedOperationCount > 0 ? (HttpStatusCode)StatusCodes.MultiStatus : HttpStatusCode.OK;
 
-            return new CosmosResponseMessage(batchStatus, requestMessage: null, errorMessage: null)
+            return new ResponseMessage(batchStatus, requestMessage: null, errorMessage: null)
             {
                 Content = await new BatchResponsePayloadWriter(resultsFromServer).GeneratePayloadAsync()
             };
@@ -422,8 +422,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static Container GetCosmosContainer(TestHandler testHandler = null)
         {
-            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(testHandler));
-            CosmosDatabaseCore database = new CosmosDatabaseCore(client.ClientContext, BatchUnitTests.DatabaseId);
+            CosmosClient client;
+            if (testHandler != null)
+            {
+                client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(testHandler));
+            }
+            else
+            {
+                client = MockCosmosUtil.CreateMockCosmosClient();
+            }
+
+            DatabaseCore database = new DatabaseCore(client.ClientContext, BatchUnitTests.DatabaseId);
             ContainerCore container = new ContainerCore(client.ClientContext, database, BatchUnitTests.ContainerId);
             return container;
         }
@@ -451,26 +460,26 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private class BatchTestHandler : TestHandler
         {
-            private readonly Func<CosmosRequestMessage, List<ItemBatchOperation>, Task<CosmosResponseMessage>> func;
+            private readonly Func<RequestMessage, List<ItemBatchOperation>, Task<ResponseMessage>> func;
 
-            public BatchTestHandler(Func<CosmosRequestMessage, List<ItemBatchOperation>, Task<CosmosResponseMessage>> func)
+            public BatchTestHandler(Func<RequestMessage, List<ItemBatchOperation>, Task<ResponseMessage>> func)
             {
                 this.func = func;
             }
 
-            public List<Tuple<CosmosRequestMessage, List<ItemBatchOperation>>> Received { get; } = new List<Tuple<CosmosRequestMessage, List<ItemBatchOperation>>>();
+            public List<Tuple<RequestMessage, List<ItemBatchOperation>>> Received { get; } = new List<Tuple<RequestMessage, List<ItemBatchOperation>>>();
 
-            public override async Task<CosmosResponseMessage> SendAsync(
-                CosmosRequestMessage request, CancellationToken cancellationToken)
+            public override async Task<ResponseMessage> SendAsync(
+                RequestMessage request, CancellationToken cancellationToken)
             {
                 BatchTestHandler.VerifyServerRequestProperties(request);
                 List<ItemBatchOperation> operations = await new BatchRequestPayloadReader().ReadPayloadAsync(request.Content);
 
-                this.Received.Add(new Tuple<CosmosRequestMessage, List<ItemBatchOperation>>(request, operations));
+                this.Received.Add(new Tuple<RequestMessage, List<ItemBatchOperation>>(request, operations));
                 return await this.func(request, operations);
             }
 
-            private static void VerifyServerRequestProperties(CosmosRequestMessage request)
+            private static void VerifyServerRequestProperties(RequestMessage request)
             {
                 Assert.AreEqual(OperationType.Batch, request.OperationType);
                 Assert.AreEqual(ResourceType.Document, request.ResourceType);

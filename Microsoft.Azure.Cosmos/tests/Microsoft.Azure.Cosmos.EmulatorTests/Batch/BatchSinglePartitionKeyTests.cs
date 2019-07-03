@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                    .CreateItem(testDocToCreate)
-                   .ReplaceItem(testDocToReplace.Id, testDocToReplace, itemRequestOptions: firstReplaceOptions)
+                   .ReplaceItem(testDocToReplace.Id, testDocToReplace, requestOptions: firstReplaceOptions)
                    .ExecuteAsync();
 
                 BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 2);
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
 
                 BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
-                   .ReplaceItem(testDocToReplace.Id, testDocToReplace, itemRequestOptions: replaceOptions)
+                   .ReplaceItem(testDocToReplace.Id, testDocToReplace, requestOptions: replaceOptions)
                    .ExecuteAsync();
 
                 BatchSinglePartitionKeyTests.VerifyBatchProcessed(
@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1, useEpk))
+                batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .CreateItemStream(
                         BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
                         BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized))
