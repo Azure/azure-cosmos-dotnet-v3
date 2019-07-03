@@ -213,15 +213,15 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             return base.InitializeAsync(
-                collectionRid,
-                filteredPartitionKeyRanges,
-                initialPageSize,
-                this.QuerySpec,
-                (targetIndicesForFullContinuation != null) ? targetIndicesForFullContinuation.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token) : null,
-                true,
-                null,
-                null,
-                token);
+                collectionRid: collectionRid,
+                partitionKeyRanges: filteredPartitionKeyRanges,
+                initialPageSize: initialPageSize,
+                querySpecForInit: this.QuerySpec,
+                targetRangeToContinuationMap: (targetIndicesForFullContinuation != null) ? targetIndicesForFullContinuation.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Token) : null,
+                deferFirstPage: true,
+                filter: null,
+                filterCallback: null,
+                token: token);
         }
 
         /// <summary>

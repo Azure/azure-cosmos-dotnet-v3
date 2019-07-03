@@ -160,7 +160,6 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public delegate void ProduceAsyncCompleteDelegate(
-            ItemProducer producer,
             int numberOfDocuments,
             double requestCharge,
             QueryMetrics queryMetrics,
@@ -358,7 +357,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 this.produceAsyncCompleteCallback(
-                    this,
                     feedResponse.Count,
                     feedResponse.Headers.RequestCharge,
                     queryMetrics,

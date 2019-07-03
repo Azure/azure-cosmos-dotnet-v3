@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public virtual ResourceType ResourceTypeEnum { get; }
         public virtual OperationType OperationTypeEnum { get; }
         public virtual Type ResourceType { get; }
-        public SqlQuerySpec SqlQuerySpec { get; internal set; }
+        public virtual SqlQuerySpec SqlQuerySpec { get; internal set; }
         public virtual QueryRequestOptions QueryRequestOptions { get; }
         public virtual bool IsContinuationExpected { get; }
         public virtual bool AllowNonValueAggregateQuery { get; }
@@ -91,12 +91,12 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
 
             return await this.QueryClient.ExecuteItemQueryAsync(
-                           this.ResourceLink,
-                           this.ResourceTypeEnum,
-                           this.OperationTypeEnum,
-                           this.ContainerResourceId,
-                           requestOptions,
-                           querySpecForInit,
+                           resourceUri: this.ResourceLink,
+                           resourceType: this.ResourceTypeEnum,
+                           operationType: this.OperationTypeEnum,
+                           containerResourceId: this.ContainerResourceId,
+                           requestOptions: requestOptions,
+                           sqlQuerySpec: querySpecForInit,
                            requestEnricher: (cosmosRequestMessage) =>
                            {
                                this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                                cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                            },
-                           cancellationToken);
+                           cancellationToken: cancellationToken);
         }
 
         private void PopulatePartitionKeyRangeInfo(

@@ -561,7 +561,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
-                throw new CosmosException(HttpStatusCode.BadRequest, $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
+                throw new CosmosException(
+                    statusCode: HttpStatusCode.BadRequest,
+                    message: $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
             }
 
             foreach (Tuple<TContinuationToken, Range<string>> suppledContinuationToken in suppliedContinuationTokens)
@@ -579,7 +581,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Could not find the child ranges
                 if (replacementRanges.Count() == 0)
                 {
-                    throw new CosmosException(HttpStatusCode.BadRequest, $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
+                    throw new CosmosException(
+                    statusCode: HttpStatusCode.BadRequest,
+                    message: $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
                 }
 
                 // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
@@ -596,7 +600,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    throw new CosmosException(HttpStatusCode.BadRequest, $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
+                    throw new CosmosException(
+                    statusCode: HttpStatusCode.BadRequest,
+                    message: $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
                 }
 
                 foreach (PartitionKeyRange partitionKeyRange in replacementRanges)

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -21,12 +22,20 @@ namespace Microsoft.Azure.Cosmos.Tests
     internal static class QueryResponseMessageFactory
     {
         private static readonly CosmosSerializer cosmosSerializer = new CosmosJsonSerializerCore();
+        public const int SPLIT = -1;
 
         public static (QueryResponse queryResponse, ReadOnlyCollection<ToDoItem> items) Create(
             string itemIdPrefix,
             string continuationToken,
+            string collectionRid,
             int itemCount = 50)
         {
+            // Use -1 to represent a split response
+            if (itemCount == QueryResponseMessageFactory.SPLIT)
+            {
+                return CreateSplitResponse(collectionRid);
+            }
+
             ReadOnlyCollection<ToDoItem> items = ToDoItem.CreateItems(itemCount, itemIdPrefix);
             MemoryStream memoryStream = (MemoryStream)cosmosSerializer.ToStream<IList<ToDoItem>>(items);
             long responseLengthBytes = memoryStream.Length;
@@ -42,10 +51,26 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryResponse message = QueryResponse.CreateSuccess(
                     result: cosmosArray,
                     count: itemCount,
-                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(headers, ResourceType.Document, "CollectionRid"),
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(headers, ResourceType.Document, collectionRid),
                     responseLengthBytes: responseLengthBytes);
 
             return (message, items);
+        }
+
+        public static (QueryResponse queryResponse, ReadOnlyCollection<ToDoItem> items) CreateSplitResponse(string collectionRid)
+        {
+            QueryResponse splitResponse = QueryResponse.CreateFailure(
+               new CosmosQueryResponseMessageHeaders(null, null, ResourceType.Document, collectionRid)
+               {
+                   SubStatusCode = SubStatusCodes.PartitionKeyRangeGone,
+                   ActivityId = Guid.NewGuid().ToString()
+               },
+               HttpStatusCode.Gone,
+               null,
+               "Partition split error",
+               null);
+
+            return (splitResponse, new List<ToDoItem>().AsReadOnly());
         }
     }
 }

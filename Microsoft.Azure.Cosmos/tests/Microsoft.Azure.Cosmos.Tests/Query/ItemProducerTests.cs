@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (int[] combination in combinations)
             {
                 (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(
-                    responseMessagePageSizes: combination,
+                    responseMessagesPageSize: combination,
                     maxPageSize: maxPageSize,
                     cancellationToken: this.cancellationToken);
 
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task BufferMore(int maxPageSize, int[] pageSizes)
         {
             (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(
-                responseMessagePageSizes: pageSizes,
+                responseMessagesPageSize: pageSizes,
                 maxPageSize: maxPageSize,
                 cancellationToken: this.cancellationToken);
 
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Parallel
             itemFactory = MockItemProducerFactory.Create(
-               responseMessagePageSizes: pageSizes,
+               responseMessagesPageSize: pageSizes,
                maxPageSize: 10,
                cancellationToken: this.cancellationToken);
             itemProducer = itemFactory.itemProducer;
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             int[] pageSizes = new int[] { 2, 3, 1, 4 };
             (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(
-               responseMessagePageSizes: pageSizes,
+               responseMessagesPageSize: pageSizes,
                maxPageSize: 10,
                responseDelay: TimeSpan.FromSeconds(1),
                cancellationToken: this.cancellationToken);

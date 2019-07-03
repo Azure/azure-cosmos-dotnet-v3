@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// The comparer used to determine which document to serve next.
         /// </summary>
-        private static readonly IComparer<ItemProducerTree> MoveNextComparer = new ParllelItemProducerTreeComparer();
+        private static readonly IComparer<ItemProducerTree> MoveNextComparer = new ParallelItemProducerTreeComparer();
 
         /// <summary>
         /// The function to determine which partition to fetch from first.
@@ -195,18 +195,24 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         if (suppliedCompositeContinuationToken.Range == null || suppliedCompositeContinuationToken.Range.IsEmpty)
                         {
-                            throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid Range in the continuation token {requestContinuation} for Parallel~Context.");
+                            throw new CosmosException(
+                                statusCode: HttpStatusCode.BadRequest,
+                                message: $"Invalid Range in the continuation token {requestContinuation} for Parallel~Context.");
                         }
                     }
 
                     if (suppliedCompositeContinuationTokens.Length == 0)
                     {
-                        throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid format for continuation token {requestContinuation} for Parallel~Context.");
+                        throw new CosmosException(
+                            statusCode: HttpStatusCode.BadRequest,
+                            message: $"Invalid format for continuation token {requestContinuation} for Parallel~Context.");
                     }
                 }
                 catch (JsonException ex)
                 {
-                    throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid JSON in continuation token {requestContinuation} for Parallel~Context, exception: {ex.Message}");
+                    throw new CosmosException(
+                        statusCode: HttpStatusCode.BadRequest,
+                        message: $"Invalid JSON in continuation token {requestContinuation} for Parallel~Context, exception: {ex.Message}");
                 }
 
                 filteredPartitionKeyRanges = this.GetPartitionKeyRangesForContinuation(suppliedCompositeContinuationTokens, partitionKeyRanges, out targetIndicesForFullContinuation);
@@ -249,50 +255,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKeyRanges,
                 minIndex,
                 partitionKeyRanges.Count - minIndex);
-        }
-
-        /// <summary>
-        /// For parallel queries we drain from left partition to right,
-        /// then by rid order within those partitions.
-        /// </summary>
-        private sealed class ParllelItemProducerTreeComparer : IComparer<ItemProducerTree>
-        {
-            /// <summary>
-            /// Compares two document producer trees in a parallel context and returns their comparison.
-            /// </summary>
-            /// <param name="documentProducerTree1">The first document producer tree.</param>
-            /// <param name="documentProducerTree2">The second document producer tree.</param>
-            /// <returns>
-            /// A negative number if the first comes before the second.
-            /// Zero if the two document producer trees are interchangeable.
-            /// A positive number if the second comes before the first.
-            /// </returns>
-            public int Compare(
-                ItemProducerTree documentProducerTree1,
-                ItemProducerTree documentProducerTree2)
-            {
-                if (object.ReferenceEquals(documentProducerTree1, documentProducerTree2))
-                {
-                    return 0;
-                }
-
-                if (documentProducerTree1.HasMoreResults && !documentProducerTree2.HasMoreResults)
-                {
-                    return -1;
-                }
-
-                if (!documentProducerTree1.HasMoreResults && documentProducerTree2.HasMoreResults)
-                {
-                    return 1;
-                }
-
-                // Either both don't have results or both do.
-                PartitionKeyRange partitionKeyRange1 = documentProducerTree1.PartitionKeyRange;
-                PartitionKeyRange partitionKeyRange2 = documentProducerTree2.PartitionKeyRange;
-                return string.CompareOrdinal(
-                    partitionKeyRange1.MinInclusive,
-                    partitionKeyRange2.MinInclusive);
-            }
         }
 
         /// <summary>

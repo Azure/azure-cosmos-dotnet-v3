@@ -376,14 +376,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (suppliedOrderByContinuationTokens.Length == 0)
                 {
-                    throw new CosmosException(HttpStatusCode.BadRequest, $"Order by continuation token can not be empty: {requestContinuation}.");
+                    throw new CosmosException(
+                        statusCode: HttpStatusCode.BadRequest,
+                        message: $"Order by continuation token can not be empty: {requestContinuation}.");
                 }
 
                 foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
                 {
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
-                        throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
+                        throw new CosmosException(
+                            statusCode: HttpStatusCode.BadRequest,
+                            message: $"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
                     }
                 }
 
@@ -391,7 +395,9 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             catch (JsonException ex)
             {
-                throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
+                throw new CosmosException(
+                    statusCode: HttpStatusCode.BadRequest,
+                    message: $"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
             }
         }
 
@@ -420,7 +426,9 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
                 {
-                    throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
+                    throw new CosmosException(
+                        statusCode: HttpStatusCode.BadRequest,
+                        message: $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
                 }
 
                 Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
@@ -458,7 +466,9 @@ namespace Microsoft.Azure.Cosmos.Query
                         {
                             if (!ResourceId.TryParse(orderByResult.Rid, out rid))
                             {
-                                throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse.");
+                                throw new CosmosException(
+                                    statusCode: HttpStatusCode.BadRequest,
+                                    message: $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context~TryParse.");
                             }
 
                             resourceIds.Add(orderByResult.Rid, rid);
@@ -468,7 +478,9 @@ namespace Microsoft.Azure.Cosmos.Query
                         {
                             if (continuationRid.Database != rid.Database || continuationRid.DocumentCollection != rid.DocumentCollection)
                             {
-                                throw new CosmosException(HttpStatusCode.BadRequest, $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
+                                throw new CosmosException(
+                                    statusCode: HttpStatusCode.BadRequest,
+                                    message: $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
                             }
 
                             continuationRidVerified = true;
