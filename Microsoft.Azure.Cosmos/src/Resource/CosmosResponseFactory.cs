@@ -32,6 +32,9 @@ namespace Microsoft.Azure.Cosmos
         internal FeedResponse<T> CreateQueryFeedResponse<T>(
             ResponseMessage cosmosResponseMessage)
         {
+            //Throw the exception
+            cosmosResponseMessage.EnsureSuccessStatusCode();
+
             QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
             if (queryResponse != null)
             {
