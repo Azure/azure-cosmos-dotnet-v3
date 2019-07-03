@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 declaringType = methodCallExpression.Arguments[0].Type;
 
-                if (methodCallExpression.Method.DeclaringType.GeUnderlyingSystemType() == typeof(TypeCheckFunctionsExtensions))
+                if (methodCallExpression.Method.DeclaringType.GeUnderlyingSystemType() == typeof(CosmosLinqExtensions))
                 {
                     return TypeCheckFunctions.Visit(methodCallExpression, context);
                 }
