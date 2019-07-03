@@ -205,15 +205,6 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to One or more provided request options are not supported on items that are part of a batch request..
-        /// </summary>
-        internal static string BatchItemRequestOptionNotSupported {
-            get {
-                return ResourceManager.GetString("BatchItemRequestOptionNotSupported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to The batch request did not have any operations to be executed..
         /// </summary>
         internal static string BatchNoOperations {

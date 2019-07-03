@@ -165,9 +165,6 @@
   <data name="BadSession" xml:space="preserve">
     <value>Session object retrieved from client with endpoint {0} cannot be used on a client initialized to endpoint {1}.</value>
   </data>
-  <data name="BatchItemRequestOptionNotSupported" xml:space="preserve">
-    <value>One or more provided request options are not supported on items that are part of a batch request.</value>
-  </data>
   <data name="BatchNoOperations" xml:space="preserve">
     <value>The batch request did not have any operations to be executed.</value>
   </data>
