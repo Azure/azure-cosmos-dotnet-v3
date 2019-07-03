@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             ).ToCosmosResponseMessage(request);
                 }
 
-                serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
+                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id);
 
                 response = await base.SendAsync(request, cancellationToken);
 
