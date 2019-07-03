@@ -6073,11 +6073,9 @@
       "Attributes": [],
       "MethodInfo": "Boolean Equals(System.Object, System.Object)"
     },
-    "Boolean ReferenceEquals(System.Object, System.Object)[System.Runtime.Versioning.NonVersionableAttribute()]": {
+    "Boolean ReferenceEquals(System.Object, System.Object)": {
       "Type": "Method",
-      "Attributes": [
-        "NonVersionableAttribute"
-      ],
+      "Attributes": [],
       "MethodInfo": "Boolean ReferenceEquals(System.Object, System.Object)"
     },
     "Int32 GetHashCode()": {
@@ -6095,11 +6093,9 @@
       "Attributes": [],
       "MethodInfo": "System.Type GetType()"
     },
-    "Void .ctor()[System.Runtime.Versioning.NonVersionableAttribute()]": {
+    "Void .ctor()": {
       "Type": "Constructor",
-      "Attributes": [
-        "NonVersionableAttribute"
-      ],
+      "Attributes": [],
       "MethodInfo": "Void .ctor()"
     }
   },

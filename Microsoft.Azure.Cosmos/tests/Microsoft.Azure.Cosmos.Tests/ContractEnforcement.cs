@@ -65,7 +65,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static IEnumerable<CustomAttributeData> RemoveDebugSpecificAttributes(IEnumerable<CustomAttributeData> attributes)
         {
-            return attributes.Where(x => !x.AttributeType.Name.Contains("SuppressMessageAttribute"));
+            return attributes.Where(x =>
+                !x.AttributeType.Name.Contains("SuppressMessageAttribute") &&
+                !x.AttributeType.Name.Contains("DynamicallyInvokableAttribute") &&
+                !x.AttributeType.Name.Contains("NonVersionableAttribute") &&
+                !x.AttributeType.Name.Contains("ReliabilityContractAttribute")
+            );
         }
 
         private static TypeTree BuildTypeTree(TypeTree root, Type[] types)
