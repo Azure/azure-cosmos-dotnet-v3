@@ -115,54 +115,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken)
         {
-            bool isFirstExecute = false;
-            ResponseMessage response = null;
-            for (int i = 0; i < 2; i++)
-            {
-                // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
-                // execute context has incorrect values and should be recreated. This should only be done for the first 
-                // execution. If results have already been pulled an error should be returned to the user since it's 
-                // not possible to combine query results from multiple containers.
-                if (this.innerExecutionContext == null)
-                {
-                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
-                    isFirstExecute = true;
-                }
-
-                response = await this.ExecuteNextHelperAsync(cancellationToken);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    break;
-                }
-
-                if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.Headers.SubStatusCode == SubStatusCodes.NameCacheIsStale)
-                {
-                    await this.ForceRefreshCollectionCacheAsync(cancellationToken);
-                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
-                    isFirstExecute = false;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return response;
-        }
-
-        /// <summary>
-        /// This is a helper function to catch any remaining exceptions that should not be thrown.
-        /// TODO: Remove all throws that are not argument exceptions
-        /// </summary>
-        private async Task<ResponseMessage> ExecuteNextHelperAsync(CancellationToken cancellationToken)
-        {
-            // This catches exception thrown by the caches and converts it to QueryResponse
+            // This catches exception thrown by the pipeline and converts it to QueryResponse
             try
             {
-                QueryResponse queryResponse = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
-                queryResponse.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
-                return queryResponse;
+                return await this.ExecuteNextHelperAsync(cancellationToken);
             }
             catch (DocumentClientException exception)
             {
@@ -187,6 +143,49 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// This is a helper function to catch any remaining exceptions that should not be thrown.
+        /// TODO: Remove all throws that are not argument exceptions
+        /// </summary>
+        private async Task<ResponseMessage> ExecuteNextHelperAsync(CancellationToken cancellationToken)
+        {
+            bool isFirstExecute = false;
+            QueryResponse response = null;
+            for (int i = 0; i < 2; i++)
+            {
+                // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
+                // execute context has incorrect values and should be recreated. This should only be done for the first 
+                // execution. If results have already been pulled an error should be returned to the user since it's 
+                // not possible to combine query results from multiple containers.
+                if (this.innerExecutionContext == null)
+                {
+                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                    isFirstExecute = true;
+                }
+
+                response = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
+                response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    break;
+                }
+
+                if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.Headers.SubStatusCode == SubStatusCodes.NameCacheIsStale)
+                {
+                    await this.ForceRefreshCollectionCacheAsync(cancellationToken);
+                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                    isFirstExecute = false;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return response;
         }
 
         private async Task ForceRefreshCollectionCacheAsync(CancellationToken cancellationToken)
