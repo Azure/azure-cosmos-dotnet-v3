@@ -248,7 +248,7 @@
 
             QueryDefinition query = new QueryDefinition(
                 "select * from sales s where s.AccountNumber = @AccountInput ")
-                .UseParameter("@AccountInput", "Account1");
+                .WithParameter("@AccountInput", "Account1");
 
             FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
                 query,

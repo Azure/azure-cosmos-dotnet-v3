@@ -83,17 +83,17 @@
             await readResponse.Database.CreateContainerAsync("testContainer", "/pk");
 
             // Get the current throughput for the database
-            ThroughputResponse throughputResponse = await database.ReadThroughputAsync();
-            if (throughputResponse.Resource.Throughput.HasValue)
+            int? throughputResponse = await database.ReadThroughputAsync();
+            if (throughputResponse.HasValue)
             {
-                Console.WriteLine($"\n4. Read a database throughput: {throughputResponse.Resource.Throughput.HasValue}");
+                Console.WriteLine($"\n4. Read a database throughput: {throughputResponse}");
 
                 // Update the current throughput for the database
                 await database.ReplaceThroughputAsync(11000);
             }
 
             Console.WriteLine("\n5. Reading all databases resources for an account");
-            FeedIterator<DatabaseProperties> iterator = client.GetDatabaseIterator();
+            FeedIterator<DatabaseProperties> iterator = client.GetDatabaseQueryIterator<DatabaseProperties>();
             do
             {
                 foreach (DatabaseProperties db in await iterator.ReadNextAsync())
