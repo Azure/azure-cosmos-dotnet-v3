@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary>
     public static class TypeCheckFunctionsExtensions
     {
-        private static readonly string ErrorMessage = "Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.";
-        
         /// <summary>
         /// Determines if a certain property is defined or not.
         /// </summary>
@@ -29,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool IsDefined(this object obj)
         {
-            throw new NotImplementedException(ErrorMessage);
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
 
         /// <summary>
@@ -46,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>s>
         public static bool IsNull(this object obj)
         {
-            throw new NotImplementedException(ErrorMessage);
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
 
         /// <summary>
@@ -66,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>s>
         public static bool IsPrimitive(this object obj)
         {
-            throw new NotImplementedException(ErrorMessage);
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
     }
 }
