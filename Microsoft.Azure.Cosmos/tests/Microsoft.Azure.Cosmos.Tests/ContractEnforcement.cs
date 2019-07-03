@@ -70,7 +70,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 !x.AttributeType.Name.Contains("DynamicallyInvokableAttribute") &&
                 !x.AttributeType.Name.Contains("NonVersionableAttribute") &&
                 !x.AttributeType.Name.Contains("ReliabilityContractAttribute") &&
-                !x.AttributeType.Name.Contains("NonVersionableAttribute")
+                !x.AttributeType.Name.Contains("NonVersionableAttribute") &&
+                !x.AttributeType.Name.Contains("DebuggerStepThroughAttribute")
             );
         }
 
