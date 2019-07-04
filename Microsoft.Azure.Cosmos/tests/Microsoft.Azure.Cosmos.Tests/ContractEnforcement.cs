@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TypeTree baseline = JsonConvert.DeserializeObject<TypeTree>(File.ReadAllText(baselinePath));
 
             string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
-            File.WriteAllText($"{breakingChangesPath}", localJson);
+            File.WriteAllText($"{breakingChangesPath}", localJson, Encoding.UTF8);
             string baselineJson = JsonConvert.SerializeObject(baseline, Formatting.Indented);
 
             return new Tuple<string, string>(baselineJson, localJson);
