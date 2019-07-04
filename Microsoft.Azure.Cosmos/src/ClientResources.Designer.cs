@@ -432,7 +432,18 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("StringCompareToInvalidOperator", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to typeCheck extension functions not implemented.
+        /// </summary>
+        internal static string TypeCheckExtensionFunctionsNotImplemented
+        {
+            get
+            {
+                return ResourceManager.GetString("TypeCheckExtensionFunctionsNotImplemented", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to User-defined function name can not be null or empty..
         /// </summary>
