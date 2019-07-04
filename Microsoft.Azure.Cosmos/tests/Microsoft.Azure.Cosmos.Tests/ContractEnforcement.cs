@@ -1,5 +1,4 @@
-﻿using DiffMatchPatch;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -21,17 +20,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ContractChanges()
         {
-            Tuple<string, string> result = ContractEnforcement.CheckBreakingChanges("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath);
-            string baselineJson = result.Item1;
-            string localJson = result.Item2;
-
-            diff_match_patch dmp = new diff_match_patch();
-            dmp.Diff_Timeout = 0;
-            List<Diff> diffs = dmp.diff_main(localJson, baselineJson);
-
             Assert.IsTrue(
-                baselineJson == localJson,
-                $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff. Diff = {string.Join(string.Empty, diffs)}"
+                ContractEnforcement.CheckBreakingChanges("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
+                $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
             );
         }
 
@@ -126,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return root;
         }
 
-        private static Tuple<string, string> CheckBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
+        private static bool CheckBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
         {
             TypeTree locally = new TypeTree(typeof(object));
             ContractEnforcement.BuildTypeTree(locally, ContractEnforcement.GetAssemblyLocally(dllName).GetExportedTypes());
@@ -134,10 +125,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             TypeTree baseline = JsonConvert.DeserializeObject<TypeTree>(File.ReadAllText(baselinePath));
 
             string localJson = JsonConvert.SerializeObject(locally, Formatting.Indented);
-            File.WriteAllText($"{breakingChangesPath}", localJson, Encoding.UTF8);
+            File.WriteAllText($"{breakingChangesPath}", localJson);
             string baselineJson = JsonConvert.SerializeObject(baseline, Formatting.Indented);
 
-            return new Tuple<string, string>(baselineJson, localJson);
+            return baselineJson == localJson;
         }
     }
 }
