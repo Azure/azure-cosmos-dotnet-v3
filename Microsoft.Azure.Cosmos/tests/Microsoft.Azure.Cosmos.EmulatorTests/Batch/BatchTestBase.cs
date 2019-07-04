@@ -57,14 +57,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // Documents in PartitionKey1
         protected TestDoc TestDocPk1ExistingA { get; set; }
-
-        // Documents in PartitionKey1
         protected TestDoc TestDocPk1ExistingB { get; set; }
-
-        // Documents in PartitionKey1
         protected TestDoc TestDocPk1ExistingC { get; set; }
-
-        // Documents in PartitionKey1
         protected TestDoc TestDocPk1ExistingD { get; set; }
 
         public static void ClassInit(TestContext context)
