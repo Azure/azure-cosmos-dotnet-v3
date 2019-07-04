@@ -190,6 +190,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private async Task ForceRefreshCollectionCacheAsync(CancellationToken cancellationToken)
         {
+            this.cosmosQueryContext.QueryClient.ClearSessionTokenCache(this.cosmosQueryContext.ResourceLink.OriginalString);
+
             CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                OperationType.Query,
@@ -200,8 +202,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 request.ForceNameCacheRefresh = true;
                 await collectionCache.ResolveCollectionAsync(request, cancellationToken);
             }
-
-            this.cosmosQueryContext.QueryClient.ClearSessionTokenCache(this.cosmosQueryContext.ResourceLink.OriginalString);
         }
 
         private async Task<ContainerProperties> GetContainerPropertiesAsync(CancellationToken cancellationToken)
