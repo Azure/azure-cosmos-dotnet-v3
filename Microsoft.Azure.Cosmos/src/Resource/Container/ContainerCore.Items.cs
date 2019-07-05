@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Batch CreateBatch(PartitionKey partitionKey)
         {
-            return new Batch(this, partitionKey);
+            return new BatchCore(this, partitionKey);
         }
 
         internal FeedIterator GetStandByFeedIterator(

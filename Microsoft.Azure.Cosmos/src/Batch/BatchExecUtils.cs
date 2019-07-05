@@ -17,6 +17,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class BatchExecUtils
     {
+        // Using the same buffer size as the Stream.DefaultCopyBufferSize
+        private const int BufferSize = 81920;
+
         /// <summary>
         /// Converts a Stream to a Memory{byte} wrapping a byte array honoring a provided maximum length for the returned Memory.
         /// </summary>
@@ -25,7 +28,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"><see cref="CancellationToken"/> to cancel the operation.</param>
         /// <returns>A Memory{byte} with length at most maximumLength.</returns>
         /// <remarks>Throws RequestEntityTooLargeException if the input stream has more bytes than maximumLength.</remarks>
-        public static async Task<Memory<byte>> StreamToMemoryAsync(Stream stream, int maximumLength, CancellationToken cancellationToken)
+        public static async Task<Memory<byte>> StreamToMemoryAsync(
+            Stream stream, 
+            int maximumLength, 
+            CancellationToken cancellationToken)
         {
             if (stream.CanSeek)
             {
@@ -56,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                int bufferSize = 81920; // Using the same buffer size as the Stream.DefaultCopyBufferSize
+                int bufferSize = BatchExecUtils.BufferSize;
                 byte[] buffer = new byte[bufferSize];
 
                 using (MemoryStream memoryStream = new MemoryStream(bufferSize)) // using bufferSize as initial capacity as well
@@ -81,13 +87,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static void GetServerRequestLimits(out int maxServerRequestBodyLength, out int maxServerRequestOperationCount)
-        {
-            maxServerRequestBodyLength = Constants.MaxDirectModeBatchRequestBodySizeInBytes;
-            maxServerRequestOperationCount = Constants.MaxOperationsInDirectModeBatchRequest;
-        }
-
-        public static ResponseMessage Validate(
+        public static void EnsureValid(
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,
             int? maxOperationCount = null)
@@ -141,10 +141,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (errorMessage != null)
             {
-                return new ResponseMessage(HttpStatusCode.BadRequest, errorMessage: errorMessage);
+                throw new ArgumentException(errorMessage);
             }
-
-            return new ResponseMessage(HttpStatusCode.OK);
         }
     }
 }

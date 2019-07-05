@@ -1019,6 +1019,90 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
         /// <returns>An instance of <see cref="Batch"/></returns>
+        /// <exception>
+        /// This API only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions. Check the HTTP status code on the response to check if the operation failed.
+        /// </exception>
+        /// <example>
+        /// This example atomically modifies a set of documents as a batch.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity
+        /// {
+        ///     public string type { get; set; }
+        ///     public string id { get; set; }
+        ///     public string status { get; set; }
+        /// }
+        ///
+        /// string activityType = "personal";
+        /// ToDoActivity test1 = new ToDoActivity()
+        /// {
+        ///     type = activityType,
+        ///     id = "learning",
+        ///     status = "ToBeDone"
+        /// };
+        ///
+        /// ToDoActivity test2 = new ToDoActivity()
+        /// {
+        ///     type = activityType,
+        ///     id = "shopping",
+        ///     status = "Done"
+        /// };
+        ///
+        /// ToDoActivity test3 = new ToDoActivity()
+        /// {
+        ///     type = activityType,
+        ///     id = "swimming",
+        ///     status = "ToBeDone"
+        /// };
+        ///
+        /// using (BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(activityType))
+        ///     .CreateItem<ToDoActivity>(test1)
+        ///     .ReplaceItem<ToDoActivity>(test2.id, test2)
+        ///     .UpsertItem<ToDoActivity>(test3)
+        ///     .DeleteItem("reading")
+        ///     .CreateItemStream(streamPayload1)
+        ///     .ReplaceItemStream("eating", streamPayload2)
+        ///     .UpsertItemStream(streamPayload3)
+        ///     .ExecuteAsync())
+        /// {
+        ///    if (!batchResponse.IsSuccessStatusCode)
+        ///    {
+        ///        // Handle and log exception
+        ///        return;
+        ///    }
+        ///
+        ///    // Look up interested results - eg. via typed access on operation results
+        ///    BatchOperationResult<ToDoActivity> replaceResult = batchResponse.GetOperationResultAtIndex<ToDoActivity>(0);
+        ///    ToDoActivity readActivity = replaceResult.Resource;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// This example atomically reads a set of documents as a batch.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string activityType = "personal";
+        /// using (BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(activityType))
+        ///    .ReadItem("playing")
+        ///    .ReadItem("walking")
+        ///    .ReadItem("jogging")
+        ///    .ReadItem("running")
+        ///    .ExecuteAsync())
+        /// {
+        ///     // Look up interested results - eg. via direct access to operation result stream
+        ///     List<string> resultItems = new List<string>();
+        ///     foreach (BatchOperationResult operationResult in batchResponse)
+        ///     {
+        ///         using (StreamReader streamReader = new StreamReader(operationResult.ResourceStream))
+        ///         {
+        ///             resultItems.Add(await streamReader.ReadToEndAsync());
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract Batch CreateBatch(PartitionKey partitionKey);
     }
 }

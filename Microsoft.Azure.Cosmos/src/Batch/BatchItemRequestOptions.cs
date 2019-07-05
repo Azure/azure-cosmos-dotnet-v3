@@ -17,6 +17,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
         /// <seealso cref="IndexingDirective"/>
-        public virtual IndexingDirective? IndexingDirective { get; set; }
+        public IndexingDirective? IndexingDirective { get; set; }
     }
 }

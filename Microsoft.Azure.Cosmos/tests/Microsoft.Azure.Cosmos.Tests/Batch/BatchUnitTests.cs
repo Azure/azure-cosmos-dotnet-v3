@@ -30,23 +30,30 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchInvalidOptionsAsync()
         {
-            Container container = BatchUnitTests.GetCosmosContainer();
-
+            Container container = BatchUnitTests.GetContainer();
             List<RequestOptions> badBatchOptionsList = new List<RequestOptions>()
             {
                 new RequestOptions()
                 {
                     IfMatchEtag = "cond",
+                },
+                new RequestOptions()
+                {
+                    IfNoneMatchEtag = "cond2",
                 }
             };
 
             foreach (RequestOptions batchOptions in badBatchOptionsList)
             {
-                BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
-                                                            .ReadItem("someId")
-                                                            .ExecuteAsync(batchOptions);
+                BatchCore batch = (BatchCore)(
+                        container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+                            .ReadItem("someId"));
 
-                Assert.AreEqual(HttpStatusCode.BadRequest, batchResponse.StatusCode);
+                await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
+                    batch, 
+                    typeof(ArgumentException),
+                    ClientResources.BatchRequestOptionNotSupported,
+                    batchOptions);
             }
         }
 
@@ -54,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchInvalidItemOptionsAsync()
         {
-            Container container = BatchUnitTests.GetCosmosContainer();
+            Container container = BatchUnitTests.GetContainer();
 
             List<BatchItemRequestOptions> badItemOptionsList = new List<BatchItemRequestOptions>()
             {
@@ -78,11 +85,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (BatchItemRequestOptions itemOptions in badItemOptionsList)
             {
-                BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
-                                                            .ReplaceItem("someId", new TestItem("repl"), itemOptions)
-                                                            .ExecuteAsync();
+                Batch batch = container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+                        .ReplaceItem("someId", new TestItem("repl"), itemOptions);
 
-                Assert.AreEqual(HttpStatusCode.BadRequest, batchResponse.StatusCode);
+                await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
+                    batch,
+                    typeof(ArgumentException));
             }
         }
 
@@ -90,11 +98,53 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("abpai")]
         public async Task BatchNoOperationsAsync()
         {
-            Container container = BatchUnitTests.GetCosmosContainer();
-            BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
-               .ExecuteAsync();
+            Container container = BatchUnitTests.GetContainer();
+            Batch batch = container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
+            await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
+                batch,
+                typeof(ArgumentException),
+                ClientResources.BatchNoOperations);
+        }
 
-            Assert.AreEqual(HttpStatusCode.BadRequest, batchResponse.StatusCode);
+        [TestMethod]
+        [Owner("abpai")]
+        public async Task BatchLargerThanServerRequestAsync()
+        {
+            Container container = BatchUnitTests.GetContainer();
+            const int operationCount = 20;
+            int appxDocSize = Constants.MaxDirectModeBatchRequestBodySizeInBytes / operationCount;
+
+            // Increase the doc size by a bit so all docs won't fit in one server request.
+            appxDocSize = (int)(appxDocSize * 1.05);
+            Batch batch = container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
+            for (int i = 0; i < operationCount; i++)
+            {
+                TestItem testItem = new TestItem(new string('x', appxDocSize));
+                batch.CreateItem(testItem);
+            }
+
+            await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
+                batch,
+                typeof(RequestEntityTooLargeException));
+        }
+
+        [TestMethod]
+        [Owner("abpai")]
+        public async Task BatchWithTooManyOperationsAsync()
+        {
+            Container container = BatchUnitTests.GetContainer();
+            const int operationCount = Constants.MaxOperationsInDirectModeBatchRequest + 1;
+
+            Batch batch = container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
+            for (int i = 0; i < operationCount; i++)
+            {
+                batch.ReadItem("someId");
+            }
+
+            await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
+                batch,
+                typeof(ArgumentException),
+                ClientResources.BatchTooLarge);
         }
 
         [TestMethod]
@@ -241,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });
 
-            Container container = BatchUnitTests.GetCosmosContainer(testHandler);
+            Container container = BatchUnitTests.GetContainer(testHandler);
 
             BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .CreateItem(createItem)
@@ -307,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return responseMessage;
             });
 
-            Container container = BatchUnitTests.GetCosmosContainer(testHandler);
+            Container container = BatchUnitTests.GetContainer(testHandler);
 
             BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .ReadItem("id1")
@@ -420,7 +470,41 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private static Container GetCosmosContainer(TestHandler testHandler = null)
+        private static async Task VerifyExceptionThrownOnExecuteAsync(
+            Batch batch,
+            Type expectedTypeOfException,
+            string expectedExceptionMessage = null, 
+            RequestOptions requestOptions = null)
+        {
+            bool wasExceptionThrown = false;
+            try
+            {
+                if (requestOptions != null)
+                {
+                    await ((BatchCore)batch).ExecuteAsync(requestOptions);
+                }
+                else
+                {
+                    await batch.ExecuteAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Assert.AreEqual(expectedTypeOfException, ex.GetType());
+                if (expectedExceptionMessage != null)
+                {
+                    Assert.IsTrue(ex.Message.Contains(expectedExceptionMessage));
+                }
+                wasExceptionThrown = true;
+            }
+
+            if (!wasExceptionThrown)
+            {
+                Assert.Fail("Exception was expected to be thrown but was not.");
+            }
+        }
+
+        private static Container GetContainer(TestHandler testHandler = null)
         {
             CosmosClient client;
             if (testHandler != null)
@@ -435,22 +519,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             DatabaseCore database = new DatabaseCore(client.ClientContext, BatchUnitTests.DatabaseId);
             ContainerCore container = new ContainerCore(client.ClientContext, database, BatchUnitTests.ContainerId);
             return container;
-        }
-
-        private static ContainerCore GetMockedContainer(string containerName = null)
-        {
-            Mock<ContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
-            mockedContainer.Setup(c => c.ClientContext).Returns(BatchUnitTests.GetMockedClientContext());
-            return mockedContainer.Object;
-        }
-
-        private static CosmosClientContext GetMockedClientContext()
-        {
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonSerializerCore());
-            return mockContext.Object;
         }
 
         private static TestItem Deserialize(Memory<byte> body, CosmosSerializer serializer)
@@ -493,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     UriKind.Relative);
                 Assert.AreEqual(expectedRequestUri, request.RequestUri);
             }
-        }
+       }
 
         private class TestItem
         {
