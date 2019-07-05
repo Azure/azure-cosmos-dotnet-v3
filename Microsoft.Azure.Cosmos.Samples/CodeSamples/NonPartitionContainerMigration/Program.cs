@@ -148,13 +148,13 @@
             // Insert a new item with NonePartitionKeyValue
             ItemResponse<DeviceInformationItem> createResponse = await container.CreateItemAsync<DeviceInformationItem>(
              item: itemWithoutPK,
-             partitionKey: PartitionKey.NonePartitionKeyValue);
+             partitionKey: PartitionKey.None);
             Console.WriteLine("Creating Item {0} Status Code {1}", itemid, createResponse.StatusCode);
 
             // Read an existing item with NonePartitionKeyValue
             ItemResponse<DeviceInformationItem> readResponse = await container.ReadItemAsync<DeviceInformationItem>(
                 id: itemid,
-                partitionKey: PartitionKey.NonePartitionKeyValue
+                partitionKey: PartitionKey.None
                 );
             Console.WriteLine("Reading Item {0} Status Code {1}", itemid, readResponse.StatusCode);
 
@@ -163,14 +163,14 @@
             ItemResponse<DeviceInformationItem> replaceResponse = await container.ReplaceItemAsync<DeviceInformationItem>(
                  item: itemWithoutPK,
                  id: itemWithoutPK.Id,
-                 partitionKey: PartitionKey.NonePartitionKeyValue
+                 partitionKey: PartitionKey.None
                  );
             Console.WriteLine("Replacing Item {0} Status Code {1}", itemid, replaceResponse.StatusCode);
 
             // Delete an item with NonePartitionKeyValue.
             ItemResponse<DeviceInformationItem> deleteResponse = await container.DeleteItemAsync<DeviceInformationItem>(
                 id: itemid,
-                partitionKey: PartitionKey.NonePartitionKeyValue
+                partitionKey: PartitionKey.None
                 );
             Console.WriteLine("Deleting Item {0} Status Code {1}", itemid, deleteResponse.StatusCode);
         }
@@ -229,7 +229,7 @@
                 string itemid = Guid.NewGuid().ToString();
                 DeviceInformationItem itemWithoutPK = GetDeviceWithNoPartitionKey(itemid);
                 ItemResponse<DeviceInformationItem> createResponse = await container.CreateItemAsync<DeviceInformationItem>(
-                partitionKey: PartitionKey.NonePartitionKeyValue,
+                partitionKey: PartitionKey.None,
                 item: itemWithoutPK);
             }
 
@@ -237,7 +237,7 @@
             // The operation is made in batches to not lose work in case of partial execution
             int resultsFetched = 0;
             QueryDefinition sql = new QueryDefinition("select * from r");      
-            FeedIterator<DeviceInformationItem> setIterator = container.GetItemQueryIterator<DeviceInformationItem>(sql, requestOptions: new QueryRequestOptions() { PartitionKey = PartitionKey.NonePartitionKeyValue, MaxItemCount = 2 });
+            FeedIterator<DeviceInformationItem> setIterator = container.GetItemQueryIterator<DeviceInformationItem>(sql, requestOptions: new QueryRequestOptions() { PartitionKey = PartitionKey.None, MaxItemCount = 2 });
             while (setIterator.HasMoreResults)
             {
                 FeedResponse<DeviceInformationItem> queryResponse = await setIterator.ReadNextAsync();
@@ -262,7 +262,7 @@
 
                         // Deleting item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                         ItemResponse<DeviceInformationItem> deleteResponseWithoutPk = await container.DeleteItemAsync<DeviceInformationItem>(
-                         partitionKey: PartitionKey.NonePartitionKeyValue,
+                         partitionKey: PartitionKey.None,
                          id: item.Id);
                     }
                 }

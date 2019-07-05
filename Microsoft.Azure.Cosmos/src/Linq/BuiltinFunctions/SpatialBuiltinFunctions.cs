@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(Geometry), typeof(Geometry)},
+                        new Type[]{typeof(Geometry)},
                     }));
 
             SpatialBuiltinFunctionDefinitions.Add("Within",
@@ -36,31 +36,25 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(Geometry), typeof(Geometry)},
+                        new Type[]{typeof(Geometry)},
                     }));
 
             SpatialBuiltinFunctionDefinitions.Add("IsValidDetailed",
                 new SqlBuiltinFunctionVisitor("ST_IsValidDetailed",
                     true,
-                    new List<Type[]>()
-                    {
-                        new Type[]{typeof(Geometry)},
-                    }));
+                    new List<Type[]>()));
 
             SpatialBuiltinFunctionDefinitions.Add("IsValid",
                 new SqlBuiltinFunctionVisitor("ST_IsValid",
                     true,
-                    new List<Type[]>()
-                    {
-                        new Type[]{typeof(Geometry)},
-                    }));
+                    new List<Type[]>()));
 
             SpatialBuiltinFunctionDefinitions.Add("Intersects",
                 new SqlBuiltinFunctionVisitor("ST_Intersects",
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(Geometry), typeof(Geometry)},
+                        new Type[]{typeof(Geometry)},
                     }));
         }
 

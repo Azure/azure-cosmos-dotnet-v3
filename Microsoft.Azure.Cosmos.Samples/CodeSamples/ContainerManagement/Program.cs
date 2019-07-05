@@ -152,9 +152,9 @@
             //*********************************************************************************************
             // Get configured performance (reserved throughput) of a CosmosContainer
             //**********************************************************************************************
-            ThroughputResponse throughputResponse = await simpleContainer.ReadThroughputAsync();
+            int? throughputResponse = await simpleContainer.ReadThroughputAsync();
 
-            Console.WriteLine($"\n2. Found throughput \n{throughputResponse.Resource.Throughput.Value}\nusing container's id \n{simpleContainer.Id}");
+            Console.WriteLine($"\n2. Found throughput \n{throughputResponse}\nusing container's id \n{simpleContainer.Id}");
 
             //******************************************************************************************************************
             // Change performance (reserved throughput) of CosmosContainer
@@ -168,7 +168,7 @@
             // Get the offer again after replace
             throughputResponse = await simpleContainer.ReadThroughputAsync();
 
-            Console.WriteLine($"3. Found throughput \n{throughputResponse.Resource.Throughput.Value}\n using container's ResourceId {simpleContainer.Id}.\n");
+            Console.WriteLine($"3. Found throughput \n{throughputResponse}\n using container's ResourceId {simpleContainer.Id}.\n");
         }
         // </GetAndChangeContainerPerformance>
 
@@ -194,7 +194,7 @@
         {
             Console.WriteLine("\n5. Reading all CosmosContainer resources for a database");
 
-            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerIterator();
+            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>();
             while (resultSetIterator.HasMoreResults)
             {
                 foreach (ContainerProperties container in await resultSetIterator.ReadNextAsync())

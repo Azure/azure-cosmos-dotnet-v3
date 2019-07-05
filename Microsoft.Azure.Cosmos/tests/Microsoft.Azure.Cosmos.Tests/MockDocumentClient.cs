@@ -190,6 +190,13 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+            this.partitionKeyRangeCache.Setup(
+                        m => m.TryGetOverlappingRangesAsync(
+                            It.IsAny<string>(),
+                            It.IsAny<Documents.Routing.Range<string>>(),
+                            It.IsAny<bool>()
+                        )
+                ).Returns(Task.FromResult<IReadOnlyList<PartitionKeyRange>>(new List<PartitionKeyRange>() { new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } }));
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
