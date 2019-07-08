@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         isMinInclusive: true,
                         isMaxInclusive: false)
                 };
-
+                
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
                 PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             ).ToCosmosResponseMessage(request);
                 }
 
-                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id);
+                serviceRequest.RouteTo(new PartitionKeyRangeIdentity(collectionFromCache.ResourceId, resolvedRangeInfo.ResolvedRange.Id));
 
                 response = await base.SendAsync(request, cancellationToken);
 
