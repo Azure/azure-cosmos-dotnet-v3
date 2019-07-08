@@ -148,39 +148,29 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
+        public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
             string storedProcedureId,
-            TInput input,
             Cosmos.PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken),
+            params dynamic[] inputParams)
         {
-            Stream parametersStream;
-            if (input != null && !input.GetType().IsArray)
-            {
-                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput[]>(new TInput[1] { input });
-            }
-            else
-            {
-                parametersStream = this.clientContext.CosmosSerializer.ToStream<TInput>(input);
-            }
-
             Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
-                streamPayload: parametersStream,
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                inputParams: inputParams);
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
         }
 
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             string storedProcedureId,
-            Stream streamPayload,
             Cosmos.PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken = default(CancellationToken),
+            params dynamic[] inputParams)
         {
             if (string.IsNullOrEmpty(storedProcedureId))
             {
@@ -188,6 +178,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
+
+            Stream streamPayload = null;
+            if (inputParams != null)
+            {
+                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(inputParams);
+            }
 
             Uri linkUri = this.clientContext.CreateLink(
                 parentLink: this.container.LinkUri.OriginalString,

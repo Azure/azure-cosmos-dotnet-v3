@@ -256,13 +256,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <typeparam name="TInput">The input type that is JSON serializable.</typeparam>
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
-        /// <param name="input">The JSON serializable input parameters.</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="inputParams">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
@@ -304,21 +303,21 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TInput, TOutput>(
+        public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
             string storedProcedureId,
-            TInput input,
             PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default(CancellationToken),
+            params dynamic[] inputParams);
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
         /// </summary>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
-        /// <param name="streamPayload">The stream representing the input for the stored procedure.</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <param name="inputParams">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
@@ -367,10 +366,10 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             string storedProcedureId,
-            Stream streamPayload,
             PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default(CancellationToken),
+            params dynamic[] inputParams);
 
         /// <summary>
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.

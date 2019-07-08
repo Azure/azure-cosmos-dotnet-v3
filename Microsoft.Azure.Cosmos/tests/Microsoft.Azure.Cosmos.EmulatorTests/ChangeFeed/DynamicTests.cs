@@ -49,8 +49,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
-                    foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
-                    if (processedDocCount == 10) allDocsProcessed.Set();
+                    foreach (dynamic doc in docs)
+                    {
+                        accumulator += doc.id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 10)
+                    {
+                        allDocsProcessed.Set();
+                    }
 
                     return Task.CompletedTask;
                 })
@@ -65,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
             }
 
-            var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             await processor.StopAsync();
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
             Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
@@ -92,8 +99,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                     {
                         processedDocCount += docs.Count();
-                        foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
-                        if (processedDocCount == 10) allDocsProcessed.Set();
+                        foreach (dynamic doc in docs)
+                        {
+                            accumulator += doc.id.ToString() + ".";
+                        }
+
+                        if (processedDocCount == 10)
+                        {
+                            allDocsProcessed.Set();
+                        }
 
                         return Task.CompletedTask;
                     })
@@ -108,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
                 }
 
-                var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+                bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
                 await processor.StopAsync();
                 Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
                 Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
@@ -145,8 +159,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
                     processedDocCount += docs.Count();
-                    foreach (var doc in docs) accumulator += doc.id.ToString() + ".";
-                    if (processedDocCount == 5) allDocsProcessed.Set();
+                    foreach (dynamic doc in docs)
+                    {
+                        accumulator += doc.id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 5)
+                    {
+                        allDocsProcessed.Set();
+                    }
 
                     return Task.CompletedTask;
                 })
@@ -156,16 +177,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
             // Generate the payload
-            await scripts.ExecuteStoredProcedureAsync<int, object>(sprocId, 0, new PartitionKey(partitionKey));
+            await scripts.ExecuteStoredProcedureAsync<object>(sprocId, new PartitionKey(partitionKey), inputParams: 0);
             // Create 3 docs each 1.5MB. All 3 do not fit into MAX_RESPONSE_SIZE (4 MB). 2nd and 3rd are in same transaction.
-            var content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
+            string content = string.Format("{{\"id\": \"doc2\", \"value\": \"{0}\", \"pk\": 0}}", new string('x', 1500000));
             await this.Container.CreateItemAsync(JsonConvert.DeserializeObject<dynamic>(content), new PartitionKey(partitionKey));
 
-            await scripts.ExecuteStoredProcedureAsync<int, object>(sprocId, 3, new PartitionKey(partitionKey));
+            await scripts.ExecuteStoredProcedureAsync<object>(sprocId, new PartitionKey(partitionKey), inputParams: 3);
 
             await processor.StartAsync();
             // Letting processor initialize and pickup changes
-            var isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             await processor.StopAsync();
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
             Assert.AreEqual("doc0.doc1.doc2.doc3.doc4.", accumulator);
