@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             bool isFirstExecute = false;
             QueryResponse response = null;
-            for (int i = 0; i < 2; i++)
+            while (true)
             {
                 // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
                 // execute context has incorrect values and should be recreated. This should only be done for the first 
