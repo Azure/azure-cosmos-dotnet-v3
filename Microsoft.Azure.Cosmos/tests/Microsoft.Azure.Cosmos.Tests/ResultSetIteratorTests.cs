@@ -26,35 +26,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         private bool ContinueNextExecution { get; set; }
 
         [TestMethod]
-        public async Task TestIteratorContract()
-        {
-            this.ContinuationToken = null;
-            this.Options = new QueryRequestOptions();
-            this.CancellationToken = new CancellationTokenSource().Token;
-            this.ContinueNextExecution = true;
-
-            FeedIterator resultSetIterator = new FeedIteratorCore(
-                this.MaxItemCount,
-                this.ContinuationToken,
-                this.Options,
-                this.NextResultSetDelegate);
-
-            Assert.IsTrue(resultSetIterator.HasMoreResults);
-
-            ResponseMessage response = await resultSetIterator.ReadNextAsync(this.CancellationToken);
-            this.ContinuationToken = response.Headers.ContinuationToken;
-
-            Assert.IsTrue(resultSetIterator.HasMoreResults);
-            this.ContinueNextExecution = false;
-
-            response = await resultSetIterator.ReadNextAsync(this.CancellationToken);
-            this.ContinuationToken = response.Headers.ContinuationToken;
-
-            Assert.IsFalse(resultSetIterator.HasMoreResults);
-            Assert.IsNull(response.Headers.ContinuationToken);
-        }
-
-        [TestMethod]
         public void ValidateFillQueryRequestOptions()
         {
             Mock<QueryRequestOptions> options = new Mock<QueryRequestOptions>() { CallBase = true };

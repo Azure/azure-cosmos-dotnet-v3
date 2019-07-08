@@ -1740,7 +1740,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("sproc1", "function() {return 1}"));
                 for (int i = 0; i < 10; i++)
                 {
-                    await scripts.ExecuteStoredProcedureAsync<object, object>(partitionKey: new Cosmos.PartitionKey(i), storedProcedureId: "sproc1", input: null);
+                    await scripts.ExecuteStoredProcedureAsync<object, object>(input: null, storedProcedureId: "sproc1", partitionKey: new Cosmos.PartitionKey(i));
                 }
             }
             finally

@@ -1430,7 +1430,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Script cannot timeout.
             Scripts scripts = collection.Scripts;
             StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
-            string result = await scripts.ExecuteStoredProcedureAsync<object, string>(storedProcedureId: "scriptId", partitionKey: new Cosmos.PartitionKey(documentDefinition.Id), input: null);
+            string result = await scripts.ExecuteStoredProcedureAsync<object, string>(input: null, storedProcedureId: "scriptId", partitionKey: new Cosmos.PartitionKey(documentDefinition.Id));
             await database.DeleteAsync();
         }
 

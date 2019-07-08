@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
 
-            await factory.ExecuteNextAsync(cancellationtoken);
+            await factory.ReadNextAsync(cancellationtoken);
         }
 
         private async Task<(IList<DocumentQueryExecutionComponentBase> components, QueryResponse response)> GetAllExecutionComponents()
