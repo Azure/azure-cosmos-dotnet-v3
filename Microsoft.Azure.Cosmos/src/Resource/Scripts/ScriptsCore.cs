@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -151,16 +152,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
             string storedProcedureId,
             Cosmos.PartitionKey partitionKey,
+            StoredProcedureDefinition? inputParameters = null,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken),
-            params dynamic[] inputParams)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.ExecuteStoredProcedureStreamAsync(
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
+                inputParameters: inputParameters,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken,
-                inputParams: inputParams);
+                cancellationToken: cancellationToken);
 
             return this.clientContext.ResponseFactory.CreateStoredProcedureExecuteResponseAsync<TOutput>(response);
         }
@@ -168,9 +169,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             string storedProcedureId,
             Cosmos.PartitionKey partitionKey,
+            StoredProcedureDefinition? inputParameters = null,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken),
-            params dynamic[] inputParams)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(storedProcedureId))
             {
@@ -180,9 +181,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
 
             Stream streamPayload = null;
-            if (inputParams != null)
+            if (inputParameters.HasValue)
             {
-                streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(inputParams);
+                dynamic[] input = inputParameters.Value.Parameters;
+                if (input != null && input.Any())
+                {
+                    streamPayload = this.clientContext.CosmosSerializer.ToStream<dynamic[]>(input);
+                }
             }
 
             Uri linkUri = this.clientContext.CreateLink(

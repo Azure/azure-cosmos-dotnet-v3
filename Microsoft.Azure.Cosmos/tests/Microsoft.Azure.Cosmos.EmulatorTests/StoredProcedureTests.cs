@@ -117,12 +117,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
             StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string>(
                 sprocId, 
-                new Cosmos.PartitionKey(testPartitionId), 
+                new Cosmos.PartitionKey(testPartitionId),
+                new StoredProcedureDefinition(Guid.NewGuid().ToString()),
                 new StoredProcedureRequestOptions()
                 {
                     EnableScriptLogging = true
-                },
-                inputParams: Guid.NewGuid().ToString());
+                });
 
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
             Assert.AreEqual(testLogsText, sprocResponse.ScriptLog);
@@ -149,11 +149,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
                 sprocId,
                 new Cosmos.PartitionKey(testPartitionId),
+                new StoredProcedureDefinition(Guid.NewGuid().ToString()),
                 new StoredProcedureRequestOptions()
                 {
                     EnableScriptLogging = true
-                },
-                inputParams: Guid.NewGuid().ToString());
+                });
 
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
             Assert.AreEqual(testLogsText, Uri.UnescapeDataString(sprocResponse.Headers["x-ms-documentdb-script-log-results"]));
@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string>(
                 sprocId, 
                 new Cosmos.PartitionKey(testPartitionId), 
-                inputParams: "one");
+                inputParams: new StoredProcedureDefinition("one"));
 
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
@@ -366,9 +366,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedureExecuteResponse<string> sprocResponse2 = await this.scripts.ExecuteStoredProcedureAsync<string>(
                 storedProcedureId: sprocId,
                 partitionKey: new Cosmos.PartitionKey(testPartitionId),
+                inputParams: new StoredProcedureDefinition("one", "two","three"),
                 requestOptions: null,
-                cancellationToken: default(CancellationToken),
-                "one", "two", "three");
+                cancellationToken: default(CancellationToken));
 
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse2.StatusCode);
 

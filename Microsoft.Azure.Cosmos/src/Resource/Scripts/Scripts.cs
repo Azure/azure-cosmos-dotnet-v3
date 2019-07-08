@@ -259,16 +259,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
+        /// <param name="inputParams">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <param name="inputParams">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
         /// <code language="c#">
         /// <![CDATA[
-        /// string sprocBody = @"function simple(prefix)
+        /// string sprocBody = @"function simple(prefix, postfix)
         ///    {
         ///        var collection = getContext().getCollection();
         ///
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///            // Check the feed and if it's empty, set the body to 'no docs found',
         ///            // Otherwise just take 1st element from the feed.
         ///            if (!feed || !feed.length) getContext().getResponse().setBody(""no docs found"");
-        ///            else getContext().getResponse().setBody(prefix + JSON.stringify(feed[0]));
+        ///            else getContext().getResponse().setBody(prefix + JSON.stringify(feed[0]) + postfix);
         ///        });
         ///
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
@@ -295,10 +295,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         body: sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(
-        ///                         sprocId,
-        ///                         "Item as a string: ",
-        ///                         new PartitionKey(testPartitionId));
+        /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string>(
+        ///                         storedProcedureId: sprocId,
+        ///                         partitionKey: new PartitionKey(testPartitionId),
+        ///                         requestOptions: null,
+        ///                         cancellationToken: default(CancellationToken),
+        ///                         "myPrefixString", "myPostfixString");
         /// Console.WriteLine(sprocResponse.Resource);
         /// /// ]]>
         /// </code>
@@ -306,25 +308,25 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
             string storedProcedureId,
             PartitionKey partitionKey,
+            StoredProcedureDefinition? inputParams = null,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken),
-            params dynamic[] inputParams);
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Executes a stored procedure against a container as an asynchronous operation in the Azure Cosmos service and obtains a Stream as response.
         /// </summary>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
+        /// <param name="inputParams">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <param name="inputParams">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="storedProcedureId"/> or <paramref name="partitionKey"/>  are not set.</exception>
         /// <example>
         ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
         /// <code language="c#">
         /// <![CDATA[
-        /// string sprocBody = @"function simple(prefix)
+        /// string sprocBody = @"function simple(prefix, postfix)
         ///    {
         ///        var collection = getContext().getCollection();
         ///
@@ -338,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///            // Check the feed and if it's empty, set the body to 'no docs found',
         ///            // Otherwise just take 1st element from the feed.
         ///            if (!feed || !feed.length) getContext().getResponse().setBody(""no docs found"");
-        ///            else getContext().getResponse().setBody(prefix + JSON.stringify(feed[0]));
+        ///            else getContext().getResponse().setBody(prefix + JSON.stringify(feed[0]) + postfix);
         ///        });
         ///
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
@@ -352,9 +354,12 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// 
         /// // Execute the stored procedure
         /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
-        ///                         sprocId,
-        ///                         stream,
-        ///                         new PartitionKey(testPartitionId)), 
+        ///                         storedProcedureId: sprocId,
+        ///                         partitionKey: new PartitionKey(testPartitionId),
+        ///                         requestOptions: null,
+        ///                         cancellationToken: default(CancellationToken),
+        ///                         "myPrefixString", "myPostfixString");
+        ///                         
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
         ///     string stringResponse = await sr.ReadToEndAsync();
@@ -367,9 +372,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             string storedProcedureId,
             PartitionKey partitionKey,
+            StoredProcedureDefinition? inputParams = null,
             StoredProcedureRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken),
-            params dynamic[] inputParams);
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
