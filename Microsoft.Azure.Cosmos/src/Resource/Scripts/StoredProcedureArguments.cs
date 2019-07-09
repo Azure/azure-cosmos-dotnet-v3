@@ -4,13 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Scripts
 {
-    using System.Net;
-    using Microsoft.Azure.Documents;
-
     /// <summary>
-    /// Stored an array of Stored procedure parameters.
+    /// Stored an array of Stored procedure arguments.
     /// </summary>
-    public struct StoredProcedureDefinition
+    public struct StoredProcedureArguments
     {
         internal dynamic[] Parameters { get; }
 
@@ -18,9 +15,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Create a list of parameters as input for a stored procedure operation
         /// </summary>
         /// <param name="inputParams">A list of parameters to be used as input for a stored procedure execute operation</param>
-        public StoredProcedureDefinition(params dynamic[] inputParams)
+        public StoredProcedureArguments(params dynamic[] inputParams)
         {
-            Parameters = inputParams;
+            this.Parameters = inputParams;
         }
     }
 }

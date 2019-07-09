@@ -1515,7 +1515,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string result = string.Empty;
             try
             {
-                result = scripts.ExecuteStoredProcedureAsync<string>("__.sys.echo", new Cosmos.PartitionKey("anyPk"), new StoredProcedureDefinition(input)).Result;
+                result = scripts.ExecuteStoredProcedureAsync<string>("__.sys.echo", new Cosmos.PartitionKey("anyPk"), new StoredProcedureArguments(input)).Result;
             }
             catch (DocumentClientException exception)
             {

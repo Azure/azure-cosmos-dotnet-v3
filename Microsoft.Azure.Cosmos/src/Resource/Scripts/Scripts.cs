@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <typeparam name="TOutput">The return type that is JSON serializable.</typeparam>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
-        /// <param name="inputParams">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
+        /// <param name="arguments">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
@@ -298,9 +298,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string>(
         ///                         storedProcedureId: sprocId,
         ///                         partitionKey: new PartitionKey(testPartitionId),
-        ///                         requestOptions: null,
-        ///                         cancellationToken: default(CancellationToken),
-        ///                         "myPrefixString", "myPostfixString");
+        ///                         arguments: new StoredProcedureArguments("myPrefixString", "myPostfixString"));
+        ///                         
         /// Console.WriteLine(sprocResponse.Resource);
         /// /// ]]>
         /// </code>
@@ -308,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
             string storedProcedureId,
             PartitionKey partitionKey,
-            StoredProcedureDefinition? inputParams = null,
+            StoredProcedureArguments? arguments = null,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -317,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         /// <param name="storedProcedureId">The identifier of the Stored Procedure to execute.</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="Cosmos.PartitionKey"/></param>
-        /// <param name="inputParams">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
+        /// <param name="arguments">(Optional) An array of dynamic objects representing the parameters for the stored procedure.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request <see cref="StoredProcedureRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The task object representing the service response for the asynchronous operation which would contain any response set in the stored procedure.</returns>
@@ -356,9 +355,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
         ///                         storedProcedureId: sprocId,
         ///                         partitionKey: new PartitionKey(testPartitionId),
-        ///                         requestOptions: null,
-        ///                         cancellationToken: default(CancellationToken),
-        ///                         "myPrefixString", "myPostfixString");
+        ///                         arguments: new StoredProcedureArguments("myPrefixString", "myPostfixString"));
         ///                         
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
@@ -372,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
             string storedProcedureId,
             PartitionKey partitionKey,
-            StoredProcedureDefinition? inputParams = null,
+            StoredProcedureArguments? arguments = null,
             StoredProcedureRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

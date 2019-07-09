@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             const string testLogsText = "this is a test";
             const string testPartitionId = "1";
             string sprocId = Guid.NewGuid().ToString();
-            string sprocBody = @"function(name) { var context = getContext(); console.log('"+ testLogsText + "'); var response = context.getResponse(); response.setBody('hello there ' + name); }";
+            string sprocBody = @"function(name) { var context = getContext(); console.log('" + testLogsText + "'); var response = context.getResponse(); response.setBody('hello there ' + name); }";
 
             StoredProcedureResponse storedProcedureResponse =
                 await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
@@ -116,9 +116,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
             StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string>(
-                sprocId, 
+                sprocId,
                 new Cosmos.PartitionKey(testPartitionId),
-                new StoredProcedureDefinition(Guid.NewGuid().ToString()),
+                new StoredProcedureArguments(Guid.NewGuid().ToString()),
                 new StoredProcedureRequestOptions()
                 {
                     EnableScriptLogging = true
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
                 sprocId,
                 new Cosmos.PartitionKey(testPartitionId),
-                new StoredProcedureDefinition(Guid.NewGuid().ToString()),
+                new StoredProcedureArguments(Guid.NewGuid().ToString()),
                 new StoredProcedureRequestOptions()
                 {
                     EnableScriptLogging = true
@@ -328,15 +328,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createItemResponse.StatusCode);
 
             StoredProcedureExecuteResponse<string> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string>(
-                sprocId, 
-                new Cosmos.PartitionKey(testPartitionId), 
-                inputParams: new StoredProcedureDefinition("one"));
+                sprocId,
+                new Cosmos.PartitionKey(testPartitionId),
+                arguments: new StoredProcedureArguments("one"));
 
             Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
 
             string stringResponse = sprocResponse.Resource;
             Assert.IsNotNull(stringResponse);
             Assert.AreEqual("one", stringResponse);
+
+            ResponseMessage response = await this.scripts.ExecuteStoredProcedureStreamAsync(
+                 sprocId,
+                 new Cosmos.PartitionKey(testPartitionId),
+                 arguments: new StoredProcedureArguments(new dynamic[] { null }));
+
+            using(StreamReader reader = new StreamReader(response.Content))
+            {
+                string text = await reader.ReadToEndAsync();
+                Assert.AreEqual("null", text);
+            }
+
+            sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<string>(
+                sprocId,
+                new Cosmos.PartitionKey(testPartitionId),
+                arguments: new StoredProcedureArguments(new dynamic[] { null }));
+
+            Assert.AreEqual(HttpStatusCode.OK, sprocResponse.StatusCode);
+
+            stringResponse = sprocResponse.Resource;
+            Assert.IsNull(stringResponse);
 
             StoredProcedureResponse deleteResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
@@ -366,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             StoredProcedureExecuteResponse<string> sprocResponse2 = await this.scripts.ExecuteStoredProcedureAsync<string>(
                 storedProcedureId: sprocId,
                 partitionKey: new Cosmos.PartitionKey(testPartitionId),
-                inputParams: new StoredProcedureDefinition("one", "two","three"),
+                arguments: new StoredProcedureArguments("one", "two", "three"),
                 requestOptions: null,
                 cancellationToken: default(CancellationToken));
 
