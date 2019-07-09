@@ -158,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     try
                     {
                         doc3 = await container.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(resourceRandomId), id: resourceRandomId);
+                        Assert.Fail();
                     }
                     catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
                     {
@@ -671,7 +672,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task DeleteContainerAsync(Container container)
+        private async Task DeleteContainerIfExistsAsync(Container container)
         {
             try
             {
@@ -724,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (type == FabircServiceReuseType.Bindable)
             {
-                await this.DeleteContainerAsync(collBar);
+                await this.DeleteContainerIfExistsAsync(collBar);
             }
 
             // Now verify the collectionFooId, the cache has collectionFooId -> OldRid cache
@@ -745,7 +746,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (type == FabircServiceReuseType.BoundToDifferentName)
             {
-                await this.DeleteContainerAsync(collBar);
+                await this.DeleteContainerIfExistsAsync(collBar);
             }
         }
 
@@ -1007,19 +1008,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
-        public async Task NameRoutingBadUrlTest()
+        public void NameRoutingBadUrlTest()
         {
             CosmosClient client;
 
             client = TestCommon.CreateCosmosClient(true);
-            await this.NameRoutingBadUrlTestPrivateAsync(client, false);
+            this.NameRoutingBadUrlTestPrivateAsync(client, false).Wait();
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             client = TestCommon.CreateClient(false, Protocol.Https);
-            this.NameRoutingBadUrlTestPrivateAsync(client, false);
+            this.NameRoutingBadUrlTestPrivateAsync(client, false).Wait();
 
             client = TestCommon.CreateClient(false, Protocol.Tcp);
-            this.NameRoutingBadUrlTestPrivateAsync(client, false, true);
+            this.NameRoutingBadUrlTestPrivateAsync(client, false, true).Wait();
 #endif
         }
 

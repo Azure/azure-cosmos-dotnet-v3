@@ -364,6 +364,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 ContainerResponse containerResponse = await container.DeleteContainerAsync();
+                Assert.Fail();
             }
             catch (CosmosException ex)
             {

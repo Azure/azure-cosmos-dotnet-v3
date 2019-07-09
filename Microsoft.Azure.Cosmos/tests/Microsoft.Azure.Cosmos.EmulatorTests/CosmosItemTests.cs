@@ -1720,7 +1720,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Headers.ActivityId);
             Assert.IsNotNull(response.ErrorMessage);
 
-            // For typed, it will throw         
+            // For typed, it will throw 
             try
             {
                 ItemResponse<string> typedResponse = await container.ReadItemAsync<string>("id1", Cosmos.PartitionKey.None);

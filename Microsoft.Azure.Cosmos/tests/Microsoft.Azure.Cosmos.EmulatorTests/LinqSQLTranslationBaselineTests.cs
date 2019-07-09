@@ -46,8 +46,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                testDb = await cosmosClient.CreateDatabaseAsync(nameof(LinqSQLTranslationBaselineTest));
-            }                        
+                //swallow
+            }
+
+            testDb = await cosmosClient.CreateDatabaseAsync(nameof(LinqSQLTranslationBaselineTest));
         }
 
         [TestInitialize]

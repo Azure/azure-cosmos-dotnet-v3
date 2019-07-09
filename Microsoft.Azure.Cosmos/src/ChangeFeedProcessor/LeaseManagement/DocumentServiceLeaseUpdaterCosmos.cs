@@ -83,24 +83,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             try
             {
                 ItemRequestOptions itemRequestOptions = this.CreateIfMatchOptions(lease);
-                
-                try
-                {
-                    ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReplaceItemAsync<DocumentServiceLeaseCore>(
-                    id: itemId,
-                    item: lease,
-                    partitionKey: partitionKey,
-                    requestOptions: itemRequestOptions).ConfigureAwait(false);
 
-                    return response.Resource;
-                }
-                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    throw new LeaseLostException(lease, true);
-                }
+                ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReplaceItemAsync<DocumentServiceLeaseCore>(
+                id: itemId,
+                item: lease,
+                partitionKey: partitionKey,
+                requestOptions: itemRequestOptions).ConfigureAwait(false);
+
+                return response.Resource;
             }
             catch (CosmosException ex)
             {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new LeaseLostException(lease, true);
+                }
+
                 DefaultTrace.TraceWarning("Lease operation exception, status code: {0}", ex.StatusCode);
                 if (ex.StatusCode == HttpStatusCode.PreconditionFailed)
                 {
