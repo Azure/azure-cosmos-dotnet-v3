@@ -1387,7 +1387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                Task[] createItems = new Task[100];
+                Task[] createItems = new Task[300];
                 for (int i = 0; i < createItems.Length; i++)
                 {
                     ToDoActivity temp = this.CreateRandomToDoActivity();
@@ -1398,9 +1398,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Task.WaitAll(createItems);
 
-                List<Task> createQuery = new List<Task>(100);
+                List<Task> createQuery = new List<Task>(500);
                 List<ResponseMessage> failedToManyRequests = new List<ResponseMessage>();
-                for (int i = 0; i < 100 && failedToManyRequests.Count == 0; i++)
+                for (int i = 0; i < 500 && failedToManyRequests.Count == 0; i++)
                 {
                     createQuery.Add(VerifyQueryToManyExceptionAsync(
                         container, 
@@ -1411,7 +1411,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Task[] tasks = createQuery.ToArray();
                 Task.WaitAll(tasks);
 
-                Assert.IsTrue(failedToManyRequests.Count > 0);
+                Assert.IsTrue(failedToManyRequests.Count > 0, "Rate limiting appears to be disabled");
                 ResponseMessage failedResponseMessage = failedToManyRequests.First();
                 Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
                 Assert.IsNull(failedResponseMessage.ErrorMessage);
