@@ -163,6 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 await func();
+                Assert.Fail();
             }
             catch (CosmosException ex)
             {

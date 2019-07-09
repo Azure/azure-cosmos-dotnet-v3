@@ -1508,8 +1508,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             Container collection = await database.CreateContainerAsync(collectionSpec);
 
-            Scripts scripts = collection.Scripts;
-            StoredProcedureProperties sprocUri = await scripts.ReadStoredProcedureAsync("__.sys.echo");
+            Scripts scripts = collection.Scripts;            
             string input = "foobar";
 
             string result = string.Empty;
