@@ -1530,20 +1530,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static async Task VerifyReadFeedToManyExceptionAsync(Container container, List<ResponseMessage> failedToManyMessages)
-        {
-            FeedIterator iterator = container.GetItemQueryStreamIterator();
-            while (iterator.HasMoreResults && failedToManyMessages.Count == 0)
-            {
-                ResponseMessage response = await iterator.ReadNextAsync();
-                if (response.StatusCode == (HttpStatusCode)429)
-                {
-                    failedToManyMessages.Add(response);
-                    return;
-                }
-            }
-        }
-
         private static async Task ExecuteQueryAsync(Container container, HttpStatusCode expected)
         {
             FeedIterator iterator = container.GetItemQueryStreamIterator("select * from r");
