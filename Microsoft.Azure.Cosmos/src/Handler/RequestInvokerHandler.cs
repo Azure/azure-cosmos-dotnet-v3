@@ -5,11 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -72,7 +74,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             await this.client.DocumentClient.EnsureValidClientAsync();
-            await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
+#if DEBUG                 
+            ResponseMessage response = await this.AssertPartitioningDetailsAsync(request, cancellationToken);
+            if (response != null)
+            {
+                return response;
+            }
+#endif
             this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
         }
@@ -205,6 +213,32 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (this.client.DocumentClient.UseMultipleWriteLocations)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
+            }
+        }
+
+        private async Task<ResponseMessage> AssertPartitioningDetailsAsync(RequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.IsMasterOperation())
+            {
+                return null;
+            }
+
+            CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
+            try
+            {
+                ContainerProperties collectionFromCache =
+                await collectionCache.ResolveCollectionAsync(request.ToDocumentServiceRequest(), cancellationToken);
+
+                if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+                {
+                    Debug.Assert(request.AssertPartitioningPropertiesAndHeaders());
+                }
+
+                return null;
+            }
+            catch (DocumentClientException ex)
+            {
+                return ex.ToCosmosResponseMessage(request);
             }
         }
     }

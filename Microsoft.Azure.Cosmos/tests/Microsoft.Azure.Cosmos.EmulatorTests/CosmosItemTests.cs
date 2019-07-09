@@ -1474,37 +1474,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task ExecuteQueryAsync(Container container, HttpStatusCode expected)
         {
-            try
+            FeedIterator iterator = container.GetItemQueryStreamIterator("select * from r");
+            while (iterator.HasMoreResults)
             {
-                FeedIterator iterator = container.GetItemQueryStreamIterator("select * from r");
-                while (iterator.HasMoreResults)
-                {
-                    ResponseMessage response = await iterator.ReadNextAsync();
-                    Assert.AreEqual(expected, response.StatusCode, $"ExecuteQueryAsync substatuscode: {response.Headers.SubStatusCode} ");
-                }
+                ResponseMessage response = await iterator.ReadNextAsync();
+                Assert.AreEqual(expected, response.StatusCode, $"ExecuteQueryAsync substatuscode: {response.Headers.SubStatusCode} ");
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, expected);
-            }
-            
         }
 
         private static async Task ExecuteReadFeedAsync(Container container, HttpStatusCode expected)
         {
-            try
+            FeedIterator iterator = container.GetItemQueryStreamIterator();
+            while (iterator.HasMoreResults)
             {
-                FeedIterator iterator = container.GetItemQueryStreamIterator();
-                while (iterator.HasMoreResults)
-                {
-                    ResponseMessage response = await iterator.ReadNextAsync();
-                    Assert.AreEqual(expected, response.StatusCode, $"ExecuteReadFeedAsync substatuscode: {response.Headers.SubStatusCode} ");
-                }
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, expected);
-            }            
+                ResponseMessage response = await iterator.ReadNextAsync();
+                Assert.AreEqual(expected, response.StatusCode, $"ExecuteReadFeedAsync substatuscode: {response.Headers.SubStatusCode} ");
+            } 
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
