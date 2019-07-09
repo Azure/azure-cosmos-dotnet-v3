@@ -61,8 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             HttpStatusCode[] testHttpStatusCodes = new HttpStatusCode[]
                                 {
-                                    HttpStatusCode.OK,
-                                    HttpStatusCode.NotFound
+                                    HttpStatusCode.OK                                    
                                 };
 
             // User operations

@@ -22,10 +22,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                     itemId,
                     partitionKey)
                     .ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return default(T);
-            }
 
             return response;
         }
@@ -52,10 +48,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
             var response = await container.DeleteItemAsync<T>(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                return default(T);
-            }
 
             return response.Resource;
         }

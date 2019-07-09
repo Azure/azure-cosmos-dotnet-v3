@@ -97,7 +97,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string resourceRandom2Id = "randomToDelete2" + suffix;
 
                 // Delete database if exist:
-                Cosmos.Database databaseToDelete = await client.GetDatabase(databaseId).DeleteAsync();
+
+                try
+                {
+                    Cosmos.Database databaseToDelete = await client.GetDatabase(databaseId).DeleteAsync();
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    //swallow
+                }
+                
 
                 //1. Database CRUD
                 Cosmos.Database database = await client.CreateDatabaseAsync(resourceRandomId);
@@ -146,8 +155,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     // 
                     await container.ReplaceItemAsync<dynamic>(id: doc3Id, item: new { id = doc3Id, Description = "test" });
-                    doc3 = await container.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(resourceRandomId), id: resourceRandomId);
-
+                    try
+                    {
+                        doc3 = await container.DeleteItemAsync<Document>(partitionKey: new Cosmos.PartitionKey(resourceRandomId), id: resourceRandomId);
+                    }
+                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                    {
+                        //swallow
+                    }
+                    
                     // read databaseCollection feed.
                     FeedIterator<dynamic> itemIterator = container.GetItemQueryIterator<dynamic>(queryDefinition: null);
                     int count = 0;
@@ -655,6 +671,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        private async Task DeleteContainerAsync(Container container)
+        {
+            try
+            {
+                await container.DeleteContainerAsync();
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //swallow
+            }
+        }
+
         private async Task UsingSameFabircServiceTestAsync(Cosmos.Database database, FabircServiceReuseType type,
             Container collectionToDelete,
             CallAPIForStaleCacheTest eApiTest)
@@ -696,7 +724,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (type == FabircServiceReuseType.Bindable)
             {
-                await collBar.DeleteContainerAsync();
+                await this.DeleteContainerAsync(collBar);
             }
 
             // Now verify the collectionFooId, the cache has collectionFooId -> OldRid cache
@@ -717,7 +745,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (type == FabircServiceReuseType.BoundToDifferentName)
             {
-                await collBar.DeleteContainerAsync(); ;
+                await this.DeleteContainerAsync(collBar);
             }
         }
 
@@ -979,19 +1007,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         [TestMethod]
-        public void NameRoutingBadUrlTest()
+        public async Task NameRoutingBadUrlTest()
         {
             CosmosClient client;
 
             client = TestCommon.CreateCosmosClient(true);
-            this.NameRoutingBadUrlTestPrivateAsync(client, false).Wait();
+            await this.NameRoutingBadUrlTestPrivateAsync(client, false);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             client = TestCommon.CreateClient(false, Protocol.Https);
-            this.NameRoutingBadUrlTestPrivateAsync(client, false).Wait();
+            this.NameRoutingBadUrlTestPrivateAsync(client, false);
 
             client = TestCommon.CreateClient(false, Protocol.Tcp);
-            this.NameRoutingBadUrlTestPrivateAsync(client, false, true).Wait();
+            this.NameRoutingBadUrlTestPrivateAsync(client, false, true);
 #endif
         }
 
@@ -1018,9 +1046,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 // the url doesn't conform to the schema at at all.
                 ItemResponse<Document> response = await coll.ReadItemAsync<Document>("dba/what/colltions/abc", new Cosmos.PartitionKey(doc1Id));
-                Assert.IsNull(response.Resource);
-                Assert.AreEqual(response.StatusCode, HttpStatusCode.NotFound);
-            }
+            }            
             catch (CosmosException e)
             {
                 // without client validation.
@@ -1032,8 +1058,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 // the url doesn't conform to the schema at at all.
                 ItemResponse<Document> response = await coll.ReadItemAsync<Document>("dbs/what/colltions/abc", new Cosmos.PartitionKey(doc1Id));
-                Assert.IsNull(response.Resource);
-                Assert.AreEqual(response.StatusCode, HttpStatusCode.NotFound);
             }
             catch (CosmosException e)
             {
@@ -1051,20 +1075,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException e)
             {
                 Assert.IsNotNull(e.Message);
-                Assert.IsTrue(e.StatusCode == HttpStatusCode.BadRequest || e.StatusCode == HttpStatusCode.Unauthorized);
+                Assert.AreEqual(e.StatusCode, HttpStatusCode.NotFound);
             }
 
             try
             {
                 // doing a collection read with Document link
                 ContainerResponse collection1 = await database.GetContainer(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id).ToString()).ReadContainerAsync();
-                Assert.IsNull(collection1.Resource);
-                Assert.AreEqual(collection1.StatusCode, HttpStatusCode.NotFound);
             }
             catch (CosmosException e)
             {
                 Assert.IsNotNull(e.Message);
-                Assert.IsTrue(e.StatusCode == HttpStatusCode.BadRequest || e.StatusCode == HttpStatusCode.Unauthorized);
+                Assert.AreEqual(e.StatusCode, HttpStatusCode.NotFound);
             }
             finally
             {

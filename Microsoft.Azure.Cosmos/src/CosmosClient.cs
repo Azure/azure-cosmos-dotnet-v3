@@ -429,16 +429,20 @@ namespace Microsoft.Azure.Cosmos
 
             // Doing a Read before Create will give us better latency for existing databases
             Database database = this.GetDatabase(id);
-            DatabaseResponse cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
-            if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.NotFound)
-            {
-                return cosmosDatabaseResponse;
-            }
+            DatabaseResponse cosmosDatabaseResponse;
 
-            cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, throughput, requestOptions, cancellationToken: cancellationToken);
-            if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.Conflict)
+            try
             {
-                return cosmosDatabaseResponse;
+                cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
+                return cosmosDatabaseResponse;                
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, throughput, requestOptions, cancellationToken: cancellationToken);
+                if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.Conflict)
+                {
+                    return cosmosDatabaseResponse;
+                }
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create

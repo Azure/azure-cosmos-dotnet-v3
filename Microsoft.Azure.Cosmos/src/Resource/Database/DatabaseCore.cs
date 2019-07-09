@@ -232,16 +232,20 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             Container container = this.GetContainer(containerProperties.Id);
-            ContainerResponse cosmosContainerResponse = await container.ReadContainerAsync(cancellationToken: cancellationToken);
-            if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
-            {
-                return cosmosContainerResponse;
-            }
+            ContainerResponse cosmosContainerResponse;
 
-            cosmosContainerResponse = await this.CreateContainerAsync(containerProperties, throughput, requestOptions, cancellationToken: cancellationToken);
-            if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
+            try
             {
-                return cosmosContainerResponse;
+                cosmosContainerResponse = await container.ReadContainerAsync(cancellationToken: cancellationToken);                
+                return cosmosContainerResponse;                
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                cosmosContainerResponse = await this.CreateContainerAsync(containerProperties, throughput, requestOptions, cancellationToken: cancellationToken);
+                if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
+                {
+                    return cosmosContainerResponse;
+                }
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
