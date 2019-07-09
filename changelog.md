@@ -1,12 +1,24 @@
-## Changes in [3.0.0.9-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0.9-preview) : ##
+# Changelog
 
-* Cosmos Client builder pattern
-* Non string partition keys are allowed
-* Exception less code-path for 429
-* Added support for spatial classes
-* Added item cross partition query stream
-* Fixed JSON parsing exception when headers are to large
+All notable changes to this project will be documented in this file.
 
-## Changes in [3.0.0.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0.1-preview) : ##
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-* Initial release
+## [Unreleased]
+
+### Added
+
+- StandByFeedIterator with no StartTime (#503)
+- Making LINQ extension classes public (#507)
+
+### Changed
+
+- Remove GC.SuppressFinalize from response message (#512)
+- Query fix to fully drain all items when it contains empty pages (#500)
+
+## [3.0.0-rc1] - 2019-07-01
+
+### Added
+
+- Initial release candidate
