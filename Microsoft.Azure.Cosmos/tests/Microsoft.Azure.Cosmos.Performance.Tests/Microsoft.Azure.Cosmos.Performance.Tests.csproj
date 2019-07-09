@@ -6,6 +6,10 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
+    <DirectVersion>3.0.0.34-preview</DirectVersion>
+    <HybridRowVersion>1.0.0-preview</HybridRowVersion>
+    <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
+    <DirectPackageName Condition=" '$(SignAssembly)' != 'true' ">Microsoft.Azure.Cosmos.Direct.MyGet</DirectPackageName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +22,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="$(DirectPackageName)" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>

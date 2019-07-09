@@ -92,6 +92,7 @@ namespace Microsoft.Azure.Cosmos
             bool hasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
             if (!hasMoreResults)
             {
+                currentRangeToken.Token = responseContinuationToken;
                 // Current Range is done, push it to the end
                 this.compositeContinuationToken.MoveToNextToken();
             }

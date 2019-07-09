@@ -121,44 +121,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestConflictResolutionPolicy()
         {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/users";
+            Database databaseForConflicts = await this.cosmosClient.CreateDatabaseAsync("conflictResolutionContainerTest",
+                cancellationToken: this.cancellationToken);
 
-            ContainerResponse containerResponse =
-                await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithConflictResolution()
-                        .WithLastWriterWinsResolution("/lww")
-                        .Attach()
-                    .CreateAsync();
+            try
+            {
+                string containerName = "conflictResolutionContainerTest";
+                string partitionKeyPath = "/users";
 
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.AreEqual(containerName, containerResponse.Resource.Id);
-            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
-            ContainerProperties containerSettings = containerResponse.Resource;
-            Assert.IsNotNull(containerSettings.ConflictResolutionPolicy);
-            Assert.AreEqual(ConflictResolutionMode.LastWriterWins, containerSettings.ConflictResolutionPolicy.Mode);
-            Assert.AreEqual("/lww", containerSettings.ConflictResolutionPolicy.ResolutionPath);
-            Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ResolutionProcedure));
+                ContainerResponse containerResponse =
+                    await databaseForConflicts.DefineContainer(containerName, partitionKeyPath)
+                        .WithConflictResolution()
+                            .WithLastWriterWinsResolution("/lww")
+                            .Attach()
+                        .CreateAsync();
 
-            // Delete container
-            await containerResponse.Container.DeleteContainerAsync();
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                ContainerProperties containerSettings = containerResponse.Resource;
+                Assert.IsNotNull(containerSettings.ConflictResolutionPolicy);
+                Assert.AreEqual(ConflictResolutionMode.LastWriterWins, containerSettings.ConflictResolutionPolicy.Mode);
+                Assert.AreEqual("/lww", containerSettings.ConflictResolutionPolicy.ResolutionPath);
+                Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ResolutionProcedure));
 
-            // Re-create with custom policy
-            string sprocName = "customresolsproc";
-            containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithConflictResolution()
-                        .WithCustomStoredProcedureResolution(sprocName)
-                        .Attach()
-                    .CreateAsync();
+                // Delete container
+                await containerResponse.Container.DeleteContainerAsync();
 
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.AreEqual(containerName, containerResponse.Resource.Id);
-            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
-            containerSettings = containerResponse.Resource;
-            Assert.IsNotNull(containerSettings.ConflictResolutionPolicy);
-            Assert.AreEqual(ConflictResolutionMode.Custom, containerSettings.ConflictResolutionPolicy.Mode);
-            Assert.AreEqual(sprocName, containerSettings.ConflictResolutionPolicy.ResolutionProcedure);
-            Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ResolutionPath));
+                // Re-create with custom policy
+                string sprocName = "customresolsproc";
+                containerResponse = await databaseForConflicts.DefineContainer(containerName, partitionKeyPath)
+                        .WithConflictResolution()
+                            .WithCustomStoredProcedureResolution(sprocName)
+                            .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                containerSettings = containerResponse.Resource;
+                Assert.IsNotNull(containerSettings.ConflictResolutionPolicy);
+                Assert.AreEqual(ConflictResolutionMode.Custom, containerSettings.ConflictResolutionPolicy.Mode);
+                Assert.AreEqual(UriFactory.CreateStoredProcedureUri(databaseForConflicts.Id, containerName, sprocName), containerSettings.ConflictResolutionPolicy.ResolutionProcedure);
+                Assert.IsTrue(string.IsNullOrEmpty(containerSettings.ConflictResolutionPolicy.ResolutionPath));
+            }
+            finally
+            {
+                await databaseForConflicts.DeleteAsync();
+            }
         }
 
         [TestMethod]

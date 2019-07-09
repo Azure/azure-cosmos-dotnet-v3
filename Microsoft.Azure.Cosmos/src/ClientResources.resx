@@ -240,6 +240,9 @@
   <data name="StringCompareToInvalidOperator" xml:space="preserve">
     <value>Invalid operator for string.CompareTo(). Vaid operators are ('==', '&lt;', '&lt;=', '&gt;' or '&gt;=')</value>
   </data>
+  <data name="TypeCheckExtensionFunctionsNotImplemented" xml:space="preserve">
+    <value>Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.</value>
+  </data>
   <data name="UdfNameIsNullOrEmpty" xml:space="preserve">
     <value>User-defined function name can not be null or empty.</value>
   </data>
