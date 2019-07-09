@@ -17,7 +17,12 @@ namespace Microsoft.Azure.Cosmos
     /// Response of a batch request.
     /// </summary>
 #pragma warning disable CA1710 // Identifiers should have correct suffix
-    public class BatchResponse : IReadOnlyList<BatchOperationResult>, IDisposable
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class BatchResponse : IReadOnlyList<BatchOperationResult>, IDisposable
 #pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         private bool isDisposed;

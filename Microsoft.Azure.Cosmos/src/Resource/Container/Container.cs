@@ -1014,6 +1014,7 @@ namespace Microsoft.Azure.Cosmos
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
 
+#if PREVIEW
         /// <summary>
         /// Initializes a new instance of the <see cref="Batch"/> class.
         /// </summary>
@@ -1104,5 +1105,6 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Batch CreateBatch(PartitionKey partitionKey);
+#endif
     }
 }

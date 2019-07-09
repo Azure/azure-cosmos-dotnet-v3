@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a batch of requests that will be performed atomically against the Azure Cosmos DB service.
     /// </summary>
-    public abstract class Batch
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class Batch
     {
         /// <summary>
         /// Adds an operation to create an item into the batch.

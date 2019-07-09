@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return doc.Id;
         }
 
-        protected static BatchItemRequestOptions GetBatchItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, int? ttlInSeconds = null)
+        internal static BatchItemRequestOptions GetBatchItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, int? ttlInSeconds = null)
         {
             BatchItemRequestOptions requestOptions = new BatchItemRequestOptions()
             {

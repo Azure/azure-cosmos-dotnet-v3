@@ -7,7 +7,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// <see cref="RequestOptions"/> that apply to operations within a <see cref="Batch"/>.
     /// </summary>
-    public class BatchItemRequestOptions : RequestOptions
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class BatchItemRequestOptions : RequestOptions
     {
         /// <summary>
         /// Gets or sets the indexing directive (Include or Exclude) for the request in the Azure Cosmos DB service.

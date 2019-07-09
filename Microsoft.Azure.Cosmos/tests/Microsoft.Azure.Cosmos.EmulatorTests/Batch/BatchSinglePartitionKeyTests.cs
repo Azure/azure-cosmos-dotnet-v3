@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc replaceDoc = this.GetTestDocCopy(firstDoc);
             replaceDoc.Cost += 20;
 
-            BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+            BatchResponse batchResponse = await new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                 .CreateItem(firstDoc)
                 .ReplaceItem(replaceDoc.Id, replaceDoc)
                 .ExecuteAsync();
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     IfMatchEtag = readResponse.ETag
                 };
 
-                BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchResponse batchResponse = await new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                    .CreateItem(testDocToCreate)
                    .ReplaceItem(testDocToReplace.Id, testDocToReplace, requestOptions: firstReplaceOptions)
                    .ExecuteAsync();
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     IfMatchEtag = BatchTestBase.Random.Next().ToString()
                 };
 
-                BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchResponse batchResponse = await new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                    .ReplaceItem(testDocToReplace.Id, testDocToReplace, requestOptions: replaceOptions)
                    .ExecuteAsync();
 
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TestDoc testDocToUpsert = await BatchTestBase.CreateSchematizedTestDocAsync(container, this.PartitionKey1, ttlInSeconds: ttlInSeconds);
                 testDocToUpsert.Cost++;
 
-                BatchCore batch = (BatchCore)(container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchCore batch = (BatchCore)(new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                        .CreateItemStream(
                             BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
                             BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized, ttlInSeconds: ttlInSeconds))
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             TestDoc doc = await BatchTestBase.CreateJsonTestDocAsync(container, this.PartitionKey1, appxDocSizeInBytes);
 
-            Batch batch = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
+            Batch batch = new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1));
             for (int i = 0; i < operationCount; i++)
             {
                 batch.ReadItem(doc.Id);
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = BatchTestBase.JsonContainer;
             await this.CreateJsonTestDocsAsync(container);
 
-            BatchResponse batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+            BatchResponse batchResponse = await new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .ReadItem(this.TestDocPk1ExistingA.Id)
                     .ReadItem(this.TestDocPk1ExistingB.Id)
                     .ReadItem(this.TestDocPk1ExistingC.Id)
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             BatchResponse batchResponse;
             if (!isStream)
             {
-                batchResponse = await container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                batchResponse = await new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .CreateItem(testDocToCreate)
                     .ReadItem(this.TestDocPk1ExistingC.Id)
                     .ReplaceItem(testDocToReplace.Id, testDocToReplace)
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                BatchCore batch = (BatchCore)(container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                BatchCore batch = (BatchCore)(new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                     .CreateItemStream(
                         BatchTestBase.TestDocToStream(testDocToCreate, isSchematized),
                         BatchTestBase.GetBatchItemRequestOptions(testDocToCreate, isSchematized))
@@ -408,8 +408,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task<BatchResponse[]> RunTwoLargeBatchesAsync(Container container)
         {
-            Batch batch1 = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
-            Batch batch2 = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1));
+            Batch batch1 = new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1));
+            Batch batch2 = new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1));
 
             for (int i = 0; i < Constants.MaxOperationsInDirectModeBatchRequest; i++)
             {
@@ -536,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
             TestDoc anotherTestDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
-            Batch batch = container.CreateBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+            Batch batch = new BatchCore((ContainerCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
                 .CreateItem(testDocToCreate);
 
             appendOperation(batch);

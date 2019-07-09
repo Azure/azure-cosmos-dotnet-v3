@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (RequestOptions batchOptions in badBatchOptionsList)
             {
                 BatchCore batch = (BatchCore)(
-                        container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+                        new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                             .ReadItem("someId"));
 
                 await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (BatchItemRequestOptions itemOptions in badItemOptionsList)
             {
-                Batch batch = container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+                Batch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                         .ReplaceItem("someId", new TestItem("repl"), itemOptions);
 
                 await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task BatchNoOperationsAsync()
         {
             Container container = BatchUnitTests.GetContainer();
-            Batch batch = container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
+            Batch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
             await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
                 batch,
                 typeof(ArgumentException),
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Increase the doc size by a bit so all docs won't fit in one server request.
             appxDocSize = (int)(appxDocSize * 1.05);
-            Batch batch = container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
+            Batch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
             for (int i = 0; i < operationCount; i++)
             {
                 TestItem testItem = new TestItem(new string('x', appxDocSize));
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Container container = BatchUnitTests.GetContainer();
             const int operationCount = Constants.MaxOperationsInDirectModeBatchRequest + 1;
 
-            Batch batch = container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
+            Batch batch = new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1));
             for (int i = 0; i < operationCount; i++)
             {
                 batch.ReadItem("someId");
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Container container = BatchUnitTests.GetContainer(testHandler);
 
-            BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+            BatchResponse batchResponse = await new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .CreateItem(createItem)
                 .ReadItem(readId)
                 .ReplaceItem(replaceItem.Id, replaceItem)
@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Container container = BatchUnitTests.GetContainer(testHandler);
 
-            BatchResponse batchResponse = await container.CreateBatch(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
+            BatchResponse batchResponse = await new BatchCore((ContainerCore)container, new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1))
                 .ReadItem("id1")
                 .ReadItem("id2")
                 .ExecuteAsync();
