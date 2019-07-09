@@ -291,14 +291,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Scripts scripts = this.container.GetScripts();
         /// string sprocId = "appendString";
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
-        ///         id: sprocId,
-        ///         body: sprocBody);
+        ///         sprocId,
+        ///         sprocBody);
         /// 
         /// // Execute the stored procedure
         /// StoredProcedureExecuteResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string>(
-        ///                         storedProcedureId: sprocId,
-        ///                         partitionKey: new PartitionKey(testPartitionId),
-        ///                         parameters: new dynamic[] {"myPrefixString", "myPostfixString"});
+        ///                         sprocId,
+        ///                         new PartitionKey(testPartitionId),
+        ///                         new dynamic[] {"myPrefixString", "myPostfixString"});
         ///                         
         /// Console.WriteLine(sprocResponse.Resource);
         /// /// ]]>
@@ -348,14 +348,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Scripts scripts = this.container.GetScripts();
         /// string sprocId = "appendString";
         /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
-        ///         id: sprocId,
-        ///         body: sprocBody);
+        ///         sprocId,
+        ///         sprocBody);
         /// 
         /// // Execute the stored procedure
         /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
-        ///                         storedProcedureId: sprocId,
-        ///                         partitionKey: new PartitionKey(testPartitionId),
-        ///                         parameters: new dynamic[] {"myPrefixString", "myPostfixString"});
+        ///                         sprocId,
+        ///                         new PartitionKey(testPartitionId),
+        ///                         new dynamic[] {"myPrefixString", "myPostfixString"});
         ///                         
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
