@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
             StoredProcedureExecuteResponse<object> sprocResponse = await scripts.ExecuteStoredProcedureAsync<object>(
                 storedProcedureId: storedProcedureId,
                 partitionKey: new PartitionKey(partitionKey),
-                arguments: new StoredProcedureArguments(new object()));
+                parameters: new dynamic[] { new object() });
 
             requestCharge = sprocResponse.RequestCharge;
 

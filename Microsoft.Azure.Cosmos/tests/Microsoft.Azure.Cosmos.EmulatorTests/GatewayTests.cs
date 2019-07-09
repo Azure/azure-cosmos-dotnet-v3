@@ -133,7 +133,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(retrievedStoredProcedure);
             Assert.AreEqual(storedProcedure.Id, retrievedStoredProcedure.Resource.Id);
 
-            response = collection.Scripts.ExecuteStoredProcedureAsync<TValue>(storedProcedure.Id, new Cosmos.PartitionKey(partitionKey)).Result;
+            response = collection.Scripts.ExecuteStoredProcedureAsync<TValue>(
+                storedProcedure.Id, 
+                new Cosmos.PartitionKey(partitionKey),
+                null).Result;
             Assert.IsNotNull(response);
 
             // delete
@@ -1430,7 +1433,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Script cannot timeout.
             Scripts scripts = collection.Scripts;
             StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
-            string result = await scripts.ExecuteStoredProcedureAsync<string>(storedProcedureId: "scriptId", partitionKey: new Cosmos.PartitionKey(documentDefinition.Id));
+            string result = await scripts.ExecuteStoredProcedureAsync<string>(
+                storedProcedureId: "scriptId",
+                partitionKey: new Cosmos.PartitionKey(documentDefinition.Id),
+                parameters: null);
+
             await database.DeleteAsync();
         }
 
@@ -1476,7 +1483,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Scripts scripts = collection.Scripts;
                 StoredProcedureProperties storedProcedure = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties("scriptId", script));
-                string result = await scripts.ExecuteStoredProcedureAsync<string>("scriptId", partitionKey: new Cosmos.PartitionKey(document.Id));
+                string result = await scripts.ExecuteStoredProcedureAsync<string>(
+                    "scriptId", 
+                    partitionKey: new Cosmos.PartitionKey(document.Id),
+                    parameters: null);
             }
             catch (DocumentClientException exception)
             {
@@ -1515,7 +1525,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string result = string.Empty;
             try
             {
-                result = scripts.ExecuteStoredProcedureAsync<string>("__.sys.echo", new Cosmos.PartitionKey("anyPk"), new StoredProcedureArguments(input)).Result;
+                result = scripts.ExecuteStoredProcedureAsync<string>("__.sys.echo", new Cosmos.PartitionKey("anyPk"), new dynamic[] { input }).Result;
             }
             catch (DocumentClientException exception)
             {
