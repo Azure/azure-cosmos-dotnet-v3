@@ -1076,7 +1076,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException e)
             {
                 Assert.IsNotNull(e.Message);
-                Assert.AreEqual(e.StatusCode, HttpStatusCode.NotFound);
+                Assert.IsTrue(e.StatusCode == HttpStatusCode.BadRequest || e.StatusCode == HttpStatusCode.Unauthorized || e.StatusCode == HttpStatusCode.NotFound);
             }
 
             try
@@ -1087,7 +1087,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException e)
             {
                 Assert.IsNotNull(e.Message);
-                Assert.AreEqual(e.StatusCode, HttpStatusCode.NotFound);
+                Assert.IsTrue(e.StatusCode == HttpStatusCode.BadRequest || e.StatusCode == HttpStatusCode.Unauthorized || e.StatusCode == HttpStatusCode.NotFound);
             }
             finally
             {
