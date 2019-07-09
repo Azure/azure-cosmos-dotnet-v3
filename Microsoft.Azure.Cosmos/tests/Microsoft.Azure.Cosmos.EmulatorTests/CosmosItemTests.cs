@@ -1375,6 +1375,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
+        public async Task VerifyToManyRequestTest(bool isQuery)
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
+            Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/status");
+
+            try
+            {
+                Task[] createItems = new Task[300];
+                for (int i = 0; i < createItems.Length; i++)
+                {
+                    ToDoActivity temp = this.CreateRandomToDoActivity();
+                    createItems[i] = container.CreateItemStreamAsync(
+                        partitionKey: new Cosmos.PartitionKey(temp.status),
+                        streamPayload: this.jsonSerializer.ToStream<ToDoActivity>(temp));
+                }
+
+                Task.WaitAll(createItems);
+
+                List<Task> createQuery = new List<Task>(500);
+                List<ResponseMessage> failedToManyRequests = new List<ResponseMessage>();
+                for (int i = 0; i < 500 && failedToManyRequests.Count == 0; i++)
+                {
+                    createQuery.Add(VerifyQueryToManyExceptionAsync(
+                        container, 
+                        isQuery,
+                        failedToManyRequests));
+                }
+
+                Task[] tasks = createQuery.ToArray();
+                Task.WaitAll(tasks);
+
+                Assert.IsTrue(failedToManyRequests.Count > 0, "Rate limiting appears to be disabled");
+                ResponseMessage failedResponseMessage = failedToManyRequests.First();
+                Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
+                Assert.IsNull(failedResponseMessage.ErrorMessage);
+            }
+            finally
+            {
+                await db.DeleteAsync();
+            }
+        }
+
         [TestMethod]
         public async Task VerifySessionTokenPassThrough()
         {
@@ -1457,6 +1505,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await db1.DeleteAsync();
                 cc1.Dispose();
                 cc2.Dispose();
+            }
+        }
+
+        private static async Task VerifyQueryToManyExceptionAsync(
+            Container container,
+            bool isQuery, 
+            List<ResponseMessage> failedToManyMessages)
+        {
+            string queryText = null;
+            if (isQuery)
+            {
+                queryText = "select * from r";
+            }
+
+            FeedIterator iterator = container.GetItemQueryStreamIterator(queryText);
+            while (iterator.HasMoreResults && failedToManyMessages.Count == 0)
+            {
+                ResponseMessage response = await iterator.ReadNextAsync();
+                if (response.StatusCode == (HttpStatusCode)429)
+                {
+                    failedToManyMessages.Add(response);
+                    return;
+                }
             }
         }
 
