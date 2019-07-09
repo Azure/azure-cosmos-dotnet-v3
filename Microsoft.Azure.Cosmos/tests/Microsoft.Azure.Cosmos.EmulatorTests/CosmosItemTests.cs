@@ -1379,6 +1379,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
+        [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
         public async Task VerifyToManyRequestTest(bool isQuery)
         {
             CosmosClient client = TestCommon.CreateCosmosClient();
