@@ -66,11 +66,31 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Container container = this.database.GetContainer("containerId");
-        /// ContainerProperties containerProperties = container.ReadContainerAsync();
+        /// ContainerProperties containerProperties = await container.ReadContainerAsync();
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> ReadContainerAsync(
+            ContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Container container = this.database.GetContainer("containerId");
+        /// ResponseMessage response = await container.ReadContainerStreamAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// </returns>
+        public abstract Task<ResponseMessage> ReadContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -101,13 +121,37 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// ContainerProperties containerProperties = containerReadResponse;
-        /// setting.IndexingPolicy.Automatic = false;
-        /// ContainerResponse response = container.ReplaceContainerAsync(containerProperties);
+        /// containerProperties.IndexingPolicy.Automatic = false;
+        /// ContainerResponse response = await container.ReplaceContainerAsync(containerProperties);
         /// ContainerProperties replacedProperties = response;
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> ReplaceContainerAsync(
+            ContainerProperties containerProperties,
+            ContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Replace a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="containerProperties">The <see cref="ContainerProperties"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ContainerProperties containerProperties = containerReadResponse;
+        /// containerProperties.IndexingPolicy.Automatic = false;
+        /// ResponseMessage response = await container.ReplaceContainerStreamAsync(containerProperties);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the replace resource record.
+        /// </returns>
+        public abstract Task<ResponseMessage> ReplaceContainerStreamAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -132,11 +176,29 @@ namespace Microsoft.Azure.Cosmos
         /// <code language="c#">
         /// <![CDATA[
         /// Container container = this.database.Containers["containerId"];
-        /// ContainerResponse response = container.DeleteContainerAsync();
+        /// ContainerResponse response = await container.DeleteContainerAsync();
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<ContainerResponse> DeleteContainerAsync(
+            ContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Delete a <see cref="ContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Container container = this.database.Containers["containerId"];
+        /// ResponseMessage response = await container.DeleteContainerStreamAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
+        public abstract Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -217,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput.
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(400, requestOptions : new RequestOptions());
+        /// ThroughputResponse throughput = await this.cosmosContainer.ReplaceThroughputAsync(400);
         /// ]]>
         /// </code>
         /// </example>
@@ -228,42 +290,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.
-        /// </returns>
-        public abstract Task<ResponseMessage> ReadStreamAsync(
-            ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Replace a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <param name="containerProperties">The <see cref="ContainerProperties"/>.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the replace resource record.
-        /// </returns>
-        public abstract Task<ResponseMessage> ReplaceStreamAsync(
-            ContainerProperties containerProperties,
-            ContainerRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Delete a <see cref="ContainerProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
-        public abstract Task<ResponseMessage> DeleteStreamAsync(
-            ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -353,7 +379,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse item = this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status));
+        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(tests, new PartitionKey(test.status));
         /// ]]>
         /// </code>
         /// </example>
@@ -380,7 +406,7 @@ namespace Microsoft.Azure.Cosmos
         /// Read a response as a stream.
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.container.ReadItemStreamAsync("id", new PartitionKey("partitionKey")))
+        /// using(ResponseMessage response = await this.container.ReadItemStreamAsync("id", new PartitionKey("partitionKey")))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -441,7 +467,7 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
-        /// ToDoActivity toDoActivity = this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
         /// 
         /// ]]>
         /// </code>
@@ -471,7 +497,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upsert a Stream containing the item to Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.container.UpsertItemStreamAsync(partitionKey: new PartitionKey("itemPartitionKey"), streamPayload: stream))
+        /// using(ResponseMessage response = await this.container.UpsertItemStreamAsync(stream, new PartitionKey("itemPartitionKey")))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -539,7 +565,7 @@ namespace Microsoft.Azure.Cosmos
         ///    status = "InProgress"
         /// };
         ///
-        /// ItemResponse<ToDoActivity> item = await this.container.UpsertAsync<ToDoActivity>(test, new PartitionKey(test.status));
+        /// ItemResponse<ToDoActivity> item = await this.container.UpsertItemAsync<ToDoActivity>(test, new PartitionKey(test.status));
         /// ]]>
         /// </code>
         /// </example>
@@ -569,7 +595,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace an item in Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.container.ReplaceItemStreamAsync(partitionKey: new PartitionKey("itemPartitionKey"), id: "itemId", streamPayload: stream))
+        /// using(ResponseMessage response = await this.container.ReplaceItemStreamAsync(stream, "itemId", new PartitionKey("itemPartitionKey"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -670,7 +696,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete an item from Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(CosmosResponseMessage response = this.container.DeleteItemStreamAsync(partitionKey: "itemPartitionKey", id: "itemId"))
+        /// using(ResponseMessage response = await this.container.DeleteItemStreamAsync("itemId", "itemPartitionKey"))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -746,7 +772,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive").WithParameter("@expensive", 9000);
         /// FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-        ///     queryDefinition: queryDefinition, 
+        ///     queryDefinition: queryDefinition,
         ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
@@ -786,9 +812,9 @@ namespace Microsoft.Azure.Cosmos
         ///     public int cost {get; set;}
         /// }
         /// 
-        /// QueryDefinition sqlQuery = new QueryDefinition("select * from ToDos t where t.cost > @expensive").WithParameter("@expensive", 9000);
+        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive").WithParameter("@expensive", 9000);
         /// FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-        ///     sqlQueryDefinition: sqlQuery, 
+        ///     queryDefinition: queryDefinition,
         ///     requestOptions: new QueryRequestOptions { PartitionKey = new PartitionKey("Error")});
         ///     
         /// while (feedIterator.HasMoreResults)
@@ -920,19 +946,19 @@ namespace Microsoft.Azure.Cosmos
         /// }
         ///  
         /// // Query by the Title property
-        /// Book book = container.Items.GetItemLinqQuery<Book>(allowSynchronousQueryExecution = true)
+        /// Book book = container.Items.GetItemLinqQuery<Book>(true)
         ///                      .Where(b => b.Title == "War and Peace")
         ///                      .AsEnumerable()
         ///                      .FirstOrDefault();
         /// 
         /// // Query a nested property
-        /// Book otherBook = container.Items.GetItemLinqQuery<Book>(allowSynchronousQueryExecution = true)
+        /// Book otherBook = container.Items.GetItemLinqQuery<Book>(true)
         ///                           .Where(b => b.Author.FirstName == "Leo")
         ///                           .AsEnumerable()
         ///                           .FirstOrDefault();
         /// 
         /// // Perform iteration on books
-        /// foreach (Book matchingBook in container.Items.GetItemLinqQuery<Book>(allowSynchronousQueryExecution = true)
+        /// foreach (Book matchingBook in container.Items.GetItemLinqQuery<Book>(true)
         ///                            .Where(b => b.Price > 100))
         /// {
         ///     // Iterate through books

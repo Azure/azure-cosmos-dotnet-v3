@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictsIterator();
+        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     foreach(ConflictProperties item in await conflictIterator.FetchNextSetAsync())
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictsIterator();
+        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     foreach(ConflictProperties item in await conflictIterator.FetchNextSetAsync())
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictIterator();
+        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     foreach(ConflictProperties item in await conflictIterator.FetchNextSetAsync())
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator conflictIterator = await conflicts.GetConflictStreamIterator();
+        /// FeedIterator conflictIterator = conflicts.GetConflictQueryStreamIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator<ConflictProperties> conflictIterator = await conflicts.GetConflictIterator();
+        /// FeedIterator<ConflictProperties> conflictIterator = conflicts.GetConflictQueryIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     foreach(ConflictProperties item in await conflictIterator.FetchNextSetAsync())
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// FeedIterator conflictIterator = await conflicts.GetConflictStreamIterator();
+        /// FeedIterator conflictIterator = conflicts.GetConflictQueryStreamIterator();
         /// while (conflictIterator.HasMoreResults)
         /// {
         ///     using (CosmosResponseMessage iterator = await feedIterator.FetchNextSetAsync())
