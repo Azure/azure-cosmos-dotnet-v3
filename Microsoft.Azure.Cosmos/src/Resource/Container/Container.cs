@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Container container = this.database.Containers["containerId"];
+        /// Container container = this.database.GetContainer("containerId");
         /// ResponseMessage response = await container.DeleteContainerStreamAsync();
         /// ]]>
         /// </code>
@@ -696,7 +696,7 @@ namespace Microsoft.Azure.Cosmos
         /// Delete an item from Cosmos
         /// <code language="c#">
         /// <![CDATA[
-        /// using(ResponseMessage response = await this.container.DeleteItemStreamAsync("itemId", "itemPartitionKey"))
+        /// using(ResponseMessage response = await this.container.DeleteItemStreamAsync("itemId", new PartitionKey("itemPartitionKey")))
         /// {
         ///     if (!response.IsSuccessStatusCode)
         ///     {
@@ -1006,19 +1006,19 @@ namespace Microsoft.Azure.Cosmos
         /// }
         ///  
         /// // Query by the Title property
-        /// Book book = container.Items.GetItemLinqQuery<Book>(true)
+        /// Book book = container.GetItemLinqQueryable<Book>(true)
         ///                      .Where(b => b.Title == "War and Peace")
         ///                      .AsEnumerable()
         ///                      .FirstOrDefault();
         /// 
         /// // Query a nested property
-        /// Book otherBook = container.Items.GetItemLinqQuery<Book>(true)
+        /// Book otherBook = container.GetItemLinqQueryable<Book>(true)
         ///                           .Where(b => b.Author.FirstName == "Leo")
         ///                           .AsEnumerable()
         ///                           .FirstOrDefault();
         /// 
         /// // Perform iteration on books
-        /// foreach (Book matchingBook in container.Items.GetItemLinqQuery<Book>(true)
+        /// foreach (Book matchingBook in container.GetItemLinqQueryable<Book>(true)
         ///                            .Where(b => b.Price > 100))
         /// {
         ///     // Iterate through books
@@ -1032,7 +1032,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         ///
         /// // LINQ query generation
-        /// var setIterator = container.Items.GetItemLinqQuery<Book>()
+        /// var setIterator = container.GetItemLinqQueryable<Book>()
         ///                      .Where(b => b.Title == "War and Peace")
         ///                      .ToFeedIterator();
         ///                      

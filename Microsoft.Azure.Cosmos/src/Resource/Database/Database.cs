@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
         /// Returns a reference to a container object. 
         /// </summary>
         /// <param name="id">The cosmos container id.</param>
-        /// <returns>Cosmos container proxy</returns>
+        /// <returns>Cosmos container reference</returns>
         /// <remarks>
         /// Returns a Container reference. Reference doesn't guarantees existence.
         /// Please ensure container already exists or is created through a create operation.
