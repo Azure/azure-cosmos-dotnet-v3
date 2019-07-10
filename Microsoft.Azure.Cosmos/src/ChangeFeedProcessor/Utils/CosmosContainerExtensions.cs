@@ -18,12 +18,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             PartitionKey partitionKey,
             string itemId)
         {
-            var response = await container.ReadItemAsync<T>(
+            return await container.ReadItemAsync<T>(
                     itemId,
                     partitionKey)
                     .ConfigureAwait(false);
-
-            return response;
         }
 
         public static async Task<ItemResponse<T>> TryCreateItemAsync<T>(

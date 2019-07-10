@@ -240,7 +240,6 @@ namespace Microsoft.Azure.Cosmos
             
             this.ValidateContainerProperties(containerProperties);
             response = await this.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, cancellationToken);
-
             if (response.StatusCode != HttpStatusCode.Conflict)
             {
                 return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));

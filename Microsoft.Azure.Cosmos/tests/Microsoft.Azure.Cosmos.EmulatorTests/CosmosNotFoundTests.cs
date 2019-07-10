@@ -156,6 +156,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-        }       
+        }
     }
 }

@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
-            }                      
+            }
         }
 
         [TestMethod]

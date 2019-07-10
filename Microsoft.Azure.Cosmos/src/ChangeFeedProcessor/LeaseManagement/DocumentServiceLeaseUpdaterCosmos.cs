@@ -93,12 +93,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
             catch (CosmosException ex)
             {
+                DefaultTrace.TraceWarning("Lease operation exception, status code: {0}", ex.StatusCode);
                 if (ex.StatusCode == HttpStatusCode.NotFound)
                 {
                     throw new LeaseLostException(lease, true);
                 }
 
-                DefaultTrace.TraceWarning("Lease operation exception, status code: {0}", ex.StatusCode);
                 if (ex.StatusCode == HttpStatusCode.PreconditionFailed)
                 {
                     return null;
