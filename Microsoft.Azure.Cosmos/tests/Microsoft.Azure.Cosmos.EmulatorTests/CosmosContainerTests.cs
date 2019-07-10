@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             }
 
-            using (ResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteStreamAsync())
+            using (ResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteContainerStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
             }

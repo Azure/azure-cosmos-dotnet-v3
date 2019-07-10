@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
 
             Container container = this.GetContainer(containerProperties.Id);
 
-            ResponseMessage response = await container.ReadStreamAsync(cancellationToken: cancellationToken);
+            ResponseMessage response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
