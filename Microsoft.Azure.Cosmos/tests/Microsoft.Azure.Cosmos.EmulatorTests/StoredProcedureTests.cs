@@ -291,8 +291,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string sprocId = Guid.NewGuid().ToString();
 
-            StoredProcedureResponse storedProcedureResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
-            Assert.AreEqual(HttpStatusCode.NotFound, storedProcedureResponse.StatusCode);
+            try
+            {
+                StoredProcedureResponse storedProcedureResponse = await this.scripts.DeleteStoredProcedureAsync(sprocId);
+                Assert.Fail();
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }
         }
 
         [TestMethod]
