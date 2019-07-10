@@ -143,6 +143,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Id;
 
             public string Pk;
+
+            public string[] TagsField;
         }
 
         [TestMethod]
@@ -755,6 +757,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 }
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
+                obj.TagsField = new string[0];
                 return obj;
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -770,7 +773,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // ToString
                 new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())),
                 // get_item
-                new LinqTestInput("get_item", b => getQuery(b).Select(doc => doc.EnumerableField[0]))
+                new LinqTestInput("get_item", b => getQuery(b).Select(doc => doc.EnumerableField[0])),
+                // TagsMatch
+                new LinqTestInput("TagsMatch", b => getQuery(b).Where(doc => Tags.Match(doc.TagsField, new [] { "ns:name=1" }, true)))
             };
             this.ExecuteTestSuite(inputs);
         }

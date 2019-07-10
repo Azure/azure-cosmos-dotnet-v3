@@ -593,6 +593,107 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             this.WriteEndContext(")");
         }
 
+        public override void Visit(SqlTagsMatchExpression sqlObject)
+        {
+            const char nullOperator = '\0';
+            const char requiredOperator = '*';
+            const char notOperator = '!';
+            
+            (char op, string ns, string name, string value) Parse(string tag)
+            {
+                var indexOfColon = tag.IndexOf(':');
+                var indexOfEquals = tag.IndexOf('=');
+
+                if (indexOfColon < 1 || indexOfEquals < 3 || indexOfColon > indexOfEquals)
+                    throw new ArgumentException("Tag is not a machine tag");
+
+                var op = tag[0] == notOperator || tag[0] == requiredOperator ? tag[0] : nullOperator;
+                var ns = tag.Substring(op == nullOperator ? 0 : 1, op == nullOperator ? indexOfColon : indexOfColon - 1);
+                var name = tag.Substring(indexOfColon + 1, indexOfEquals - (indexOfColon + 1));
+                var value = tag.Substring(indexOfEquals + 1);
+
+                return (op, ns, name, value);
+            }
+
+            this.writer.Write("(");
+            
+            if (sqlObject.Tags.Any())
+            {
+                var machineTags = sqlObject.Tags.Select(Parse);
+                var tagsByGroup = machineTags.GroupBy(x => (ns: x.ns, name: x.name));
+                foreach (var grouping in tagsByGroup)
+                {
+                    var tagName = grouping.Key.ns + ":" + grouping.Key.name;
+                    var regulars = grouping.Where(x => x.op == nullOperator);
+                    var nots = grouping.Where(x => x.op == notOperator);
+                    var requireds = grouping.Where(x => x.op == requiredOperator);
+                    var regularProp = $"{sqlObject.MemberAccess}[\"tags\"][\"{tagName}\"][\"t\"]";
+                    var notProp = $"{sqlObject.MemberAccess}[\"tags\"][\"{tagName}\"][\"n\"]";
+
+                    if (nots.Any())
+                    {
+                        if (nots.Any(x => x.value.Length == 0))
+                        {
+                            this.writer.Write($"ARRAY_LENGTH({regularProp} ?? []) = 0");
+                        }
+                        else
+                        {
+                            this.writer.Write("(");
+                            this.writer.Write($"NOT(ARRAY_CONTAINS({regularProp} ?? [], ''))");
+                            foreach (var not in nots.Where(x => x.value.Length > 0))
+                                this.writer.Write($" AND NOT(ARRAY_CONTAINS({regularProp} ?? [], '{not.value}'))");
+                            this.writer.Write(")");
+                        }
+                    }
+                    if (regulars.Any())
+                    {
+                        if (nots.Any())
+                            this.writer.Write(" AND ");
+                        this.writer.Write("(");
+                        this.writer.Write($"NOT(ARRAY_CONTAINS({notProp} ?? [], ''))");
+                        foreach (var regular in regulars.Where(x => x.value.Length > 0))
+                            this.writer.Write($" AND NOT(ARRAY_CONTAINS({notProp} ?? [], '{regular.value}'))");
+                        this.writer.Write(")");
+                        if (regulars.All(x => x.value.Length > 0))
+                        {
+                            this.writer.Write(" AND ");
+                            this.writer.Write("(");
+                            this.writer.Write($"ARRAY_LENGTH({regularProp} ?? []) = 0 OR ARRAY_CONTAINS({regularProp} ?? [], '')");
+                            foreach (var regular in regulars)
+                                this.writer.Write($" OR ARRAY_CONTAINS({regularProp} ?? [], '{regular.value}')");
+                            this.writer.Write(")");
+                        }
+                    }
+                    if (requireds.Any())
+                    {
+                        if (nots.Any() || regulars.Any())
+                            this.writer.Write(" AND ");
+                        this.writer.Write($"ARRAY_LENGTH({regularProp} ?? []) > 0");
+                        this.writer.Write(" AND ");
+                        this.writer.Write("(");
+                        this.writer.Write($"ARRAY_CONTAINS({regularProp} ?? [], '')");
+                        foreach (var required in requireds)
+                            this.writer.Write($" OR ARRAY_CONTAINS({regularProp} ?? [], '{required.value}')");
+                        this.writer.Write(")");
+                    }
+
+                    this.writer.Write(" AND ");
+                }
+            }
+
+            if (sqlObject.SupportDocumentRequiredTags)
+            {
+                var tagsExpression = $"[{string.Join(",", sqlObject.Tags.Select(x => $"\"{x}\""))}]";
+                this.writer.Write($"udf.TagsMatch({sqlObject.MemberAccess}[\"tag\"] ?? [], {tagsExpression})");
+            }
+            else
+            {
+                this.writer.Write("1 = 1");
+            }
+
+            this.writer.Write(")");
+        }
+
         public override void Visit(SqlTopSpec sqlTopSpec)
         {
             this.writer.Write("TOP ");

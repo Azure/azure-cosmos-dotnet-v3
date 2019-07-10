@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract void Visit(SqlStringPathExpression sqlObject);
         public abstract void Visit(SqlSubqueryCollection sqlObject);
         public abstract void Visit(SqlSubqueryScalarExpression sqlObject);
+        public abstract void Visit(SqlTagsMatchExpression sqlObject);
         public abstract void Visit(SqlTopSpec sqlObject);
         public abstract void Visit(SqlUnaryScalarExpression sqlObject);
         public abstract void Visit(SqlUndefinedLiteral sqlObject);

@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlStringPathExpressionHashCode = -1280625326;
         private const int SqlSubqueryCollectionHashCode = 1175697100;
         private const int SqlSubqueryScalarExpressionHashCode = -1327458193;
+        private const int SqlTagsMatchExpressionHashCode = 957110162;
         private const int SqlTopSpecHashCode = -791376698;
         private const int SqlUnaryScalarExpressionHashCode = 723832597;
         private const int SqlUndefinedLiteralHashCode = 1290712518;
@@ -584,6 +585,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         {
             int hashCode = SqlSubqueryScalarExpressionHashCode;
             hashCode = CombineHashes(hashCode, sqlSubqueryScalarExpression.Query.Accept(this));
+            return hashCode;
+        }
+
+        public override int Visit(SqlTagsMatchExpression sqlTagsMatchExpression)
+        {
+            int hashCode = SqlTagsMatchExpressionHashCode;
+            hashCode = CombineHashes(hashCode, sqlTagsMatchExpression.MemberAccess.GetHashCode());
+            foreach (var tag in sqlTagsMatchExpression.Tags)
+                hashCode = CombineHashes(hashCode, tag.GetHashCode());
             return hashCode;
         }
 

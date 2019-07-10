@@ -317,6 +317,15 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 return SqlFunctionCallScalarExpression.Create(methodName, true, arguments.ToImmutableArray());
             }
+            if (methodCallExpression.Method.DeclaringType == typeof(Tags) && methodCallExpression.Method.Name == "Match")
+            {
+                var memberExpression = VisitMemberAccess((MemberExpression)methodCallExpression.Arguments[0], context);
+                var queryTags = (IEnumerable<string>)((ConstantExpression)methodCallExpression.Arguments[1]).Value;
+                var supportDocumentRequiredTags = false;
+                if (methodCallExpression.Arguments.Count == 3)
+                    supportDocumentRequiredTags = (bool)((ConstantExpression)methodCallExpression.Arguments[2]).Value;
+                return SqlTagsMatchExpression.Create(memberExpression.ToString(), queryTags, supportDocumentRequiredTags);
+            }
             else
             {
                 return BuiltinFunctionVisitor.VisitBuiltinFunctionCall(methodCallExpression, context);

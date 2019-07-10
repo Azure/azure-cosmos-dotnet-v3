@@ -387,6 +387,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return SqlSubqueryScalarExpression.Create(sqlSubqueryScalarExpression.Query.Accept(this) as SqlQuery);
         }
 
+        public override SqlObject Visit(SqlTagsMatchExpression sqlObject)
+        {
+            // No idea what this obfuscator does
+            return sqlObject;
+        }
+
         public override SqlObject Visit(SqlTopSpec sqlTopSpec)
         {
             return SqlTopSpec.Create(SqlNumberLiteral.Create(0));
