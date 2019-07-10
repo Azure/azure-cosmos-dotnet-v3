@@ -68,11 +68,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             CancellationToken cancellationtoken = cancellationTokenSource.Token;
 
-            Mock<CollectionCache> mockCollectionCache = new Mock<CollectionCache>();
-            mockCollectionCache.Setup(x => x.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), cancellationtoken)).Returns(Task.FromResult(new ContainerProperties("mockContainer", "/pk")));
-
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
-            client.Setup(x => x.GetCollectionCacheAsync()).Returns(Task.FromResult(mockCollectionCache.Object));
+            client.Setup(x => x.GetCachedContainerPropertiesAsync(cancellationtoken)).Returns(Task.FromResult(new ContainerProperties("mockContainer", "/pk")));
             client.Setup(x => x.ByPassQueryParsing()).Returns(false);
             client.Setup(x => x.GetPartitionedQueryExecutionInfoAsync(
                 sqlQuerySpec,
