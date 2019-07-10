@@ -99,7 +99,6 @@ namespace Microsoft.Azure.Cosmos.Query
                   sqlQuerySpecFromUser: sqlQuerySpec,
                   queryRequestOptions: cloneQueryRequestOptions,
                   resourceLink: resourceLink,
-                  getLazyFeedResponse: isContinuationExpected,
                   isContinuationExpected: isContinuationExpected,
                   allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                   correlatedActivityId: correlatedActivityId);
@@ -204,39 +203,13 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private async Task<ContainerProperties> GetContainerPropertiesAsync(CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            ContainerProperties containerProperties = null;
-            if (this.cosmosQueryContext.ResourceTypeEnum.IsCollectionChild())
-            {
-                CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
-                using (
-                    DocumentServiceRequest request = DocumentServiceRequest.Create(
-                        OperationType.Query,
-                        this.cosmosQueryContext.ResourceTypeEnum,
-                        this.cosmosQueryContext.ResourceLink.OriginalString,
-                        AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
-                {
-                    containerProperties = await collectionCache.ResolveCollectionAsync(request, cancellationToken);
-                }
-            }
-
-            if (containerProperties == null)
-            {
-                throw new ArgumentException($"The container was not found for resource: {this.cosmosQueryContext.ResourceLink.OriginalString} ");
-            }
-
-            return containerProperties;
-        }
-
         private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ContainerProperties containerProperties = await this.GetContainerPropertiesAsync(cancellationToken);
+            CosmosQueryClient cosmosQueryClient = this.cosmosQueryContext.QueryClient;
+            ContainerProperties containerProperties = await cosmosQueryClient.GetCachedContainerPropertiesAsync(cancellationToken);
             this.cosmosQueryContext.ContainerResourceId = containerProperties.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -302,18 +275,17 @@ namespace Microsoft.Azure.Cosmos.Query
                 };
 
                 rewrittenComosQueryContext = new CosmosQueryContext(
-                    this.cosmosQueryContext.QueryClient,
-                    this.cosmosQueryContext.ResourceTypeEnum,
-                    this.cosmosQueryContext.OperationTypeEnum,
-                    this.cosmosQueryContext.ResourceType,
-                    rewrittenQuerySpec,
-                    this.cosmosQueryContext.QueryRequestOptions,
-                    this.cosmosQueryContext.ResourceLink,
-                    this.cosmosQueryContext.IsContinuationExpected,
-                    this.cosmosQueryContext.CorrelatedActivityId,
-                    this.cosmosQueryContext.IsContinuationExpected,
-                    this.cosmosQueryContext.AllowNonValueAggregateQuery,
-                    this.cosmosQueryContext.ContainerResourceId);
+                    client: this.cosmosQueryContext.QueryClient,
+                    resourceTypeEnum: this.cosmosQueryContext.ResourceTypeEnum,
+                    operationType: this.cosmosQueryContext.OperationTypeEnum,
+                    resourceType: this.cosmosQueryContext.ResourceType,
+                    sqlQuerySpecFromUser: rewrittenQuerySpec,
+                    queryRequestOptions: this.cosmosQueryContext.QueryRequestOptions,
+                    resourceLink: this.cosmosQueryContext.ResourceLink,
+                    correlatedActivityId: this.cosmosQueryContext.CorrelatedActivityId,
+                    isContinuationExpected: this.cosmosQueryContext.IsContinuationExpected,
+                    allowNonValueAggregateQuery: this.cosmosQueryContext.AllowNonValueAggregateQuery,
+                    containerResourceId: this.cosmosQueryContext.ContainerResourceId);
             }
             else
             {

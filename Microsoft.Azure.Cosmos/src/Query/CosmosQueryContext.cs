@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
@@ -36,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec sqlQuerySpecFromUser,
             QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
-            bool getLazyFeedResponse,
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -80,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CorrelatedActivityId = correlatedActivityId;
         }
 
-        internal virtual async Task<QueryResponse> ExecuteQueryAsync(
+        internal virtual Task<QueryResponse> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -90,53 +88,18 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             QueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
 
-            return await this.QueryClient.ExecuteItemQueryAsync(
+            return this.QueryClient.ExecuteItemQueryAsync(
                            resourceUri: this.ResourceLink,
                            resourceType: this.ResourceTypeEnum,
                            operationType: this.OperationTypeEnum,
                            containerResourceId: this.ContainerResourceId,
                            requestOptions: requestOptions,
                            sqlQuerySpec: querySpecForInit,
-                           requestEnricher: (cosmosRequestMessage) =>
-                           {
-                               this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
-                               cosmosRequestMessage.Headers.Add(
-                                   HttpConstants.HttpHeaders.IsContinuationExpected,
-                                   isContinuationExpected.ToString());
-                               QueryRequestOptions.FillContinuationToken(
-                                   cosmosRequestMessage,
-                                   continuationToken);
-                               QueryRequestOptions.FillMaxItemCount(
-                                   cosmosRequestMessage,
-                                   pageSize);
-                               cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-                               cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                           },
+                           continuationToken: continuationToken,
+                           partitionKeyRange: partitionKeyRange,
+                           isContinuationExpected: isContinuationExpected,
+                           pageSize: pageSize,
                            cancellationToken: cancellationToken);
-        }
-
-        private void PopulatePartitionKeyRangeInfo(
-            RequestMessage request, 
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity)
-        {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            if (request.ResourceType.IsPartitioned())
-            {
-                // If the request already has the logical partition key,
-                // then we shouldn't add the physical partition key range id.
-
-                bool hasPartitionKey = request.Headers.PartitionKey != null;
-                if (!hasPartitionKey)
-                {
-                    request
-                        .ToDocumentServiceRequest()
-                        .RouteTo(partitionKeyRangeIdentity);
-                }
-            }
         }
     }
 }

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Linq
               queryClient,
               cosmosQueryRequestOptions,
               this.allowSynchronousQueryExecution,
-              this.queryClient.DocumentQueryClient.OnExecuteScalarQueryCallback);
+              this.queryClient.OnExecuteScalarQueryCallback);
             this.correlatedActivityId = Guid.NewGuid();
         }
 
