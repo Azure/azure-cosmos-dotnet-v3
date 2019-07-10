@@ -232,25 +232,17 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             Container container = this.GetContainer(containerProperties.Id);
-
             ResponseMessage response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
-
-            if (response.IsSuccessStatusCode)
+            if (response.StatusCode != HttpStatusCode.NotFound)
             {
                 return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
             }
             
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            this.ValidateContainerProperties(containerProperties);
+            response = await this.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, cancellationToken);
+
+            if (response.StatusCode != HttpStatusCode.Conflict)
             {
-                this.ValidateContainerProperties(containerProperties);
-                Stream stream = this.ClientContext.PropertiesSerializer.ToStream(containerProperties);
-                response = await this.CreateContainerStreamInternalAsync(stream, throughput, requestOptions, cancellationToken: cancellationToken);
-
-                if (response.StatusCode == HttpStatusCode.Conflict)
-                {
-                    return await container.ReadContainerAsync(cancellationToken: cancellationToken);
-                }
-
                 return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
             }
 

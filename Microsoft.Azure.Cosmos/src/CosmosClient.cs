@@ -429,25 +429,16 @@ namespace Microsoft.Azure.Cosmos
 
             // Doing a Read before Create will give us better latency for existing databases
             Database database = this.GetDatabase(id);
-
             ResponseMessage response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
-
-            if (response.IsSuccessStatusCode)
+            if (response.StatusCode != HttpStatusCode.NotFound)
             {
                 return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(response));
             }
 
-            if (response.StatusCode == HttpStatusCode.NotFound)
+            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+            response = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
+            if (response.StatusCode != HttpStatusCode.Conflict)
             {
-                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-                Stream stream = this.ClientContext.PropertiesSerializer.ToStream(databaseProperties);
-                response = await this.CreateDatabaseStreamInternalAsync(stream, throughput, requestOptions, cancellationToken);
-                    
-                if (response.StatusCode == HttpStatusCode.Conflict)
-                {
-                    return await database.ReadAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);            
-                }
-
                 return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response));
             }
 

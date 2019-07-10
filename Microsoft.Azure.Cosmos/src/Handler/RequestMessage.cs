@@ -144,6 +144,26 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
+        {
+            if (this.IsMasterOperation())
+            {
+                return;
+            }
+
+#if DEBUG
+            CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
+            ContainerProperties collectionFromCache =
+                await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
+            if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+            {
+                Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
+            }
+#else
+            await Task.CompletedTask;
+#endif
+        }
+
         internal DocumentServiceRequest ToDocumentServiceRequest()
         {
             if (this.DocumentServiceRequest == null)
@@ -204,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal bool AssertPartitioningPropertiesAndHeaders()
+        private bool AssertPartitioningPropertiesAndHeaders()
         {
             // Either PK/key-range-id is assumed
             bool pkExists = !string.IsNullOrEmpty(this.Headers.PartitionKey);
@@ -238,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        internal bool IsMasterOperation()
+        private bool IsMasterOperation()
         {
             return this.ResourceType != ResourceType.Document;
         }
