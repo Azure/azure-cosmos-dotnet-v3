@@ -239,22 +239,19 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
             }
-            else
+            
+            if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                if (response.StatusCode == HttpStatusCode.NotFound)
+                this.ValidateContainerProperties(containerProperties);
+                Stream stream = this.ClientContext.PropertiesSerializer.ToStream(containerProperties);
+                response = await this.CreateContainerStreamInternalAsync(stream, throughput, requestOptions, cancellationToken: cancellationToken);
+
+                if (response.StatusCode == HttpStatusCode.Conflict)
                 {
-                    this.ValidateContainerProperties(containerProperties);
-                    Stream stream = this.ClientContext.PropertiesSerializer.ToStream(containerProperties);
-                    response = await this.CreateContainerStreamInternalAsync(stream, throughput, requestOptions, cancellationToken: cancellationToken);
-
-                    if (response.StatusCode == HttpStatusCode.Conflict)
-                    {
-                        response = await container.ReadStreamAsync(cancellationToken: cancellationToken);
-                        return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
-                    }
-
-                    return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
+                    return await container.ReadContainerAsync(cancellationToken: cancellationToken);
                 }
+
+                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create

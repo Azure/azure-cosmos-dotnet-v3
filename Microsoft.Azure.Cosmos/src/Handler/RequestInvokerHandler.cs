@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             await this.client.DocumentClient.EnsureValidClientAsync();
-#if DEBUG                 
+#if DEBUG
             ResponseMessage response = await this.AssertPartitioningDetailsAsync(request, cancellationToken);
             if (response != null)
             {
