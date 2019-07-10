@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
     /// </summary>
-    internal sealed class CosmosQueryExecutionContextFactory : CosmosQueryExecutionContext
+    internal sealed class CosmosQueryExecutionContextFactory : FeedIterator
     {
         internal const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const int PageSizeFactorForTop = 5;
@@ -104,15 +105,51 @@ namespace Microsoft.Azure.Cosmos.Query
                   correlatedActivityId: correlatedActivityId);
         }
 
-        public override bool IsDone
+        public override bool HasMoreResults
         {
             get
             {
-                return this.innerExecutionContext != null ? this.innerExecutionContext.IsDone : false;
+                return this.innerExecutionContext != null ? !this.innerExecutionContext.IsDone : true;
             }
         }
 
-        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken cancellationToken)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken)
+        {
+            // This catches exception thrown by the pipeline and converts it to QueryResponse
+            try
+            {
+                return await this.ExecuteNextHelperAsync(cancellationToken);
+            }
+            catch (DocumentClientException exception)
+            {
+                return exception.ToCosmosResponseMessage(request: null);
+            }
+            catch (CosmosException exception)
+            {
+                return new ResponseMessage(
+                    headers: exception.Headers,
+                    requestMessage: null,
+                    errorMessage: exception.Message,
+                    statusCode: exception.StatusCode,
+                    error: exception.Error);
+            }
+            catch (AggregateException ae)
+            {
+                ResponseMessage errorMessage = TransportHandler.AggregateExceptionConverter(ae, null);
+                if (errorMessage != null)
+                {
+                    return errorMessage;
+                }
+
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// This is a helper function to catch any remaining exceptions that should not be thrown.
+        /// TODO: Remove all throws that are not argument exceptions
+        /// </summary>
+        private async Task<ResponseMessage> ExecuteNextHelperAsync(CancellationToken cancellationToken)
         {
             bool isFirstExecute = false;
             QueryResponse response = null;
@@ -151,16 +188,10 @@ namespace Microsoft.Azure.Cosmos.Query
             return response;
         }
 
-        public override void Dispose()
-        {
-            if (this.innerExecutionContext != null)
-            {
-                this.innerExecutionContext.Dispose();
-            }
-        }
-
         private async Task ForceRefreshCollectionCacheAsync(CancellationToken cancellationToken)
         {
+            this.cosmosQueryContext.QueryClient.ClearSessionTokenCache(this.cosmosQueryContext.ResourceLink.OriginalString);
+
             CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
             using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                OperationType.Query,
@@ -171,8 +202,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 request.ForceNameCacheRefresh = true;
                 await collectionCache.ResolveCollectionAsync(request, cancellationToken);
             }
-
-            this.cosmosQueryContext.QueryClient.ClearSessionTokenCache(this.cosmosQueryContext.ResourceLink.OriginalString);
         }
 
         private async Task<ContainerProperties> GetContainerPropertiesAsync(CancellationToken cancellationToken)

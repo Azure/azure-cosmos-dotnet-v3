@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -72,20 +71,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
         }
 
-        public Type ElementType
-        {
-            get { return typeof(T); }
-        }
+        public Type ElementType => typeof(T);
 
-        public Expression Expression
-        {
-            get { return this.expression; }
-        }
+        public Expression Expression => this.expression;
 
-        public IQueryProvider Provider
-        {
-            get { return this.queryProvider; }
-        }
+        public IQueryProvider Provider => this.queryProvider;
 
         public bool HasMoreResults => throw new NotImplementedException();
 
@@ -100,26 +90,21 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (!this.allowSynchronousQueryExecution)
             {
-                throw new NotSupportedException("To execute LINQ query please set " + nameof(allowSynchronousQueryExecution) + " true or" +
+                throw new NotSupportedException("To execute LINQ query please set " + nameof(this.allowSynchronousQueryExecution) + " true or" +
                     " use GetItemsQueryIterator to execute asynchronously");
             }
 
-            using (CosmosQueryExecutionContext localQueryExecutionContext = CreateCosmosQueryExecutionContext())
+            FeedIterator localQueryExecutionContext = this.CreateCosmosQueryExecutionContext();
+            while (localQueryExecutionContext.HasMoreResults)
             {
-                while (!localQueryExecutionContext.IsDone)
-                {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                    QueryResponse cosmosQueryResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).GetAwaiter().GetResult();
+                ResponseMessage responseMessage = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ReadNextAsync(CancellationToken.None), null).GetAwaiter().GetResult();
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                    QueryResponse<T> responseIterator = QueryResponse<T>.CreateResponse<T>(
-                        cosmosQueryResponse: cosmosQueryResponse,
-                        jsonSerializer: cosmosJsonSerializer,
-                        hasMoreResults: !localQueryExecutionContext.IsDone);
+                FeedResponse<T> items = this.container.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(responseMessage);
 
-                    foreach (T item in responseIterator)
-                    {
-                        yield return item;
-                    }
+                foreach (T item in items)
+                {
+                    yield return item;
                 }
             }
         }
@@ -141,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return JsonConvert.SerializeObject(querySpec);
             }
 
-            return container.LinkUri.ToString();
+            return this.container.LinkUri.ToString();
         }
 
         public string ToSqlQueryText()
@@ -152,13 +137,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return (querySpec.QueryText);
             }
 
-            return container.LinkUri.ToString();
+            return this.container.LinkUri.ToString();
         }
 
         public FeedIterator<T> ToFeedIterator()
         {
             return this.container.GetItemQueryIterator<T>(
-                queryDefinition: new QueryDefinition(ToSqlQueryText()),
+                queryDefinition: new QueryDefinition(this.ToSqlQueryText()),
                 continuationToken: null,
                 requestOptions: this.cosmosQueryRequestOptions);
         }
@@ -178,21 +163,20 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
-        private CosmosQueryExecutionContext CreateCosmosQueryExecutionContext()
+        private FeedIterator CreateCosmosQueryExecutionContext()
         {
-            CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
+            return new CosmosQueryExecutionContextFactory(
                 client: this.queryClient,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
-                sqlQuerySpec: DocumentQueryEvaluator.Evaluate(expression),
+                sqlQuerySpec: DocumentQueryEvaluator.Evaluate(this.expression),
                 continuationToken: null,
                 queryRequestOptions: this.cosmosQueryRequestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
                 correlatedActivityId: Guid.NewGuid());
-            return cosmosQueryExecution;
         }
     }
 }

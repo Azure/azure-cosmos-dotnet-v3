@@ -5,7 +5,6 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
-    using Microsoft.Azure.Cosmos.SystemFunctions;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

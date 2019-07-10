@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedStatelessIteratorCore(
+            return new FeedIteratorCore(
                this.ClientContext,
                this.LinkUri,
                ResourceType.Collection,
@@ -361,9 +361,9 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<T>(
+            return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
         public override ContainerBuilder DefineContainer(
@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            return new ContainerBuilder(this, name, partitionKeyPath);
+            return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
         internal void ValidateContainerProperties(ContainerProperties containerProperties)
