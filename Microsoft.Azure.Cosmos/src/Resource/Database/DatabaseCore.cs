@@ -242,8 +242,10 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 if (response.StatusCode == HttpStatusCode.NotFound)
-                {                    
-                    response = await this.CreateContainerStreamInternalAsync(null, throughput, requestOptions, cancellationToken: cancellationToken);
+                {
+                    this.ValidateContainerProperties(containerProperties);
+                    Stream stream = this.ClientContext.PropertiesSerializer.ToStream(containerProperties);
+                    response = await this.CreateContainerStreamInternalAsync(stream, throughput, requestOptions, cancellationToken: cancellationToken);
 
                     if (response.StatusCode == HttpStatusCode.Conflict)
                     {
