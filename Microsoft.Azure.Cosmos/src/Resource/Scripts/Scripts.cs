@@ -69,9 +69,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// StoredProcedureProperties storedProcedure = new StoredProcedureProperties(id, sprocBody);
-        /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(storedProcedure);
+        /// StoredProcedureResponse storedProcedureResponse = await scripts.CreateStoredProcedureAsync(storedProcedure);
         /// 
         /// // Execute the stored procedure
         /// CosmosItemResponse<string> sprocResponse = await scripts.ExecuteStoredProcedureAsync<string, string>(
@@ -95,6 +95,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the type feed iterator for sproc with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM s where s.id like @testId";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// queryDefinition.WithParameter("@testId", "testSprocId");
+        /// FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryDefinition);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator<T> GetStoredProcedureQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -108,6 +120,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the stream feed iterator for sproc with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM s where s.id like @testId";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// queryDefinition.WithParameter("@testId", "testSprocId");
+        /// FeedIterator iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryDefinition);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator GetStoredProcedureQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -121,6 +145,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the type feed iterator for sproc with queryText as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
+        /// FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryText);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator<T> GetStoredProcedureQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -134,6 +168,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the stream feed iterator for sproc with queryText as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM s where s.id like '%testId%'";
+        /// FeedIterator iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryText);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator GetStoredProcedureQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
@@ -166,8 +210,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This reads an existing stored procedure.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
-        /// CosmosStoredProcedure storedProcedure = await scripts.ReadStoredProcedureAsync("ExistingId");
+        /// Scripts scripts = this.container.Scripts;
+        /// StoredProcedureResponse storedProcedure = await scripts.ReadStoredProcedureAsync("ExistingId");
         /// ]]>
         /// </code>
         /// </example>
@@ -211,8 +255,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///     getContext().getRequest().setBody(item);
         /// }";
         /// 
-        /// Scripts scripts = this.container.GetScripts();
-        /// CosmosResponseMessage response = await scripts.ReplaceStoredProcedureAsync("testTriggerId", body);
+        /// Scripts scripts = this.container.Scripts;
+        /// StoredProcedureResponse response = await scripts.ReplaceStoredProcedureAsync(new StoredProcedureProperties("testTriggerId", body));
         /// ]]>
         /// </code>
         /// </example>
@@ -243,8 +287,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples gets a reference to an existing stored procedure and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
-        /// CosmosResponseMessage response = await scripts.DeleteStoredProcedureAsync("taxUdfId");
+        /// Scripts scripts = this.container.Scripts;
+        /// StoredProcedureResponse response = await scripts.DeleteStoredProcedureAsync("taxUdfId");
         /// ]]>
         /// </code>
         /// </example>
@@ -288,9 +332,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// string sprocId = "appendString";
-        /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
+        /// StoredProcedureResponse storedProcedureResponse = await scripts.CreateStoredProcedureAsync(
         ///         sprocId,
         ///         sprocBody);
         /// 
@@ -345,14 +389,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
         ///    }";
         ///    
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// string sprocId = "appendString";
-        /// CosmosStoredProcedure cosmosStoredProcedure = await scripts.CreateStoredProcedureAsync(
+        /// StoredProcedureResponse storedProcedureResponse = await scripts.CreateStoredProcedureAsync(
         ///         sprocId,
         ///         sprocBody);
         /// 
         /// // Execute the stored procedure
-        /// CosmosResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
+        /// ResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
         ///                         sprocId,
         ///                         new PartitionKey(testPartitionId),
         ///                         new dynamic[] {"myPrefixString", "myPostfixString"});
@@ -405,8 +449,8 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This creates a trigger then uses the trigger in a create item.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
-        /// CosmosTrigger cosmosTrigger = await scripts.CreateTriggerAsync(
+        /// Scripts scripts = this.container.Scripts;
+        /// TriggerResponse triggerResponse = await scripts.CreateTriggerAsync(
         ///     new TriggerProperties
         ///     {
         ///         Id = "addTax",
@@ -423,13 +467,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         TriggerType = TriggerType.Pre
         ///     });
         ///
-        /// CosmosItemRequestOptions options = new CosmosItemRequestOptions()
+        /// ItemRequestOptions options = new ItemRequestOptions()
         /// {
-        ///     PreTriggers = new List<string>() { cosmosTrigger.Id },
+        ///     PreTriggers = new List<string>() { triggerResponse.Id },
         /// };
         ///
         /// // Create a new item with trigger set in the request options
-        /// CosmosItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+        /// ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
         /// double itemTax = createdItem.Resource.tax;
         /// ]]>
         /// </code>
@@ -447,6 +491,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the type feed iterator for Trigger with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM t where t.id like @testId";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// queryDefinition.WithParameter("@testId", "testTriggerId");
+        /// FeedIterator<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryDefinition);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator<T> GetTriggerQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -460,6 +516,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the stream feed iterator for Trigger with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM t where t.id like @testId";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// queryDefinition.WithParameter("@testId", "testTriggerId");
+        /// FeedIterator iter = this.scripts.GetTriggerQueryStreamIterator(queryDefinition);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator GetTriggerQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -473,6 +541,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the type feed iterator for Trigger with queryText as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM t where t.id like '%testId%'";
+        /// FeedIterator<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(queryText);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator<T> GetTriggerQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -486,6 +564,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the stream feed iterator for Trigger with queryText as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM t where t.id like '%testId%'";
+        /// FeedIterator iter = this.scripts.GetTriggerQueryStreamIterator(queryText);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator GetTriggerQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
@@ -514,7 +602,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This reads an existing trigger
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// TriggerResponse response = await scripts.ReadTriggerAsync("ExistingId");
         /// TriggerProperties triggerProperties = response;
         /// ]]>
@@ -555,7 +643,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///     TriggerType = TriggerType.Post
         /// };
         /// 
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// TriggerResponse response = await scripts.ReplaceTriggerAsync(triggerSettigs);
         /// ]]>
         /// </code>
@@ -576,7 +664,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples gets a reference to an existing trigger and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// TriggerResponse response = await scripts.DeleteTriggerAsync("existingId");
         /// ]]>
         /// </code>
@@ -618,7 +706,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This creates a user defined function then uses the function in an item query.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// await scripts.UserDefinedFunctions.CreateUserDefinedFunctionAsync(
         ///     new UserDefinedFunctionProperties 
         ///     { 
@@ -658,6 +746,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the type feed iterator for UDF with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM u where u.id like @testId";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// queryDefinition.WithParameter("@testId", "testUDFId");
+        /// FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -671,6 +771,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the stream feed iterator for UDF with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// string queryText = "SELECT * FROM u where u.id like @testId";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// queryDefinition.WithParameter("@testId", "testUdfId");
+        /// FeedIterator iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator GetUserDefinedFunctionQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -684,6 +796,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the type feed iterator for UDF with queryText as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like '%testId%'");
+        /// FeedIterator<UserDefinedFunctionProperties> iter = this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>(queryDefinition);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -697,6 +819,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to read through the existing stored procedures.</returns>
+        /// <example>
+        /// This create the stream feed iterator for UDF with queryText as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// QueryDefinition queryDefinition = new QueryDefinition("SELECT * FROM u where u.id like '%testId%'");
+        /// FeedIterator iter = this.scripts.GetUserDefinedFunctionQueryStreamIterator(queryDefinition);
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract FeedIterator GetUserDefinedFunctionQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
@@ -728,7 +860,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///  This reads an existing user defined function.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// UserDefinedFunctionResponse response = await scripts.ReadUserDefinedFunctionAsync("ExistingId");
         /// UserDefinedFunctionProperties udfProperties = response;
         /// ]]>
@@ -752,7 +884,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples replaces an existing user defined function.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// UserDefinedFunctionProperties udfProperties = new UserDefinedFunctionProperties
         /// {
         ///     Id = "testUserDefinedFunId",
@@ -780,7 +912,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This examples gets a reference to an existing user defined function and deletes it.
         /// <code language="c#">
         /// <![CDATA[
-        /// Scripts scripts = this.container.GetScripts();
+        /// Scripts scripts = this.container.Scripts;
         /// UserDefinedFunctionResponse response = await this.container.DeleteUserDefinedFunctionAsync("existingId");
         /// ]]>
         /// </code>

@@ -91,11 +91,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Container doesNotExistContainer = database.GetContainer(DoesNotExist);
-            this.VerifyNotFoundResponse(await doesNotExistContainer.ReadStreamAsync());
+            this.VerifyNotFoundResponse(await doesNotExistContainer.ReadContainerStreamAsync());
 
             ContainerProperties containerSettings = new ContainerProperties(id: DoesNotExist, partitionKeyPath: "/pk");
-            this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceStreamAsync(containerSettings));
-            this.VerifyNotFoundResponse(await doesNotExistContainer.DeleteStreamAsync());
+            this.VerifyNotFoundResponse(await doesNotExistContainer.ReplaceContainerStreamAsync(containerSettings));
+            this.VerifyNotFoundResponse(await doesNotExistContainer.DeleteContainerStreamAsync());
 
             // Validate Child resources
             await this.ItemOperations(doesNotExistContainer, true);
