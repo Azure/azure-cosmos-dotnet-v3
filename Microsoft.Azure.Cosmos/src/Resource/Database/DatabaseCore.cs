@@ -232,19 +232,26 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             Container container = this.GetContainer(containerProperties.Id);
-            ContainerResponse cosmosContainerResponse;
 
-            try
+            ResponseMessage response = await container.ReadStreamAsync(cancellationToken: cancellationToken);
+
+            if (response.IsSuccessStatusCode)
             {
-                cosmosContainerResponse = await container.ReadContainerAsync(cancellationToken: cancellationToken);                
-                return cosmosContainerResponse;                
+                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            else
             {
-                cosmosContainerResponse = await this.CreateContainerAsync(containerProperties, throughput, requestOptions, cancellationToken: cancellationToken);
-                if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
-                {
-                    return cosmosContainerResponse;
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {                    
+                    response = await this.CreateContainerStreamInternalAsync(null, throughput, requestOptions, cancellationToken: cancellationToken);
+
+                    if (response.StatusCode == HttpStatusCode.Conflict)
+                    {
+                        response = await container.ReadStreamAsync(cancellationToken: cancellationToken);
+                        return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
+                    }
+
+                    return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
                 }
             }
 

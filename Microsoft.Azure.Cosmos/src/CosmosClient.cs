@@ -429,19 +429,28 @@ namespace Microsoft.Azure.Cosmos
 
             // Doing a Read before Create will give us better latency for existing databases
             Database database = this.GetDatabase(id);
-            DatabaseResponse cosmosDatabaseResponse;
 
-            try
+            ResponseMessage response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
+
+            if (response.IsSuccessStatusCode)
             {
-                cosmosDatabaseResponse = await database.ReadAsync(cancellationToken: cancellationToken);
-                return cosmosDatabaseResponse;                
+                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(response));
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            else
             {
-                cosmosDatabaseResponse = await this.CreateDatabaseAsync(id, throughput, requestOptions, cancellationToken: cancellationToken);
-                if (cosmosDatabaseResponse.StatusCode != HttpStatusCode.Conflict)
+                if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    return cosmosDatabaseResponse;
+                    DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                    Stream stream = this.ClientContext.PropertiesSerializer.ToStream(databaseProperties);
+                    response = await this.CreateDatabaseStreamInternalAsync(stream, throughput, requestOptions, cancellationToken);
+                    
+                    if (response.StatusCode == HttpStatusCode.Conflict)
+                    {
+                        response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
+                        return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(database, Task.FromResult(response));
+                    }
+
+                    return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response));
                 }
             }
 
