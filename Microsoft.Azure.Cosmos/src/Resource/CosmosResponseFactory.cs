@@ -29,12 +29,23 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosSerializer = userJsonSerializer;
         }
 
-        internal FeedResponse<T> CreateResultSetQueryResponse<T>(
+        internal FeedResponse<T> CreateQueryFeedResponse<T>(
             ResponseMessage cosmosResponseMessage)
         {
-            return FeedIteratorCore<T>.CreateCosmosQueryResponse(
-                cosmosResponseMessage,
-                this.cosmosSerializer);
+            //Throw the exception
+            cosmosResponseMessage.EnsureSuccessStatusCode();
+
+            QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
+            if (queryResponse != null)
+            {
+                return QueryResponse<T>.CreateResponse<T>(
+                    responseMessage: queryResponse,
+                    jsonSerializer: this.cosmosSerializer);
+            }
+
+            return ReadFeedResponse<T>.CreateResponse<T>(
+                       cosmosResponseMessage,
+                       this.cosmosSerializer);
         }
 
         internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(

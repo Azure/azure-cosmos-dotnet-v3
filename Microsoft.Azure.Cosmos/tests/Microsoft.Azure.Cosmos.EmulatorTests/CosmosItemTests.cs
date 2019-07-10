@@ -414,6 +414,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ItemDistinctStreamIterator()
+        {
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+
+            string lastContinuationToken = null;
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1
+            };
+
+            FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
+                queryText: "select DISTINCT t.id from t",
+                continuationToken: lastContinuationToken,
+                requestOptions: requestOptions);
+
+            while (feedIterator.HasMoreResults)
+            {
+                using (ResponseMessage responseMessage =
+                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    Collection<ToDoActivity> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    foreach (ToDoActivity toDoActivity in response)
+                    {
+                        if (itemIds.Contains(toDoActivity.id))
+                        {
+                            itemIds.Remove(toDoActivity.id);
+                        }
+                    }
+                }
+            }
+
+            Assert.IsNull(lastContinuationToken);
+            Assert.AreEqual(itemIds.Count, 0);
+        }
+
+        [TestMethod]
         public async Task ItemIterator()
         {
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
@@ -793,7 +830,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // BadReqeust bcoz collection is regular and not binary 
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
 
-            await this.Container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString() , status = "test"});
+            await this.Container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString(), status = "test" });
             epk = new PartitionKey("test")
                            .InternalKey
                            .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
@@ -1114,7 +1151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 //Reading all items on fixed container.
-                feedIterator = fixedContainer.GetItemQueryIterator<dynamic>( requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+                feedIterator = fixedContainer.GetItemQueryIterator<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
                 while (feedIterator.HasMoreResults)
                 {
                     FeedResponse<dynamic> queryResponse = await feedIterator.ReadNextAsync();
@@ -1338,6 +1375,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
+        public async Task VerifyToManyRequestTest(bool isQuery)
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
+            Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/status");
+
+            try
+            {
+                Task[] createItems = new Task[300];
+                for (int i = 0; i < createItems.Length; i++)
+                {
+                    ToDoActivity temp = this.CreateRandomToDoActivity();
+                    createItems[i] = container.CreateItemStreamAsync(
+                        partitionKey: new Cosmos.PartitionKey(temp.status),
+                        streamPayload: this.jsonSerializer.ToStream<ToDoActivity>(temp));
+                }
+
+                Task.WaitAll(createItems);
+
+                List<Task> createQuery = new List<Task>(500);
+                List<ResponseMessage> failedToManyRequests = new List<ResponseMessage>();
+                for (int i = 0; i < 500 && failedToManyRequests.Count == 0; i++)
+                {
+                    createQuery.Add(VerifyQueryToManyExceptionAsync(
+                        container, 
+                        isQuery,
+                        failedToManyRequests));
+                }
+
+                Task[] tasks = createQuery.ToArray();
+                Task.WaitAll(tasks);
+
+                Assert.IsTrue(failedToManyRequests.Count > 0, "Rate limiting appears to be disabled");
+                ResponseMessage failedResponseMessage = failedToManyRequests.First();
+                Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
+                Assert.IsNull(failedResponseMessage.ErrorMessage);
+            }
+            finally
+            {
+                await db.DeleteAsync();
+            }
+        }
+
         [TestMethod]
         public async Task VerifySessionTokenPassThrough()
         {
@@ -1360,60 +1445,88 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Create two client instances and do meta data operations through a single client
         /// but do all validation using both clients.
         /// </summary>
-        /// [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(true, true)]
+        [DataRow(true, false)]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
         [DataTestMethod]
-        public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate)
+        public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate, bool isQuery)
         {
-            List<Func<Container, HttpStatusCode, Task>> operations = new List<Func<Container, HttpStatusCode, Task>>();
-            operations.Add(ExecuteQueryAsync);
-            operations.Add(ExecuteReadFeedAsync);
-
-            foreach (var operation in operations)
+            Func<Container, HttpStatusCode, Task> operation = null;
+            if (isQuery)
             {
-                CosmosClient cc1 = TestCommon.CreateCosmosClient();
-                CosmosClient cc2 = TestCommon.CreateCosmosClient();
-                Cosmos.Database db1 = null;
-                try
+                operation = ExecuteQueryAsync;
+            }
+            else
+            {
+                operation = ExecuteReadFeedAsync;
+            }
+
+            CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+            Cosmos.Database db1 = null;
+            try
+            {
+                string dbName = Guid.NewGuid().ToString();
+                string containerName = Guid.NewGuid().ToString();
+
+                db1 = await cc1.CreateDatabaseAsync(dbName);
+                ContainerCore container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+
+                await operation(container1, HttpStatusCode.OK);
+
+                // Read through client2 -> return 404
+                Container container2 = cc2.GetDatabase(dbName).GetContainer(containerName);
+                await operation(container2, HttpStatusCode.OK);
+
+                // Delete container 
+                await container1.DeleteContainerAsync();
+
+                if (operationBetweenRecreate)
                 {
-                    string dbName = Guid.NewGuid().ToString();
-                    string containerName = Guid.NewGuid().ToString();
+                    // Read on deleted container through client1
+                    await operation(container1, HttpStatusCode.NotFound);
 
-                    db1 = await cc1.CreateDatabaseAsync(dbName);
-                    ContainerCore container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
-
-                    await operation(container1, HttpStatusCode.OK);
-
-                    // Read through client2 -> return 404
-                    Container container2 = cc2.GetDatabase(dbName).GetContainer(containerName);
-                    await operation(container2, HttpStatusCode.OK);
-
-                    // Delete container 
-                    await container1.DeleteContainerAsync();
-
-                    if (operationBetweenRecreate)
-                    {
-                        // Read on deleted container through client1
-                        await operation(container1, HttpStatusCode.NotFound);
-
-                        // Read on deleted container through client2
-                        await operation(container2, HttpStatusCode.NotFound);
-                    }
-
-                    // Re-create again 
-                    container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
-
-                    // Read through client1
-                    await operation(container1, HttpStatusCode.OK);
-
-                    // Read through client2
-                    await operation(container2, HttpStatusCode.OK);  
+                    // Read on deleted container through client2
+                    await operation(container2, HttpStatusCode.NotFound);
                 }
-                finally
+
+                // Re-create again 
+                container1 = (ContainerCore)await db1.CreateContainerAsync(containerName, "/id");
+
+                // Read through client1
+                await operation(container1, HttpStatusCode.OK);
+
+                // Read through client2
+                await operation(container2, HttpStatusCode.OK);
+            }
+            finally
+            {
+                await db1.DeleteAsync();
+                cc1.Dispose();
+                cc2.Dispose();
+            }
+        }
+
+        private static async Task VerifyQueryToManyExceptionAsync(
+            Container container,
+            bool isQuery, 
+            List<ResponseMessage> failedToManyMessages)
+        {
+            string queryText = null;
+            if (isQuery)
+            {
+                queryText = "select * from r";
+            }
+
+            FeedIterator iterator = container.GetItemQueryStreamIterator(queryText);
+            while (iterator.HasMoreResults && failedToManyMessages.Count == 0)
+            {
+                ResponseMessage response = await iterator.ReadNextAsync();
+                if (response.StatusCode == (HttpStatusCode)429)
                 {
-                    await db1.DeleteAsync();
-                    cc1.Dispose();
-                    cc2.Dispose();
+                    failedToManyMessages.Add(response);
+                    return;
                 }
             }
         }

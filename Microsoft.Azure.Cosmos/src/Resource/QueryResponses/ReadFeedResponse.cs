@@ -11,14 +11,12 @@ namespace Microsoft.Azure.Cosmos
     {
         protected ReadFeedResponse(
             ICollection<T> resource,
-            Headers responseMessageHeaders,
-            bool hasMoreResults)
+            Headers responseMessageHeaders)
             : base(
                 httpStatusCode: HttpStatusCode.Accepted,
                 headers: responseMessageHeaders,
                 resource: resource)
         {
-            this.HasMoreResults = hasMoreResults;
             this.Count = resource.Count;
         }
 
@@ -26,29 +24,27 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ContinuationToken => this.Headers?.ContinuationToken;
 
-        internal override string InternalContinuationToken => this.ContinuationToken;
-
-        internal override bool HasMoreResults { get; }
-
         public override IEnumerator<T> GetEnumerator()
         {
             return this.Resource.GetEnumerator();
         }
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            Headers responseMessageHeaders,
-            Stream stream,
-            CosmosSerializer jsonSerializer,
-            bool hasMoreResults)
+            ResponseMessage responseMessage,
+            CosmosSerializer jsonSerializer)
         {
-            using (stream)
+            using (responseMessage)
             {
-                CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream);
-                ICollection<TInput> resources = response.Data;
+                ICollection<TInput> resources = default(ICollection<TInput>);
+                if (responseMessage.Content != null)
+                {
+                    CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(responseMessage.Content);
+                    resources = response.Data;
+                }
+
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     resource: resources,
-                    responseMessageHeaders: responseMessageHeaders,
-                    hasMoreResults: hasMoreResults);
+                    responseMessageHeaders: responseMessage.Headers);
 
                 return readFeedResponse;
             }
@@ -61,8 +57,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                 resource: resources,
-                responseMessageHeaders: responseMessageHeaders,
-                hasMoreResults: hasMoreResults);
+                responseMessageHeaders: responseMessageHeaders);
 
             return readFeedResponse;
         }

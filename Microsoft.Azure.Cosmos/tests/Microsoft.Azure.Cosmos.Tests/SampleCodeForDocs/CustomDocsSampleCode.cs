@@ -34,10 +34,11 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
             var requestCharge = itemResponse.RequestCharge;
 
             Scripts scripts = container.Scripts;
-            StoredProcedureExecuteResponse<object> sprocResponse = await scripts.ExecuteStoredProcedureAsync<object, object>(
+            StoredProcedureExecuteResponse<object> sprocResponse = await scripts.ExecuteStoredProcedureAsync<object>(
                 storedProcedureId: storedProcedureId,
-                input: new object(),
-                partitionKey: new PartitionKey(partitionKey));
+                partitionKey: new PartitionKey(partitionKey),
+                parameters: new dynamic[] { new object() });
+
             requestCharge = sprocResponse.RequestCharge;
 
             FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(

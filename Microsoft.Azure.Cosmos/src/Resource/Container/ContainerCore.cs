@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadStreamAsync(
+            Task<ResponseMessage> response = this.ReadContainerStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteStreamAsync(
+            Task<ResponseMessage> response = this.DeleteContainerStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(response);
         }
 
-        public override Task<ResponseMessage> DeleteStreamAsync(
+        public override Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        public override Task<ResponseMessage> ReadStreamAsync(
+        public override Task<ResponseMessage> ReadContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<ResponseMessage> ReplaceStreamAsync(
+        public override Task<ResponseMessage> ReplaceContainerStreamAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))

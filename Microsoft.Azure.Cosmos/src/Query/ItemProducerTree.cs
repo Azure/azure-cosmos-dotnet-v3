@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
             PartitionKeyRange partitionKeyRange,
-            Action<ItemProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
+            ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
             bool deferFirstPage,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryContext,
                 querySpecForInit,
                 partitionKeyRange,
-                (itemProducer, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token),
+                (itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token) => produceAsyncCompleteCallback(this, itemsBuffered, resourceUnitUsage, queryMetrics, requestLength, token),
                 equalityComparer,
                 initialPageSize,
                 initialContinuationToken);
@@ -142,6 +142,14 @@ namespace Microsoft.Azure.Cosmos.Query
                 initialPageSize);
             this.executeWithSplitProofingSemaphore = new SemaphoreSlim(1, 1);
         }
+
+        public delegate void ProduceAsyncCompleteDelegate(
+            ItemProducerTree itemProducerTree,
+            int numberOfDocuments,
+            double requestCharge,
+            QueryMetrics queryMetrics,
+            long responseLengthInBytes,
+            CancellationToken token);
 
         /// <summary>
         /// Gets the root document from the tree.
@@ -506,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private static Func<PartitionKeyRange, string, ItemProducerTree> CreateItemProducerTreeCallback(
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
-            Action<ItemProducerTree, int, double, QueryMetrics, long, CancellationToken> produceAsyncCompleteCallback,
+            ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
             bool deferFirstPage,
@@ -654,7 +662,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     // Repair the execution context: Get the replacement document producers and add them to the tree.
-                    List<PartitionKeyRange> replacementRanges = await this.GetReplacementRangesAsync(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
+                    IReadOnlyList<PartitionKeyRange> replacementRanges = await this.GetReplacementRangesAsync(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
                     foreach (PartitionKeyRange replacementRange in replacementRanges)
                     {
                         ItemProducerTree replacementItemProducerTree = this.createItemProducerTreeCallback(replacementRange, splitItemProducerTree.Root.BackendContinuationToken);
@@ -693,13 +701,12 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="targetRange">The target range that got split.</param>
         /// <param name="collectionRid">The collection rid.</param>
         /// <returns>The replacement ranges for the target range that got split.</returns>
-        private async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
+        private async Task<IReadOnlyList<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
         {
             IRoutingMapProvider routingMapProvider = await this.queryClient.GetRoutingMapProviderAsync();
-            List<PartitionKeyRange> replacementRanges = (
+            IReadOnlyList<PartitionKeyRange> replacementRanges = (
                 await routingMapProvider
-                    .TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true))
-                    .ToList();
+                    .TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true));
             string replaceMinInclusive = replacementRanges.First().MinInclusive;
             string replaceMaxExclusive = replacementRanges.Last().MaxExclusive;
             if (!replaceMinInclusive.Equals(targetRange.MinInclusive, StringComparison.Ordinal) || !replaceMaxExclusive.Equals(targetRange.MaxExclusive, StringComparison.Ordinal))
