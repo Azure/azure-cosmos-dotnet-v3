@@ -31,252 +31,61 @@ namespace Microsoft.Azure.Cosmos.Tests
         private CosmosSerializer cosmosSerializer = new CosmosJsonSerializerCore();
 
         [TestMethod]
-        public async Task TestQueryPipelineSplitAsync()
+        [DataRow(null)]
+        public async Task TestCosmosCrossPartitionQueryExecutionContextWithEmptyPagesAndSplitAsync(string initialContinuationToken)
         {
-            int maxPageSize = 10;
-            const string collectionRid = "UipSALL8vxE";
-            Uri resourceLink = new Uri("dbs/test/colls/collTest", UriKind.Relative);
-            SqlQuerySpec sqlQuerySpec = MockItemProducerFactory.DefaultQuerySpec;
-            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(collectionRid);
-            containerProperties.Id = "SplitContainerId";
-            containerProperties.PartitionKeyPath = "/pk";
+            int maxPageSize = 5;
 
-            // pkRange1 is the original range, newPkRange2/newPkRange3 are the ranges after the split
-            PartitionKeyRange pkRange0 = new PartitionKeyRange() { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
-            PartitionKeyRange newPkRange1 = new PartitionKeyRange() { Id = "1", MinInclusive = "", MaxExclusive = "BB" };
-            PartitionKeyRange newPkRange2 = new PartitionKeyRange() { Id = "2", MinInclusive = "BB", MaxExclusive = "FF" };
-            IReadOnlyList<PartitionKeyRange> newPkRanges = new List<PartitionKeyRange>()
+            List<MockResponseForSinglePartition[]> mockResponsesScenario = MockQueryFactory.GetSplitScenarios(initialContinuationToken);
+            foreach (MockResponseForSinglePartition[] mockResponse in mockResponsesScenario)
             {
-                newPkRange1,
-                newPkRange2,
-            };
+                Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
+                IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
+                    mockQueryClient,
+                    sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
+                    containerRid: MockQueryFactory.DefaultCollectionRid,
+                    initContinuationToken: initialContinuationToken,
+                    maxPageSize: maxPageSize,
+                    mockResponseForSinglePartition: mockResponse,
+                    cancellationToken);
 
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
-            {
-                QueryInfo = new QueryInfo(),
-                QueryRanges = new List<Microsoft.Azure.Documents.Routing.Range<string>>()
-                {
-                    new Microsoft.Azure.Documents.Routing.Range<string>(
-                        min: pkRange0.MinInclusive,
-                        max: pkRange0.MaxExclusive,
-                        isMinInclusive: true,
-                        isMaxInclusive: true)
-                }
-            };
+                CosmosQueryContext context = MockQueryFactory.CreateContext(
+                    mockQueryClient.Object);
 
-            // Setup the necessary partition key range update calls
-            Mock<IRoutingMapProvider> mockRoutingMap = new Mock<IRoutingMapProvider>();
-            mockRoutingMap.Setup(x =>
-                x.TryGetOverlappingRangesAsync(
-                    collectionRid,
-                    pkRange0.ToRange(),
-                    true)).Returns(Task.FromResult(newPkRanges));
-
-            Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
-            mockQueryClient.Setup(x => x.GetRoutingMapProviderAsync()).Returns(Task.FromResult(mockRoutingMap.Object));
-            mockQueryClient.Setup(x => x.GetCachedContainerPropertiesAsync(cancellationToken)).Returns(Task.FromResult(containerProperties));
-            mockQueryClient.Setup(x => x.GetPartitionedQueryExecutionInfoAsync(
-                sqlQuerySpec,
-                containerProperties.PartitionKey,
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                It.IsAny<bool>(),
-                cancellationToken)).Returns(Task.FromResult(partitionedQueryExecutionInfo));
-
-            mockQueryClient.Setup(x => x.GetTargetPartitionKeyRangesAsync(
-                resourceLink.OriginalString,
-                collectionRid,
-                partitionedQueryExecutionInfo.QueryRanges))
-                .Returns(Task.FromResult(new List<PartitionKeyRange>() { pkRange0 }));
-
-            Mock<CosmosQueryContext> mockContext = new Mock<CosmosQueryContext>();
-            mockContext.Setup(x => x.QueryClient).Returns(mockQueryClient.Object);
-            mockContext.Setup(x => x.ContainerResourceId).Returns(collectionRid);
-            mockContext.Setup(x => x.SqlQuerySpec).Returns(sqlQuerySpec);
-
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-                MaxItemCount = maxPageSize
-            };
-  
-            mockContext.Setup(x => x.QueryRequestOptions).Returns(requestOptions);
-            List<ToDoItem> allMockedToDoItems = new List<ToDoItem>();
-
-            // Setup the mocks for the new partitions ranges
-            List<ToDoItem> itemsFromPkRange1 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
-                 mockQueryClient,
-                 responseMessagesPageSize: new int[] { 2, QueryResponseMessageFactory.SPLIT },
-                 sqlQuerySpec: sqlQuerySpec,
-                 partitionKeyRange: pkRange0,
-                 continuationToken: null,
-                 maxPageSize: maxPageSize,
-                 collectionRid: collectionRid,
-                 responseDelay: null,
-                 cancellationToken: cancellationToken);
-            allMockedToDoItems.AddRange(itemsFromPkRange1);
-
-            List<ToDoItem> itemsFromPkRange2 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
-                mockQueryClient,
-                responseMessagesPageSize: new int[] { 1 },
-                sqlQuerySpec: sqlQuerySpec,
-                partitionKeyRange: newPkRange1,
-                continuationToken: null,
-                maxPageSize: maxPageSize,
-                collectionRid: collectionRid,
-                responseDelay: null,
-                cancellationToken: cancellationToken);
-            allMockedToDoItems.AddRange(itemsFromPkRange2);
-
-            List<ToDoItem> itemsFromPkRange3 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
-                 mockQueryClient,
-                 responseMessagesPageSize: new int[] { 1 },
-                 sqlQuerySpec: sqlQuerySpec,
-                 partitionKeyRange: newPkRange2,
-                 continuationToken: null,
-                 maxPageSize: maxPageSize,
-                 collectionRid: collectionRid,
-                 responseDelay: null,
-                 cancellationToken: cancellationToken);
-            allMockedToDoItems.AddRange(itemsFromPkRange3);
-
-            FeedIterator executionContext = new CosmosQueryExecutionContextFactory(
-                client: mockQueryClient.Object,
-                resourceTypeEnum: ResourceType.Document,
-                operationType: OperationType.Query,
-                resourceType: typeof(ToDoItem),
-                sqlQuerySpec: sqlQuerySpec,
-                continuationToken: null,
-                queryRequestOptions: requestOptions,
-                resourceLink: resourceLink,
-                isContinuationExpected: true,
-                allowNonValueAggregateQuery: true,
-                correlatedActivityId: Guid.NewGuid());
-
-            // Read all the pages from both splits
-            List<ToDoItem> itemsRead = new List<ToDoItem>();
-            Assert.IsTrue(executionContext.HasMoreResults);
-
-            while (executionContext.HasMoreResults)
-            {
-                using (ResponseMessage response = await executionContext.ReadNextAsync(cancellationToken))
-                {
-                    Collection<ToDoItem> items = this.cosmosSerializer.FromStream<CosmosFeedResponseUtil<ToDoItem>>(response.Content).Data;
-                    itemsRead.AddRange(items);
-                }
-            }
-
-            Assert.AreEqual(allMockedToDoItems.Count, itemsRead.Count);
-
-            CollectionAssert.AreEqual(itemsRead, allMockedToDoItems, new ToDoItemComparer());
-        }
-
-        [TestMethod]
-        public async Task TestSplitWithExecutionContextAsync()
-        {
-            int maxPageSize = 10;
-            const string collectionRid = "MockTestSplitContainerRid";
-            SqlQuerySpec sqlQuerySpec = MockItemProducerFactory.DefaultQuerySpec;
-
-            // pkRange1 is the original range, newPkRange2/newPkRange3 are the ranges after the split
-            PartitionKeyRange pkRange1 = new PartitionKeyRange() { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
-            PartitionKeyRange newPkRange2 = new PartitionKeyRange() { Id = "1", MinInclusive = "", MaxExclusive = "BB" };
-            PartitionKeyRange newPkRange3 = new PartitionKeyRange() { Id = "2", MinInclusive = "BB", MaxExclusive = "FF" };
-            IReadOnlyList<PartitionKeyRange> newPkRanges = new List<PartitionKeyRange>()
-            {
-                newPkRange2,
-                newPkRange3,
-            };
-
-            // Setup the necessary partition key range update calls
-            Mock<IRoutingMapProvider> mockRoutingMap = new Mock<IRoutingMapProvider>();
-            mockRoutingMap.Setup(x =>
-                x.TryGetOverlappingRangesAsync(
-                    collectionRid,
-                    pkRange1.ToRange(),
-                    true)).Returns(Task.FromResult(newPkRanges));
-
-            Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
-            mockQueryClient.Setup(x => x.GetRoutingMapProviderAsync()).Returns(Task.FromResult(mockRoutingMap.Object));
-
-            Mock<CosmosQueryContext> mockContext = new Mock<CosmosQueryContext>();
-            mockContext.Setup(x => x.QueryClient).Returns(mockQueryClient.Object);
-            mockContext.Setup(x => x.ContainerResourceId).Returns(collectionRid);
-            mockContext.Setup(x => x.SqlQuerySpec).Returns(sqlQuerySpec);
-
-            QueryRequestOptions requestOptions = new QueryRequestOptions();
-            mockContext.Setup(x => x.QueryRequestOptions).Returns(requestOptions);
-            List<ToDoItem> allMockedToDoItems = new List<ToDoItem>();
-
-
-            // Setup the mocks for the new partitions ranges
-            List<ToDoItem> itemsFromPkRange1 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
-                 mockContext,
-                 responseMessagesPageSize: new int[] { 2, QueryResponseMessageFactory.SPLIT },
-                 sqlQuerySpec: sqlQuerySpec,
-                 partitionKeyRange: pkRange1,
-                 continuationToken: null,
-                 maxPageSize: maxPageSize,
-                 collectionRid: collectionRid,
-                 responseDelay: null,
-                 cancellationToken: cancellationToken);
-            allMockedToDoItems.AddRange(itemsFromPkRange1);
-
-            List<ToDoItem> itemsFromPkRange2 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
-                mockContext,
-                responseMessagesPageSize: new int[] { 1 },
-                sqlQuerySpec: sqlQuerySpec,
-                partitionKeyRange: newPkRange2,
-                continuationToken: null,
-                maxPageSize: maxPageSize,
-                collectionRid: collectionRid,
-                responseDelay: null,
-                cancellationToken: cancellationToken);
-            allMockedToDoItems.AddRange(itemsFromPkRange2);
-
-            List<ToDoItem> itemsFromPkRange3 = MockItemProducerFactory.MockSinglePartitionKeyRangeContext(
-                 mockContext,
-                 responseMessagesPageSize: new int[] { 1 },
-                 sqlQuerySpec: sqlQuerySpec,
-                 partitionKeyRange: newPkRange3,
-                 continuationToken: null,
-                 maxPageSize: maxPageSize,
-                 collectionRid: collectionRid,
-                 responseDelay: null,
-                 cancellationToken: cancellationToken);
-            allMockedToDoItems.AddRange(itemsFromPkRange3);
-
-            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-                    collectionRid,
+                CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
+                    MockQueryFactory.DefaultCollectionRid,
                     new PartitionedQueryExecutionInfo() { QueryInfo = new QueryInfo() },
-                    new List<PartitionKeyRange>() { pkRange1 },
+                    new List<PartitionKeyRange>() { MockQueryFactory.DefaultPartitionKeyRange },
                     maxPageSize,
-                    null);
+                    initialContinuationToken);
 
-            CosmosParallelItemQueryExecutionContext executionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
-                mockContext.Object,
-                initParams,
-                cancellationToken);
+                CosmosParallelItemQueryExecutionContext executionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                    context,
+                    initParams,
+                    cancellationToken);
 
-            // Read all the pages from both splits
-            List<ToDoItem> itemsRead = new List<ToDoItem>();
-            Assert.IsTrue(!executionContext.IsDone);
+                // Read all the pages from both splits
+                List<ToDoItem> itemsRead = new List<ToDoItem>();
+                Assert.IsTrue(!executionContext.IsDone);
 
-            while (!executionContext.IsDone)
-            {
-                QueryResponse queryResponse = await executionContext.DrainAsync(maxPageSize, cancellationToken);
-
-                foreach (CosmosElement element in queryResponse.CosmosElements)
+                while (!executionContext.IsDone)
                 {
-                    string jsonValue = element.ToString();
-                    ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
-                    itemsRead.Add(item);
+                    QueryResponse queryResponse = await executionContext.DrainAsync(maxPageSize, cancellationToken);
+
+                    foreach (CosmosElement element in queryResponse.CosmosElements)
+                    {
+                        string jsonValue = element.ToString();
+                        ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                        itemsRead.Add(item);
+                    }
                 }
+
+                Assert.AreEqual(allItems.Count, itemsRead.Count);
+                List<ToDoItem> exepected = allItems.OrderBy(x => x.id).ToList();
+                List<ToDoItem> actual = itemsRead.OrderBy(x => x.id).ToList();
+
+                CollectionAssert.AreEqual(exepected, actual, new ToDoItemComparer());
             }
-
-            Assert.AreEqual(allMockedToDoItems.Count, itemsRead.Count);
-
-            CollectionAssert.AreEqual(itemsRead, allMockedToDoItems, new ToDoItemComparer());
         }
     }
 }
