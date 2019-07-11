@@ -615,7 +615,7 @@ namespace Microsoft.Azure.Cosmos
                 documentClient: this.DocumentClient,
                 documentQueryClient: new DocumentQueryClient(this.DocumentClient));
 
-            this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
+            this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.ClientContext), LazyThreadSafetyMode.PublicationOnly);
         }
 
         internal async virtual Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
