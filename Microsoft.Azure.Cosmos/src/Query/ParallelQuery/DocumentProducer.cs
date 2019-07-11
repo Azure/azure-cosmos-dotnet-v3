@@ -98,6 +98,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private bool hasStartedFetching;
 
         /// <summary>
+        /// Need this flag so that the document producer stops buffering more results after a fatal exception.
+        /// </summary>
+        private bool documentProducerHitException;
+
+        /// <summary>
         /// Initializes a new instance of the DocumentProducer class.
         /// </summary>
         /// <param name="partitionKeyRange">The partition key range.</param>
@@ -299,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.Query
             try
             {
                 await this.fetchSemaphore.WaitAsync();
-                if (!this.HasMoreBackendResults)
+                if (!this.HasMoreBackendResults || this.documentProducerHitException)
                 {
                     // Just NOP
                     return;
@@ -385,10 +390,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                 // Buffer the exception instead of throwing, since we don't want an unobserved exception.
                                 await this.bufferedPages.AddAsync(TryMonad<DocumentFeedResponse<CosmosElement>>.FromException(exceptionToBuffer));
 
-                                // null out the backend continuation token, 
-                                // so that people stop trying to buffer more on this producer.
-                                this.hasStartedFetching = true;
-                                this.BackendContinuationToken = null;
+                                // set this flag so that people stop trying to buffer more on this producer.
+                                this.documentProducerHitException = true;
                                 break;
                             }
                             else
