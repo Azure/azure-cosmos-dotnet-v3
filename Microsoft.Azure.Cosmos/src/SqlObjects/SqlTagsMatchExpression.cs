@@ -7,15 +7,15 @@ namespace Microsoft.Azure.Cosmos.Sql
 
     internal class SqlTagsMatchExpression : SqlScalarExpression
     {
-        private SqlTagsMatchExpression(string memberAccess, IEnumerable<string> tags, bool supportDocumentRequiredTags)
+        private SqlTagsMatchExpression(string tagsProperty, IEnumerable<string> tags, bool supportDocumentRequiredTags)
             : base(SqlObjectKind.TagsMatch)
         {
-            MemberAccess = memberAccess;
+            TagsProperty = tagsProperty;
             Tags = tags;
             SupportDocumentRequiredTags = supportDocumentRequiredTags;
         }
 
-        public string MemberAccess { get; }
+        public string TagsProperty { get; }
         public IEnumerable<string> Tags { get; }
         public bool SupportDocumentRequiredTags { get; }
         

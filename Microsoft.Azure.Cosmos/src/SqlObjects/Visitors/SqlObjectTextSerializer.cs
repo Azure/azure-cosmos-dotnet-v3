@@ -599,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             const char requiredOperator = '*';
             const char notOperator = '!';
             
-            (char op, string ns, string name, string value) Parse(string tag)
+            (char Operator, string Namespace, string Name, string Value, string Tag, bool IsNot, bool IsRequired, bool IsWildcard) Parse(string tag)
             {
                 var indexOfColon = tag.IndexOf(':');
                 var indexOfEquals = tag.IndexOf('=');
@@ -612,55 +612,60 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 var name = tag.Substring(indexOfColon + 1, indexOfEquals - (indexOfColon + 1));
                 var value = tag.Substring(indexOfEquals + 1);
 
-                return (op, ns, name, value);
+                return (op, ns, name, value, tag, op == '!', op == '*', value.Length == 0);
             }
 
             this.writer.Write("(");
-            
-            if (sqlObject.Tags.Any())
+
+            var supportDocumentRequiredTags = sqlObject.SupportDocumentRequiredTags;
+            var tags = sqlObject.Tags;
+            var tagsProp = sqlObject.TagsProperty;
+            var tagProp = $"{tagsProp}[\"tag\"]";
+
+            if (tags.Any())
             {
-                var machineTags = sqlObject.Tags.Select(Parse);
-                var tagsByGroup = machineTags.GroupBy(x => (ns: x.ns, name: x.name));
+                var machineTags = tags.Select(x => Parse(x));
+                var tagsByGroup = machineTags.GroupBy(x => x.Namespace + ":" + x.Name);
                 foreach (var grouping in tagsByGroup)
                 {
-                    var tagName = grouping.Key.ns + ":" + grouping.Key.name;
-                    var regulars = grouping.Where(x => x.op == nullOperator);
-                    var nots = grouping.Where(x => x.op == notOperator);
-                    var requireds = grouping.Where(x => x.op == requiredOperator);
-                    var regularProp = $"{sqlObject.MemberAccess}[\"tags\"][\"{tagName}\"][\"t\"]";
-                    var notProp = $"{sqlObject.MemberAccess}[\"tags\"][\"{tagName}\"][\"n\"]";
+                    var tagName = grouping.Key;
+                    var regulars = grouping.Where(x => x.Operator == '\0');
+                    var nots = grouping.Where(x => x.IsNot);
+                    var requireds = grouping.Where(x => x.IsRequired);
+                    var wildcardTag = grouping.Key + "=";
+                    var regularProp = $"{tagsProp}[\"tags\"][\"{tagName}\"]";
+                    var notProp = $"{tagsProp}[\"tags\"][\"!{tagName}\"]";
 
                     if (nots.Any())
                     {
-                        if (nots.Any(x => x.value.Length == 0))
+                        if (nots.Any(x => x.IsWildcard))
                         {
-                            this.writer.Write($"ARRAY_LENGTH({regularProp} ?? []) = 0");
+                            this.writer.Write($"NOT(IS_DEFINED({regularProp}))");
                         }
-                        else
+                        else if (nots.Any(x => !x.IsWildcard))
                         {
-                            this.writer.Write("(");
-                            this.writer.Write($"NOT(ARRAY_CONTAINS({regularProp} ?? [], ''))");
-                            foreach (var not in nots.Where(x => x.value.Length > 0))
-                                this.writer.Write($" AND NOT(ARRAY_CONTAINS({regularProp} ?? [], '{not.value}'))");
-                            this.writer.Write(")");
+                            this.writer.Write($"NOT(ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\"))");
+                            foreach (var not in nots)
+                                this.writer.Write($" AND NOT(ARRAY_CONTAINS({tagProp}, \"{not.Tag.Substring(1)}\"))");
                         }
                     }
                     if (regulars.Any())
                     {
                         if (nots.Any())
                             this.writer.Write(" AND ");
-                        this.writer.Write("(");
-                        this.writer.Write($"NOT(ARRAY_CONTAINS({notProp} ?? [], ''))");
-                        foreach (var regular in regulars.Where(x => x.value.Length > 0))
-                            this.writer.Write($" AND NOT(ARRAY_CONTAINS({notProp} ?? [], '{regular.value}'))");
-                        this.writer.Write(")");
-                        if (regulars.All(x => x.value.Length > 0))
+
+                        if (regulars.Any(x => x.IsWildcard))
                         {
-                            this.writer.Write(" AND ");
-                            this.writer.Write("(");
-                            this.writer.Write($"ARRAY_LENGTH({regularProp} ?? []) = 0 OR ARRAY_CONTAINS({regularProp} ?? [], '')");
+                            this.writer.Write($"NOT(IS_DEFINED({notProp}))");
+                        }
+                        else if (regulars.Any(x => !x.IsWildcard))
+                        {
+                            this.writer.Write($"(NOT(IS_DEFINED({notProp})) OR NOT(ARRAY_CONTAINS({tagProp}, \"!{wildcardTag}\"))");
                             foreach (var regular in regulars)
-                                this.writer.Write($" OR ARRAY_CONTAINS({regularProp} ?? [], '{regular.value}')");
+                                this.writer.Write($" AND NOT(ARRAY_CONTAINS({tagProp}, \"!{regular.Tag}\"))");
+                            this.writer.Write($") AND (NOT(IS_DEFINED({regularProp})) OR ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\")");
+                            foreach (var regular in regulars)
+                                this.writer.Write($" OR ARRAY_CONTAINS({tagProp}, \"{regular.Tag}\")");
                             this.writer.Write(")");
                         }
                     }
@@ -668,12 +673,13 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                     {
                         if (nots.Any() || regulars.Any())
                             this.writer.Write(" AND ");
-                        this.writer.Write($"ARRAY_LENGTH({regularProp} ?? []) > 0");
-                        this.writer.Write(" AND ");
-                        this.writer.Write("(");
-                        this.writer.Write($"ARRAY_CONTAINS({regularProp} ?? [], '')");
-                        foreach (var required in requireds)
-                            this.writer.Write($" OR ARRAY_CONTAINS({regularProp} ?? [], '{required.value}')");
+                        this.writer.Write($"ARRAY_CONTAINS({tagProp}, \"{wildcardTag}\") OR (");
+                        foreach (var (value, index) in requireds.Select((v, i) => (v, i)))
+                        {
+                            if (index > 0)
+                                this.writer.Write(" AND ");
+                            this.writer.Write($"ARRAY_CONTAINS({tagProp}, \"{value.Tag.Substring(1)}\")");
+                        }
                         this.writer.Write(")");
                     }
 
@@ -681,10 +687,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 }
             }
 
-            if (sqlObject.SupportDocumentRequiredTags)
+            if (supportDocumentRequiredTags)
             {
-                var tagsExpression = $"[{string.Join(",", sqlObject.Tags.Select(x => $"\"{x}\""))}]";
-                this.writer.Write($"udf.TagsMatch({sqlObject.MemberAccess}[\"tag\"] ?? [], {tagsExpression})");
+                var tagsExpression = $"[{string.Join(",", tags.Select(x => $"\"{x}\""))}]";
+                this.writer.Write($"udf.TagsMatch({tagProp}, {tagsExpression})");
             }
             else
             {
