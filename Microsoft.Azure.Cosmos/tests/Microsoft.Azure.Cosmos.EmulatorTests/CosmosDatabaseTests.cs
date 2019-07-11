@@ -153,17 +153,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ImplicitConversion()
         {
-            string databaseName = Guid.NewGuid().ToString();
-
-            DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.GetDatabase(databaseName).ReadAsync(cancellationToken: this.cancellationToken);
+            DatabaseResponse cosmosDatabaseResponse = await this.CreateDatabaseHelper();
             Cosmos.Database cosmosDatabase = cosmosDatabaseResponse;
             DatabaseProperties cosmosDatabaseSettings = cosmosDatabaseResponse;
-            Assert.IsNotNull(cosmosDatabase);
-            Assert.IsNull(cosmosDatabaseSettings);
-
-            cosmosDatabaseResponse = await this.CreateDatabaseHelper();
-            cosmosDatabase = cosmosDatabaseResponse;
-            cosmosDatabaseSettings = cosmosDatabaseResponse;
             Assert.IsNotNull(cosmosDatabase);
             Assert.IsNotNull(cosmosDatabaseSettings);
 
@@ -177,11 +169,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task DropNonExistingDatabase()
         {
-            DatabaseResponse response = await this.cosmosClient.GetDatabase(Guid.NewGuid().ToString()).DeleteAsync(cancellationToken: this.cancellationToken);
-
-            string activityId = response.ActivityId;
-            double? ru = response.RequestCharge;
-            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            try
+            {
+                DatabaseResponse response = await this.cosmosClient.GetDatabase(Guid.NewGuid().ToString()).DeleteAsync(cancellationToken: this.cancellationToken);
+                Assert.Fail();
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }
         }
 
         [TestMethod]

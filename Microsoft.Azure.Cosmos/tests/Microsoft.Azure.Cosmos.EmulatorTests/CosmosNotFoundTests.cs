@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         PartitionKey = new Cosmos.PartitionKey("testpk"),
                 });
 
-            this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());
+            this.VerifyNotFoundResponse(await queryIterator.ReadNextAsync());
 
             var crossPartitionQueryIterator2 = container.GetItemQueryStreamIterator(
                 "select * from t where true", 
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "select * from t where true", 
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
-                this.VerifyQueryNotFoundResponse(await queryIterator.ReadNextAsync());
+                this.VerifyNotFoundResponse(await queryIterator.ReadNextAsync());
 
                 var feedIterator = container.GetItemQueryStreamIterator();
                 this.VerifyNotFoundResponse(await feedIterator.ReadNextAsync());

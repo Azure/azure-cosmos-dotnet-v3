@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Routing;
 
@@ -216,8 +215,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     // If the partition has split and there are no more results in the parent buffer
                     // then just pull from the highest priority child (with recursive decent).
 
-                    // Need to pop push to force an update in priority
-                    this.children.Enqueue(this.children.Dequeue());
                     return this.children.Peek().CurrentItemProducerTree;
                 }
                 else
@@ -250,26 +247,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the document producer tree has more results.
         /// </summary>
-        public bool HasMoreResults
-        {
-            get
-            {
-                return this.Root.HasMoreResults
+        public bool HasMoreResults => this.Root.HasMoreResults
                     || (this.HasSplit && this.children.Peek().HasMoreResults);
-            }
-        }
 
         /// <summary>
         /// Gets a value indicating whether the document producer tree has more backend results.
         /// </summary>
-        public bool HasMoreBackendResults
-        {
-            get
-            {
-                return this.Root.HasMoreBackendResults
+        public bool HasMoreBackendResults => this.Root.HasMoreBackendResults
                     || (this.HasSplit && this.children.Peek().HasMoreBackendResults);
-            }
-        }
 
         /// <summary>
         /// Gets whether there are items left in the current page of the document producer tree.
@@ -310,13 +295,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the document producer tree is active.
         /// </summary>
-        public bool IsActive
-        {
-            get
-            {
-                return this.Root.IsActive || this.children.Any((child) => child.IsActive);
-            }
-        }
+        public bool IsActive => this.Root.IsActive || this.children.Any((child) => child.IsActive);
 
         /// <summary>
         /// Gets or sets the page size for this document producer tree.
@@ -387,13 +366,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the document producer tree has split.
         /// </summary>
-        private bool HasSplit
-        {
-            get
-            {
-                return this.children.Count != 0;
-            }
-        }
+        private bool HasSplit => this.children.Count != 0;
 
         /// <summary>
         /// Moves to the next item in the document producer tree.
@@ -565,7 +538,23 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                return await this.CurrentItemProducerTree.MoveNextAsync(token);
+                // Keep track of the current tree
+                ItemProducerTree itemProducerTree = this.CurrentItemProducerTree;
+                (bool successfullyMovedNext, QueryResponse failureResponse) response = await itemProducerTree.MoveNextAsync(token);
+
+                // Update the priority queue for the new values
+                this.children.Enqueue(this.children.Dequeue());
+
+                // If the current tree is done, but other trees still have a result
+                // then return true.
+                if (!response.successfullyMovedNext &&
+                    response.failureResponse == null &&
+                    this.HasMoreResults)
+                {
+                    return ItemProducer.IsSuccessResponse;
+                }
+
+                return response;
             }
         }
 
