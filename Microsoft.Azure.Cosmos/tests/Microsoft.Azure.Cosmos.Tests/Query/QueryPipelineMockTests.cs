@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initContinuationToken: initialContinuationToken,
                     maxPageSize: maxPageSize,
                     mockResponseForSinglePartition: mockResponse,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
 
                 CosmosQueryContext context = MockQueryFactory.CreateContext(
                     mockQueryClient.Object);

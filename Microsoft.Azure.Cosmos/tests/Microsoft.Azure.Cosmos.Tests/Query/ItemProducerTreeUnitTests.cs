@@ -47,21 +47,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initContinuationToken: initialContinuationToken,
                     maxPageSize: maxPageSize,
                     mockResponseForSinglePartition: new MockResponseForSinglePartition[] { mockResponse },
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
 
                 CosmosQueryContext context = MockQueryFactory.CreateContext(
                     mockQueryClient.Object);
 
                 ItemProducerTree itemProducerTree = new ItemProducerTree(
-                   context,
-                   MockQueryFactory.DefaultQuerySpec,
-                   mockResponse.PartitionKeyRange,
-                   MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
-                   new ParallelItemProducerTreeComparer(),
-                   CosmosElementEqualityComparer.Value,
-                   true,
-                   MockQueryFactory.DefaultCollectionRid,
-                   maxPageSize,
+                   queryContext: context,
+                   querySpecForInit: MockQueryFactory.DefaultQuerySpec,
+                   partitionKeyRange: mockResponse.PartitionKeyRange,
+                   produceAsyncCompleteCallback: MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
+                   itemProducerTreeComparer: new ParallelItemProducerTreeComparer(),
+                   equalityComparer: CosmosElementEqualityComparer.Value,
+                   deferFirstPage: true,
+                   collectionRid: MockQueryFactory.DefaultCollectionRid,
+                   initialPageSize: maxPageSize,
                    initialContinuationToken: mockResponse.StartingContinuationToken);
 
                 Assert.IsTrue(itemProducerTree.HasMoreResults);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initContinuationToken: initialContinuationToken,
                     maxPageSize: maxPageSize,
                     mockResponseForSinglePartition: mockResponse,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
 
                 CosmosQueryContext context = MockQueryFactory.CreateContext(
                     mockQueryClient.Object);
