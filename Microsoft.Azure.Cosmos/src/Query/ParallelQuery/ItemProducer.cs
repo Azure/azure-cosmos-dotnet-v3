@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.fetchSchedulingMetrics.Stop();
                 this.hasStartedFetching = true;
-                this.BackendContinuationToken = feedResponse.Headers.ContinuationToken;
+                
                 this.ActivityId = Guid.Parse(feedResponse.Headers.ActivityId);
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccessStatusCode)
@@ -329,6 +329,10 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.hitException = true;
                     return;
                 }
+
+                // The backend continuation token is used for the children on splits 
+                // and should not be updated on exceptions
+                this.BackendContinuationToken = feedResponse.Headers.ContinuationToken;
 
                 Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
                 QueryMetrics queryMetrics = QueryMetrics.Zero;

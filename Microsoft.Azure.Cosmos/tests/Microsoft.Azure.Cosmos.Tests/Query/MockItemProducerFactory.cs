@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal static class MockItemProducerFactory
     {
-        public const string DefaultCollectionRid = "MockDefaultCollectionRid";
+        public static readonly string DefaultDatabaseRid = MockQueryFactory.DefaultDatabaseRid;
+        public static readonly string DefaultCollectionRid = MockQueryFactory.DefaultCollectionRid;
         public static readonly IReadOnlyList<int> Dataset = Enumerable.Range(1, 1000).ToList();
         public static readonly SqlQuerySpec DefaultQuerySpec = new SqlQuerySpec("SELECT * FROM C ");
         public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B", Id = "0" };
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuationToken = null,
             int maxPageSize = 50,
             bool deferFirstPage = true,
-            string collectionRid = DefaultCollectionRid,
+            string collectionRid = null,
             IComparer<ItemProducerTree> itemProducerTreeComparer = null,
             ItemProducerTree.ProduceAsyncCompleteDelegate completeDelegate = null,
             TimeSpan? responseDelay = null,
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     newContinuationToken = Guid.NewGuid().ToString();
                 }
 
-                (QueryResponse response, ReadOnlyCollection<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
+                (QueryResponse response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
                     itemIdPrefix: $"page{i}-pk{partitionKeyRange.Id}-",
                     continuationToken: newContinuationToken,
                     collectionRid: collectionRid,
@@ -242,7 +243,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                             }
                         })
                         .Returns(Task.FromResult(queryResponse.response));
-                previousContinuationToken = newContinuationToken;
+
+
+                if (responseMessagesPageSize[i] != QueryResponseMessageFactory.SPLIT)
+                {
+                    previousContinuationToken = newContinuationToken;
+                }
             }
 
             return allItems;
@@ -272,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     newContinuationToken = Guid.NewGuid().ToString();
                 }
 
-                (QueryResponse response, ReadOnlyCollection<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
+                (QueryResponse response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
                     itemIdPrefix: $"page{i}-pk{partitionKeyRange.Id}-",
                     continuationToken: newContinuationToken,
                     collectionRid: collectionRid,
