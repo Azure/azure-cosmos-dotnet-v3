@@ -85,16 +85,6 @@ namespace Microsoft.Azure.Cosmos
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders)
         {
-            if (result == null)
-            {
-                throw new ArgumentNullException(nameof(result));
-            }
-
-            if (responseHeaders == null)
-            {
-                throw new ArgumentNullException(nameof(responseHeaders));
-            }
-
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException("count must be positive");
@@ -125,16 +115,6 @@ namespace Microsoft.Azure.Cosmos
             string errorMessage,
             Error error)
         {
-            if (responseHeaders == null)
-            {
-                throw new ArgumentNullException(nameof(responseHeaders));
-            }
-
-            if (errorMessage == null)
-            {
-                throw new ArgumentNullException(nameof(errorMessage));
-            }
-
             QueryResponse cosmosQueryResponse = new QueryResponse(
                 result: Enumerable.Empty<CosmosElement>(),
                 count: 0,

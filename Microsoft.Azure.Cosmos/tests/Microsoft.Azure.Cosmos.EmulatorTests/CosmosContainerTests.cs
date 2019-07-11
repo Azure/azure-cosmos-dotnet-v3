@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             }
 
-            using (ResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteStreamAsync())
+            using (ResponseMessage containerResponse = await this.cosmosDatabase.GetContainer(containerName).DeleteContainerStreamAsync())
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
             }
@@ -361,8 +361,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             Container container = this.cosmosDatabase.GetContainer(containerName);
 
-            ContainerResponse containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
+            try
+            {
+                ContainerResponse containerResponse = await container.DeleteContainerAsync();
+                Assert.Fail();
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }            
         }
 
         [TestMethod]
@@ -492,17 +499,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.GetContainer(containerName).ReadContainerAsync();
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
             Container container = containerResponse;
             ContainerProperties containerSettings = containerResponse;
-
-            Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
-            Assert.IsNotNull(container);
-            Assert.IsNull(containerSettings);
-
-            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
-            container = containerResponse;
-            containerSettings = containerResponse;
             Assert.IsNotNull(container);
             Assert.IsNotNull(containerSettings);
 

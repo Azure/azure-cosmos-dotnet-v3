@@ -161,14 +161,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
-        {
-            // Not finding something is part of a normal work-flow and should not be an exception.
-            // This prevents the unnecessary overhead of an exception
-            if (cosmosResponseMessage.StatusCode == HttpStatusCode.NotFound)
-            {
-                return default(T);
-            }
-
+        {            
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
 

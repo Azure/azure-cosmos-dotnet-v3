@@ -227,9 +227,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .Returns(() =>
                 {
-                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
-                    itemResponse.Setup(i => i.StatusCode).Returns(HttpStatusCode.NotFound);
-                    return Task.FromResult(itemResponse.Object);
+                    throw new CosmosException(HttpStatusCode.NotFound, "");
                 })
                 .Returns(() =>
                 {
@@ -262,9 +260,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
-                    var itemResponse = new Mock<ItemResponse<DocumentServiceLeaseCore>>();
-                    itemResponse.Setup(i => i.StatusCode).Returns(HttpStatusCode.NotFound);
-                    return itemResponse.Object;
+                    throw new CosmosException(HttpStatusCode.NotFound, "");
                 });
 
             mockedItems.SetupSequence(i => i.ReplaceItemAsync<DocumentServiceLeaseCore>(
