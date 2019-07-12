@@ -21,7 +21,7 @@
     {
         //Read configuration
         private static readonly string CosmosDatabaseId = "samples";
-        private static readonly string containerId = "container-samples";
+        private static readonly string containerId = "query-samples";
 
         private static Database cosmosDatabase = null;
 
