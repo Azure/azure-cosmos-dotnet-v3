@@ -360,14 +360,10 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal virtual Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ReadAsync(cancellationToken: cancellationToken)
-                .ContinueWith(task =>
-                {
-                    DatabaseResponse response = task.Result;
-                    return response.Resource.ResourceId;
-                }, cancellationToken);
+            DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
+            return databaseResponse?.Resource?.ResourceId;
         }
 
         private Task<ResponseMessage> CreateContainerStreamInternalAsync(

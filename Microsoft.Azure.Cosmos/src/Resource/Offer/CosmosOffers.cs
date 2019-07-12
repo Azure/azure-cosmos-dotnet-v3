@@ -30,15 +30,13 @@ namespace Microsoft.Azure.Cosmos
         {
             OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
 
-            Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
+            return await this.GetThroughputResponseAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
-
-            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(response);
         }
 
         internal async Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -50,15 +48,13 @@ namespace Microsoft.Azure.Cosmos
             OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
-            Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
+            return await this.GetThroughputResponseAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
                 operationType: OperationType.Replace,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
-
-            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(response);
         }
 
         internal async Task<OfferV2> GetOfferV2Async(
@@ -136,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
             return default(T);
         }
 
-        private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
+        private async Task<ThroughputResponse> GetThroughputResponseAsync(
            Stream streamPayload,
            OperationType operationType,
            Uri linkUri,
@@ -144,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
+            Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: linkUri,
               resourceType: resourceType,
               operationType: operationType,
@@ -154,6 +150,7 @@ namespace Microsoft.Azure.Cosmos
               requestOptions: requestOptions,
               requestEnricher: null,
               cancellationToken: cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
         }
 
     }

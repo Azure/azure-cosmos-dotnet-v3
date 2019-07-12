@@ -471,9 +471,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .ReadThroughputAsync(new RequestOptions());
                 Assert.Fail("It should throw Resource Not Found exception");
             }
-            catch (Exception ex)
+            catch (DocumentClientException ex)
             {
-                Assert.IsTrue(ex.InnerException.Message.Contains("Resource Not Found"));
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
             }
 
             containerResponse = await container.DeleteContainerAsync();
@@ -481,16 +481,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(AggregateException))]
         public async Task ThroughputNonExistingTest()
         {
             string containerName = Guid.NewGuid().ToString();
             Container container = this.cosmosDatabase.GetContainer(containerName);
 
-            await ((ContainerCore)container).ReadThroughputAsync();
-
-            ContainerResponse containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);
+            try
+            {
+                await container.ReadThroughputAsync();
+                Assert.Fail("It should throw Resource Not Found exception");
+            }
+            catch (DocumentClientException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }
         }
 
         [TestMethod]
