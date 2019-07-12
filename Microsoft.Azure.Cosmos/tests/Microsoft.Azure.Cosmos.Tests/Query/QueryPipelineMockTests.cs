@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             int maxPageSize = 5;
 
-            List<MockResponseForSinglePartition[]> mockResponsesScenario = MockQueryFactory.GetSplitScenarios(initialContinuationToken);
-            foreach (MockResponseForSinglePartition[] mockResponse in mockResponsesScenario)
+            List<MockPartitionResponse[]> mockResponsesScenario = MockQueryFactory.GetSplitScenarios();
+            foreach (MockPartitionResponse[] mockResponse in mockResponsesScenario)
             {
                 Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
                 IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initContinuationToken: initialContinuationToken,
                     maxPageSize: maxPageSize,
                     mockResponseForSinglePartition: mockResponse,
-                    cancellationToken: cancellationToken);
+                    cancellationTokenForMocks: cancellationToken);
 
                 CosmosQueryContext context = MockQueryFactory.CreateContext(
                     mockQueryClient.Object);
