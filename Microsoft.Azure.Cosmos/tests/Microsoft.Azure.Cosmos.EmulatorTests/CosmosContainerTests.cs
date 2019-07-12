@@ -382,7 +382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = this.cosmosDatabase.GetContainer(containerName);
 
-            int? readThroughput = await ((ContainerCore)container).ReadProvisionedThroughputAsync();
+            int? readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
 
             containerResponse = await container.DeleteContainerAsync();
@@ -432,11 +432,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = this.cosmosDatabase.GetContainer(containerName);
 
-            int? readThroughput = await ((ContainerCore)container).ReadProvisionedThroughputAsync();
+            int? readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
 
-            await ((ContainerCore)container).ReplaceProvisionedThroughputAsync(readThroughput.Value + 1000);
-            int? replaceThroughput = await ((ContainerCore)container).ReadProvisionedThroughputAsync();
+            await container.ReplaceThroughputAsync(readThroughput.Value + 1000);
+            int? replaceThroughput = await ((ContainerCore)container).ReadThroughputAsync();
             Assert.IsNotNull(replaceThroughput);
             Assert.AreEqual(readThroughput.Value + 1000, replaceThroughput);
 
@@ -487,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             Container container = this.cosmosDatabase.GetContainer(containerName);
 
-            await ((ContainerCore)container).ReadProvisionedThroughputAsync();
+            await ((ContainerCore)container).ReadThroughputAsync();
 
             ContainerResponse containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NotFound, containerResponse.StatusCode);

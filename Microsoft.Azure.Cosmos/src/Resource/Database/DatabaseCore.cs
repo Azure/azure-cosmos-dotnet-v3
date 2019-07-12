@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
                 parentLink: null,
                 uriPathSegment: Paths.DatabasesPathSegment,
                 id: databaseId);
+            this.Offers = new CosmosOffers(this.ClientContext);
         }
 
         public override string Id { get; }
@@ -44,6 +45,8 @@ namespace Microsoft.Azure.Cosmos
         internal virtual Uri LinkUri { get; }
 
         internal CosmosClientContext ClientContext { get; }
+
+        internal CosmosOffers Offers { get; private set; }
 
         public override Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
@@ -67,23 +70,6 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }
 
-        internal async Task<int?> ReadProvisionedThroughputAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return await ReadThroughputAsync(cancellationToken);
-        }
-
-        internal async Task ReplaceProvisionedThroughputAsync(
-            int throughput,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            ThroughputResponse response = await ReplaceThroughputAsync(throughput, null, cancellationToken);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                throw new CosmosException(response.StatusCode, "Throughput is not configured");
-            }
-        }
-
         public async override Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -96,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             string rid = await this.GetRIDAsync(cancellationToken);
-            return await this.ClientContext.Client.Offers.ReadThroughputAsync(
+            return await this.Offers.ReadThroughputAsync(
                 targetRID: rid,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -109,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         {
             string rid = await this.GetRIDAsync(cancellationToken);
 
-            return await this.ClientContext.Client.Offers.ReplaceThroughputAsync(
+            return await this.Offers.ReplaceThroughputAsync(
                 targetRID: rid,
                 throughput: throughput,
                 requestOptions: requestOptions,

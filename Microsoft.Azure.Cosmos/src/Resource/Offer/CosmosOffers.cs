@@ -28,12 +28,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await GetOfferV2Async(targetRID, cancellationToken);
-
-            if (offerV2 == null)
-            {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
-            }
+            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
 
             Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
                 streamPayload: null,
@@ -52,13 +47,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await GetOfferV2Async(targetRID, cancellationToken);
-
-            if (offerV2 == null)
-            {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
-            }
-
+            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
             Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
@@ -80,27 +69,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException(targetRID);
             }
-            QueryDefinition queryDefinition = new QueryDefinition(@"select * from root r where r.offerResourceId=""" + targetRID + @"""");
+
+            QueryDefinition queryDefinition = new QueryDefinition("select * from root r where r.offerResourceId= @targetRID");
+            queryDefinition.WithParameter("@targetRID", targetRID);
 
             FeedIterator<OfferV2> databaseStreamIterator = this.GetOfferQueryIterator<OfferV2>(
                  queryDefinition);
-            OfferV2 offerV2 = await SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
-            return offerV2;
-        }
+            OfferV2 offerV2 = await this.SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
 
-        internal virtual FeedIterator GetOfferQueryStreamIterator(
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return new FeedIteratorCore(
-               this.ClientContext,
-               this.OfferRootUri,
-               ResourceType.Offer,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+            if (offerV2 == null)
+            {
+                throw new CosmosException(HttpStatusCode.NotFound, "Throughput is not configured");
+            }
+
+            return offerV2;
         }
 
         internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
@@ -109,11 +91,13 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            FeedIterator databaseStreamIterator = this.GetOfferQueryStreamIterator(
-                queryDefinition,
-                continuationToken,
-                requestOptions,
-                cancellationToken);
+            FeedIterator databaseStreamIterator = new FeedIteratorCore(
+               this.ClientContext,
+               this.OfferRootUri,
+               ResourceType.Offer,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
@@ -136,27 +120,20 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosOfferResult(offerV2.Content.OfferThroughput);
         }
 
-        private Task<T> SingleOrDefaultAsync<T>(
+        private async Task<T> SingleOrDefaultAsync<T>(
             FeedIterator<T> offerQuery,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (offerQuery.HasMoreResults)
+            while (offerQuery.HasMoreResults)
             {
-                return offerQuery.ReadNextAsync(cancellationToken)
-                    .ContinueWith(nextAsyncTask =>
-                    {
-                       FeedResponse<T> offerFeedResponse = nextAsyncTask.Result;
-                       if (offerFeedResponse.Any())
-                        {
-                            return Task.FromResult(offerFeedResponse.Single());
-                        }
-
-                       return SingleOrDefaultAsync(offerQuery, cancellationToken);
-                    })
-                    .Unwrap();
+                FeedResponse<T> offerFeedResponse = await offerQuery.ReadNextAsync(cancellationToken);
+                if (offerFeedResponse.Any())
+                {
+                    return offerFeedResponse.Single();
+                }
             }
 
-            return Task.FromResult(default(T));
+            return default(T);
         }
 
         private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
