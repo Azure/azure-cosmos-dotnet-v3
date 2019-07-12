@@ -79,7 +79,8 @@
             ContainerProperties containerSettings = new ContainerProperties(containerId, "/LastName");
 
             // Delete the existing container to prevent create item conflicts
-            await database.GetContainer(containerId).DeleteContainerAsync();
+            using (await database.GetContainer(containerId).DeleteContainerStreamAsync())
+            { }
 
             // Create with a throughput of 1000 RU/s
             Container container = await database.CreateContainerIfNotExistsAsync(
@@ -112,7 +113,10 @@
 
             await TryDeleteStoredProcedure(container, scriptId);
             Scripts cosmosScripts = container.Scripts;
-            StoredProcedureResponse sproc = await cosmosScripts.CreateStoredProcedureAsync(new StoredProcedureProperties(scriptId, File.ReadAllText(scriptFileName)));
+            StoredProcedureResponse sproc = await cosmosScripts.CreateStoredProcedureAsync(
+                new StoredProcedureProperties(
+                    scriptId, 
+                    File.ReadAllText(scriptFileName)));
 
             // 2. Create a document.
             SampleDocument doc = new SampleDocument
@@ -128,7 +132,10 @@
 
             // 3. Run the script. Pass "Hello, " as parameter. 
             // The script will take the 1st document and echo: Hello, <document as json>.
-            StoredProcedureExecuteResponse<string> response = await container.Scripts.ExecuteStoredProcedureAsync<string, string>(scriptId, "Hello", new PartitionKey(doc.LastName));
+            StoredProcedureExecuteResponse<string> response = await container.Scripts.ExecuteStoredProcedureAsync<string>(
+                scriptId,
+                new PartitionKey(doc.LastName),
+                new dynamic[] { "Hello" });
 
             Console.WriteLine("Result from script: {0}\r\n", response.Resource);
 
@@ -181,7 +188,10 @@
                 dynamic[] args = new dynamic[] { JsonConvert.DeserializeObject<dynamic>(argsJson) };
 
                 // 6. execute the batch.
-                StoredProcedureExecuteResponse<int> scriptResult = await cosmosScripts.ExecuteStoredProcedureAsync<dynamic, int>(scriptId, args, new PartitionKey("Andersen"));
+                StoredProcedureExecuteResponse<int> scriptResult = await cosmosScripts.ExecuteStoredProcedureAsync<int>(
+                    scriptId,
+                    new PartitionKey("Andersen"),
+                    args);
 
                 // 7. Prepare for next batch.
                 int currentlyInserted = scriptResult.Resource;
@@ -226,10 +236,10 @@
             do
             {
                 // 3. Run the stored procedure.
-                StoredProcedureExecuteResponse<OrderByResult> response = await cosmosScripts.ExecuteStoredProcedureAsync<object, OrderByResult>(
+                StoredProcedureExecuteResponse<OrderByResult> response = await cosmosScripts.ExecuteStoredProcedureAsync<OrderByResult>(
                     scriptId,
-                    new { filterQuery, orderByFieldName, continuationToken },
-                    new PartitionKey("Andersen"));
+                    new PartitionKey("Andersen"),
+                    new dynamic[] { filterQuery, orderByFieldName, continuationToken });
 
                 // 4. Process stored procedure response.
                 continuationToken = response.Resource.Continuation;
@@ -339,10 +349,15 @@
         private static async Task TryDeleteStoredProcedure(Container container, string sprocId)
         {
             Scripts cosmosScripts = container.Scripts;
-            StoredProcedureResponse sproc = await cosmosScripts.ReadStoredProcedureAsync(sprocId);
-            if (sproc != null)
+
+            try
             {
+                StoredProcedureResponse sproc = await cosmosScripts.ReadStoredProcedureAsync(sprocId);
                 await cosmosScripts.DeleteStoredProcedureAsync(sprocId);
+            }
+            catch(CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                //Nothing to delete
             }
         }
         // </TryDeleteStoredProcedure>
