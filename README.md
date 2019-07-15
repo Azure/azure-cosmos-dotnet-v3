@@ -15,10 +15,10 @@ This project provides a client tools or utilities in .NET that makes it easy to 
 Our [Samples folder](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/CodeSamples) is a good starting point.
 
 ```
-CosmosClient client = new CosmosClient("", "mysupersecretkey");
+CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
 Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
 Container container = await database.CreateContainerIfNotExistsAsync(
-    "MyContainerName", 
+    "MyContainerName",
     "/partitionKeyPath",
     400);
 
