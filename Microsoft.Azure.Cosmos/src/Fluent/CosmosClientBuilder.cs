@@ -173,6 +173,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// This can be used to weaken the database account consistency level for read operations.
+        /// If this is not set the database account consistency level will be used for all requests.
+        /// </summary>
+        /// <param name="consistencyLevel">The desired consistency level for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        public CosmosClientBuilder WithDesiredConsistencyLevel(Cosmos.ConsistencyLevel consistencyLevel)
+        {
+            this.clientOptions.DesiredConsistencyLevel = consistencyLevel;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the time to wait for response to come back from network peer. Default is 60 connections</param>

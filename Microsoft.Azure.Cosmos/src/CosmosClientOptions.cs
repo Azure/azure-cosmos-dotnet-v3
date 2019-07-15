@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
+    using System.Runtime.ConstrainedExecution;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -140,6 +141,12 @@ namespace Microsoft.Azure.Cosmos
         public ConnectionMode ConnectionMode { get; set; }
 
         /// <summary>
+        /// This can be used to weaken the database account consistency level for read operations.
+        /// If this is not set the database account consistency level will be used for all requests.
+        /// </summary>
+        public ConsistencyLevel? DesiredConsistencyLevel { get; set; }
+
+        /// <summary>
         /// Get ot set the number of times client should retry on rate throttled requests.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
@@ -171,7 +178,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
         /// </summary>
-        [JsonConverter(typeof(ClientOptionJsonConverter))]
+        [JsonIgnore]
         internal CosmosSerializer CosmosSerializerWithWrapperOrDefault => this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
 
         /// <summary>
@@ -330,6 +337,30 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return connectionPolicy;
+        }
+
+        internal Documents.ConsistencyLevel? GetDocumentsConsistencyLevel()
+        {
+            if (!this.DesiredConsistencyLevel.HasValue)
+            {
+                return null;
+            }
+
+            switch (this.DesiredConsistencyLevel.Value)
+            {
+                case ConsistencyLevel.BoundedStaleness:
+                    return Documents.ConsistencyLevel.BoundedStaleness;
+                case ConsistencyLevel.ConsistentPrefix:
+                    return Documents.ConsistencyLevel.BoundedStaleness;
+                case ConsistencyLevel.Eventual:
+                    return Documents.ConsistencyLevel.Eventual;
+                case ConsistencyLevel.Session:
+                    return Documents.ConsistencyLevel.Session;
+                case ConsistencyLevel.Strong:
+                    return Documents.ConsistencyLevel.Strong;
+                default:
+                    throw new ArgumentException($"Unsupported ConsistencyLevel {this.DesiredConsistencyLevel.Value}");
+            }
         }
 
         internal static string GetAccountEndpoint(string connectionString)

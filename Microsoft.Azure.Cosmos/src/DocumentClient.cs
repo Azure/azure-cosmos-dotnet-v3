@@ -1443,7 +1443,7 @@ namespace Microsoft.Azure.Cosmos
             return this.accountServiceConfiguration.QueryEngineConfiguration;
         }
 
-        internal async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             await this.EnsureValidClientAsync();
             return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
