@@ -289,7 +289,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         internal string AccountKey { get; }
 
-        internal CosmosOffers Offers { get; private set; }
         internal DocumentClient DocumentClient { get; set; }
         internal RequestInvokerHandler RequestHandler { get; private set; }
         internal CosmosResponseFactory ResponseFactory { get; private set; }
@@ -613,8 +612,6 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
                 documentQueryClient: new DocumentQueryClient(this.DocumentClient));
-
-            this.Offers = new CosmosOffers(this.ClientContext);
         }
 
         internal async virtual Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()

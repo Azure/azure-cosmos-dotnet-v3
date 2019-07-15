@@ -79,7 +79,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             string rid = await this.GetRIDAsync(cancellationToken);
-            return await this.ClientContext.Client.Offers.ReadThroughputAsync(
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReadThroughputAsync(
                 targetRID: rid,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -91,8 +92,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             string rid = await this.GetRIDAsync(cancellationToken);
-
-            return await this.ClientContext.Client.Offers.ReplaceThroughputAsync(
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputAsync(
                 targetRID: rid,
                 throughput: throughput,
                 requestOptions: requestOptions,
