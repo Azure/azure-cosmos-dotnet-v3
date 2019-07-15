@@ -984,6 +984,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <typeparam name="T">The type of object to query.</typeparam>
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional)The options for the item query request.<see cref="QueryRequestOptions"/></param>
         /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
         /// <example>
@@ -1053,6 +1054,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
         /// <summary>

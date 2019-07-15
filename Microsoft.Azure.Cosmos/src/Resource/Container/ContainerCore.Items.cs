@@ -314,6 +314,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
@@ -322,6 +323,7 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 this.ClientContext.CosmosSerializer,
                 (CosmosQueryClientCore)this.queryClient,
+                continuationToken,
                 requestOptions,
                 allowSynchronousQueryExecution);
         }

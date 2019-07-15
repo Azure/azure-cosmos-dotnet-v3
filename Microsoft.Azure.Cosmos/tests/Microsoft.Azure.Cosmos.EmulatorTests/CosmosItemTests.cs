@@ -1301,6 +1301,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(exception.Message.Contains("To execute LINQ query please set allowSynchronousQueryExecution true"));
             }
         }
+
+        [TestMethod]
+        public async Task ItemLINQQueryWithContinuationTokenTest()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await CreateRandomItems(pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
+            queryRequestOptions.MaxConcurrency = 1;
+            queryRequestOptions.MaxItemCount = 5;
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(requestOptions: queryRequestOptions);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            FeedIterator<ToDoActivity> feedIterator = queriable.ToFeedIterator();
+
+            int firstItemSet = 0;
+            string continuationToken = null;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync();
+                firstItemSet = feedResponse.Count();
+                continuationToken = feedResponse.ContinuationToken;
+                if(firstItemSet > 0)
+                {
+                    break;
+                }
+            }
+
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(continuationToken: continuationToken, requestOptions: queryRequestOptions);
+            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            feedIterator = queriable.ToFeedIterator();
+
+            //Test continuationToken with LINQ query generation and asynchronous feedIterator execution.
+            int secondItemSet = 0;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync();
+                secondItemSet += feedResponse.Count();
+            }
+
+            Assert.AreEqual(10 - firstItemSet, secondItemSet);
+
+            //Test continuationToken with blocking LINQ execution
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution:true, continuationToken: continuationToken, requestOptions: queryRequestOptions);
+            int linqExecutionItemCount = linqQueryable.Where(item => (item.taskNum < 100)).Count();
+            Assert.AreEqual(10 - firstItemSet, linqExecutionItemCount);
+        }
+
         // Move the data from None Partition to other logical partitions
         [TestMethod]
         public async Task MigrateDataInNonPartitionContainer()
