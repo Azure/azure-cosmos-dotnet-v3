@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (this.cosmosDatabase != null)
             {
-                await this.cosmosDatabase.DeleteAsync();
+                await this.cosmosDatabase.DeleteStreamAsync();
             }
             this.cosmosClient.Dispose();
         }
