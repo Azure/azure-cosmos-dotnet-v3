@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             if (testDb != null)
             {
-                await testDb.DeleteAsync();
+                await testDb.DeleteStreamAsync();
             }
         }
 
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestCleanup]
         public async Task TestCleanUp()
         {
-            await testContainer.DeleteContainerAsync();
+            await testContainer.DeleteContainerStreamAsync();
         }
 
         [JsonConverter(typeof(StringEnumConverter))]

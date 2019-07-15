@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             if (testDb != null)
             {
-                await testDb.DeleteAsync();
+                await testDb.DeleteStreamAsync();
             }
         }
 
