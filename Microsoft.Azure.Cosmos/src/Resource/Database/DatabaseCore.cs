@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos
                 parentLink: null,
                 uriPathSegment: Paths.DatabasesPathSegment,
                 id: databaseId);
-            this.Offers = new CosmosOffers(this.ClientContext);
         }
 
         public override string Id { get; }
@@ -45,8 +44,6 @@ namespace Microsoft.Azure.Cosmos
         internal virtual Uri LinkUri { get; }
 
         internal CosmosClientContext ClientContext { get; }
-
-        internal CosmosOffers Offers { get; private set; }
 
         public override Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
@@ -82,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             string rid = await this.GetRIDAsync(cancellationToken);
-            return await this.Offers.ReadThroughputAsync(
+            return await this.ClientContext.Client.Offers.ReadThroughputAsync(
                 targetRID: rid,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
@@ -95,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         {
             string rid = await this.GetRIDAsync(cancellationToken);
 
-            return await this.Offers.ReplaceThroughputAsync(
+            return await this.ClientContext.Client.Offers.ReplaceThroughputAsync(
                 targetRID: rid,
                 throughput: throughput,
                 requestOptions: requestOptions,

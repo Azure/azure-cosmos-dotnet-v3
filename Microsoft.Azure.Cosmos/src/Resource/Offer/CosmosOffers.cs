@@ -87,17 +87,30 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            FeedIterator databaseStreamIterator = new FeedIteratorCore(
+            FeedIterator databaseStreamIterator = GetOfferQueryStreamIterator(
+               queryDefinition,
+               continuationToken,
+               requestOptions,
+               cancellationToken);
+
+            return new FeedIteratorCore<T>(
+                databaseStreamIterator,
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+        }
+
+        internal virtual FeedIterator GetOfferQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return new FeedIteratorCore(
                this.ClientContext,
                this.OfferRootUri,
                ResourceType.Offer,
                queryDefinition,
                continuationToken,
                requestOptions);
-
-            return new FeedIteratorCore<T>(
-                databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
         private CosmosOfferResult GetThroughputIfExists(Offer offer)

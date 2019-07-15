@@ -45,7 +45,6 @@ namespace Microsoft.Azure.Cosmos
             this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
-            this.Offers = new CosmosOffers(this.ClientContext);
         }
 
         public override string Id { get; }
@@ -55,8 +54,6 @@ namespace Microsoft.Azure.Cosmos
         internal virtual Uri LinkUri { get; }
 
         internal virtual CosmosClientContext ClientContext { get; }
-
-        internal CosmosOffers Offers { get; private set; }
 
         public override Conflicts Conflicts { get; }
 
@@ -115,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             string rid = await this.GetRIDAsync(cancellationToken);
-            return await this.Offers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
+            return await this.ClientContext.Client.Offers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
         }
 
         public async override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -125,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         {
             string rid = await this.GetRIDAsync(cancellationToken);
 
-            return await this.Offers.ReplaceThroughputAsync(
+            return await this.ClientContext.Client.Offers.ReplaceThroughputAsync(
                 targetRID: rid,
                 throughput: throughput,
                 requestOptions: requestOptions,
@@ -180,7 +177,14 @@ namespace Microsoft.Azure.Cosmos
         internal async Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             ClientCollectionCache collectionCache = await this.ClientContext.DocumentClient.GetCollectionCacheAsync();
-            return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
+            try
+            {
+                return await collectionCache.ResolveByNameAsync(HttpConstants.Versions.CurrentVersion, this.LinkUri.OriginalString, cancellationToken);
+            }
+            catch (DocumentClientException ex)
+            {
+                throw new CosmosException(ex.StatusCode.Value, ex.Message, ex.Error);
+            }
         }
 
         // Name based look-up, needs re-computation and can't be cached

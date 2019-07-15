@@ -491,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await container.ReadThroughputAsync();
                 Assert.Fail("It should throw Resource Not Found exception");
             }
-            catch (DocumentClientException ex)
+            catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
             }
