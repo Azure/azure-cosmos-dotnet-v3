@@ -79,8 +79,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
-                if (this.locationUnavailablityInfoByEndpoint.Count > 0
-                    && DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime)
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
                 {
                     this.UpdateLocationCache();
                 }
@@ -98,8 +98,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
-                if (this.locationUnavailablityInfoByEndpoint.Count > 0
-                    && DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime)
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
                 {
                     this.UpdateLocationCache();
                 }
