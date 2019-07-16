@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
         /// Not every request supports consistency level. This allows each child to decide to expose it
-        /// but use the same base logic
+        /// and use the same base logic
         /// </summary>
         /// <value>
         /// The consistency level required for the request.
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ConsistencyLevel compatibility will validated and set by RequestInvokeHandler
         /// </remarks>
-        internal virtual ConsistencyLevel? BaseConsistencyLevelHelper { get; set; }
+        internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties

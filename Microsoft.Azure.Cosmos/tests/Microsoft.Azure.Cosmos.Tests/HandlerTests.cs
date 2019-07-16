@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.ConsistencyLevel clientLevel = Cosmos.ConsistencyLevel.Eventual;
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
-                customizeClientBuilder: builder => builder.WithDesiredConsistencyLevel(clientLevel));
+                customizeClientBuilder: builder => builder.WithConsistencyLevel(clientLevel));
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.ConsistencyLevel requestOptionLevel = Cosmos.ConsistencyLevel.BoundedStaleness;
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                 accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
-                customizeClientBuilder: builder => builder.WithDesiredConsistencyLevel(Cosmos.ConsistencyLevel.Eventual));
+                customizeClientBuilder: builder => builder.WithConsistencyLevel(Cosmos.ConsistencyLevel.Eventual));
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {

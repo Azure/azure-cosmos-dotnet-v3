@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
-        /// .UseConsistencyLevel(ConsistencyLevel.Strong)
+        /// .WithConsistencyLevel(ConsistencyLevel.Strong)
         /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
@@ -178,9 +178,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="consistencyLevel">The desired consistency level for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        public CosmosClientBuilder WithDesiredConsistencyLevel(Cosmos.ConsistencyLevel consistencyLevel)
+        public CosmosClientBuilder WithConsistencyLevel(Cosmos.ConsistencyLevel consistencyLevel)
         {
-            this.clientOptions.DesiredConsistencyLevel = consistencyLevel;
+            this.clientOptions.ConsistencyLevel = consistencyLevel;
             return this;
         }
 

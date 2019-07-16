@@ -21,12 +21,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
     {
         private readonly CosmosClient client;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
-        private Cosmos.ConsistencyLevel? DesiredAccountConsistencyLevel;
+        private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
         public RequestInvokerHandler(CosmosClient client)
         {
             this.client = client;
-            this.DesiredAccountConsistencyLevel = this.client.ClientOptions.DesiredConsistencyLevel;
+            this.RequestedClientConsistencyLevel = this.client.ClientOptions.ConsistencyLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -189,13 +189,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
             // Type based access context for requested consistency preferred for performance
             Cosmos.ConsistencyLevel? consistencyLevel = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
-            if (promotedRequestOptions != null && promotedRequestOptions.BaseConsistencyLevelHelper.HasValue)
+            if (promotedRequestOptions != null && promotedRequestOptions.BaseConsistencyLevel.HasValue)
             {
-                consistencyLevel = promotedRequestOptions.BaseConsistencyLevelHelper;
+                consistencyLevel = promotedRequestOptions.BaseConsistencyLevel;
             }
-            else if (this.DesiredAccountConsistencyLevel.HasValue)
+            else if (this.RequestedClientConsistencyLevel.HasValue)
             {
-                consistencyLevel = this.DesiredAccountConsistencyLevel;
+                consistencyLevel = this.RequestedClientConsistencyLevel;
             }
 
             if (consistencyLevel.HasValue)
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
                 
-                if (ValidationHelpers.ValidateConsistencyLevel(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
+                if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.Value.ToString());

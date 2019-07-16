@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
         /// This can be used to weaken the database account consistency level for read operations.
         /// If this is not set the database account consistency level will be used for all requests.
         /// </summary>
-        public ConsistencyLevel? DesiredConsistencyLevel { get; set; }
+        public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
         /// Get ot set the number of times client should retry on rate throttled requests.
@@ -341,25 +341,25 @@ namespace Microsoft.Azure.Cosmos
 
         internal Documents.ConsistencyLevel? GetDocumentsConsistencyLevel()
         {
-            if (!this.DesiredConsistencyLevel.HasValue)
+            if (!this.ConsistencyLevel.HasValue)
             {
                 return null;
             }
 
-            switch (this.DesiredConsistencyLevel.Value)
+            switch (this.ConsistencyLevel.Value)
             {
-                case ConsistencyLevel.BoundedStaleness:
+                case Cosmos.ConsistencyLevel.BoundedStaleness:
                     return Documents.ConsistencyLevel.BoundedStaleness;
-                case ConsistencyLevel.ConsistentPrefix:
+                case Cosmos.ConsistencyLevel.ConsistentPrefix:
                     return Documents.ConsistencyLevel.BoundedStaleness;
-                case ConsistencyLevel.Eventual:
+                case Cosmos.ConsistencyLevel.Eventual:
                     return Documents.ConsistencyLevel.Eventual;
-                case ConsistencyLevel.Session:
+                case Cosmos.ConsistencyLevel.Session:
                     return Documents.ConsistencyLevel.Session;
-                case ConsistencyLevel.Strong:
+                case Cosmos.ConsistencyLevel.Strong:
                     return Documents.ConsistencyLevel.Strong;
                 default:
-                    throw new ArgumentException($"Unsupported ConsistencyLevel {this.DesiredConsistencyLevel.Value}");
+                    throw new ArgumentException($"Unsupported ConsistencyLevel {this.ConsistencyLevel.Value}");
             }
         }
 

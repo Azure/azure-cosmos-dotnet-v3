@@ -6435,7 +6435,7 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            return ValidationHelpers.ValidateConsistencyLevel(backendConsistency, desiredConsistency);
+            return ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistency, desiredConsistency);
         }
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
