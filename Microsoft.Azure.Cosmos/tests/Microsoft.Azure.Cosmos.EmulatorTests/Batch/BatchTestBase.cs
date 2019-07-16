@@ -174,12 +174,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (BatchTestBase.Database != null)
             {
-                BatchTestBase.Database.DeleteAsync().GetAwaiter().GetResult();
+                BatchTestBase.Database.DeleteStreamAsync().GetAwaiter().GetResult();
             }
 
             if (BatchTestBase.SharedThroughputDatabase != null)
             {
-                BatchTestBase.SharedThroughputDatabase.DeleteAsync().GetAwaiter().GetResult();
+                BatchTestBase.SharedThroughputDatabase.DeleteStreamAsync().GetAwaiter().GetResult();
             }
 
             BatchTestBase.Client.Dispose();
