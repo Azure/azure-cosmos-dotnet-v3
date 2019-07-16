@@ -372,6 +372,13 @@ namespace Microsoft.Azure.Cosmos
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
 
+#if PREVIEW
+        public override Batch CreateBatch(PartitionKey partitionKey)
+        {
+            return new BatchCore(this, partitionKey);
+        }
+#endif
+
         internal FeedIterator GetStandByFeedIterator(
             string continuationToken = null,
             int? maxItemCount = null,
