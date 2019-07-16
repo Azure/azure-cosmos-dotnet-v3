@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             if (testDb != null)
             {
-                testDb.DeleteAsync().Wait();
+                testDb.DeleteStreamAsync().Wait();
             }
         }
 

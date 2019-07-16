@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Database database = DirectCosmosClient.GetDatabase(DatabaseId);
-            await database.DeleteAsync();
+            await database.DeleteStreamAsync();
 
             CosmosBasicQueryTests.DirectCosmosClient.Dispose();
             CosmosBasicQueryTests.GatewayCosmosClient.Dispose();

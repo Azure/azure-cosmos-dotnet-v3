@@ -60,7 +60,7 @@
 
             if (this.database != null)
             {
-                await this.database.DeleteAsync(
+                await this.database.DeleteStreamAsync(
                     requestOptions: null,
                     cancellationToken: this.cancellationToken);
             }
