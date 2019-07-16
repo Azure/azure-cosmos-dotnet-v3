@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// Only valid when used with Create, Replace and Delete methods for documents.
         /// Currently only one PreTrigger is permitted per operation.
         /// </remarks>
-        internal IEnumerable<string> PreTriggers { get; set; }
+        public IEnumerable<string> PreTriggers { get; set; }
 
         /// <summary>
         /// Gets or sets the trigger to be invoked after the operation in the Azure Cosmos DB service.
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         /// Only valid when used with Create, Replace and Delete methods for documents.
         /// Currently only one PreTrigger is permitted per operation.
         /// </remarks>
-        internal IEnumerable<string> PostTriggers { get; set; }
+        public IEnumerable<string> PostTriggers { get; set; }
 
         /// <summary>
         /// Gets or sets the indexing directive (Include or Exclude) for the request in the Azure Cosmos DB service.
