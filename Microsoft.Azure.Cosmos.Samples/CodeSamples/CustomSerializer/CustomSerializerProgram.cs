@@ -65,7 +65,7 @@
                 Database db = null;
                 try
                 {
-                    await client.CreateDatabaseIfNotExistsAsync("CustomSerializerDemo");
+                    db = await client.CreateDatabaseIfNotExistsAsync("CustomSerializerDemo");
                     Container container = await db.CreateContainerIfNotExistsAsync(
                         id: "ContainerDemo",
                         partitionKeyPath: "/pk");
@@ -77,6 +77,8 @@
                     {
                         throw new InvalidOperationException("Description was not ignored");
                     }
+
+                    Console.WriteLine($"Item created: {responseObject}");
                 }
                 finally
                 {
