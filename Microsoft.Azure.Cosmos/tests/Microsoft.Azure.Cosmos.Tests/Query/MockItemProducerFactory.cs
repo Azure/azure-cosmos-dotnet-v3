@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal static class MockItemProducerFactory
     {
-        public const string DefaultCollectionRid = "MockDefaultCollectionRid";
+        public static readonly string DefaultDatabaseRid = MockQueryFactory.DefaultDatabaseRid;
+        public static readonly string DefaultCollectionRid = MockQueryFactory.DefaultCollectionRid;
         public static readonly IReadOnlyList<int> Dataset = Enumerable.Range(1, 1000).ToList();
         public static readonly SqlQuerySpec DefaultQuerySpec = new SqlQuerySpec("SELECT * FROM C ");
         public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B", Id = "0" };
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuationToken = null,
             int maxPageSize = 50,
             bool deferFirstPage = true,
-            string collectionRid = DefaultCollectionRid,
+            string collectionRid = null,
             IComparer<ItemProducerTree> itemProducerTreeComparer = null,
             ItemProducerTree.ProduceAsyncCompleteDelegate completeDelegate = null,
             TimeSpan? responseDelay = null,
@@ -190,6 +191,70 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         public static List<ToDoItem> MockSinglePartitionKeyRangeContext(
+            Mock<CosmosQueryClient> mockQueryContext,
+            int[] responseMessagesPageSize,
+            SqlQuerySpec sqlQuerySpec,
+            PartitionKeyRange partitionKeyRange,
+            string continuationToken,
+            int maxPageSize,
+            string collectionRid,
+            TimeSpan? responseDelay,
+            CancellationToken cancellationToken)
+        {
+            // Setup a list of query responses. It generates a new continuation token for each response. This allows the mock to return the messages in the correct order.
+            List<ToDoItem> allItems = new List<ToDoItem>();
+            string previousContinuationToken = continuationToken;
+            for (int i = 0; i < responseMessagesPageSize.Length; i++)
+            {
+                string newContinuationToken = null;
+
+                // The last response should have a null continuation token
+                if (i + 1 != responseMessagesPageSize.Length)
+                {
+                    newContinuationToken = Guid.NewGuid().ToString();
+                }
+
+                (QueryResponse response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
+                    itemIdPrefix: $"page{i}-pk{partitionKeyRange.Id}-",
+                    continuationToken: newContinuationToken,
+                    collectionRid: collectionRid,
+                    itemCount: responseMessagesPageSize[i]);
+
+                allItems.AddRange(queryResponse.items);
+
+                mockQueryContext.Setup(x =>
+                    x.ExecuteItemQueryAsync(
+                        It.IsAny<Uri>(),
+                        ResourceType.Document,
+                        OperationType.Query,
+                        collectionRid,
+                        It.IsAny<QueryRequestOptions>(),
+                        It.Is<SqlQuerySpec>(specInput => IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
+                        previousContinuationToken,
+                        It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),
+                        It.IsAny<bool>(),
+                        maxPageSize,
+                        cancellationToken))
+                        .Callback(() =>
+                        {
+                            if (responseDelay.HasValue)
+                            {
+                                Thread.Sleep(responseDelay.Value);
+                            }
+                        })
+                        .Returns(Task.FromResult(queryResponse.response));
+
+
+                if (responseMessagesPageSize[i] != QueryResponseMessageFactory.SPLIT)
+                {
+                    previousContinuationToken = newContinuationToken;
+                }
+            }
+
+            return allItems;
+        }
+
+        public static List<ToDoItem> MockSinglePartitionKeyRangeContext(
             Mock<CosmosQueryContext> mockQueryContext,
             int[] responseMessagesPageSize,
             SqlQuerySpec sqlQuerySpec,
@@ -213,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     newContinuationToken = Guid.NewGuid().ToString();
                 }
 
-                (QueryResponse response, ReadOnlyCollection<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
+                (QueryResponse response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
                     itemIdPrefix: $"page{i}-pk{partitionKeyRange.Id}-",
                     continuationToken: newContinuationToken,
                     collectionRid: collectionRid,
@@ -223,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 mockQueryContext.Setup(x =>
                     x.ExecuteQueryAsync(
-                        sqlQuerySpec,
+                        It.Is<SqlQuerySpec>(specInput => IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                         previousContinuationToken,
                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, collectionRid)),
                         It.IsAny<bool>(),
@@ -241,6 +306,44 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             return allItems;
+        }
+
+        public static bool IsSqlQuerySpecEqual(SqlQuerySpec expected, SqlQuerySpec actual)
+        {
+            if (expected == actual || (expected == null && actual == null))
+            {
+                return true;
+            }
+
+            if ((expected != null && actual == null) ||
+                (expected == null && actual != null))
+            {
+                return false;
+            }
+
+            if (!string.Equals(expected.QueryText, actual.QueryText))
+            {
+                return false;
+            }
+
+            return IsSqlParameterCollectionsEqual(expected.Parameters, actual.Parameters);
+        }
+
+        private static bool IsSqlParameterCollectionsEqual(SqlParameterCollection expected, SqlParameterCollection actual)
+        {
+            if (expected == actual || (expected == null && actual == null))
+            {
+                return true;
+            }
+
+            if ((expected != null && actual == null) ||
+                (expected == null && actual != null) ||
+                    (expected.Count != actual.Count))
+            {
+                return false;
+            }
+
+            return expected.SequenceEqual(actual);
         }
     }
 }

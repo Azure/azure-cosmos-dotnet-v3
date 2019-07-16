@@ -81,8 +81,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateTriggersTest()
         {
             // Prevent failures if previous test did not clean up correctly 
-            await this.scripts.DeleteTriggerAsync("addTax");
-
+            try
+            {
+                await this.scripts.DeleteTriggerAsync("addTax");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //swallow
+            }
+            
             ToDoActivity item = new ToDoActivity()
             {
                 id = Guid.NewGuid().ToString(),

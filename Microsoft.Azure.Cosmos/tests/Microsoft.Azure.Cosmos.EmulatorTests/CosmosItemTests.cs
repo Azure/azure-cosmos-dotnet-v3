@@ -116,9 +116,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(deleteResponse);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
-            readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.None);
-            Assert.IsNotNull(readResponse);
-            Assert.AreEqual(HttpStatusCode.NotFound, readResponse.StatusCode);
+            try
+            {
+                readResponse = await this.Container.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: Cosmos.PartitionKey.None);
+                Assert.Fail("Should throw exception.");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }
         }
 
         [TestMethod]
@@ -150,9 +156,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(deleteResponse);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
-            readResponse = await multiPartPkContainer.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: new Cosmos.PartitionKey("pk1"));
-            Assert.IsNotNull(readResponse);
-            Assert.AreEqual(HttpStatusCode.NotFound, readResponse.StatusCode);
+            try
+            {
+                readResponse = await multiPartPkContainer.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: new Cosmos.PartitionKey("pk1"));
+                Assert.Fail("Should throw exception.");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }
         }
 
         [TestMethod]
@@ -1375,6 +1387,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
+        public async Task VerifyToManyRequestTest(bool isQuery)
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
+            Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/status");
+
+            try
+            {
+                Task[] createItems = new Task[300];
+                for (int i = 0; i < createItems.Length; i++)
+                {
+                    ToDoActivity temp = this.CreateRandomToDoActivity();
+                    createItems[i] = container.CreateItemStreamAsync(
+                        partitionKey: new Cosmos.PartitionKey(temp.status),
+                        streamPayload: this.jsonSerializer.ToStream<ToDoActivity>(temp));
+                }
+
+                Task.WaitAll(createItems);
+
+                List<Task> createQuery = new List<Task>(500);
+                List<ResponseMessage> failedToManyRequests = new List<ResponseMessage>();
+                for (int i = 0; i < 500 && failedToManyRequests.Count == 0; i++)
+                {
+                    createQuery.Add(VerifyQueryToManyExceptionAsync(
+                        container, 
+                        isQuery,
+                        failedToManyRequests));
+                }
+
+                Task[] tasks = createQuery.ToArray();
+                Task.WaitAll(tasks);
+
+                Assert.IsTrue(failedToManyRequests.Count > 0, "Rate limiting appears to be disabled");
+                ResponseMessage failedResponseMessage = failedToManyRequests.First();
+                Assert.AreEqual(failedResponseMessage.StatusCode, (HttpStatusCode)429);
+                Assert.IsNull(failedResponseMessage.ErrorMessage);
+            }
+            finally
+            {
+                await db.DeleteAsync();
+            }
+        }
+
         [TestMethod]
         public async Task VerifySessionTokenPassThrough()
         {
@@ -1460,6 +1520,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        private static async Task VerifyQueryToManyExceptionAsync(
+            Container container,
+            bool isQuery, 
+            List<ResponseMessage> failedToManyMessages)
+        {
+            string queryText = null;
+            if (isQuery)
+            {
+                queryText = "select * from r";
+            }
+
+            FeedIterator iterator = container.GetItemQueryStreamIterator(queryText);
+            while (iterator.HasMoreResults && failedToManyMessages.Count == 0)
+            {
+                ResponseMessage response = await iterator.ReadNextAsync();
+                if (response.StatusCode == (HttpStatusCode)429)
+                {
+                    failedToManyMessages.Add(response);
+                    return;
+                }
+            }
+        }
+
         private static async Task ExecuteQueryAsync(Container container, HttpStatusCode expected)
         {
             FeedIterator iterator = container.GetItemQueryStreamIterator("select * from r");
@@ -1477,7 +1560,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ResponseMessage response = await iterator.ReadNextAsync();
                 Assert.AreEqual(expected, response.StatusCode, $"ExecuteReadFeedAsync substatuscode: {response.Headers.SubStatusCode} ");
-            }
+            } 
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
@@ -1693,10 +1776,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Headers.ActivityId);
             Assert.IsNotNull(response.ErrorMessage);
 
-            // FOr typed also its not error
-            var typedResponse = await container.ReadItemAsync<string>("id1", Cosmos.PartitionKey.None);
-            Assert.AreEqual(HttpStatusCode.NotFound, typedResponse.StatusCode);
-            Assert.IsNotNull(typedResponse.Headers.ActivityId);
+            // For typed, it will throw 
+            try
+            {
+                ItemResponse<string> typedResponse = await container.ReadItemAsync<string>("id1", Cosmos.PartitionKey.None);
+                Assert.Fail("Should throw exception.");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }
         }
     }
 }

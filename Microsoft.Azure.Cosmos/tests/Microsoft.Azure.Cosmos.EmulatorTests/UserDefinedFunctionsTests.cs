@@ -80,8 +80,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateUserDefinedFunctionsTest()
         {
-            // Prevent failures if previous test did not clean up correctly 
-            await this.scripts.DeleteUserDefinedFunctionAsync("calculateTax");
+            try
+            {
+                // Prevent failures if previous test did not clean up correctly 
+                await this.scripts.DeleteUserDefinedFunctionAsync("calculateTax");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //swallow
+            }
 
             ToDoActivity item = new ToDoActivity()
             {
