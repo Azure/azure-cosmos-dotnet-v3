@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task Cleanup()
         {
-            await this.database.DeleteAsync();
+            await this.database.DeleteStreamAsync();
         }
 
         [TestMethod]

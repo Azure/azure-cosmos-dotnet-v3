@@ -1,12 +1,13 @@
-## Changes in [3.0.0.9-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0.9-preview) : ##
+## Changes in [3.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0) : ##
 
-* Cosmos Client builder pattern
-* Non string partition keys are allowed
-* Exception less code-path for 429
-* Added support for spatial classes
-* Added item cross partition query stream
-* Fixed JSON parsing exception when headers are to large
-
-## Changes in [3.0.0.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0.1-preview) : ##
-
-* Initial release
+* General availability of [Version 3.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/) of the .NET SDK
+* Targets .NET Standard 2.0, which supports .NET framework 4.6.1+ and .NET Core 2.0+
+* New object model, with top-level CosmosClient and methods split across relevant Database and Container classes
+* New highly performant stream APIs
+* Built-in support for Change Feed processor APIs
+* Fluent builder APIs for CosmosClient, Container, and Change Feed processor
+* Idiomatic throughput management APIs
+* Granular RequestOptions and ResponseTypes for database, container, item, query and throughput requests
+* Ability to scale non-partitioned containers 
+* Extensible and customizable serializer
+* Extensible request pipeline with support for custom handlers
