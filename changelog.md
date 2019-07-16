@@ -1,4 +1,6 @@
 ## Changes in [3.1.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0) : ##
+* Features
+[#544] (https://github.com/Azure/azure-cosmos-dotnet-v3/pull/544) Adding continuation token support for LINQ
 
 * Fixes
 [#558] (https://github.com/Azure/azure-cosmos-dotnet-v3/pull/558) LocationCache ConcurrentDict lock contention fix
