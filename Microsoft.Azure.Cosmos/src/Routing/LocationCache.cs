@@ -79,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
                 if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
                     && this.locationUnavailablityInfoByEndpoint.Any())
                 {
@@ -98,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
                 if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
                     && this.locationUnavailablityInfoByEndpoint.Any())
                 {
