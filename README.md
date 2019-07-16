@@ -2,21 +2,28 @@
 
 This project provides a client tools or utilities in .NET that makes it easy to interact with Azure Cosmos DB. Azure cosmos DB is published with nuget name [Microsoft.Azure.Cosmos](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/).
 
-## SDK release notes
+Useful links:
 
-<https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md>
+- [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)
+- [Github samples](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/CodeSamples)
+- [MultiMaster samples](https://github.com/markjbrown/azure-cosmosdb-dotnet/tree/master/samples/MultiMaster)
+- [Resource Model of Azure Cosmos DB Service]( https://docs.microsoft.com/azure/cosmos-db/sql-api-resources)
+- [Cosmos DB Resource URI](https://docs.microsoft.com/rest/api/documentdb/documentdb-resource-uri-syntax-for-rest)
+- [Partitioning](https://docs.microsoft.com/azure/cosmos-db/partition-data)
+- [Introduction to SQL API of Azure Cosmos DB Service](https://docs.microsoft.com/azure/cosmos-db/sql-api-sql-query)
+- [SDK API](https://docs.microsoft.com/dotnet/api/overview/azure/cosmosdb?view=azure-dotnet)
+- [Using emulator](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-nosql-local-emulator.md)
+- [Capture traces](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-sdk_capture_etl.md)
+- [Release notes](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md)
+- [Diagnose and troubleshooting](https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk)
 
-### SDK API
+## Basic 
 
-<https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos?view=azure-dotnet-preview>
+This is a basic sample that shows creating a database, container, and inserting an item into the container
 
-## Samples
-
-Our [Samples folder](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/CodeSamples) is a good starting point.
-
-```
+```csharp
 CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
-Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
+Database database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
 Container container = await database.CreateContainerIfNotExistsAsync(
     "MyContainerName",
     "/partitionKeyPath",
@@ -25,10 +32,6 @@ Container container = await database.CreateContainerIfNotExistsAsync(
 dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working" };
 ItemResponse<dynamic> response = await container.CreateItemAsync(testItem);
 ```
-
-## Diagnose and troubleshooting issues
-
-<https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk>
 
 ## Contributing
 
