@@ -42,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
                 IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
                     mockQueryClient,
+                    isOrderByQuery: false,
                     sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                     containerRid: MockQueryFactory.DefaultCollectionRid,
                     initContinuationToken: initialContinuationToken,
@@ -96,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
                 IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
                     mockQueryClient,
+                    isOrderByQuery: false,
                     sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
                     containerRid: MockQueryFactory.DefaultCollectionRid,
                     initContinuationToken: initialContinuationToken,

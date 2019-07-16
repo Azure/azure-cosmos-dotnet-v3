@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-                queryText: "select DISTINCT t.id from t",
+                queryText: "select * from t order by t.id",
                 continuationToken: lastContinuationToken,
                 requestOptions: requestOptions);
 

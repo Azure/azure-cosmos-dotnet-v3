@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static readonly SqlQuerySpec DefaultQuerySpec = new SqlQuerySpec("SELECT * FROM C ");
         public static readonly CancellationToken DefaultCancellationToken = new CancellationTokenSource().Token;
         public static readonly Uri DefaultResourceLink = new Uri("dbs/MockDb/colls/MockQueryFactoryDefault", UriKind.Relative);
-        public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "00", MaxExclusive = "FF", Id = "0" };
-        public static readonly PartitionKeyRange DefaultPartitionKeyRange1AfterSplit = new PartitionKeyRange() { MinInclusive = "00", MaxExclusive = "B", Id = "1" };
+        public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" };
+        public static readonly PartitionKeyRange DefaultPartitionKeyRange1AfterSplit = new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "B", Id = "1" };
         public static readonly PartitionKeyRange DefaultPartitionKeyRange2AfterSplit = new PartitionKeyRange() { MinInclusive = "B", MaxExclusive = "FF", Id = "2" };
         public static readonly IReadOnlyList<PartitionKeyRange> DefaultPartitionKeyRangesAfterSplit = new List<PartitionKeyRange>()
         {
@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static IList<ToDoItem> GenerateAndMockResponse(
            Mock<CosmosQueryClient> mockQueryClient,
+           bool isOrderByQuery,
            SqlQuerySpec sqlQuerySpec,
            string containerRid,
            string initContinuationToken,
@@ -58,15 +59,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 containerRid).OrderBy(item => item.id).ToList();
 
             GenerateAndMockResponseHelper(
-                mockQueryClient,
-                mockRoutingMap,
-                allItemsOrdered,
-                sqlQuerySpec,
-                containerRid,
-                initContinuationToken,
-                maxPageSize,
-                mockResponseForSinglePartition,
-                cancellationTokenForMocks);
+                mockQueryClient: mockQueryClient,
+                mockRoutingMap: mockRoutingMap,
+                allItemsOrdered: allItemsOrdered,
+                isOrderByQuery: isOrderByQuery,
+                sqlQuerySpec: sqlQuerySpec,
+                containerRid: containerRid,
+                initContinuationToken: initContinuationToken,
+                maxPageSize: maxPageSize,
+                mockResponseForSinglePartition: mockResponseForSinglePartition,
+                cancellationTokenForMocks: cancellationTokenForMocks);
 
             return allItemsOrdered;
         }
@@ -75,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
              Mock<CosmosQueryClient> mockQueryClient,
              Mock<IRoutingMapProvider> mockRoutingMap,
              IList<ToDoItem> allItemsOrdered,
+             bool isOrderByQuery,
              SqlQuerySpec sqlQuerySpec,
              string containerRid,
              string initContinuationToken,
@@ -123,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                     QueryResponse queryResponse = QueryResponseMessageFactory.CreateQueryResponse(
                         currentPageItems,
+                        isOrderByQuery,
                         newContinuationToken,
                         containerRid);
 
@@ -170,15 +174,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                          .Returns(Task.FromResult(querySplitResponse));
 
                     GenerateAndMockResponseHelper(
-                       mockQueryClient,
-                       mockRoutingMap,
-                       allItemsOrdered,
-                       sqlQuerySpec,
-                       containerRid,
-                       previousContinuationToken,
-                       maxPageSize,
-                       partitionAndMessages.Split,
-                       cancellationTokenForMocks);
+                       mockQueryClient: mockQueryClient,
+                       mockRoutingMap: mockRoutingMap,
+                       allItemsOrdered: allItemsOrdered,
+                       isOrderByQuery: isOrderByQuery,
+                       sqlQuerySpec: sqlQuerySpec,
+                       containerRid: containerRid,
+                       initContinuationToken: previousContinuationToken,
+                       maxPageSize: maxPageSize,
+                       mockResponseForSinglePartition: partitionAndMessages.Split,
+                       cancellationTokenForMocks: cancellationTokenForMocks);
                 }
             }
 
