@@ -30,39 +30,43 @@ namespace Microsoft.Azure.Cosmos.Tests
         private CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
-        [DataRow(0, 5)]
-        [DataRow(1, 5)]
-        [DataRow(2, 2)]
-        [DataRow(2, 5)]
-        public async Task TestMoveNextAsync(int pageSize, int maxPageSize)
+        [DataRow(null)]
+        [DataRow("SomeRandomContinuationToken")]
+        public async Task TestMoveNextWithEmptyPagesAsync(string initialContinuationToken)
         {
-            List<int[]> combinations = new List<int[]>()
-            {
-                // Create all combination with empty pages
-                new int[] { pageSize },
-                new int[] { pageSize, 0 },
-                new int[] { 0, pageSize },
-                new int[] { pageSize, pageSize },
-                new int[] { pageSize, 0, 0 },
-                new int[] {0, pageSize, 0 },
-                new int[] {0, 0, pageSize },
-                new int[] { pageSize, 0, pageSize },
-                new int[] { pageSize, pageSize, pageSize },
-            };
+            int maxPageSize = 5;
 
-            foreach (int[] combination in combinations)
+            MockResponseForSinglePartition[] mockResponses = MockQueryFactory.GetAllCombinationWithEmptyPage(initialContinuationToken);
+            foreach (MockResponseForSinglePartition mockResponse in mockResponses)
             {
-                (ItemProducerTree itemProducerTree, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.CreateTree(
-                    responseMessagesPageSize: combination,
+                Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
+                IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
+                    mockQueryClient,
+                    sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
+                    containerRid: MockQueryFactory.DefaultCollectionRid,
+                    initContinuationToken: initialContinuationToken,
                     maxPageSize: maxPageSize,
-                    cancellationToken: this.cancellationToken);
+                    mockResponseForSinglePartition: new MockResponseForSinglePartition[] { mockResponse },
+                    cancellationToken: cancellationToken);
 
-                ItemProducerTree itemProducerTree = itemFactory.itemProducerTree;
+                CosmosQueryContext context = MockQueryFactory.CreateContext(
+                    mockQueryClient.Object);
 
-                List<ToDoItem> itemsRead = new List<ToDoItem>();
+                ItemProducerTree itemProducerTree = new ItemProducerTree(
+                   queryContext: context,
+                   querySpecForInit: MockQueryFactory.DefaultQuerySpec,
+                   partitionKeyRange: mockResponse.PartitionKeyRange,
+                   produceAsyncCompleteCallback: MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
+                   itemProducerTreeComparer: new ParallelItemProducerTreeComparer(),
+                   equalityComparer: CosmosElementEqualityComparer.Value,
+                   deferFirstPage: true,
+                   collectionRid: MockQueryFactory.DefaultCollectionRid,
+                   initialPageSize: maxPageSize,
+                   initialContinuationToken: mockResponse.StartingContinuationToken);
 
                 Assert.IsTrue(itemProducerTree.HasMoreResults);
 
+                List<ToDoItem> itemsRead = new List<ToDoItem>();
                 while ((await itemProducerTree.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
                 {
                     Assert.IsTrue(itemProducerTree.HasMoreResults);
@@ -73,9 +77,68 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.IsFalse(itemProducerTree.HasMoreResults);
 
-                Assert.AreEqual(itemFactory.allItems.Count, itemsRead.Count);
+                Assert.AreEqual(allItems.Count, itemsRead.Count);
 
-                CollectionAssert.AreEqual(itemsRead, itemFactory.allItems, new ToDoItemComparer());
+                CollectionAssert.AreEqual(itemsRead, allItems.ToList(), new ToDoItemComparer());
+            }
+        }
+
+        [TestMethod]
+        [DataRow(null)]
+        [DataRow("SomeRandomContinuationToken")]
+        public async Task TestMoveNextWithEmptyPagesAndSplitAsync(string initialContinuationToken)
+        {
+            int maxPageSize = 5;
+
+            List<MockResponseForSinglePartition[]> mockResponsesScenario = MockQueryFactory.GetSplitScenarios(initialContinuationToken);
+            foreach (MockResponseForSinglePartition[] mockResponse in mockResponsesScenario)
+            {
+                Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
+                IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
+                    mockQueryClient,
+                    sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
+                    containerRid: MockQueryFactory.DefaultCollectionRid,
+                    initContinuationToken: initialContinuationToken,
+                    maxPageSize: maxPageSize,
+                    mockResponseForSinglePartition: mockResponse,
+                    cancellationToken: cancellationToken);
+
+                CosmosQueryContext context = MockQueryFactory.CreateContext(
+                    mockQueryClient.Object);
+
+                ItemProducerTree itemProducerTree = new ItemProducerTree(
+                   context,
+                   MockQueryFactory.DefaultQuerySpec,
+                   mockResponse[0].PartitionKeyRange,
+                   MockItemProducerFactory.DefaultTreeProduceAsyncCompleteDelegate,
+                   new ParallelItemProducerTreeComparer(),
+                   CosmosElementEqualityComparer.Value,
+                   true,
+                   MockQueryFactory.DefaultCollectionRid,
+                   maxPageSize,
+                   initialContinuationToken: mockResponse[0].StartingContinuationToken);
+
+                Assert.IsTrue(itemProducerTree.HasMoreResults);
+
+                List<ToDoItem> itemsRead = new List<ToDoItem>();
+                while ((await itemProducerTree.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
+                {
+                    Assert.IsTrue(itemProducerTree.HasMoreResults);
+                    if(itemProducerTree.Current != null)
+                    {
+                        string jsonValue = itemProducerTree.Current.ToString();
+                        ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
+                        itemsRead.Add(item);
+                    }
+                }
+
+                Assert.IsFalse(itemProducerTree.HasMoreResults);
+
+                Assert.AreEqual(allItems.Count, itemsRead.Count);
+                List<ToDoItem> exepected = allItems.OrderBy(x => x.id).ToList();
+                List<ToDoItem> actual = itemsRead.OrderBy(x => x.id).ToList();
+
+                CollectionAssert.AreEqual(exepected, actual, new ToDoItemComparer());
             }
         }
 

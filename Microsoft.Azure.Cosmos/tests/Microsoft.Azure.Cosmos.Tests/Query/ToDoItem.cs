@@ -3,18 +3,20 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
+using Microsoft.Azure.Documents;
 
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Tests
 {
-    public class ToDoItem
+    internal class ToDoItem
     {
         public string id { get; set; }
         public string pk { get; set; }
         public double cost { get; set; }
         public bool isDone { get; set; }
         public int count { get; set; }
+        public string _rid { get; set; }
 
-        public static ToDoItem Create(string idPrefix)
+        public static ToDoItem Create(string idPrefix, ResourceId itemRid = null)
         {
             if(idPrefix == null)
             {
@@ -29,19 +31,30 @@ namespace Microsoft.Azure.Cosmos.Query
                 pk = Guid.NewGuid().ToString(),
                 cost = 9000.00001,
                 isDone = true,
-                count = 42
+                count = 42,
+                _rid = itemRid?.ToString()
             };
         }
 
-        public static ReadOnlyCollection<ToDoItem> CreateItems(int count, string idPrefix)
+        public static IList<ToDoItem> CreateItems(
+            int count, 
+            string idPrefix, 
+            string containerRid = null)
         {
             List<ToDoItem> items = new List<ToDoItem>();
-            for (int i = 0; i < count; i++)
+            for (uint i = 0; i < count; i++)
             {
-                items.Add(ToDoItem.Create(idPrefix));
+                ResourceId rid = null;
+                if(containerRid != null)
+                {
+                    // id 0 returns null for resource id
+                    rid = ResourceId.NewDocumentId(containerRid, i+1);
+                }
+                
+                items.Add(ToDoItem.Create(idPrefix, rid));
             }
 
-            return items.AsReadOnly();
+            return items;
         }
     }
 
