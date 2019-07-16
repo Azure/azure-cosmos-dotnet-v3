@@ -17,7 +17,7 @@ Useful links:
 - [Release notes](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md)
 - [Diagnose and troubleshooting](https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk)
 
-## Basic 
+## Basic
 
 This is a basic sample that shows creating a database, container, and inserting an item into the container
 
