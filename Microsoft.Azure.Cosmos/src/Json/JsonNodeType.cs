@@ -6,7 +6,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// The enumeration of JSON node types
     /// </summary>
+#if INTERNAL
+    public enum JsonNodeType
+#else
     internal enum JsonNodeType
+#endif
     {
         /// <summary>
         /// Corresponds to the 'null' value in JSON.

@@ -8,7 +8,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// The ByteOrder class is capable of reversing the bytes of any primitive type.
     /// </summary>
+#if INTERNAL
+    public static class ByteOrder
+#else
     internal static class ByteOrder
+#endif
     {
         /// <summary>
         /// Reverses a single byte.

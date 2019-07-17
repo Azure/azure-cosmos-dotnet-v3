@@ -6,7 +6,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
+#if INTERNAL
+#pragma warning disable SA1601 // Partial elements should be documented
+    public abstract partial class CosmosString : CosmosElement
+#else
     internal abstract partial class CosmosString : CosmosElement
+#endif
     {
         private sealed class LazyCosmosString : CosmosString
         {
@@ -58,5 +63,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 jsonWriter.WriteJsonNode(this.jsonNavigator, this.jsonNavigatorNode);
             }
         }
-    } 
+    }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#endif
 }

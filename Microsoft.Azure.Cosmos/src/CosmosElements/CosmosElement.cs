@@ -8,7 +8,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public abstract class CosmosElement
+#else
     internal abstract class CosmosElement
+#endif
     {
         protected CosmosElement(CosmosElementType cosmosItemType)
         {
@@ -117,4 +123,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return item;
         }
     }
+#if INTERNAL
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

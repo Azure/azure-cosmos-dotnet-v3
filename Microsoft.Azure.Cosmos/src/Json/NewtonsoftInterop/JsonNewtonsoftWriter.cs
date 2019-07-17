@@ -8,7 +8,13 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
     using System.IO;
     using System.Text;
 
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public sealed class JsonNewtonsoftWriter : Microsoft.Azure.Cosmos.Json.JsonWriter
+#else
     internal sealed class JsonNewtonsoftWriter : Microsoft.Azure.Cosmos.Json.JsonWriter
+#endif
     {
         private readonly Newtonsoft.Json.JsonWriter writer;
         private readonly StringBuilder stringBuilder;
@@ -164,4 +170,8 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
             return Encoding.UTF8.GetBytes(this.stringBuilder.ToString());
         }
     }
+#if INTERNAL
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

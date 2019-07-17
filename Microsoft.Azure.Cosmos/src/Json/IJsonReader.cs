@@ -8,7 +8,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// Interface for all JsonReaders that know how to read jsons.
     /// </summary>
+#if INTERNAL
+    public interface IJsonReader
+#else
     internal interface IJsonReader
+#endif
     {
         /// <summary>
         /// Gets the <see cref="JsonSerializationFormat"/> for the JsonReader

@@ -8,7 +8,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json;
 
+#if INTERNAL
+#pragma warning disable SA1601 // Partial elements should be documented
+    public abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+#else
     internal abstract partial class CosmosObject : CosmosElement, IReadOnlyDictionary<string, CosmosElement>
+#endif
     {
         private sealed class EagerCosmosObject : CosmosObject
         {
@@ -64,5 +69,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 jsonWriter.WriteObjectEnd();
             }
         }
-    }  
+    }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#endif
 }

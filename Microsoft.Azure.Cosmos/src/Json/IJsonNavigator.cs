@@ -9,7 +9,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonNavigator interface for classes that can navigate jsons.
     /// </summary>
+#if INTERNAL
+    public interface IJsonNavigator
+#else
     internal interface IJsonNavigator
+#endif
     {
         /// <summary>
         /// Gets the <see cref="JsonSerializationFormat"/> for the IJsonNavigator.

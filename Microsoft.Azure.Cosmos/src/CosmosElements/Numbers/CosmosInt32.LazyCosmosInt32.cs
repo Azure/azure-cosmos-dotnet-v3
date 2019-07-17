@@ -6,7 +6,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
+#if INTERNAL
+#pragma warning disable SA1601 // Partial elements should be documented
+    public abstract partial class CosmosInt32 : CosmosNumber
+#else
     internal abstract partial class CosmosInt32 : CosmosNumber
+#endif
     {
         private sealed class LazyCosmosInt32 : CosmosInt32
         {
@@ -41,4 +46,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#endif
 }

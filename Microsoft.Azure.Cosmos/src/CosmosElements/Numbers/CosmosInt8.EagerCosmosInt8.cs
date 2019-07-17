@@ -3,7 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+#if INTERNAL
+#pragma warning disable SA1601 // Partial elements should be documented
+    public abstract partial class CosmosInt8 : CosmosNumber
+#else
     internal abstract partial class CosmosInt8 : CosmosNumber
+#endif
     {
         private sealed class EagerCosmosInt8 : CosmosInt8
         {
@@ -20,4 +25,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#endif
 }

@@ -10,7 +10,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// A BinaryReader that can read binary that has little endian byte ordering for a client that can be run a both a big endian and little endian machine.
     /// </summary>
+#if INTERNAL
+    public sealed class LittleEndianBinaryReader : BinaryReader
+#else
     internal sealed class LittleEndianBinaryReader : BinaryReader
+#endif
     {
         /// <summary>
         /// Flag used to determine if the machine is a little endian machine.

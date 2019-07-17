@@ -7,7 +7,13 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
     using System.Collections.Generic;
     using Newtonsoft.Json;
 
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public sealed class JsonNewtonsoftReader : Microsoft.Azure.Cosmos.Json.JsonReader
+#else
     internal sealed class JsonNewtonsoftReader : Microsoft.Azure.Cosmos.Json.JsonReader
+#endif
     {
         private readonly Newtonsoft.Json.JsonReader reader;
 
@@ -112,4 +118,8 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
             }
         }
     }
+#if INTERNAL
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

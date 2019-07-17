@@ -11,7 +11,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// This class maintains the current state of a JSON object/value while it is being read or written.
     /// </summary>
+#if INTERNAL
+    public sealed class JsonObjectState
+#else
     internal sealed class JsonObjectState
+#endif
     {
         /// <summary>
         /// This constant defines the maximum nesting depth that the parser supports.

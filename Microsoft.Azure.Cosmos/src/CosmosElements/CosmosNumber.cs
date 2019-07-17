@@ -6,7 +6,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using Microsoft.Azure.Cosmos.Json;
 
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public abstract class CosmosNumber : CosmosElement
+#else
     internal abstract class CosmosNumber : CosmosElement
+#endif
     {
         protected CosmosNumber(CosmosNumberType cosmosNumberType)
             : base(CosmosElementType.Number)
@@ -30,4 +36,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract long? AsInteger();
     }
+#if INTERNAL
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

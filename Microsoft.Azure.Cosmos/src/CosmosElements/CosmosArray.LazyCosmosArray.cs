@@ -8,7 +8,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
+#if INTERNAL
+#pragma warning disable SA1601 // Partial elements should be documented
+    public abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
+#else
     internal abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
+#endif
     {
         private sealed class LazyCosmosArray : CosmosArray
         {
@@ -67,4 +72,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#endif
 }

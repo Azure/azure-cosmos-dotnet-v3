@@ -6,7 +6,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// Enum of JsonTokenType
     /// </summary>
+#if INTERNAL
+    public enum JsonTokenType
+#else
     internal enum JsonTokenType
+#endif
     {
         /// <summary>
         /// Reserved for no other value
