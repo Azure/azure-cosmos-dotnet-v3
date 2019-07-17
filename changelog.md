@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#544](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/544) Added continuation token support for LINQ
+- [#554](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/554) Added support for Switzerland and Germany regions
 
 ### Fixed
 
