@@ -11,6 +11,7 @@
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
     <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
     <DirectPackageName Condition=" '$(SignAssembly)' != 'true' ">Microsoft.Azure.Cosmos.Direct.MyGet</DirectPackageName>
+    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <Version Condition=" '$(IsNightly)' == '1' ">$(ClientVersion)-nightly$(CurrentDate)</Version>
     <Version Condition=" '$(IsNightly)' == '0' Or '$(IsNightly)' == '' ">$(ClientVersion)</Version>
     <FileVersion>$(VersionPrefix)</FileVersion>
@@ -36,7 +37,6 @@
     <DebugType>portable</DebugType>
     <IncludeSymbols>false</IncludeSymbols>
     <IncludeSource>false</IncludeSource>
-    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
     <NoWarn>NU5125</NoWarn>
   </PropertyGroup>
