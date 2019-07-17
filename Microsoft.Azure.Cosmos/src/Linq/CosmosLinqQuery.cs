@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <seealso cref="CosmosLinqQueryProvider"/>  
     internal sealed class CosmosLinqQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
-        private readonly Expression expression;
         private readonly CosmosLinqQueryProvider queryProvider;
         private readonly Guid correlatedActivityId;
 
@@ -44,8 +43,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.queryClient = queryClient ?? throw new ArgumentNullException(nameof(queryClient));
             this.continuationToken = continuationToken;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
-            this.expression = expression ?? Expression.Constant(this);
+            this.Expression = expression ?? Expression.Constant(this);
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
+            this.correlatedActivityId = Guid.NewGuid();
+
             this.queryProvider = new CosmosLinqQueryProvider(
               container,
               responseFactory,
@@ -54,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.Linq
               cosmosQueryRequestOptions,
               this.allowSynchronousQueryExecution,
               this.queryClient.OnExecuteScalarQueryCallback);
-            this.correlatedActivityId = Guid.NewGuid();
         }
 
         public CosmosLinqQuery(
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public Type ElementType => typeof(T);
 
-        public Expression Expression => this.expression;
+        public Expression Expression { get; }
 
         public IQueryProvider Provider => this.queryProvider;
 
@@ -98,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                     " use GetItemsQueryIterator to execute asynchronously");
             }
 
-            FeedIterator<T> localQueryExecutionContext = this.CreateFeedIterator(false);
-            while (localQueryExecutionContext.HasMoreResults)
+            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
+            while (localFeedIterator.HasMoreResults)
             {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                FeedResponse<T> items = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ReadNextAsync(CancellationToken.None), null).GetAwaiter().GetResult();
+                FeedResponse<T> items = TaskHelper.InlineIfPossible(() => localFeedIterator.ReadNextAsync(CancellationToken.None), null).GetAwaiter().GetResult();
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
 
                 foreach (T item in items)
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public override string ToString()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
             if (querySpec != null)
             {
                 return JsonConvert.SerializeObject(querySpec);
@@ -134,13 +134,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public string ToSqlQueryText()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
             return querySpec?.QueryText;
         }
 
         public FeedIterator<T> ToFeedIterator()
         {
-            return CreateFeedIterator(true);
+            return this.CreateFeedIterator(true);
         }
 
         public void Dispose()
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private FeedIterator<T> CreateFeedIterator(bool isContinuationExcpected)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
 
             FeedIterator streamIterator = this.container.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: querySpec,
