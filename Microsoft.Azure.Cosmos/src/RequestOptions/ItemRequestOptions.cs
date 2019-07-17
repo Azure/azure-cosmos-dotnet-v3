@@ -111,7 +111,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.IndexingDirective != null && this.IndexingDirective.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.IndexingDirective, this.IndexingDirective.Value.ToString());
+                request.Headers.Add(
+                    HttpConstants.HttpHeaders.IndexingDirective, 
+                    IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);

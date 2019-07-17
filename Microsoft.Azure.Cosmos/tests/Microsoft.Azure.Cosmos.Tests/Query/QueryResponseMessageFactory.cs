@@ -59,10 +59,25 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static QueryResponse CreateQueryResponse(
             IList<ToDoItem> items,
+            bool isOrderByQuery,
             string continuationToken,
             string collectionRid)
         {
-            MemoryStream memoryStream = (MemoryStream)cosmosSerializer.ToStream<IList<ToDoItem>>(items);
+            MemoryStream memoryStream;
+            string json;
+            if (isOrderByQuery)
+            {
+                memoryStream = SerializeForOrderByQuery(items);
+                using(StreamReader sr = new StreamReader(SerializeForOrderByQuery(items)))
+                {
+                    json = sr.ReadToEnd();
+                }
+            }
+            else
+            {
+                memoryStream = (MemoryStream)cosmosSerializer.ToStream<IList<ToDoItem>>(items);
+            }
+
             long responseLengthBytes = memoryStream.Length;
 
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
@@ -96,6 +111,35 @@ namespace Microsoft.Azure.Cosmos.Tests
                null);
 
             return splitResponse;
+        }
+
+        private static MemoryStream SerializeForOrderByQuery(IList<ToDoItem> items)
+        {
+            OrderByReturnStructure[] payload = items.Select(item => new OrderByReturnStructure()
+            {
+                _rid = item._rid,
+                payload = item,
+                orderByItems = new OrderbyItems[] { new OrderbyItems(item.id) }
+            }).ToArray();
+
+            return (MemoryStream)cosmosSerializer.ToStream<OrderByReturnStructure[]>(payload);
+        }
+
+        private class OrderByReturnStructure
+        {
+            public string _rid { get; set; }
+            public ToDoItem payload { get; set; }
+            public OrderbyItems[] orderByItems { get; set; }
+        }
+
+        private class OrderbyItems
+        {
+            public OrderbyItems(string item)
+            {
+                this.item = item;
+            }
+
+            public string item { get; set; }
         }
     }
 }

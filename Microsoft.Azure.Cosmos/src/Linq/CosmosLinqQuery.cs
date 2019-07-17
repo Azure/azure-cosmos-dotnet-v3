@@ -30,11 +30,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosSerializer cosmosJsonSerializer;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
+        private readonly string continuationToken;
 
         public CosmosLinqQuery(
            ContainerCore container,
            CosmosSerializer cosmosJsonSerializer,
            CosmosQueryClientCore queryClient,
+           string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
            bool allowSynchronousQueryExecution)
@@ -42,14 +44,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.cosmosJsonSerializer = cosmosJsonSerializer ?? throw new ArgumentNullException(nameof(cosmosJsonSerializer));
             this.queryClient = queryClient ?? throw new ArgumentNullException(nameof(queryClient));
+            this.continuationToken = continuationToken;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.expression = expression ?? Expression.Constant(this);
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
             this.queryProvider = new CosmosLinqQueryProvider(
-              container,
-              cosmosJsonSerializer,
-              queryClient,
-              cosmosQueryRequestOptions,
+              this.container,
+              this.cosmosJsonSerializer,
+              this.queryClient,
+              this.continuationToken,
+              this.cosmosQueryRequestOptions,
               this.allowSynchronousQueryExecution,
               this.queryClient.OnExecuteScalarQueryCallback);
             this.correlatedActivityId = Guid.NewGuid();
@@ -59,12 +63,14 @@ namespace Microsoft.Azure.Cosmos.Linq
           ContainerCore container,
           CosmosSerializer cosmosJsonSerializer,
           CosmosQueryClientCore queryClient,
+          string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution)
             : this(
               container,
               cosmosJsonSerializer,
               queryClient,
+              continuationToken,
               cosmosQueryRequestOptions,
               null,
               allowSynchronousQueryExecution)
@@ -144,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             return this.container.GetItemQueryIterator<T>(
                 queryDefinition: new QueryDefinition(this.ToSqlQueryText()),
-                continuationToken: null,
+                continuationToken: this.continuationToken,
                 requestOptions: this.cosmosQueryRequestOptions);
         }
 
@@ -171,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 operationType: OperationType.Query,
                 resourceType: typeof(T),
                 sqlQuerySpec: DocumentQueryEvaluator.Evaluate(this.expression),
-                continuationToken: null,
+                continuationToken: this.continuationToken,
                 queryRequestOptions: this.cosmosQueryRequestOptions,
                 resourceLink: this.container.LinkUri,
                 isContinuationExpected: false,

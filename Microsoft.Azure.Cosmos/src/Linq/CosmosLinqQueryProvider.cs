@@ -20,11 +20,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution;
         private readonly Action<IQueryable> onExecuteScalarQueryCallback;
+        private readonly string continuationToken;
 
         public CosmosLinqQueryProvider(
            ContainerCore container,
            CosmosSerializer cosmosJsonSerializer,
            CosmosQueryClientCore queryClient,
+           string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
            bool allowSynchronousQueryExecution,
            Action<IQueryable> onExecuteScalarQueryCallback = null)
@@ -32,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.container = container;
             this.cosmosJsonSerializer = cosmosJsonSerializer;
             this.queryClient = queryClient;
+            this.continuationToken = continuationToken;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
             this.onExecuteScalarQueryCallback = onExecuteScalarQueryCallback;
@@ -43,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
+                this.continuationToken,
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution);
@@ -57,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
+                this.continuationToken,
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution);
@@ -70,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
+                this.continuationToken,
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution);
@@ -86,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.container,
                 this.cosmosJsonSerializer,
                 this.queryClient,
+                this.continuationToken,
                 this.cosmosQueryRequestOptions,
                 this.allowSynchronousQueryExecution);
             this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);

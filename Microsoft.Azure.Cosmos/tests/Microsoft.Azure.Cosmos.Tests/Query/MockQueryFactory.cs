@@ -16,13 +16,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal static class MockQueryFactory
     {
+        public static readonly int[] EmptyPage = new int[] { };
         public static readonly string DefaultDatabaseRid = ResourceId.NewDatabaseId(3810641).ToString();
         public static readonly string DefaultCollectionRid = ResourceId.NewDocumentCollectionId(DefaultDatabaseRid, 1376573569).ToString();
         public static readonly SqlQuerySpec DefaultQuerySpec = new SqlQuerySpec("SELECT * FROM C ");
         public static readonly CancellationToken DefaultCancellationToken = new CancellationTokenSource().Token;
         public static readonly Uri DefaultResourceLink = new Uri("dbs/MockDb/colls/MockQueryFactoryDefault", UriKind.Relative);
-        public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "00", MaxExclusive = "FF", Id = "0" };
-        public static readonly PartitionKeyRange DefaultPartitionKeyRange1AfterSplit = new PartitionKeyRange() { MinInclusive = "00", MaxExclusive = "B", Id = "1" };
+        public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" };
+        public static readonly PartitionKeyRange DefaultPartitionKeyRange1AfterSplit = new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "B", Id = "1" };
         public static readonly PartitionKeyRange DefaultPartitionKeyRange2AfterSplit = new PartitionKeyRange() { MinInclusive = "B", MaxExclusive = "FF", Id = "2" };
         public static readonly IReadOnlyList<PartitionKeyRange> DefaultPartitionKeyRangesAfterSplit = new List<PartitionKeyRange>()
         {
@@ -31,32 +32,24 @@ namespace Microsoft.Azure.Cosmos.Tests
         }.AsReadOnly();
 
         public static IList<ToDoItem> GenerateAndMockResponse(
-            Mock<CosmosQueryClient> mockQueryClient,
-            SqlQuerySpec sqlQuerySpec,
-            string containerRid,
-            string initContinuationToken,
-            int maxPageSize,
-            MockResponseForSinglePartition[] mockResponseForSinglePartition,
-            CancellationToken cancellationToken)
+           Mock<CosmosQueryClient> mockQueryClient,
+           bool isOrderByQuery,
+           SqlQuerySpec sqlQuerySpec,
+           string containerRid,
+           string initContinuationToken,
+           int maxPageSize,
+           MockPartitionResponse[] mockResponseForSinglePartition,
+           CancellationToken cancellationTokenForMocks)
         {
-            if (mockResponseForSinglePartition == null)
-            {
-                throw new ArgumentNullException(nameof(mockResponseForSinglePartition));
-            }
-
             // Setup the routing map in case there is a split and the ranges need to be updated
             Mock<IRoutingMapProvider> mockRoutingMap = new Mock<IRoutingMapProvider>();
             mockQueryClient.Setup(x => x.GetRoutingMapProviderAsync()).Returns(Task.FromResult(mockRoutingMap.Object));
 
             // Get the total item count
             int totalItemCount = 0;
-            foreach (MockResponseForSinglePartition response in mockResponseForSinglePartition)
+            foreach (MockPartitionResponse response in mockResponseForSinglePartition)
             {
-                foreach(var message in response.Messages)
-                {
-                    int? currentItemCount = message.ItemsIndexPosition?.Length;
-                    totalItemCount += currentItemCount ?? 0;
-                }
+                totalItemCount += response.GetTotalItemCount();
             }
 
             // Create all the items and order by id
@@ -65,53 +58,77 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "MockQueryFactory",
                 containerRid).OrderBy(item => item.id).ToList();
 
+            GenerateAndMockResponseHelper(
+                mockQueryClient: mockQueryClient,
+                mockRoutingMap: mockRoutingMap,
+                allItemsOrdered: allItemsOrdered,
+                isOrderByQuery: isOrderByQuery,
+                sqlQuerySpec: sqlQuerySpec,
+                containerRid: containerRid,
+                initContinuationToken: initContinuationToken,
+                maxPageSize: maxPageSize,
+                mockResponseForSinglePartition: mockResponseForSinglePartition,
+                cancellationTokenForMocks: cancellationTokenForMocks);
+
+            return allItemsOrdered;
+        }
+
+        private static IList<ToDoItem> GenerateAndMockResponseHelper(
+             Mock<CosmosQueryClient> mockQueryClient,
+             Mock<IRoutingMapProvider> mockRoutingMap,
+             IList<ToDoItem> allItemsOrdered,
+             bool isOrderByQuery,
+             SqlQuerySpec sqlQuerySpec,
+             string containerRid,
+             string initContinuationToken,
+             int maxPageSize,
+             MockPartitionResponse[] mockResponseForSinglePartition,
+             CancellationToken cancellationTokenForMocks)
+        {
+            if (mockResponseForSinglePartition == null)
+            {
+                throw new ArgumentNullException(nameof(mockResponseForSinglePartition));
+            }
+
             // Loop through all the partitions
-            foreach (MockResponseForSinglePartition partitionAndMessages in mockResponseForSinglePartition)
+            foreach (MockPartitionResponse partitionAndMessages in mockResponseForSinglePartition)
             {
                 PartitionKeyRange partitionKeyRange = partitionAndMessages.PartitionKeyRange;
 
-                string previousContinuationToken = partitionAndMessages.StartingContinuationToken;
+                string previousContinuationToken = initContinuationToken;
 
                 // Loop through each message inside the partition
-                MockResponseMessages[] messages = partitionAndMessages.Messages;
-                for (int i = 0; i < messages.Length; i++)
+                List<int[]> messages = partitionAndMessages.MessagesWithItemIndex;
+                int messagesCount = messages == null ? 0 : messages.Count;
+                int lastMessageIndex = messagesCount - 1;
+                for (int i = 0; i < messagesCount; i++)
                 {
-                    MockResponseMessages message = partitionAndMessages.Messages[i];
-                    QueryResponse queryResponse = null;
+                    int[] message = partitionAndMessages.MessagesWithItemIndex[i];
+
                     string newContinuationToken = null;
 
-                    if (message.UpdatedRangesAfterSplit != null)
+                    List<ToDoItem> currentPageItems = new List<ToDoItem>();
+                    // Null represents an empty page
+                    if (message != null)
                     {
-                        queryResponse = QueryResponseMessageFactory.CreateSplitResponse(containerRid);
-                        mockRoutingMap.Setup(x =>
-                            x.TryGetOverlappingRangesAsync(
-                                containerRid,
-                                It.Is<Documents.Routing.Range<string>>(inputRange => inputRange.Equals(partitionKeyRange.ToRange())),
-                                true)).Returns(Task.FromResult(message.UpdatedRangesAfterSplit));
-                    }
-                    else
-                    { 
-                        List<ToDoItem> currentPageItems = new List<ToDoItem>();
-                        // Null represents an empty page
-                        if(message.ItemsIndexPosition != null)
+                        foreach (int itemPosition in message)
                         {
-                            foreach (int itemPosition in message.ItemsIndexPosition)
-                            {
-                                currentPageItems.Add(allItemsOrdered[itemPosition]);
-                            }
+                            currentPageItems.Add(allItemsOrdered[itemPosition]);
                         }
-
-                        // Last message should have null continuation token
-                        if (i + 1 != messages.Length)
-                        {
-                            newContinuationToken = Guid.NewGuid().ToString();
-                        }
-
-                        queryResponse = QueryResponseMessageFactory.CreateQueryResponse(
-                            currentPageItems,
-                            newContinuationToken,
-                            containerRid);
                     }
+
+                    // Last message should have null continuation token
+                    // Split means it's not the last message for this PK range
+                    if (i != lastMessageIndex || partitionAndMessages.HasSplit)
+                    {
+                        newContinuationToken = Guid.NewGuid().ToString();
+                    }
+
+                    QueryResponse queryResponse = QueryResponseMessageFactory.CreateQueryResponse(
+                        currentPageItems,
+                        isOrderByQuery,
+                        newContinuationToken,
+                        containerRid);
 
                     mockQueryClient.Setup(x =>
                       x.ExecuteItemQueryAsync(
@@ -125,17 +142,48 @@ namespace Microsoft.Azure.Cosmos.Tests
                           It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, containerRid)),
                           It.IsAny<bool>(),
                           maxPageSize,
-                          cancellationToken))
-                          .Callback(() =>
-                          {
-                              if (message.DelayResponse.HasValue)
-                              {
-                                  Thread.Sleep(message.DelayResponse.Value);
-                              }
-                          })
+                          cancellationTokenForMocks))
                           .Returns(Task.FromResult(queryResponse));
 
                     previousContinuationToken = newContinuationToken;
+                }
+
+                if (partitionAndMessages.HasSplit)
+                {
+                    QueryResponse querySplitResponse = QueryResponseMessageFactory.CreateSplitResponse(containerRid);
+
+                    mockRoutingMap.Setup(x =>
+                            x.TryGetOverlappingRangesAsync(
+                                containerRid,
+                                It.Is<Documents.Routing.Range<string>>(inputRange => inputRange.Equals(partitionKeyRange.ToRange())),
+                                true)).Returns(Task.FromResult(partitionAndMessages.GetPartitionKeyRangeOfSplit()));
+
+                    mockQueryClient.Setup(x =>
+                     x.ExecuteItemQueryAsync(
+                         It.IsAny<Uri>(),
+                         ResourceType.Document,
+                         OperationType.Query,
+                         containerRid,
+                         It.IsAny<QueryRequestOptions>(),
+                         It.Is<SqlQuerySpec>(specInput => MockItemProducerFactory.IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
+                         previousContinuationToken,
+                         It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, containerRid)),
+                         It.IsAny<bool>(),
+                         maxPageSize,
+                         cancellationTokenForMocks))
+                         .Returns(Task.FromResult(querySplitResponse));
+
+                    GenerateAndMockResponseHelper(
+                       mockQueryClient: mockQueryClient,
+                       mockRoutingMap: mockRoutingMap,
+                       allItemsOrdered: allItemsOrdered,
+                       isOrderByQuery: isOrderByQuery,
+                       sqlQuerySpec: sqlQuerySpec,
+                       containerRid: containerRid,
+                       initContinuationToken: previousContinuationToken,
+                       maxPageSize: maxPageSize,
+                       mockResponseForSinglePartition: partitionAndMessages.Split,
+                       cancellationTokenForMocks: cancellationTokenForMocks);
                 }
             }
 
@@ -159,392 +207,235 @@ namespace Microsoft.Azure.Cosmos.Tests
                 containerResourceId: DefaultCollectionRid);
         }
 
-        public static List<MockResponseForSinglePartition[]> GetSplitScenarios(string initialContinuationToken)
+        public static MockPartitionResponse[] CreateDefaultResponse(
+            int[] message1,
+            int[] message2 = null,
+            int[] message3 = null)
         {
-            List<MockResponseForSinglePartition[]> allSplitScenario = new List<MockResponseForSinglePartition[]>();
+            List<int[]> messages = new List<int[]>();
+            if (message1 != null)
+            {
+                messages.Add(message1);
+            }
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
+            if (message2 != null)
+            {
+                messages.Add(message2);
+            }
+
+            if (message3 != null)
+            {
+                messages.Add(message3);
+            }
+
+            return CreateDefaultResponse(messages);
+        }
+
+        public static MockPartitionResponse[] CreateDefaultResponse(
+            List<int[]> messages)
+        {
+            return new MockPartitionResponse[] {
+                new MockPartitionResponse()
                 {
                     PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(0)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(1)
-                    }
+                    MessagesWithItemIndex = messages,
                 }
-            });
+            };
+        }
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
+        public static MockPartitionResponse[] CreateDefaultSplit(
+            List<int[]> beforeSplit,
+            List<int[]> split1,
+            List<int[]> split2)
+        {
+            return new MockPartitionResponse[] {
+                new MockPartitionResponse()
                 {
                     PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
+                    MessagesWithItemIndex = beforeSplit,
+                    Split = new MockPartitionResponse[]
                     {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(0),
-                        new MockResponseMessages(2)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(1),
-                        new MockResponseMessages(3)
+                        new MockPartitionResponse()
+                        {
+                            PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
+                            MessagesWithItemIndex = split1
+                        },
+                        new MockPartitionResponse()
+                        {
+                            PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
+                            MessagesWithItemIndex = split2,
+                        }
                     }
                 }
-            });
+            };
+        }
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(0),
-                    }
-                }
-            });
+        public static List<MockPartitionResponse[]> GetSplitScenarios()
+        {
+            List<MockPartitionResponse[]> allSplitScenario = new List<MockPartitionResponse[]>();
+            List<int[]> EmptyPage = new List<int[]>()
+            {
+                MockQueryFactory.EmptyPage
+            };
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(0),
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
-                    }
-                }
-            });
+            List<int[]> Item0 = new List<int[]>()
+            {
+                new int[] {0}
+            };
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(0),
-                        new MockResponseMessages(1),
-                    }
-                }
-            });
+            List<int[]> Item1 = new List<int[]>()
+            {
+                new int[] {1}
+            };
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(0),
-                        new MockResponseMessages(1),
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
-                    }
-                }
-            });
+            // Create combination of first page empty then split or starts with split
+            List<List<int[]>> firstPartitionOptions = new List<List<int[]>>()
+            {
+                EmptyPage,
+                null,
+                new List<int[]>(){ new int[] {0, 1} }
+            };
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
+            foreach (var firstPartition in firstPartitionOptions)
+            {
+                int itemCount = 0;
+                if (firstPartition != null)
                 {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
+                    foreach (int[] items in firstPartition)
                     {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
+                        itemCount += items.Length;
                     }
                 }
-            });
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
-                        new MockResponseMessages(0),
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(1),
-                        new MockResponseMessages(2),
-                    }
-                }
-            });
+                allSplitScenario.Add(CreateDefaultSplit(
+                    firstPartition,
+                    EmptyPage,
+                    EmptyPage));
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
+                allSplitScenario.Add(CreateDefaultSplit(
+                    firstPartition,
+                    EmptyPage,
+                    new List<int[]>()
                     {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
-                        new MockResponseMessages(0),
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
-                    {
-                        new MockResponseMessages(),
-                        new MockResponseMessages(1),
-                    }
-                }
-            });
+                        new int[] { itemCount }
+                    }));
 
-            allSplitScenario.Add(new MockResponseForSinglePartition[]{
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
+                allSplitScenario.Add(CreateDefaultSplit(
+                    firstPartition,
+                    new List<int[]>()
                     {
-                        new MockResponseMessages(DefaultPartitionKeyRangesAfterSplit)
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange1AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
+                        new int[] { itemCount }
+                    },
+                    EmptyPage));
+
+                allSplitScenario.Add(CreateDefaultSplit(
+                    firstPartition,
+                    new List<int[]>()
                     {
-                        new MockResponseMessages(),
-                        new MockResponseMessages(),
-                        new MockResponseMessages(0),
-                        new MockResponseMessages(2),
-                    }
-                },
-                new MockResponseForSinglePartition()
-                {
-                    PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange2AfterSplit,
-                    StartingContinuationToken = initialContinuationToken,
-                    Messages = new MockResponseMessages[]
+                        new int[] { itemCount }
+                    },
+                    new List<int[]>()
                     {
-                        new MockResponseMessages(),
-                        new MockResponseMessages(1),
-                    }
-                }
-            });
+                        new int[] { itemCount + 1}
+                    }));
+
+                allSplitScenario.Add(CreateDefaultSplit(
+                    firstPartition,
+                    new List<int[]>()
+                    {
+                        MockQueryFactory.EmptyPage,
+                        new int[] { itemCount }
+                    },
+                    EmptyPage));
+
+                allSplitScenario.Add(CreateDefaultSplit(
+                    firstPartition,
+                    EmptyPage,
+                    new List<int[]>()
+                    {
+                        MockQueryFactory.EmptyPage,
+                        new int[] { itemCount }
+                    }));
+
+                allSplitScenario.Add(CreateDefaultSplit(
+                    firstPartition,
+                    EmptyPage,
+                    new List<int[]>()
+                    {
+                        MockQueryFactory.EmptyPage,
+                        new int[] { itemCount },
+                        new int[] { itemCount + 1 },
+                        MockQueryFactory.EmptyPage,
+                        new int[] { itemCount + 2 },
+                    }));
+
+                allSplitScenario.Add(CreateDefaultSplit(
+                    firstPartition,
+                    new List<int[]>()
+                    {
+                        new int[] { itemCount },
+                        new int[] { itemCount + 2 },
+                        MockQueryFactory.EmptyPage,
+                        new int[] { itemCount + 4 },
+                    },
+                    new List<int[]>()
+                    {
+                        MockQueryFactory.EmptyPage,
+                        new int[] { itemCount + 1 },
+                        new int[] { itemCount + 3 },
+                        MockQueryFactory.EmptyPage,
+                        new int[] { itemCount + 5 },
+                    }));
+            }
 
             return allSplitScenario;
         }
 
-        public static MockResponseForSinglePartition GetDefaultMockResponseForSinglePartition(string initialContinuationToken, params MockResponseMessages[] messages)
+        public static List<MockPartitionResponse[]> GetAllCombinationWithEmptyPage()
         {
-            return new MockResponseForSinglePartition()
+            return new List<MockPartitionResponse[]>
             {
-                PartitionKeyRange = MockQueryFactory.DefaultPartitionKeyRange,
-                StartingContinuationToken = initialContinuationToken,
-                Messages = messages
-            };
-        }
-
-        public static MockResponseForSinglePartition[] GetAllCombinationWithEmptyPage(string initialContinuationToken = null)
-        {
-            return new MockResponseForSinglePartition[]
-            {
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages()),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(0)),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(),
-                    new MockResponseMessages(0)),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(0),
-                    new MockResponseMessages()),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(0),
-                    new MockResponseMessages(1)),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                     new MockResponseMessages(0),
-                    new MockResponseMessages(),
-                    new MockResponseMessages()),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(),
-                    new MockResponseMessages(0),
-                    new MockResponseMessages()),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(),
-                    new MockResponseMessages(),
-                    new MockResponseMessages(0)),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(0),
-                    new MockResponseMessages(1),
-                    new MockResponseMessages()),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(0),
-                    new MockResponseMessages(),
-                    new MockResponseMessages(1)),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(),
-                    new MockResponseMessages(0),
-                    new MockResponseMessages(1)),
-                GetDefaultMockResponseForSinglePartition(
-                    initialContinuationToken,
-                    new MockResponseMessages(0),
-                    new MockResponseMessages(1),
-                    new MockResponseMessages(2))
+                CreateDefaultResponse(
+                    MockQueryFactory.EmptyPage),
+                CreateDefaultResponse(
+                    new int[] { 0 }),
+                CreateDefaultResponse(
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 0 }),
+                CreateDefaultResponse(
+                    new int[] { 0 },
+                    MockQueryFactory.EmptyPage),
+                CreateDefaultResponse(
+                    new int[] { 0 },
+                    new int[] { 1 }),
+                CreateDefaultResponse(
+                    new int[] { 0 },
+                    MockQueryFactory.EmptyPage,
+                    MockQueryFactory.EmptyPage),
+                CreateDefaultResponse(
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 0 },
+                    MockQueryFactory.EmptyPage),
+                CreateDefaultResponse(
+                    MockQueryFactory.EmptyPage,
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 0 }),
+                CreateDefaultResponse(
+                    new int[] { 0 },
+                    new int[] { 1 },
+                    MockQueryFactory.EmptyPage),
+                CreateDefaultResponse(
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 0 },
+                    new int[] { 1 }),
+                CreateDefaultResponse(
+                    new int[] { 0 },
+                    MockQueryFactory.EmptyPage,
+                    new int[] { 1 }),
+                CreateDefaultResponse(
+                    new int[] { 0 },
+                    new int[] { 1 },
+                    new int[] { 2 }),
             };
         }
 
