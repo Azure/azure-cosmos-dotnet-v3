@@ -1,7 +1,7 @@
 ## Changes in [3.1.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0) : ##
 
 * Fixes [#544](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/544) Adding continuation token support for LINQ
-
+* Fixes [#561](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/561) GetItemLinqQueryable now works with null query
 
 ## Changes in [3.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0) : ##
 
