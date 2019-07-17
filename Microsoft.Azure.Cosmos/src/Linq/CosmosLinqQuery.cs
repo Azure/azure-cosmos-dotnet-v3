@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     " use GetItemsQueryIterator to execute asynchronously");
             }
 
-            FeedIterator<T> localQueryExecutionContext = this.ToFeedIterator();
+            FeedIterator<T> localQueryExecutionContext = this.CreateCosmosQueryExecutionContext(false);
             while (localQueryExecutionContext.HasMoreResults)
             {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
@@ -140,17 +140,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public FeedIterator<T> ToFeedIterator()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
-
-            FeedIterator streamIterator = this.container.GetItemQueryStreamIteratorInternal(
-                sqlQuerySpec: querySpec,
-                isContinuationExcpected: false,
-                continuationToken: this.continuationToken,
-                requestOptions: this.cosmosQueryRequestOptions);
-
-            return new FeedIteratorCore<T>(
-                streamIterator,
-                this.responseFactory.CreateQueryFeedResponse<T>);
+            return CreateCosmosQueryExecutionContext(true);
         }
 
         public void Dispose()
@@ -166,6 +156,21 @@ namespace Microsoft.Azure.Cosmos.Linq
         Task<DocumentFeedResponse<dynamic>> IDocumentQuery<T>.ExecuteNextAsync(CancellationToken token)
         {
             throw new NotImplementedException();
+        }
+
+        private FeedIterator<T> CreateCosmosQueryExecutionContext(bool isContinuationExcpected)
+        {
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+
+            FeedIterator streamIterator = this.container.GetItemQueryStreamIteratorInternal(
+                sqlQuerySpec: querySpec,
+                isContinuationExcpected: isContinuationExcpected,
+                continuationToken: this.continuationToken,
+                requestOptions: this.cosmosQueryRequestOptions);
+
+            return new FeedIteratorCore<T>(
+                streamIterator,
+                this.responseFactory.CreateQueryFeedResponse<T>);
         }
     }
 }
