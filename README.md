@@ -1,8 +1,24 @@
 # Microsoft Azure Cosmos DB .NET SDK Version 3.0
 
-This project provides a client tools or utilities in .NET that makes it easy to interact with Azure Cosmos DB. Azure cosmos DB is published with nuget name [Microsoft.Azure.Cosmos](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/).
+This project provides .NET SDK library for SQL API of Azure Cosmos Database Service. This project also includes samples, tools, and utilities.
 
-Useful links:
+```csharp
+CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
+Database database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
+Container container = await database.CreateContainerIfNotExistsAsync(
+    "MyContainerName",
+    "/partitionKeyPath",
+    400);
+
+dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working" };
+ItemResponse<dynamic> response = await container.CreateItemAsync(testItem);
+```
+
+## Install via [Nuget.org](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/)
+
+`Install-Package Microsoft.Azure.Cosmos`
+
+## Useful links
 
 - [Get Started APP](https://docs.microsoft.com/azure/cosmos-db/sql-api-get-started)
 - [Github samples](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/CodeSamples)
@@ -16,22 +32,6 @@ Useful links:
 - [Capture traces](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-sdk_capture_etl.md)
 - [Release notes](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md)
 - [Diagnose and troubleshooting](https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk)
-
-## Basic
-
-This is a basic sample that shows creating a database, container, and inserting an item into the container
-
-```csharp
-CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
-Database database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
-Container container = await database.CreateContainerIfNotExistsAsync(
-    "MyContainerName",
-    "/partitionKeyPath",
-    400);
-
-dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working" };
-ItemResponse<dynamic> response = await container.CreateItemAsync(testItem);
-```
 
 ## Contributing
 
