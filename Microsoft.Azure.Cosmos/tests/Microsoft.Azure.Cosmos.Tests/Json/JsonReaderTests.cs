@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -2031,63 +2032,85 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         /// </summary>
         private void VerifyReader(IJsonReader jsonReader, JsonTokenInfo[] expectedTokens, Exception expectedException, Encoding encoding)
         {
-            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
-            Assert.AreEqual(JsonTokenType.NotStarted, jsonTokenType);
+            CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
 
-            foreach (JsonTokenInfo expectedToken in expectedTokens)
+            CultureInfo[] cultureInfoList = new CultureInfo[]
             {
-                jsonReader.Read();
+                defaultCultureInfo,
+                System.Globalization.CultureInfo.GetCultureInfo("fr-FR")
+            };
 
-                switch (expectedToken.JsonTokenType)
+            try
+            {
+
+                foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
-                    case JsonTokenType.BeginArray:
-                        this.VerifyBeginArray(jsonReader, encoding);
-                        break;
-                    case JsonTokenType.EndArray:
-                        this.VerifyEndArray(jsonReader, encoding);
-                        break;
-                    case JsonTokenType.BeginObject:
-                        this.VerifyBeginObject(jsonReader, encoding);
-                        break;
-                    case JsonTokenType.EndObject:
-                        this.VerifyEndObject(jsonReader, encoding);
-                        break;
-                    case JsonTokenType.String:
-                        this.VerifyString(jsonReader, expectedToken.BufferedToken, encoding);
-                        break;
-                    case JsonTokenType.Number:
-                        this.VerifyNumber(jsonReader, expectedToken.Value, encoding);
-                        break;
-                    case JsonTokenType.True:
-                        this.VerifyTrue(jsonReader, encoding);
-                        break;
-                    case JsonTokenType.False:
-                        this.VerifyFalse(jsonReader, encoding);
-                        break;
-                    case JsonTokenType.Null:
-                        this.VerifyNull(jsonReader, encoding);
-                        break;
-                    case JsonTokenType.FieldName:
-                        this.VerifyFieldName(jsonReader, expectedToken.BufferedToken, encoding);
-                        break;
-                    case JsonTokenType.NotStarted:
-                    default:
-                        Assert.Fail(string.Format("Got an unexpected JsonTokenType: {0} as an expected token type", expectedToken.JsonTokenType));
-                        break;
+                    System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
+
+                    JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+                    Assert.AreEqual(JsonTokenType.NotStarted, jsonTokenType);
+
+                    foreach (JsonTokenInfo expectedToken in expectedTokens)
+                    {
+                        jsonReader.Read();
+
+                        switch (expectedToken.JsonTokenType)
+                        {
+                            case JsonTokenType.BeginArray:
+                                this.VerifyBeginArray(jsonReader, encoding);
+                                break;
+                            case JsonTokenType.EndArray:
+                                this.VerifyEndArray(jsonReader, encoding);
+                                break;
+                            case JsonTokenType.BeginObject:
+                                this.VerifyBeginObject(jsonReader, encoding);
+                                break;
+                            case JsonTokenType.EndObject:
+                                this.VerifyEndObject(jsonReader, encoding);
+                                break;
+                            case JsonTokenType.String:
+                                this.VerifyString(jsonReader, expectedToken.BufferedToken, encoding);
+                                break;
+                            case JsonTokenType.Number:
+                                this.VerifyNumber(jsonReader, expectedToken.Value, encoding);
+                                break;
+                            case JsonTokenType.True:
+                                this.VerifyTrue(jsonReader, encoding);
+                                break;
+                            case JsonTokenType.False:
+                                this.VerifyFalse(jsonReader, encoding);
+                                break;
+                            case JsonTokenType.Null:
+                                this.VerifyNull(jsonReader, encoding);
+                                break;
+                            case JsonTokenType.FieldName:
+                                this.VerifyFieldName(jsonReader, expectedToken.BufferedToken, encoding);
+                                break;
+                            case JsonTokenType.NotStarted:
+                            default:
+                                Assert.Fail(string.Format("Got an unexpected JsonTokenType: {0} as an expected token type", expectedToken.JsonTokenType));
+                                break;
+                        }
+                    }
+
+                    if (expectedException != null)
+                    {
+                        try
+                        {
+                            jsonReader.Read();
+                            Assert.Fail(string.Format("Expected to receive {0} but didn't", expectedException.Message));
+                        }
+                        catch (Exception exception)
+                        {
+                            Assert.AreEqual(expectedException.GetType(), exception.GetType());
+                        }
+                    }
                 }
             }
-
-            if (expectedException != null)
+            finally
             {
-                try
-                {
-                    jsonReader.Read();
-                    Assert.Fail(string.Format("Expected to receive {0} but didn't", expectedException.Message));
-                }
-                catch (Exception exception)
-                {
-                    Assert.AreEqual(expectedException.GetType(), exception.GetType());
-                }
+                System.Threading.Thread.CurrentThread.CurrentCulture = defaultCultureInfo;
             }
         }
 
