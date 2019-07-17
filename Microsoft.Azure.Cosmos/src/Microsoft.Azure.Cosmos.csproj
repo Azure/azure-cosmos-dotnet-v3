@@ -102,6 +102,7 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <DefineConstants Condition=" '$(IsNightly)' == '1' ">$(DefineConstants);PREVIEW</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
   </PropertyGroup>
