@@ -241,36 +241,11 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            requestOptions = requestOptions ?? new QueryRequestOptions();
-
-            if (requestOptions.IsEffectivePartitionKeyRouting)
-            {
-                requestOptions.PartitionKey = null;
-            }
-
-            if (queryDefinition == null)
-            {
-                return new FeedIteratorCore(
-                    this.ClientContext,
-                    this.LinkUri,
-                    resourceType: ResourceType.Document,
-                    queryDefinition: null,
-                    continuationToken: continuationToken,
-                    options: requestOptions);
-            }
-
-            return new CosmosQueryExecutionContextFactory(
-                client: this.queryClient,
-                resourceTypeEnum: ResourceType.Document,
-                operationType: OperationType.Query,
-                resourceType: typeof(QueryResponse),
-                sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
+            return this.GetItemQueryStreamIteratorInternal(
+                sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
+                isContinuationExcpected: true,
                 continuationToken: continuationToken,
-                queryRequestOptions: requestOptions,
-                resourceLink: this.LinkUri,
-                isContinuationExpected: true,
-                allowNonValueAggregateQuery: true,
-                correlatedActivityId: Guid.NewGuid());
+                requestOptions: requestOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -320,7 +295,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new CosmosLinqQuery<T>(
                 this,
-                this.ClientContext.CosmosSerializer,
+                this.ClientContext.ResponseFactory,
                 (CosmosQueryClientCore)this.queryClient,
                 requestOptions,
                 allowSynchronousQueryExecution);
@@ -386,6 +361,49 @@ namespace Microsoft.Azure.Cosmos
                 maxItemCount: maxItemCount,
                 container: this,
                 options: cosmosQueryRequestOptions);
+        }
+
+        /// <summary>
+        /// Helper method to create a stream feed iterator.
+        /// It decides if it is a query or read feed and create
+        /// the correct instance.
+        /// </summary>
+        internal FeedIterator GetItemQueryStreamIteratorInternal(
+            SqlQuerySpec sqlQuerySpec,
+            bool isContinuationExcpected,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
+        {
+            requestOptions = requestOptions ?? new QueryRequestOptions();
+
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
+
+            if (sqlQuerySpec == null)
+            {
+                return new FeedIteratorCore(
+                    this.ClientContext,
+                    this.LinkUri,
+                    resourceType: ResourceType.Document,
+                    queryDefinition: null,
+                    continuationToken: continuationToken,
+                    options: requestOptions);
+            }
+
+            return new CosmosQueryExecutionContextFactory(
+                client: this.queryClient,
+                resourceTypeEnum: ResourceType.Document,
+                operationType: OperationType.Query,
+                resourceType: typeof(QueryResponse),
+                sqlQuerySpec: sqlQuerySpec,
+                continuationToken: continuationToken,
+                queryRequestOptions: requestOptions,
+                resourceLink: this.LinkUri,
+                isContinuationExpected: isContinuationExcpected,
+                allowNonValueAggregateQuery: true,
+                correlatedActivityId: Guid.NewGuid());
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.

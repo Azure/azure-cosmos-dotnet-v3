@@ -425,6 +425,62 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemIds.Count, 0);
         }
 
+        [DataRow(false)]
+        [DataRow(true)]
+        [DataTestMethod]
+        public async Task ItemLinqReadFeedTest(bool useStatelessIterator)
+        {
+            IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1
+            };
+
+            List<ToDoActivity> itemsViaReadFeed = this.Container.GetItemLinqQueryable<ToDoActivity>(
+                allowSynchronousQueryExecution: true,
+                requestOptions: requestOptions).ToList();
+
+            Assert.IsTrue(itemsViaReadFeed.Count >= 3);
+            CollectionAssert.AreEqual(deleteList.ToList(), itemsViaReadFeed);
+
+            //I
+            //string lastContinuationToken = null;
+            //FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemLinqQueryable<ToDoActivity>(
+            //    requestOptions: requestOptions).ToFeedIterator();
+
+            //while (feedIterator.HasMoreResults)
+            //{
+            //    if (useStatelessIterator)
+            //    {
+            //        feedIterator = this.Container.GetItemLinqQueryable<ToDoActivity>(
+            //            continuationToken: lastContinuationToken,
+            //            requestOptions: requestOptions).ToFeedIterator();
+            //    }
+
+            //    using (ResponseMessage responseMessage =
+            //        await feedIterator.ReadNextAsync(this.cancellationToken))
+            //    {
+            //        lastContinuationToken = responseMessage.Headers.ContinuationToken;
+
+            //        Collection<ToDoActivity> response = new CosmosJsonSerializerCore().FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+            //        foreach (ToDoActivity toDoActivity in response)
+            //        {
+            //            if (itemIds.Contains(toDoActivity.id))
+            //            {
+            //                itemIds.Remove(toDoActivity.id);
+            //            }
+            //        }
+
+            //    }
+
+            //}
+
+            //Assert.IsNull(lastContinuationToken);
+            //Assert.AreEqual(itemIds.Count, 0);
+        }
+
         [TestMethod]
         public async Task ItemDistinctStreamIterator()
         {
@@ -1736,6 +1792,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public double cost { get; set; }
             public string description { get; set; }
             public string status { get; set; }
+
+            public override bool Equals(Object obj)
+            {
+                ToDoActivity input = obj as ToDoActivity;
+                if(input == null)
+                {
+                    return false;
+                }
+
+                return string.Equals(this.id, input.id)
+                    && this.taskNum == input.taskNum
+                    && this.cost == input.cost
+                    && string.Equals(this.description, input.description)
+                    && string.Equals(this.status, input.status);
+            }
+
+            public override int GetHashCode()
+            {
+                return base.GetHashCode();
+            }
         }
 
         public class ToDoActivityAfterMigration

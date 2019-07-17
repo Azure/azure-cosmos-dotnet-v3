@@ -91,7 +91,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         internal static string ToSqlQueryText<T>(this IQueryable<T> query)
         {
-            return ((CosmosLinqQuery<T>)query).ToSqlQueryText();
+            CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
+
+            if (linqQuery == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToSqlQueryText is only supported on cosmos LINQ query operations");
+            }
+
+            return linqQuery.ToSqlQueryText();
         }
 
         /// <summary>
