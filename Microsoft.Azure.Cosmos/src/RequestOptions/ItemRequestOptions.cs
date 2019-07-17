@@ -91,7 +91,11 @@ namespace Microsoft.Azure.Cosmos
         /// for each individual request.
         /// </para>
         /// </remarks>
-        public ConsistencyLevel? ConsistencyLevel { get; set; }
+        public ConsistencyLevel? ConsistencyLevel
+        {
+            get => this.BaseConsistencyLevel;
+            set => this.BaseConsistencyLevel = value;
+        }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -117,7 +121,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
-            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             base.PopulateRequestOptions(request);
         }
