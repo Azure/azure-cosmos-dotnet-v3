@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+
     /// <summary> 
     /// Specifies whether or not the resource in the Azure Cosmos DB database is to be indexed.
     /// </summary>
@@ -31,5 +33,20 @@ namespace Microsoft.Azure.Cosmos
         public static readonly string Default = IndexingDirective.Default.ToString();
         public static readonly string Include = IndexingDirective.Include.ToString();
         public static readonly string Exclude = IndexingDirective.Exclude.ToString();
+
+        public static string FromIndexingDirective(IndexingDirective directive)
+        {
+            switch (directive)
+            {
+                case IndexingDirective.Default:
+                    return IndexingDirectiveStrings.Default;
+                case IndexingDirective.Exclude:
+                    return IndexingDirectiveStrings.Exclude;
+                case IndexingDirective.Include:
+                    return IndexingDirectiveStrings.Include;
+                default:
+                    throw new ArgumentException(string.Format("Missing indexing directive string for {0}", directive));
+            }
+        }
     }
 }
