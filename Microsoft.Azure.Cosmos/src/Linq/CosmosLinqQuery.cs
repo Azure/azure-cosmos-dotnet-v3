@@ -28,11 +28,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly CosmosResponseFactory responseFactory;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
+        private readonly string continuationToken;
 
         public CosmosLinqQuery(
            ContainerCore container,
            CosmosResponseFactory responseFactory,
            CosmosQueryClientCore queryClient,
+           string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
            bool allowSynchronousQueryExecution)
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
             this.queryClient = queryClient ?? throw new ArgumentNullException(nameof(queryClient));
+            this.continuationToken = continuationToken;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.expression = expression ?? Expression.Constant(this);
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
@@ -47,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Linq
               container,
               responseFactory,
               queryClient,
+              this.continuationToken,
               cosmosQueryRequestOptions,
               this.allowSynchronousQueryExecution,
               this.queryClient.OnExecuteScalarQueryCallback);
@@ -57,12 +61,14 @@ namespace Microsoft.Azure.Cosmos.Linq
           ContainerCore container,
           CosmosResponseFactory responseFactory,
           CosmosQueryClientCore queryClient,
+          string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution)
             : this(
               container,
               responseFactory,
               queryClient,
+              continuationToken,
               cosmosQueryRequestOptions,
               null,
               allowSynchronousQueryExecution)
@@ -139,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedIterator streamIterator = this.container.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: querySpec,
                 isContinuationExcpected: false,
-                continuationToken: null,
+                continuationToken: this.continuationToken,
                 requestOptions: this.cosmosQueryRequestOptions);
 
             return new FeedIteratorCore<T>(

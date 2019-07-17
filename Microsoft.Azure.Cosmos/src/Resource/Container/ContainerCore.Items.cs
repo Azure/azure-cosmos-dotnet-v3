@@ -289,6 +289,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
@@ -297,6 +298,7 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 this.ClientContext.ResponseFactory,
                 (CosmosQueryClientCore)this.queryClient,
+                continuationToken,
                 requestOptions,
                 allowSynchronousQueryExecution);
         }
@@ -346,6 +348,13 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedProcessor: changeFeedEstimatorCore,
                 applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
         }
+
+#if PREVIEW
+        public override Batch CreateBatch(PartitionKey partitionKey)
+        {
+            return new BatchCore(this, partitionKey);
+        }
+#endif
 
         internal FeedIterator GetStandByFeedIterator(
             string continuationToken = null,
