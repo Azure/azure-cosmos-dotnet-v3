@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     " use GetItemsQueryIterator to execute asynchronously");
             }
 
-            FeedIterator<T> localQueryExecutionContext = this.CreateCosmosQueryExecutionContext(false);
+            FeedIterator<T> localQueryExecutionContext = this.CreateFeedIterator(false);
             while (localQueryExecutionContext.HasMoreResults)
             {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public FeedIterator<T> ToFeedIterator()
         {
-            return CreateCosmosQueryExecutionContext(true);
+            return CreateFeedIterator(true);
         }
 
         public void Dispose()
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
-        private FeedIterator<T> CreateCosmosQueryExecutionContext(bool isContinuationExcpected)
+        private FeedIterator<T> CreateFeedIterator(bool isContinuationExcpected)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
 
