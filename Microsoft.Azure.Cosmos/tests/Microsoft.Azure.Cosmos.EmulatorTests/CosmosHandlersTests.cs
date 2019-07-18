@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosHandlersTests : BaseCosmosClientHelper
     {
         private Container Container = null;
-        private CosmosSerializer jsonSerializer = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -28,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
             this.Container = response;
-            this.jsonSerializer = new CosmosJsonSerializerCore();
         }
 
         [TestCleanup]
@@ -53,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = CreateRandomToDoActivity();
             using (ResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
-                streamPayload: this.jsonSerializer.ToStream(testItem)))
+                streamPayload: TestCommon.Serializer.ToStream(testItem)))
             {
                 Assert.IsNotNull(response);
                 Assert.IsNotNull(response.RequestMessage);

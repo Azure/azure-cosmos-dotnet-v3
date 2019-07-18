@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosJsonSerializerCore());
+            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosJsonDotNetSerializer());
 
             await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     document
                 };
 
-                message.Content = (new CosmosJsonSerializerCore()).ToStream(cosmosFeedResponse);
+                message.Content = (new CosmosJsonDotNetSerializer()).ToStream(cosmosFeedResponse);
             }
 
             return message;
@@ -128,26 +128,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             public string id { get; set; }
         }
 
-        private class CustomSerializer : CosmosJsonSerializerCore
+        private class CustomSerializer : CosmosSerializer
         {
+            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public int FromStreamCalled = 0;
             public int ToStreamCalled = 0;
 
             public override T FromStream<T>(Stream stream)
             {
                 this.FromStreamCalled++;
-                return base.FromStream<T>(stream);
+                return this.cosmosSerializer.FromStream<T>(stream);
             }
 
             public override Stream ToStream<T>(T input)
             {
                 this.ToStreamCalled++;
-                return base.ToStream<T>(input);
+                return this.cosmosSerializer.ToStream<T>(input);
             }
         }
 
-        private class CustomSerializerFails : CosmosJsonSerializerCore
+        private class CustomSerializerFails: CosmosSerializer
         {
+            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public override T FromStream<T>(Stream stream)
             {
                 throw new CustomException();
@@ -155,9 +157,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             public override Stream ToStream<T>(T input)
             {
-                return base.ToStream<T>(input);
+                return this.cosmosSerializer.ToStream<T>(input);
             }
         }
+
 
         private class CustomException : Exception
         {

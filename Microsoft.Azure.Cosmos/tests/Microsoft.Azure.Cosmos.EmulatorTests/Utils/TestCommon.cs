@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static readonly int serverStalenessIntervalInSeconds;
         private static readonly int masterStalenessIntervalInSeconds;
+        public static readonly CosmosSerializer Serializer = new CosmosJsonDotNetSerializer();
 
         static TestCommon()
         {

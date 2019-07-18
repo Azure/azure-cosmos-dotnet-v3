@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             
             foreach(dynamic poco in supportedTypesToTest)
             {
-                object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
+                object pk = await container.GetPartitionKeyValueFromStreamAsync(MockCosmosUtil.Serializer.ToStream(poco));
                 if(pk is bool)
                 {
                     Assert.AreEqual(poco.pk, (bool)pk);
@@ -154,12 +154,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach(dynamic poco in unsupportedTypesToTest)
             {                   
                 await Assert.ThrowsExceptionAsync<ArgumentException>(async () => {
-                    await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
+                    await container.GetPartitionKeyValueFromStreamAsync(MockCosmosUtil.Serializer.ToStream(poco));
                 });
             }
 
             //null should return null
-            object pkValue = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(new { pk = (object)null }));
+            object pkValue = await container.GetPartitionKeyValueFromStreamAsync(MockCosmosUtil.Serializer.ToStream(new { pk = (object)null }));
             Assert.AreEqual(Cosmos.PartitionKey.Null, pkValue);
         }
 
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (dynamic poco in invalidNestedItems)
             {
-                object pk = await container.GetPartitionKeyValueFromStreamAsync(new CosmosJsonSerializerCore().ToStream(poco));
+                object pk = await container.GetPartitionKeyValueFromStreamAsync(MockCosmosUtil.Serializer.ToStream(poco));
                 Assert.IsTrue(object.ReferenceEquals(Cosmos.PartitionKey.None, pk) || object.Equals(Cosmos.PartitionKey.None, pk));
             }
         }
@@ -331,8 +331,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(5, testHandlerHitCount, "An operation did not make it to the handler");
 
-            CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
-            using (Stream itemStream = jsonSerializer.ToStream<dynamic>(testItem))
+            CosmosSerializer jsonSerializer = MockCosmosUtil.Serializer;
+            using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
             {
                 using (ResponseMessage streamResponse = await container.CreateItemStreamAsync(
                     partitionKey: partitionKey,
