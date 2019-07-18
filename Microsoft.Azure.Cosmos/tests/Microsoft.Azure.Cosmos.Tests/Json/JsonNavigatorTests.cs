@@ -375,7 +375,6 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         private void VerifyNavigator(string input, Exception expectedException, bool performExtraChecks = true)
         {
             CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
-            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
 
             CultureInfo[] cultureInfoList = new CultureInfo[]
             {
@@ -385,7 +384,6 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             try
             {
-
                 foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
                     IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(input));

@@ -1330,7 +1330,6 @@
         private void VerifyWriter(JsonTokenInfo[] tokensToWrite, string expectedString = null, Exception expectedException = null)
         {
             CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
-            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
 
             CultureInfo[] cultureInfoList = new CultureInfo[]
             {
@@ -1340,7 +1339,6 @@
 
             try
             {
-
                 foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
                     Encoding[] encodings =
