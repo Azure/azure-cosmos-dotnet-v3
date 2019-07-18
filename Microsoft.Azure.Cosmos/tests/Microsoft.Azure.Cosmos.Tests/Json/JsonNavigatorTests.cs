@@ -386,6 +386,8 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             {
                 foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
+                    System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
+
                     IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(input));
                     JsonTokenInfo[] tokensFromReader = JsonNavigatorTests.GetTokensWithReader(jsonReader);
 

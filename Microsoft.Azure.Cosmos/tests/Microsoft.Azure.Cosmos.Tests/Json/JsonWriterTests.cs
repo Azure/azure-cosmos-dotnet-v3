@@ -1341,6 +1341,8 @@
             {
                 foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
+                    System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
+
                     Encoding[] encodings =
                     {
                         Encoding.UTF8,
