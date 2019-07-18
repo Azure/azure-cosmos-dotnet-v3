@@ -430,6 +430,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Container already exist with different partition key path.
+        /// </summary>
+        internal static string PartitionKeyPathConflict {
+            get {
+                return ResourceManager.GetString("PartitionKeyPathConflict", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Partition property not found in the document..
         /// </summary>
         internal static string PartitionPropertyNotFound {
@@ -509,18 +518,16 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("StringCompareToInvalidOperator", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to typeCheck extension functions not implemented.
+        ///   Looks up a localized string similar to Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server..
         /// </summary>
-        internal static string TypeCheckExtensionFunctionsNotImplemented
-        {
-            get
-            {
+        internal static string TypeCheckExtensionFunctionsNotImplemented {
+            get {
                 return ResourceManager.GetString("TypeCheckExtensionFunctionsNotImplemented", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to User-defined function name can not be null or empty..
         /// </summary>

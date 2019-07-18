@@ -399,12 +399,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Check if a database exists, and if it doesn't, create it.
-        /// This will make a read operation, and if the database is not found it will do a create operation.
+        /// <para>Check if a database exists, and if it doesn't, create it.
+        /// Create on existing database will override custom settings provided and return back the existing database with settings saved earlier.</para>
+        /// 
+        /// Please check for databaseResponse.StatusCode, if created it will return HttpStatusCode.Created,
+        /// if it read the existing container it will return HttpStatusCode.OK.
         ///
-        /// A database manages users, permissions and a set of containers.
+        /// <para>A database manages users, permissions and a set of containers.
         /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
-        /// with the database being the logical container for data.
+        /// with the database being the logical container for data.</para>
         ///
         /// Each Database consists of one or more containers, each of which in turn contain one or more
         /// documents. Since databases are an administrative resource, the Service Master Key will be

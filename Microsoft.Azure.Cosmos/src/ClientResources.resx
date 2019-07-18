@@ -252,6 +252,9 @@
   <data name="PathExpressionsOnly" xml:space="preserve">
     <value>Only path expressions are supported for SelectMany.</value>
   </data>
+  <data name="PartitionKeyPathConflict" xml:space="preserve">
+    <value>Container already exist with different partition key path</value>
+  </data>
   <data name="PKAndEpkSetTogether" xml:space="preserve">
     <value>Partition key and effective partition key may not both be set.</value>
   </data>

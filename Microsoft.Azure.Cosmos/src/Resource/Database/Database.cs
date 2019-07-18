@@ -352,8 +352,11 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Check if a container exists, and if it doesn't, create it.
-        /// This will make a read operation, and if the container is not found it will do a create operation.
+        /// <para>Check if a container exists, and if it doesn't, create it.
+        /// Create on existing collection will override custom settings provided and return back the existing collection with settings saved earlier.</para>
+        ///
+        /// Please check for containerResponse.StatusCode, if created it will return HttpStatusCode.Created,
+        /// if it read the existing container it will return HttpStatusCode.OK.
         /// </summary>
         /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
