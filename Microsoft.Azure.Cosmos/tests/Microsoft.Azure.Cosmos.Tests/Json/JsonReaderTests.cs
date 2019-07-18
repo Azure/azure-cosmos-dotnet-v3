@@ -1991,10 +1991,18 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             byte[] utf8ByteArray = Encoding.UTF8.GetBytes(input);
             // Test readers created with the array API
-            this.VerifyReader(JsonReader.Create(utf8ByteArray), expectedTokens, expectedException, Encoding.UTF8);
+            this.VerifyReader(
+                () => JsonReader.Create(utf8ByteArray), 
+                expectedTokens, 
+                expectedException, 
+                Encoding.UTF8);
 
             // Test readers create from the stream API (without buffering).
-            this.VerifyReader(JsonReader.Create(new MemoryStream(utf8ByteArray)), expectedTokens, expectedException, Encoding.UTF8);
+            this.VerifyReader(
+                () => JsonReader.Create(new MemoryStream(utf8ByteArray)), 
+                expectedTokens, 
+                expectedException, 
+                Encoding.UTF8);
 
             //// TODO: have a test where you are reading from a file and over the network.
 
@@ -2009,20 +2017,22 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             foreach (Encoding encoding in encodings)
             {
                 byte[] encodedBytes = encoding.GetBytes(input);
-                MemoryStream memoryStream = new MemoryStream(encodedBytes);
 
-                IJsonReader jsonReader = JsonReader.CreateTextReaderWithEncoding(memoryStream, encoding);
-                this.VerifyReader(jsonReader, expectedTokens, expectedException, encoding);
+                this.VerifyReader(
+                    () => JsonReader.CreateTextReaderWithEncoding(new MemoryStream(encodedBytes), encoding), 
+                    expectedTokens, 
+                    expectedException, 
+                    encoding);
             }
         }
 
         private void VerifyReader(byte[] input, JsonTokenInfo[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
         {
             // Test binary reader created with the array API
-            this.VerifyReader(JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
+            this.VerifyReader(() => JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
 
             // Test binary reader created with the stream API
-            this.VerifyReader(JsonReader.Create(new MemoryStream(input), jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
+            this.VerifyReader(() => JsonReader.Create(new MemoryStream(input), jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
 
             //// TODO: have a test where you are reading from a file and over the network.
         }
@@ -2030,10 +2040,9 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         /// <summary>
         /// Verifies the reader by constructing a JsonReader from the memorystream with the specified encoding and then reads tokens from to see if they match the expected tokens. If there is an exception provided it also tries to read until it hits that exception.
         /// </summary>
-        private void VerifyReader(IJsonReader jsonReader, JsonTokenInfo[] expectedTokens, Exception expectedException, Encoding encoding)
+        private void VerifyReader(Func<IJsonReader> createJsonReader, JsonTokenInfo[] expectedTokens, Exception expectedException, Encoding encoding)
         {
             CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
-            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("fr-FR");
 
             CultureInfo[] cultureInfoList = new CultureInfo[]
             {
@@ -2043,11 +2052,11 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             try
             {
-
                 foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
                     System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
 
+                    IJsonReader jsonReader = createJsonReader();
                     JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
                     Assert.AreEqual(JsonTokenType.NotStarted, jsonTokenType);
 
@@ -2180,7 +2189,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
 
-                double valueFromString = double.Parse(stringRawJsonToken);
+                double valueFromString = double.Parse(stringRawJsonToken, CultureInfo.InvariantCulture);
                 Assert.AreEqual(expectedNumberValue, valueFromString);
             }
         }
