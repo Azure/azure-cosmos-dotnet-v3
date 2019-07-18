@@ -162,8 +162,28 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
-        /// Get ot set an optional serializer client should use to serialize or de-serialize cosmos request/responses.
+        /// Get to set an optional JSON serializer. The client will use it to serialize or de-serialize user's cosmos request/responses.
+        /// SDK owned types such as DatabaseProperties and ContainerProperties will always use the SDK default serializer.
         /// </summary>
+        /// <remarks>
+        /// To set a JSON.net serializer setting use <see cref="CosmosJsonDotNetSerializer"/>. 
+        /// The constructor supports passing in the JsonSerializerSettings.
+        /// </remarks>
+        /// <example>
+        /// // An example on how to configure the serializer to ignore null values
+        /// CosmosSerializer ignoreNullSerializer = new CosmosJsonDotNetSerializer(
+        ///         new JsonSerializerSettings()
+        ///         {
+        ///             NullValueHandling = NullValueHandling.Ignore
+        ///         });
+        ///         
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     Serializer = ignoreNullSerializer
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// </example>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer { get; set; }
 
