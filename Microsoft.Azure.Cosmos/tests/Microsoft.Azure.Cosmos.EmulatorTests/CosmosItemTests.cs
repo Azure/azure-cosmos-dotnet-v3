@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await testContainer.GetNonePartitionKeyValueAsync();
                     Assert.Fail();
                 }
-                catch (DocumentClientException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
+                catch (CosmosException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
                 {
                 }
             }

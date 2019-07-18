@@ -5,60 +5,56 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
 
     internal class CosmosOffers
     {
-        private readonly IDocumentClient documentClient;
+        private readonly CosmosClientContext ClientContext;
+        private readonly Uri OfferRootUri;
 
-        public CosmosOffers(IDocumentClient documentClient)
+        public CosmosOffers(CosmosClientContext clientContext)
         {
-            this.documentClient = documentClient;
+            this.ClientContext = clientContext;
+            this.OfferRootUri = new Uri(Paths.Offers_Root, UriKind.Relative);
         }
 
-        internal async Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
+        internal async Task<ThroughputResponse> ReadThroughputAsync(
             string targetRID,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (string.IsNullOrWhiteSpace(targetRID))
-            {
-                throw new ArgumentNullException(targetRID);
-            }
+            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
 
-            try
-            {
-                Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
-                return this.GetThroughputIfExists(offer);
-            }
-            catch (DocumentClientException dce)
-            {
-                return new CosmosOfferResult(
-                    dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                    new CosmosException(
-                        dce.Message?.Replace(Environment.NewLine, string.Empty),
-                        dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                        (int)dce.GetSubStatus(),
-                        dce.ActivityId,
-                        dce.RequestCharge));
-            }
-            catch (AggregateException ex)
-            {
-                CosmosOfferResult offerResult = CosmosOffers.TryToOfferResult(ex);
-                if (offerResult != null)
-                {
-                    return offerResult;
-                }
+            return await this.GetThroughputResponseAsync(
+                streamPayload: null,
+                operationType: OperationType.Read,
+                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                resourceType: ResourceType.Offer,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
 
-                throw;
-            }
+        internal async Task<ThroughputResponse> ReplaceThroughputAsync(
+            string targetRID,
+            int throughput,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
+            OfferV2 newOffer = new OfferV2(offerV2, throughput);
+
+            return await this.GetThroughputResponseAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
+                operationType: OperationType.Replace,
+                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                resourceType: ResourceType.Offer,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         internal async Task<OfferV2> GetOfferV2Async(
@@ -70,77 +66,51 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(targetRID);
             }
 
-            Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
-            OfferV2 offerV2 = offer as OfferV2;
+            QueryDefinition queryDefinition = new QueryDefinition("select * from root r where r.offerResourceId= @targetRID");
+            queryDefinition.WithParameter("@targetRID", targetRID);
+
+            FeedIterator<OfferV2> databaseStreamIterator = this.GetOfferQueryIterator<OfferV2>(
+                 queryDefinition);
+            OfferV2 offerV2 = await this.SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
+
+            if (offerV2 == null)
+            {
+                throw new CosmosException(HttpStatusCode.NotFound, "Throughput is not configured");
+            }
+
             return offerV2;
         }
 
-        internal async Task<CosmosOfferResult> ReplaceThroughputIfExistsAsync(
-            string targetRID,
-            int throughput,
+        internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            try
-            {
-                Offer offer = await this.ReadOfferAsync(targetRID, cancellationToken);
-                if (offer == null)
-                {
-                    throw new ArgumentOutOfRangeException("Throughput is not configured");
-                }
+            FeedIterator databaseStreamIterator = GetOfferQueryStreamIterator(
+               queryDefinition,
+               continuationToken,
+               requestOptions,
+               cancellationToken);
 
-                OfferV2 offerV2 = offer as OfferV2;
-                if (offerV2 == null)
-                {
-                    throw new NotImplementedException();
-                }
-
-                OfferV2 newOffer = new OfferV2(offerV2, throughput);
-                Offer replacedOffer = await this.ReplaceOfferAsync(targetRID, newOffer, cancellationToken);
-                offerV2 = replacedOffer as OfferV2;
-                Debug.Assert(offerV2 != null);
-
-                return new CosmosOfferResult(offerV2.Content.OfferThroughput);
-            }
-            catch (DocumentClientException dce)
-            {
-                return new CosmosOfferResult(
-                    dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                    new CosmosException(
-                        dce.Message?.Replace(Environment.NewLine, string.Empty),
-                        dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                        (int)dce.GetSubStatus(),
-                        dce.ActivityId,
-                        dce.RequestCharge));
-            }
-            catch (AggregateException ex)
-            {
-                CosmosOfferResult offerResult = CosmosOffers.TryToOfferResult(ex);
-                if (offerResult != null)
-                {
-                    return offerResult;
-                }
-
-                throw;
-            }
+            return new FeedIteratorCore<T>(
+                databaseStreamIterator,
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
-        private static CosmosOfferResult TryToOfferResult(AggregateException ex)
+        internal virtual FeedIterator GetOfferQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            AggregateException innerExceptions = ex.Flatten();
-            DocumentClientException dce = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException) as DocumentClientException;
-            if (dce != null)
-            {
-                return new CosmosOfferResult(
-                    dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                    new CosmosException(
-                        dce.Message?.Replace(Environment.NewLine, string.Empty),
-                        dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                        (int)dce.GetSubStatus(),
-                        dce.ActivityId,
-                        dce.RequestCharge));
-            }
-
-            return null;
+            return new FeedIteratorCore(
+               this.ClientContext,
+               this.OfferRootUri,
+               ResourceType.Offer,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
         }
 
         private CosmosOfferResult GetThroughputIfExists(Offer offer)
@@ -159,66 +129,42 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosOfferResult(offerV2.Content.OfferThroughput);
         }
 
-        private Task<Offer> ReadOfferAsync(string targetRID,
-                    CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<T> SingleOrDefaultAsync<T>(
+            FeedIterator<T> offerQuery,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (string.IsNullOrWhiteSpace(targetRID))
+            while (offerQuery.HasMoreResults)
             {
-                throw new ArgumentNullException(nameof(targetRID));
+                FeedResponse<T> offerFeedResponse = await offerQuery.ReadNextAsync(cancellationToken);
+                if (offerFeedResponse.Any())
+                {
+                    return offerFeedResponse.Single();
+                }
             }
 
-            IDocumentQuery<Offer> offerQuery = this.documentClient.CreateOfferQuery()
-                                            .Where(offer => offer.OfferResourceId == targetRID)
-                                            .AsDocumentQuery();
-
-            return this.SingleOrDefaultAsync<Offer>(offerQuery, cancellationToken);
+            return default(T);
         }
 
-        private Task<T> SingleOrDefaultAsync<T>(
-            IDocumentQuery<T> offerQuery,
-            CancellationToken cancellationToken)
+        private async Task<ThroughputResponse> GetThroughputResponseAsync(
+           Stream streamPayload,
+           OperationType operationType,
+           Uri linkUri,
+           ResourceType resourceType,
+           RequestOptions requestOptions = null,
+           CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (offerQuery.HasMoreResults)
-            {
-                return offerQuery.ExecuteNextAsync<T>(cancellationToken)
-                    .ContinueWith(nextAsyncTask =>
-                    {
-                        DocumentFeedResponse<T> offerFeedResponse = nextAsyncTask.Result;
-                        if (offerFeedResponse.Any())
-                        {
-                            return Task.FromResult(offerFeedResponse.Single());
-                        }
-
-                        return SingleOrDefaultAsync(offerQuery, cancellationToken);
-                    })
-                    .Unwrap();
-            }
-
-            return Task.FromResult(default(T));
+            Task<ResponseMessage> responseMessage = this.ClientContext.ProcessResourceOperationStreamAsync(
+              resourceUri: linkUri,
+              resourceType: resourceType,
+              operationType: operationType,
+              cosmosContainerCore: null,
+              partitionKey: null,
+              streamPayload: streamPayload,
+              requestOptions: requestOptions,
+              requestEnricher: null,
+              cancellationToken: cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
         }
 
-        private Task<Offer> ReplaceOfferAsync(
-                        string targetRID,
-                        Offer targetOffer,
-                        CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (string.IsNullOrWhiteSpace(targetRID))
-            {
-                throw new ArgumentNullException(nameof(targetRID));
-            }
-
-            if (targetOffer == null)
-            {
-                throw new ArgumentNullException(nameof(targetOffer));
-            }
-
-            if (!string.Equals(targetRID, targetOffer.OfferResourceId, StringComparison.Ordinal))
-            {
-                throw new ArgumentOutOfRangeException($"Offer imcompatible with resoruce RID {targetRID}");
-            }
-
-            return this.documentClient.ReplaceOfferAsync(targetOffer)
-                .ContinueWith(task => task.Result.Resource);
-        }
     }
 }

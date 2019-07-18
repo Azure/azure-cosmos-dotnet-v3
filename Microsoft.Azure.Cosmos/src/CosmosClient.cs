@@ -98,7 +98,6 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClient : IDisposable
     {
         private readonly Uri DatabaseRootUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-        private Lazy<CosmosOffers> offerSet;
         private ConsistencyLevel? accountConsistencyLevel;
 
         static CosmosClient()
@@ -292,7 +291,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         internal string AccountKey { get; }
 
-        internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
         internal RequestInvokerHandler RequestHandler { get; private set; }
         internal CosmosResponseFactory ResponseFactory { get; private set; }
@@ -616,8 +614,6 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
                 documentQueryClient: new DocumentQueryClient(this.DocumentClient));
-
-            this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 
         internal async virtual Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()

@@ -126,6 +126,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     {
                         return dce.ToCosmosResponseMessage(request);
                     }
+                    catch (CosmosException ce)
+                    {
+                        return ce.ToCosmosResponseMessage(request);
+                    }
                 }
                 else
                 {

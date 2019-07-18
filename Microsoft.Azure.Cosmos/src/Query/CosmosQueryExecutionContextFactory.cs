@@ -125,12 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             catch (CosmosException exception)
             {
-                return new ResponseMessage(
-                    headers: exception.Headers,
-                    requestMessage: null,
-                    errorMessage: exception.Message,
-                    statusCode: exception.StatusCode,
-                    error: exception.Error);
+                return exception.ToCosmosResponseMessage(request: null);
             }
             catch (AggregateException ae)
             {
