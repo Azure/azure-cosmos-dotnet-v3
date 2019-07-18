@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
+                GetContext(),
                 containerName,
                 null);
 
@@ -64,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
+                GetContext(),
                 containerName,
                 null);
 
@@ -84,9 +87,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
+            mockContainers
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
+                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -112,9 +119,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
+            mockContainers
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
+                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -141,9 +152,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
+            mockContainers
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
+                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -170,9 +185,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
+            mockContainers
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
+                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -199,9 +218,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
+            mockContainers
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
+                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -231,9 +254,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
+            mockContainers
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
+                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -248,6 +275,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        private static CosmosClientContext GetContext()
+        {
+            return new ClientContextCore(
+                client: null,
+                clientOptions: null,
+                userJsonSerializer: null,
+                defaultJsonSerializer: null,
+                cosmosResponseFactory: null,
+                requestHandler: null,
+                documentClient: new MockDocumentClient(),
+                documentQueryClient: null);
         }
     }
 }

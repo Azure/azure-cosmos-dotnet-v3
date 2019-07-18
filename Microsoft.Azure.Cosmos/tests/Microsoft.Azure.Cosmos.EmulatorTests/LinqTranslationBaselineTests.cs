@@ -5,7 +5,6 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
-    using Microsoft.Azure.Cosmos.SystemFunctions;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             if (testDb != null)
             {
-                await testDb.DeleteAsync();
+                await testDb.DeleteStreamAsync();
             }
         }
 
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestCleanup]
         public async Task TestCleanUp()
         {
-            await testContainer.DeleteContainerAsync();
+            await testContainer.DeleteContainerStreamAsync();
         }
 
         [JsonConverter(typeof(StringEnumConverter))]

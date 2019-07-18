@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     ///
     /// while (feedIterator.HasMoreResults)
     /// {
-    ///     foreach (var tax in await feedIterator.FetchNextSetAsync())
+    ///     foreach (var tax in await feedIterator.ReadNextAsync())
     ///     {
     ///         Console.WriteLine(tax);
     ///     }

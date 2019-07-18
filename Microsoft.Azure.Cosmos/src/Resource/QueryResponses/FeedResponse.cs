@@ -88,9 +88,5 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.GetEnumerator();
         }
-
-        internal abstract string InternalContinuationToken { get; }
-
-        internal abstract bool HasMoreResults { get; }
     }
 }

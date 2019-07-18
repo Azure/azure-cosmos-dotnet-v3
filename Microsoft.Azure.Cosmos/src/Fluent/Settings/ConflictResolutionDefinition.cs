@@ -45,8 +45,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defines the stored procedure to be used as custom conflict resolution mode <see cref="ConflictResolutionPolicy"/>.
         /// </summary>
-        /// <param name="conflictResolutionProcedure"> sets the stored procedure to be used for conflict-resolution. <see cref="ConflictResolutionPolicy.ResolutionProcedure"/>.</param>
+        /// <param name="conflictResolutionProcedure"> Sets the stored procedure's name to be used for conflict-resolution.</param>
+        /// <remarks>The stored procedure can be created later on, but needs to honor the name specified here.</remarks>
         /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
+        /// <example>
+        /// This example below creates a <see cref="Container"/> with a Conflict Resolution policy that uses a stored procedure to resolve conflicts:
+        /// <code language="c#">
+        /// <![CDATA[
+        /// await databaseForConflicts.DefineContainer("myContainer", "/id")
+        ///     .WithConflictResolution()
+        ///         .WithCustomStoredProcedureResolution("myStoredProcedure")
+        ///         .Attach()
+        ///     .CreateAsync();
+        /// </example>
+        /// ]]>
+        /// </code>
+        /// </example>
         public ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure)
         {
             if (string.IsNullOrEmpty(conflictResolutionProcedure))

@@ -232,16 +232,17 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             Container container = this.GetContainer(containerProperties.Id);
-            ContainerResponse cosmosContainerResponse = await container.ReadContainerAsync(cancellationToken: cancellationToken);
-            if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
+            ResponseMessage response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
+            if (response.StatusCode != HttpStatusCode.NotFound)
             {
-                return cosmosContainerResponse;
+                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
             }
-
-            cosmosContainerResponse = await this.CreateContainerAsync(containerProperties, throughput, requestOptions, cancellationToken: cancellationToken);
-            if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
+            
+            this.ValidateContainerProperties(containerProperties);
+            response = await this.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, cancellationToken);
+            if (response.StatusCode != HttpStatusCode.Conflict)
             {
-                return cosmosContainerResponse;
+                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -342,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new FeedStatelessIteratorCore(
+            return new FeedIteratorCore(
                this.ClientContext,
                this.LinkUri,
                ResourceType.Collection,
@@ -361,9 +362,9 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
 
-            return new FeedStatelessIteratorCore<T>(
+            return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<T>);
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
         public override ContainerBuilder DefineContainer(
@@ -380,7 +381,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            return new ContainerBuilder(this, name, partitionKeyPath);
+            return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
         internal void ValidateContainerProperties(ContainerProperties containerProperties)

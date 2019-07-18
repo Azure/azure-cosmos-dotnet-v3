@@ -252,9 +252,11 @@
 
             FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
                 query,
-                requestOptions : new QueryRequestOptions() {
+                requestOptions: new QueryRequestOptions()
+                {
                     PartitionKey = new PartitionKey("Account1"),
-                    MaxItemCount = 1});
+                    MaxItemCount = 1
+                });
 
             List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
             while (resultSet.HasMoreResults)
@@ -269,10 +271,12 @@
             // Use the same query as before but get the cosmos response message to access the stream directly
             FeedIterator streamResultSet = container.GetItemQueryStreamIterator(
                 query,
-                requestOptions: new QueryRequestOptions() {
+                requestOptions: new QueryRequestOptions()
+                {
                     PartitionKey = new PartitionKey("Account1"),
                     MaxItemCount = 10,
-                    MaxConcurrency = 1 });
+                    MaxConcurrency = 1
+                });
 
             List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
             while (streamResultSet.HasMoreResults)
@@ -713,7 +717,8 @@
             database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
 
             // Delete the existing container to prevent create item conflicts
-            await database.GetContainer(containerId).DeleteContainerAsync();
+            using (await database.GetContainer(containerId).DeleteContainerStreamAsync())
+            { }
 
             // We create a partitioned collection here which needs a partition key. Partitioned collections
             // can be created with very high values of provisioned throughput (up to Throughput = 250,000)
