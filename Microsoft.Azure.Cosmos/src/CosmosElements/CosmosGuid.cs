@@ -10,10 +10,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
 #pragma warning disable SA1601 // Partial elements should be documented
-    public abstract partial class CosmosGuid : CosmosElement
+    public
 #else
-    internal abstract partial class CosmosGuid : CosmosElement
+    internal
 #endif
+    abstract partial class CosmosGuid : CosmosElement
     {
         protected CosmosGuid()
             : base(CosmosElementType.Guid)

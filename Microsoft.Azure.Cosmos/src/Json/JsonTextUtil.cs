@@ -10,11 +10,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Common utility class for JsonTextReader and JsonTextNavigator.
     /// Please treat this class as private.
     /// </summary>
-#if INTERNAL
-    public static class JsonTextUtil
-#else
     internal static class JsonTextUtil
-#endif
     {
         /// <summary>
         /// Gets the number value from the specified token.

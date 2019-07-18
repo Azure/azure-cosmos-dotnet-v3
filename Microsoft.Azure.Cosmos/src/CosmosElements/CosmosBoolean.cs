@@ -9,10 +9,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
-    public sealed class CosmosBoolean : CosmosElement
+    public
 #else
-    internal sealed class CosmosBoolean : CosmosElement
+    internal
 #endif
+    sealed class CosmosBoolean : CosmosElement
     {
         private static readonly CosmosBoolean True = new CosmosBoolean(true);
         private static readonly CosmosBoolean False = new CosmosBoolean(false);

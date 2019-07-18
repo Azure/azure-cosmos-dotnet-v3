@@ -9,10 +9,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Struct to hold the property name and property value for an object property.
     /// </summary>
 #if INTERNAL
-    public struct ObjectProperty
+    public
 #else
-    internal struct ObjectProperty
+    internal
 #endif
+    struct ObjectProperty
     {
         /// <summary>
         /// The IJsonNavigatorNode to the node that holds the object property name.

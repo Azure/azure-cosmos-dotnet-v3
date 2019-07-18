@@ -8,10 +8,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     /// An enum that describes the kind of number represented by a cosmos number
     /// </summary>
 #if INTERNAL
-    public enum CosmosNumberType
+    public
 #else
-    internal enum CosmosNumberType
+    internal
 #endif
+    enum CosmosNumberType
     {
         /// <summary>
         /// A Json number where integers and floating points are interchangeably used.

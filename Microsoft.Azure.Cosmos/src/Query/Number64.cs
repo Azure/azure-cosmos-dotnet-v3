@@ -16,10 +16,11 @@ namespace Microsoft.Azure.Cosmos
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
-    public struct Number64 : IComparable<Number64>, IEquatable<Number64>
+    public
 #else
-    internal struct Number64 : IComparable<Number64>, IEquatable<Number64>
+    internal
 #endif
+    struct Number64 : IComparable<Number64>, IEquatable<Number64>
     {
         /// <summary>
         /// Maximum Number64.

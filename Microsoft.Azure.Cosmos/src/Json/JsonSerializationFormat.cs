@@ -12,10 +12,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// To declare an enum of another integral type, such as byte, use a colon after the identifier followed by the type, as shown in the following example.
     /// </remarks>
 #if INTERNAL
-    public enum JsonSerializationFormat : byte
+    public
 #else
-    internal enum JsonSerializationFormat : byte
+    internal
 #endif
+    enum JsonSerializationFormat : byte
     {
         /// <summary>
         /// Plain text

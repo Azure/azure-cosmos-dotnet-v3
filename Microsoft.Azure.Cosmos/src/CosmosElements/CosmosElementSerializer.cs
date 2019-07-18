@@ -13,10 +13,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
-    public static class CosmosElementSerializer
+    public
 #else
-    internal static class CosmosElementSerializer
+    internal
 #endif
+    static class CosmosElementSerializer
     {
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.

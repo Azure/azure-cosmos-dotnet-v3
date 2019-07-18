@@ -8,10 +8,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Interface that describes a Node within a JSON document in a <see cref="IJsonNavigator"/>
     /// </summary>
 #if INTERNAL
-    public interface IJsonNavigatorNode
+    public
 #else
-    internal interface IJsonNavigatorNode
+    internal
 #endif
+    interface IJsonNavigatorNode
     {
     }
 }

@@ -14,15 +14,16 @@ namespace Microsoft.Azure.Cosmos.Json
     /// The tokens are traversed in the same order as they appear in the JSON document.
     /// </summary>
 #if INTERNAL
-    public abstract partial class JsonReader : IJsonReader
+    public
 #else
-    internal abstract partial class JsonReader : IJsonReader
+    internal
 #endif
+    abstract partial class JsonReader : IJsonReader
     {
         /// <summary>
         /// The <see cref="JsonObjectState"/>
         /// </summary>
-        protected readonly JsonObjectState JsonObjectState;
+        internal readonly JsonObjectState JsonObjectState;
 
         /// <summary>
         /// Whether to skip validation.

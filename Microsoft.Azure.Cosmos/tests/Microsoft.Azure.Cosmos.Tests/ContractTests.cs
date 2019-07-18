@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         {
 
 #if INTERNAL
-            int expected = 8;
+            int expected = 7;
 #else
             int expected = 5;
 #endif

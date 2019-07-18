@@ -11,10 +11,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Partial class that wraps the private JsonTextNavigator
     /// </summary>
 #if INTERNAL
-    public abstract partial class JsonNavigator : IJsonNavigator
+    public
 #else
-    internal abstract partial class JsonNavigator : IJsonNavigator
+    internal
 #endif
+    abstract partial class JsonNavigator : IJsonNavigator
     {
         /// <summary>
         /// JsonNavigator that know how to navigate JSONs in binary serialization.

@@ -11,10 +11,11 @@ namespace Microsoft.Azure.Cosmos.Json
     /// The navigator defines methods that allow random access to JSON document nodes.
     /// </summary>
 #if INTERNAL
-    public abstract partial class JsonNavigator : IJsonNavigator
+    public
 #else
-    internal abstract partial class JsonNavigator : IJsonNavigator
+    internal
 #endif
+    abstract partial class JsonNavigator : IJsonNavigator
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonNavigator"/> class.
