@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private readonly ContainerCore container;
         private readonly CosmosQueryClientCore queryClient;
-        private readonly CosmosSerializer cosmosJsonSerializer;
+        private readonly CosmosResponseFactory responseFactory;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution;
         private readonly Action<IQueryable> onExecuteScalarQueryCallback;
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public CosmosLinqQueryProvider(
            ContainerCore container,
-           CosmosSerializer cosmosJsonSerializer,
+           CosmosResponseFactory responseFactory,
            CosmosQueryClientCore queryClient,
            string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Linq
            Action<IQueryable> onExecuteScalarQueryCallback = null)
         {
             this.container = container;
-            this.cosmosJsonSerializer = cosmosJsonSerializer;
+            this.responseFactory = responseFactory;
             this.queryClient = queryClient;
             this.continuationToken = continuationToken;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             return new CosmosLinqQuery<TElement>(
                 this.container,
-                this.cosmosJsonSerializer,
+                this.responseFactory,
                 this.queryClient,
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return (IQueryable)Activator.CreateInstance(
                 documentQueryType,
                 this.container,
-                this.cosmosJsonSerializer,
+                this.responseFactory,
                 this.queryClient,
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             CosmosLinqQuery<TResult> cosmosLINQQuery = (CosmosLinqQuery<TResult>)Activator.CreateInstance(
                 cosmosQueryType,
                 this.container,
-                this.cosmosJsonSerializer,
+                this.responseFactory,
                 this.queryClient,
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             CosmosLinqQuery<object> cosmosLINQQuery = (CosmosLinqQuery<object>)Activator.CreateInstance(
                 cosmosQueryType,
                 this.container,
-                this.cosmosJsonSerializer,
+                this.responseFactory,
                 this.queryClient,
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
