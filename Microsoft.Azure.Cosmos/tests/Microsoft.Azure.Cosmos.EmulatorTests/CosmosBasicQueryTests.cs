@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosBasicQueryTests
     {
         private static readonly QueryRequestOptions RequestOptions = new QueryRequestOptions() { MaxItemCount = 1 };
-        private static readonly CosmosSerializer CosmosSerializer = new CosmosJsonSerializerCore();
         private static CosmosClient DirectCosmosClient;
         private static CosmosClient GatewayCosmosClient;
         private const string DatabaseId = "CosmosBasicQueryTests";
@@ -370,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await pagedFeedIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
 
-                ICollection<T> responseResults = CosmosSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                ICollection<T> responseResults = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
                 Assert.IsTrue(responseResults.Count <= 1);
 
                 pagedStreamResults.AddRange(responseResults);

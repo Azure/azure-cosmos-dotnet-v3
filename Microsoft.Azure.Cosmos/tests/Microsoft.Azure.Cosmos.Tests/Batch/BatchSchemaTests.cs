@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ArraySegment<ItemBatchOperation>(operations),
                 maxBodySize,
                 maxOperationCount,
-                serializer: new CosmosJsonSerializerCore(),
+                serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: CancellationToken.None);
 
             Assert.AreEqual(2, batchRequest.Operations.Count);
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ArraySegment<ItemBatchOperation>(operations), 
                 maxBodySize,
                 maxOperationCount,
-                serializer: new CosmosJsonSerializerCore(),
+                serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: CancellationToken.None);
 
             Assert.AreEqual(2, batchRequest.Operations.Count);
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
-            CosmosSerializer serializer = new CosmosJsonSerializerCore();
+            CosmosSerializer serializer = new CosmosJsonDotNetSerializer();
             SinglePartitionKeyServerBatchRequest batchResponse = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                 partitionKey: Cosmos.PartitionKey.None,
                 operations: new ArraySegment<ItemBatchOperation>(

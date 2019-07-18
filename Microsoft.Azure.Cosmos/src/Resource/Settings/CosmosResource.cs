@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class CosmosResource
     {
-        private static CosmosJsonSerializerCore cosmosDefaultJsonSerializer = new CosmosJsonSerializerCore();
+        private static CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
 
         internal static T FromStream<T>(DocumentServiceResponse response)
         {

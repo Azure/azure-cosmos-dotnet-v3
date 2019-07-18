@@ -118,15 +118,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 handler = handler.InnerHandler;
             }
 
-            CosmosSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
-
-            CosmosResponseFactory responseFactory = new CosmosResponseFactory(cosmosJsonSerializer, cosmosJsonSerializer);
+            CosmosResponseFactory responseFactory = new CosmosResponseFactory(MockCosmosUtil.Serializer, MockCosmosUtil.Serializer);
 
             return new ClientContextCore(
                 client: client,
                 clientOptions: null,
-                userJsonSerializer: cosmosJsonSerializer,
-                defaultJsonSerializer: cosmosJsonSerializer,
+                userJsonSerializer: MockCosmosUtil.Serializer,
+                defaultJsonSerializer: MockCosmosUtil.Serializer,
                 cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
                 documentClient: new MockDocumentClient(),

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosJsonSeriliazerUnitTests
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateSerializer()
         {
-            CosmosJsonSerializerCore cosmosDefaultJsonSerializer = new CosmosJsonSerializerCore();
+            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateJson()
         {
-            CosmosJsonSerializerCore cosmosDefaultJsonSerializer = new CosmosJsonSerializerCore();
+            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
             using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(this.toDoActivity))
             {
                 Assert.IsNotNull(stream);
@@ -56,6 +57,37 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                     string responseAsString = reader.ReadToEnd();
                     Assert.IsNotNull(responseAsString);
                     Assert.AreEqual(this.toDoActivityJson, responseAsString);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void ValidateCustomSerializerSettings()
+        {
+            JsonSerializerSettings settings = new JsonSerializerSettings()
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+
+            ToDoActivity toDoActivityNoDescription = new ToDoActivity()
+            {
+                id = "c1d433c1-369d-430e-91e5-14e3ce588f71",
+                taskNum = 42,
+                cost = double.MaxValue,
+                description = null,
+                status = "TBD"
+            };
+
+            string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""status"":""TBD""}";
+            CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer(settings);
+            using (Stream stream = cosmosDefaultJsonSerializer.ToStream<ToDoActivity>(toDoActivityNoDescription))
+            {
+                Assert.IsNotNull(stream);
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    string responseAsString = reader.ReadToEnd();
+                    Assert.IsNotNull(responseAsString);
+                    Assert.AreEqual(toDoActivityJson, responseAsString);
                 }
             }
         }
@@ -149,7 +181,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             public double cost { get; set; }
             public string description { get; set; }
             public string status { get; set; }
-
         }
     }
 }

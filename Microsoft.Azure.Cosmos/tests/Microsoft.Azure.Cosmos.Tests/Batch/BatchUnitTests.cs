@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IfNoneMatchEtag = "delCondition"
             };
 
-            CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
+            CosmosJsonDotNetSerializer jsonSerializer = new CosmosJsonDotNetSerializer();
             BatchTestHandler testHandler = new BatchTestHandler((request, operations) =>
             {
                 Assert.AreEqual(new Cosmos.PartitionKey(BatchUnitTests.PartitionKey1).ToString(), request.Headers.PartitionKey);
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task BatchSingleServerResponseAsync()
         {
             List<BatchOperationResult> expectedResults = new List<BatchOperationResult>();
-            CosmosJsonSerializerCore jsonSerializer = new CosmosJsonSerializerCore();
+            CosmosJsonDotNetSerializer jsonSerializer = new CosmosJsonDotNetSerializer();
             TestItem testItem = new TestItem("tst");
 
             Stream itemStream = jsonSerializer.ToStream<TestItem>(testItem);

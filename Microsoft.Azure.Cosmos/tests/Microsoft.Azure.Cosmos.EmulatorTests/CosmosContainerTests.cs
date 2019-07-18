@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage message = await resultSet.ReadNextAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
-                    CosmosJsonSerializerCore defaultJsonSerializer = new CosmosJsonSerializerCore();
+                    CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
                     dynamic containers = defaultJsonSerializer.FromStream<dynamic>(message.Content).DocumentCollections;
                     foreach (dynamic container in containers)
                     {
