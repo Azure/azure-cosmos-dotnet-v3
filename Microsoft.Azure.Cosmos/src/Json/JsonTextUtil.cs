@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Globalization;
     using System.Text;
 
     /// <summary>
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Json
             int offset = bufferedToken.Offset;
             int count = bufferedToken.Count;
             string stringDouble = Encoding.UTF8.GetString(rawBufferedTokenArray, offset, count);
-            return double.Parse(stringDouble);
+            return double.Parse(stringDouble, CultureInfo.InvariantCulture);
         }
 
         /// <summary>
