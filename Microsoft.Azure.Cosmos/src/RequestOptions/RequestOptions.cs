@@ -38,6 +38,19 @@ namespace Microsoft.Azure.Cosmos
         internal bool IsEffectivePartitionKeyRouting { get; set; }
 
         /// <summary>
+        /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
+        /// Not every request supports consistency level. This allows each child to decide to expose it
+        /// and use the same base logic
+        /// </summary>
+        /// <value>
+        /// The consistency level required for the request.
+        /// </value>
+        /// <remarks>
+        /// ConsistencyLevel compatibility will validated and set by RequestInvokeHandler
+        /// </remarks>
+        internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
@@ -83,20 +96,6 @@ namespace Microsoft.Azure.Cosmos
 
             resourceUri = null;
             return false;
-        }
-
-        /// <summary>
-        /// Set the consistency level
-        /// </summary>
-        /// <param name="request">The current request.</param>
-        /// <param name="consistencyLevel">The desired Consistency level.</param>
-        internal static void SetConsistencyLevel(RequestMessage request, ConsistencyLevel? consistencyLevel)
-        {
-            if (consistencyLevel != null && consistencyLevel.HasValue)
-            {
-                // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
-                request.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.ToString());
-            }
         }
 
         /// <summary>

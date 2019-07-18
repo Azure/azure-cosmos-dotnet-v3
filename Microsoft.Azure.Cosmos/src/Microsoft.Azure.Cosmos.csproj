@@ -11,9 +11,12 @@
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
     <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
     <DirectPackageName Condition=" '$(SignAssembly)' != 'true' ">Microsoft.Azure.Cosmos.Direct.MyGet</DirectPackageName>
-    <Version Condition=" '$(IsNightly)' == '1' ">$(ClientVersion)-nightly$(CurrentDate)</Version>
-    <Version Condition=" '$(IsNightly)' == '0' Or '$(IsNightly)' == '' ">$(ClientVersion)</Version>
-    <FileVersion>$(VersionPrefix)</FileVersion>
+    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+    <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
+    <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
+    <Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
+    <Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
+    <FileVersion>$(ClientVersion)</FileVersion>
     <Authors>Microsoft</Authors>
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -36,7 +39,6 @@
     <DebugType>portable</DebugType>
     <IncludeSymbols>false</IncludeSymbols>
     <IncludeSource>false</IncludeSource>
-    <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
     <NoWarn>NU5125</NoWarn>
   </PropertyGroup>
@@ -102,7 +104,8 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
+    <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+    <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
   </PropertyGroup>
 </Project>

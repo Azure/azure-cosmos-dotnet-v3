@@ -1443,7 +1443,7 @@ namespace Microsoft.Azure.Cosmos
             return this.accountServiceConfiguration.QueryEngineConfiguration;
         }
 
-        internal async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             await this.EnsureValidClientAsync();
             return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
@@ -6435,7 +6435,7 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            return ValidationHelpers.ValidateConsistencyLevel(backendConsistency, desiredConsistency);
+            return ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistency, desiredConsistency);
         }
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)

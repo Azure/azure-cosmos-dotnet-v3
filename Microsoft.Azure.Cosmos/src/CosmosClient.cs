@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Runtime.ConstrainedExecution;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -226,7 +227,8 @@ namespace Microsoft.Azure.Cosmos
                 transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
                 connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
                 enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
-                storeClientFactory: clientOptionsClone.StoreClientFactory);
+                storeClientFactory: clientOptionsClone.StoreClientFactory,
+                desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel());
 
             this.Init(
                 clientOptionsClone,
@@ -622,8 +624,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.accountConsistencyLevel.HasValue)
             {
-                await this.DocumentClient.EnsureValidClientAsync();
-                this.accountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;
+                this.accountConsistencyLevel = await this.DocumentClient.GetDefaultConsistencyLevelAsync();
             }
 
             return this.accountConsistencyLevel.Value;

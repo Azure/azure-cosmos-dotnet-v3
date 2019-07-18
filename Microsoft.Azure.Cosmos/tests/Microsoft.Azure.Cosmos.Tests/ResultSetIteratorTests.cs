@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(bool.TrueString, request.Headers[HttpConstants.HttpHeaders.EnableScanInQuery]);
             Assert.AreEqual(options.Object.SessionToken, request.Headers[HttpConstants.HttpHeaders.SessionToken]);
-            Assert.AreEqual(options.Object.ConsistencyLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
+            Assert.IsNull(request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
             options.Verify(m => m.PopulateRequestOptions(It.Is<RequestMessage>(p => ReferenceEquals(p, request))), Times.Once);
         }
 
