@@ -74,6 +74,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CustomSerilizerTest()
+        {
+            string id1 = "MyCustomSerilizerTestId1";
+            string id2 = "MyCustomSerilizerTestId2";
+            string pk = "MyTestPk";
+
+            // Delete the item to prevent create conflicts if test is run multiple times
+            using (await this.Container.DeleteItemStreamAsync(id1, new Cosmos.PartitionKey(pk)))
+            { }
+            using (await this.Container.DeleteItemStreamAsync(id2, new Cosmos.PartitionKey(pk)))
+            { }
+
+            // Both items have null description
+            dynamic testItem = new { id = id1, status = pk, description = (string)null };
+            dynamic testItem2 = new { id = id2, status = pk, description = (string)null };
+
+            // Create a client that ignore null
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                Serializer = new CosmosJsonDotNetSerializer(
+                    new JsonSerializerSettings()
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    })
+            };
+
+            CosmosClient ignoreNullClient = TestCommon.CreateCosmosClient(clientOptions);
+            Container ignoreContainer = ignoreNullClient.GetContainer(this.database.Id, this.Container.Id);
+
+            ItemResponse<dynamic> ignoreNullResponse = await ignoreContainer.CreateItemAsync<dynamic>(item: testItem);
+            Assert.IsNotNull(ignoreNullResponse);
+            Assert.IsNotNull(ignoreNullResponse.Resource);
+            Assert.IsNull(ignoreNullResponse.Resource["description"]);
+
+            ItemResponse<dynamic> keepNullResponse = await this.Container.CreateItemAsync<dynamic>(item: testItem2);
+            Assert.IsNotNull(keepNullResponse);
+            Assert.IsNotNull(keepNullResponse.Resource);
+            Assert.IsNotNull(keepNullResponse.Resource["description"]);
+
+            using (await this.Container.DeleteItemStreamAsync(id1, new Cosmos.PartitionKey(pk)))
+            { }
+            using (await this.Container.DeleteItemStreamAsync(id2, new Cosmos.PartitionKey(pk)))
+            { }
+        }
+
+        [TestMethod]
         public async Task CreateDropItemUndefinedPartitionKeyTest()
         {
             dynamic testItem = new
