@@ -67,29 +67,6 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }
 
-        internal async Task<int?> ReadProvisionedThroughputAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellationToken);
-            if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
-            {
-                return offerResult.Throughput;
-            }
-
-            throw offerResult.CosmosException;
-        }
-
-        internal async Task ReplaceProvisionedThroughputAsync(
-            int throughput,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(throughput, cancellationToken);
-            if (offerResult.StatusCode != HttpStatusCode.OK)
-            {
-                throw offerResult.CosmosException;
-            }
-        }
-
         public async override Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -101,25 +78,12 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetRIDAsync(cancellationToken)
-            .ContinueWith(task => this.ClientContext.Client.Offers.GetOfferV2Async(task.Result, cancellationToken),
-                cancellationToken)
-            .Unwrap();
-
-            if (offerV2 == null)
-            {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
-            }
-
-            Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
-                streamPayload: null,
-                operationType: OperationType.Read,
-                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
-                resourceType: ResourceType.Offer,
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReadThroughputAsync(
+                targetRID: rid,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
-
-            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(response);
         }
 
         public async override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -127,27 +91,13 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetRIDAsync(cancellationToken)
-             .ContinueWith(task => this.ClientContext.Client.Offers.GetOfferV2Async(task.Result, cancellationToken),
-                 cancellationToken)
-             .Unwrap();
-
-            if (offerV2 == null)
-            {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
-            }
-
-            OfferV2 newOffer = new OfferV2(offerV2, throughput);
-
-            Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
-                operationType: OperationType.Replace,
-                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
-                resourceType: ResourceType.Offer,
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputAsync(
+                targetRID: rid,
+                throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
-
-            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(response);
         }
 
         public override Task<ResponseMessage> ReadStreamAsync(
@@ -417,31 +367,10 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.GetRIDAsync(cancellationToken)
-                .ContinueWith(task => this.ClientContext.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
-                .Unwrap();
-        }
-
-        internal Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
-            int throughput,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task<string> rid = this.GetRIDAsync(cancellationToken);
-            return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, throughput, cancellationToken), cancellationToken)
-                .Unwrap();
-        }
-
-        internal virtual Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ReadAsync(cancellationToken: cancellationToken)
-                .ContinueWith(task =>
-                {
-                    DatabaseResponse response = task.Result;
-                    return response.Resource.ResourceId;
-                }, cancellationToken);
+            DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
+            return databaseResponse?.Resource?.ResourceId;
         }
 
         private Task<ResponseMessage> CreateContainerStreamInternalAsync(

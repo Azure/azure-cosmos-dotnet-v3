@@ -232,8 +232,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                CosmosJsonSerializerCore serializer = new CosmosJsonSerializerCore();
-                return serializer.ToStream<TestDoc>(testDoc);
+                
+                return TestCommon.Serializer.ToStream<TestDoc>(testDoc);
             }
         }
 
@@ -245,8 +245,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                CosmosJsonSerializerCore serializer = new CosmosJsonSerializerCore();
-                return serializer.FromStream<TestDoc>(stream);
+                return TestCommon.Serializer.FromStream<TestDoc>(stream);
             }
         }
 

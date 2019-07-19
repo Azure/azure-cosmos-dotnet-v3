@@ -150,6 +150,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
+            catch (CosmosException ex)
+            {
+                ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
+                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                return errorResponse;
+            }
             catch (AggregateException ex)
             {
                 SetOriginalContinuationToken(request, response, originalContinuation);

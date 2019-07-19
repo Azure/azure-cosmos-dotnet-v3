@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonSerializerCore());
+            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
             mockContext.Setup(x => x.Client).Returns(mockClient.Object);
             return mockContext.Object;
         }

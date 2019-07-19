@@ -18,10 +18,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public sealed class StoredProcedureTests : BaseCosmosClientHelper
     {
-        private static CosmosSerializer cosmosJsonSerializer = new CosmosJsonSerializerCore();
         private Container container = null;
         private Scripts scripts = null;
-        private StoredProcedureRequestOptions requestOptions = new StoredProcedureRequestOptions();
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -224,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
             StoredProcedureExecuteResponse<JArray> sprocResponse = await this.scripts.ExecuteStoredProcedureAsync<JArray>(
-                sprocId, 
+                sprocId,
                 new Cosmos.PartitionKey(testPartitionId),
                 parameters: null);
 
@@ -269,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedureProperties storedProcedure = storedProcedureResponse;
             ResponseMessage sprocResponse = await this.scripts.ExecuteStoredProcedureStreamAsync(
-                sprocId, 
+                sprocId,
                 new Cosmos.PartitionKey(testPartitionId),
                 null);
 
@@ -358,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  new Cosmos.PartitionKey(testPartitionId),
                  parameters: new dynamic[] { null });
 
-            using(StreamReader reader = new StreamReader(response.Content))
+            using (StreamReader reader = new StreamReader(response.Content))
             {
                 string text = await reader.ReadToEndAsync();
                 Assert.AreEqual("null", text);

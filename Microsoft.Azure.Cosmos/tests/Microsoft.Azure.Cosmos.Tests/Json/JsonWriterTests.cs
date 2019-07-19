@@ -7,6 +7,7 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Reflection;
+    using System.Globalization;
 
     [TestClass]
     public class JsonWriterTests
@@ -1328,43 +1329,63 @@
 
         private void VerifyWriter(JsonTokenInfo[] tokensToWrite, string expectedString = null, Exception expectedException = null)
         {
-            Encoding[] encodings =
+            CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
+
+            CultureInfo[] cultureInfoList = new CultureInfo[]
             {
-                Encoding.UTF8,
-                Encoding.Unicode,
-                Encoding.UTF32,
+                defaultCultureInfo,
+                System.Globalization.CultureInfo.GetCultureInfo("fr-FR")
             };
 
-            foreach (Encoding encoding in encodings)
+            try
             {
-                // Create through encoding API
-                IJsonWriter jsonWriterWithEncoding = JsonWriter.Create(encoding);
-                if (expectedString != null)
+                foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
-                    // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
-                    string expectedStringNoWhiteSpace = Newtonsoft.Json.Linq.JToken.Parse(expectedString).ToString(Newtonsoft.Json.Formatting.None).Replace("/", @"\/");
-                    this.VerifyWriter(jsonWriterWithEncoding, tokensToWrite, encoding.GetBytes(expectedStringNoWhiteSpace), JsonSerializationFormat.Text, expectedException);
-                }
-                else
-                {
-                    this.VerifyWriter(jsonWriterWithEncoding, tokensToWrite, null, JsonSerializationFormat.Text, expectedException);
-                }
-            }
+                    System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
 
-            // Create through serializtion api
-            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            byte[] expectedOutput;
-            if (expectedString != null)
-            {
-                string expectedStringNoWhiteSpace = Newtonsoft.Json.Linq.JToken.Parse(expectedString).ToString(Newtonsoft.Json.Formatting.None).Replace("/", @"\/");
-                expectedOutput = Encoding.UTF8.GetBytes(expectedStringNoWhiteSpace);
-            }
-            else
-            {
-                expectedOutput = null;
-            }
+                    Encoding[] encodings =
+                    {
+                        Encoding.UTF8,
+                        Encoding.Unicode,
+                        Encoding.UTF32,
+                    };
 
-            this.VerifyWriter(jsonWriter, tokensToWrite, expectedOutput, JsonSerializationFormat.Text, expectedException);
+                    foreach (Encoding encoding in encodings)
+                    {
+                        // Create through encoding API
+                        IJsonWriter jsonWriterWithEncoding = JsonWriter.Create(encoding);
+                        if (expectedString != null)
+                        {
+                            // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
+                            string expectedStringNoWhiteSpace = Newtonsoft.Json.Linq.JToken.Parse(expectedString).ToString(Newtonsoft.Json.Formatting.None).Replace("/", @"\/");
+                            this.VerifyWriter(jsonWriterWithEncoding, tokensToWrite, encoding.GetBytes(expectedStringNoWhiteSpace), JsonSerializationFormat.Text, expectedException);
+                        }
+                        else
+                        {
+                            this.VerifyWriter(jsonWriterWithEncoding, tokensToWrite, null, JsonSerializationFormat.Text, expectedException);
+                        }
+                    }
+
+                    // Create through serializtion api
+                    IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                    byte[] expectedOutput;
+                    if (expectedString != null)
+                    {
+                        string expectedStringNoWhiteSpace = Newtonsoft.Json.Linq.JToken.Parse(expectedString).ToString(Newtonsoft.Json.Formatting.None).Replace("/", @"\/");
+                        expectedOutput = Encoding.UTF8.GetBytes(expectedStringNoWhiteSpace);
+                    }
+                    else
+                    {
+                        expectedOutput = null;
+                    }
+
+                    this.VerifyWriter(jsonWriter, tokensToWrite, expectedOutput, JsonSerializationFormat.Text, expectedException);
+                }
+            }
+            finally
+            {
+                System.Threading.Thread.CurrentThread.CurrentCulture = defaultCultureInfo;
+            }
         }
 
         private void VerifyWriter(JsonTokenInfo[] tokensToWrite, byte[] binaryOutput, Exception expectedException = null)

@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = this.database.GetContainer(containerName);
 
-            int? readThroughput = await ((ContainerCore)container).ReadProvisionedThroughputAsync();
+            int? readThroughput = await container.ReadThroughputAsync();
             Assert.IsNotNull(readThroughput);
             Assert.AreEqual(expectedThroughput, readThroughput);
 
