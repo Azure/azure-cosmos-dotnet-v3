@@ -226,10 +226,19 @@ namespace Microsoft.Azure.Cosmos.Query
             if (exception != null)
             {
                 DefaultTrace.TraceInformation("QueryEngineConfiguration: " + this.queryengineConfiguration);
+                string errorMessage;
+                if (string.IsNullOrEmpty(serializedQueryExecutionInfo))
+                {
+                    errorMessage = $"Message: Please verify the application is using the correct version of \"Microsoft.Azure.Cosmos.ServiceInterop.dll\". Error {exception.ToString()}";
+                }
+                else
+                {
+                    errorMessage = "Message: " + serializedQueryExecutionInfo;
+                }
 
                 throw new CosmosException(
                     HttpStatusCode.BadRequest,
-                    "Message: " + serializedQueryExecutionInfo);
+                    errorMessage);
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =
