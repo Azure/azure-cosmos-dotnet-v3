@@ -430,7 +430,7 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Container already exist with different partition key path.
+        ///   Looks up a localized string similar to The requested partition key path &apos;{0}&apos; does not match existing Container &quot;{1}&apos; with partition key path &apos;{2}&apos;.
         /// </summary>
         internal static string PartitionKeyPathConflict {
             get {

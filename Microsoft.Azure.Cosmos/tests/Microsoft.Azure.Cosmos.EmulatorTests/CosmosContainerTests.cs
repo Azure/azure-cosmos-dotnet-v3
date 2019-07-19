@@ -183,7 +183,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch(ArgumentException ex)
             {
                 Assert.AreEqual(nameof(settings.PartitionKey), ex.ParamName);
-                Assert.IsTrue(ex.Message.Contains(ClientResources.PartitionKeyPathConflict));
+                Assert.IsTrue(ex.Message.Contains(string.Format(
+                    ClientResources.PartitionKeyPathConflict,
+                    partitionKeyPath2,
+                    containerName,
+                    partitionKeyPath1)));
             }
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();

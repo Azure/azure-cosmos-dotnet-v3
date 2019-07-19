@@ -398,10 +398,10 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// <para>Check if a database exists, and if it doesn't, create it.
-        /// Create on existing database will override custom settings provided and return back the existing database with settings saved earlier.</para>
+        /// Only the database id is used to verify if there is an existing database. Other database properties such as throughput are not validated and can be different then the passed properties.</para>
         /// 
-        /// Please check for databaseResponse.StatusCode, if created it will return HttpStatusCode.Created,
-        /// if it read the existing container it will return HttpStatusCode.OK.
+        /// Status code 201: New database is created.
+        /// Status code 200: Database already exist.
         ///
         /// <para>A database manages users, permissions and a set of containers.
         /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,

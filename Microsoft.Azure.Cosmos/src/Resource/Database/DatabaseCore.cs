@@ -191,7 +191,13 @@ namespace Microsoft.Azure.Cosmos
                         retrivedContainerResponse.Resource.PartitionKey,
                         containerProperties.PartitionKey))
                 {
-                    throw new ArgumentException(ClientResources.PartitionKeyPathConflict, nameof(containerProperties.PartitionKey));
+                    throw new ArgumentException(
+                        string.Format(
+                            ClientResources.PartitionKeyPathConflict,
+                            containerProperties.PartitionKeyPath,
+                            containerProperties.Id,
+                            retrivedContainerResponse.Resource?.PartitionKeyPath),
+                        nameof(containerProperties.PartitionKey));
                 }
 
                 return retrivedContainerResponse;

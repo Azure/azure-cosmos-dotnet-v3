@@ -353,10 +353,10 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// <para>Check if a container exists, and if it doesn't, create it.
-        /// Create on existing collection will override custom settings provided and return back the existing collection with settings saved earlier.</para>
+        /// Only the container id is used to verify if there is an existing container. Other container properties such as throughput are not validated and can be different then the passed properties.</para>
         ///
-        /// Please check for containerResponse.StatusCode, if created it will return HttpStatusCode.Created,
-        /// if it read the existing container it will return HttpStatusCode.OK.
+        /// Status code 201: New container is created.
+        /// Status code 200: Container already exist.
         /// </summary>
         /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
