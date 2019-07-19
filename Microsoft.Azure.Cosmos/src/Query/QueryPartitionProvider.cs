@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 string errorMessage;
                 if (string.IsNullOrEmpty(serializedQueryExecutionInfo))
                 {
-                    errorMessage = $"Message: Please verify the application is using the correct version of \"Microsoft.Azure.Cosmos.ServiceInterop.dll\". Error {exception.ToString()}";
+                    errorMessage = $"Message: Query service interop parsing hit an unexpected exception: {exception.ToString()}";
                 }
                 else
                 {
