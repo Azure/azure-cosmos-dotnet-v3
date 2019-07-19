@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryClientCore : CosmosQueryClient
@@ -92,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 partitionKey: requestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                streamPayload: sqlQuerySpec.ToStream(this.clientContext),
                 requestEnricher: (cosmosRequestMessage) =>
                 {
                     this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
@@ -111,9 +113,9 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(
-                requestOptions, 
-                resourceType, 
-                containerResourceId, 
+                requestOptions,
+                resourceType,
+                containerResourceId,
                 message);
         }
 
@@ -133,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: null,
                 partitionKey: null,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.PropertiesSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                streamPayload: sqlQuerySpec.ToStream(this.clientContext),
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken))
             {
@@ -141,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
                 message.EnsureSuccessStatusCode();
                 partitionedQueryExecutionInfo = this.clientContext.CosmosSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
-                
+
             return partitionedQueryExecutionInfo;
         }
 
@@ -256,8 +258,8 @@ namespace Microsoft.Azure.Cosmos
 
                 long responseLengthBytes = memoryStream.Length;
                 CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
-                    memoryStream, 
-                    resourceType, 
+                    memoryStream,
+                    resourceType,
                     requestOptions.CosmosSerializationOptions);
 
                 int itemCount = cosmosArray.Count;

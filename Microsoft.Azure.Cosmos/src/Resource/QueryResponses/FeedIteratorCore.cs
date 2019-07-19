@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.CosmosSerializer.ToStream(this.querySpec);
+                stream = this.querySpec.ToStream(this.clientContext);
                 operation = OperationType.Query;
             }
 

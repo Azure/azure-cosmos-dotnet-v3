@@ -520,40 +520,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ItemDistinctStreamIterator()
+        public async Task ItemCustomSerialzierTest()
         {
             IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
             HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
 
-            string lastContinuationToken = null;
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            QueryDefinition queryDefinition = new QueryDefinition("select * from t where t.id = @id0 or t.id = @id1 or t.id = @id2")
+                .WithParameter("@id0", deleteList[0].id)
+                .WithParameter("@id1", deleteList[1].id)
+                .WithParameter("@id2", deleteList[2].id);
+
+            int toStreamCount = 0;
+            int fromStreamCount = 0;
+            CosmosSerializerHelper cosmosSerializerHelper = new CosmosSerializerHelper(
+                toStreamCallBack: (itemId) =>
+                {
+                    Assert.IsTrue(itemIds.Contains(itemId));
+                    toStreamCount++;
+                },
+                fromStreamCallback: (item) => fromStreamCount++);
+
+            CosmosClientOptions options = new CosmosClientOptions()
             {
-                MaxItemCount = 1
+                Serializer = cosmosSerializerHelper
             };
 
-            FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-                queryText: "select * from t order by t.id",
-                continuationToken: lastContinuationToken,
-                requestOptions: requestOptions);
+            CosmosClient clientSerializer = TestCommon.CreateCosmosClient(options);
+            Container containerSerializer = clientSerializer.GetContainer(this.database.Id, this.Container.Id);
 
-            while (feedIterator.HasMoreResults)
+            FeedIterator<ToDoActivity> feedIterator = containerSerializer.GetItemQueryIterator<ToDoActivity>(
+                queryDefinition: queryDefinition);
+
+            // Only need once to verify correct serialization of the query definition
+            FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+            foreach (ToDoActivity toDoActivity in response)
             {
-                using (ResponseMessage responseMessage =
-                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                if (itemIds.Contains(toDoActivity.id))
                 {
-                    Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                    foreach (ToDoActivity toDoActivity in response)
-                    {
-                        if (itemIds.Contains(toDoActivity.id))
-                        {
-                            itemIds.Remove(toDoActivity.id);
-                        }
-                    }
+                    itemIds.Remove(toDoActivity.id);
                 }
             }
 
-            Assert.IsNull(lastContinuationToken);
-            Assert.AreEqual(itemIds.Count, 0);
+            // Each parameter in query spec should be a call to the custom serializer
+            Assert.AreEqual(3, toStreamCount);
+            Assert.AreEqual(1, fromStreamCount);
         }
 
         [TestMethod]
@@ -827,11 +837,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNull(iter.ErrorMessage);
                         totalRequstCharge += iter.Headers.RequestCharge;
 
-                ToDoActivity[] activities = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data.ToArray();
-                Assert.AreEqual(1, activities.Length);
-                ToDoActivity response = activities.First();
-                resultList.Add(response);
-            }
+                        ToDoActivity[] activities = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data.ToArray();
+                        Assert.AreEqual(1, activities.Length);
+                        ToDoActivity response = activities.First();
+                        resultList.Add(response);
+                    }
 
                     Assert.AreEqual(deleteList.Count, resultList.Count);
                     Assert.IsTrue(totalRequstCharge > 0);

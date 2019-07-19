@@ -4,15 +4,20 @@
 
 namespace Microsoft.Azure.Cosmos.Core.Tests
 {
+    using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+    using Newtonsoft.Json.Serialization;
 
     [TestClass]
     public class CosmosJsonSeriliazerUnitTests
@@ -163,6 +168,78 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             // Throw if the setups were not called
             mockDefaultJsonSerializer.VerifyAll();
+        }
+
+        [TestMethod]
+        public void ValidateSqlQuerySpecSerializer()
+        {
+            List<SqlQuerySpec> sqlQuerySpecs = new List<SqlQuerySpec>();
+            sqlQuerySpecs.Add(new SqlQuerySpec()
+            {
+                QueryText = "Select * from something"
+            });
+
+            sqlQuerySpecs.Add(new SqlQuerySpec()
+            {
+                QueryText = "Select * from something",
+                Parameters = new SqlParameterCollection()
+            });
+
+            SqlParameterCollection sqlParameters = new SqlParameterCollection();
+            sqlParameters.Add(new SqlParameter("@id", "test1"));
+
+            sqlQuerySpecs.Add(new SqlQuerySpec()
+            {
+                QueryText = "Select * from something",
+                Parameters = sqlParameters
+            });
+
+            sqlParameters = new SqlParameterCollection();
+            sqlParameters.Add(new SqlParameter("@id", "test2"));
+            sqlParameters.Add(new SqlParameter("@double", 42.42));
+            sqlParameters.Add(new SqlParameter("@int", 9001));
+            sqlParameters.Add(new SqlParameter("@null", null));
+            sqlParameters.Add(new SqlParameter("@datetime", DateTime.UtcNow));
+
+            sqlQuerySpecs.Add(new SqlQuerySpec()
+            {
+                QueryText = "Select * from something",
+                Parameters = sqlParameters
+            });
+
+            CosmosJsonDotNetSerializer userSerializer = new CosmosJsonDotNetSerializer();
+            CosmosJsonDotNetSerializer propertiesSerializer = new CosmosJsonDotNetSerializer();
+
+            CosmosClientContext clientContext = new ClientContextCore(
+                client: null,
+                clientOptions: null,
+                userJsonSerializer: userSerializer,
+                defaultJsonSerializer: propertiesSerializer,
+                cosmosResponseFactory: null,
+                requestHandler: null,
+                documentClient: null,
+                documentQueryClient: null);
+
+            foreach (SqlQuerySpec sqlQuerySpec in sqlQuerySpecs)
+            {
+                Stream stream = propertiesSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec);
+                string result1;
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    result1 = sr.ReadToEnd();
+                    Assert.IsNotNull(result1);
+                }
+
+                stream = sqlQuerySpec.ToStream(clientContext);
+                string result2;
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    result2 = sr.ReadToEnd();
+                    Assert.IsNotNull(result2);
+                }
+
+                Assert.AreEqual(result1, result2);
+            }
         }
 
         private ResponseMessage CreateResponse()
