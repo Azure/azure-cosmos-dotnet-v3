@@ -60,6 +60,17 @@ namespace Microsoft.Azure.Cosmos
                             .Select(e => e.Name)
                             .ToArray();
 
+            if(locationNames.Length > cosmosRegions.Length)
+            {
+                HashSet<string> missingLocationNames = new HashSet<string>(locationNames);
+                foreach(var region in cosmosRegions)
+                {
+                    missingLocationNames.Remove(region);
+                }
+
+                Assert.Fail($"Missing regions from Cosmos.Regions: {string.Join(";", missingLocationNames)}");
+            }
+
             CollectionAssert.AreEquivalent(locationNames, cosmosRegions);
         }
 
