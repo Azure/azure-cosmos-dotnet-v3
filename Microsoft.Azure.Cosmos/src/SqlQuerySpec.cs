@@ -5,12 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Text;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a SQL query in the Azure Cosmos DB service.
@@ -18,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     [DataContract]
     internal sealed class SqlQuerySpec
     {
+        private string queryText;
         private SqlParameterCollection parameters;
 
         /// <summary>
@@ -51,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("parameters");
             }
 
-            this.QueryText = queryText;
+            this.queryText = queryText;
             this.parameters = parameters;
         }
 
@@ -60,7 +59,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The text of the database query.</value>
         [DataMember(Name = "query")]
-        public string QueryText { get; set; }
+        public string QueryText
+        {
+            get { return this.queryText; }
+            set { this.queryText = value; }
+        }
 
         /// <summary>
         /// Gets or sets the <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of Azure Cosmos DB query parameters.
@@ -107,12 +110,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static class SqlQuerySpecToStream
         {
-            private static readonly byte[] startOfQuery = Encoding.UTF8.GetBytes("{\"query\":\"");
-            private static readonly byte[] endOfQueryNoParameters = Encoding.UTF8.GetBytes("\"}");
-            private static readonly byte[] startParametersArray = Encoding.UTF8.GetBytes("\",\"parameters\":[{\"name\":\"");
-            private static readonly byte[] middleOfParameter = Encoding.UTF8.GetBytes("\",\"value\":");
-            private static readonly byte[] endAndStartNewParameter = Encoding.UTF8.GetBytes("},{\"name\":\"");
-            private static readonly byte[] endOfParameterArray = Encoding.UTF8.GetBytes("}]}");
+            private static readonly byte[] startOfQuery = Encoding.UTF8.GetBytes("{\"query\":");   
+            private static readonly byte[] startParametersArray = Encoding.UTF8.GetBytes(",\"parameters\":[");
+            private static readonly byte[] parameterNameKey = Encoding.UTF8.GetBytes("{\"name\":");
+            private static readonly byte[] parameterValueKey = Encoding.UTF8.GetBytes(",\"value\":");
+            private static readonly byte[] doubleQuote = Encoding.UTF8.GetBytes("\"");
+            private static readonly byte[] comma = Encoding.UTF8.GetBytes(",");
+            private static readonly byte[] endObject = Encoding.UTF8.GetBytes("}");
+            private static readonly byte[] endArray = Encoding.UTF8.GetBytes("]");
 
             /// <summary>
             /// Convert the SqlQuerySpec to stream. If the user specified a custom serializer this will
@@ -126,54 +131,113 @@ namespace Microsoft.Azure.Cosmos
                 SqlQuerySpec sqlQuerySpec,
                 CosmosClientContext clientContext)
             {
-                CosmosSerializer cosmosSerializer = clientContext.CosmosSerializer;
-
-                // If there is no customer serializer then just use the default.
-                if (clientContext.PropertiesSerializer == cosmosSerializer)
+                // If there is no custom serializer then just use the default.
+                if (object.ReferenceEquals(clientContext.PropertiesSerializer, clientContext.CosmosSerializer))
                 {
                     return clientContext.PropertiesSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec);
                 }
 
                 // An example of the JSON that the stream will contain:
-                // "{\"query\":\"Select* from something\",\"parameters\":[{\"name\":\"@parameter\",\"value\":\"myvalue\"}]}";
-                Stream memoryStream = new MemoryStream();
+                // "{"query":"Select* from something","parameters":[{"name":"@parameter","value":"myvalue"}]}";
+                MemoryStream memoryStream = new MemoryStream();
 
-                memoryStream.Write(SqlQuerySpecToStream.startOfQuery, 0, startOfQuery.Length);
-                byte[] queryText = Encoding.UTF8.GetBytes(sqlQuerySpec.QueryText);
-                memoryStream.Write(queryText, 0, queryText.Length);
+                // Write JSON '{"query":'
+                Write(startOfQuery, memoryStream);
 
-                int parameterCount = sqlQuerySpec.Parameters?.Count ?? 0;
-                if (parameterCount == 0)
-                {
-                    memoryStream.Write(endOfQueryNoParameters, 0, endOfQueryNoParameters.Length);
-                    memoryStream.Position = 0;
-                    return memoryStream;
-                }
+                // Write JSON '"QueryText"'
+                WriteStringText(sqlQuerySpec.queryText, memoryStream);
 
-                memoryStream.Write(startParametersArray, 0, startParametersArray.Length);
-                for (int i = 0; i < parameterCount; i++)
-                {
-                    var paramater = sqlQuerySpec.Parameters[i];
-                    byte[] name = Encoding.UTF8.GetBytes(paramater.Name);
-                    memoryStream.Write(name, 0, name.Length);
-                    memoryStream.Write(middleOfParameter, 0, middleOfParameter.Length);
-                    using (Stream valueStream = cosmosSerializer.ToStream(paramater.Value))
-                    {
-                        valueStream.CopyTo(memoryStream);
-                    }
+                // Write the parameters
+                WriteParametersToStream(
+                    memoryStream,
+                    sqlQuerySpec,
+                    clientContext);
 
-                    if (i + 1 == parameterCount)
-                    {
-                        memoryStream.Write(endOfParameterArray, 0, endOfParameterArray.Length);
-                    }
-                    else
-                    {
-                        memoryStream.Write(endAndStartNewParameter, 0, endAndStartNewParameter.Length);
-                    }
-                }
+                // End the JSON object '}'
+                Write(endObject, memoryStream);
 
+                // Reset the position so reading starts at the beginning of the stream
                 memoryStream.Position = 0;
                 return memoryStream;
+            }
+
+            /// <summary>
+            ///  Write JSON '"QueryText"'
+            /// </summary>
+            private static void WriteStringText(
+                string inputText,
+                MemoryStream memoryStream)
+            {
+                // Write JSON '"'
+                Write(doubleQuote, memoryStream);
+
+                // Write query text
+                byte[] inputToWrite = Encoding.UTF8.GetBytes(inputText);
+                Write(inputToWrite, memoryStream);
+
+                // Write JSON '"'
+                Write(doubleQuote, memoryStream);
+            }
+
+            /// <summary>
+            /// Write a JSON object ',"parameters":[{"name":"parameterName","value":valueStream}]'
+            /// </summary>
+            private static void WriteParametersToStream(
+                MemoryStream memoryStream,
+                SqlQuerySpec sqlQuerySpec,
+                CosmosClientContext clientContext)
+            {
+                // No parameters to write
+                if (sqlQuerySpec.parameters == null || !sqlQuerySpec.parameters.Any())
+                {
+                    return;
+                }
+
+                // Write JSON ',"parameters":['
+                Write(startParametersArray, memoryStream);
+
+                int totalParameterCount = sqlQuerySpec.Parameters.Count;
+                int lastPos = totalParameterCount - 1;
+                for (int i = 0; i < totalParameterCount; i++)
+                {
+                    SqlParameter sqlParameter = sqlQuerySpec.Parameters[i];
+                    using (Stream valueStream = clientContext.CosmosSerializer.ToStream(sqlParameter.Value))
+                    {
+                        // Write JSON '{"name":"parameterName","value":valueStream}'
+                        WriteParameter(sqlParameter.Name, valueStream, memoryStream);
+                    }
+
+                    // Separate each object in the array with a comma
+                    if (i != lastPos)
+                    {
+                        Write(comma, memoryStream);
+                    }
+                }
+
+                // End the Array ']'
+                Write(endArray, memoryStream);
+            }
+
+            /// <summary>
+            /// Write a JSON object '{"name":parameterName,"value":valueStream}'
+            /// </summary>
+            private static void WriteParameter(string parameterName, Stream valueStream, MemoryStream memoryStream)
+            {
+                // {"name":
+                Write(parameterNameKey, memoryStream);
+                WriteStringText(parameterName, memoryStream);
+
+                // ,"value":
+                Write(parameterValueKey, memoryStream);
+                valueStream.CopyTo(memoryStream);
+
+                // }
+                Write(endObject, memoryStream);
+            }
+
+            private static void Write(byte[] input, MemoryStream memoryStream)
+            {
+                memoryStream.Write(input, 0, input.Length);
             }
         }
     }

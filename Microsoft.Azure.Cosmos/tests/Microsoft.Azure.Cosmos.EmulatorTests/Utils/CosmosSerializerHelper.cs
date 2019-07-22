@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using Newtonsoft.Json;
     using System;
+    using System.Globalization;
     using System.IO;
 
     /// <summary>
@@ -17,9 +19,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Action<dynamic> toStreamCallBack;
 
         public CosmosSerializerHelper(
+            JsonSerializerSettings jsonSerializerSettings,
             Action<dynamic> fromStreamCallback,
             Action<dynamic> toStreamCallBack)
         {
+            if(jsonSerializerSettings == null)
+            {
+                cosmosSerializer = TestCommon.Serializer;
+            }
+            else
+            {
+                cosmosSerializer = new CosmosJsonDotNetSerializer(jsonSerializerSettings);
+            }
+
             this.fromStreamCallback = fromStreamCallback;
             this.toStreamCallBack = toStreamCallBack;
         }
@@ -36,6 +48,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.toStreamCallBack?.Invoke(input);
             return this.cosmosSerializer.ToStream<T>(input);
+        }
+
+        public sealed class FormatNumbersAsTextConverter : JsonConverter
+        {
+            public override bool CanRead => false;
+            public override bool CanWrite => true;
+            public override bool CanConvert(Type type) => type == typeof(int) || type == typeof(double);
+
+            public override void WriteJson(
+                JsonWriter writer, 
+                object value, 
+                JsonSerializer serializer)
+            {
+                if(value.GetType() == typeof(int))
+                {
+                    int number = (int)value;
+                    writer.WriteValue(number.ToString(CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    double number = (double)value;
+                    writer.WriteValue(number.ToString(CultureInfo.InvariantCulture));
+                }
+                
+            }
+
+            public override object ReadJson(
+                JsonReader reader, 
+                Type type, 
+                object existingValue, 
+                JsonSerializer serializer)
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }

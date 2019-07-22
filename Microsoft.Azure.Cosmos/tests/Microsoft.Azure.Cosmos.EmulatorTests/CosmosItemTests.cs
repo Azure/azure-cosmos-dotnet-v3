@@ -522,21 +522,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemCustomSerialzierTest()
         {
-            IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
-            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+            dynamic testItem1 = new
+            {
+                id = "ItemCustomSerialzierTest1",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                status = "MyCustomStatus",
+                taskNum = 4909
+            };
 
-            QueryDefinition queryDefinition = new QueryDefinition("select * from t where t.id = @id0 or t.id = @id1 or t.id = @id2")
-                .WithParameter("@id0", deleteList[0].id)
-                .WithParameter("@id1", deleteList[1].id)
-                .WithParameter("@id2", deleteList[2].id);
+            dynamic testItem2 = new
+            {
+                id = "ItemCustomSerialzierTest2",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                status = "MyCustomStatus",
+                taskNum = 4909
+            };
+
+            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+            {
+                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() }
+            };
+
+            QueryDefinition queryDefinition = new QueryDefinition("select * from t where t.status = @status or t.cost = @cost or t.taskNum = @taskNum or t.totalCost = @totalCost")
+                .WithParameter("@status", testItem1.status)
+                .WithParameter("@cost", testItem1.cost)
+                .WithParameter("@taskNum", testItem1.taskNum)
+                .WithParameter("@totalCost", testItem1.totalCost);
 
             int toStreamCount = 0;
             int fromStreamCount = 0;
             CosmosSerializerHelper cosmosSerializerHelper = new CosmosSerializerHelper(
-                toStreamCallBack: (itemId) =>
+                jsonSerializerSettings,
+                toStreamCallBack: (itemValue) =>
                 {
-                    Assert.IsTrue(itemIds.Contains(itemId));
-                    toStreamCount++;
+                    if (itemValue == null || itemValue.GetType().IsPrimitive)
+                    {
+                        toStreamCount++;
+                    }
                 },
                 fromStreamCallback: (item) => fromStreamCount++);
 
@@ -548,22 +572,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient clientSerializer = TestCommon.CreateCosmosClient(options);
             Container containerSerializer = clientSerializer.GetContainer(this.database.Id, this.Container.Id);
 
-            FeedIterator<ToDoActivity> feedIterator = containerSerializer.GetItemQueryIterator<ToDoActivity>(
+            try
+            {
+                await containerSerializer.CreateItemAsync<dynamic>(testItem1);
+                await containerSerializer.CreateItemAsync<dynamic>(testItem2);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+            {
+                // Ignore conflicts since the object already exists
+            }
+
+            FeedIterator<dynamic> feedIterator = containerSerializer.GetItemQueryIterator<dynamic>(
                 queryDefinition: queryDefinition);
 
             // Only need once to verify correct serialization of the query definition
-            FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync(this.cancellationToken);
-            foreach (ToDoActivity toDoActivity in response)
+            FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+            foreach (dynamic item in response)
             {
-                if (itemIds.Contains(toDoActivity.id))
-                {
-                    itemIds.Remove(toDoActivity.id);
-                }
+                Assert.IsFalse(string.Equals(testItem1.id, item.id) || string.Equals(testItem2.id, item.id));
+                Assert.IsTrue(((JObject)item)["totalCost"].Type == JTokenType.String);
+                Assert.IsTrue(((JObject)item)["taskNum"].Type == JTokenType.String);
             }
 
             // Each parameter in query spec should be a call to the custom serializer
             Assert.AreEqual(3, toStreamCount);
-            Assert.AreEqual(1, fromStreamCount);
+            Assert.AreEqual(3, fromStreamCount);
         }
 
         [TestMethod]

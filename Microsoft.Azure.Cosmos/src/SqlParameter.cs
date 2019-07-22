@@ -6,12 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Text;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a parameter associated with <see cref="SqlQuerySpec"/> in the Azure Cosmos DB service.
