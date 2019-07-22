@@ -253,7 +253,7 @@
     <value>Only path expressions are supported for SelectMany.</value>
   </data>
   <data name="PartitionKeyPathConflict" xml:space="preserve">
-    <value>The requested partition key path '{0}' does not match existing Container "{1}' with partition key path '{2}'</value>
+    <value>The requested partition key path '{0}' does not match existing Container '{1}' with partition key path '{2}'</value>
   </data>
   <data name="PKAndEpkSetTogether" xml:space="preserve">
     <value>Partition key and effective partition key may not both be set.</value>
