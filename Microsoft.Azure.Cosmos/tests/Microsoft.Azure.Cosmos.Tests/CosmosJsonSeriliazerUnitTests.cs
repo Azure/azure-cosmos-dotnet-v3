@@ -176,9 +176,14 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             List<SqlQuerySpec> sqlQuerySpecs = new List<SqlQuerySpec>();
             sqlQuerySpecs.Add(new SqlQuerySpec()
             {
-                QueryText = "Select * from something"
+                QueryText = "SELECT root._rid, [{\"item\": root[\"NumberField\"]}] AS orderByItems, root AS payload\nFROM root\nWHERE (true)\nORDER BY root[\"NumberField\"] DESC"
             });
 
+            sqlQuerySpecs.Add(new SqlQuerySpec()
+            {
+                QueryText = "Select * from something"
+            });
+           
             sqlQuerySpecs.Add(new SqlQuerySpec()
             {
                 QueryText = "Select * from something",

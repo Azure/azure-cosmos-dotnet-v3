@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Text;
 
@@ -110,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static class SqlQuerySpecToStream
         {
-            private static readonly byte[] startOfQuery = Encoding.UTF8.GetBytes("{\"query\":");   
+            private static readonly byte[] startOfQuery = Encoding.UTF8.GetBytes("{\"query\":");
             private static readonly byte[] startParametersArray = Encoding.UTF8.GetBytes(",\"parameters\":[");
             private static readonly byte[] parameterNameKey = Encoding.UTF8.GetBytes("{\"name\":");
             private static readonly byte[] parameterValueKey = Encoding.UTF8.GetBytes(",\"value\":");
@@ -145,7 +146,10 @@ namespace Microsoft.Azure.Cosmos
                 Write(startOfQuery, memoryStream);
 
                 // Write JSON '"QueryText"'
-                WriteStringText(sqlQuerySpec.queryText, memoryStream);
+                using (Stream queryTextStream = clientContext.PropertiesSerializer.ToStream(sqlQuerySpec.QueryText))
+                {
+                    queryTextStream.CopyTo(memoryStream);
+                }
 
                 // Write the parameters
                 WriteParametersToStream(
