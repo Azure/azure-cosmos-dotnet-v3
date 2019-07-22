@@ -39,6 +39,21 @@ namespace Microsoft.Azure.Cosmos
             this.SqlParameters = new Dictionary<string, SqlParameter>();
         }
 
+        internal QueryDefinition(SqlQuerySpec sqlQuery)
+        {
+            if (sqlQuery == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuery));
+            }
+
+            this.Query = sqlQuery.QueryText;
+            this.SqlParameters = new Dictionary<string, SqlParameter>();
+            foreach (SqlParameter sqlParameter in sqlQuery.Parameters)
+            {
+                this.SqlParameters.Add(sqlParameter.Name, sqlParameter);
+            }
+        }
+
         /// <summary>
         /// Add parameters to the SQL query
         /// </summary>
