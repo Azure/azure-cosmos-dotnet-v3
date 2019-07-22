@@ -87,5 +87,23 @@ namespace Microsoft.Azure.Cosmos
         {
             return new SqlQuerySpec(this.Query, new SqlParameterCollection(this.SqlParameters.Values));
         }
+
+        /// <summary>
+        /// This method gets the query text from QueryDefinition.
+        /// </summary>
+        /// <returns>The query text from QueryDefinition.</returns>
+        /// <example>
+        /// This example shows how to get query text from QueryDefinition.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// String sqlQueryText = queryDefinition.ToSqlQueryText();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public string ToSqlQueryText()
+        {
+            return this.Query;
+        }
     }
 }
