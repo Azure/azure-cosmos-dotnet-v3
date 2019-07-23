@@ -605,11 +605,16 @@ namespace Microsoft.Azure.Cosmos
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
 
+            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
+                this.ClientOptions.PropertiesSerializer);
+
             this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
+                sqlQuerySpecSerializer: sqlQuerySpecSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,

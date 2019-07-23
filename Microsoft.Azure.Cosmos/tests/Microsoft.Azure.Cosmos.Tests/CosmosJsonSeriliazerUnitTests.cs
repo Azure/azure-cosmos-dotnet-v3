@@ -215,15 +215,9 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             CosmosJsonDotNetSerializer userSerializer = new CosmosJsonDotNetSerializer();
             CosmosJsonDotNetSerializer propertiesSerializer = new CosmosJsonDotNetSerializer();
 
-            CosmosClientContext clientContext = new ClientContextCore(
-                client: null,
-                clientOptions: null,
-                userJsonSerializer: userSerializer,
-                defaultJsonSerializer: propertiesSerializer,
-                cosmosResponseFactory: null,
-                requestHandler: null,
-                documentClient: null,
-                documentQueryClient: null);
+            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                userSerializer,
+                propertiesSerializer);
 
             foreach (SqlQuerySpec sqlQuerySpec in sqlQuerySpecs)
             {
@@ -235,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                     Assert.IsNotNull(result1);
                 }
 
-                stream = sqlQuerySpec.ToStream(clientContext);
+                stream = sqlQuerySpecSerializer.ToStream(sqlQuerySpec);
                 string result2;
                 using (StreamReader sr = new StreamReader(stream))
                 {
