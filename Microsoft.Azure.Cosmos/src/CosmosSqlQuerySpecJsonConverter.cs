@@ -44,9 +44,11 @@ namespace Microsoft.Azure.Cosmos
             // Use the user serializer for the parameter values so custom conversions are correctly handled
             using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
             {
-                StreamReader streamReader = new StreamReader(str);
-                string parameterValue = streamReader.ReadToEnd();
-                writer.WriteRawValue(parameterValue);
+                using (StreamReader streamReader = new StreamReader(str))
+                {
+                    string parameterValue = streamReader.ReadToEnd();
+                    writer.WriteRawValue(parameterValue);
+                }
             }
 
             writer.WriteEndObject();
