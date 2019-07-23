@@ -15,11 +15,11 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class CosmosSqlQuerySpecJsonConverter : JsonConverter
     {
-        private CosmosSerializer UserSerializer;
+        private readonly CosmosSerializer UserSerializer;
 
         internal CosmosSqlQuerySpecJsonConverter(CosmosSerializer userSerializer)
         {
-            this.UserSerializer = userSerializer;
+            this.UserSerializer = userSerializer ?? throw new ArgumentNullException(nameof(userSerializer));
         }
 
         public override bool CanConvert(Type objectType)

@@ -522,13 +522,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemCustomSerialzierTest()
         {
+            DateTime createDateTime = DateTime.UtcNow;
+            Dictionary<string, int> keyValuePairs = new Dictionary<string, int>()
+            {
+                {"test1", 42 },
+                {"test42", 9001 }
+            };
+
             dynamic testItem1 = new
             {
                 id = "ItemCustomSerialzierTest1",
                 cost = (double?)null,
                 totalCost = 98.2789,
                 status = "MyCustomStatus",
-                taskNum = 4909
+                taskNum = 4909,
+                createdDateTime = createDateTime,
+                statusCode = HttpStatusCode.Accepted,
+                itemIds = new int[] { 1, 5, 10 },
+                dictionary = keyValuePairs
             };
 
             dynamic testItem2 = new
@@ -537,7 +548,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cost = (double?)null,
                 totalCost = 98.2789,
                 status = "MyCustomStatus",
-                taskNum = 4909
+                taskNum = 4909,
+                createdDateTime = createDateTime,
+                statusCode = HttpStatusCode.Accepted,
+                itemIds = new int[] { 1, 5, 10 },
+                dictionary = keyValuePairs
             };
 
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
@@ -545,11 +560,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() }
             };
 
-            QueryDefinition queryDefinition = new QueryDefinition("select * from t where t.status = @status or t.cost = @cost or t.taskNum = @taskNum or t.totalCost = @totalCost")
-                .WithParameter("@status", testItem1.status)
-                .WithParameter("@cost", testItem1.cost)
-                .WithParameter("@taskNum", testItem1.taskNum)
-                .WithParameter("@totalCost", testItem1.totalCost);
+            List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
+            {
+                new QueryDefinition("select * from t where t.status = @status" ).WithParameter("@status", testItem1.status),
+                new QueryDefinition("select * from t where t.cost = @cost" ).WithParameter("@cost", testItem1.cost),
+                new QueryDefinition("select * from t where t.taskNum = @taskNum" ).WithParameter("@taskNum", testItem1.taskNum),
+                new QueryDefinition("select * from t where t.totalCost = @totalCost" ).WithParameter("@totalCost", testItem1.totalCost),
+                new QueryDefinition("select * from t where t.createdDateTime = @createdDateTime" ).WithParameter("@createdDateTime", testItem1.createdDateTime),
+                new QueryDefinition("select * from t where t.statusCode = @statusCode" ).WithParameter("@statusCode", testItem1.statusCode),
+                new QueryDefinition("select * from t where t.itemIds = @itemIds" ).WithParameter("@itemIds", testItem1.itemIds),
+                new QueryDefinition("select * from t where t.dictionary = @dictionary" ).WithParameter("@dictionary", testItem1.dictionary),
+                new QueryDefinition("select * from t where t.status = @status and t.cost = @cost" )
+                    .WithParameter("@status", testItem1.status)
+                    .WithParameter("@cost", testItem1.cost),
+            };
 
             int toStreamCount = 0;
             int fromStreamCount = 0;
@@ -557,7 +581,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 jsonSerializerSettings,
                 toStreamCallBack: (itemValue) =>
                 {
-                    if (itemValue == null || itemValue.GetType().IsPrimitive)
+                    Type itemType = itemValue != null ? itemValue.GetType() : null;
+                    if (itemValue == null
+                        || itemType == typeof(int)
+                        || itemType == typeof(double)
+                        || itemType == typeof(string)
+                        || itemType == typeof(DateTime)
+                        || itemType == typeof(HttpStatusCode)
+                        || itemType == typeof(int[])
+                        || itemType == typeof(Dictionary<string, int>))
                     {
                         toStreamCount++;
                     }
@@ -582,21 +614,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Ignore conflicts since the object already exists
             }
 
-            FeedIterator<dynamic> feedIterator = containerSerializer.GetItemQueryIterator<dynamic>(
-                queryDefinition: queryDefinition);
-
-            // Only need once to verify correct serialization of the query definition
-            FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
-            foreach (dynamic item in response)
+            foreach (var queryDefinition in queryDefinitions)
             {
-                Assert.IsFalse(string.Equals(testItem1.id, item.id) || string.Equals(testItem2.id, item.id));
-                Assert.IsTrue(((JObject)item)["totalCost"].Type == JTokenType.String);
-                Assert.IsTrue(((JObject)item)["taskNum"].Type == JTokenType.String);
-            }
+                toStreamCount = 0;
+                fromStreamCount = 0;
 
-            // Each parameter in query spec should be a call to the custom serializer
-            Assert.AreEqual(3, toStreamCount);
-            Assert.AreEqual(3, fromStreamCount);
+                FeedIterator<dynamic> feedIterator = containerSerializer.GetItemQueryIterator<dynamic>(
+                    queryDefinition: queryDefinition);
+
+                List<dynamic> allItems = new List<dynamic>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    // Only need once to verify correct serialization of the query definition
+                    FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                    Assert.AreEqual(response.Count, response.Count());
+                    allItems.AddRange(response);
+                }
+
+
+                Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                foreach (dynamic item in allItems)
+                {
+                    Assert.IsFalse(string.Equals(testItem1.id, item.id) || string.Equals(testItem2.id, item.id));
+                    Assert.IsTrue(((JObject)item)["totalCost"].Type == JTokenType.String);
+                    Assert.IsTrue(((JObject)item)["taskNum"].Type == JTokenType.String);
+                }
+
+                // Each parameter in query spec should be a call to the custom serializer
+                int parameterCount = queryDefinition.ToSqlQuerySpec().Parameters.Count;
+                Assert.AreEqual(parameterCount, toStreamCount, $"missing to stream call. Expected: {parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual(1, fromStreamCount);
+            }
         }
 
         [TestMethod]
