@@ -62,9 +62,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(executor));
             }
 
-            if (CosmosSerializer == null)
+            if (cosmosSerializer == null)
             {
-                throw new ArgumentNullException(nameof(CosmosSerializer));
+                throw new ArgumentNullException(nameof(cosmosSerializer));
             }
 
             this.maxBatchOperationCount = maxBatchOperationCount;
