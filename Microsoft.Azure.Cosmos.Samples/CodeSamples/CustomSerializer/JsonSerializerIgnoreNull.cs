@@ -8,6 +8,8 @@
 
     class JsonSerializerIgnoreNull : CosmosSerializer
     {
+        public int FromCount = 0;
+        public int ToCount = 0;
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
         private static readonly JsonSerializer Serializer = new JsonSerializer()
         {
@@ -16,6 +18,7 @@
 
         public override T FromStream<T>(Stream stream)
         {
+            FromCount++;
             using (stream)
             {
                 if (typeof(Stream).IsAssignableFrom(typeof(T)))
@@ -35,6 +38,7 @@
 
         public override Stream ToStream<T>(T input)
         {
+            ToCount++;
             MemoryStream streamPayload = new MemoryStream();
             using (StreamWriter streamWriter = new StreamWriter(
                 streamPayload,

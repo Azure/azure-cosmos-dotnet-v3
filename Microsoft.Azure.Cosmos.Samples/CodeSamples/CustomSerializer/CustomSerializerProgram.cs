@@ -1,13 +1,16 @@
 ﻿namespace Cosmos.Samples.Shared
 {
-    using System;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
-    using Newtonsoft.Json.Linq;
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
-    class CustomSerializerProgram
+    internal class CustomSerializerProgram
     {
+        private Container Container;
+
         // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
         // <Main>
         public static async Task Main(string[] args)
@@ -55,9 +58,10 @@
 
         public async Task RunDemo(string endpoint, string key)
         {
+            JsonSerializerIgnoreNull jsonSerializerIgnore = new JsonSerializerIgnoreNull();
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                Serializer = new JsonSerializerIgnoreNull(),
+                Serializer = jsonSerializerIgnore,
             };
 
             using (CosmosClient client = new CosmosClient(endpoint, key, options))
@@ -66,28 +70,63 @@
                 try
                 {
                     db = await client.CreateDatabaseIfNotExistsAsync("CustomSerializerDemo");
-                    Container container = await db.CreateContainerIfNotExistsAsync(
+                    this.Container = await db.CreateContainerIfNotExistsAsync(
                         id: "ContainerDemo",
-                        partitionKeyPath: "/pk");
+                        partitionKeyPath: "/ponumber");
 
-                    dynamic testItem = new { id = "MyTestItemWithIgnoreNull" + Guid.NewGuid(), pk = "ItExists", description = (string)null };
-                    ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(testItem, new PartitionKey(testItem.pk));
-                    dynamic responseObject = itemResponse.Resource;
-                    if (responseObject["description"] != null)
+                    SalesOrder salesOrder = new SalesOrder()
                     {
-                        throw new InvalidOperationException("Description was not ignored");
-                    }
+                        Id = "1234SalesOrder",
+                        PurchaseOrderNumber = "1234PurchaseOrderNumber"
+                    };
 
-                    Console.WriteLine($"Item created: {responseObject}");
+                    SalesOrder salesOrder2 = new SalesOrder()
+                    {
+                        Id = "789SalesOrder",
+                        PurchaseOrderNumber = "789PurchaseOrderNumber"
+                    };
+
+                    ItemResponse<SalesOrder> itemResponse = await this.Container.CreateItemAsync<SalesOrder>(salesOrder, new PartitionKey(salesOrder.PurchaseOrderNumber));
+                    itemResponse = await this.Container.CreateItemAsync<SalesOrder>(salesOrder2, new PartitionKey(salesOrder2.PurchaseOrderNumber));
+                    
+
+                    Console.WriteLine($"Item created: {itemResponse.Resource}");
+
+                    int beforeFromCount = jsonSerializerIgnore.FromCount;
+                    IEnumerable<SalesOrder> salesOrders = await SearchPersons();
+                    int afterFromCount = jsonSerializerIgnore.FromCount;
+
+                    if(beforeFromCount == afterFromCount)
+                    {
+                        throw new ArgumentException("Nothing was desesrialized");
+                    }
                 }
                 finally
                 {
-                    if(db != null)
+                    if (db != null)
                     {
                         await db.DeleteAsync();
                     }
                 }
             }
+        }
+
+        public async Task<IEnumerable<SalesOrder>> SearchPersons()
+        {
+            QueryDefinition qd = new QueryDefinition("select * from T");
+
+            List<SalesOrder> ret = new List<SalesOrder>();
+
+            FeedIterator<SalesOrder> feed = this.Container.GetItemQueryIterator<SalesOrder>(qd);
+
+            while (feed.HasMoreResults)
+            {
+                FeedResponse<SalesOrder> curr = await feed.ReadNextAsync();
+
+                ret.AddRange(curr);
+            }
+
+            return ret;
         }
     }
 }
