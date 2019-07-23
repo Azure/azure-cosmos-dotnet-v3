@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
+            this.PartitionKeyJson = partitionKey.HasValue ? this.PartitionKey.Value.ToString() : null;
         }
 
         public ItemBatchOperation(

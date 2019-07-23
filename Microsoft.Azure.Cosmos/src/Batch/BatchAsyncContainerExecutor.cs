@@ -88,18 +88,23 @@ namespace Microsoft.Azure.Cosmos
             return await streamer.AddAsync(new BatchAsyncOperationContext(resolvedPartitionKeyRangeId, operation));
         }
 
-        public async Task<bool> ValidateOperationAsync(ItemBatchOperation operation)
+        public async Task<bool> ValidateOperationAsync(
+            ItemBatchOperation operation, 
+            ItemRequestOptions itemRequestOptions = null)
         {
-            if (operation.RequestOptions != null)
+            if (itemRequestOptions != null)
             {
-                if (operation.RequestOptions.BaseConsistencyLevel.HasValue)
+                if (itemRequestOptions.BaseConsistencyLevel.HasValue
+                                || itemRequestOptions.PreTriggers != null
+                                || itemRequestOptions.PostTriggers != null
+                                || itemRequestOptions.SessionToken != null)
                 {
                     return false;
                 }
 
-                if (operation.RequestOptions.Properties != null
-                            && (operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
-                            | operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
+                if (itemRequestOptions.Properties != null
+                            && (itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
+                            | itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
                 {
                     byte[] epk = epkObj as byte[];
                     string epkStr = epkStrObj as string;
@@ -189,9 +194,9 @@ namespace Microsoft.Azure.Cosmos
 
         private static void AddHeadersToRequestMessage(RequestMessage requestMessage, string partitionKeyRangeId)
         {
-            requestMessage.Headers.Add(WFConstants.BackendHeaders.PartitionKeyRangeId, partitionKeyRangeId);
+            requestMessage.Headers.PartitionKeyRangeId = partitionKeyRangeId;
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);
-            requestMessage.Headers.Add(BatchExecUtils.IsBatchRequest, bool.TrueString);
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
         }
 
         /// <summary>
@@ -267,7 +272,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                partitionKeyRangeId = BatchExecUtils.GetPartitionKeyRangeId(operation.ParsedPartitionKey, partitionKeyDefinition, collectionRoutingMap);
+                partitionKeyRangeId = BatchExecUtils.GetPartitionKeyRangeId(operation.PartitionKey.Value, partitionKeyDefinition, collectionRoutingMap);
             }
 
             return partitionKeyRangeId;
@@ -364,8 +369,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Debug.Assert(serverRequestPayload != null, "Server request payload expected to be non-null");
 
-                ResponseMessage responseMessage = await ExecUtils.ProcessResourceOperationAsync(
-                    this.cosmosClientContext.Client,
+                ResponseMessage responseMessage = await this.cosmosClientContext.ProcessResourceOperationStreamAsync(
                     this.cosmosContainer.LinkUri,
                     ResourceType.Document,
                     OperationType.Batch,
@@ -374,7 +378,6 @@ namespace Microsoft.Azure.Cosmos
                     partitionKey: null,
                     streamPayload: serverRequestPayload,
                     requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
-                    responseCreator: cosmosResponseMessage => cosmosResponseMessage, // response creator
                     cancellationToken: cancellationToken);
 
                 return await BatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer);
