@@ -272,10 +272,25 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                await this.FillOperationPropertiesAsync(operation, cancellationToken);
                 partitionKeyRangeId = BatchExecUtils.GetPartitionKeyRangeId(operation.PartitionKey.Value, partitionKeyDefinition, collectionRoutingMap);
             }
 
             return partitionKeyRangeId;
+        }
+
+        private async Task FillOperationPropertiesAsync(ItemBatchOperation operation, CancellationToken cancellationToken)
+        {
+            // Same logic from RequestInvokerHandler to manage partition key migration
+            if (object.ReferenceEquals(operation.PartitionKey, PartitionKey.None))
+            {
+                Documents.Routing.PartitionKeyInternal partitionKeyInternal = await this.cosmosContainer.GetNonePartitionKeyValueAsync(cancellationToken);
+                operation.PartitionKeyJson = partitionKeyInternal.ToJsonString();
+            }
+            else
+            {
+                operation.PartitionKeyJson = operation.PartitionKey.Value.ToString();
+            }
         }
 
         private async Task<PartitionKeyRangeBatchExecutionResult> StartExecutionForPKRangeIdAsync(
