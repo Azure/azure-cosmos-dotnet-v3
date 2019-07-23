@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class BatchExecUtils
     {
+        internal const int StatusCodeMultiStatus = 207;
+        internal const string IsBatchRequest = "x-ms-cosmos-is-batch-request";
         // Using the same buffer size as the Stream.DefaultCopyBufferSize
         private const int BufferSize = 81920;
 
@@ -143,6 +145,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException(errorMessage);
             }
+        }
+
+        public static string GetPartitionKeyRangeId(Documents.PartitionKey partitionKey, PartitionKeyDefinition partitionKeyDefinition, Routing.CollectionRoutingMap collectionRoutingMap)
+        {
+            string effectivePartitionKey = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            return collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey).Id;
         }
     }
 }

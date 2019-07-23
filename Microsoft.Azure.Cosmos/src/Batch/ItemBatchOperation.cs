@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
 
         public BatchItemRequestOptions RequestOptions { get; }
 
-        public int OperationIndex { get; }
+        public int OperationIndex { get; internal set; }
 
         internal string PartitionKeyJson { get; set; }
 
