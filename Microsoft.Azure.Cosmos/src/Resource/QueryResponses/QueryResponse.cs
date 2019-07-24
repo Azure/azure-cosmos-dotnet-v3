@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The number of items in the stream.
         /// </summary>
-        public override int Count { get; }
+        public override int Count => this.cosmosElements?.Count() ?? 0;
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
 

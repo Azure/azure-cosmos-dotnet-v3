@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 clientOptions: null,
                 userJsonSerializer: null,
                 defaultJsonSerializer: null,
+                sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null,
