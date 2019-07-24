@@ -50,28 +50,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ContainerContractTest()
         {
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(new Guid().ToString(), "/id");
-            Assert.IsNotNull(response);
-            Assert.IsTrue(response.RequestCharge > 0);
-            Assert.IsNotNull(response.Headers);
-            Assert.IsNotNull(response.Headers.ActivityId);
+            ValidateCreateContainerResponseContract(response);
+        }
 
-            ContainerProperties containerSettings = response.Resource;
-            Assert.IsNotNull(containerSettings.Id);
-            Assert.IsNotNull(containerSettings.ResourceId);
-            Assert.IsNotNull(containerSettings.ETag);
-            Assert.IsTrue(containerSettings.LastModified.HasValue);
+        [TestMethod]
+        public async Task ContainerBuilderContractTest()
+        {
+            ContainerResponse response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateAsync();
+            ValidateCreateContainerResponseContract(response);
 
-            Assert.IsNotNull(containerSettings.PartitionKeyPath);
-            Assert.IsNotNull(containerSettings.PartitionKeyPathTokens);
-            Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens.Length);
-            Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0]);
+            response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateIfNotExistsAsync();
+            ValidateCreateContainerResponseContract(response);
 
-            ContainerCore containerCore = response.Container as ContainerCore;
-            Assert.IsNotNull(containerCore);
-            Assert.IsNotNull(containerCore.LinkUri);
-            Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));
-
-            Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
+            response = await this.cosmosDatabase.DefineContainer(response.Container.Id, "/id").CreateIfNotExistsAsync();
+            ValidateCreateContainerResponseContract(response);
         }
 
         [Ignore]
@@ -576,6 +568,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
+        {
+            Assert.IsNotNull(containerResponse);
+            Assert.IsTrue(containerResponse.RequestCharge > 0);
+            Assert.IsNotNull(containerResponse.Headers);
+            Assert.IsNotNull(containerResponse.Headers.ActivityId);
+
+            ContainerProperties containerSettings = containerResponse.Resource;
+            Assert.IsNotNull(containerSettings.Id);
+            Assert.IsNotNull(containerSettings.ResourceId);
+            Assert.IsNotNull(containerSettings.ETag);
+            Assert.IsTrue(containerSettings.LastModified.HasValue);
+
+            Assert.IsNotNull(containerSettings.PartitionKeyPath);
+            Assert.IsNotNull(containerSettings.PartitionKeyPathTokens);
+            Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens.Length);
+            Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0]);
+
+            ContainerCore containerCore = containerResponse.Container as ContainerCore;
+            Assert.IsNotNull(containerCore);
+            Assert.IsNotNull(containerCore.LinkUri);
+            Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));
+
+            Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
         }
     }
 }
