@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientOptions clientOptions,
             CosmosSerializer userJsonSerializer,
             CosmosSerializer defaultJsonSerializer,
+            CosmosSerializer sqlQuerySpecSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientOptions = clientOptions;
             this.CosmosSerializer = userJsonSerializer;
             this.PropertiesSerializer = defaultJsonSerializer;
+            this.SqlQuerySpecSerializer = sqlQuerySpecSerializer;
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
@@ -47,6 +49,8 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosSerializer CosmosSerializer { get; }
 
         internal override CosmosSerializer PropertiesSerializer { get; }
+
+        internal override CosmosSerializer SqlQuerySpecSerializer { get; }
 
         internal override CosmosResponseFactory ResponseFactory { get; }
 
