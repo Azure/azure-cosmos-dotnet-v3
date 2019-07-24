@@ -33,6 +33,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosSerializer PropertiesSerializer { get; }
 
+        internal abstract CosmosSerializer SqlQuerySpecSerializer { get; }
+
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 
         internal abstract RequestInvokerHandler RequestHandler { get; }
