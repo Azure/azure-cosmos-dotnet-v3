@@ -1179,7 +1179,7 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__40))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__37))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
@@ -1514,8 +1514,51 @@
       },
       "NestedTypes": {}
     },
-    "CosmosSerializer": {
+    "CosmosJsonDotNetSerializer": {
       "Subclasses": {},
+      "Members": {
+        "System.IO.Stream ToStream[T](T)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IO.Stream ToStream[T](T)"
+        },
+        "T FromStream[T](System.IO.Stream)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "T FromStream[T](System.IO.Stream)"
+        },
+        "Void .ctor(Newtonsoft.Json.JsonSerializerSettings)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "Void .ctor(Newtonsoft.Json.JsonSerializerSettings)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosSerializer": {
+      "Subclasses": {
+        "CosmosJsonDotNetSerializer": {
+          "Subclasses": {},
+          "Members": {
+            "System.IO.Stream ToStream[T](T)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.IO.Stream ToStream[T](T)"
+            },
+            "T FromStream[T](System.IO.Stream)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "T FromStream[T](System.IO.Stream)"
+            },
+            "Void .ctor(Newtonsoft.Json.JsonSerializerSettings)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "Void .ctor(Newtonsoft.Json.JsonSerializerSettings)"
+            }
+          },
+          "NestedTypes": {}
+        }
+      },
       "Members": {
         "System.IO.Stream ToStream[T](T)": {
           "Type": "Method",
@@ -2065,6 +2108,13 @@
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(System.Nullable`1[System.Int32])"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateIfNotExistsAsync>d__10))]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])"
         },
         "Void .ctor()": {
           "Type": "Constructor",
@@ -3280,7 +3330,17 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.String GermanyNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String GermanyNortheast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String GermanyWestCentral": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
@@ -3336,6 +3396,16 @@
           "MethodInfo": null
         },
         "System.String SouthIndia": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SwitzerlandNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String SwitzerlandWest": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
