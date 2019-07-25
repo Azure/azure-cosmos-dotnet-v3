@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class PartitionKeyTests
@@ -41,6 +42,50 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.AreEqual(testcase.Item2, new PartitionKey(testcase.Item1).ToString());
             }
+        }
+
+        [TestMethod]
+        public void TestPartitionKeyDefinitionAreEquivalent()
+        {
+            //Different partition key path test
+            PartitionKeyDefinition definition1 = new PartitionKeyDefinition();
+            definition1.Paths.Add("/pk1");
+
+            PartitionKeyDefinition definition2 = new PartitionKeyDefinition();
+            definition2.Paths.Add("/pk2");
+
+            Assert.IsFalse(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
+
+            //Different partition kind test
+            definition1 = new PartitionKeyDefinition();
+            definition1.Paths.Add("/pk1");
+            definition1.Kind = PartitionKind.Hash;
+
+            definition2 = new PartitionKeyDefinition();
+            definition2.Paths.Add("/pk1");
+            definition2.Kind = PartitionKind.Range;
+
+            Assert.IsFalse(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
+
+            //Different partition version test
+            definition1 = new PartitionKeyDefinition();
+            definition1.Paths.Add("/pk1");
+            definition1.Version = PartitionKeyDefinitionVersion.V1;
+
+            definition2 = new PartitionKeyDefinition();
+            definition2.Paths.Add("/pk1");
+            definition2.Version = PartitionKeyDefinitionVersion.V2;
+
+            Assert.IsFalse(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
+
+            //Same partition key path test
+            definition1 = new PartitionKeyDefinition();
+            definition1.Paths.Add("/pk1");
+
+            definition2 = new PartitionKeyDefinition();
+            definition2.Paths.Add("/pk1");
+
+            Assert.IsTrue(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
         }
     }
 }

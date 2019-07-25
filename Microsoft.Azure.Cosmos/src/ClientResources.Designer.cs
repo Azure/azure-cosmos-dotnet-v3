@@ -430,6 +430,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The requested partition key path &apos;{0}&apos; does not match existing Container &apos;{1}&apos; with partition key path &apos;{2}&apos;.
+        /// </summary>
+        internal static string PartitionKeyPathConflict {
+            get {
+                return ResourceManager.GetString("PartitionKeyPathConflict", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Partition property not found in the document..
         /// </summary>
         internal static string PartitionPropertyNotFound {
