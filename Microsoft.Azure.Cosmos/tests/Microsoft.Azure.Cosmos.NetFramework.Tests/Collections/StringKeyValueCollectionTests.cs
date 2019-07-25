@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Collections
     ///
     /// </summary>
     [TestClass]
-    public class StringKeyValueCollectionTests
+    public class DictionaryNameValueCollectionTests
     {
         /// <summary>
         ///
