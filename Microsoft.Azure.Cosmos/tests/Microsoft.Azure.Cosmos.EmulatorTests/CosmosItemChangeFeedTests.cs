@@ -66,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastcontinuation = responseMessage.Headers.ContinuationToken;
+                    Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
                     List<CompositeContinuationToken> deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation);
                     currentRange = deserializedToken[0].Range;
                     Assert.AreEqual(pkRangesCount, deserializedToken.Count);
@@ -107,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await setIteratorNew.ReadNextAsync(this.cancellationToken))
                 {
                     lastcontinuation = responseMessage.Headers.ContinuationToken;
+                    Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
                     currentRange = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation)[0].Range;
 
                     if (responseMessage.IsSuccessStatusCode)
@@ -158,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastcontinuation = responseMessage.Headers.ContinuationToken;
+                    Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
                     List<CompositeContinuationToken> deserializedToken = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(lastcontinuation);
                     currentRange = deserializedToken[0].Range;
                     if (responseMessage.IsSuccessStatusCode)
@@ -274,6 +277,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     continuationToken = responseMessage.Headers.ContinuationToken;
+                    Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
                     if (responseMessage.IsSuccessStatusCode)
                     {
                         Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;

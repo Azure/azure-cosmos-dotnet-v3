@@ -4153,10 +4153,20 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.String ContinuationToken": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String ErrorMessage": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "System.String get_ContinuationToken()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_ContinuationToken()"
         },
         "System.String get_ErrorMessage()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

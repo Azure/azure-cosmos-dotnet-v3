@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastContinuationToken = responseMessage.Headers.ContinuationToken;
-
+                    Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
                     Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in response)
                     {
@@ -806,6 +806,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ResponseMessage response = await feedIterator.ReadNextAsync();
                 lastContinuationToken = response.Headers.ContinuationToken;
+                Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
+
                 Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 JsonSerializer serializer = new JsonSerializer();
 
