@@ -226,10 +226,19 @@ namespace Microsoft.Azure.Cosmos.Query
             if (exception != null)
             {
                 DefaultTrace.TraceInformation("QueryEngineConfiguration: " + this.queryengineConfiguration);
+                string errorMessage;
+                if (string.IsNullOrEmpty(serializedQueryExecutionInfo))
+                {
+                    errorMessage = $"Message: Query service interop parsing hit an unexpected exception: {exception.ToString()}";
+                }
+                else
+                {
+                    errorMessage = "Message: " + serializedQueryExecutionInfo;
+                }
 
                 throw new CosmosException(
                     HttpStatusCode.BadRequest,
-                    "Message: " + serializedQueryExecutionInfo);
+                    errorMessage);
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =

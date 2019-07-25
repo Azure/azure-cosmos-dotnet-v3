@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
+    using System.Net;
 
     [TestClass]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -24,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         private static CosmosClient cosmosClient;
-        private static CosmosDatabase testDb;
+        private static Database testDb;
         private static Container testContainer;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
             cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
-                cosmosClientBuilder.WithCustomJsonSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
+                cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
                 {
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                     // We want to simulate the property not exist so ignoring the null value
@@ -39,9 +40,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 })).WithConnectionModeGateway();
             });
 
-            await cosmosClient.GetDatabase(id: nameof(LinqSQLTranslationBaselineTest)).DeleteAsync();
-            testDb = await cosmosClient.CreateDatabaseAsync(nameof(LinqSQLTranslationBaselineTest));
+            try
+            {
+                await cosmosClient.GetDatabase(id: nameof(LinqSQLTranslationBaselineTest)).DeleteAsync();
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //swallow
+            }
 
+            testDb = await cosmosClient.CreateDatabaseAsync(nameof(LinqSQLTranslationBaselineTest));
         }
 
         [TestInitialize]
@@ -53,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         [TestCleanup]
         public async Task TestCleanUp()
         {
-            await testContainer.DeleteAsync();
+            await testContainer.DeleteContainerAsync();
         }
 
         [ClassCleanup]
@@ -61,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             if (testDb != null)
             {
-                await testDb.DeleteAsync();
+                await testDb.DeleteStreamAsync();
             }
         }
 

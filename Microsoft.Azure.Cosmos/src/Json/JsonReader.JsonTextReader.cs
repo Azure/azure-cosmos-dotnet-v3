@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Text;
 
@@ -911,7 +912,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public double GetNumberValue()
                 {
                     string stringDouble = this.encoding.GetString(this.bufferedToken.GetBuffer(), 0, this.tokenLength);
-                    return double.Parse(stringDouble);
+                    return double.Parse(stringDouble, CultureInfo.InvariantCulture);
                 }
 
                 /// <summary>

@@ -9,18 +9,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
-    internal abstract class AbstractRetryHandler : CosmosRequestHandler
+    internal abstract class AbstractRetryHandler : RequestHandler
     {
-        internal abstract Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(CosmosRequestMessage request);
+        internal abstract Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request);
 
-        public override async Task<CosmosResponseMessage> SendAsync(
-            CosmosRequestMessage request, 
+        public override async Task<ResponseMessage> SendAsync(
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
+            request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
             try
             {
@@ -43,6 +43,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return ex.ToCosmosResponseMessage(request);
             }
+            catch (CosmosException ex)
+            {
+                return ex.ToCosmosResponseMessage(request);
+            }
             catch (AggregateException ex)
             {
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
@@ -57,11 +61,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 throw;
             }
+            finally
+            {
+                request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
+            }
         }
 
-        private static async Task<CosmosResponseMessage> ExecuteHttpRequestAsync(
-           Func<Task<CosmosResponseMessage>> callbackMethod,
-           Func<CosmosResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
+        private static async Task<ResponseMessage> ExecuteHttpRequestAsync(
+           Func<Task<ResponseMessage>> callbackMethod,
+           Func<ResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
            Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
            CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -72,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 try
                 {
-                    CosmosResponseMessage cosmosResponseMessage = await callbackMethod();
+                    ResponseMessage cosmosResponseMessage = await callbackMethod();
                     if (cosmosResponseMessage.IsSuccessStatusCode)
                     {
                         return cosmosResponseMessage;
@@ -103,4 +111,4 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
     }
-} 
+}

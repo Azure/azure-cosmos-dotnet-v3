@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Description("Make sure that the pair (PK, unique key) is globally (not depending on partion/PK) unique")]
+        [Description("Make sure that the pair (PK, unique key) is globally (not depending on partition/PK) unique")]
         public void TestGloballyUniquenessOfFieldAndPartitionedKeyPair()
         {
             using (DocumentClient client = TestCommon.CreateClient(true, tokenType: AuthorizationTokenType.PrimaryMasterKey))

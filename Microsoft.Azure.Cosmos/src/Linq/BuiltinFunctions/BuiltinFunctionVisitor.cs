@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
-    using Microsoft.Azure.Cosmos.SystemFunctions;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
@@ -52,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 declaringType = methodCallExpression.Arguments[0].Type;
 
-                if (methodCallExpression.Method.DeclaringType.GeUnderlyingSystemType() == typeof(TypeCheckFunctionsExtensions))
+                if (methodCallExpression.Method.DeclaringType.GeUnderlyingSystemType() == typeof(CosmosLinqExtensions))
                 {
                     return TypeCheckFunctions.Visit(methodCallExpression, context);
                 }
@@ -83,8 +82,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // Spatial functions
-            if (typeof(Geometry).IsAssignableFrom(declaringType)
-                || methodCallExpression.Method.DeclaringType == typeof(GeometryOperationExtensions))
+            if (typeof(Geometry).IsAssignableFrom(declaringType))
             {
                 return SpatialBuiltinFunctions.Visit(methodCallExpression, context);
             }

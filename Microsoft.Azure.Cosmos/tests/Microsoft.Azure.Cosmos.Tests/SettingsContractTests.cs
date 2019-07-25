@@ -255,8 +255,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ConflictResolutionPolicy = new Cosmos.ConflictResolutionPolicy()
                 {
                     Mode = Cosmos.ConflictResolutionMode.Custom,
-                    ConflictResolutionPath = "/path",
-                    ConflictResolutionProcedure = "sp"
+                    ResolutionPath = "/path",
+                    ResolutionProcedure = "sp"
                 }
             };
 
@@ -280,8 +280,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(cosmosContainerSettings.Id, collectionDeser.Id);
             Assert.AreEqual((int)cosmosContainerSettings.ConflictResolutionPolicy.Mode, (int)collectionDeser.ConflictResolutionPolicy.Mode);
-            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath, collectionDeser.ConflictResolutionPolicy.ConflictResolutionPath);
-            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure, collectionDeser.ConflictResolutionPolicy.ConflictResolutionProcedure);
+            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ResolutionPath, collectionDeser.ConflictResolutionPolicy.ConflictResolutionPath);
+            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ResolutionProcedure, collectionDeser.ConflictResolutionPolicy.ConflictResolutionProcedure);
         }
 
         [TestMethod]
@@ -395,10 +395,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosAccountSettings.EnableMultipleWriteLocations = true;
             cosmosAccountSettings.ResourceId = "/uri";
             cosmosAccountSettings.ETag = "etag";
-            cosmosAccountSettings.WriteLocationsInternal = new Collection<AccountLocation>() { new AccountLocation() { Name="region1", DatabaseAccountEndpoint = "endpoint1" } };
-            cosmosAccountSettings.ReadLocationsInternal = new Collection<AccountLocation>() { new AccountLocation() { Name = "region2", DatabaseAccountEndpoint = "endpoint2" } };
+            cosmosAccountSettings.WriteLocationsInternal = new Collection<AccountRegion>() { new AccountRegion() { Name="region1", Endpoint = "endpoint1" } };
+            cosmosAccountSettings.ReadLocationsInternal = new Collection<AccountRegion>() { new AccountRegion() { Name = "region2", Endpoint = "endpoint2" } };
             cosmosAccountSettings.AddressesLink = "link";
-            cosmosAccountSettings.ConsistencySetting = new AccountConsistency() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
+            cosmosAccountSettings.Consistency = new AccountConsistency() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
             cosmosAccountSettings.ReplicationPolicy = new ReplicationPolicy() { AsyncReplication = true };
             cosmosAccountSettings.ReadPolicy = new ReadPolicy() { PrimaryReadCoefficient = 10 };
 
@@ -411,11 +411,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosAccountSettings.ResourceId, accountDeserSettings.ResourceId);
             Assert.AreEqual(cosmosAccountSettings.ETag, accountDeserSettings.ETag);
             Assert.AreEqual(cosmosAccountSettings.WriteLocationsInternal[0].Name, accountDeserSettings.WriteLocationsInternal[0].Name);
-            Assert.AreEqual(cosmosAccountSettings.WriteLocationsInternal[0].DatabaseAccountEndpoint, accountDeserSettings.WriteLocationsInternal[0].DatabaseAccountEndpoint);
+            Assert.AreEqual(cosmosAccountSettings.WriteLocationsInternal[0].Endpoint, accountDeserSettings.WriteLocationsInternal[0].Endpoint);
             Assert.AreEqual(cosmosAccountSettings.ReadLocationsInternal[0].Name, accountDeserSettings.ReadLocationsInternal[0].Name);
-            Assert.AreEqual(cosmosAccountSettings.ReadLocationsInternal[0].DatabaseAccountEndpoint, accountDeserSettings.ReadLocationsInternal[0].DatabaseAccountEndpoint);
+            Assert.AreEqual(cosmosAccountSettings.ReadLocationsInternal[0].Endpoint, accountDeserSettings.ReadLocationsInternal[0].Endpoint);
             Assert.AreEqual(cosmosAccountSettings.AddressesLink, accountDeserSettings.AddressesLink);
-            Assert.AreEqual(cosmosAccountSettings.ConsistencySetting.DefaultConsistencyLevel, accountDeserSettings.ConsistencySetting.DefaultConsistencyLevel);
+            Assert.AreEqual(cosmosAccountSettings.Consistency.DefaultConsistencyLevel, accountDeserSettings.Consistency.DefaultConsistencyLevel);
             Assert.AreEqual(cosmosAccountSettings.ReplicationPolicy.AsyncReplication, accountDeserSettings.ReplicationPolicy.AsyncReplication);
             Assert.AreEqual(cosmosAccountSettings.ReadPolicy.PrimaryReadCoefficient, accountDeserSettings.ReadPolicy.PrimaryReadCoefficient);
         }

@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
             internalClient.DocumentClient.StoreModel = MockServerStoreModel(internalClient.DocumentClient.Session, sendDirectFunc);
 
 
-            RetryHandler retryHandler = new RetryHandler(internalClient.DocumentClient.ResetSessionTokenRetryPolicy);
+            RetryHandler retryHandler = new RetryHandler(internalClient);
             MockTransportHandler transportHandler = new MockTransportHandler(internalClient);
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
@@ -384,8 +384,8 @@ namespace Microsoft.Azure.Cosmos
             {
             }
 
-            public override async Task<CosmosResponseMessage> SendAsync(
-                CosmosRequestMessage request,
+            public override async Task<ResponseMessage> SendAsync(
+                RequestMessage request,
                 CancellationToken cancellationToken)
             {
                 this.ProcessMessagesAsyncThrew = false;

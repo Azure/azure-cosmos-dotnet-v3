@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public abstract class BaseCosmosClientHelper
     {
         protected CosmosClient cosmosClient = null;
-        protected CosmosDatabase database = null;
+        protected Database database = null;
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
 
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (this.database != null)
             {
-                await this.database.DeleteAsync(
+                await this.database.DeleteStreamAsync(
                     requestOptions: null,
                     cancellationToken: this.cancellationToken);
             }

@@ -79,8 +79,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
-                if (this.locationUnavailablityInfoByEndpoint.Count > 0
-                    && DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime)
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
                 {
                     this.UpdateLocationCache();
                 }
@@ -98,8 +99,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
-                if (this.locationUnavailablityInfoByEndpoint.Count > 0
-                    && DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime)
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
                 {
                     this.UpdateLocationCache();
                 }
@@ -155,8 +157,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         public void OnDatabaseAccountRead(AccountProperties databaseAccount)
         {
             this.UpdateLocationCache(
-                databaseAccount.WritableLocations,
-                databaseAccount.ReadableLocations,
+                databaseAccount.WritableRegions,
+                databaseAccount.ReadableRegions,
                 preferenceList: null,
                 enableMultipleWriteLocations: databaseAccount.EnableMultipleWriteLocations);
         }
@@ -179,12 +181,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         ///            Once the endpoint is marked unavailable, it is moved to the end of available write endpoint. Current request will
         ///            be retried on next preferred available write endpoint.
         ///        (ii) For all other resources, always resolve to first/second (regardless of preferred locations)
-        ///             write endpoint in <see cref="AccountProperties.WritableLocations"/>.
-        ///             Endpoint of first write location in <see cref="AccountProperties.WritableLocations"/> is the only endpoint that supports
+        ///             write endpoint in <see cref="AccountProperties.WritableRegions"/>.
+        ///             Endpoint of first write location in <see cref="AccountProperties.WritableRegions"/> is the only endpoint that supports
         ///             write operation on all resource types (except during that region's failover). 
-        ///             Only during manual failover, client would retry write on second write location in <see cref="AccountProperties.WritableLocations"/>.
-        ///    (b) Else resolve the request to first write endpoint in <see cref="AccountProperties.writeLocations"/> OR 
-        ///        second write endpoint in <see cref="AccountProperties.WritableLocations"/> in case of manual failover of that location.
+        ///             Only during manual failover, client would retry write on second write location in <see cref="AccountProperties.WritableRegions"/>.
+        ///    (b) Else resolve the request to first write endpoint in <see cref="AccountProperties.writeRegions"/> OR 
+        ///        second write endpoint in <see cref="AccountProperties.WritableRegions"/> in case of manual failover of that location.
         /// 2. Else resolve the request to most preferred available read endpoint (automatic failover for read requests)
         /// </summary>
         /// <param name="request">Request for which endpoint is to be resolved</param>
@@ -409,8 +411,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
         private void UpdateLocationCache(
-            IEnumerable<AccountLocation> writeLocations = null,
-            IEnumerable<AccountLocation> readLocations = null,
+            IEnumerable<AccountRegion> writeLocations = null,
+            IEnumerable<AccountRegion> readLocations = null,
             ReadOnlyCollection<string> preferenceList = null,
             bool? enableMultipleWriteLocations = null)
         {
@@ -519,16 +521,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             return endpoints.AsReadOnly();
         }        
 
-        private ReadOnlyDictionary<string, Uri> GetEndpointByLocation(IEnumerable<AccountLocation> locations, out ReadOnlyCollection<string> orderedLocations)
+        private ReadOnlyDictionary<string, Uri> GetEndpointByLocation(IEnumerable<AccountRegion> locations, out ReadOnlyCollection<string> orderedLocations)
         {
             Dictionary<string, Uri> endpointsByLocation = new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase);
             List<string> parsedLocations = new List<string>();
 
-            foreach (AccountLocation location in locations)
+            foreach (AccountRegion location in locations)
             {
                 Uri endpoint;
                 if (!string.IsNullOrEmpty(location.Name)
-                    && Uri.TryCreate(location.DatabaseAccountEndpoint, UriKind.Absolute, out endpoint))
+                    && Uri.TryCreate(location.Endpoint, UriKind.Absolute, out endpoint))
                 {
                     endpointsByLocation[location.Name] = endpoint;
                     parsedLocations.Add(location.Name);
@@ -538,7 +540,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     DefaultTrace.TraceInformation("GetAvailableEndpointsByLocation() - skipping add for location = {0} as it is location name is either empty or endpoint is malformed {1}",
                         location.Name,
-                        location.DatabaseAccountEndpoint);
+                        location.Endpoint);
                 }
             }
 

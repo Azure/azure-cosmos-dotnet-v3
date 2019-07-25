@@ -17,6 +17,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class BatchExecUtils
     {
+        // Using the same buffer size as the Stream.DefaultCopyBufferSize
+        private const int BufferSize = 81920;
+
         /// <summary>
         /// Converts a Stream to a Memory{byte} wrapping a byte array honoring a provided maximum length for the returned Memory.
         /// </summary>
@@ -25,7 +28,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"><see cref="CancellationToken"/> to cancel the operation.</param>
         /// <returns>A Memory{byte} with length at most maximumLength.</returns>
         /// <remarks>Throws RequestEntityTooLargeException if the input stream has more bytes than maximumLength.</remarks>
-        public static async Task<Memory<byte>> StreamToMemoryAsync(Stream stream, int maximumLength, CancellationToken cancellationToken)
+        public static async Task<Memory<byte>> StreamToMemoryAsync(
+            Stream stream, 
+            int maximumLength, 
+            CancellationToken cancellationToken)
         {
             if (stream.CanSeek)
             {
@@ -56,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                int bufferSize = 81920; // Using the same buffer size as the Stream.DefaultCopyBufferSize
+                int bufferSize = BatchExecUtils.BufferSize;
                 byte[] buffer = new byte[bufferSize];
 
                 using (MemoryStream memoryStream = new MemoryStream(bufferSize)) // using bufferSize as initial capacity as well
@@ -81,13 +87,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static void GetServerRequestLimits(out int maxServerRequestBodyLength, out int maxServerRequestOperationCount)
-        {
-            maxServerRequestBodyLength = Constants.MaxDirectModeBatchRequestBodySizeInBytes;
-            maxServerRequestOperationCount = Constants.MaxOperationsInDirectModeBatchRequest;
-        }
-
-        public static CosmosResponseMessage Validate(
+        public static void EnsureValid(
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,
             int? maxOperationCount = null)
@@ -116,34 +116,24 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (ItemBatchOperation operation in operations)
                 {
-                    if (operation.RequestOptions != null)
+                    if (operation.RequestOptions != null
+                        && operation.RequestOptions.Properties != null
+                        && (operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
+                            | operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
                     {
-                        if (operation.RequestOptions.ConsistencyLevel.HasValue
-                            || operation.RequestOptions.PreTriggers != null
-                            || operation.RequestOptions.PostTriggers != null
-                            || operation.RequestOptions.SessionToken != null)
+                        byte[] epk = epkObj as byte[];
+                        string epkStr = epkStrObj as string;
+                        if (epk == null || epkStr == null)
                         {
-                            errorMessage = ClientResources.BatchItemRequestOptionNotSupported;
+                            errorMessage = string.Format(
+                                ClientResources.EpkPropertiesPairingExpected,
+                                WFConstants.BackendHeaders.EffectivePartitionKey,
+                                WFConstants.BackendHeaders.EffectivePartitionKeyString);
                         }
 
-                        if (operation.RequestOptions.Properties != null
-                            && (operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
-                            | operation.RequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
+                        if (operation.PartitionKey != null)
                         {
-                            byte[] epk = epkObj as byte[];
-                            string epkStr = epkStrObj as string;
-                            if (epk == null || epkStr == null)
-                            {
-                                errorMessage = string.Format(
-                                    ClientResources.EpkPropertiesPairingExpected,
-                                    WFConstants.BackendHeaders.EffectivePartitionKey,
-                                    WFConstants.BackendHeaders.EffectivePartitionKeyString);
-                            }
-
-                            if (operation.PartitionKey != null)
-                            {
-                                errorMessage = ClientResources.PKAndEpkSetTogether;
-                            }
+                            errorMessage = ClientResources.PKAndEpkSetTogether;
                         }
                     }
                 }
@@ -151,10 +141,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (errorMessage != null)
             {
-                return new CosmosResponseMessage(HttpStatusCode.BadRequest, errorMessage: errorMessage);
+                throw new ArgumentException(errorMessage);
             }
-
-            return new CosmosResponseMessage(HttpStatusCode.OK);
         }
     }
 }

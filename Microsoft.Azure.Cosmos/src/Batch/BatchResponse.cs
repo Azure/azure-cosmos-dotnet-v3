@@ -17,7 +17,12 @@ namespace Microsoft.Azure.Cosmos
     /// Response of a batch request.
     /// </summary>
 #pragma warning disable CA1710 // Identifiers should have correct suffix
-    public class BatchResponse : IReadOnlyList<BatchOperationResult>, IDisposable
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class BatchResponse : IReadOnlyList<BatchOperationResult>, IDisposable
 #pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         private bool isDisposed;
@@ -186,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets all the Activity IDs associated with the response.
         /// </summary>
         /// <returns>An enumerable that contains the Activity IDs.</returns>
-        public virtual IEnumerable<string> GetActivityIds()
+        internal virtual IEnumerable<string> GetActivityIds()
         {
             yield return this.ActivityId;
         }
@@ -207,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static async Task<BatchResponse> FromResponseMessageAsync(
-            CosmosResponseMessage responseMessage, 
+            ResponseMessage responseMessage, 
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {
@@ -291,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static async Task<BatchResponse> PopulateFromContentAsync(
-            CosmosResponseMessage responseMessage,
+            ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {

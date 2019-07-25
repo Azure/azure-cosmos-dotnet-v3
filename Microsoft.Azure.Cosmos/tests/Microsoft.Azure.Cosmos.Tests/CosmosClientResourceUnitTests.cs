@@ -27,12 +27,13 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 clientOptions: null,
                 userJsonSerializer: null,
                 defaultJsonSerializer: null,
+                sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
                 documentClient: null,
                 documentQueryClient: new Mock<IDocumentQueryClient>().Object);
 
-            CosmosDatabaseCore db = new CosmosDatabaseCore(context, databaseId);
+            DatabaseCore db = new DatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
 
             ContainerCore container = new ContainerCore(context, db, crId);
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 }
             };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 }
             };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             options.PreTriggers = new List<string>() { "preTrigger" };
             options.PostTriggers = new List<string>() { "postTrigger" };
 
-            CosmosRequestMessage httpRequest = new CosmosRequestMessage(
+            RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 

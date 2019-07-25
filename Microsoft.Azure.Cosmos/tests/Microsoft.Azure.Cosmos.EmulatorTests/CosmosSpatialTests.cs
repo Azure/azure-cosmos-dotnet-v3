@@ -15,12 +15,11 @@
     {
         private ContainerCore Container = null;
         private DocumentClient documentClient;
-        private CosmosJsonSerializerCore jsonSerializer = null;
         private readonly string spatialName = "SpatialName";
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
         protected CosmosClient cosmosClient = null;
-        protected CosmosDatabase database = null;
+        protected Database database = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -42,7 +41,6 @@
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
             this.Container = (ContainerCore)response;
-            this.jsonSerializer = new CosmosJsonSerializerCore();
         }
 
         [TestCleanup]
@@ -60,7 +58,7 @@
 
             if (this.database != null)
             {
-                await this.database.DeleteAsync(
+                await this.database.DeleteStreamAsync(
                     requestOptions: null,
                     cancellationToken: this.cancellationToken);
             }

@@ -22,13 +22,13 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// In order to read the Change Feed from the beginning, set this to DateTime.MinValue.
         /// </remarks>
-        public virtual DateTime? StartTime { get; set; }
+        public DateTime? StartTime { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        internal override void PopulateRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal override void PopulateRequestOptions(RequestMessage request)
         {
             // Check if no Continuation Token is present
             if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
@@ -48,17 +48,17 @@ namespace Microsoft.Azure.Cosmos
             base.PopulateRequestOptions(request);
         }
 
-        internal static void FillPartitionKeyRangeId(CosmosRequestMessage request, string partitionKeyRangeId)
+        internal static void FillPartitionKeyRangeId(RequestMessage request, string partitionKeyRangeId)
         {
             Debug.Assert(request != null);
 
             if (!string.IsNullOrEmpty(partitionKeyRangeId))
             {
-                request.PartitionKeyRangeId = partitionKeyRangeId;
+                request.PartitionKeyRangeId = new PartitionKeyRangeIdentity(partitionKeyRangeId);
             }
         }
 
-        internal static void FillContinuationToken(CosmosRequestMessage request, string continuationToken)
+        internal static void FillContinuationToken(RequestMessage request, string continuationToken)
         {
             Debug.Assert(request != null);
 
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static void FillMaxItemCount(CosmosRequestMessage request, int? maxItemCount)
+        internal static void FillMaxItemCount(RequestMessage request, int? maxItemCount)
         {
             Debug.Assert(request != null);
 

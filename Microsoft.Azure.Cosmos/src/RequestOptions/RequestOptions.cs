@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -21,10 +19,10 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the If-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>
+        /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>
         /// but can be used with other methods like <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/> for caching scenarios.
         /// </remarks>
-        public virtual string IfMatchEtag { get; set; }
+        public string IfMatchEtag { get; set; }
 
         /// <summary>
         /// Gets or sets the If-None-Match (ETag) associated with the request in the Azure Cosmos DB service.
@@ -32,13 +30,31 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Most commonly used to detect changes to the resource
         /// </remarks>
-        public virtual string IfNoneMatchEtag { get; set; }
+        public string IfNoneMatchEtag { get; set; }
+
+        /// <summary>
+        /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
+        /// </summary>
+        internal bool IsEffectivePartitionKeyRouting { get; set; }
+
+        /// <summary>
+        /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
+        /// Not every request supports consistency level. This allows each child to decide to expose it
+        /// and use the same base logic
+        /// </summary>
+        /// <value>
+        /// The consistency level required for the request.
+        /// </value>
+        /// <remarks>
+        /// ConsistencyLevel compatibility will validated and set by RequestInvokeHandler
+        /// </remarks>
+        internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        internal virtual void PopulateRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal virtual void PopulateRequestOptions(RequestMessage request)
         {
             if (this.Properties != null)
             {
@@ -66,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>True if the object exists in the request options. False if the value was not passed in as a request option</returns>
         internal bool TryGetResourceUri(out Uri resourceUri)
         {
-            if (this.Properties != null && this.Properties.TryGetValue(HandlerConstants.ResourceUri, out var requestOptesourceUri))
+            if (this.Properties != null && this.Properties.TryGetValue(HandlerConstants.ResourceUri, out object requestOptesourceUri))
             {
                 Uri uri = requestOptesourceUri as Uri;
                 if (uri == null || uri.IsAbsoluteUri)
@@ -83,25 +99,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Set the consistency level
-        /// </summary>
-        /// <param name="request">The current request.</param>
-        /// <param name="consistencyLevel">The desired Consistency level.</param>
-        protected static void SetConsistencyLevel(CosmosRequestMessage request, ConsistencyLevel? consistencyLevel)
-        {
-            if (consistencyLevel != null && consistencyLevel.HasValue)
-            {
-                // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
-                request.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.ToString());
-            }
-        }
-
-        /// <summary>
         /// Set the session token
         /// </summary>
         /// <param name="request">The current request.</param>
         /// <param name="sessionToken">The current session token.</param>
-        protected static void SetSessionToken(CosmosRequestMessage request, string sessionToken)
+        internal static void SetSessionToken(RequestMessage request, string sessionToken)
         {
             if (!string.IsNullOrWhiteSpace(sessionToken))
             {

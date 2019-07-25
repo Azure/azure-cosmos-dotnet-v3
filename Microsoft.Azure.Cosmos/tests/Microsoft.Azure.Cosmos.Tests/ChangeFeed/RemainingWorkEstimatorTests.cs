@@ -203,9 +203,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(expectedLsn, RemainingWorkEstimatorCore.ExtractLsnFromSessionToken(newTokenWithRegionalLsn));
         }
 
-        private static CosmosResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, string itemLsn = null)
+        private static ResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, string itemLsn = null)
         {
-            CosmosResponseMessage message = new CosmosResponseMessage(statusCode);
+            ResponseMessage message = new ResponseMessage(statusCode);
             message.Headers.Add(Documents.HttpConstants.HttpHeaders.SessionToken, localLsn);
             if (!string.IsNullOrEmpty(itemLsn))
             {
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     firstDocument
                 };
 
-                message.Content = (new CosmosJsonSerializerCore()).ToStream(cosmosFeedResponse);
+                message.Content = (new CosmosJsonDotNetSerializer()).ToStream(cosmosFeedResponse);
             }
 
             return message;

@@ -4,13 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.ObjectModel;
-    using System.Globalization;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary> 
     /// Specifies a path within a JSON document to be included in the Azure Cosmos DB service.

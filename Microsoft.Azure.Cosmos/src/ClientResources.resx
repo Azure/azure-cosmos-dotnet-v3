@@ -165,9 +165,6 @@
   <data name="BadSession" xml:space="preserve">
     <value>Session object retrieved from client with endpoint {0} cannot be used on a client initialized to endpoint {1}.</value>
   </data>
-  <data name="BatchItemRequestOptionNotSupported" xml:space="preserve">
-    <value>One or more provided request options are not supported on items that are part of a batch request.</value>
-  </data>
   <data name="BatchNoOperations" xml:space="preserve">
     <value>The batch request did not have any operations to be executed.</value>
   </data>
@@ -255,6 +252,9 @@
   <data name="PathExpressionsOnly" xml:space="preserve">
     <value>Only path expressions are supported for SelectMany.</value>
   </data>
+  <data name="PartitionKeyPathConflict" xml:space="preserve">
+    <value>The requested partition key path '{0}' does not match existing Container '{1}' with partition key path '{2}'</value>
+  </data>
   <data name="PKAndEpkSetTogether" xml:space="preserve">
     <value>Partition key and effective partition key may not both be set.</value>
   </data>
@@ -269,6 +269,9 @@
   </data>
   <data name="StringCompareToInvalidOperator" xml:space="preserve">
     <value>Invalid operator for string.CompareTo(). Vaid operators are ('==', '&lt;', '&lt;=', '&gt;' or '&gt;=')</value>
+  </data>
+  <data name="TypeCheckExtensionFunctionsNotImplemented" xml:space="preserve">
+    <value>Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.</value>
   </data>
   <data name="UdfNameIsNullOrEmpty" xml:space="preserve">
     <value>User-defined function name can not be null or empty.</value>

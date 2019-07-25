@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             var feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = container.GetItemLinqQuery<T>(allowSynchronousQueryExecution : true);
+            var query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution : true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         public static Func<bool, IQueryable<Family>> GenerateFamilyCosmosData(
-            CosmosDatabase cosmosDatabase, out Container container)
+            Cosmos.Database cosmosDatabase, out Container container)
         {
             // The test collection should have range index on string properties
             // for the orderby tests
@@ -427,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(
-         CosmosDatabase cosmosDatabase
+         Cosmos.Database cosmosDatabase
          )
         {
             const int DocumentCount = 10;
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            var query = container.GetItemLinqQuery<Data>(allowSynchronousQueryExecution : true);
+            var query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution : true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.

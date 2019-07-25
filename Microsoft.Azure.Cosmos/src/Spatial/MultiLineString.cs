@@ -8,12 +8,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Runtime.Serialization;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a geometry consisting of multiple <see cref="LineString"/>.
     /// </summary>
     /// <seealso cref="LineString"/>.
+    [DataContract]
     internal sealed class MultiLineString : Geometry, IEquatable<MultiLineString>
     {
         /// <summary>
@@ -64,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Collection of <see cref="LineStringCoordinates"/> representing individual line strings.
         /// </value>
+        [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public ReadOnlyCollection<LineStringCoordinates> LineStrings { get; private set; }
 

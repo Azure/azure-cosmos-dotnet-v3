@@ -10,24 +10,19 @@ namespace Microsoft.Azure.Cosmos
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
         protected ReadFeedResponse(
-            IEnumerable<T> resource,
-            CosmosResponseMessageHeaders responseMessageHeaders,
-            bool hasMoreResults)
+            ICollection<T> resource,
+            Headers responseMessageHeaders)
             : base(
                 httpStatusCode: HttpStatusCode.Accepted,
                 headers: responseMessageHeaders,
                 resource: resource)
         {
-            this.HasMoreResults = hasMoreResults;
+            this.Count = resource.Count;
         }
 
         public override int Count { get; }
 
-        public override string Continuation => this.Headers.Continuation;
-
-        internal override string InternalContinuationToken => this.Continuation;
-
-        internal override bool HasMoreResults { get; }
+        public override string ContinuationToken => this.Headers?.ContinuationToken;
 
         public override IEnumerator<T> GetEnumerator()
         {
@@ -35,33 +30,34 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            CosmosResponseMessageHeaders responseMessageHeaders,
-            Stream stream,
-            CosmosSerializer jsonSerializer,
-            bool hasMoreResults)
+            ResponseMessage responseMessage,
+            CosmosSerializer jsonSerializer)
         {
-            using (stream)
+            using (responseMessage)
             {
-                CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream);
-                IEnumerable<TInput> resources = response.Data;
+                ICollection<TInput> resources = default(ICollection<TInput>);
+                if (responseMessage.Content != null)
+                {
+                    CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(responseMessage.Content);
+                    resources = response.Data;
+                }
+
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     resource: resources,
-                    responseMessageHeaders: responseMessageHeaders,
-                    hasMoreResults: hasMoreResults);
+                    responseMessageHeaders: responseMessage.Headers);
 
                 return readFeedResponse;
             }
         }
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            CosmosResponseMessageHeaders responseMessageHeaders,
-            IEnumerable<TInput> resources,
+            Headers responseMessageHeaders,
+            ICollection<TInput> resources,
             bool hasMoreResults)
         {
             ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                 resource: resources,
-                responseMessageHeaders: responseMessageHeaders,
-                hasMoreResults: hasMoreResults);
+                responseMessageHeaders: responseMessageHeaders);
 
             return readFeedResponse;
         }

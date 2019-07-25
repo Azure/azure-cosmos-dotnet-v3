@@ -25,11 +25,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         protected static CosmosClient GatewayClient { get; set; }
 
-        protected static CosmosDatabase Database { get; set; }
+        protected static Cosmos.Database Database { get; set; }
 
-        protected static CosmosDatabase SharedThroughputDatabase { get; set; }
+        protected static Cosmos.Database SharedThroughputDatabase { get; set; }
 
-        protected static CosmosDatabase GatewayDatabase { get; set; }
+        protected static Cosmos.Database GatewayDatabase { get; set; }
 
         protected static Container JsonContainer { get; set; }
 
@@ -57,14 +57,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         // Documents in PartitionKey1
         protected TestDoc TestDocPk1ExistingA { get; set; }
-
-        // Documents in PartitionKey1
         protected TestDoc TestDocPk1ExistingB { get; set; }
-
-        // Documents in PartitionKey1
         protected TestDoc TestDocPk1ExistingC { get; set; }
-
-        // Documents in PartitionKey1
         protected TestDoc TestDocPk1ExistingD { get; set; }
 
         public static void ClassInit(TestContext context)
@@ -148,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static void InitializeSharedThroughputContainer()
         {
             CosmosClient client = TestCommon.CreateCosmosClient();
-            CosmosDatabase db = client.CreateDatabaseAsync(string.Format("Shared_{0}", Guid.NewGuid().ToString("N")), throughput: 20000).GetAwaiter().GetResult().Database;
+            Cosmos.Database db = client.CreateDatabaseAsync(string.Format("Shared_{0}", Guid.NewGuid().ToString("N")), throughput: 20000).GetAwaiter().GetResult().Database;
 
             for (int index = 0; index < 5; index++)
             {
@@ -180,12 +174,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (BatchTestBase.Database != null)
             {
-                BatchTestBase.Database.DeleteAsync().GetAwaiter().GetResult();
+                BatchTestBase.Database.DeleteStreamAsync().GetAwaiter().GetResult();
             }
 
             if (BatchTestBase.SharedThroughputDatabase != null)
             {
-                BatchTestBase.SharedThroughputDatabase.DeleteAsync().GetAwaiter().GetResult();
+                BatchTestBase.SharedThroughputDatabase.DeleteStreamAsync().GetAwaiter().GetResult();
             }
 
             BatchTestBase.Client.Dispose();
@@ -238,8 +232,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                CosmosJsonSerializerCore serializer = new CosmosJsonSerializerCore();
-                return serializer.ToStream<TestDoc>(testDoc);
+                
+                return TestCommon.Serializer.ToStream<TestDoc>(testDoc);
             }
         }
 
@@ -251,20 +245,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                CosmosJsonSerializerCore serializer = new CosmosJsonSerializerCore();
-                return serializer.FromStream<TestDoc>(stream);
+                return TestCommon.Serializer.FromStream<TestDoc>(stream);
             }
         }
 
         protected static async Task VerifyByReadAsync(Container container, TestDoc doc, bool isStream = false, bool isSchematized = false, bool useEpk = false, string eTag = null)
         {
-            Cosmos.PartitionKey partitionKey = BatchTestBase.GetPartitionKey(doc.Status, useEpk);
+            Cosmos.PartitionKey partitionKey = BatchTestBase.GetPartitionKey(doc.Status);
 
             if (isStream)
             {
                 string id = BatchTestBase.GetId(doc, isSchematized);
-                ItemRequestOptions requestOptions = BatchTestBase.GetItemRequestOptions(doc, isSchematized, useEpk, isPartOfBatch: false);
-                CosmosResponseMessage response = await container.ReadItemStreamAsync(id, partitionKey, requestOptions);
+                ItemRequestOptions requestOptions = BatchTestBase.GetItemRequestOptions(doc, isSchematized, useEpk);
+                ResponseMessage response = await container.ReadItemStreamAsync(id, partitionKey, requestOptions);
 
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual(doc, BatchTestBase.StreamToTestDoc(response.Content, isSchematized));
@@ -291,10 +284,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected static async Task VerifyNotFoundAsync(Container container, TestDoc doc, bool isSchematized = false, bool useEpk = false)
         {
             string id = BatchTestBase.GetId(doc, isSchematized);
-            Cosmos.PartitionKey partitionKey = BatchTestBase.GetPartitionKey(doc.Status, useEpk);
-            ItemRequestOptions requestOptions = BatchTestBase.GetItemRequestOptions(doc, isSchematized, useEpk, isPartOfBatch: false);
+            Cosmos.PartitionKey partitionKey = BatchTestBase.GetPartitionKey(doc.Status);
+            ItemRequestOptions requestOptions = BatchTestBase.GetItemRequestOptions(doc, isSchematized, useEpk);
 
-            CosmosResponseMessage response = await container.ReadItemStreamAsync(id, partitionKey, requestOptions);
+            ResponseMessage response = await container.ReadItemStreamAsync(id, partitionKey, requestOptions);
 
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         }
@@ -327,15 +320,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     batchOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
                     batchOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
+                    batchOptions.IsEffectivePartitionKeyRouting = true;
                 }
             }
 
             return batchOptions;
         }
 
-        protected static Cosmos.PartitionKey GetPartitionKey(object partitionKey, bool useEpk = false)
+        protected static Cosmos.PartitionKey GetPartitionKey(object partitionKey)
         {
-            return useEpk ? null : new Cosmos.PartitionKey(partitionKey);
+            return new Cosmos.PartitionKey(partitionKey);
         }
 
         protected static string GetId(TestDoc doc, bool isSchematized)
@@ -348,42 +342,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return doc.Id;
         }
 
-
-        protected static ItemRequestOptions GetItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, bool isPartOfBatch = true, int? ttlInSeconds = null)
+        internal static BatchItemRequestOptions GetBatchItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, int? ttlInSeconds = null)
         {
-            ItemRequestOptions requestOptions = null;
-            if (isSchematized)
+            BatchItemRequestOptions requestOptions = new BatchItemRequestOptions()
             {
-                requestOptions = new ItemRequestOptions()
-                {
-                    Properties = new Dictionary<string, object>
-                    {
-                        { WFConstants.BackendHeaders.BinaryId, Encoding.UTF8.GetBytes(doc.Id) }
-                    }
-                };
+                Properties = new Dictionary<string, object>()
+            };
 
-                if (ttlInSeconds.HasValue)
-                {
-                    requestOptions.Properties.Add(WFConstants.BackendHeaders.TimeToLiveInSeconds, ttlInSeconds.Value.ToString());
-                }
-
-                if (useEpk)
-                {
-                    string epk = new Microsoft.Azure.Documents.PartitionKey(doc.Status)
-                                    .InternalKey
-                                    .GetEffectivePartitionKeyString(BatchTestBase.PartitionKeyDefinition);
-
-                    requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
-                    requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
-                }
-
-                if (!isPartOfBatch)
-                {
-                    requestOptions.Properties.Add(WFConstants.BackendHeaders.BinaryPassthroughRequest, bool.TrueString);
-                }
+            if (PopulateRequestOptions(requestOptions, doc, isSchematized, useEpk, ttlInSeconds))
+            {
+                return requestOptions;
             }
 
-            return requestOptions;
+            return null;
+        }
+
+        protected static ItemRequestOptions GetItemRequestOptions(TestDoc doc, bool isSchematized, bool useEpk = false, int? ttlInSeconds = null)
+        {
+            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            {
+                Properties = new Dictionary<string, object>()
+            };
+
+            bool wasPopulated = BatchTestBase.PopulateRequestOptions(requestOptions, doc, isSchematized, useEpk, ttlInSeconds);
+            if (isSchematized)
+            {
+                requestOptions.Properties.Add(WFConstants.BackendHeaders.BinaryPassthroughRequest, bool.TrueString);
+                wasPopulated = true;
+            }
+
+            if (wasPopulated)
+            {
+                return requestOptions;
+            }
+
+            return null;
         }
 
         protected static async Task<TestDoc> CreateJsonTestDocAsync(Container container, object partitionKey, int minDesiredSize = 20)
@@ -397,10 +390,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected static async Task<TestDoc> CreateSchematizedTestDocAsync(Container container, object partitionKey, int? ttlInSeconds = null)
         {
             TestDoc doc = BatchTestBase.PopulateTestDoc(partitionKey);
-            CosmosResponseMessage createResponse = await container.CreateItemStreamAsync(
+            ResponseMessage createResponse = await container.CreateItemStreamAsync(
                 doc.ToHybridRowStream(),
                 BatchTestBase.GetPartitionKey(partitionKey),
-                BatchTestBase.GetItemRequestOptions(doc, isSchematized: true, isPartOfBatch: false, ttlInSeconds: ttlInSeconds));
+                BatchTestBase.GetItemRequestOptions(doc, isSchematized: true, ttlInSeconds: ttlInSeconds));
             Assert.AreEqual(
                 HttpStatusCode.Created,
                 createResponse.StatusCode);
@@ -416,6 +409,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             return bytes;
+        }
+
+        private static bool PopulateRequestOptions(RequestOptions requestOptions, TestDoc doc, bool isSchematized, bool useEpk, int? ttlInSeconds)
+        {
+            if (isSchematized)
+            {
+                requestOptions.Properties.Add(WFConstants.BackendHeaders.BinaryId, Encoding.UTF8.GetBytes(doc.Id));
+
+                if (ttlInSeconds.HasValue)
+                {
+                    requestOptions.Properties.Add(WFConstants.BackendHeaders.TimeToLiveInSeconds, ttlInSeconds.Value.ToString());
+                }
+
+                if (useEpk)
+                {
+                    string epk = new Microsoft.Azure.Documents.PartitionKey(doc.Status)
+                                    .InternalKey
+                                    .GetEffectivePartitionKeyString(BatchTestBase.PartitionKeyDefinition);
+
+                    requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKeyString, epk);
+                    requestOptions.Properties.Add(WFConstants.BackendHeaders.EffectivePartitionKey, BatchTestBase.HexStringToBytes(epk));
+                    requestOptions.IsEffectivePartitionKeyRouting = true;
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
 #pragma warning disable CA1034

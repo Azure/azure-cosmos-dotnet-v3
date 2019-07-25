@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos
     /// Query engine time in the Azure DocumentDB database service.
     /// (dummy class that will be deprecated).
     /// </summary>
-    public sealed class QueryEngineTimes
+    internal sealed class QueryEngineTimes
     {
         private readonly TimeSpan indexLookupTime;
         private readonly TimeSpan documentLoadTime;

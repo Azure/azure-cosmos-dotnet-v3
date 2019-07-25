@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.ObjectModel;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -13,16 +13,15 @@ namespace Microsoft.Azure.Cosmos
     internal class ClientPipelineBuilder
     {
         private readonly CosmosClient client;
-        private readonly CosmosRequestHandler invalidPartitionExceptionRetryHandler;
-        private readonly CosmosRequestHandler transportHandler;
-        private readonly CosmosRequestHandler partitionKeyRangeGoneRetryHandler;
-        private ReadOnlyCollection<CosmosRequestHandler> customHandlers;
-        private CosmosRequestHandler retryHandler;
+        private readonly RequestHandler invalidPartitionExceptionRetryHandler;
+        private readonly RequestHandler transportHandler;
+        private readonly RequestHandler partitionKeyRangeGoneRetryHandler;
+        private IReadOnlyCollection<RequestHandler> customHandlers;
+        private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
             CosmosClient client,
-            IRetryPolicyFactory retryPolicyFactory,
-            ReadOnlyCollection<CosmosRequestHandler> customHandlers)
+            IReadOnlyCollection<RequestHandler> customHandlers)
         {
             this.client = client;
             this.transportHandler = new TransportHandler(client);
@@ -31,69 +30,138 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyRangeGoneRetryHandler = new PartitionKeyRangeGoneRetryHandler(this.client);
             Debug.Assert(this.partitionKeyRangeGoneRetryHandler.InnerHandler == null, "The partitionKeyRangeGoneRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
-            this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler(this.client);
+            this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler();
             Debug.Assert(this.invalidPartitionExceptionRetryHandler.InnerHandler == null, "The invalidPartitionExceptionRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
 
-            this.UseRetryPolicy(retryPolicyFactory);
+            this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
         }
 
-        internal ReadOnlyCollection<CosmosRequestHandler> CustomHandlers
+        internal IReadOnlyCollection<RequestHandler> CustomHandlers
         {
             get => this.customHandlers;
             private set
             {
                 if (value != null && value.Any(x => x?.InnerHandler != null))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(CustomHandlers));
+                    throw new ArgumentOutOfRangeException(nameof(this.CustomHandlers));
                 }
 
                 this.customHandlers = value;
             }
         }
 
-        internal CosmosRequestHandler PartitionKeyRangeHandler { get; set; }
+        internal RequestHandler PartitionKeyRangeHandler { get; set; }
 
+        /// <summary>
+        /// This is the cosmos pipeline logic for the operations. 
+        /// 
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |    RequestInvokerHandler    |
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |       UserHandlers          |
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |       RetryHandler          |-> RetryPolicy -> ResetSessionTokenRetryPolicyFactory -> ClientRetryPolicy -> ResourceThrottleRetryPolicy
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |       RouteHandler          | 
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |                             |
+        ///                                    |                             |
+        ///                  +-----------------------------+         +---------------------------------------+
+        ///                  | !IsPartitionedFeedOperation |         |    IsPartitionedFeedOperation         |
+        ///                  |      TransportHandler       |         | invalidPartitionExceptionRetryHandler |
+        ///                  |                             |         |                                       |
+        ///                  +-----------------------------+         +---------------------------------------+
+        ///                                                                          |
+        ///                                                                          |
+        ///                                                                          |
+        ///                                                          +---------------------------------------+
+        ///                                                          |                                       |
+        ///                                                          |   partitionKeyRangeGoneRetryHandler   |
+        ///                                                          |                                       |
+        ///                                                          +---------------------------------------+
+        ///                                                                          |
+        ///                                                                          |
+        ///                                                                          |
+        ///                                                          +---------------------------------------+
+        ///                                                          |                                       |
+        ///                                                          |     PartitionKeyRangeHandler          |
+        ///                                                          |                                       |
+        ///                                                          +---------------------------------------+
+        ///                                                                          |
+        ///                                                                          |
+        ///                                                                          |
+        ///                                                          +---------------------------------------+
+        ///                                                          |                                       |
+        ///                                                          |         TransportHandler              |
+        ///                                                          |                                       |
+        ///                                                          +---------------------------------------+
+        /// </summary>
+        /// <returns>The request invoker handler used to do calls to Cosmos DB</returns>
         public RequestInvokerHandler Build()
         {
             RequestInvokerHandler root = new RequestInvokerHandler(this.client);
 
-            CosmosRequestHandler current = root;
+            RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())
             {
-                foreach (CosmosRequestHandler handler in this.CustomHandlers)
+                foreach (RequestHandler handler in this.CustomHandlers)
                 {
                     current.InnerHandler = handler;
-                    current = (CosmosRequestHandler)current.InnerHandler;
+                    current = current.InnerHandler;
                 }
             }
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;
-            current = (CosmosRequestHandler)current.InnerHandler;
+            current = current.InnerHandler;
 
             // Have a router handler
-            CosmosRequestHandler feedHandler = this.CreateDocumentFeedPipeline();
+            RequestHandler feedHandler = this.CreateDocumentFeedPipeline();
 
             Debug.Assert(feedHandler != null, nameof(feedHandler));
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
-            CosmosRequestHandler routerHandler = new RouterHandler(feedHandler, this.transportHandler);
+            RequestHandler routerHandler = new RouterHandler(
+                documentFeedHandler: feedHandler,
+                pointOperationHandler: this.transportHandler);
+
             current.InnerHandler = routerHandler;
-            current = (CosmosRequestHandler)current.InnerHandler;
+            current = current.InnerHandler;
 
             return root;
         }
 
-        private static CosmosRequestHandler CreatePipeline(params CosmosRequestHandler[] requestHandlers)
+        private static RequestHandler CreatePipeline(params RequestHandler[] requestHandlers)
         {
-            CosmosRequestHandler head = null;
+            RequestHandler head = null;
             int handlerCount = requestHandlers.Length;
             for (int i = handlerCount - 1; i >= 0; i--)
             {
-                CosmosRequestHandler indexHandler = requestHandlers[i];
+                RequestHandler indexHandler = requestHandlers[i];
                 if (indexHandler.InnerHandler != null)
                 {
                     throw new ArgumentOutOfRangeException($"The requestHandlers[{i}].InnerHandler is required to be null to allow the pipeline to chain the handlers.");
@@ -109,30 +177,30 @@ namespace Microsoft.Azure.Cosmos
             return head;
         }
 
-        private ClientPipelineBuilder UseRetryPolicy(IRetryPolicyFactory retryPolicyFactory)
+        private ClientPipelineBuilder UseRetryPolicy()
         {
-            this.retryHandler = new RetryHandler(retryPolicyFactory);
+            this.retryHandler = new RetryHandler(this.client);
             Debug.Assert(this.retryHandler.InnerHandler == null, "The retryHandler.InnerHandler must be null to allow other handlers to be linked.");
             return this;
         }
 
-        private ClientPipelineBuilder AddCustomHandlers(ReadOnlyCollection<CosmosRequestHandler> customHandlers)
+        private ClientPipelineBuilder AddCustomHandlers(IReadOnlyCollection<RequestHandler> customHandlers)
         {
             this.CustomHandlers = customHandlers;
             return this;
         }
 
-        private CosmosRequestHandler CreateDocumentFeedPipeline()
+        private RequestHandler CreateDocumentFeedPipeline()
         {
-            CosmosRequestHandler[] feedPipeline = new CosmosRequestHandler[]
+            RequestHandler[] feedPipeline = new RequestHandler[]
                 {
-                    this.partitionKeyRangeGoneRetryHandler,
                     this.invalidPartitionExceptionRetryHandler,
+                    this.partitionKeyRangeGoneRetryHandler,
                     this.PartitionKeyRangeHandler,
                     this.transportHandler,
                 };
 
-            return (CosmosRequestHandler)ClientPipelineBuilder.CreatePipeline(feedPipeline);
+            return ClientPipelineBuilder.CreatePipeline(feedPipeline);
         }
     }
 }

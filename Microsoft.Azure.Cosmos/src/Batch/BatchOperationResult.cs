@@ -14,7 +14,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a result for a specific operation that was part of a batch request.
     /// </summary>
-    public class BatchOperationResult
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class BatchOperationResult
     {
         internal BatchOperationResult(HttpStatusCode statusCode)
         {
@@ -178,7 +183,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <typeparam name="T">The type of the Resource which this class wraps.</typeparam>
 #pragma warning disable SA1402 // File may only contain a single type
-    public class BatchOperationResult<T> : BatchOperationResult
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class BatchOperationResult<T> : BatchOperationResult
 #pragma warning restore SA1402 // File may only contain a single type
     {
         /// <summary>

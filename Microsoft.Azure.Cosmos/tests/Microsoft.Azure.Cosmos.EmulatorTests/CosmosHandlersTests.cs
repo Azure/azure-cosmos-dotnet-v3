@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosHandlersTests : BaseCosmosClientHelper
     {
         private Container Container = null;
-        private CosmosSerializer jsonSerializer = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -28,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
             this.Container = response;
-            this.jsonSerializer = new CosmosJsonSerializerCore();
         }
 
         [TestCleanup]
@@ -51,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (cosmosClientBuilder) => cosmosClientBuilder.AddCustomHandlers(testHandler));
 
             ToDoActivity testItem = CreateRandomToDoActivity();
-            using (CosmosResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemStreamAsync(
+            using (ResponseMessage response = await customClient.GetContainer(this.database.Id, this.Container.Id).CreateItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(testItem.status),
-                streamPayload: this.jsonSerializer.ToStream(testItem)))
+                streamPayload: TestCommon.Serializer.ToStream(testItem)))
             {
                 Assert.IsNotNull(response);
                 Assert.IsNotNull(response.RequestMessage);
@@ -114,11 +112,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string status { get; set; }
         }
 
-        public class CustomHandler : CosmosRequestHandler
+        public class CustomHandler : RequestHandler
         {
-            public Action<CosmosRequestMessage> UpdateRequestMessage = null;
+            public Action<RequestMessage> UpdateRequestMessage = null;
 
-            public override Task<CosmosResponseMessage> SendAsync(CosmosRequestMessage request, CancellationToken cancellationToken)
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
             {
                 if (this.UpdateRequestMessage != null)
                 {

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -63,8 +64,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static Container GetMockedContainer(string containerName = "myColl")
         {
-            CosmosResponseMessageHeaders headers = new CosmosResponseMessageHeaders();
-            headers.Continuation = string.Empty;
+            Headers headers = new Headers();
+            headers.ContinuationToken = string.Empty;
 
             Mock<FeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<FeedIterator<DocumentServiceLeaseCore>>();
             mockedQuery.Setup(q => q.ReadNextAsync(It.IsAny<CancellationToken>()))
@@ -79,9 +80,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<Container> mockedItems = new Mock<Container>();
             mockedItems.Setup(i => i.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 // To make sure the SQL Query gets correctly created
-                It.Is<string>(value => ("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')").Equals(value)), 
-                It.IsAny<int>(), 
-                It.IsAny<int?>(), 
+                It.Is<string>(value => string.Equals("SELECT * FROM c WHERE STARTSWITH(c.id, '" + DocumentServiceLeaseContainerCosmosTests.leaseStoreManagerSettings.GetPartitionLeasePrefix() + "')", value)),
                 It.IsAny<string>(), 
                 It.IsAny<QueryRequestOptions>()))
                 .Returns(()=>

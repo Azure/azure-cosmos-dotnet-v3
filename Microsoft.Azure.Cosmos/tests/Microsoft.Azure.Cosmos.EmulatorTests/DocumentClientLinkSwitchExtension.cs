@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="documentCollection">the Microsoft.Azure.Documents.DocumentCollection.csobject.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(this DocumentClient client, Database owner, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
+        public static Task<ResourceResponse<DocumentCollection>> CreateDocumentCollectionAsync(this DocumentClient client, Documents.Database owner, DocumentCollection documentCollection, Documents.Client.RequestOptions options = null)
         {
             return client.CreateDocumentCollectionAsync(owner.GetLink(), documentCollection, options);
         }
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="database">database.</param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<Database>> DeleteDatabaseAsync(this DocumentClient client, Database database, Documents.Client.RequestOptions options = null)
+        public static Task<ResourceResponse<Documents.Database>> DeleteDatabaseAsync(this DocumentClient client, Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             return client.DeleteDatabaseAsync(database.GetLink(), options);
         }
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="database"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<ResourceResponse<Database>> ReadDatabaseAsync(this DocumentClient client, Database database, Documents.Client.RequestOptions options = null)
+        public static Task<ResourceResponse<Documents.Database>> ReadDatabaseAsync(this DocumentClient client, Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             return client.ReadDatabaseAsync(database.GetLink(), options);
         }
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="options">the request options for the request.</param>
         /// <returns>The task object representing the service response for the asynchronous operation.</returns>
-        public static Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(this DocumentClient client, Database owner, FeedOptions options = null)
+        public static Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedAsync(this DocumentClient client, Documents.Database owner, FeedOptions options = null)
         {
             return client.ReadDocumentCollectionFeedAsync(owner.GetLink(), options);
         }
@@ -565,9 +565,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="owner"></param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(this DocumentClient client, Database owner,  FeedOptions feedOptions = null)
+        public static IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(this DocumentClient client, Documents.Database owner,  FeedOptions feedOptions = null)
         {
-            return new DocumentQuery<DocumentCollection>(client, ResourceType.Collection, typeof(Database), owner.GetLink(), feedOptions);
+            return new DocumentQuery<DocumentCollection>(client, ResourceType.Collection, typeof(Documents.Database), owner.GetLink(), feedOptions);
         }
 
         /// <summary>
@@ -578,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="sqlExpression">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateDocumentCollectionQuery(this DocumentClient client, Database owner, string sqlExpression, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateDocumentCollectionQuery(this DocumentClient client, Documents.Database owner, string sqlExpression, FeedOptions feedOptions = null)
         {
             return CreateDocumentCollectionQuery(client, owner, new SqlQuerySpec(sqlExpression), feedOptions);
         }
@@ -591,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="querySpec">the sql query.</param>
         /// <param name="feedOptions">the options for processing the query results feed.</param>
         /// <returns>the query result set.</returns>
-        public static IQueryable<dynamic> CreateDocumentCollectionQuery(this DocumentClient client, Database owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
+        public static IQueryable<dynamic> CreateDocumentCollectionQuery(this DocumentClient client, Documents.Database owner, SqlQuerySpec querySpec, FeedOptions feedOptions = null)
         {
             return client.CreateDocumentCollectionQuery(owner.GetLink(), querySpec, feedOptions);
         }
@@ -867,7 +867,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="collectionsLink">The link for collections</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{DocumentCollection}"/> instance.</returns>
-        public static ResourceFeedReader<DocumentCollection> CreateDocumentCollectionFeedReader(this DocumentClient client, Database owner,
+        public static ResourceFeedReader<DocumentCollection> CreateDocumentCollectionFeedReader(this DocumentClient client, Documents.Database owner,
             FeedOptions options = null)
         {
             return new ResourceFeedReader<DocumentCollection>(client, ResourceType.Collection, options, owner.GetLink());
@@ -880,7 +880,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="usersLink">The link for users</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{User}"/> instance.</returns>
-        public static ResourceFeedReader<User> CreateUserFeedReader(this DocumentClient client, Database owner,
+        public static ResourceFeedReader<User> CreateUserFeedReader(this DocumentClient client, Documents.Database owner,
             FeedOptions options = null)
         {
             return new ResourceFeedReader<User>(client, ResourceType.User, options, owner.GetLink());

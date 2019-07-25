@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     id: "id2",
                     operationType: OperationType.Replace,
                     operationIndex: 1,
-                    requestOptions: new ItemRequestOptions()
+                    requestOptions: new BatchItemRequestOptions()
                     {
                         IfMatchEtag = "theCondition"
                     })
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ArraySegment<ItemBatchOperation>(operations),
                 maxBodySize,
                 maxOperationCount,
-                serializer: new CosmosJsonSerializerCore(),
+                serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: CancellationToken.None);
 
             Assert.AreEqual(2, batchRequest.Operations.Count);
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ArraySegment<ItemBatchOperation>(operations), 
                 maxBodySize,
                 maxOperationCount,
-                serializer: new CosmosJsonSerializerCore(),
+                serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: CancellationToken.None);
 
             Assert.AreEqual(2, batchRequest.Operations.Count);
@@ -149,9 +149,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
 
-            CosmosSerializer serializer = new CosmosJsonSerializerCore();
+            CosmosSerializer serializer = new CosmosJsonDotNetSerializer();
             SinglePartitionKeyServerBatchRequest batchResponse = await SinglePartitionKeyServerBatchRequest.CreateAsync(
-                partitionKey: null,
+                partitionKey: Cosmos.PartitionKey.None,
                 operations: new ArraySegment<ItemBatchOperation>(
                     new ItemBatchOperation[]
                     {
@@ -162,12 +162,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: serializer,
                 cancellationToken: CancellationToken.None);
             BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
-                new CosmosResponseMessage(HttpStatusCode.OK) { Content = responseContent },
+                new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchResponse,
                 serializer);
 
             Assert.IsNotNull(batchresponse);
-            Assert.IsTrue(batchresponse.IsSuccessStatusCode, "batchresponse.IsSuccessStatusCode" + batchresponse.StatusCode);
+            Assert.IsTrue(batchresponse.IsSuccessStatusCode);
             Assert.AreEqual(3, batchresponse.Count);
 
             CosmosBatchOperationResultEqualityComparer comparer = new CosmosBatchOperationResultEqualityComparer();
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     && x.ResourceBody.Span.SequenceEqual(y.ResourceBody.Span);
             }
 
-            private bool Equals(ItemRequestOptions x, ItemRequestOptions y)
+            private bool Equals(BatchItemRequestOptions x, BatchItemRequestOptions y)
             {
                 if (x == null && y == null)
                 {
@@ -195,8 +195,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 else if (x != null && y != null)
                 {
-                    CosmosRequestMessage xMessage = new CosmosRequestMessage();
-                    CosmosRequestMessage yMessage = new CosmosRequestMessage();
+                    RequestMessage xMessage = new RequestMessage();
+                    RequestMessage yMessage = new RequestMessage();
                     x.PopulateRequestOptions(xMessage);
                     y.PopulateRequestOptions(yMessage);
 
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 int hashCode = 1660235553;
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(obj.Id);
                 hashCode = (hashCode * -1521134295) + obj.OperationType.GetHashCode();
-                hashCode = (hashCode * -1521134295) + EqualityComparer<ItemRequestOptions>.Default.GetHashCode(obj.RequestOptions);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<BatchItemRequestOptions>.Default.GetHashCode(obj.RequestOptions);
                 hashCode = (hashCode * -1521134295) + obj.OperationIndex.GetHashCode();
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Memory<byte>>.Default.GetHashCode(obj.ResourceBody);
                 return hashCode;

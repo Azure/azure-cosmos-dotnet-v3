@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class CosmosClientBuilder
     {
-        private readonly ClientOptions clientOptions = new ClientOptions();
+        private readonly CosmosClientOptions clientOptions = new CosmosClientOptions();
         private readonly string accountEndpoint;
         private readonly string accountKey;
 
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
-        /// .UseConsistencyLevel(ConsistencyLevel.Strong)
+        /// .WithConsistencyLevel(ConsistencyLevel.Strong)
         /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
@@ -77,8 +77,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 throw new ArgumentNullException(nameof(connectionString));
             }
 
-            this.accountEndpoint = ClientOptions.GetAccountEndpoint(connectionString);
-            this.accountKey = ClientOptions.GetAccountKey(connectionString);
+            this.accountEndpoint = CosmosClientOptions.GetAccountEndpoint(connectionString);
+            this.accountKey = CosmosClientOptions.GetAccountKey(connectionString);
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
         /// <returns>An instance of <see cref="CosmosClient"/>.</returns>
-        public virtual CosmosClient Build()
+        public CosmosClient Build()
         {
             DefaultTrace.TraceInformation($"CosmosClientBuilder.Build with configuration: {this.clientOptions.GetSerializedConfiguration()}");
             return new CosmosClient(this.accountEndpoint, this.accountKey, this.clientOptions);
@@ -114,16 +114,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        public virtual CosmosClientBuilder WithApplicationName(string applicationName)
+        public CosmosClientBuilder WithApplicationName(string applicationName)
         {
             this.clientOptions.ApplicationName = applicationName;
             return this;
         }
 
         /// <summary>
-        /// Set the current preferred region
+        /// Set the preferred geo-replicated region to be used in the Azure Cosmos DB service. 
         /// </summary>
-        /// <param name="applicationRegion"><see cref="CosmosRegions"/> for a list of valid azure regions. This list may not contain the latest azure regions.</param>
+        /// <param name="applicationRegion">Azure region where application is running. <see cref="Regions"/> lists valid Cosmos DB regions.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/> with a of preferred region.
         /// <code language="c#">
@@ -137,8 +137,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </code>
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.ApplicationRegion"/>
-        public virtual CosmosClientBuilder WithApplicationRegion(string applicationRegion)
+        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
+        public CosmosClientBuilder WithApplicationRegion(string applicationRegion)
         {
             this.clientOptions.ApplicationRegion = applicationRegion;
             return this;
@@ -150,8 +150,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="requestTimeout">A time to use as timeout for operations.</param>
         /// <value>Default value is 60 seconds.</value>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.RequestTimeout"/>
-        public virtual CosmosClientBuilder WithRequestTimeout(TimeSpan requestTimeout)
+        /// <seealso cref="CosmosClientOptions.RequestTimeout"/>
+        public CosmosClientBuilder WithRequestTimeout(TimeSpan requestTimeout)
         {
             this.clientOptions.RequestTimeout = requestTimeout;
             return this;
@@ -164,11 +164,23 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.ConnectionMode"/>
-        public virtual CosmosClientBuilder WithConnectionModeDirect()
+        /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
+        public CosmosClientBuilder WithConnectionModeDirect()
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
+            return this;
+        }
+
+        /// <summary>
+        /// This can be used to weaken the database account consistency level for read operations.
+        /// If this is not set the database account consistency level will be used for all requests.
+        /// </summary>
+        /// <param name="consistencyLevel">The desired consistency level for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        public CosmosClientBuilder WithConsistencyLevel(Cosmos.ConsistencyLevel consistencyLevel)
+        {
+            this.clientOptions.ConsistencyLevel = consistencyLevel;
             return this;
         }
 
@@ -180,9 +192,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.ConnectionMode"/>
-        /// <seealso cref="ClientOptions.GatewayModeMaxConnectionLimit"/>
-        public virtual CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
+        /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
+        /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
+        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
             this.clientOptions.ConnectionProtocol = Protocol.Https;
@@ -200,17 +212,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// pipeline to chain the handlers.
         /// </summary>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <param name="handlers">A list of <see cref="CosmosRequestHandler"/> instaces to add to the pipeline.</param>
-        /// <seealso cref="ClientOptions.CustomHandlers"/>
-        public virtual CosmosClientBuilder AddCustomHandlers(params CosmosRequestHandler[] handlers)
+        /// <param name="customHandlers">A list of <see cref="RequestHandler"/> instaces to add to the pipeline.</param>
+        /// <seealso cref="CosmosClientOptions.CustomHandlers"/>
+        public CosmosClientBuilder AddCustomHandlers(params RequestHandler[] customHandlers)
         {
-            if (handlers != null && handlers.Any(x => x != null))
+            foreach (RequestHandler handler in customHandlers)
             {
-                this.clientOptions.CustomHandlers = handlers.ToList().AsReadOnly();
-            }
-            else
-            {
-                this.clientOptions.CustomHandlers = null;
+                if (handler.InnerHandler != null)
+                {
+                    throw new ArgumentException(nameof(customHandlers) + " requires all DelegatingHandler.InnerHandler to be null. The CosmosClient uses the inner handler in building the pipeline.");
+                }
+
+                this.clientOptions.CustomHandlers.Add(handler);
             }
 
             return this;
@@ -231,13 +244,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <seealso cref="ClientOptions.MaxRetryWaitTimeOnThrottledRequests"/>
-        /// <seealso cref="ClientOptions.MaxRetryAttemptsOnThrottledRequests"/>
-        public virtual CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
+        /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnRateLimitedRequests"/>
+        /// <seealso cref="CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests"/>
+        public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
             int maxRetryAttemptsOnThrottledRequests)
         {
-            this.clientOptions.MaxRetryWaitTimeOnThrottledRequests = maxRetryWaitTimeOnThrottledRequests;
-            this.clientOptions.MaxRetryAttemptsOnThrottledRequests = maxRetryAttemptsOnThrottledRequests;
+            this.clientOptions.MaxRetryWaitTimeOnRateLimitedRequests = maxRetryWaitTimeOnThrottledRequests;
+            this.clientOptions.MaxRetryAttemptsOnRateLimitedRequests = maxRetryAttemptsOnThrottledRequests;
             return this;
         }
 
@@ -247,8 +260,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosSerializer"/>
-        /// <seealso cref="ClientOptions.Serializer"/>
-        public virtual CosmosClientBuilder WithCustomJsonSerializer(
+        /// <seealso cref="CosmosClientOptions.Serializer"/>
+        public CosmosClientBuilder WithCustomSerializer(
             CosmosSerializer cosmosJsonSerializer)
         {
             this.clientOptions.Serializer = cosmosJsonSerializer;

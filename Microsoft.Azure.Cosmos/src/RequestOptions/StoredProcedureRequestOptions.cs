@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public virtual bool EnableScriptLogging { get; set; }
+        public bool EnableScriptLogging { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///
         /// </para>
         /// </remarks>
-        public virtual string SessionToken { get; set; }
+        public string SessionToken { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
@@ -75,13 +75,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// for each individual request.
         /// </para>
         /// </remarks>
-        public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
+        public ConsistencyLevel? ConsistencyLevel
+        {
+            get => this.BaseConsistencyLevel;
+            set => this.BaseConsistencyLevel = value;
+        }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        internal override void PopulateRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal override void PopulateRequestOptions(RequestMessage request)
         {
             if (this.EnableScriptLogging)
             {
@@ -89,7 +93,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
-            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             base.PopulateRequestOptions(request);
         }

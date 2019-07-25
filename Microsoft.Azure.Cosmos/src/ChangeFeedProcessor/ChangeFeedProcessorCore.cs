@@ -93,20 +93,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (documentServiceLeaseStoreManager == null)
             {
-                ContainerResponse cosmosContainerResponse = await leaseContainer.ReadAsync().ConfigureAwait(false);
+                ContainerResponse cosmosContainerResponse = await leaseContainer.ReadContainerAsync().ConfigureAwait(false);
                 ContainerProperties containerProperties = cosmosContainerResponse.Resource;
 
                 bool isPartitioned =
                     containerProperties.PartitionKey != null &&
                     containerProperties.PartitionKey.Paths != null &&
                     containerProperties.PartitionKey.Paths.Count > 0;
-                if (isPartitioned &&
-                    (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
+                bool isMigratedFixed = (containerProperties.PartitionKey?.IsSystemKey == true);
+                if (isPartitioned
+                    && !isMigratedFixed
+                    && (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
                 {
                     throw new ArgumentException("The lease collection, if partitioned, must have partition key equal to id.");
                 }
 
-                RequestOptionsFactory requestOptionsFactory = isPartitioned ?
+                RequestOptionsFactory requestOptionsFactory = isPartitioned && !isMigratedFixed ?
                     (RequestOptionsFactory)new PartitionedByIdCollectionRequestOptionsFactory() :
                     (RequestOptionsFactory)new SinglePartitionRequestOptionsFactory();
 
