@@ -26,7 +26,7 @@
         private static readonly JsonSerializer Serializer = new JsonSerializer();
 
         //Reusable instance of ItemClient which represents the connection to a Cosmos endpoint
-        private static CosmosDatabase database = null;
+        private static Database database = null;
         private static Container container = null;
 
         public static async Task Main(string[] args)
@@ -47,7 +47,6 @@
                 {
                     await Program.SetupDatabaseAndContainer(client, databaseName, containerId);
                     Container container = client.GetContainer(databaseName, containerId);
-                    ContainerResponse containerResponse = await container.ReadAsync();
 
                     // Execute CRUD
                     await ExecuteCrudAsync(container);
@@ -352,7 +351,7 @@
             database = await client.CreateDatabaseIfNotExistsAsync(databaseName);
 
             // Delete the existing container to prevent create item conflicts
-            await database.GetContainer(containerId).DeleteAsync();
+            await database.GetContainer(containerId).DeleteContainerStreamAsync();
 
             ContainerProperties containerSettings = new ContainerProperties(containerId, partitionKeyPath: "/AccountNumber");
 
