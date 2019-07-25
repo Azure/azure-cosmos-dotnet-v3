@@ -107,6 +107,7 @@
                 int count = 0;
                 foreach (Family item in await setIterator.ReadNextAsync())
                 {
+                    count++;
                     Assert("Should only return 1 result at a time.", count <= 1);
                     families.Add(item);
                 }
