@@ -44,7 +44,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             sqlParameters.Add(new SqlParameter("@name", "ABC"));
             sqlQuerySpec = new SqlQuerySpec(query, sqlParameters);
             sqlQueryDefinition = new QueryDefinition(sqlQuerySpec);
-            Assert.AreEqual(sqlQueryDefinition.ToSqlQueryText(), sqlQuerySpec.QueryText);
+            Assert.AreEqual(sqlQueryDefinition.QueryText, sqlQuerySpec.QueryText);
+            Assert.AreEqual(sqlQueryDefinition.ToSqlQuerySpec().QueryText, sqlQueryDefinition.QueryText);
             Assert.AreEqual(sqlQueryDefinition.ToSqlQuerySpec().Parameters.Count(), sqlQuerySpec.Parameters.Count());
             Assert.AreEqual(sqlQueryDefinition.ToSqlQuerySpec().Parameters.First().Name, sqlQuerySpec.Parameters.First().Name);
             Assert.AreEqual(sqlQueryDefinition.ToSqlQuerySpec().Parameters.First().Value, sqlQuerySpec.Parameters.First().Value);

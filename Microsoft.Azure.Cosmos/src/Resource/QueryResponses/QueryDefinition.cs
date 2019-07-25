@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryDefinition
     {
-        private string Query { get; }
         private Dictionary<string, SqlParameter> SqlParameters { get; }
 
         /// <summary>
@@ -35,9 +34,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(query));
             }
 
-            this.Query = query;
+            this.QueryText = query;
             this.SqlParameters = new Dictionary<string, SqlParameter>();
         }
+
+        /// <summary>
+        /// Gets the text of the Azure Cosmos DB SQL query.
+        /// </summary>
+        /// <value>The text of the SQL query.</value>
+        public string QueryText { get; }
 
         internal QueryDefinition(SqlQuerySpec sqlQuery)
         {
@@ -46,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(sqlQuery));
             }
 
-            this.Query = sqlQuery.QueryText;
+            this.QueryText = sqlQuery.QueryText;
             this.SqlParameters = new Dictionary<string, SqlParameter>();
             foreach (SqlParameter sqlParameter in sqlQuery.Parameters)
             {
@@ -85,25 +90,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal SqlQuerySpec ToSqlQuerySpec()
         {
-            return new SqlQuerySpec(this.Query, new SqlParameterCollection(this.SqlParameters.Values));
-        }
-
-        /// <summary>
-        /// This method gets the query text from QueryDefinition.
-        /// </summary>
-        /// <returns>The query text from QueryDefinition.</returns>
-        /// <example>
-        /// This example shows how to get query text from QueryDefinition.
-        ///
-        /// <code language="c#">
-        /// <![CDATA[
-        /// String sqlQueryText = queryDefinition.ToSqlQueryText();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public string ToSqlQueryText()
-        {
-            return this.Query;
+            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.SqlParameters.Values));
         }
     }
 }

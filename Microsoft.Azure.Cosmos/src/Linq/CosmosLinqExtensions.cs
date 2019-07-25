@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        internal static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query)
+        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query)
         {
             CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
 
