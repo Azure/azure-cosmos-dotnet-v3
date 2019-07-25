@@ -15,10 +15,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
@@ -89,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(
             Enumerable.Empty<dynamic>(),
             Enumerable.Empty<dynamic>().Count(),
-            new StringKeyValueCollection());
+            new DictionaryNameValueCollection());
         protected SqlQuerySpec querySpec;
         private readonly IDocumentQueryClient client;
         private readonly ResourceType resourceTypeEnum;
@@ -196,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<INameValueCollection> CreateCommonHeadersAsync(FeedOptions feedOptions)
         {
-            INameValueCollection requestHeaders = new StringKeyValueCollection();
+            INameValueCollection requestHeaders = new DictionaryNameValueCollection();
 
             Cosmos.ConsistencyLevel defaultConsistencyLevel = (Cosmos.ConsistencyLevel)(await this.client.GetDefaultConsistencyLevelAsync());
             Cosmos.ConsistencyLevel? desiredConsistencyLevel = (Cosmos.ConsistencyLevel?)await this.client.GetDesiredConsistencyLevelAsync();

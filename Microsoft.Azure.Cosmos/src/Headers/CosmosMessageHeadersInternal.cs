@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
@@ -166,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
 
         public INameValueCollection Clone()
         {
-            return new StringKeyValueCollection(this);
+            return new DictionaryNameValueCollection(this);
         }
 
         public void Add(INameValueCollection collection)

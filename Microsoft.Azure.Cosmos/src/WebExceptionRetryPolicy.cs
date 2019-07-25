@@ -6,10 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal sealed class WebExceptionRetryPolicy : IRetryPolicy
