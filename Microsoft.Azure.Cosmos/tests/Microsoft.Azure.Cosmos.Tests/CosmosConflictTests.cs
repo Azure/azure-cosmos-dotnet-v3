@@ -125,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 clientOptions: null,
                 userJsonSerializer: MockCosmosUtil.Serializer,
                 defaultJsonSerializer: MockCosmosUtil.Serializer,
+                sqlQuerySpecSerializer: MockCosmosUtil.Serializer,
                 cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
                 documentClient: new MockDocumentClient(),
