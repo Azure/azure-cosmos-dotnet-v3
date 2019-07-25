@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Security.Cryptography;
     using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -57,6 +58,65 @@ namespace Microsoft.Azure.Cosmos
                          resourceType,
                          headers,
                          stringHMACSHA256Helper);
+        }
+
+        // This is a helper for both system and master keys
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "HTTP Headers are ASCII")]
+        public static string GenerateKeyAuthorizationSignature(string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            string key,
+            bool bUseUtcNowForMissingXDate = false)
+        {
+            // resourceId can be null for feed-read of /dbs
+
+            if (string.IsNullOrEmpty(verb))
+            {
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "verb");
+            }
+
+            if (resourceType == null)
+            {
+                throw new ArgumentNullException("resourceType"); // can be empty
+            }
+
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentException(RMResources.StringArgumentNullOrEmpty, "key");
+            }
+
+            if (headers == null)
+            {
+                throw new ArgumentNullException("headers");
+            }
+
+            byte[] keyBytes = Convert.FromBase64String(key);
+            using (HMACSHA256 hmacSha256 = new HMACSHA256(keyBytes))
+            {
+                // Order of the values included in the message payload is a protocol that clients/BE need to follow exactly.
+                // More headers can be added in the future.
+                // If any of the value is optional, it should still have the placeholder value of ""
+                // OperationType -> ResourceType -> ResourceId/OwnerId -> XDate -> Date
+                string verbInput = verb ?? string.Empty;
+                string resourceIdInput = resourceId ?? string.Empty;
+                string resourceTypeInput = resourceType ?? string.Empty;
+
+                string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
+                string payLoad = GenerateMessagePayload(verbInput,
+                     authResourceId,
+                     resourceTypeInput,
+                     headers,
+                     bUseUtcNowForMissingXDate);
+
+                byte[] hashPayLoad = hmacSha256.ComputeHash(Encoding.UTF8.GetBytes(payLoad));
+                string authorizationToken = Convert.ToBase64String(hashPayLoad);
+
+                return HttpUtility.UrlEncode(String.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
+                            Constants.Properties.MasterToken,
+                            Constants.Properties.TokenVersion,
+                            authorizationToken));
+            }
         }
 
         // This is a helper for both system and master keys
