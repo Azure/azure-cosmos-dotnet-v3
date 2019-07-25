@@ -76,10 +76,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="usersLink">The link for users</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{User}"/> instance.</returns>
-        public static ResourceFeedReader<User> CreateUserFeedReader(this DocumentClient client, string usersLink,
+        public static ResourceFeedReader<Documents.User> CreateUserFeedReader(this DocumentClient client, string usersLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<User>(client, ResourceType.User, options, usersLink);
+            return new ResourceFeedReader<Documents.User>(client, ResourceType.User, options, usersLink);
         }
 
         /// <summary>

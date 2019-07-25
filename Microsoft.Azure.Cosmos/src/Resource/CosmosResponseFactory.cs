@@ -76,6 +76,21 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        internal Task<UserResponse> CreateUserResponseAsync(
+            User user,
+            Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                UserProperties userProperties = this.ToObjectInternal<UserProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new UserResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    userProperties,
+                    user);
+            });
+        }
+
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
             Database database,
             Task<ResponseMessage> cosmosResponseMessageTask)

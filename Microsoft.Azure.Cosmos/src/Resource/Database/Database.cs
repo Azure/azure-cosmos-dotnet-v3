@@ -487,6 +487,127 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
+        /// Returns a reference to a user object. 
+        /// </summary>
+        /// <param name="id">The cosmos user id.</param>
+        /// <returns>Cosmos container reference</returns>
+        /// <remarks>
+        /// Returns a User reference. Reference doesn't guarantees existence.
+        /// Please ensure user already exists or is created through a create operation.
+        /// </remarks>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// User user = await db.GetUser("userId");
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract User GetUser(string id);
+
+        /// <summary>
+        /// Creates a user as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="userProperties">The <see cref="UserProperties"/> object.</param>
+        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.</returns>
+        /// <exception cref="ArgumentNullException">If either <paramref name="userProperties"/> is not set.</exception>
+        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new user.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="UserProperties"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// UserProperties userProperties = new UserProperties()
+        /// {
+        ///     Id = Guid.NewGuid().ToString(),
+        /// };
+        ///
+        /// UserResponse response = await this.cosmosDatabase.CreateUserAsync(userProperties);
+        /// ]]>
+        /// </code>
+        /// </example>   
+        public abstract Task<UserResponse> CreateUserAsync(
+                    UserProperties userProperties,
+                    RequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Creates a user as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="id">The cosmos user id</param>
+        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
+        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new user.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="UserProperties"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// UserResponse response = await this.cosmosDatabase.CreateUserAsync(Guid.NewGuid().ToString());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<UserResponse> CreateUserAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Creates a user as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="userProperties">The <see cref="UserProperties"/> object.</param>
+        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the created resource record.</returns>
+        /// <example>
+        /// Creates a user as an asynchronous operation in the Azure Cosmos service and return stream response.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// UserProperties userProperties = new UserProperties()
+        /// {
+        ///     Id = Guid.NewGuid().ToString()
+        /// };
+        ///
+        /// using(ResponseMessage response = await this.cosmosDatabase.CreateUserStreamAsync(userProperties))
+        /// {
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> CreateUserStreamAsync(
+            UserProperties userProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
         /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>

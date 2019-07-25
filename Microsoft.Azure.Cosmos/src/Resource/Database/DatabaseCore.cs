@@ -254,6 +254,75 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
+        public override Task<UserResponse> CreateUserAsync(
+                    UserProperties userProperties,
+                    RequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (userProperties == null)
+            {
+                throw new ArgumentNullException(nameof(userProperties));
+            }
+
+            this.ClientContext.ValidateResource(userProperties.Id);
+
+            Task<ResponseMessage> response = this.CreateUserStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response);
+        }
+
+        public override Task<UserResponse> CreateUserAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            UserProperties userProperties = new UserProperties(id);
+
+            return this.CreateUserAsync(
+                userProperties,
+                requestOptions,
+                cancellationToken);
+        }
+
+        public override User GetUser(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return new UserCore(
+                    this.ClientContext,
+                    this,
+                    id);
+        }
+
+        public override Task<ResponseMessage> CreateUserStreamAsync(
+            UserProperties userProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (userProperties == null)
+            {
+                throw new ArgumentNullException(nameof(userProperties));
+            }
+
+            this.ClientContext.ValidateResource(userProperties.Id);
+
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(userProperties);
+            return this.CreateUserStreamInternalAsync(streamPayload,
+                requestOptions,
+                cancellationToken);
+        }
+
         public override FeedIterator GetContainerQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
@@ -358,6 +427,23 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
+        internal Task<ResponseMessage> ProcessUserCreateAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
+               resourceType: ResourceType.User,
+               operationType: OperationType.Create,
+               cosmosContainerCore: null,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: null,
+               cancellationToken: cancellationToken);
+        }
+
         internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
@@ -373,6 +459,17 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessCollectionCreateAsync(
                 streamPayload: streamPayload,
                 throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> CreateUserStreamInternalAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessUserCreateAsync(
+                streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
