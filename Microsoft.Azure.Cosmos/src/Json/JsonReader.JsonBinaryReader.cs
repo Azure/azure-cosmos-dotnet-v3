@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Gets the next JSON token from the JsonReader as a double.
             /// </summary>
             /// <returns>The next JSON token from the JsonReader as a double.</returns>
-            public override double GetNumberValue()
+            public override Number64 GetNumberValue()
             {
                 return this.jsonBinaryBuffer.GetNumberValue();
             }
@@ -173,6 +173,51 @@ namespace Microsoft.Azure.Cosmos.Json
             public override IReadOnlyList<byte> GetBufferedRawJsonToken()
             {
                 return this.jsonBinaryBuffer.GetBufferedRawJsonToken();
+            }
+
+            public override sbyte GetInt8Value()
+            {
+                return this.jsonBinaryBuffer.GetInt8Value();
+            }
+
+            public override short GetInt16Value()
+            {
+                return this.jsonBinaryBuffer.GetInt16Value();
+            }
+
+            public override int GetInt32Value()
+            {
+                return this.jsonBinaryBuffer.GetInt32Value();
+            }
+
+            public override long GetInt64Value()
+            {
+                return this.jsonBinaryBuffer.GetInt64Value();
+            }
+
+            public override uint GetUInt32Value()
+            {
+                return this.jsonBinaryBuffer.GetUInt32Value();
+            }
+
+            public override float GetFloat32Value()
+            {
+                return this.jsonBinaryBuffer.GetFloat32Value();
+            }
+
+            public override double GetFloat64Value()
+            {
+                return this.jsonBinaryBuffer.GetFloat64Value();
+            }
+
+            public override Guid GetGuidValue()
+            {
+                return this.jsonBinaryBuffer.GetGuidValue();
+            }
+
+            public override IReadOnlyList<byte> GetBinaryValue()
+            {
+                return this.jsonBinaryBuffer.GetBinaryValue();
             }
 
             private void ReadToken()
@@ -450,10 +495,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     // typemarker is the encoded system string.
                 }
-                else if (JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedSystemString(typeMarker))
-                {
-                    this.jsonBinaryBuffer.ReadByte();
-                }
                 else
                 {
                     throw new JsonInvalidStringCharacterException();
@@ -464,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 byte typeMarker = this.jsonBinaryBuffer.ReadByte();
 
-                if (JsonBinaryEncoding.TypeMarker.IsEncodedIntegerLiteral(typeMarker))
+                if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
                 {
                     // The number marker is the value;
                 }
@@ -472,19 +513,19 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     switch (typeMarker)
                     {
-                        case JsonBinaryEncoding.TypeMarker.UInt8:
+                        case JsonBinaryEncoding.TypeMarker.NumberUInt8:
                             this.jsonBinaryBuffer.ReadByte();
                             break;
-                        case JsonBinaryEncoding.TypeMarker.Int16:
+                        case JsonBinaryEncoding.TypeMarker.NumberInt16:
                             this.jsonBinaryBuffer.ReadInt16();
                             break;
-                        case JsonBinaryEncoding.TypeMarker.Int32:
+                        case JsonBinaryEncoding.TypeMarker.NumberInt32:
                             this.jsonBinaryBuffer.ReadInt32();
                             break;
-                        case JsonBinaryEncoding.TypeMarker.Int64:
+                        case JsonBinaryEncoding.TypeMarker.NumberInt64:
                             this.jsonBinaryBuffer.ReadInt64();
                             break;
-                        case JsonBinaryEncoding.TypeMarker.Double:
+                        case JsonBinaryEncoding.TypeMarker.NumberDouble:
                             this.jsonBinaryBuffer.ReadDouble();
                             break;
                         default:
@@ -533,7 +574,7 @@ namespace Microsoft.Azure.Cosmos.Json
             private JsonTokenType GetJsonTokenType(byte typeMarker)
             {
                 JsonTokenType jsonTokenType;
-                if (JsonBinaryEncoding.TypeMarker.IsEncodedIntegerLiteral(typeMarker))
+                if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
                 {
                     jsonTokenType = JsonTokenType.Number;
                 }
@@ -567,11 +608,11 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
 
                         // Number values
-                        case JsonBinaryEncoding.TypeMarker.UInt8:
-                        case JsonBinaryEncoding.TypeMarker.Int16:
-                        case JsonBinaryEncoding.TypeMarker.Int32:
-                        case JsonBinaryEncoding.TypeMarker.Int64:
-                        case JsonBinaryEncoding.TypeMarker.Double:
+                        case JsonBinaryEncoding.TypeMarker.NumberUInt8:
+                        case JsonBinaryEncoding.TypeMarker.NumberInt16:
+                        case JsonBinaryEncoding.TypeMarker.NumberInt32:
+                        case JsonBinaryEncoding.TypeMarker.NumberInt64:
+                        case JsonBinaryEncoding.TypeMarker.NumberDouble:
                             jsonTokenType = JsonTokenType.Number;
                             break;
 
@@ -823,7 +864,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Gets the next JSON token from the IJsonBinaryBuffer as a double.
                 /// </summary>
                 /// <returns>The next JSON token from the BinaryBuffer as a double.</returns>
-                public double GetNumberValue()
+                public Number64 GetNumberValue()
                 {
                     if (this.CurrentJsonTokenType != JsonTokenType.Number)
                     {
@@ -831,7 +872,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     long currentPosition = this.BinaryReader.BaseStream.Position;
-                    double value = this.GetNumberValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    Number64 value = this.GetNumberValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
                     this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
                     return value;
                 }
@@ -853,6 +894,113 @@ namespace Microsoft.Azure.Cosmos.Json
                     return value;
                 }
 
+                public sbyte GetInt8Value()
+                {
+                    if (this.CurrentJsonTokenType != JsonTokenType.Number)
+                    {
+                        throw new JsonNotNumberTokenException();
+                    }
+
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    sbyte value = this.GetInt8Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
+                public short GetInt16Value()
+                {
+                    if (this.CurrentJsonTokenType != JsonTokenType.Number)
+                    {
+                        throw new JsonNotNumberTokenException();
+                    }
+
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    short value = this.GetInt16Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
+                public int GetInt32Value()
+                {
+                    if (this.CurrentJsonTokenType != JsonTokenType.Number)
+                    {
+                        throw new JsonNotNumberTokenException();
+                    }
+
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    int value = this.GetInt32Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
+                public long GetInt64Value()
+                {
+                    if (this.CurrentJsonTokenType != JsonTokenType.Number)
+                    {
+                        throw new JsonNotNumberTokenException();
+                    }
+
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    long value = this.GetInt64Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
+                public uint GetUInt32Value()
+                {
+                    if (this.CurrentJsonTokenType != JsonTokenType.Number)
+                    {
+                        throw new JsonNotNumberTokenException();
+                    }
+
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    uint value = this.GetUInt32Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
+                public float GetFloat32Value()
+                {
+                    if (this.CurrentJsonTokenType != JsonTokenType.Number)
+                    {
+                        throw new JsonNotNumberTokenException();
+                    }
+
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    float value = this.GetFloat32Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
+                public double GetFloat64Value()
+                {
+                    if (this.CurrentJsonTokenType != JsonTokenType.Number)
+                    {
+                        throw new JsonNotNumberTokenException();
+                    }
+
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    double value = this.GetFloat64Value((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
+                public Guid GetGuidValue()
+                {
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    Guid value = this.GetGuidValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
+                public IReadOnlyList<byte> GetBinaryValue()
+                {
+                    long currentPosition = this.BinaryReader.BaseStream.Position;
+                    IReadOnlyList<byte> value = this.GetBinaryValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
+                    this.BinaryReader.BaseStream.Seek(currentPosition, SeekOrigin.Begin);
+                    return value;
+                }
+
                 /// <summary>
                 /// Gets a binary reader whose position is at the beginning of the provided jsonToken.
                 /// </summary>
@@ -865,7 +1013,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// </summary>
                 /// <param name="jsonToken">The json token to get the number value of.</param>
                 /// <returns>the number value from a json token as a double.</returns>
-                private double GetNumberValue(ArraySegment<byte> jsonToken)
+                private Number64 GetNumberValue(ArraySegment<byte> jsonToken)
                 {
                     BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
                     return JsonBinaryEncoding.GetNumberValue(binaryReader);
@@ -880,6 +1028,60 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
                     return JsonBinaryEncoding.GetStringValue(binaryReader, this.jsonStringDictionary);
+                }
+
+                private sbyte GetInt8Value(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetInt8Value(binaryReader);
+                }
+
+                private short GetInt16Value(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetInt16Value(binaryReader);
+                }
+
+                private int GetInt32Value(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetInt32Value(binaryReader);
+                }
+
+                private long GetInt64Value(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetInt64Value(binaryReader);
+                }
+
+                private uint GetUInt32Value(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetUInt32Value(binaryReader);
+                }
+
+                private float GetFloat32Value(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetFloat32Value(binaryReader);
+                }
+
+                private double GetFloat64Value(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetFloat64Value(binaryReader);
+                }
+
+                private Guid GetGuidValue(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetGuidValue(binaryReader);
+                }
+
+                private IReadOnlyList<byte> GetBinaryValue(ArraySegment<byte> jsonToken)
+                {
+                    BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
+                    return JsonBinaryEncoding.GetBinaryValue(binaryReader);
                 }
             }
             #endregion

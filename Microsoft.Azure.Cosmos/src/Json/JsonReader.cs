@@ -148,11 +148,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns><code>true</code> if the JsonReader successfully advanced to the next token; <code>false</code> if the JsonReader has passed the end of the JSON.</returns>
         public abstract bool Read();
 
-        /// <summary>
-        /// Gets the next JSON token from the JsonReader as a double.
-        /// </summary>
-        /// <returns>The next JSON token from the JsonReader as a double.</returns>
-        public abstract double GetNumberValue();
+        /// <inheritdoc />
+        public abstract Number64 GetNumberValue();
 
         /// <summary>
         /// Gets the next JSON token from the JsonReader as a string.
@@ -165,5 +162,32 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <returns>The next JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
         public abstract IReadOnlyList<byte> GetBufferedRawJsonToken();
+
+        /// <inheritdoc />
+        public abstract sbyte GetInt8Value();
+
+        /// <inheritdoc />
+        public abstract short GetInt16Value();
+
+        /// <inheritdoc />
+        public abstract int GetInt32Value();
+
+        /// <inheritdoc />
+        public abstract long GetInt64Value();
+
+        /// <inheritdoc />
+        public abstract uint GetUInt32Value();
+
+        /// <inheritdoc />
+        public abstract float GetFloat32Value();
+
+        /// <inheritdoc />
+        public abstract double GetFloat64Value();
+
+        /// <inheritdoc />
+        public abstract Guid GetGuidValue();
+
+        /// <inheritdoc />
+        public abstract IReadOnlyList<byte> GetBinaryValue();
     }
 }

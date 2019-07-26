@@ -119,16 +119,10 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteStringValue(string value);
 
         /// <summary>
-        /// Writes an integer to the internal buffer.
-        /// </summary>
-        /// <param name="value">The value of the integer to write.</param>
-        public abstract void WriteIntValue(long value);
-
-        /// <summary>
         /// Writes a number to the internal buffer.
         /// </summary>
         /// <param name="value">The value of the number to write.</param>
-        public abstract void WriteNumberValue(double value);
+        public abstract void WriteNumberValue(Number64 value);
 
         /// <summary>
         /// Writes a boolean to the internal buffer.
@@ -188,30 +182,36 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 case JsonTokenType.NotStarted:
                     break;
+
                 case JsonTokenType.BeginArray:
                     this.WriteArrayStart();
                     break;
+
                 case JsonTokenType.EndArray:
                     this.WriteArrayEnd();
                     break;
+
                 case JsonTokenType.BeginObject:
                     this.WriteObjectStart();
                     break;
+
                 case JsonTokenType.EndObject:
                     this.WriteObjectEnd();
                     break;
+
                 case JsonTokenType.True:
                     this.WriteBoolValue(true);
                     break;
+
                 case JsonTokenType.False:
                     this.WriteBoolValue(false);
                     break;
+
                 case JsonTokenType.Null:
                     this.WriteNullValue();
                     break;
-                case JsonTokenType.String:
-                case JsonTokenType.Number:
-                case JsonTokenType.FieldName:
+
+                default:
                     {
                         if (sameFormat)
                         {
@@ -220,30 +220,86 @@ namespace Microsoft.Azure.Cosmos.Json
                         }
                         else
                         {
-                            if (jsonTokenType == JsonTokenType.Number)
+                            switch (jsonTokenType)
                             {
-                                double number = jsonReader.GetNumberValue();
-                                this.WriteNumberValue(number);
-                            }
-                            else
-                            {
-                                string value = jsonReader.GetStringValue();
-                                if (jsonTokenType == JsonTokenType.FieldName)
-                                {
-                                    this.WriteFieldName(value);
-                                }
-                                else
-                                {
-                                    this.WriteStringValue(value);
-                                }
+                                case JsonTokenType.String:
+                                case JsonTokenType.FieldName:
+                                    {
+                                        string value = jsonReader.GetStringValue();
+                                        if (jsonTokenType == JsonTokenType.FieldName)
+                                        {
+                                            this.WriteFieldName(value);
+                                        }
+                                        else
+                                        {
+                                            this.WriteStringValue(value);
+                                        }
+
+                                        break;
+                                    }
+
+                                case JsonTokenType.Number:
+                                    {
+                                        Number64 value = jsonReader.GetNumberValue();
+                                        this.WriteNumberValue(value);
+                                    }
+                                    break;
+
+                                case JsonTokenType.Int8:
+                                    {
+                                        sbyte value = jsonReader.GetInt8Value();
+                                        this.WriteInt8Value(value);
+                                    }
+                                    break;
+
+                                case JsonTokenType.Int16:
+                                    {
+                                        short value = jsonReader.GetInt16Value();
+                                        this.WriteInt16Value(value);
+                                    }
+                                    break;
+
+                                case JsonTokenType.Int32:
+                                    {
+                                        int value = jsonReader.GetInt32Value();
+                                        this.WriteInt32Value(value);
+                                    }
+                                    break;
+
+                                case JsonTokenType.Int64:
+                                    {
+                                        long value = jsonReader.GetInt64Value();
+                                        this.WriteInt64Value(value);
+                                    }
+                                    break;
+
+                                case JsonTokenType.UInt32:
+                                    {
+                                        uint value = jsonReader.GetUInt32Value();
+                                        this.WriteUInt32Value(value);
+                                    }
+                                    break;
+
+                                case JsonTokenType.Guid:
+                                    {
+                                        Guid value = jsonReader.GetGuidValue();
+                                        this.WriteGuidValue(value);
+                                    }
+                                    break;
+
+                                case JsonTokenType.Binary:
+                                    {
+                                        IReadOnlyList<byte> value = jsonReader.GetBinaryValue();
+                                        this.WriteBinaryValue(value);
+                                    }
+                                    break;
+
+                                default:
+                                    throw new ArgumentException($"Unexpected JsonTokenType: {jsonTokenType}");
                             }
                         }
-
-                        break;
                     }
-
-                default:
-                    throw new ArgumentException($"Unexpected JsonTokenType: {jsonTokenType}");
+                    break;
             }
         }
 
@@ -329,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 switch (jsonNodeType)
                 {
                     case JsonNodeType.Number:
-                        double numberValue = jsonNavigator.GetNumberValue(jsonNavigatorNode);
+                        Number64 numberValue = jsonNavigator.GetNumberValue(jsonNavigatorNode);
                         this.WriteNumberValue(numberValue);
                         break;
 

@@ -67,8 +67,8 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="jsonStringDictionary">The JSON string dictionary used for user string encoding.</param>
             /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
             public JsonBinaryWriter(
-                bool skipValidation, 
-                JsonStringDictionary jsonStringDictionary = null, 
+                bool skipValidation,
+                JsonStringDictionary jsonStringDictionary = null,
                 bool serializeCount = false)
                 : base(skipValidation)
             {
@@ -159,42 +159,19 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <summary>
-            /// Writes an integer to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the integer to write.</param>
-            public override void WriteIntValue(long value)
-            {
-                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
-
-                this.WriteIntegerInternal(value);
-                this.bufferedContexts.Peek().Count++;
-            }
-
-            /// <summary>
             /// Writes a number to the internal buffer.
             /// </summary>
             /// <param name="value">The value of the number to write.</param>
-            public override void WriteNumberValue(double value)
+            public override void WriteNumberValue(Number64 value)
             {
-                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
-
-                // The maximum integer value that can be stored in an IEEE 754 double type w/o losing precision
-                const double MaxFullPrecisionValue = ((long)1) << 53;
-
-                // Check if the number is an integer
-                double truncatedValue = Math.Floor(value);
-                if ((truncatedValue == value) && (value >= -MaxFullPrecisionValue) && (value <= MaxFullPrecisionValue))
+                if (value.IsInteger)
                 {
-                    // The number does not have any decimals and fits in a 64-bit value
-                    this.WriteIntegerInternal((long)value);
+                    this.WriteIntegerInternal(Number64.ToLong(value));
                 }
                 else
                 {
-                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Double);
-                    this.binaryWriter.Write(value);
+                    this.WriteDoubleInternal(Number64.ToDouble(value));
                 }
-
-                this.bufferedContexts.Peek().Count++;
             }
 
             /// <summary>
@@ -220,47 +197,84 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override void WriteInt8Value(sbyte value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int8);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int8);
+                this.binaryWriter.Write(value);
             }
 
             public override void WriteInt16Value(short value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int16);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int16);
+                this.binaryWriter.Write(value);
             }
 
             public override void WriteInt32Value(int value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int32);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int32);
+                this.binaryWriter.Write(value);
             }
 
             public override void WriteInt64Value(long value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int64);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int64);
+                this.binaryWriter.Write(value);
             }
 
             public override void WriteFloat32Value(float value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Float32);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Float32);
+                this.binaryWriter.Write(value);
             }
 
             public override void WriteFloat64Value(double value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Float64);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Float64);
+                this.binaryWriter.Write(value);
             }
 
             public override void WriteUInt32Value(uint value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.UInt32);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.UInt32);
+                this.binaryWriter.Write(value);
             }
 
             public override void WriteGuidValue(Guid value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Guid);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Guid);
+                this.binaryWriter.Write(value.ToByteArray());
             }
 
             public override void WriteBinaryValue(IReadOnlyList<byte> value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Binary);
+
+                long length = value.Count;
+                if ((length & ~0xFF) == 0)
+                {
+                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Binary1ByteLength);
+                    this.binaryWriter.Write((byte)length);
+                }
+                else if ((length & ~0xFFFF) == 0)
+                {
+                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Binary2ByteLength);
+                    this.binaryWriter.Write((ushort)length);
+                }
+                else if ((length & ~0xFFFFFFFFL) == 0)
+                {
+                    this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Binary4ByteLength);
+                    this.binaryWriter.Write((ulong)length);
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException("Binary length was too large.");
+                }
             }
 
             /// <summary>
@@ -490,8 +504,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 // This would be changed later, so that the writer can control which strings need to be encoded.
                 this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
                 if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(
-                    value, 
-                    this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName ? this.jsonStringDictionary : null, 
+                    value,
+                    this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName ? this.jsonStringDictionary : null,
                     out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
                 {
                     switch (multiByteTypeMarker.Length)
@@ -553,7 +567,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void WriteIntegerInternal(long value)
             {
-                if (JsonBinaryEncoding.TypeMarker.IsEncodedIntegerLiteral(value))
+                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
+                if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(value))
                 {
                     this.binaryWriter.Write((byte)(JsonBinaryEncoding.TypeMarker.LiteralIntMin + value));
                 }
@@ -564,22 +579,22 @@ namespace Microsoft.Azure.Cosmos.Json
                         // Non-negative Number
                         if (value <= byte.MaxValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.UInt8);
+                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberUInt8);
                             this.binaryWriter.Write((byte)value);
                         }
                         else if (value <= short.MaxValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int16);
+                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt16);
                             this.binaryWriter.Write((short)value);
                         }
                         else if (value <= int.MaxValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int32);
+                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt32);
                             this.binaryWriter.Write((int)value);
                         }
                         else
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int64);
+                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt64);
                             this.binaryWriter.Write((long)value);
                         }
                     }
@@ -588,21 +603,28 @@ namespace Microsoft.Azure.Cosmos.Json
                         // Negative Number
                         if (value < int.MinValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int64);
+                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt64);
                             this.binaryWriter.Write((long)value);
                         }
                         else if (value < short.MinValue)
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int32);
+                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt32);
                             this.binaryWriter.Write((int)value);
                         }
                         else
                         {
-                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int16);
+                            this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberInt16);
                             this.binaryWriter.Write((short)value);
                         }
                     }
                 }
+            }
+
+            private void WriteDoubleInternal(double value)
+            {
+                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
+                this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.NumberDouble);
+                this.binaryWriter.Write(value);
             }
 
             private sealed class BeginOffsetAndCount

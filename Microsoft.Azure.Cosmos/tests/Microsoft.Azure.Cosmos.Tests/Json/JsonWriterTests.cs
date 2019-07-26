@@ -99,7 +99,7 @@
             byte[] binaryOutput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Int16,
+                JsonBinaryEncoding.TypeMarker.NumberInt16,
                 // 1337 in litte endian hex,
                 0x39, 0x05,
             };
@@ -542,8 +542,8 @@
             binaryOutputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength });
 
             List<byte[]> numbers = new List<byte[]>();
-            numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int16, 0xFE, 0xFF });
-            numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int16, 0xFF, 0xFF });
+            numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt16, 0xFE, 0xFF });
+            numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt16, 0xFF, 0xFF });
             numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin });
             numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 1 });
             numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 2 });
@@ -734,7 +734,7 @@
             List<byte[]> elements = new List<byte[]>();
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int16, 0xFF, 0xFF });
+            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt16, 0xFF, 0xFF });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x9A, 0x99, 0x99, 0x99, 0x99, 0x99, 0xF1, 0xBF });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 1 });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 2 });
@@ -814,9 +814,9 @@
             binaryOutputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength });
 
             List<byte[]> elements = new List<byte[]>();
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.UInt8, 35 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.UInt8, 70 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.UInt8, 140 });
+            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberUInt8, 35 });
+            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberUInt8, 70 });
+            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberUInt8, 140 });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0xBC, 0xCA, 0x0F, 0xBA, 0x41, 0x1F, 0x0A, 0x48 });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0xDB, 0x5E, 0xAE, 0xBE, 0x50, 0x9B, 0x44, 0x4E });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x32, 0x80, 0x84, 0x3C, 0x73, 0xDB, 0xCD, 0x5C });
@@ -1094,7 +1094,7 @@
                 elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "int".Length), 105, 110, 116 });
-                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int32, 0x19, 0xDF, 0xB6, 0xB0 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt32, 0x19, 0xDF, 0xB6, 0xB0 });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "string".Length), 115, 116, 114, 105, 110, 103 });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "XCPCFXPHHF".Length), 88, 67, 80, 67, 70, 88, 80, 72, 72, 70 });
@@ -1150,7 +1150,7 @@
                 elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 1) });
-                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int32, 0x19, 0xDF, 0xB6, 0xB0 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt32, 0x19, 0xDF, 0xB6, 0xB0 });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 2) });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "XCPCFXPHHF".Length), 88, 67, 80, 67, 70, 88, 80, 72, 72, 70 });

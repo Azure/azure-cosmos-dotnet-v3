@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Text;
 
     /// <summary>
@@ -191,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Gets the number of value of the token that was just read from the buffer.
                 /// </summary>
                 /// <returns>The number of value of the token that was just read from the buffer.</returns>
-                double GetNumberValue();
+                Number64 GetNumberValue();
 
                 /// <summary>
                 /// Gets the string value of the token that was just read from the buffer.
@@ -349,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Gets the next JSON token from the JsonReader as a double.
             /// </summary>
             /// <returns>The next JSON token from the JsonReader as a double.</returns>
-            public override double GetNumberValue()
+            public override Number64 GetNumberValue()
             {
                 return this.jsonTextBuffer.GetNumberValue();
             }
@@ -361,6 +362,53 @@ namespace Microsoft.Azure.Cosmos.Json
             public override string GetStringValue()
             {
                 return this.jsonTextBuffer.GetStringValue();
+            }
+
+            public override sbyte GetInt8Value()
+            {
+                return (sbyte)Number64.ToLong(this.GetNumberValue());
+            }
+
+            public override short GetInt16Value()
+            {
+                return (short)Number64.ToLong(this.GetNumberValue());
+            }
+
+            public override int GetInt32Value()
+            {
+                return (int)Number64.ToLong(this.GetNumberValue());
+            }
+
+            public override long GetInt64Value()
+            {
+                return (long)Number64.ToLong(this.GetNumberValue());
+            }
+
+            public override uint GetUInt32Value()
+            {
+                return (uint)Number64.ToLong(this.GetNumberValue());
+            }
+
+            public override float GetFloat32Value()
+            {
+                return (float)Number64.ToLong(this.GetNumberValue());
+            }
+
+            public override double GetFloat64Value()
+            {
+                return (double)Number64.ToLong(this.GetNumberValue());
+            }
+
+            public override Guid GetGuidValue()
+            {
+                return Guid.Parse(
+                    this.jsonTextBuffer.Encoding.GetString(
+                        this.jsonTextBuffer.GetBufferedRawJsonToken().ToArray()));
+            }
+
+            public override IReadOnlyList<byte> GetBinaryValue()
+            {
+                return this.jsonTextBuffer.GetBufferedRawJsonToken();
             }
 
             /// <summary>
@@ -761,7 +809,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Gets the number value of the token that was just read from the buffer.
                 /// </summary>
                 /// <returns>The number value of the token that was just read from the buffer.</returns>
-                public double GetNumberValue()
+                public Number64 GetNumberValue()
                 {
                     return JsonTextUtil.GetNumberValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
                 }
@@ -909,7 +957,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Gets the number of value of the token that was just read from the buffer.
                 /// </summary>
                 /// <returns>The number of value of the token that was just read from the buffer.</returns>
-                public double GetNumberValue()
+                public Number64 GetNumberValue()
                 {
                     string stringDouble = this.encoding.GetString(this.bufferedToken.GetBuffer(), 0, this.tokenLength);
                     return double.Parse(stringDouble, CultureInfo.InvariantCulture);

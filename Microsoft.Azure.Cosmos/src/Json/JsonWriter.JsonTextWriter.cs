@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Json
             private const string FalseString = "false";
             private const string NullString = "null";
 
-            private static readonly Dictionary<Encoding, string> ByteOrderMarkDictionary = new Dictionary<Encoding, string> 
+            private static readonly Dictionary<Encoding, string> ByteOrderMarkDictionary = new Dictionary<Encoding, string>
             {
                 { Encoding.UTF8, "\xEF\xBB\xBF" },
                 { Encoding.Unicode, "\xFF\xFE" },
@@ -173,61 +173,18 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <summary>
-            /// Writes an integer to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the integer to write.</param>
-            public override void WriteIntValue(long value)
-            {
-                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
-                this.PrefixMemberSeparator();
-                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
-            }
-
-            /// <summary>
             /// Writes a number to the internal buffer.
             /// </summary>
             /// <param name="value">The value of the number to write.</param>
-            public override void WriteNumberValue(double value)
+            public override void WriteNumberValue(Number64 value)
             {
-                // The maximum integer value that can be stored in an IEEE 754 double type w/o losing precision
-                const double MaxFullPrecisionValue = ((long)1) << 53;
-
-                // Check if the number is an integer
-                double truncatedValue = Math.Floor(value);
-                if ((truncatedValue == value) && (value >= -MaxFullPrecisionValue) && (value <= MaxFullPrecisionValue))
+                if (value.IsInteger)
                 {
-                    // The number does not have any decimals and fits in a 64-bit value
-                    this.WriteIntValue((long)value);
-                    return;
-                }
-
-                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
-                this.PrefixMemberSeparator();
-
-                if (double.IsNaN(value))
-                {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(NotANumber);
-                    this.WriteChar(StringEndToken);
-                }
-                else if (double.IsNegativeInfinity(value))
-                {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(NegativeInfinity);
-                    this.WriteChar(StringEndToken);
-                }
-                else if (double.IsPositiveInfinity(value))
-                {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(PositiveInfinity);
-                    this.WriteChar(StringEndToken);
+                    this.WriteIntegerInternal(Number64.ToLong(value));
                 }
                 else
                 {
-                    // If you require more precision, specify format with the "G17" format specification, which always returns 17 digits of precision,
-                    // or "R", which returns 15 digits if the number can be represented with that precision or 17 digits if the number can only be represented with maximum precision.
-                    // In some cases, Double values formatted with the "R" standard numeric format string do not successfully round-trip if compiled using the /platform:x64 or /platform:anycpu switches and run on 64-bit systems. To work around this problem, you can format Double values by using the "G17" standard numeric format string. 
-                    this.streamWriter.Write(value.ToString("R", CultureInfo.InvariantCulture));
+                    this.WriteDoubleInternal(Number64.ToDouble(value));
                 }
             }
 
@@ -262,42 +219,45 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override void WriteInt8Value(sbyte value)
             {
-                throw new NotImplementedException();
+                this.WriteNumberValue(value);
             }
 
             public override void WriteInt16Value(short value)
             {
-                throw new NotImplementedException();
+                this.WriteNumberValue(value);
             }
 
             public override void WriteInt32Value(int value)
             {
-                throw new NotImplementedException();
+                this.WriteNumberValue(value);
             }
 
             public override void WriteInt64Value(long value)
             {
-                throw new NotImplementedException();
+                this.WriteNumberValue(value);
             }
 
             public override void WriteFloat32Value(float value)
             {
-                throw new NotImplementedException();
+                this.WriteNumberValue(value);
             }
 
             public override void WriteFloat64Value(double value)
             {
-                throw new NotImplementedException();
+                this.WriteNumberValue(value);
             }
 
             public override void WriteUInt32Value(uint value)
             {
-                throw new NotImplementedException();
+                this.WriteNumberValue(value);
             }
 
             public override void WriteGuidValue(Guid value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Guid);
+                this.PrefixMemberSeparator();
+
+                this.streamWriter.Write(value.ToString());
             }
 
             public override void WriteBinaryValue(IReadOnlyList<byte> value)
@@ -358,6 +318,52 @@ namespace Microsoft.Azure.Cosmos.Json
             protected override void WriteRawJsonToken(JsonTokenType jsonTokenType, IReadOnlyList<byte> rawJsonToken)
             {
                 throw new NotImplementedException();
+            }
+
+            /// <summary>
+            /// Writes an integer to the internal buffer.
+            /// </summary>
+            /// <param name="value">The value of the integer to write.</param>
+            private void WriteIntegerInternal(long value)
+            {
+                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+            }
+
+            /// <summary>
+            /// Writes an integer to the internal buffer.
+            /// </summary>
+            /// <param name="value">The value of the integer to write.</param>
+            private void WriteDoubleInternal(double value)
+            {
+                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
+                this.PrefixMemberSeparator();
+                if (double.IsNaN(value))
+                {
+                    this.WriteChar(StringStartToken);
+                    this.streamWriter.Write(NotANumber);
+                    this.WriteChar(StringEndToken);
+                }
+                else if (double.IsNegativeInfinity(value))
+                {
+                    this.WriteChar(StringStartToken);
+                    this.streamWriter.Write(NegativeInfinity);
+                    this.WriteChar(StringEndToken);
+                }
+                else if (double.IsPositiveInfinity(value))
+                {
+                    this.WriteChar(StringStartToken);
+                    this.streamWriter.Write(PositiveInfinity);
+                    this.WriteChar(StringEndToken);
+                }
+                else
+                {
+                    // If you require more precision, specify format with the "G17" format specification, which always returns 17 digits of precision,
+                    // or "R", which returns 15 digits if the number can be represented with that precision or 17 digits if the number can only be represented with maximum precision.
+                    // In some cases, Double values formatted with the "R" standard numeric format string do not successfully round-trip if compiled using the /platform:x64 or /platform:anycpu switches and run on 64-bit systems. To work around this problem, you can format Double values by using the "G17" standard numeric format string. 
+                    this.streamWriter.Write(value.ToString("R", CultureInfo.InvariantCulture));
+                }
             }
 
             /// <summary>
@@ -426,29 +432,29 @@ namespace Microsoft.Azure.Cosmos.Json
                         char escapeSequence = default(char);
                         switch (characterToEscape)
                         {
-                            case '\\': 
+                            case '\\':
                                 escapeSequence = '\\';
                                 break;
                             case '"':
                                 escapeSequence = '"';
                                 break;
-                            case '/': 
-                                escapeSequence = '/'; 
+                            case '/':
+                                escapeSequence = '/';
                                 break;
-                            case '\b': 
-                                escapeSequence = 'b'; 
+                            case '\b':
+                                escapeSequence = 'b';
                                 break;
-                            case '\f': 
-                                escapeSequence = 'f'; 
+                            case '\f':
+                                escapeSequence = 'f';
                                 break;
-                            case '\n': 
-                                escapeSequence = 'n'; 
+                            case '\n':
+                                escapeSequence = 'n';
                                 break;
-                            case '\r': 
-                                escapeSequence = 'r'; 
+                            case '\r':
+                                escapeSequence = 'r';
                                 break;
-                            case '\t': 
-                                escapeSequence = 't'; 
+                            case '\t':
+                                escapeSequence = 't';
                                 break;
                         }
 

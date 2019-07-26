@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="numberNavigatorNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
             /// <returns>A double that represents the number value in the node.</returns>
-            public override double GetNumberValue(IJsonNavigatorNode numberNavigatorNode)
+            public override Number64 GetNumberValue(IJsonNavigatorNode numberNavigatorNode)
             {
                 if (numberNavigatorNode == null)
                 {
@@ -149,47 +149,155 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(((numberNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.Int8))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must be a binary {JsonNodeType.Int8} node.");
+                }
+
+                long offset = ((BinaryNode)numberNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetInt8Value(this.binaryReader);
             }
 
             public override short GetInt16Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(((numberNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.Int16))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must be a binary {JsonNodeType.Int16} node.");
+                }
+
+                long offset = ((BinaryNode)numberNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetInt16Value(this.binaryReader);
             }
 
             public override int GetInt32Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(((numberNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.Int32))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must be a binary {JsonNodeType.Int32} node.");
+                }
+
+                long offset = ((BinaryNode)numberNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetInt32Value(this.binaryReader);
             }
 
             public override long GetInt64Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(((numberNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.Int64))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must be a binary {JsonNodeType.Int64} node.");
+                }
+
+                long offset = ((BinaryNode)numberNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetInt64Value(this.binaryReader);
             }
 
             public override float GetFloat32Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(((numberNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.Float32))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must be a binary {JsonNodeType.Float32} node.");
+                }
+
+                long offset = ((BinaryNode)numberNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetFloat32Value(this.binaryReader);
             }
 
             public override double GetFloat64Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(((numberNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.Float64))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must be a binary {JsonNodeType.Float64} node.");
+                }
+
+                long offset = ((BinaryNode)numberNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetFloat64Value(this.binaryReader);
             }
 
             public override uint GetUInt32Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(((numberNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.UInt32))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must be a binary {JsonNodeType.UInt32} node.");
+                }
+
+                long offset = ((BinaryNode)numberNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetUInt32Value(this.binaryReader);
             }
 
             public override Guid GetGuidValue(IJsonNavigatorNode guidNode)
             {
-                throw new NotImplementedException();
+                if (guidNode == null)
+                {
+                    throw new ArgumentNullException(nameof(guidNode));
+                }
+
+                if (!(((guidNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.Guid))
+                {
+                    throw new ArgumentException($"{nameof(guidNode)} must be a binary {JsonNodeType.Guid} node.");
+                }
+
+                long offset = ((BinaryNode)guidNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetGuidValue(this.binaryReader);
             }
 
             public override IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
             {
-                throw new NotImplementedException();
+                if (binaryNode == null)
+                {
+                    throw new ArgumentNullException(nameof(binaryNode));
+                }
+
+                if (!(((binaryNode as BinaryNode)?.JsonNodeType ?? JsonNodeType.Unknown) == JsonNodeType.Binary))
+                {
+                    throw new ArgumentException($"{nameof(binaryNode)} must be a binary {JsonNodeType.Binary} node.");
+                }
+
+                long offset = ((BinaryNode)binaryNode).Offset;
+                this.binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                return JsonBinaryEncoding.GetBinaryValue(this.binaryReader);
             }
 
             public override bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue)

@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="numberNavigatorNode">The <see cref="IJsonNavigatorNode"/> of the node you want the number value from.</param>
             /// <returns>A double that represents the number value in the node.</returns>
-            public override double GetNumberValue(IJsonNavigatorNode numberNavigatorNode)
+            public override Number64 GetNumberValue(IJsonNavigatorNode numberNavigatorNode)
             {
                 if (numberNavigatorNode == null)
                 {
@@ -132,37 +132,37 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                return (sbyte)Number64.ToLong((this.GetNumberValue(numberNode)));
             }
 
             public override short GetInt16Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                return (short)Number64.ToLong((this.GetNumberValue(numberNode)));
             }
 
             public override int GetInt32Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                return (int)Number64.ToLong((this.GetNumberValue(numberNode)));
             }
 
             public override long GetInt64Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                return (long)Number64.ToLong((this.GetNumberValue(numberNode)));
             }
 
             public override float GetFloat32Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                return (float)Number64.ToLong((this.GetNumberValue(numberNode)));
             }
 
             public override double GetFloat64Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                return (double)Number64.ToLong((this.GetNumberValue(numberNode)));
             }
 
             public override uint GetUInt32Value(IJsonNavigatorNode numberNode)
             {
-                throw new NotImplementedException();
+                return (uint)Number64.ToLong((this.GetNumberValue(numberNode)));
             }
 
             public override Guid GetGuidValue(IJsonNavigatorNode guidNode)
@@ -501,6 +501,16 @@ namespace Microsoft.Azure.Cosmos.Json
                     return new ObjectProperty(fieldName, value);
                 }
 
+                private static GuidNode ParseGuidNode(IJsonReader jsonTextReader)
+                {
+                    return GuidNode.Create(jsonTextReader.GetGuidValue());
+                }
+
+                private static BinaryNode ParseBinaryNode(IJsonReader jsonTextReader)
+                {
+                    return BinaryNode.Create(jsonTextReader.GetBinaryValue());
+                }
+
                 /// <summary>
                 /// Parses out a JSON AST node with a jsonTextReader.
                 /// </summary>
@@ -521,6 +531,13 @@ namespace Microsoft.Azure.Cosmos.Json
                             node = JsonTextParser.ParseStringNode(jsonTextReader);
                             break;
                         case JsonTokenType.Number:
+                        case JsonTokenType.Float32:
+                        case JsonTokenType.Float64:
+                        case JsonTokenType.Int8:
+                        case JsonTokenType.Int16:
+                        case JsonTokenType.Int32:
+                        case JsonTokenType.Int64:
+                        case JsonTokenType.UInt32:
                             node = JsonTextParser.ParseNumberNode(jsonTextReader);
                             break;
                         case JsonTokenType.True:
@@ -531,6 +548,12 @@ namespace Microsoft.Azure.Cosmos.Json
                             break;
                         case JsonTokenType.Null:
                             node = JsonTextParser.ParseNullNode(jsonTextReader);
+                            break;
+                        case JsonTokenType.Guid:
+                            node = JsonTextParser.ParseGuidNode(jsonTextReader);
+                            break;
+                        case JsonTokenType.Binary:
+                            node = JsonTextParser.ParseBinaryNode(jsonTextReader);
                             break;
                         default:
                             throw new JsonInvalidTokenException();
@@ -792,6 +815,38 @@ namespace Microsoft.Azure.Cosmos.Json
                 public static TrueNode Create()
                 {
                     return TrueNode.Instance;
+                }
+            }
+
+            private sealed class GuidNode : JsonTextNode
+            {
+                private readonly Guid value;
+
+                private GuidNode(Guid value)
+                    : base(JsonNodeType.Guid)
+                {
+                    this.value = value;
+                }
+
+                public static GuidNode Create(Guid value)
+                {
+                    return new GuidNode(value);
+                }
+            }
+
+            private sealed class BinaryNode : JsonTextNode
+            {
+                private readonly IReadOnlyList<byte> value;
+
+                private BinaryNode(IReadOnlyList<byte> value)
+                    : base(JsonNodeType.Binary)
+                {
+                    this.value = value;
+                }
+
+                public static BinaryNode Create(IReadOnlyList<byte> value)
+                {
+                    return new BinaryNode(value);
                 }
             }
             #endregion

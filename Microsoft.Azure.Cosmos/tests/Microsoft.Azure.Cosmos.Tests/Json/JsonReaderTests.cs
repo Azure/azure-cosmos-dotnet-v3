@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             byte[] binaryInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Int16,
+                JsonBinaryEncoding.TypeMarker.NumberInt16,
                 // 1337 in litte endian hex,
                 0x39, 0x05,
             };
@@ -268,28 +268,28 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             byte[] binaryUInt8Input =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.UInt8,
+                JsonBinaryEncoding.TypeMarker.NumberUInt8,
                 (byte)number,
             };
 
             byte[] binaryInt16Input =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Int16,
+                JsonBinaryEncoding.TypeMarker.NumberInt16,
                 0x04, 0x00,
             };
 
             byte[] binaryInt32Input =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Int32,
+                JsonBinaryEncoding.TypeMarker.NumberInt32,
                 0x04, 0x00, 0x00, 0x00,
             };
 
             byte[] binaryInt64Input =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Int64,
+                JsonBinaryEncoding.TypeMarker.NumInt64,
                 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             };
 
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             byte[] minByteInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.UInt8,
+                JsonBinaryEncoding.TypeMarker.NumberUInt8,
                 byte.MinValue
             };
 
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             byte[] maxByteInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.UInt8,
+                JsonBinaryEncoding.TypeMarker.NumberUInt8,
                 byte.MaxValue
             };
 
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             List<byte> minShortInput = new List<byte>();
             minShortInput.Add(BinaryFormat);
-            minShortInput.Add(JsonBinaryEncoding.TypeMarker.Int16);
+            minShortInput.Add(JsonBinaryEncoding.TypeMarker.NumberInt16);
             minShortInput.AddRange(BitConverter.GetBytes(short.MinValue));
 
             this.VerifyReader(short.MinValue.ToString(), minShortTokens);
@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             List<byte> maxShortInput = new List<byte>();
             maxShortInput.Add(BinaryFormat);
-            maxShortInput.Add(JsonBinaryEncoding.TypeMarker.Int16);
+            maxShortInput.Add(JsonBinaryEncoding.TypeMarker.NumberInt16);
             maxShortInput.AddRange(BitConverter.GetBytes(short.MaxValue));
 
             this.VerifyReader(short.MaxValue.ToString(), maxShortTokens);
@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             List<byte> minIntInput = new List<byte>();
             minIntInput.Add(BinaryFormat);
-            minIntInput.Add(JsonBinaryEncoding.TypeMarker.Int32);
+            minIntInput.Add(JsonBinaryEncoding.TypeMarker.NumberInt32);
             minIntInput.AddRange(BitConverter.GetBytes(int.MinValue));
 
             this.VerifyReader(int.MinValue.ToString(), minIntTokens);
@@ -400,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             List<byte> maxIntInput = new List<byte>();
             maxIntInput.Add(BinaryFormat);
-            maxIntInput.Add(JsonBinaryEncoding.TypeMarker.Int32);
+            maxIntInput.Add(JsonBinaryEncoding.TypeMarker.NumberInt32);
             maxIntInput.AddRange(BitConverter.GetBytes(int.MaxValue));
 
             this.VerifyReader(int.MaxValue.ToString(), maxIntTokens);
@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             List<byte> minLongInput = new List<byte>();
             minLongInput.Add(BinaryFormat);
-            minLongInput.Add(JsonBinaryEncoding.TypeMarker.Int64);
+            minLongInput.Add(JsonBinaryEncoding.TypeMarker.NumInt64);
             minLongInput.AddRange(BitConverter.GetBytes(long.MinValue));
 
             this.VerifyReader(long.MinValue.ToString(), minLongTokens);
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             List<byte> maxLongInput = new List<byte>();
             maxLongInput.Add(BinaryFormat);
-            maxLongInput.Add(JsonBinaryEncoding.TypeMarker.Int64);
+            maxLongInput.Add(JsonBinaryEncoding.TypeMarker.NumInt64);
             maxLongInput.AddRange(BitConverter.GetBytes(long.MaxValue));
 
             this.VerifyReader(long.MaxValue.ToString(), maxLongTokens);
@@ -885,8 +885,8 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             binaryInputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength });
 
             List<byte[]> numbers = new List<byte[]>();
-            numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int16, 0xFE, 0xFF });
-            numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int16, 0xFF, 0xFF });
+            numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt16, 0xFE, 0xFF });
+            numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt16, 0xFF, 0xFF });
             numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin });
             numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 1 });
             numbers.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 2 });
@@ -1079,7 +1079,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             List<byte[]> elements = new List<byte[]>();
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int16, 0xFF, 0xFF });
+            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt16, 0xFF, 0xFF });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xBF });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 1 });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 2 });
@@ -1490,7 +1490,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "int".Length), 105, 110, 116 });
-                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int32, 0x19, 0xDF, 0xB6, 0xB0 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt32, 0x19, 0xDF, 0xB6, 0xB0 });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "string".Length), 115, 116, 114, 105, 110, 103 });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "XCPCFXPHHF".Length), 88, 67, 80, 67, 70, 88, 80, 72, 72, 70 });
@@ -1546,7 +1546,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Double, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 1) });
-                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Int32, 0x19, 0xDF, 0xB6, 0xB0 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt32, 0x19, 0xDF, 0xB6, 0xB0 });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 2) });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "XCPCFXPHHF".Length), 88, 67, 80, 67, 70, 88, 80, 72, 72, 70 });
