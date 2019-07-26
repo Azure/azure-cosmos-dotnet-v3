@@ -90,6 +90,36 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
-        internal string ResourceId { get; private set; }
+        internal string ResourceId { get; set; }
+
+        /// <summary>
+        /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The self-link associated with the resource.</value> 
+        /// <remarks>
+        /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
+        /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
+        /// </remarks>
+        [JsonProperty(PropertyName = Constants.Properties.SelfLink)]
+        internal string SelfLink { get; private set; }
+
+        /// <summary>
+        /// Gets the permissions associated with the user for the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The permissions associated with the user.</value> 
+        [JsonProperty(PropertyName = Constants.Properties.PermissionsLink)]
+        internal string Permissions { get; private set; }
+
+        /// <summary>
+        /// Gets the self-link of the permissions associated with the user for the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>The self-link of the permissions associated with the user.</value>
+        internal string PermissionsLink
+        {
+            get
+            {
+                return $"{this.SelfLink?.TrimEnd('/')}/{ this.Permissions}";
+            }
+        }
     }
 }

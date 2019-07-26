@@ -38,11 +38,10 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext = clientContext;
             this.LinkUri = clientContext.CreateLink(
                 parentLink: database.LinkUri.OriginalString,
-                uriPathSegment: Paths.CollectionsPathSegment,
+                uriPathSegment: Paths.UsersPathSegment,
                 id: userId);
 
-            this.Database = database;
-            this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
+            this.Database = database;            
         }
 
         /// <summary>
@@ -66,49 +65,120 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override Task<UserResponse> ReadUserAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            Task<ResponseMessage> response = this.ReadUserStreamAsync(
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
         }
 
         /// <inheritdoc/>
         public override Task<ResponseMessage> ReadUserStreamAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return this.ProcessStreamAsync(
+                streamPayload: null,
+                operationType: OperationType.Read,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         /// <inheritdoc/>
         public override Task<UserResponse> ReplaceUserAsync(UserProperties userProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            if (userProperties == null)
+            {
+                throw new ArgumentNullException(nameof(userProperties));
+            }
+
+            this.ClientContext.ValidateResource(userProperties.Id);
+            Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
         }
 
         /// <inheritdoc/>
         public override Task<ResponseMessage> ReplaceUserStreamAsync(UserProperties userProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            if (userProperties == null)
+            {
+                throw new ArgumentNullException(nameof(userProperties));
+            }
+
+            this.ClientContext.ValidateResource(userProperties.Id);
+            return this.ReplaceStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         /// <inheritdoc/>
         public override Task<UserResponse> DeleteUserAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            Task<ResponseMessage> response = this.DeleteUserStreamAsync(
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
         }
 
         /// <inheritdoc/>
         public override Task<ResponseMessage> DeleteUserStreamAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return this.ProcessStreamAsync(
+               streamPayload: null,
+               operationType: OperationType.Delete,
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
         }
 
-        private string GetResourceSegmentUriWithoutId()
+        private Task<ResponseMessage> ReplaceStreamInternalAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            // StringBuilder is roughly 2x faster than string.Format
-            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.OriginalString.Length +
-                                                            Paths.DocumentsPathSegment.Length + 2);
-            stringBuilder.Append(this.LinkUri.OriginalString);
-            stringBuilder.Append("/");
-            stringBuilder.Append(Paths.UsersPathSegment);
-            stringBuilder.Append("/");
-            return stringBuilder.ToString();
+            return this.ProcessStreamAsync(
+                streamPayload: streamPayload,
+                operationType: OperationType.Replace,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> ProcessStreamAsync(
+            Stream streamPayload,
+            OperationType operationType,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return ProcessResourceOperationStreamAsync(
+                streamPayload: streamPayload,
+                operationType: operationType,
+                linkUri: this.LinkUri,
+                resourceType: ResourceType.User,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
+           Stream streamPayload,
+           OperationType operationType,
+           Uri linkUri,
+           ResourceType resourceType,
+           RequestOptions requestOptions = null,
+           CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+              resourceUri: linkUri,
+              resourceType: resourceType,
+              operationType: operationType,
+              cosmosContainerCore: null,
+              partitionKey: null,
+              streamPayload: streamPayload,
+              requestOptions: requestOptions,
+              requestEnricher: null,
+              cancellationToken: cancellationToken);
         }
     }
 }
