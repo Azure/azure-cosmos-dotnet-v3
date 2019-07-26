@@ -134,6 +134,18 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
+        /// <inheritdoc/>
+        public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties, PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public override Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties, PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
             Stream streamPayload,
             RequestOptions requestOptions = null,

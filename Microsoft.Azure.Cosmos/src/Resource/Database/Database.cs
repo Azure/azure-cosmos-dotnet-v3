@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.</returns>
         /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
         /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
-        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a container are:
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
         /// <list type="table">
         ///     <listheader>
         ///         <term>StatusCode</term><description>Reason for exception</description>

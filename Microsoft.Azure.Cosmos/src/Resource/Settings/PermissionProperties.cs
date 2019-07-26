@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private string id;
         private PermissionMode permissionMode;
+        private PartitionKey resourceParitionKey;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UserProperties"/> class for the Azure Cosmos DB service.
@@ -28,10 +29,13 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="UserProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        public PermissionProperties(string id)
+        /// <param name="permissionMode">The permission mode of the resource in the Azure Cosmos service.</param>
+        /// <param name="resourcePartitionKey">The partition key of the resource in the Azure Cosmos service.</param>
+        public PermissionProperties(string id, PermissionMode permissionMode, PartitionKey resourcePartitionKey)
         {
             this.Id = id;
-            this.PermissionMode = PermissionMode.All;
+            this.permissionMode = permissionMode;
+            this.resourceParitionKey = resourcePartitionKey;
         }
 
         /// <summary> 
@@ -41,10 +45,10 @@ namespace Microsoft.Azure.Cosmos
         /// The self-link of the resource to which the permission applies.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.ResourceLink)]
-        public string ResourceLink { get; set; }
+        internal string ResourceLink { get; set; }
 
         /// <summary>
-        /// Gets or sets optional partition key value for the permission in the Azure Cosmos DB service.
+        /// Gets optional partition key value for the permission in the Azure Cosmos DB service.
         /// A permission applies to resources when two conditions are met:
         ///       1. <see cref="ResourceLink"/> is prefix of resource's link.
         ///             For example "/dbs/mydatabase/colls/mycollection" applies to "/dbs/mydatabase/colls/mycollection" and "/dbs/mydatabase/colls/mycollection/docs/mydocument"
@@ -52,10 +56,14 @@ namespace Microsoft.Azure.Cosmos
         ///             For example absent/empty partition key is superset of all partition keys.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.ResourcePartitionKey)]
-        public PartitionKey ResourcePartitionKey { get; set; }
+        public PartitionKey ResourcePartitionKey
+        {
+            get => this.resourceParitionKey;
+            private set => this.resourceParitionKey = value;
+        }
 
         /// <summary>
-        /// Gets or sets the permission mode in the Azure Cosmos DB service.
+        /// Gets the permission mode in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The <see cref="PermissionMode"/> mode: Read or All.
@@ -65,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
         public PermissionMode PermissionMode
         {
             get => this.permissionMode;
-            set => this.permissionMode = value;
+            private set => this.permissionMode = value;
         }
 
         /// <summary>
@@ -78,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         public string Token { get; private set; }
 
         /// <summary>
-        /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
+        /// Gets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
         /// <remarks>
@@ -101,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         public string Id
         {
             get => this.id;
-            set => this.id = value ?? throw new ArgumentNullException(nameof(this.Id));
+            private set => this.id = value ?? throw new ArgumentNullException(nameof(this.Id));
         }
 
         /// <summary>

@@ -177,5 +177,65 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ResponseMessage> DeleteUserStreamAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Creates a permission as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
+        /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
+        /// <exception cref="System.AggregateException">Represents a consolidation of failures that occurred during async processing. Look within InnerExceptions to find the actual exception(s).</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new permission.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="PermissionProperties"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// PermissionProperties permissionProperties = PermissionProperties.CreateDatabasePermission();
+        /// 
+        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<PermissionResponse> CreatePermissionAsync(
+            PermissionProperties permissionProperties,
+            PermissionRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Creates a permission as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
+        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the created resource record.</returns>
+        /// <example>
+        /// Creates a permission as an asynchronous operation in the Azure Cosmos service and return stream response.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// PermissionProperties permissionProperties = PermissionProperties.CreateDatabasePermission();
+        ///
+        /// using(ResponseMessage response = await this.cosmosDatabase.GetUser("userId").CreatePermissionStreamAsync(permissionProperties))
+        /// {
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> CreatePermissionStreamAsync(
+            PermissionProperties permissionProperties,
+            PermissionRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
     }
 }
