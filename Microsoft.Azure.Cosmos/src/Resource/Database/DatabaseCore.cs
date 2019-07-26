@@ -376,14 +376,65 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetContainerQueryStreamIterator(
+            FeedIterator containerStreamIterator = this.GetContainerQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
 
             return new FeedIteratorCore<T>(
-                databaseStreamIterator,
+                containerStreamIterator,
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+        }
+
+        public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator userStreamIterator = this.GetUserQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+
+            return new FeedIteratorCore<T>(
+                userStreamIterator,
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+        }
+
+        public override FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+               this.ClientContext,
+               this.LinkUri,
+               ResourceType.User,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetUserQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator GetUserQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetUserQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
         }
 
         public override ContainerBuilder DefineContainer(
@@ -506,5 +557,6 @@ namespace Microsoft.Azure.Cosmos
               requestEnricher: null,
               cancellationToken: cancellationToken);
         }
+        
     }
 }

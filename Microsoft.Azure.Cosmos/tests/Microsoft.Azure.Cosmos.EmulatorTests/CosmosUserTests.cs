@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TestCRUD()
+        public async Task CRUDTest()
         {
             string userId = Guid.NewGuid().ToString();
 
@@ -69,6 +69,91 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             userResponse = await this.cosmosDatabase.GetUser(newUserId).DeleteUserAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, userResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task StreamCRUDTest()
+        {
+            string userId = Guid.NewGuid().ToString();
+            CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
+
+            ResponseMessage responseMessage = await this.cosmosDatabase.CreateUserStreamAsync(new UserProperties { Id = userId });
+            Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
+            UserProperties user = defaultJsonSerializer.FromStream<UserProperties>(responseMessage.Content);
+            Assert.AreEqual(userId, user.Id);
+            Assert.IsNotNull(user.ResourceId);
+
+            string newUserId = Guid.NewGuid().ToString();
+            user.Id = newUserId;
+
+            responseMessage = await this.cosmosDatabase.GetUser(userId).ReplaceUserStreamAsync(user);
+            user = defaultJsonSerializer.FromStream<UserProperties>(responseMessage.Content);
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.AreEqual(newUserId, user.Id);
+
+            responseMessage = await this.cosmosDatabase.GetUser(newUserId).ReadUserStreamAsync();
+            user = defaultJsonSerializer.FromStream<UserProperties>(responseMessage.Content);
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.AreEqual(newUserId, user.Id);
+
+            responseMessage = await this.cosmosDatabase.GetUser(newUserId).DeleteUserStreamAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, responseMessage.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task IteratorTest()
+        {
+            string userId = Guid.NewGuid().ToString();
+
+            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+
+            HashSet<string> userIds = new HashSet<string>();
+            FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<UserProperties>();
+            while (resultSet.HasMoreResults)
+            {
+                foreach (UserProperties userProperties in await resultSet.ReadNextAsync())
+                {
+                    if (!userIds.Contains(userProperties.Id))
+                    {
+                        userIds.Add(userProperties.Id);
+                    }
+                }
+            }
+
+            Assert.IsTrue(userIds.Count > 0);
+            Assert.IsTrue(userIds.Contains(userId));
+        }
+
+        [TestMethod]
+        public async Task StreamIteratorTest()
+        {
+            string userId = Guid.NewGuid().ToString();
+
+            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+
+            HashSet<string> userIds = new HashSet<string>();
+            FeedIterator resultSet = this.cosmosDatabase.GetUserQueryStreamIterator(
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+
+            while (resultSet.HasMoreResults)
+            {
+                using (ResponseMessage message = await resultSet.ReadNextAsync())
+                {
+                    Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
+                    CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
+                    dynamic users = defaultJsonSerializer.FromStream<dynamic>(message.Content).Users;
+                    foreach (dynamic user in users)
+                    {
+                        string id = user.id.ToString();
+                        userIds.Add(id);
+                    }
+                }
+            }
+
+            Assert.IsTrue(userIds.Count > 0);
+            Assert.IsTrue(userIds.Contains(userId));
         }
     }
 }
