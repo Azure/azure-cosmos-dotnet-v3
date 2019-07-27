@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            INameValueCollection headers = new StringKeyValueCollection();
+            INameValueCollection headers = new DictionaryNameValueCollection();
 
             if (this.feedOptions.MaxItemCount.HasValue)
             {

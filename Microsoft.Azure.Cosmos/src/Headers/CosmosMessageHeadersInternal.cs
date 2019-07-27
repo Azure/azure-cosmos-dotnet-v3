@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
 
         public INameValueCollection Clone()
         {
-            return new StringKeyValueCollection(this);
+            return new DictionaryNameValueCollection(this);
         }
 
         public void Add(INameValueCollection collection)

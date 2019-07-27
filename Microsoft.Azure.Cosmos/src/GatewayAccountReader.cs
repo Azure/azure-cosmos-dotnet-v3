@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                 string xDate = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
                 httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
 
-                INameValueCollection headersCollection = new StringKeyValueCollection();
+                INameValueCollection headersCollection = new DictionaryNameValueCollection();
                 headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
 
                 authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(

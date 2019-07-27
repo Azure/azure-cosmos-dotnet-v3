@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                    ResourceType.Collection,
                    collectionLink,
                    AuthorizationTokenType.PrimaryMasterKey,
-                   new StringKeyValueCollection()))
+                   new DictionaryNameValueCollection()))
             {
                 request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
 
@@ -73,7 +73,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     PathsHelper.GetResourcePath(request.ResourceType),
                     HttpConstants.HttpMethods.Get,
                     request.Headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    out _);
 
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 

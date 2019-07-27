@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 {
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal sealed class PartitionCheckpointerCore : PartitionCheckpointer

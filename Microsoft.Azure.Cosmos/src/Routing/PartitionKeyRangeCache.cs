@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -159,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
             do
             {
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
 
                 headers.Set(HttpConstants.HttpHeaders.PageSize, PageSizeString);
                 headers.Set(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
@@ -230,7 +231,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     PathsHelper.GetResourcePath(request.ResourceType),
                     HttpConstants.HttpMethods.Get,
                     request.Headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    out _);
                 }
                 catch (UnauthorizedException)
                 {

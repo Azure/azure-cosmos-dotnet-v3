@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.ComponentModel;
     using System.Runtime.InteropServices;
     using System.Security;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 

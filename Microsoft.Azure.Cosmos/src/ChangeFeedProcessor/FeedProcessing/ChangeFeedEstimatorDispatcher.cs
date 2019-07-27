@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Cosmos.Container;
 
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                DefaultTrace.TraceException(userException);
+                DefaultTraceEx.TraceException(userException);
                 DefaultTrace.TraceWarning("Exception happened on ChangeFeedEstimatorDispatcher.DispatchEstimation");
             }
         }

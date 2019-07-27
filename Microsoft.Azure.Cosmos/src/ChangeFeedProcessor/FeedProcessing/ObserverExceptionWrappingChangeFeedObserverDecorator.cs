@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal sealed class ObserverExceptionWrappingChangeFeedObserverDecorator<T> : ChangeFeedObserver<T>
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                DefaultTrace.TraceException(userException);
+                DefaultTraceEx.TraceException(userException);
                 DefaultTrace.TraceWarning("Exception happened on Observer.CloseAsync");
                 throw new ObserverException(userException);
             }
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                DefaultTrace.TraceException(userException);
+                DefaultTraceEx.TraceException(userException);
                 DefaultTrace.TraceWarning("Exception happened on Observer.OpenAsync");
                 throw new ObserverException(userException);
             }
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                DefaultTrace.TraceException(userException);
+                DefaultTraceEx.TraceException(userException);
                 DefaultTrace.TraceWarning("Exception happened on Observer.ProcessChangesAsync");
                 throw new ObserverException(userException);
             }
