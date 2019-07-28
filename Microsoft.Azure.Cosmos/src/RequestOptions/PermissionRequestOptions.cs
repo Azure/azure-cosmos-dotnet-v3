@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// When working with Azure Cosmos DB Users and Permissions, the way to instantiate an instance of <see cref="Microsoft.Azure.Cosmos.CosmosClient"/> is to
-        /// get the <see cref="Permission.Token"/> for the resource the <see cref="User"/> wants to access and pass this
+        /// get the <see cref="PermissionProperties.Token"/> for the resource the <see cref="User"/> wants to access and pass this
         /// to the authKeyOrResourceToken parameter of <see cref="Microsoft.Azure.Cosmos.CosmosClient"/> constructor
         /// <para>
         /// When requesting this Token, a RequestOption for ResourceTokenExpirySeconds can be used to set the length of time to elapse before the token expires.

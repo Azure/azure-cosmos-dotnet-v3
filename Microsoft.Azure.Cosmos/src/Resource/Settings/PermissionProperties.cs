@@ -14,76 +14,30 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class PermissionProperties
     {
-        private string id;
-        private PermissionMode permissionMode;
-        private PartitionKey resourceParitionKey;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="UserProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="PermissionProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         public PermissionProperties()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="UserProperties"/> class for the Azure Cosmos DB service.
+        /// Initializes a new instance of the <see cref="PermissionProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="permissionMode">The permission mode of the resource in the Azure Cosmos service.</param>
-        /// <param name="resourcePartitionKey">The partition key of the resource in the Azure Cosmos service.</param>
-        public PermissionProperties(string id, PermissionMode permissionMode, PartitionKey resourcePartitionKey)
+        /// <param name="resourcePartitionKey">The <see cref="PartitionKey"/> of the resource in the Azure Cosmos service.</param>
+        public PermissionProperties(string id, PermissionMode permissionMode, PartitionKey? resourcePartitionKey = null)
         {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
             this.Id = id;
-            this.permissionMode = permissionMode;
-            this.resourceParitionKey = resourcePartitionKey;
+            this.PermissionMode = permissionMode;
+            this.ResourcePartitionKey = resourcePartitionKey ?? PartitionKey.None;
         }
-
-        /// <summary> 
-        /// Gets or sets the self-link of resource to which the permission applies in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The self-link of the resource to which the permission applies.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.ResourceLink)]
-        internal string ResourceLink { get; set; }
-
-        /// <summary>
-        /// Gets optional partition key value for the permission in the Azure Cosmos DB service.
-        /// A permission applies to resources when two conditions are met:
-        ///       1. <see cref="ResourceLink"/> is prefix of resource's link.
-        ///             For example "/dbs/mydatabase/colls/mycollection" applies to "/dbs/mydatabase/colls/mycollection" and "/dbs/mydatabase/colls/mycollection/docs/mydocument"
-        ///       2. <see cref="ResourcePartitionKey"/> is superset of resource's partition key.
-        ///             For example absent/empty partition key is superset of all partition keys.
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.ResourcePartitionKey)]
-        public PartitionKey ResourcePartitionKey
-        {
-            get => this.resourceParitionKey;
-            private set => this.resourceParitionKey = value;
-        }
-
-        /// <summary>
-        /// Gets the permission mode in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The <see cref="PermissionMode"/> mode: Read or All.
-        /// </value>
-        [JsonConverter(typeof(StringEnumConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.PermissionMode)]
-        public PermissionMode PermissionMode
-        {
-            get => this.permissionMode;
-            private set => this.permissionMode = value;
-        }
-
-        /// <summary>
-        /// Gets the access token granting the defined permission from the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The access token granting the defined permission.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.Token)]
-        public string Token { get; private set; }
 
         /// <summary>
         /// Gets the Id of the resource in the Azure Cosmos DB service.
@@ -106,11 +60,46 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-        public string Id
-        {
-            get => this.id;
-            private set => this.id = value ?? throw new ArgumentNullException(nameof(this.Id));
-        }
+        public string Id { get; private set; }
+
+        /// <summary> 
+        /// Gets the self-link of resource to which the permission applies in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The self-link of the resource to which the permission applies.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.ResourceLink)]
+        public string ResourceLink { get; private set; }
+
+        /// <summary>
+        /// Gets optional partition key value for the permission in the Azure Cosmos DB service.
+        /// A permission applies to resources when two conditions are met:
+        ///       1. <see cref="ResourceLink"/> is prefix of resource's link.
+        ///             For example "/dbs/mydatabase/colls/mycollection" applies to "/dbs/mydatabase/colls/mycollection" and "/dbs/mydatabase/colls/mycollection/docs/mydocument"
+        ///       2. <see cref="ResourcePartitionKey"/> is superset of resource's partition key.
+        ///             For example absent/empty partition key is superset of all partition keys.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.ResourcePartitionKey)]
+        public PartitionKey ResourcePartitionKey { get; private set; }
+
+        /// <summary>
+        /// Gets the permission mode in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The <see cref="PermissionMode"/> mode: Read or All.
+        /// </value>
+        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.PermissionMode)]
+        public PermissionMode PermissionMode { get; private set; }
+
+        /// <summary>
+        /// Gets the access token granting the defined permission from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The access token granting the defined permission.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.Token)]
+        public string Token { get; private set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -145,5 +134,131 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId)]
         internal string ResourceId { get; private set; }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="Database"/>
+        /// </summary>
+        /// <param name="id">The permission id.</param>
+        /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
+        /// <param name="database">The <see cref="Database"/> object.</param>
+        /// <returns>an instandce of <see cref="PermissionProperties"/></returns>
+        public static PermissionProperties CreateForDatabase(string id, 
+            PermissionMode permissionMode, Database database)
+        {
+            return new PermissionProperties(id, permissionMode)
+            {
+                ResourceLink = ((DatabaseCore)database).LinkUri.OriginalString
+            };
+        }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="Container"/>.
+        /// </summary>
+        /// <param name="id">The permission id.</param>
+        /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
+        /// <param name="container">The <see cref="Container"/> object.</param>
+        /// <returns>an instandce of <see cref="PermissionProperties"/></returns>
+        public static PermissionProperties CreateForContainer(string id,
+            PermissionMode permissionMode, 
+            Container container)
+        {
+            return new PermissionProperties(id, permissionMode)
+            {
+                ResourceLink = ((ContainerCore)container).LinkUri.OriginalString
+            };
+        }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="PermissionProperties"/> with permssion to cosnmos item.
+        /// </summary>
+        /// <param name="id">The permission id.</param>
+        /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
+        /// <param name="container">The <see cref="Container"/> object.</param>
+        /// <param name="resourcePartitionKey">The <see cref="PartitionKey"/> of the resource in the Azure Cosmos service.</param>
+        /// <param name="itemId">The cosmos item id</param>
+        /// <returns>an instandce of <see cref="PermissionProperties"/></returns>
+        public static PermissionProperties CreateForItem(string id,
+            PermissionMode permissionMode, 
+            Container container,
+            PartitionKey resourcePartitionKey,
+            string itemId)
+        {
+            return new PermissionProperties(id, permissionMode, resourcePartitionKey)
+            {
+                ResourceLink = ((ContainerCore)container).GetResourceUri(null, OperationType.Read, itemId).OriginalString
+            };
+        }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="PermissionProperties"/> with permssion to cosmos stored procedure.
+        /// </summary>
+        /// <param name="id">The permission id.</param>
+        /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
+        /// <param name="container">The <see cref="Container"/> object.</param>
+        /// <param name="resourcePartitionKey">The <see cref="PartitionKey"/> of the resource in the Azure Cosmos service.</param>
+        /// <param name="storeProcedureId">The cosmos stored procedure id</param>
+        /// <returns>an instandce of <see cref="PermissionProperties"/></returns>
+        public static PermissionProperties CreateForStoredProcedure(string id,
+            PermissionMode permissionMode,
+            Container container, 
+            PartitionKey resourcePartitionKey,
+            string storeProcedureId)
+        {
+            return new PermissionProperties(id, permissionMode)
+            {
+                ResourceLink = ((ContainerCore)container).ClientContext.CreateLink(
+                    parentLink: ((ContainerCore)container).LinkUri.OriginalString,
+                    uriPathSegment: Paths.StoredProceduresPathSegment,
+                    id: id).OriginalString
+            };
+        }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="PermissionProperties"/> with permssion to cosmos stored procedure.
+        /// </summary>
+        /// <param name="id">The permission id.</param>
+        /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
+        /// <param name="container">The <see cref="Container"/> object.</param>
+        /// <param name="resourcePartitionKey">The <see cref="PartitionKey"/> of the resource in the Azure Cosmos service.</param>
+        /// <param name="userDefinedFunctionId">The cosmos user defined function id</param>
+        /// <returns>an instandce of <see cref="PermissionProperties"/></returns>
+        public static PermissionProperties CreateForUserDefinedFunction(string id,
+            PermissionMode permissionMode,
+            Container container,
+            PartitionKey resourcePartitionKey,
+            string userDefinedFunctionId)
+        {
+            return new PermissionProperties(id, permissionMode)
+            {
+                ResourceLink = ((ContainerCore)container).ClientContext.CreateLink(
+                    parentLink: ((ContainerCore)container).LinkUri.OriginalString,
+                    uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
+                    id: id).OriginalString
+            };
+        }
+
+        /// <summary>
+        /// Create a new instance of the <see cref="PermissionProperties"/> with permssion to cosmos stored procedure.
+        /// </summary>
+        /// <param name="id">The permission id.</param>
+        /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
+        /// <param name="container">The <see cref="Container"/> object.</param>
+        /// <param name="resourcePartitionKey">The <see cref="PartitionKey"/> of the resource in the Azure Cosmos service.</param>
+        /// <param name="triggerId">The cosmos trigger id</param>
+        /// <returns>an instandce of <see cref="PermissionProperties"/></returns>
+        public static PermissionProperties CreateForTrigger(string id,
+            PermissionMode permissionMode,
+            Container container,
+            PartitionKey resourcePartitionKey,
+            string triggerId)
+        {
+            return new PermissionProperties(id, permissionMode)
+            {
+                ResourceLink = ((ContainerCore)container).ClientContext.CreateLink(
+                    parentLink: ((ContainerCore)container).LinkUri.OriginalString,
+                    uriPathSegment: Paths.TriggersPathSegment,
+                    id: id).OriginalString
+            };
+        }
     }
 }

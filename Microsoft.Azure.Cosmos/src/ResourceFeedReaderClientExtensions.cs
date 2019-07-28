@@ -102,10 +102,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="permissionsLink"></param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Permission}"/> instance.</returns>
-        public static ResourceFeedReader<Permission> CreatePermissionFeedReader(this DocumentClient client, string permissionsLink,
+        public static ResourceFeedReader<Documents.Permission> CreatePermissionFeedReader(this DocumentClient client, string permissionsLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<Permission>(client, ResourceType.Permission, options, permissionsLink);
+            return new ResourceFeedReader<Documents.Permission>(client, ResourceType.Permission, options, permissionsLink);
         }
 
         /// <summary>
