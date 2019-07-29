@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
                 headers[HttpConstants.HttpHeaders.Continuation] = continuationToken;
                 return headers;
             };
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection localHeaders = new StringKeyValueCollection();
+                INameValueCollection localHeaders = new DictionaryNameValueCollection();
                 if (continuationToken != null)
                 {
                     localHeaders[HttpConstants.HttpHeaders.Continuation] = continuationToken;
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
                             PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null);
                             actualPartitionKeyRangeIds.Add(resolvedRangeInfo.ResolvedRange.Id);
-                            INameValueCollection headers = new StringKeyValueCollection();
+                            INameValueCollection headers = new DictionaryNameValueCollection();
 
                             await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo);
 

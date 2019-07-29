@@ -110,9 +110,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            mockAuthorizationTokenProvider.Setup(provider => provider.GetSystemAuthorizationTokenAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                .ReturnsAsync("dummyauthtoken");
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
 
             this.StoreModel = new ServerStoreModel(new StoreClient(
