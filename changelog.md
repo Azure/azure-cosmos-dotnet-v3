@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#572](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/572) Added partition key validation on CreateContainerIfNotExistsAsync
 - [#592](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/592) Added CreateIfNotExistsAsync to container builder
 - [#597](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/597) Added continuation token property to ResponseMessage
-- [#604](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/604) Added ToStreamIterator extension method for LINQ operation
+- [#604](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/604) Added LINQ ToStreamIterator extension method
 
 ### Fixed
 
