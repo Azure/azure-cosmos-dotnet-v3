@@ -6,7 +6,7 @@
     <Description>This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/. </Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <ClientVersion>3.0.0</ClientVersion>
+    <ClientVersion>3.1.0</ClientVersion>
     <DirectVersion>3.1.3</DirectVersion>
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
     <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
