@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (toDispatch != null)
             {
-                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync());
+                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
             }
 
             this.StartTimer();
