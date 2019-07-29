@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string id = Guid.NewGuid().ToString();
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
 
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument))));
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument))));
         }
 
         private static ItemBatchOperation CreateItem(string id)

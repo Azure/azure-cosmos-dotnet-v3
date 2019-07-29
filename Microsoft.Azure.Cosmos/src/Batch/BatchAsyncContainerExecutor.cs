@@ -102,25 +102,7 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                if (itemRequestOptions.Properties != null
-                            && (itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
-                            | itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
-                {
-                    byte[] epk = epkObj as byte[];
-                    string epkStr = epkStrObj as string;
-                    if (epk == null || epkStr == null)
-                    {
-                        throw new InvalidOperationException(string.Format(
-                            ClientResources.EpkPropertiesPairingExpected,
-                            WFConstants.BackendHeaders.EffectivePartitionKey,
-                            WFConstants.BackendHeaders.EffectivePartitionKeyString));
-                    }
-
-                    if (operation.PartitionKey != null)
-                    {
-                        throw new InvalidOperationException(ClientResources.PKAndEpkSetTogether);
-                    }
-                }
+                Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 
             await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, default(CancellationToken));
@@ -129,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (itemByteSize > this.maxServerRequestBodyLength)
             {
-                throw new InvalidOperationException(RMResources.RequestTooLarge);
+                throw new ArgumentException(RMResources.RequestTooLarge);
             }
 
             return true;
@@ -180,6 +162,33 @@ namespace Microsoft.Azure.Cosmos
 
             IEnumerable<BatchResponse> serverResponses = completedResults.SelectMany(res => res.ServerResponses);
             return new CrossPartitionKeyBatchResponse(serverResponses, this.cosmosClientContext.CosmosSerializer);
+        }
+
+        private static bool ValidateOperationEPK(
+            ItemBatchOperation operation, 
+            ItemRequestOptions itemRequestOptions)
+        {
+            if (itemRequestOptions.Properties != null
+                            && (itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKey, out object epkObj)
+                            | itemRequestOptions.Properties.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkStrObj)))
+            {
+                byte[] epk = epkObj as byte[];
+                string epkStr = epkStrObj as string;
+                if (epk == null || epkStr == null)
+                {
+                    throw new InvalidOperationException(string.Format(
+                        ClientResources.EpkPropertiesPairingExpected,
+                        WFConstants.BackendHeaders.EffectivePartitionKey,
+                        WFConstants.BackendHeaders.EffectivePartitionKeyString));
+                }
+
+                if (operation.PartitionKey != null)
+                {
+                    throw new InvalidOperationException(ClientResources.PKAndEpkSetTogether);
+                }
+            }
+
+            return true;
         }
 
         private static IEnumerable<BatchAsyncOperationContext> GetOperationsToRetry(
@@ -262,21 +271,9 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition = await this.cosmosContainer.GetPartitionKeyDefinitionAsync(cancellationToken);
             CollectionRoutingMap collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(cancellationToken);
 
-            string partitionKeyRangeId;
-            object epkObj = null;
-            if (operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out epkObj) ?? false)
-            {
-                string epk = epkObj as string;
-                Debug.Assert(epk != null, "Expected non-null string for " + WFConstants.BackendHeaders.EffectivePartitionKeyString);
-                partitionKeyRangeId = collectionRoutingMap.GetRangeByEffectivePartitionKey(epk).Id;
-            }
-            else
-            {
-                await this.FillOperationPropertiesAsync(operation, cancellationToken);
-                partitionKeyRangeId = BatchExecUtils.GetPartitionKeyRangeId(operation.PartitionKey.Value, partitionKeyDefinition, collectionRoutingMap);
-            }
-
-            return partitionKeyRangeId;
+            Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkObj) == null, "EPK is not supported");
+            await this.FillOperationPropertiesAsync(operation, cancellationToken);
+            return BatchExecUtils.GetPartitionKeyRangeId(operation.PartitionKey.Value, partitionKeyDefinition, collectionRoutingMap);
         }
 
         private async Task FillOperationPropertiesAsync(ItemBatchOperation operation, CancellationToken cancellationToken)
