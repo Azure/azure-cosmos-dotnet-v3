@@ -118,18 +118,18 @@ namespace Microsoft.Azure.Cosmos
             this.currentTimer = this.timerPool.GetPooledTimer(this.dispatchTimerInSeconds);
             this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
             {
-                this.DispatchTimer();
+                return this.DispatchTimerAsync();
             });
         }
 
-        private void DispatchTimer()
+        private async Task DispatchTimerAsync()
         {
             if (this.disposed)
             {
                 return;
             }
 
-            this.addLimiter.Wait();
+            await this.addLimiter.WaitAsync();
 
             BatchAsyncBatcher toDispatch;
             try
