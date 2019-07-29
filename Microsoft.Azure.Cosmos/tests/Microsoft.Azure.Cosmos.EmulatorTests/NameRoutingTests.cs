@@ -1869,7 +1869,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 document,
                 ResourceType.Document,
                 AuthorizationTokenType.PrimaryMasterKey,
-                new StringKeyValueCollection(),
+                new DictionaryNameValueCollection(),
                 SerializationFormattingPolicy.None))
             {
                 request.Headers[HttpConstants.HttpHeaders.PartitionKey] = PartitionKeyInternal.Empty.ToJsonString();

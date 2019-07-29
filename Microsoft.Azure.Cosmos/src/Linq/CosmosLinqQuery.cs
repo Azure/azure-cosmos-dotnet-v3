@@ -132,10 +132,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             return this.container.LinkUri.ToString();
         }
 
-        public string ToSqlQueryText()
+        public QueryDefinition ToQueryDefinition()
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
-            return querySpec?.QueryText;
+            return new QueryDefinition(querySpec);
         }
 
         public FeedIterator<T> ToFeedIterator()

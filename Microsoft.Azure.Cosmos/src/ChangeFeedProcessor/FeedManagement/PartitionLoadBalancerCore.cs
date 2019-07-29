@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class PartitionLoadBalancerCore : PartitionLoadBalancer
     {
@@ -77,14 +77,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             }
                             catch (Exception e)
                             {
-                                DefaultTrace.TraceException(e);
+                                Extensions.TraceException(e);
                                 DefaultTrace.TraceError("Partition load balancer lease add/update iteration failed");
                             }
                         }
                     }
                     catch (Exception e)
                     {
-                        DefaultTrace.TraceException(e);
+                        Extensions.TraceException(e);
                         DefaultTrace.TraceError("Partition load balancer iteration failed");
                     }
 

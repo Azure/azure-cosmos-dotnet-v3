@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
             //V3 Asynchronous query execution with LINQ query generation sql text.
             FeedIterator<ToDoActivity> setIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                queriable.ToSqlQueryText(),
+                queriable.ToQueryDefinition(),
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
             int resultsFetched = 0;

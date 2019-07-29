@@ -234,11 +234,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection localHeaders = null;
             if (headers != null)
             {
-                localHeaders = new StringKeyValueCollection(headers);
+                localHeaders = new DictionaryNameValueCollection(headers);
             }
             else
             {
-                localHeaders = new StringKeyValueCollection();
+                localHeaders = new DictionaryNameValueCollection();
             }
 
             string continuationToken = null;
@@ -406,11 +406,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection localHeaders = null;
             if (headers != null)
             {
-                localHeaders = new StringKeyValueCollection(headers);
+                localHeaders = new DictionaryNameValueCollection(headers);
             }
             else
             {
-                localHeaders = new StringKeyValueCollection();
+                localHeaders = new DictionaryNameValueCollection();
             }
 
             string continuationToken = null;
