@@ -143,6 +143,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             return this.CreateFeedIterator(true);
         }
 
+        public FeedIterator ToStreamIterator()
+        {
+            return this.CreateStreamIterator(true);
+        }
+
         public void Dispose()
         {
             //NOTHING TO DISPOSE HERE
@@ -158,16 +163,22 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
-        private FeedIterator<T> CreateFeedIterator(bool isContinuationExcpected)
+        private FeedIterator CreateStreamIterator(bool isContinuationExcpected)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
 
-            FeedIterator streamIterator = this.container.GetItemQueryStreamIteratorInternal(
+            return this.container.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: querySpec,
                 isContinuationExcpected: isContinuationExcpected,
                 continuationToken: this.continuationToken,
                 requestOptions: this.cosmosQueryRequestOptions);
+        }
 
+        private FeedIterator<T> CreateFeedIterator(bool isContinuationExcpected)
+        {
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
+
+            FeedIterator streamIterator = this.CreateStreamIterator(isContinuationExcpected);
             return new FeedIteratorCore<T>(
                 streamIterator,
                 this.responseFactory.CreateQueryFeedResponse<T>);
