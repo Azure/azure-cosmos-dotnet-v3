@@ -1,10 +1,13 @@
-﻿using System;
-using System.Net;
-using Microsoft.Azure.Cosmos.Internal;
-using Microsoft.Azure.Documents;
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.Utils
 {
+    using System;
+    using System.Net;
+    using Microsoft.Azure.Cosmos.Core.Trace;
+
     internal static class DNSHelper
     {
         public static Uri GetResolvedUri(string endpoint)
@@ -28,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Utils
             catch (Exception ex)
             {
                 DefaultTrace.TraceInformation($"endpoint:{endpoint}. endpointAsUri:{endpointAsUri}");
-                DefaultTrace.TraceException(ex);
+                Extensions.TraceException(ex);
                 return endpointAsUri;
             }
         }

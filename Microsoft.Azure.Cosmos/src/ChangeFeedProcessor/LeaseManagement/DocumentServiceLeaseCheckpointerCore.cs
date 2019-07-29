@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class DocumentServiceLeaseCheckpointerCore : DocumentServiceLeaseCheckpointer
     {

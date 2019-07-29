@@ -8,8 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Net.Http;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -63,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 string xDate = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
                 httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
 
-                INameValueCollection headersCollection = new StringKeyValueCollection();
+                INameValueCollection headersCollection = new DictionaryNameValueCollection();
                 headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
 
                 authorizationToken = AuthorizationHelper.GenerateKeyAuthorizationSignature(
