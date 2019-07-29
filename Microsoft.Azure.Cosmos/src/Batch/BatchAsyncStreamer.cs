@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<CrossPartitionKeyBatchResponse>> executor;
         private readonly int dispatchTimerInSeconds;
         private readonly CosmosSerializer CosmosSerializer;
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private BatchAsyncBatcher currentBatcher;
         private TimerPool timerPool;
         private PooledTimer currentTimer;
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (toDispatch != null)
             {
-                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync());
+                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
             }
         }
 
@@ -108,22 +109,8 @@ namespace Microsoft.Azure.Cosmos
             this.disposed = true;
             this.addLimiter?.Dispose();
             this.currentBatcher?.Dispose();
-
-            foreach (Task previousDispatch in this.previousDispatchedTasks)
-            {
-                try
-                {
-#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                    previousDispatch.GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
-                }
-                catch
-                {
-                    // Any internal exceptions are disregarded during dispose
-                }
-            }
-
             this.currentTimer.CancelTimer();
+            this.cancellationTokenSource.Cancel();
         }
 
         private void StartTimer()
