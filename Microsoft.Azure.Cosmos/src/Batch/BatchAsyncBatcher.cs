@@ -74,10 +74,6 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                batchAsyncOperation.Operation.MaterializeResourceAsync(this.CosmosSerializer, default(CancellationToken)).GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
-
                 int itemByteSize = batchAsyncOperation.Operation.GetApproximateSerializedLength();
 
                 if (itemByteSize + this.currentSize > this.maxBatchByteSize)

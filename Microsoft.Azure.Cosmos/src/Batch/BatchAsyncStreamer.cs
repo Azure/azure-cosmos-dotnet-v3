@@ -82,9 +82,7 @@ namespace Microsoft.Azure.Cosmos
         public Task<BatchOperationResult> AddAsync(BatchAsyncOperationContext context)
         {
             BatchAsyncBatcher toDispatch = null;
-#pragma warning disable VSTHRD103 // Call async methods when in an async method
             this.addLimiter.Wait();
-#pragma warning restore VSTHRD103 // Call async methods when in an async method
 
             try
             {

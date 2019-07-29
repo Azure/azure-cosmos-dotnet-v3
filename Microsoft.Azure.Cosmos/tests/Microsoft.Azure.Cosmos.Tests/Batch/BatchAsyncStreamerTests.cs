@@ -14,9 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-#pragma warning disable CA1001 // Types that own disposable fields should be disposable
     public class BatchAsyncStreamerTests
-#pragma warning restore CA1001 // Types that own disposable fields should be disposable
     {
         private const int DispatchTimerInSeconds = 5;
         private const int MaxBatchByteSize = 100000;

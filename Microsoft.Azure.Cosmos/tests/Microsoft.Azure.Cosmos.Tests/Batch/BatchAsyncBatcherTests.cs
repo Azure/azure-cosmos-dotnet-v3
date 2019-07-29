@@ -14,9 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-#pragma warning disable CA1001 // Types that own disposable fields should be disposable
     public class BatchAsyncBatcherTests
-#pragma warning restore CA1001 // Types that own disposable fields should be disposable
     {
         private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
 
@@ -114,8 +112,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("maquaran")]
-        public void HasFixedByteSize()
+        public async Task HasFixedByteSize()
         {
+            await ItemBatchOperation.MaterializeResourceAsync(new CosmosJsonDotNetSerializer(), CancellationToken.None);
             // Each operation is 2 bytes
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, new CosmosJsonDotNetSerializer(), this.Executor);
             Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
