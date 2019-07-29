@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         public override string Id { get; }
 
         /// <summary>
-        /// Returns a reference to a database object. 
+        /// Returns a reference to a user object. 
         /// </summary>
         public User User { get; }
 
@@ -57,39 +57,122 @@ namespace Microsoft.Azure.Cosmos
         internal virtual CosmosClientContext ClientContext { get; }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> DeletePermissionAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<PermissionResponse> DeletePermissionAsync(PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            Task<ResponseMessage> response = this.DeletePermissionStreamAsync(
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> DeletePermissionStreamAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> DeletePermissionStreamAsync(PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return this.ProcessStreamAsync(
+               streamPayload: null,
+               operationType: OperationType.Delete,
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
         }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> ReadPermissionAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<PermissionResponse> ReadPermissionAsync(PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            Task<ResponseMessage> response = this.ReadPermissionStreamAsync(
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> ReadPermissionStreamAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReadPermissionStreamAsync(PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return this.ProcessStreamAsync(
+                streamPayload: null,
+                operationType: OperationType.Read,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> ReplacePermissionAsync(PermissionProperties permissionProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<PermissionResponse> ReplacePermissionAsync(PermissionProperties permissionProperties, PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            if (permissionProperties == null)
+            {
+                throw new ArgumentNullException(nameof(permissionProperties));
+            }
+
+            this.ClientContext.ValidateResource(permissionProperties.Id);
+            Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> ReplacePermissionStreamAsync(PermissionProperties permissionProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReplacePermissionStreamAsync(PermissionProperties permissionProperties, PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            if (permissionProperties == null)
+            {
+                throw new ArgumentNullException(nameof(permissionProperties));
+            }
+
+            this.ClientContext.ValidateResource(permissionProperties.Id);
+            return this.ReplaceStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> ReplaceStreamInternalAsync(
+            Stream streamPayload,
+            PermissionRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessStreamAsync(
+                streamPayload: streamPayload,
+                operationType: OperationType.Replace,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> ProcessStreamAsync(
+            Stream streamPayload,
+            OperationType operationType,
+            PermissionRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return ProcessResourceOperationStreamAsync(
+                streamPayload: streamPayload,
+                operationType: operationType,
+                linkUri: this.LinkUri,
+                resourceType: ResourceType.Permission,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
+           Stream streamPayload,
+           OperationType operationType,
+           Uri linkUri,
+           ResourceType resourceType,
+           PermissionRequestOptions requestOptions = null,
+           CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+              resourceUri: linkUri,
+              resourceType: resourceType,
+              operationType: operationType,
+              cosmosContainerCore: null,
+              partitionKey: null,
+              streamPayload: streamPayload,
+              requestOptions: requestOptions,
+              requestEnricher: null,
+              cancellationToken: cancellationToken);
         }
     }
 }

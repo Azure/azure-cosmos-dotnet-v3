@@ -48,8 +48,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserResponse> ReadPermissionAsync(
-            RequestOptions requestOptions = null,
+        public abstract Task<PermissionResponse> ReadPermissionAsync(
+            PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ResponseMessage> ReadPermissionStreamAsync(
-            RequestOptions requestOptions = null,
+            PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -105,9 +105,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserResponse> ReplacePermissionAsync(
+        public abstract Task<PermissionResponse> ReplacePermissionAsync(
             PermissionProperties permissionProperties,
-            RequestOptions requestOptions = null,
+            PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ResponseMessage> ReplacePermissionStreamAsync(
             PermissionProperties permissionProperties,
-            RequestOptions requestOptions = null,
+            PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -159,8 +159,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserResponse> DeletePermissionAsync(
-            RequestOptions requestOptions = null,
+        public abstract Task<PermissionResponse> DeletePermissionAsync(
+            PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
         public abstract Task<ResponseMessage> DeletePermissionStreamAsync(
-            RequestOptions requestOptions = null,
+            PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }
 }
