@@ -893,10 +893,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="permissionsLink"></param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Permission}"/> instance.</returns>
-        public static ResourceFeedReader<Permission> CreatePermissionFeedReader(this DocumentClient client, Documents.User user,
+        public static ResourceFeedReader<Documents.Permission> CreatePermissionFeedReader(this DocumentClient client, Documents.User user,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<Permission>(client, ResourceType.Permission, options, user.GetLink());
+            return new ResourceFeedReader<Documents.Permission>(client, ResourceType.Permission, options, user.GetLink());
         }
 
         /// <summary>
