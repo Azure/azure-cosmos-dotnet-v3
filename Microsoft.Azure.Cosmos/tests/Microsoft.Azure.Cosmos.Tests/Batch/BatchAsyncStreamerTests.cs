@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure);
             var context = CreateContext(this.ItemBatchOperation);
-            await batchAsyncStreamer.AddAsync(context);
+            await batchAsyncStreamer.AddAsync(context, CancellationToken.None);
             Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => context.Task);
             Assert.AreEqual(expectedException, capturedException);
         }
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Bigger batch size than the amount of operations, timer should dispatch
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor);
             var context = CreateContext(this.ItemBatchOperation);
-            await batchAsyncStreamer.AddAsync(context);
+            await batchAsyncStreamer.AddAsync(context, CancellationToken.None);
             BatchOperationResult result = await context.Task;
 
             Assert.AreEqual(this.ItemBatchOperation.Id, result.ETag);
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             for (int i = 0; i < 10; i++)
             {
                 var context = CreateContext(new ItemBatchOperation(OperationType.Create, i, i.ToString()));
-                await batchAsyncStreamer.AddAsync(context);
+                await batchAsyncStreamer.AddAsync(context, CancellationToken.None);
                 contexts.Add(context.Task);
             }
 

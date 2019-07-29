@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// Handles operation queueing and dispatching. 
     /// </summary>
     /// <remarks>
-    /// <see cref="AddAsync"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
+    /// <see cref="AddAsync(BatchAsyncOperationContext, System.Threading.CancellationToken)"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
     /// </remarks>
     /// <seealso cref="BatchAsyncBatcher"/>
     internal class BatchAsyncStreamer : IDisposable
@@ -79,18 +79,20 @@ namespace Microsoft.Azure.Cosmos
             this.StartTimer();
         }
 
-        public async Task AddAsync(BatchAsyncOperationContext context)
+        public async Task AddAsync(
+            BatchAsyncOperationContext context, 
+            CancellationToken cancellationToken)
         {
             BatchAsyncBatcher toDispatch = null;
             await this.addLimiter.WaitAsync();
 
             try
             {
-                if (!this.currentBatcher.TryAdd(context))
+                if (!await this.currentBatcher.TryAddAsync(context, cancellationToken))
                 {
                     // Batcher is full
                     toDispatch = this.GetBatchToDispatch();
-                    Debug.Assert(this.currentBatcher.TryAdd(context), "Could not add context to batcher.");
+                    Debug.Assert(await this.currentBatcher.TryAddAsync(context, cancellationToken), "Could not add context to batcher.");
                 }
             }
             finally

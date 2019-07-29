@@ -16,11 +16,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class BatchAsyncBatcherTests
     {
-        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
-
         private static Exception expectedException = new Exception();
 
-        // Executor just returns a reponse matching the Id with Etag
+        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
+
         private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<CrossPartitionKeyBatchResponse>> Executor
             = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
@@ -102,12 +101,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("maquaran")]
-        public void HasFixedSize()
+        public async Task HasFixedSize()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Assert.IsFalse(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None));
+            Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None));
+            Assert.IsFalse(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None));
         }
 
         [TestMethod]
@@ -117,9 +116,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             await ItemBatchOperation.MaterializeResourceAsync(new CosmosJsonDotNetSerializer(), CancellationToken.None);
             // Each operation is 2 bytes
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, new CosmosJsonDotNetSerializer(), this.Executor);
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Assert.IsFalse(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None));
+            Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None));
+            Assert.IsFalse(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None));
         }
 
         [TestMethod]
@@ -127,9 +126,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void TryAddIsThreadSafe()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
-            Task<bool> firstOperation = Task.Run<bool>(() => batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Task<bool> secondOperation = Task.Run<bool>(() => batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Task<bool> thirdOperation = Task.Run<bool>(() => batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            Task<bool> firstOperation = batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None);
+            Task<bool> secondOperation = batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None);
+            Task<bool> thirdOperation = batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None);
 
             Task.WhenAll(firstOperation, secondOperation, thirdOperation).GetAwaiter().GetResult();
 
@@ -147,8 +146,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure);
             BatchAsyncOperationContext context1 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation);
             BatchAsyncOperationContext context2 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation);
-            batchAsyncBatcher.TryAdd(context1);
-            batchAsyncBatcher.TryAdd(context2);
+            await batchAsyncBatcher.TryAddAsync(context1, CancellationToken.None);
+            await batchAsyncBatcher.TryAddAsync(context2, CancellationToken.None);
             await batchAsyncBatcher.DispatchAsync();
 
             Assert.AreEqual(TaskStatus.Faulted, context1.Task.Status);
@@ -167,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 BatchAsyncOperationContext context = new BatchAsyncOperationContext(string.Empty, new ItemBatchOperation(OperationType.Create, i, i.ToString()));
                 contexts.Add(context);
-                Assert.IsTrue(batchAsyncBatcher.TryAdd(context));
+                Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(context, CancellationToken.None));
             }
 
             await batchAsyncBatcher.DispatchAsync();
@@ -187,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task CannotDispatchTwiceAsync()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
-            batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation));
+            await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None);
 
             await batchAsyncBatcher.DispatchAsync();
             await batchAsyncBatcher.DispatchAsync();
@@ -203,10 +202,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("maquaran")]
-        public void IsNotEmptyWithOperations()
+        public async Task IsNotEmptyWithOperations()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation), CancellationToken.None));
             Assert.IsFalse(batchAsyncBatcher.IsEmpty);
         }
     }

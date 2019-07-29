@@ -59,14 +59,16 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosSerializer = cosmosSerializer;
         }
 
-        public bool TryAdd(BatchAsyncOperationContext batchAsyncOperation)
+        public async Task<bool> TryAddAsync(
+            BatchAsyncOperationContext batchAsyncOperation,
+            CancellationToken cancellationToken)
         {
             if (batchAsyncOperation == null)
             {
                 throw new ArgumentNullException(nameof(batchAsyncOperation));
             }
 
-            this.tryAddLimiter.Wait();
+            await this.tryAddLimiter.WaitAsync(cancellationToken);
             try
             {
                 if (this.batchOperations.Count == this.maxBatchOperationCount)
