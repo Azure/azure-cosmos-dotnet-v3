@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId");
         /// DatabaseResponse response = await db.GetContainer("testcontainer");
         /// ]]>
         /// </code>
@@ -766,7 +766,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// string queryText = "SELECT * FROM c where c.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
-        /// queryDefinition.WithParameter("@testId", "testDatabaseId");
+        /// queryDefinition.WithParameter("@testId", "testUserId");
         /// FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<UserProperties>(queryDefinition);
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -840,7 +840,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <example>
-        /// 2. This create the type feed iterator for users without queryText, retrieving all containers.
+        /// 2. This create the type feed iterator for users without queryText, retrieving all users.
         /// <code language="c#">
         /// <![CDATA[
         /// FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<ContainerProperties>();

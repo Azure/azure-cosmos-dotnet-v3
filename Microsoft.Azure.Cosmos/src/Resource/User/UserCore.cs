@@ -63,7 +63,8 @@ namespace Microsoft.Azure.Cosmos
         internal virtual CosmosClientContext ClientContext { get; }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> ReadUserAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<UserResponse> ReadUserAsync(RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.ReadUserStreamAsync(
                 requestOptions: requestOptions,
@@ -73,7 +74,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> ReadUserStreamAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReadUserStreamAsync(RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
                 streamPayload: null,
@@ -83,7 +85,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> ReplaceUserAsync(UserProperties userProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<UserResponse> ReplaceUserAsync(UserProperties userProperties, 
+            RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (userProperties == null)
             {
@@ -100,7 +104,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> ReplaceUserStreamAsync(UserProperties userProperties, RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> ReplaceUserStreamAsync(UserProperties userProperties, 
+            RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             if (userProperties == null)
             {
@@ -115,7 +121,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> DeleteUserAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<UserResponse> DeleteUserAsync(RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.DeleteUserStreamAsync(
                 requestOptions: requestOptions,
@@ -125,7 +132,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> DeleteUserStreamAsync(RequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<ResponseMessage> DeleteUserStreamAsync(RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
                streamPayload: null,
@@ -135,15 +143,127 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties, PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Permission GetPermission(string id)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return new PermissionCore(
+                    this.ClientContext,
+                    this,
+                    id);
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties, PermissionRequestOptions requestOptions = null, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties, 
+            PermissionRequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            if (permissionProperties == null)
+            {
+                throw new ArgumentNullException(nameof(permissionProperties));
+            }
+
+            this.ClientContext.ValidateResource(permissionProperties.Id);
+
+            Task<ResponseMessage> response = this.CreatePermissionStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
+        }
+
+        /// <inheritdoc/>
+        public override Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties, 
+            PermissionRequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (permissionProperties == null)
+            {
+                throw new ArgumentNullException(nameof(permissionProperties));
+            }
+
+            this.ClientContext.ValidateResource(permissionProperties.Id);
+
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(permissionProperties);
+            return this.CreatePermissionStreamInternalAsync(streamPayload,
+                requestOptions,
+                cancellationToken);
+        }
+
+        /// <inheritdoc/>
+        public override FeedIterator<T> GetPermissionQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator permissionStreamIterator = this.GetPermissionQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+
+            return new FeedIteratorCore<T>(
+                permissionStreamIterator,
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+        }
+
+        /// <inheritdoc/>
+        public override FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+               this.ClientContext,
+               this.LinkUri,
+               ResourceType.Permission,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        /// <inheritdoc/>
+        public override FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetPermissionQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        /// <inheritdoc/>
+        public override FeedIterator GetPermissionQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetPermissionQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        internal Task<ResponseMessage> ProcessPermissionCreateAsync(
+            Stream streamPayload,
+            PermissionRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
+               resourceType: ResourceType.Permission,
+               operationType: OperationType.Create,
+               cosmosContainerCore: null,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: null,
+               cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
@@ -191,6 +311,17 @@ namespace Microsoft.Azure.Cosmos
               requestOptions: requestOptions,
               requestEnricher: null,
               cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> CreatePermissionStreamInternalAsync(
+            Stream streamPayload,            
+            PermissionRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessPermissionCreateAsync(
+                streamPayload: streamPayload,                
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
     }
 }

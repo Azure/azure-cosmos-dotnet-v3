@@ -91,6 +91,21 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        internal Task<PermissionResponse> CreatePermissionResponseAsync(
+            Permission user,
+            Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                PermissionProperties permissionProperties = this.ToObjectInternal<PermissionProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new PermissionResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    permissionProperties,
+                    user);
+            });
+        }
+
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
             Database database,
             Task<ResponseMessage> cosmosResponseMessageTask)

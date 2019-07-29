@@ -85,5 +85,11 @@ namespace Microsoft.Azure.Cosmos
             get => this.Data;
             set => this.Data = value;
         }
+
+        public Collection<T> Permissions
+        {
+            get => this.Data;
+            set => this.Data = value;
+        }
     }
 }
