@@ -9,14 +9,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Handles operation queueing and dispatching. 
     /// </summary>
     /// <remarks>
-    /// <see cref="AddAsync(BatchAsyncOperationContext)"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
+    /// <see cref="AddAsync"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
     /// </remarks>
     /// <seealso cref="BatchAsyncBatcher"/>
     internal class BatchAsyncStreamer : IDisposable
@@ -79,10 +78,10 @@ namespace Microsoft.Azure.Cosmos
             this.StartTimer();
         }
 
-        public Task<BatchOperationResult> AddAsync(BatchAsyncOperationContext context)
+        public async Task AddAsync(BatchAsyncOperationContext context)
         {
             BatchAsyncBatcher toDispatch = null;
-            this.addLimiter.Wait();
+            await this.addLimiter.WaitAsync();
 
             try
             {
@@ -102,8 +101,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.previousDispatchedTasks.Add(toDispatch.DispatchAsync());
             }
-
-            return context.Task;
         }
 
         public void Dispose()

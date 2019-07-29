@@ -107,9 +107,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ExceptionsOnBatchBubbleUpAsync()
         {
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure);
-
-            Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => batchAsyncStreamer.AddAsync(CreateContext(this.ItemBatchOperation)));
-
+            var context = CreateContext(this.ItemBatchOperation);
+            await batchAsyncStreamer.AddAsync(context);
+            Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => context.Task);
             Assert.AreEqual(expectedException, capturedException);
         }
 
@@ -119,8 +119,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Bigger batch size than the amount of operations, timer should dispatch
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor);
-
-            BatchOperationResult result = await batchAsyncStreamer.AddAsync(CreateContext(this.ItemBatchOperation));
+            var context = CreateContext(this.ItemBatchOperation);
+            await batchAsyncStreamer.AddAsync(context);
+            BatchOperationResult result = await context.Task;
 
             Assert.AreEqual(this.ItemBatchOperation.Id, result.ETag);
         }
@@ -134,7 +135,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Task<BatchOperationResult>> contexts = new List<Task<BatchOperationResult>>(10);
             for (int i = 0; i < 10; i++)
             {
-                contexts.Add(batchAsyncStreamer.AddAsync(CreateContext(new ItemBatchOperation(OperationType.Create, i, i.ToString()))));
+                var context = CreateContext(new ItemBatchOperation(OperationType.Create, i, i.ToString()));
+                await batchAsyncStreamer.AddAsync(context);
+                contexts.Add(context.Task);
             }
 
             await Task.WhenAll(contexts);
