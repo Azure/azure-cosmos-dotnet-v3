@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryDefinition
     {
-        private string Query { get; }
         private Dictionary<string, SqlParameter> SqlParameters { get; }
 
         /// <summary>
@@ -35,8 +34,29 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(query));
             }
 
-            this.Query = query;
+            this.QueryText = query;
             this.SqlParameters = new Dictionary<string, SqlParameter>();
+        }
+
+        /// <summary>
+        /// Gets the text of the Azure Cosmos DB SQL query.
+        /// </summary>
+        /// <value>The text of the SQL query.</value>
+        public string QueryText { get; }
+
+        internal QueryDefinition(SqlQuerySpec sqlQuery)
+        {
+            if (sqlQuery == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuery));
+            }
+
+            this.QueryText = sqlQuery.QueryText;
+            this.SqlParameters = new Dictionary<string, SqlParameter>();
+            foreach (SqlParameter sqlParameter in sqlQuery.Parameters)
+            {
+                this.SqlParameters.Add(sqlParameter.Name, sqlParameter);
+            }
         }
 
         /// <summary>
@@ -70,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal SqlQuerySpec ToSqlQuerySpec()
         {
-            return new SqlQuerySpec(this.Query, new SqlParameterCollection(this.SqlParameters.Values));
+            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.SqlParameters.Values));
         }
     }
 }

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using Common;
     using ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;

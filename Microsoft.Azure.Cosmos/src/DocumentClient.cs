@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -168,11 +169,6 @@ namespace Microsoft.Azure.Cosmos
         //Callback for on execution of scalar LINQ queries event.
         //This callback is meant for tests only.
         private Action<IQueryable> onExecuteScalarQueryCallback;
-
-        static DocumentClient()
-        {
-            StringKeyValueCollection.SetNameValueCollectionFactory(new DictionaryNameValueCollectionFactory());
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -6082,16 +6078,22 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        Task<string> IAuthorizationTokenProvider.GetSystemAuthorizationTokenAsync(
-            string federationName,
-            string resourceAddress,
-            string resourceType,
-            string requestVerb,
-            INameValueCollection headers,
-            AuthorizationTokenType tokenType)
+        Task IAuthorizationTokenProvider.AddSystemAuthorizationHeaderAsync(
+            DocumentServiceRequest request,
+            string federationId,
+            string verb,
+            string resourceId)
         {
-            return Task.FromResult(
-                ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(resourceAddress, resourceType, requestVerb, headers, tokenType));
+            request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+
+            request.Headers[HttpConstants.HttpHeaders.Authorization] = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+                resourceId ?? request.ResourceAddress,
+                PathsHelper.GetResourcePath(request.ResourceType),
+                verb,
+                request.Headers,
+                request.RequestAuthorizationTokenType);
+
+            return Task.FromResult(0);
         }
 
         #endregion
@@ -6286,7 +6288,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (HttpRequestMessage request = new HttpRequestMessage())
                 {
-                    INameValueCollection headersCollection = new StringKeyValueCollection();
+                    INameValueCollection headersCollection = new DictionaryNameValueCollection();
                     string xDate = DateTime.UtcNow.ToString("r");
                     headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
                     request.Headers.Add(HttpConstants.HttpHeaders.XDate, xDate);
@@ -6666,7 +6668,7 @@ namespace Microsoft.Azure.Cosmos
                 this.initializeTask.IsCompleted,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
-            INameValueCollection headers = new StringKeyValueCollection();
+            INameValueCollection headers = new DictionaryNameValueCollection();
 
             if (this.useMultipleWriteLocations)
             {

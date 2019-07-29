@@ -4,15 +4,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
-    using System.Net;
-    using System.Net.Http;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Moq.Protected;
@@ -581,9 +576,6 @@ namespace Microsoft.Azure.Cosmos
                     sessionContainer);
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            mockAuthorizationTokenProvider.Setup(provider => provider.GetSystemAuthorizationTokenAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                .ReturnsAsync("dummyauthtoken");
 
             // setup max replica set size on the config reader
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();
@@ -672,9 +664,6 @@ namespace Microsoft.Azure.Cosmos
             Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
             
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            mockAuthorizationTokenProvider.Setup(provider => provider.GetSystemAuthorizationTokenAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                .ReturnsAsync("dummyauthtoken");
 
             for (int i = 0; i < addressInformation.Length; i++)
             {
@@ -773,9 +762,6 @@ namespace Microsoft.Azure.Cosmos
                         sessionContainer);
 
                 Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
-                mockAuthorizationTokenProvider.Setup(provider => provider.GetSystemAuthorizationTokenAsync(
-                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                    .ReturnsAsync("dummyauthtoken");
 
                 // setup max replica set size on the config reader
                 ReplicationPolicy replicationPolicy = new ReplicationPolicy();
@@ -814,9 +800,6 @@ namespace Microsoft.Azure.Cosmos
                         sessionContainer);
 
                 Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
-                mockAuthorizationTokenProvider.Setup(provider => provider.GetSystemAuthorizationTokenAsync(
-                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                    .ReturnsAsync("dummyauthtoken");
 
                 // setup max replica set size on the config reader
                 ReplicationPolicy replicationPolicy = new ReplicationPolicy();
@@ -863,9 +846,6 @@ namespace Microsoft.Azure.Cosmos
                     sessionContainer);
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            mockAuthorizationTokenProvider.Setup(provider => provider.GetSystemAuthorizationTokenAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                .ReturnsAsync("dummyauthtoken");
 
             // setup max replica set size on the config reader
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();

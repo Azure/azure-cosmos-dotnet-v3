@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastContinuationToken = responseMessage.Headers.ContinuationToken;
-
+                    Assert.AreEqual(responseMessage.ContinuationToken, responseMessage.Headers.ContinuationToken);
                     Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in response)
                     {
@@ -520,40 +520,132 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ItemDistinctStreamIterator()
+        public async Task ItemCustomSerialzierTest()
         {
-            IList<ToDoActivity> deleteList = await this.CreateRandomItems(3, randomPartitionKey: true);
-            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
-
-            string lastContinuationToken = null;
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            DateTime createDateTime = DateTime.UtcNow;
+            Dictionary<string, int> keyValuePairs = new Dictionary<string, int>()
             {
-                MaxItemCount = 1
+                {"test1", 42 },
+                {"test42", 9001 }
             };
 
-            FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
-                queryText: "select * from t order by t.id",
-                continuationToken: lastContinuationToken,
-                requestOptions: requestOptions);
-
-            while (feedIterator.HasMoreResults)
+            dynamic testItem1 = new
             {
-                using (ResponseMessage responseMessage =
-                    await feedIterator.ReadNextAsync(this.cancellationToken))
+                id = "ItemCustomSerialzierTest1",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                status = "MyCustomStatus",
+                taskNum = 4909,
+                createdDateTime = createDateTime,
+                statusCode = HttpStatusCode.Accepted,
+                itemIds = new int[] { 1, 5, 10 },
+                dictionary = keyValuePairs
+            };
+
+            dynamic testItem2 = new
+            {
+                id = "ItemCustomSerialzierTest2",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                status = "MyCustomStatus",
+                taskNum = 4909,
+                createdDateTime = createDateTime,
+                statusCode = HttpStatusCode.Accepted,
+                itemIds = new int[] { 1, 5, 10 },
+                dictionary = keyValuePairs
+            };
+
+            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+            {
+                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() }
+            };
+
+            List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
+            {
+                new QueryDefinition("select * from t where t.status = @status" ).WithParameter("@status", testItem1.status),
+                new QueryDefinition("select * from t where t.cost = @cost" ).WithParameter("@cost", testItem1.cost),
+                new QueryDefinition("select * from t where t.taskNum = @taskNum" ).WithParameter("@taskNum", testItem1.taskNum),
+                new QueryDefinition("select * from t where t.totalCost = @totalCost" ).WithParameter("@totalCost", testItem1.totalCost),
+                new QueryDefinition("select * from t where t.createdDateTime = @createdDateTime" ).WithParameter("@createdDateTime", testItem1.createdDateTime),
+                new QueryDefinition("select * from t where t.statusCode = @statusCode" ).WithParameter("@statusCode", testItem1.statusCode),
+                new QueryDefinition("select * from t where t.itemIds = @itemIds" ).WithParameter("@itemIds", testItem1.itemIds),
+                new QueryDefinition("select * from t where t.dictionary = @dictionary" ).WithParameter("@dictionary", testItem1.dictionary),
+                new QueryDefinition("select * from t where t.status = @status and t.cost = @cost" )
+                    .WithParameter("@status", testItem1.status)
+                    .WithParameter("@cost", testItem1.cost),
+            };
+
+            int toStreamCount = 0;
+            int fromStreamCount = 0;
+            CosmosSerializerHelper cosmosSerializerHelper = new CosmosSerializerHelper(
+                jsonSerializerSettings,
+                toStreamCallBack: (itemValue) =>
                 {
-                    Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                    foreach (ToDoActivity toDoActivity in response)
+                    Type itemType = itemValue != null ? itemValue.GetType() : null;
+                    if (itemValue == null
+                        || itemType == typeof(int)
+                        || itemType == typeof(double)
+                        || itemType == typeof(string)
+                        || itemType == typeof(DateTime)
+                        || itemType == typeof(HttpStatusCode)
+                        || itemType == typeof(int[])
+                        || itemType == typeof(Dictionary<string, int>))
                     {
-                        if (itemIds.Contains(toDoActivity.id))
-                        {
-                            itemIds.Remove(toDoActivity.id);
-                        }
+                        toStreamCount++;
                     }
-                }
+                },
+                fromStreamCallback: (item) => fromStreamCount++);
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                Serializer = cosmosSerializerHelper
+            };
+
+            CosmosClient clientSerializer = TestCommon.CreateCosmosClient(options);
+            Container containerSerializer = clientSerializer.GetContainer(this.database.Id, this.Container.Id);
+
+            try
+            {
+                await containerSerializer.CreateItemAsync<dynamic>(testItem1);
+                await containerSerializer.CreateItemAsync<dynamic>(testItem2);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+            {
+                // Ignore conflicts since the object already exists
             }
 
-            Assert.IsNull(lastContinuationToken);
-            Assert.AreEqual(itemIds.Count, 0);
+            foreach (var queryDefinition in queryDefinitions)
+            {
+                toStreamCount = 0;
+                fromStreamCount = 0;
+
+                FeedIterator<dynamic> feedIterator = containerSerializer.GetItemQueryIterator<dynamic>(
+                    queryDefinition: queryDefinition);
+
+                List<dynamic> allItems = new List<dynamic>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    // Only need once to verify correct serialization of the query definition
+                    FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                    Assert.AreEqual(response.Count, response.Count());
+                    allItems.AddRange(response);
+                }
+
+
+                Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                foreach (dynamic item in allItems)
+                {
+                    Assert.IsFalse(string.Equals(testItem1.id, item.id) || string.Equals(testItem2.id, item.id));
+                    Assert.IsTrue(((JObject)item)["totalCost"].Type == JTokenType.String);
+                    Assert.IsTrue(((JObject)item)["taskNum"].Type == JTokenType.String);
+                }
+
+                // Each parameter in query spec should be a call to the custom serializer
+                int parameterCount = queryDefinition.ToSqlQuerySpec().Parameters.Count;
+                Assert.AreEqual(parameterCount, toStreamCount, $"missing to stream call. Expected: {parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual(1, fromStreamCount);
+            }
         }
 
         [TestMethod]
@@ -714,6 +806,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ResponseMessage response = await feedIterator.ReadNextAsync();
                 lastContinuationToken = response.Headers.ContinuationToken;
+                Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
+
                 Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 JsonSerializer serializer = new JsonSerializer();
 
@@ -827,11 +921,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNull(iter.ErrorMessage);
                         totalRequstCharge += iter.Headers.RequestCharge;
 
-                ToDoActivity[] activities = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data.ToArray();
-                Assert.AreEqual(1, activities.Length);
-                ToDoActivity response = activities.First();
-                resultList.Add(response);
-            }
+                        ToDoActivity[] activities = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.Content).Data.ToArray();
+                        Assert.AreEqual(1, activities.Length);
+                        ToDoActivity response = activities.First();
+                        resultList.Add(response);
+                    }
 
                     Assert.AreEqual(deleteList.Count, resultList.Count);
                     Assert.IsTrue(totalRequstCharge > 0);
@@ -1348,7 +1442,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
             //V3 Asynchronous query execution with LINQ query generation sql text.
             FeedIterator<ToDoActivity> setIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                queriable.ToSqlQueryText(),
+                queriable.ToQueryDefinition(),
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
             int resultsFetched = 0;

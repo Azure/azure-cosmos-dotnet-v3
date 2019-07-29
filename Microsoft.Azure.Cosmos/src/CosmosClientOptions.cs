@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+
         private readonly Collection<RequestHandler> customHandlers;
 
         private int gatewayModeMaxConnectionLimit;
