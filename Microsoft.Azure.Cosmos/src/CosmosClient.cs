@@ -97,7 +97,6 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClient : IDisposable
     {
         private readonly Uri DatabaseRootUri = new Uri(Paths.Databases_Root, UriKind.Relative);
-        private Lazy<CosmosOffers> offerSet;
         private ConsistencyLevel? accountConsistencyLevel;
 
         static CosmosClient()
@@ -226,7 +225,8 @@ namespace Microsoft.Azure.Cosmos
                 transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
                 connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
                 enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
-                storeClientFactory: clientOptionsClone.StoreClientFactory);
+                storeClientFactory: clientOptionsClone.StoreClientFactory,
+                desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel());
 
             this.Init(
                 clientOptionsClone,
@@ -290,7 +290,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         internal string AccountKey { get; }
 
-        internal CosmosOffers Offers => this.offerSet.Value;
         internal DocumentClient DocumentClient { get; set; }
         internal RequestInvokerHandler RequestHandler { get; private set; }
         internal CosmosResponseFactory ResponseFactory { get; private set; }
@@ -397,22 +396,34 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Check if a database exists, and if it doesn't, create it.
-        /// This will make a read operation, and if the database is not found it will do a create operation.
-        ///
-        /// A database manages users, permissions and a set of containers.
+        /// <para>Check if a database exists, and if it doesn't, create it.
+        /// Only the database id is used to verify if there is an existing database. Other database properties 
+        /// such as throughput are not validated and can be different then the passed properties.</para>
+        /// 
+        /// <para>A database manages users, permissions and a set of containers.
         /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
-        /// with the database being the logical container for data.
+        /// with the database being the logical container for data.</para>
         ///
-        /// Each Database consists of one or more containers, each of which in turn contain one or more
+        /// <para>Each Database consists of one or more containers, each of which in turn contain one or more
         /// documents. Since databases are an administrative resource, the Service Master Key will be
-        /// required in order to access and successfully complete any action using the User APIs.
+        /// required in order to access and successfully complete any action using the User APIs.</para>
         /// </summary>
         /// <param name="id">The database id.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <list>
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Common success StatusCodes for the CreateDatabaseIfNotExistsAsync operation</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>201</term><description>Created - New database is created.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///     </item>
+        /// </list>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
@@ -605,25 +616,27 @@ namespace Microsoft.Azure.Cosmos
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
 
+            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
+                this.ClientOptions.PropertiesSerializer);
+
             this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
+                sqlQuerySpecSerializer: sqlQuerySpecSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
                 documentQueryClient: new DocumentQueryClient(this.DocumentClient));
-
-            this.offerSet = new Lazy<CosmosOffers>(() => new CosmosOffers(this.DocumentClient), LazyThreadSafetyMode.PublicationOnly);
         }
 
         internal async virtual Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
         {
             if (!this.accountConsistencyLevel.HasValue)
             {
-                await this.DocumentClient.EnsureValidClientAsync();
-                this.accountConsistencyLevel = (ConsistencyLevel)this.DocumentClient.ConsistencyLevel;
+                this.accountConsistencyLevel = await this.DocumentClient.GetDefaultConsistencyLevelAsync();
             }
 
             return this.accountConsistencyLevel.Value;

@@ -78,9 +78,6 @@ namespace Microsoft.Azure.Cosmos
             StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer);
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            mockAuthorizationTokenProvider.Setup(provider => provider.GetSystemAuthorizationTokenAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                .ReturnsAsync("dummyauthtoken");
 
             // setup max replica set size on the config reader
             ReplicationPolicy replicationPolicy = new ReplicationPolicy();

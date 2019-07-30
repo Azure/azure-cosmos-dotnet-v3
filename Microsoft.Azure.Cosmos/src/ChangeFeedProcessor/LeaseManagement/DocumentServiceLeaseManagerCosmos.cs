@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses Azure Cosmos DB service

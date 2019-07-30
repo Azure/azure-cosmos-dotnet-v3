@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
         ///     accountKey: "SuperSecretKey")
-        /// .UseConsistencyLevel(ConsistencyLevel.Strong)
+        /// .WithConsistencyLevel(ConsistencyLevel.Strong)
         /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
@@ -169,6 +170,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
+            return this;
+        }
+
+        /// <summary>
+        /// This can be used to weaken the database account consistency level for read operations.
+        /// If this is not set the database account consistency level will be used for all requests.
+        /// </summary>
+        /// <param name="consistencyLevel">The desired consistency level for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        public CosmosClientBuilder WithConsistencyLevel(Cosmos.ConsistencyLevel consistencyLevel)
+        {
+            this.clientOptions.ConsistencyLevel = consistencyLevel;
             return this;
         }
 

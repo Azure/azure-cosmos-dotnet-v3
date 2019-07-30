@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -79,8 +80,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
-                if (this.locationUnavailablityInfoByEndpoint.Count > 0
-                    && DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime)
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
                 {
                     this.UpdateLocationCache();
                 }
@@ -98,8 +100,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             get
             {
-                if (this.locationUnavailablityInfoByEndpoint.Count > 0
-                    && DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime)
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
                 {
                     this.UpdateLocationCache();
                 }

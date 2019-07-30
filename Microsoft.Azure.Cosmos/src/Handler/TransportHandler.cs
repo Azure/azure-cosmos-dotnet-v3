@@ -43,6 +43,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return ex.ToCosmosResponseMessage(request);
             }
+            catch (CosmosException ce)
+            {
+                return ce.ToCosmosResponseMessage(request);
+            }
             catch (AggregateException ex)
             {
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
@@ -100,12 +104,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosException cosmosException = exception as CosmosException;
             if (cosmosException != null)
             {
-                return new ResponseMessage(
-                    headers: cosmosException.Headers,
-                    requestMessage: request,
-                    errorMessage: cosmosException.Message,
-                    statusCode: cosmosException.StatusCode,
-                    error: cosmosException.Error);
+                return cosmosException.ToCosmosResponseMessage(request);
             }
 
             return null;

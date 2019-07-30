@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonSerializerCore());
+            mockContext.Setup(x => x.CosmosSerializer).Returns(MockCosmosUtil.Serializer);
             mockContext.Setup(x => x.Client).Returns(client);
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);

@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Text;
 
@@ -184,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
                 this.PrefixMemberSeparator();
-                this.streamWriter.Write(value.ToString());
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             /// <summary>
@@ -231,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     // If you require more precision, specify format with the "G17" format specification, which always returns 17 digits of precision,
                     // or "R", which returns 15 digits if the number can be represented with that precision or 17 digits if the number can only be represented with maximum precision.
                     // In some cases, Double values formatted with the "R" standard numeric format string do not successfully round-trip if compiled using the /platform:x64 or /platform:anycpu switches and run on 64-bit systems. To work around this problem, you can format Double values by using the "G17" standard numeric format string. 
-                    this.streamWriter.Write(value.ToString("R"));
+                    this.streamWriter.Write(value.ToString("R", CultureInfo.InvariantCulture));
                 }
             }
 

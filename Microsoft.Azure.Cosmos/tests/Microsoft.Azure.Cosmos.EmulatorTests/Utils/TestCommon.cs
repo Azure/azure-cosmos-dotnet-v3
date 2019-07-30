@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static readonly int serverStalenessIntervalInSeconds;
         private static readonly int masterStalenessIntervalInSeconds;
+        public static readonly CosmosSerializer Serializer = new CosmosJsonDotNetSerializer();
 
         static TestCommon()
         {
@@ -67,6 +68,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             return cosmosClientBuilder.Build();
+        }
+
+        internal static CosmosClient CreateCosmosClient(CosmosClientOptions clientOptions)
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            return new CosmosClient(endpoint, authKey, clientOptions);
         }
 
         internal static CosmosClient CreateCosmosClient(
@@ -225,11 +234,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection localHeaders = null;
             if (headers != null)
             {
-                localHeaders = new StringKeyValueCollection(headers);
+                localHeaders = new DictionaryNameValueCollection(headers);
             }
             else
             {
-                localHeaders = new StringKeyValueCollection();
+                localHeaders = new DictionaryNameValueCollection();
             }
 
             string continuationToken = null;
@@ -397,11 +406,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection localHeaders = null;
             if (headers != null)
             {
-                localHeaders = new StringKeyValueCollection(headers);
+                localHeaders = new DictionaryNameValueCollection(headers);
             }
             else
             {
-                localHeaders = new StringKeyValueCollection();
+                localHeaders = new DictionaryNameValueCollection();
             }
 
             string continuationToken = null;

@@ -198,14 +198,4 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createResponse;
         }
     }
-
-    public class ToDoActivity
-    {
-        public string id { get; set; }
-        public int taskNum { get; set; }
-        public double cost { get; set; }
-        public string description { get; set; }
-        public string status { get; set; }
-    }
-
 }

@@ -6,11 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -226,10 +226,19 @@ namespace Microsoft.Azure.Cosmos.Query
             if (exception != null)
             {
                 DefaultTrace.TraceInformation("QueryEngineConfiguration: " + this.queryengineConfiguration);
+                string errorMessage;
+                if (string.IsNullOrEmpty(serializedQueryExecutionInfo))
+                {
+                    errorMessage = $"Message: Query service interop parsing hit an unexpected exception: {exception.ToString()}";
+                }
+                else
+                {
+                    errorMessage = "Message: " + serializedQueryExecutionInfo;
+                }
 
                 throw new CosmosException(
                     HttpStatusCode.BadRequest,
-                    "Message: " + serializedQueryExecutionInfo);
+                    errorMessage);
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =

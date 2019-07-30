@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class ClientResources {
@@ -430,6 +430,15 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The requested partition key path &apos;{0}&apos; does not match existing Container &apos;{1}&apos; with partition key path &apos;{2}&apos;.
+        /// </summary>
+        internal static string PartitionKeyPathConflict {
+            get {
+                return ResourceManager.GetString("PartitionKeyPathConflict", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Partition property not found in the document..
         /// </summary>
         internal static string PartitionPropertyNotFound {
@@ -509,18 +518,16 @@ namespace Microsoft.Azure.Cosmos {
                 return ResourceManager.GetString("StringCompareToInvalidOperator", resourceCulture);
             }
         }
-
+        
         /// <summary>
-        ///   Looks up a localized string similar to typeCheck extension functions not implemented.
+        ///   Looks up a localized string similar to Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server..
         /// </summary>
-        internal static string TypeCheckExtensionFunctionsNotImplemented
-        {
-            get
-            {
+        internal static string TypeCheckExtensionFunctionsNotImplemented {
+            get {
                 return ResourceManager.GetString("TypeCheckExtensionFunctionsNotImplemented", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to User-defined function name can not be null or empty..
         /// </summary>

@@ -21,7 +21,7 @@ Put closes #XXXX in your comment to auto-close the issue that your PR fixes (if 
 
 Please add yourself as the assignee
 
-## Porjects
+## Projects
 
 Please add relevant projects so this issue can be properly tracked.
 

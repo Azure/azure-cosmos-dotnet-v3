@@ -11,10 +11,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -157,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private async Task<DocumentServiceResponse> GetFeedResponseAsync(string resourceLink, ResourceType resourceType, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            INameValueCollection headers = new StringKeyValueCollection();
+            INameValueCollection headers = new DictionaryNameValueCollection();
 
             if (this.feedOptions.MaxItemCount.HasValue)
             {

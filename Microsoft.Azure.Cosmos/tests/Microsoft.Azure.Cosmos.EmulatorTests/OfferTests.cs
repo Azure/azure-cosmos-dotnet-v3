@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Documents;
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string collPrefix = Guid.NewGuid().ToString("N");
 
                 // V2 offer
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
                 headers.Add("x-ms-offer-throughput", "8000");
 
                 DocumentCollection[] collections = (from index in Enumerable.Range(1, 1)
@@ -314,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 dbprefix = Guid.NewGuid().ToString("N");
 
                 // V2 offer
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
                 headers.Add("x-ms-offer-throughput", "8000");
 
                 List<DocumentCollection> collections = new List<DocumentCollection>();

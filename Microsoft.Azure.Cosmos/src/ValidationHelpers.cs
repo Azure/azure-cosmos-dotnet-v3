@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class ValidationHelpers
     {
-        public static bool ValidateConsistencyLevel(Cosmos.ConsistencyLevel backendConsistency, Cosmos.ConsistencyLevel desiredConsistency)
+        public static bool IsValidConsistencyLevelOverwrite(Cosmos.ConsistencyLevel backendConsistency, Cosmos.ConsistencyLevel desiredConsistency)
         {
-            return ValidationHelpers.ValidateConsistencyLevel((Documents.ConsistencyLevel)backendConsistency, (Documents.ConsistencyLevel)desiredConsistency);
+            return ValidationHelpers.IsValidConsistencyLevelOverwrite((Documents.ConsistencyLevel)backendConsistency, (Documents.ConsistencyLevel)desiredConsistency);
         }
 
-        public static bool ValidateConsistencyLevel(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
+        public static bool IsValidConsistencyLevelOverwrite(Documents.ConsistencyLevel backendConsistency, Documents.ConsistencyLevel desiredConsistency)
         {
             switch (backendConsistency)
             {

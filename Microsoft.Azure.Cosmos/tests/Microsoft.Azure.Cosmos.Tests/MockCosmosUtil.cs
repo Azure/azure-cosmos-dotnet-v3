@@ -20,9 +20,21 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
     internal class MockCosmosUtil
     {
-        public static CosmosClient CreateMockCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        public static readonly CosmosSerializer Serializer = new CosmosJsonDotNetSerializer();
+
+        public static CosmosClient CreateMockCosmosClient(
+            Action<CosmosClientBuilder> customizeClientBuilder = null,
+            Cosmos.ConsistencyLevel? accountConsistencyLevel = null)
         {
-            DocumentClient documentClient = new MockDocumentClient();
+            DocumentClient documentClient;
+            if (accountConsistencyLevel.HasValue)
+            {
+                documentClient = new MockDocumentClient(accountConsistencyLevel.Value);
+            }
+            else
+            {
+                documentClient = new MockDocumentClient();
+            }
             
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Guid.NewGuid().ToString());
             if (customizeClientBuilder != null)
