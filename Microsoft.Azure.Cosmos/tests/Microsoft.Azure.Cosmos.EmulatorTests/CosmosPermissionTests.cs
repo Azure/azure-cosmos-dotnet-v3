@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
-            Assert.AreEqual(userId, userResponse.Resource.Id);
+            Assert.AreEqual(userId, userResponse.Resource.Id);            
 
             User user = userResponse.User;
 
@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
             Assert.AreEqual(permissionProperties.PermissionMode, permissionResponse.Resource.PermissionMode);
+            Assert.IsNotNull(permissionResponse.Resource.Token);
 
             PermissionProperties newPermissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, containerResponse.Container);
 
@@ -116,6 +117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
             Assert.AreEqual(permissionId, permission.Id);
             Assert.AreEqual(permissionProperties.PermissionMode, permission.PermissionMode);
+            Assert.IsNotNull(permission.Token);
 
             PermissionProperties newPermissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, containerResponse.Container);
 
