@@ -161,23 +161,6 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; private set; }
 
         /// <summary>
-        /// Create a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="Database"/>
-        /// </summary>
-        /// <param name="id">The permission id.</param>
-        /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
-        /// <param name="database">The <see cref="Database"/> object.</param>
-        /// <returns>an instandce of <see cref="PermissionProperties"/></returns>
-        public static PermissionProperties CreateForDatabase(string id, 
-            PermissionMode permissionMode, Database database)
-        {
-            return new PermissionProperties(id, permissionMode)
-            {
-                ResourceLink = ((DatabaseCore)database).LinkUri.OriginalString
-                //ResourceLink = new Uri(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}/{1}", Paths.DatabasesPathSegment, Uri.EscapeUriString(database)), UriKind.Relative).OriginalString
-            };
-        }
-
-        /// <summary>
         /// Create a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="Container"/>.
         /// </summary>
         /// <param name="id">The permission id.</param>

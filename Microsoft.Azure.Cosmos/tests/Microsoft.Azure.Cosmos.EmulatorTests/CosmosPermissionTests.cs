@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -215,6 +216,61 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(permissionIds.Count > 0);
             Assert.IsTrue(permissionIds.Contains(permissionId));
+        }
+
+        [TestMethod]
+        public async Task ContainerResourcePermissionTest()
+        {
+            string containerId = Guid.NewGuid().ToString();
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+            Container container = containerResponse.Container;
+
+            string userId = Guid.NewGuid().ToString();
+            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            Assert.AreEqual(userId, userResponse.Resource.Id);
+
+            User user = userResponse.User;
+
+            string permissionId = Guid.NewGuid().ToString();
+            PermissionProperties permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.Read, container);
+
+            PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
+            PermissionProperties permission = permissionResponse.Resource;
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            Assert.AreEqual(permissionId, permission.Id);
+            Assert.AreEqual(permissionProperties.PermissionMode, permission.PermissionMode);
+         
+            using (CosmosClient tokenCosmosClient = new CosmosClient(
+ConfigurationManager.AppSettings["GatewayEndpoint"],
+                permission.Token
+            ))
+            {
+                ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString() });
+                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            }
+          
+            permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.Read, container);
+            permissionResponse = await user.GetPermission(permissionId).ReplacePermissionAsync(permissionProperties);
+            permission = permissionResponse.Resource;
+
+            using (CosmosClient tokenCosmosClient = new CosmosClient(
+ConfigurationManager.AppSettings["GatewayEndpoint"],
+                permission.Token
+            ))
+            {
+                try
+                {
+                    ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString() });                    
+                    Assert.Fail();
+                }
+                catch(CosmosException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.Forbidden, ex.StatusCode);
+                }      
+            }
         }
     }
 }
