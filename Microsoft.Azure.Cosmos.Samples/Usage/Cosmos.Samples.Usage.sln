@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2041
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DatabaseManagement", "DatabaseManagement\DatabaseManagement.csproj", "{F972386A-B03D-4453-88C7-948CB107C029}"
 EndProject
@@ -20,6 +20,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureFunctions", "AzureFunctions\AzureFunctions.csproj", "{4D375AAB-E67E-4A0C-9418-F512F705C574}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NonPartitionContainerMigration", "NonPartitionContainerMigration\NonPartitionContainerMigration.csproj", "{C1A42351-39FC-4600-A235-FF5A90B02628}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomSerializer", "CustomSerializer\CustomSerializer.csproj", "{CD85C611-A7BD-40EA-9E07-850203BCC9C3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,10 @@ Global
 		{C1A42351-39FC-4600-A235-FF5A90B02628}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1A42351-39FC-4600-A235-FF5A90B02628}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1A42351-39FC-4600-A235-FF5A90B02628}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD85C611-A7BD-40EA-9E07-850203BCC9C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD85C611-A7BD-40EA-9E07-850203BCC9C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD85C611-A7BD-40EA-9E07-850203BCC9C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD85C611-A7BD-40EA-9E07-850203BCC9C3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
