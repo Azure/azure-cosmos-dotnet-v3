@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(batchAsyncOperation));
             }
 
-            await this.tryAddLimiter.WaitAsync(cancellationToken);
+            await this.tryAddLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 if (this.batchOperations.Count == this.maxBatchOperationCount)
@@ -98,11 +98,10 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task DispatchAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            await this.tryAddLimiter.WaitAsync(cancellationToken);
-
+            await this.tryAddLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                CrossPartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken);
+                CrossPartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken).ConfigureAwait(false);
 
                 // If the batch was not successful, we need to set all the responses
                 if (!batchResponse.IsSuccessStatusCode)

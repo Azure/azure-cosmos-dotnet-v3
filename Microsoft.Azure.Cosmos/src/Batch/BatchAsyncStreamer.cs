@@ -84,15 +84,15 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             BatchAsyncBatcher toDispatch = null;
-            await this.addLimiter.WaitAsync();
+            await this.addLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             try
             {
-                if (!await this.currentBatcher.TryAddAsync(context, cancellationToken))
+                if (!await this.currentBatcher.TryAddAsync(context, cancellationToken).ConfigureAwait(false))
                 {
                     // Batcher is full
                     toDispatch = this.GetBatchToDispatch();
-                    Debug.Assert(await this.currentBatcher.TryAddAsync(context, cancellationToken), "Could not add context to batcher.");
+                    Debug.Assert(await this.currentBatcher.TryAddAsync(context, cancellationToken).ConfigureAwait(false), "Could not add context to batcher.");
                 }
             }
             finally
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            await this.addLimiter.WaitAsync();
+            await this.addLimiter.WaitAsync().ConfigureAwait(false);
 
             BatchAsyncBatcher toDispatch;
             try
