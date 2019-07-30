@@ -8,6 +8,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading.Tasks;
 
     class CustomSerializerProgram
@@ -111,6 +112,34 @@
                         Console.WriteLine(jsonString);
                     }
                 }
+
+                // Validate query uses the custom serializer
+                QueryDefinition queryDefinition = new QueryDefinition("select * from T where T.accountNumber = @accountNumber and T.orderDate = @orderDate ")
+                    .WithParameter("@accountNumber", salesOrder.AccountNumber)
+                    .WithParameter("@orderDate", salesOrder.OrderDate);
+
+                FeedIterator<SalesOrder> iterator = container.GetItemQueryIterator<SalesOrder>( queryDefinition);
+                List<SalesOrder> salesOrders = new List<SalesOrder>();
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<SalesOrder> queryResponse = await iterator.ReadNextAsync();
+                    salesOrders.AddRange(queryResponse);
+                }
+
+                if(salesOrders.Count != 1)
+                {
+                    throw new ArgumentException("Query should only have 1 result");
+                }
+
+                SalesOrder querySalesOrderItem = salesOrders.First();
+
+                // Validate the JSON converter is working and converting all strings to upper case
+                if (!string.Equals(salesOrder.AccountNumber.ToUpper(), querySalesOrderItem.AccountNumber))
+                {
+                    throw new Exception("Customer serializer did not convert to upper case for query.");
+                }
+
+                using(await db.DeleteStreamAsync()) { }
             }
         }
 
