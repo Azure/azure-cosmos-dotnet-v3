@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<CrossPartitionKeyBatchResponse>> executor;
         private readonly int maxBatchByteSize;
         private readonly int maxBatchOperationCount;
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private long currentSize = 0;
 
         public bool IsEmpty => this.batchOperations.Count == 0;
@@ -59,16 +60,14 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosSerializer = cosmosSerializer;
         }
 
-        public async Task<bool> TryAddAsync(
-            BatchAsyncOperationContext batchAsyncOperation,
-            CancellationToken cancellationToken)
+        public async Task<bool> TryAddAsync(BatchAsyncOperationContext batchAsyncOperation)
         {
             if (batchAsyncOperation == null)
             {
                 throw new ArgumentNullException(nameof(batchAsyncOperation));
             }
 
-            await this.tryAddLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await this.tryAddLimiter.WaitAsync(this.cancellationTokenSource.Token).ConfigureAwait(false);
             try
             {
                 if (this.batchOperations.Count == this.maxBatchOperationCount)
@@ -98,7 +97,6 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task DispatchAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            await this.tryAddLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 CrossPartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken).ConfigureAwait(false);
@@ -130,16 +128,11 @@ namespace Microsoft.Azure.Cosmos
                     operation.Fail(ex);
                 }
             }
-            finally
-            {
-                this.tryAddLimiter.Release();
-                this.Dispose();
-            }
         }
 
         public void Dispose()
         {
-            this.tryAddLimiter?.Dispose();
+            this.cancellationTokenSource.Cancel();
         }
     }
 }

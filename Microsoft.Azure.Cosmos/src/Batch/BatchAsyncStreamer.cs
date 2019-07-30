@@ -15,13 +15,13 @@ namespace Microsoft.Azure.Cosmos
     /// Handles operation queueing and dispatching. 
     /// </summary>
     /// <remarks>
-    /// <see cref="AddAsync(BatchAsyncOperationContext, System.Threading.CancellationToken)"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
+    /// <see cref="AddAsync(BatchAsyncOperationContext)"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
     /// </remarks>
     /// <seealso cref="BatchAsyncBatcher"/>
     internal class BatchAsyncStreamer : IDisposable
     {
         private readonly List<Task> previousDispatchedTasks = new List<Task>();
-        private readonly SemaphoreSlim addLimiter;
+        private readonly SemaphoreSlim dispatchLimiter;
         private readonly int maxBatchOperationCount;
         private readonly int maxBatchByteSize;
         private readonly Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<CrossPartitionKeyBatchResponse>> executor;
@@ -73,46 +73,30 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = timerPool;
             this.CosmosSerializer = cosmosSerializer;
-            this.addLimiter = new SemaphoreSlim(1, 1);
-            this.currentBatcher = this.GetBatchAsyncBatcher();
+            this.dispatchLimiter = new SemaphoreSlim(1, 1);
+            this.currentBatcher = this.CreateBatchAsyncBatcher();
 
             this.StartTimer();
         }
 
-        public async Task AddAsync(
-            BatchAsyncOperationContext context, 
-            CancellationToken cancellationToken)
+        public async Task AddAsync(BatchAsyncOperationContext context)
         {
-            BatchAsyncBatcher toDispatch = null;
-            await this.addLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-            try
+            if (!await this.currentBatcher.TryAddAsync(context).ConfigureAwait(false))
             {
-                if (!await this.currentBatcher.TryAddAsync(context, cancellationToken).ConfigureAwait(false))
-                {
-                    // Batcher is full
-                    toDispatch = this.GetBatchToDispatch();
-                    Debug.Assert(await this.currentBatcher.TryAddAsync(context, cancellationToken).ConfigureAwait(false), "Could not add context to batcher.");
-                }
-            }
-            finally
-            {
-                this.addLimiter.Release();
-            }
-
-            if (toDispatch != null)
-            {
+                // Batcher is full
+                BatchAsyncBatcher toDispatch = await this.GetBatchToDispatchAsync();
                 this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                bool addedContext = await this.currentBatcher.TryAddAsync(context).ConfigureAwait(false);
+                Debug.Assert(addedContext, "Could not add context to batcher.");
             }
         }
 
         public void Dispose()
         {
             this.disposed = true;
-            this.addLimiter?.Dispose();
+            this.cancellationTokenSource.Cancel();
             this.currentBatcher?.Dispose();
             this.currentTimer.CancelTimer();
-            this.cancellationTokenSource.Cancel();
         }
 
         private void StartTimer()
@@ -131,18 +115,7 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            await this.addLimiter.WaitAsync().ConfigureAwait(false);
-
-            BatchAsyncBatcher toDispatch;
-            try
-            {
-                toDispatch = this.GetBatchToDispatch();
-            }
-            finally
-            {
-                this.addLimiter.Release();
-            }
-
+            BatchAsyncBatcher toDispatch = await this.GetBatchToDispatchAsync();
             if (toDispatch != null)
             {
                 this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
@@ -151,19 +124,27 @@ namespace Microsoft.Azure.Cosmos
             this.StartTimer();
         }
 
-        private BatchAsyncBatcher GetBatchToDispatch()
+        private async Task<BatchAsyncBatcher> GetBatchToDispatchAsync()
         {
             if (this.currentBatcher.IsEmpty)
             {
                 return null;
             }
 
-            BatchAsyncBatcher previousBatcher = this.currentBatcher;
-            this.currentBatcher = this.GetBatchAsyncBatcher();
-            return previousBatcher;
+            await this.dispatchLimiter.WaitAsync(this.cancellationTokenSource.Token).ConfigureAwait(false);
+            try
+            {
+                BatchAsyncBatcher previousBatcher = this.currentBatcher;
+                this.currentBatcher = this.CreateBatchAsyncBatcher();
+                return previousBatcher;
+            }
+            finally
+            {
+                this.dispatchLimiter.Release();
+            }
         }
 
-        private BatchAsyncBatcher GetBatchAsyncBatcher()
+        private BatchAsyncBatcher CreateBatchAsyncBatcher()
         {
             return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.CosmosSerializer, this.executor);
         }
