@@ -15,8 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosPermissionTests
     {
         private CosmosClient cosmosClient = null;
-        private Database cosmosDatabase = null;
-        private string databaseResourceId = null;
+        private Database cosmosDatabase = null;        
 
         [TestInitialize]
         public async Task TestInit()
@@ -26,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string databaseName = Guid.NewGuid().ToString();
             DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
             this.cosmosDatabase = cosmosDatabaseResponse;
-            databaseResourceId = cosmosDatabaseResponse.Resource.ResourceId;
         }
 
         [TestCleanup]
@@ -235,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             User user = userResponse.User;
 
             string permissionId = Guid.NewGuid().ToString();
-            PermissionProperties permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.Read, container);
+            PermissionProperties permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, container);
 
             PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
             PermissionProperties permission = permissionResponse.Resource;
@@ -248,7 +246,10 @@ ConfigurationManager.AppSettings["GatewayEndpoint"],
                 permission.Token
             ))
             {
-                ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString() });
+                ItemResponse<dynamic> itemResponse = await tokenCosmosClient
+                    .GetDatabase(this.cosmosDatabase.Id)
+                    .GetContainer(containerId)
+                    .CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString() });
                 Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
             }
           
@@ -263,7 +264,10 @@ ConfigurationManager.AppSettings["GatewayEndpoint"],
             {
                 try
                 {
-                    ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString() });                    
+                    ItemResponse<dynamic> itemResponse = await tokenCosmosClient
+                    .GetDatabase(this.cosmosDatabase.Id)
+                    .GetContainer(containerId)
+                    .CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString() });                    
                     Assert.Fail();
                 }
                 catch(CosmosException ex)
