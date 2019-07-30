@@ -151,19 +151,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]
-        [Owner("maquaran")]
-        [ExpectedException(typeof(TaskCanceledException))]
-        public async Task DisposeAndAdd()
-        {
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor);
-            List<Task> operations = new List<Task>();
-            var context = CreateContext(new ItemBatchOperation(OperationType.Create, 0, "0"));
-            operations.Add(Task.Run(() => batchAsyncStreamer.Dispose()));
-            operations.Add(batchAsyncStreamer.AddAsync(context));
-            await Task.WhenAll(operations);
-        }
-
         private static BatchAsyncOperationContext CreateContext(ItemBatchOperation operation) => new BatchAsyncOperationContext(string.Empty, operation);
     }
 }
