@@ -44,6 +44,55 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CRUDTest()
+        {
+            string containerId = Guid.NewGuid().ToString();
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+            string userId = Guid.NewGuid().ToString();
+
+            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            Assert.AreEqual(userId, userResponse.Resource.Id);
+
+            User user = userResponse.User;
+
+            string permissionId = Guid.NewGuid().ToString();
+            PermissionProperties permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.Read, containerResponse.Container);
+
+            PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
+            Assert.AreEqual(permissionProperties.PermissionMode, permissionResponse.Resource.PermissionMode);
+
+            PermissionProperties newPermissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, containerResponse.Container);
+
+            permissionResponse = await user.GetPermission(permissionId).ReplacePermissionAsync(newPermissionProperties);
+            //Backend returns Created instead of OK
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
+            Assert.AreEqual(newPermissionProperties.PermissionMode, permissionResponse.Resource.PermissionMode);
+
+            permissionResponse = await user.GetPermission(permissionId).ReadPermissionAsync();
+            Assert.AreEqual(HttpStatusCode.OK, permissionResponse.StatusCode);
+            Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
+
+            permissionResponse = await user.GetPermission(permissionId).DeletePermissionAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, permissionResponse.StatusCode);
+
+            try
+            {
+                await user.GetPermission(permissionId).ReadPermissionAsync();
+                Assert.Fail();
+            }
+            catch(CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }
+        }
+
+        [TestMethod]
         public async Task StreamCRUDTest()
         {
             string containerId = Guid.NewGuid().ToString();
@@ -88,6 +137,82 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             responseMessage = await user.GetPermission(permissionId).ReadPermissionStreamAsync();
             Assert.AreEqual(HttpStatusCode.NotFound, responseMessage.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task IteratorTest()
+        {
+            string containerId = Guid.NewGuid().ToString();
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+            string userId = Guid.NewGuid().ToString();
+            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+
+            User user = userResponse.User;
+
+            string permissionId = Guid.NewGuid().ToString();
+            PermissionProperties permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.Read, containerResponse.Container);
+
+            PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+
+            HashSet<string> permissionIds = new HashSet<string>();
+            FeedIterator<PermissionProperties> resultSet = user.GetPermissionQueryIterator<PermissionProperties>();
+            while (resultSet.HasMoreResults)
+            {
+                foreach (PermissionProperties permission in await resultSet.ReadNextAsync())
+                {
+                    if (!permissionIds.Contains(permission.Id))
+                    {
+                        permissionIds.Add(permission.Id);
+                    }
+                }
+            }
+
+            Assert.IsTrue(permissionIds.Count > 0);
+            Assert.IsTrue(permissionIds.Contains(permissionId));
+        }
+
+        [TestMethod]
+        public async Task StreamIteratorTest()
+        {
+            string containerId = Guid.NewGuid().ToString();
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+            string userId = Guid.NewGuid().ToString();
+            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+            User user = userResponse.User;
+
+            string permissionId = Guid.NewGuid().ToString();
+            PermissionProperties permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.Read, containerResponse.Container);
+            PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
+            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+
+            HashSet<string> permissionIds = new HashSet<string>();
+            FeedIterator resultSet = user.GetPermissionQueryStreamIterator(
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+
+            while (resultSet.HasMoreResults)
+            {
+                using (ResponseMessage message = await resultSet.ReadNextAsync())
+                {
+                    Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
+                    CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
+                    dynamic permissions = defaultJsonSerializer.FromStream<dynamic>(message.Content).Permissions;
+                    foreach (dynamic permission in permissions)
+                    {
+                        string id = permission.id.ToString();
+                        permissionIds.Add(id);
+                    }
+                }
+            }
+
+            Assert.IsTrue(permissionIds.Count > 0);
+            Assert.IsTrue(permissionIds.Contains(permissionId));
         }
     }
 }
