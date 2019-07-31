@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.ObjectModel;
     using System.IO;
@@ -406,13 +407,106 @@ namespace Microsoft.Azure.Cosmos.Tests
             string containerJsonAfterConversion = null;
             using (Stream stream = cosmosSerializer.ToStream<ContainerProperties>(containerProperties))
             {
-                using(StreamReader sr = new StreamReader(stream))
+                using (StreamReader sr = new StreamReader(stream))
                 {
                     containerJsonAfterConversion = await sr.ReadToEndAsync();
                 }
             }
 
             Assert.AreEqual(containerJsonString, containerJsonAfterConversion);
+        }
+
+        [TestMethod]
+        public async Task ContainerV2CompatTest()
+        {
+            string containerId = "SerializeContainerTest";
+            DocumentCollection documentCollection = new DocumentCollection()
+            {
+                Id = containerId,
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string>()
+                    {
+                        "/pkPath"
+                    }
+                },
+                IndexingPolicy = new IndexingPolicy()
+                {
+                    IncludedPaths = new Collection<IncludedPath>()
+                    {
+                        new IncludedPath()
+                        {
+                            Path = "/*"
+                        }
+                    },
+                    CompositeIndexes = new Collection<Collection<CompositePath>>()
+                    {
+                        new Collection<CompositePath>()
+                        {
+                            new CompositePath()
+                            {
+                                Path = "/address/test/*",
+                                Order = CompositePathSortOrder.Ascending
+                            },
+                            new CompositePath()
+                            {
+                                Path = "/address/test2/*",
+                                Order = CompositePathSortOrder.Ascending
+                            }
+                        }
+                    },
+                    SpatialIndexes = new Collection<SpatialSpec>()
+                    {
+                        new SpatialSpec()
+                        {
+                            Path = "/name/first/*",
+                            SpatialTypes = new Collection<SpatialType>()
+                            {
+                                SpatialType.LineString
+                            }
+                        }
+                    }
+                },
+            };
+
+            
+            string documentJsonString = null;
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                documentCollection.SaveTo(memoryStream);
+                memoryStream.Position = 0;
+                using (StreamReader sr = new StreamReader(memoryStream))
+                {
+                    documentJsonString = await sr.ReadToEndAsync();
+                }
+            }
+
+            Assert.IsNotNull(documentJsonString);
+
+            string cosmosJsonString = null;
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                documentCollection.SaveTo(memoryStream);
+                memoryStream.Position = 0;
+
+                CosmosJsonDotNetSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+                ContainerProperties containerProperties = cosmosSerializer.FromStream<ContainerProperties>(memoryStream);
+
+                Assert.IsNotNull(containerProperties);
+                Assert.AreEqual(containerId, containerProperties.Id);
+
+                using (Stream stream = cosmosSerializer.ToStream<ContainerProperties>(containerProperties))
+                {
+                    using (StreamReader sr = new StreamReader(stream))
+                    {
+                        cosmosJsonString = await sr.ReadToEndAsync();
+                    }
+                }
+            }
+
+            JObject jObjectDocumentCollection = JObject.Parse(documentJsonString);
+            JObject jObjectContainer = JObject.Parse(cosmosJsonString);
+            Assert.IsTrue(JToken.DeepEquals(jObjectDocumentCollection, jObjectContainer));
         }
 
         [TestMethod]

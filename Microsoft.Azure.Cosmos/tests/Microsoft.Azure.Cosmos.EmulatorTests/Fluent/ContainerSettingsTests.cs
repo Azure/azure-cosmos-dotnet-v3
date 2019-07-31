@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Linq;
     using System.Collections.ObjectModel;
     using System.IO;
+    using Microsoft.Azure.Documents;
 
     // Similar tests to CosmosContainerTests but with Fluent syntax
     [TestClass]
@@ -37,48 +38,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/users")
             {
-                IndexingPolicy = new IndexingPolicy()
+                IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
                     Automatic = true,
-                    IndexingMode = IndexingMode.Consistent,
-                    IncludedPaths = new Collection<IncludedPath>()
+                    IndexingMode = Cosmos.IndexingMode.Consistent,
+                    IncludedPaths = new Collection<Cosmos.IncludedPath>()
                     {
-                        new IncludedPath()
+                        new Cosmos.IncludedPath()
                         {
                             Path = "/*"
                         }
                     },
-                    ExcludedPaths = new Collection<ExcludedPath>()
+                    ExcludedPaths = new Collection<Cosmos.ExcludedPath>()
                     {
-                        new ExcludedPath()
+                        new Cosmos.ExcludedPath()
                         {
                             Path = "/test/*"
                         }
                     },
-                    CompositeIndexes = new Collection<Collection<CompositePath>>()
+                    CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
                     {
-                        new Collection<CompositePath>()
+                        new Collection<Cosmos.CompositePath>()
                         {
-                            new CompositePath()
+                            new Cosmos.CompositePath()
                             {
                                 Path = "/address/city",
-                                Order = CompositePathSortOrder.Ascending
+                                Order = Cosmos.CompositePathSortOrder.Ascending
                             },
-                            new CompositePath()
+                            new Cosmos.CompositePath()
                             {
                                 Path = "/address/zipcode",
-                                Order = CompositePathSortOrder.Descending
+                                Order = Cosmos.CompositePathSortOrder.Descending
                             }
                         }
                     },
-                    SpatialIndexes = new Collection<SpatialPath>()
+                    SpatialIndexes = new Collection<Cosmos.SpatialPath>()
                     {
-                        new SpatialPath()
+                        new Cosmos.SpatialPath()
                         {
                             Path = "/address/spatial/*",
-                            SpatialTypes = new Collection<SpatialType>()
+                            SpatialTypes = new Collection<Cosmos.SpatialType>()
                             {
-                                SpatialType.LineString
+                                Cosmos.SpatialType.LineString
                             }
                         }
                     }
@@ -104,14 +105,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(responseProperties.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), responseProperties.LastModified.Value.ToString());
 
             Assert.AreEqual(1, responseProperties.IndexingPolicy.IncludedPaths.Count);
-            IncludedPath includedPath = responseProperties.IndexingPolicy.IncludedPaths.First();
+            Cosmos.IncludedPath includedPath = responseProperties.IndexingPolicy.IncludedPaths.First();
             Assert.AreEqual("/*", includedPath.Path);
 
             Assert.AreEqual("/test/*", responseProperties.IndexingPolicy.ExcludedPaths.First().Path);
 
             Assert.AreEqual(1, responseProperties.IndexingPolicy.CompositeIndexes.Count);
             Assert.AreEqual(2, responseProperties.IndexingPolicy.CompositeIndexes.First().Count);
-            CompositePath compositePath = responseProperties.IndexingPolicy.CompositeIndexes.First().First();
+            Cosmos.CompositePath compositePath = responseProperties.IndexingPolicy.CompositeIndexes.First().First();
             Assert.AreEqual("/address/city", compositePath.Path);
             Assert.AreEqual(CompositePathSortOrder.Ascending, compositePath.Order);
 
@@ -120,6 +121,107 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual("/address/spatial/*", spatialPath.Path);
             Assert.AreEqual(1, spatialPath.SpatialTypes.Count);
             Assert.AreEqual(SpatialType.LineString, spatialPath.SpatialTypes.First());
+        }
+
+        [TestMethod]
+        public async Task ContainerNegativeSpatialIndexTest()
+        {
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/users")
+            {
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    SpatialIndexes = new Collection<Cosmos.SpatialPath>()
+                    {
+                        new Cosmos.SpatialPath()
+                        {
+                            Path = "/address/spatial/*"
+                        }
+                    }
+                }
+            };
+
+            try
+            {
+                ContainerResponse response = await this.database.CreateContainerAsync(containerProperties);
+                Assert.Fail("Should require spatial type");
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+            {
+                Assert.IsTrue(ce.Message.Contains("The spatial data types array cannot be empty. Assign at least one spatial type for the 'types' array for the path"));
+            }
+        }
+
+        [TestMethod]
+        public async Task ContainerMigrationTest()
+        {
+            string containerName = "MigrationIndexTest";
+            Index index1 = new RangeIndex(DataType.String, -1);
+            Index index2 = new RangeIndex(DataType.Number, -1);
+            DocumentCollection documentCollection = new DocumentCollection()
+            {
+                Id = containerName,
+                IndexingPolicy = new IndexingPolicy()
+                {
+                    IncludedPaths = new Collection<IncludedPath>()
+                    {
+                        new IncludedPath()
+                        {
+                            Path = "/*",
+                            Indexes = new Collection<Index>()
+                            {
+                                index1,
+                                index2
+                            }
+                        }
+                    }
+                }
+            };
+
+            DocumentCollection createResponse = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(this.database, documentCollection);
+
+            // Verify the collection was created with deprecated Index objects
+            Assert.AreEqual(2, createResponse.IndexingPolicy.IncludedPaths.First().Indexes.Count);
+            Index createIndex = createResponse.IndexingPolicy.IncludedPaths.First().Indexes.First();
+            Assert.AreEqual(index1.Kind, createIndex.Kind);
+
+            // Verify v3 can add composite indexes and update the container
+            Container container = this.database.GetContainer(containerName);
+            ContainerProperties containerProperties = await container.ReadContainerAsync();
+            string cPath0 = "/address/city";
+            string cPath1 = "/address/state";
+            containerProperties.IndexingPolicy.CompositeIndexes.Add(new Collection<Cosmos.CompositePath>()
+            {
+                new Cosmos.CompositePath()
+                {
+                    Path= cPath0,
+                    Order = Cosmos.CompositePathSortOrder.Descending
+                },
+                new Cosmos.CompositePath()
+                {
+                    Path= cPath1,
+                    Order = Cosmos.CompositePathSortOrder.Ascending
+                }
+            });
+
+            containerProperties.IndexingPolicy.SpatialIndexes.Add(
+                new Cosmos.SpatialPath()
+                {
+                    Path = "/address/test/*",
+                    SpatialTypes = new Collection<Cosmos.SpatialType>() { Cosmos.SpatialType.Point }
+                });
+
+            ContainerProperties propertiesAfterReplace = await container.ReplaceContainerAsync(containerProperties);
+            Assert.AreEqual(0, propertiesAfterReplace.IndexingPolicy.IncludedPaths.First().Indexes.Count);
+            Assert.AreEqual(1, propertiesAfterReplace.IndexingPolicy.CompositeIndexes.Count);
+            Collection<Cosmos.CompositePath> compositePaths = propertiesAfterReplace.IndexingPolicy.CompositeIndexes.First();
+            Assert.AreEqual(2, compositePaths.Count);
+            Cosmos.CompositePath compositePath0 = compositePaths.ElementAt(0);
+            Cosmos.CompositePath compositePath1 = compositePaths.ElementAt(1);
+            Assert.IsTrue(string.Equals(cPath0, compositePath0.Path) || string.Equals(cPath1, compositePath0.Path));
+            Assert.IsTrue(string.Equals(cPath0, compositePath1.Path) || string.Equals(cPath1, compositePath1.Path));
+
+            Assert.AreEqual(1, propertiesAfterReplace.IndexingPolicy.SpatialIndexes.Count);
+            Assert.AreEqual("/address/test/*", propertiesAfterReplace.IndexingPolicy.SpatialIndexes.First().Path);
         }
 
         [TestMethod]
@@ -193,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestConflictResolutionPolicy()
         {
-            Database databaseForConflicts = await this.cosmosClient.CreateDatabaseAsync("conflictResolutionContainerTest",
+            Cosmos.Database databaseForConflicts = await this.cosmosClient.CreateDatabaseAsync("conflictResolutionContainerTest",
                 cancellationToken: this.cancellationToken);
 
             try
@@ -261,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .Attach()
                         .WithCompositeIndex()
                             .Path("/composite1")
-                            .Path("/composite2", CompositePathSortOrder.Descending)
+                            .Path("/composite2", Cosmos.CompositePathSortOrder.Descending)
                             .Attach()
                         .Attach()
                     .CreateAsync();
