@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string queryText,
             QueryRequestOptions requestOptions)
         {
-            FeedIterator feedStreamIterator = createStreamQuery(queryText, null, CosmosBasicQueryTests.RequestOptions);
+            FeedIterator feedStreamIterator = createStreamQuery(queryText, null, requestOptions);
             List<T> streamResults = new List<T>();
             while (feedStreamIterator.HasMoreResults)
             {
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<T> pagedStreamResults = new List<T>();
             do
             {
-                FeedIterator pagedFeedIterator = createStreamQuery(queryText, continuationToken, CosmosBasicQueryTests.RequestOptions);
+                FeedIterator pagedFeedIterator = createStreamQuery(queryText, continuationToken, requestOptions);
                 ResponseMessage response = await pagedFeedIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
 
@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string streamPagedResultString = JsonConvert.SerializeObject(pagedStreamResults);
             Assert.AreEqual(streamPagedResultString, streamResultString);
 
-            FeedIterator<T> feedIterator = createQuery(queryText, null, CosmosBasicQueryTests.RequestOptions);
+            FeedIterator<T> feedIterator = createQuery(queryText, null, requestOptions);
             List<T> results = new List<T>();
             while (feedIterator.HasMoreResults)
             {
@@ -462,7 +462,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<T> pagedResults = new List<T>();
             do
             {
-                FeedIterator<T> pagedFeedIterator = createQuery(queryText, continuationToken, CosmosBasicQueryTests.RequestOptions);
+                FeedIterator<T> pagedFeedIterator = createQuery(queryText, continuationToken, requestOptions);
                 FeedResponse<T> iterator = await pagedFeedIterator.ReadNextAsync();
                 Assert.IsTrue(iterator.Count <= 1);
                 Assert.IsTrue(iterator.Resource.Count() <= 1);
