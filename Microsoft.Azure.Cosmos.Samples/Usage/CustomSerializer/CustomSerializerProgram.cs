@@ -67,80 +67,152 @@
                 Serializer = new CosmosJsonDotNetSerializer(settings)
             };
 
-            using (CosmosClient client = new CosmosClient(endpoint, key, clientOptions))
-            {
-                Database db = await client.CreateDatabaseIfNotExistsAsync("CustomSerializerTest");
-                Container container = await db.CreateContainerIfNotExistsAsync("ContainerTest", "/id");
+            CosmosClient clientWithCutomSerializer = null;
+            CosmosClient clientWithDefaultSerializer = null;
 
+            try
+            {
+                clientWithCutomSerializer = new CosmosClient(endpoint, key, clientOptions);
+                clientWithDefaultSerializer = new CosmosClient(endpoint, key);
+
+                string dbName = "CustomSerializerTest";
+                string containerName = "ContainerTest";
+                Database db = await clientWithCutomSerializer.CreateDatabaseIfNotExistsAsync(dbName);
+
+                Container containerWithCustomSerializer = await db.CreateContainerIfNotExistsAsync(containerName, "/id");
+                Container containerWithDefaultSerializer = clientWithDefaultSerializer.GetContainer(dbName, containerName);
+
+                string accountNumber = "MyAccountNumberTest";
+                DateTime orderDateTime = new DateTime(year: 2019, month: 2, day: 10, 5, 19, 42);
                 SalesOrder salesOrder = new SalesOrder()
                 {
                     Id = "SalesOrderId",
-                    OrderDate = new DateTime(year: 2019, month: 2, day: 10, 5, 19, 42),
-                    AccountNumber = "MyAccountNumberTest"
+                    OrderDate = orderDateTime,
+                    AccountNumber = accountNumber,
+                    SubTotal = 42,
+                    TaxAmount = 42.042m,
+                    TotalDue = 9000,
+                    Freight = 42000
+                };
+
+                SalesOrder salesOrder2 = new SalesOrder()
+                {
+                    Id = "SalesOrderId2",
+                    OrderDate = orderDateTime,
+                    AccountNumber = accountNumber,
+                    SubTotal = 42,
+                    TaxAmount = 42.042m,
+                    TotalDue = 9000,
+                    Freight = 42000
                 };
 
                 // Avoid conflicts if the item was left over from a previous run
-                using (await container.DeleteItemStreamAsync(salesOrder.Id, new PartitionKey(salesOrder.Id)))
+                using (await containerWithCustomSerializer.DeleteItemStreamAsync(salesOrder.Id, new PartitionKey(salesOrder.Id)))
+                { }
+                using (await containerWithCustomSerializer.DeleteItemStreamAsync(salesOrder2.Id, new PartitionKey(salesOrder2.Id)))
                 { }
 
-                ItemResponse<SalesOrder> itemResponse = await container.CreateItemAsync<SalesOrder>(salesOrder);
+                // Create item with custom serializer
+                SalesOrder customResponse = await containerWithCustomSerializer.CreateItemAsync<SalesOrder>(salesOrder);
 
-                SalesOrder createdItem = itemResponse;
+                // Create item with default serializer
+                SalesOrder defaultResponse = await containerWithDefaultSerializer.CreateItemAsync<SalesOrder>(salesOrder2);
+
+                Console.WriteLine($"AccountNumbers comparison");
+                Console.WriteLine($"Default serializer: {defaultResponse.AccountNumber}");
+                Console.WriteLine($"Custom serializer: {customResponse.AccountNumber}\n");
 
                 // Validate the JSON converter is working and converting all strings to upper case
-                if (!string.Equals(salesOrder.AccountNumber.ToUpper(), createdItem.AccountNumber))
+                if (!string.Equals(defaultResponse.AccountNumber.ToUpper(), customResponse.AccountNumber))
                 {
                     throw new Exception("Customer serializer did not convert to upper case.");
                 }
 
-                // Verify that the JSON stored in Cosmos is valid
-                using (ResponseMessage responseMessage = await container.ReadItemStreamAsync(salesOrder.Id, new PartitionKey(salesOrder.Id)))
+                // Get JSON string for the item created with custom serializer
+                string jsonStringWithCustomSerialier = await this.GetJsonString(containerWithCustomSerializer, salesOrder);
+
+                // Get JSON string for the item created with default serializer
+                string jsonStringWithDefaultSerialier = await this.GetJsonString(containerWithDefaultSerializer, salesOrder2);
+
+                // Compare the two JSON strings to show the difference between the two serializers
+                Console.WriteLine($"JSON string with default serializer: \n{jsonStringWithDefaultSerialier}\n");
+                Console.WriteLine($"JSON string with custom serializer (ignores null, uses camel casing, and uses MicrosoftDateFormat):\n {jsonStringWithCustomSerialier}\n");
+                
+                // Verify the JSON string are different
+                if (string.Equals(jsonStringWithCustomSerialier, jsonStringWithDefaultSerialier))
                 {
-                    using (StreamReader sr = new StreamReader(responseMessage.Content))
-                    {
-                        string jsonString = await sr.ReadToEndAsync();
-
-                        // Notice all fields are CamelCase, 
-                        // DateTime is in MicrosoftDateFormat, 
-                        // id value is lower case because it is only converted to upper case on read
-                        string expectedStartString = "{\"id\":\"SalesOrderId\",\"orderDate\":\"\\/Date(1549804782000-0800)\\/\",\"shippedDate\":\"\\/Date(-62135596800000)\\/\",\"accountNumber\":\"MyAccountNumberTest\",\"subTotal\":0,\"taxAmount\":0,\"freight\":0,\"totalDue\":0";
-                        if (!jsonString.StartsWith(expectedStartString))
-                        {
-                            throw new Exception("Customer serializer did not convert to the correct object");
-                        }
-
-                        Console.WriteLine(jsonString);
-                    }
+                    throw new Exception("Customer serializer was not used for the query.");
                 }
 
-                // Validate query uses the custom serializer
-                QueryDefinition queryDefinition = new QueryDefinition("select * from T where T.accountNumber = @accountNumber and T.orderDate = @orderDate ")
+                // Get items with queries using a custom serializer
+                QueryDefinition queryDefinitionForCustomSerializer = new QueryDefinition("select * from T where T.accountNumber = @accountNumber and T.orderDate = @orderDate ")
                     .WithParameter("@accountNumber", salesOrder.AccountNumber)
                     .WithParameter("@orderDate", salesOrder.OrderDate);
+                var queryCustomSalesOrderItem = await QueryItems(
+                    containerWithCustomSerializer,
+                    queryDefinitionForCustomSerializer);
 
-                FeedIterator<SalesOrder> iterator = container.GetItemQueryIterator<SalesOrder>( queryDefinition);
-                List<SalesOrder> salesOrders = new List<SalesOrder>();
-                while (iterator.HasMoreResults)
+                QueryDefinition queryDefinitionForDefaultSerializer = new QueryDefinition("select * from T where T.AccountNumber = @accountNumber and T.OrderDate = @orderDate ")
+                    .WithParameter("@accountNumber", salesOrder2.AccountNumber)
+                    .WithParameter("@orderDate", salesOrder2.OrderDate);
+                var queryDefaultSalesOrderItem = await QueryItems(
+                    containerWithDefaultSerializer,
+                    queryDefinitionForDefaultSerializer);
+
+                Console.WriteLine($"Query comparison");
+                Console.WriteLine($"Default serializer Id: {queryDefaultSalesOrderItem.Id}, Account Number: {queryDefaultSalesOrderItem.AccountNumber}");
+                Console.WriteLine($"Custom serializer Id: {queryCustomSalesOrderItem.Id}, Account Number: {queryCustomSalesOrderItem.AccountNumber}\n");
+
+                // Validate the default query result matches the original account number
+                if (!string.Equals(salesOrder2.AccountNumber, queryDefaultSalesOrderItem.AccountNumber))
                 {
-                    FeedResponse<SalesOrder> queryResponse = await iterator.ReadNextAsync();
-                    salesOrders.AddRange(queryResponse);
+                    throw new Exception("Default serializer account numbers should match");
                 }
-
-                if(salesOrders.Count != 1)
-                {
-                    throw new ArgumentException("Query should only have 1 result");
-                }
-
-                SalesOrder querySalesOrderItem = salesOrders.First();
 
                 // Validate the JSON converter is working and converting all strings to upper case
-                if (!string.Equals(salesOrder.AccountNumber.ToUpper(), querySalesOrderItem.AccountNumber))
+                if (!string.Equals(salesOrder.AccountNumber.ToUpper(), queryCustomSalesOrderItem.AccountNumber))
                 {
-                    throw new Exception("Customer serializer did not convert to upper case for query.");
+                    throw new Exception("Custom serializer should do ToUpper() to account numbers.");
                 }
 
-                using(await db.DeleteStreamAsync()) { }
+                using (await db.DeleteStreamAsync()) { }
             }
+            finally
+            {
+                clientWithDefaultSerializer.Dispose();
+                clientWithCutomSerializer.Dispose();
+            }
+        }
+
+        public async Task<string> GetJsonString(Container container, SalesOrder salesOrder)
+        {
+            using (ResponseMessage responseMessage = await container.ReadItemStreamAsync(salesOrder.Id, new PartitionKey(salesOrder.Id)))
+            {
+                using (StreamReader sr = new StreamReader(responseMessage.Content))
+                {
+                    return await sr.ReadToEndAsync();
+                }
+            }
+        }
+
+        public async Task<SalesOrder> QueryItems(
+            Container container,
+            QueryDefinition queryDefinition)
+        {
+            FeedIterator<SalesOrder> iterator = container.GetItemQueryIterator<SalesOrder>(queryDefinition);
+            List<SalesOrder> salesOrders = new List<SalesOrder>();
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<SalesOrder> queryResponse = await iterator.ReadNextAsync();
+                salesOrders.AddRange(queryResponse);
+            }
+
+            if (salesOrders.Count != 1)
+            {
+                throw new ArgumentException("Query should only have 1 result");
+            }
+
+            return salesOrders.First();
         }
 
         /// <summary>
