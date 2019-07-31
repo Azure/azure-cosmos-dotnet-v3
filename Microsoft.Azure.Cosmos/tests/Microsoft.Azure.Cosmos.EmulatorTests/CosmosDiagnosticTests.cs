@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     sql,
                     requestOptions: requestOptions);
 
-            while (feedIterator.HasMoreResults)
+            if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
                 Assert.IsNotNull(iter.cosmosDiagnostic.queryOperationStatistics);

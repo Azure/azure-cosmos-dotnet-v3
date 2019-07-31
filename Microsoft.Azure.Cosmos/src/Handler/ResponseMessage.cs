@@ -109,25 +109,9 @@ namespace Microsoft.Azure.Cosmos
         public virtual RequestMessage RequestMessage { get; internal set; }
 
         /// <summary>
-        /// Gets the cosmos diagnostic
+        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        internal CosmosDiagnostic cosmosDiagnostic { get; set; }
-
-        /// <summary>
-        /// Gets the diagnostics information for the current request to Azure Cosmos DB service.
-        /// </summary>
-        public string RequestDiagnosticsString
-        {
-            get
-            {
-                if (this.cosmosDiagnostic == null)
-                {
-                    return string.Empty;
-                }
-
-                return this.cosmosDiagnostic.ToString();
-            }
-        }
+        public CosmosDiagnostic cosmosDiagnostic { get; set; }
 
         /// <summary>
         /// Gets the internal error object.
