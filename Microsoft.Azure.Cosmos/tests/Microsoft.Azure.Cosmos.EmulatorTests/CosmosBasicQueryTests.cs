@@ -213,6 +213,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
 
             Assert.AreEqual(1, results.Count);
+
+            //Read All with partition key
+            results = container.GetItemLinqQueryable<dynamic>(
+                allowSynchronousQueryExecution: true,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new PartitionKey("BasicQueryItem")
+                }).ToList();
+
+            Assert.AreEqual(1, results.Count);
+
+            // LINQ to feed iterator Read All with partition key
+            FeedIterator<dynamic> iterator = container.GetItemLinqQueryable<dynamic>(
+                allowSynchronousQueryExecution: true,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new PartitionKey("BasicQueryItem")
+                }).ToFeedIterator();
+
+            List<dynamic> linqResults = new List<dynamic>();
+            while (iterator.HasMoreResults)
+            {
+                linqResults.AddRange(await iterator.ReadNextAsync());
+            }
+
+            Assert.AreEqual(1, linqResults.Count);
+            Assert.AreEqual("BasicQueryItem", linqResults.First().pk.ToString());
         }
 
         [TestMethod]
