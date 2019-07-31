@@ -70,6 +70,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 Order = CompositePathSortOrder.Descending
                             }
                         }
+                    },
+                    SpatialIndexes = new Collection<SpatialPath>()
+                    {
+                        new SpatialPath()
+                        {
+                            Path = "/address/spatial/*",
+                            SpatialTypes = new Collection<SpatialType>()
+                            {
+                                SpatialType.LineString
+                            }
+                        }
                     }
                 }
             };
@@ -103,6 +114,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CompositePath compositePath = responseProperties.IndexingPolicy.CompositeIndexes.First().First();
             Assert.AreEqual("/address/city", compositePath.Path);
             Assert.AreEqual(CompositePathSortOrder.Ascending, compositePath.Order);
+
+            Assert.AreEqual(1, responseProperties.IndexingPolicy.SpatialIndexes.Count);
+            SpatialPath spatialPath = responseProperties.IndexingPolicy.SpatialIndexes.First();
+            Assert.AreEqual("/address/spatial/*", spatialPath.Path);
+            Assert.AreEqual(1, spatialPath.SpatialTypes.Count);
+            Assert.AreEqual(SpatialType.LineString, spatialPath.SpatialTypes.First());
         }
 
         [TestMethod]
@@ -232,7 +249,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
 
-            
             ContainerResponse containerResponse =
                 await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithIndexingPolicy()
