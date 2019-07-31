@@ -167,6 +167,9 @@ namespace Microsoft.Azure.Cosmos
         [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.PageSize)]
         internal string PageSize { get; set; }
 
+        [CosmosKnownHeaderAttribute(HeaderName = HttpConstants.HttpHeaders.QueryMetrics)]
+        internal string QueryMetricsText { get; set; }
+
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
         /// </summary>

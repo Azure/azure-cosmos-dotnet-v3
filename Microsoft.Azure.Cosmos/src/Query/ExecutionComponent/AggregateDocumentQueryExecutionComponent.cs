@@ -108,7 +108,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             PartitionedQueryMetrics partitionedQueryMetrics = new PartitionedQueryMetrics();
             ResourceType resourceType = ResourceType.Document;
             string containerRid = null;
-
             while (!this.IsDone)
             {
                 QueryResponse result = await base.DrainAsync(int.MaxValue, token);
@@ -168,7 +167,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     containerRid: containerRid)
                 {
                     RequestCharge = requestCharge
-                });
+                },
+                queryMetrics: this.GetQueryMetrics());
         }
 
         /// <summary>

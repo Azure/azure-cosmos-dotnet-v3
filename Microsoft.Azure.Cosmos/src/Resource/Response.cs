@@ -64,6 +64,27 @@ namespace Microsoft.Azure.Cosmos
         public abstract string ETag { get; }
 
         /// <summary>
+        /// Gets or sets the cosmos diagnostic
+        /// </summary>
+        internal CosmosDiagnostic cosmosDiagnostic { get; set; }
+
+        /// <summary>
+        /// Gets the diagnostics information for the current request to Azure Cosmos DB service.
+        /// </summary>
+        public string RequestDiagnosticsString
+        {
+            get
+            {
+                if (this.cosmosDiagnostic == null)
+                {
+                    return string.Empty;
+                }
+
+                return this.cosmosDiagnostic.ToString();
+            }
+        }
+
+        /// <summary>
         /// Gets the maximum size limit for this entity from the Azure Cosmos DB service.
         /// </summary>
         /// <value>

@@ -392,6 +392,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 result: results,
                 count: results.Count,
                 responseHeaders: this.GetResponseHeaders(),
+                queryMetrics: this.GetQueryMetrics(),
                 responseLengthBytes: this.GetAndResetResponseLengthBytes());
         }
 
