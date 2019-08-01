@@ -64,6 +64,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<MyDocument> storedDoc = await this.cosmosContainer.ReadItemAsync<MyDocument>(i.ToString(), new Cosmos.PartitionKey(i.ToString()));
                 Assert.IsNotNull(storedDoc.Resource);
             }
+
+            await executor.DisposeAsync();
         }
 
         [TestMethod]

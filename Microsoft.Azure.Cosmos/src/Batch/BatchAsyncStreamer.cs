@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// <see cref="AddAsync(BatchAsyncOperationContext)"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
     /// </remarks>
     /// <seealso cref="BatchAsyncBatcher"/>
-    internal class BatchAsyncStreamer : IDisposable
+    internal class BatchAsyncStreamer
     {
         private readonly List<Task> previousDispatchedTasks = new List<Task>();
         private readonly SemaphoreSlim dispatchLimiter;
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public void Dispose()
+        public async Task DisposeAsync()
         {
             this.disposed = true;
             this.cancellationTokenSource.Cancel();
@@ -99,9 +99,7 @@ namespace Microsoft.Azure.Cosmos
             this.currentTimer.CancelTimer();
             foreach (Task previousDispatchedTask in this.previousDispatchedTasks)
             {
-#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                previousDispatchedTask.GetAwaiter().GetResult();
-#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+                await previousDispatchedTask;
             }
         }
 
