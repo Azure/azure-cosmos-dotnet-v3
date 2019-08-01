@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class BatchAsyncBatcherTests
@@ -61,6 +62,46 @@ namespace Microsoft.Azure.Cosmos.Tests
             = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
                 throw expectedException;
+            };
+
+        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithSplit
+            = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
+            {
+                List<BatchOperationResult> results = new List<BatchOperationResult>();
+                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[operations.Count];
+                int index = 0;
+                foreach (BatchAsyncOperationContext operation in operations)
+                {
+                    results.Add(
+                    new BatchOperationResult(HttpStatusCode.Gone)
+                    {
+                        ETag = operation.Operation.Id,
+                        SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
+                    });
+
+                    arrayOperations[index++] = operation.Operation;
+                }
+
+                MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+                SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                    partitionKey: null,
+                    operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                    maxBodyLength: (int)responseContent.Length * operations.Count,
+                    maxOperationCount: operations.Count,
+                    serializer: new CosmosJsonDotNetSerializer(),
+                cancellationToken: cancellation);
+
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent };
+                responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
+
+                BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+                    responseMessage,
+                    batchRequest,
+                    new CosmosJsonDotNetSerializer());
+
+                PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+                return response;
             };
 
         [DataTestMethod]
@@ -204,7 +245,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
             Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
             batchAsyncBatcher.Dispose();
-            await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+        }
+
+        [TestMethod]
+        [Owner("maquaran")]
+        public async Task RetryOnSplit()
+        {
+            int executeCount = 0;
+            Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellationToken) =>
+            {
+                if (executeCount ++ == 0)
+                {
+                    return this.ExecutorWithSplit(operations, cancellationToken);
+                }
+
+                return this.Executor(operations, cancellationToken);
+            };
+
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), executor);
+            Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            await batchAsyncBatcher.DispatchAsync();
+            Assert.AreEqual(2, executeCount);
         }
     }
 }

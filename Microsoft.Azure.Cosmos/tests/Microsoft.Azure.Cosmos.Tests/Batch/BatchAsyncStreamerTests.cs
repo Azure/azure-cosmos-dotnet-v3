@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             await batchAsyncStreamer.DisposeAsync();
             var newContext = CreateContext(new ItemBatchOperation(OperationType.Create, 0, "0"));
             // Disposed batcher's internal cancellation was signaled
-            await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => batchAsyncStreamer.AddAsync(newContext));
+            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => batchAsyncStreamer.AddAsync(newContext));
         }
 
         private static BatchAsyncOperationContext CreateContext(ItemBatchOperation operation) => new BatchAsyncOperationContext(string.Empty, operation);

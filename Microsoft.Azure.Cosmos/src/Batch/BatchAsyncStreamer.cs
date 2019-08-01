@@ -95,12 +95,15 @@ namespace Microsoft.Azure.Cosmos
         {
             this.disposed = true;
             this.cancellationTokenSource.Cancel();
+            this.cancellationTokenSource.Dispose();
             this.currentBatcher?.Dispose();
             this.currentTimer.CancelTimer();
             foreach (Task previousDispatchedTask in this.previousDispatchedTasks)
             {
                 await previousDispatchedTask;
             }
+
+            this.dispatchLimiter.Dispose();
         }
 
         private void StartTimer()

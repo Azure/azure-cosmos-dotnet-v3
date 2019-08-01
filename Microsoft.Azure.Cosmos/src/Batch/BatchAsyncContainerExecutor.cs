@@ -126,38 +126,12 @@ namespace Microsoft.Azure.Cosmos
                 await streamer.Value.DisposeAsync();
             }
 
-            this.timerPool.Dispose();
-        }
-
-        private async Task<PartitionKeyBatchResponse> ExecuteAsync(
-            IReadOnlyList<BatchAsyncOperationContext> operations,
-            CancellationToken cancellationToken)
-        {
-            List<Task<PartitionKeyRangeBatchExecutionResult>> inProgressTasksByPKRangeId = new List<Task<PartitionKeyRangeBatchExecutionResult>>();
-            List<PartitionKeyRangeBatchExecutionResult> completedResults = new List<PartitionKeyRangeBatchExecutionResult>();
-
-            // Initial operations are all for the same PK Range Id
-            string pkRangeId = operations[0].PartitionKeyRangeId;
-            inProgressTasksByPKRangeId.Add(this.StartExecutionForPKRangeIdAsync(pkRangeId, operations, cancellationToken));
-
-            while (inProgressTasksByPKRangeId.Count > 0)
+            foreach (KeyValuePair<string, SemaphoreSlim> limiter in this.limitersByPartitionkeyRange)
             {
-                Task<PartitionKeyRangeBatchExecutionResult> completedTask = await Task.WhenAny(inProgressTasksByPKRangeId);
-                PartitionKeyRangeBatchExecutionResult executionResult = await completedTask;
-                completedResults.Add(executionResult);
-
-                // Pending operations can be due to splits, so we need to resolve the PK Range Ids
-                if (executionResult.PendingOperations != null)
-                {
-                    IEnumerable<BatchAsyncOperationContext> retryOperations = BatchAsyncContainerExecutor.GetOperationsToRetry(operations, executionResult.PendingOperations.Select(o => o.OperationIndex));
-                    await this.GroupOperationsAndStartExecutionAsync(inProgressTasksByPKRangeId, retryOperations, cancellationToken);
-                }
-
-                inProgressTasksByPKRangeId.Remove(completedTask);
+                limiter.Value.Dispose();
             }
 
-            IEnumerable<BatchResponse> serverResponses = completedResults.SelectMany(res => res.ServerResponses);
-            return new PartitionKeyBatchResponse(serverResponses, this.cosmosClientContext.CosmosSerializer);
+            this.timerPool.Dispose();
         }
 
         private static bool ValidateOperationEPK(
@@ -187,16 +161,6 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private static IEnumerable<BatchAsyncOperationContext> GetOperationsToRetry(
-            IReadOnlyList<BatchAsyncOperationContext> operations,
-            IEnumerable<int> indexes)
-        {
-            foreach (int index in indexes)
-            {
-                yield return operations[index];
-            }
-        }
-
         private static void AddHeadersToRequestMessage(RequestMessage requestMessage, string partitionKeyRangeId)
         {
             requestMessage.Headers.PartitionKeyRangeId = partitionKeyRangeId;
@@ -221,18 +185,28 @@ namespace Microsoft.Azure.Cosmos
             return operationsSentToRequest.Skip(totalOperations - operationsThatOverflowed);
         }
 
-        private async Task GroupOperationsAndStartExecutionAsync(
-            List<Task<PartitionKeyRangeBatchExecutionResult>> taskContainer,
-            IEnumerable<BatchAsyncOperationContext> operations,
+        private async Task<PartitionKeyBatchResponse> ExecuteAsync(
+            IReadOnlyList<BatchAsyncOperationContext> operations,
             CancellationToken cancellationToken)
         {
+            // Initially, all operations should be for the same PKRange, but this might be a retry after a split, and it might contain operations from
+            List<Task<PartitionKeyRangeBatchExecutionResult>> inProgressTasksByPKRangeId = new List<Task<PartitionKeyRangeBatchExecutionResult>>();
+            List<PartitionKeyRangeBatchExecutionResult> completedResults = new List<PartitionKeyRangeBatchExecutionResult>();
             Dictionary<string, List<BatchAsyncOperationContext>> operationsByPKRangeId = await this.GroupByPartitionKeyRangeIdsAsync(operations, cancellationToken);
-
             foreach (KeyValuePair<string, List<BatchAsyncOperationContext>> operationsForPKRangeId in operationsByPKRangeId)
             {
-                Task<PartitionKeyRangeBatchExecutionResult> toAdd = this.StartExecutionForPKRangeIdAsync(operationsForPKRangeId.Key, operationsForPKRangeId.Value, cancellationToken);
-                taskContainer.Add(toAdd);
+                inProgressTasksByPKRangeId.Add(this.StartExecutionForPKRangeIdAsync(operationsForPKRangeId.Key, operationsForPKRangeId.Value, cancellationToken));
             }
+
+            while (inProgressTasksByPKRangeId.Count > 0)
+            {
+                Task<PartitionKeyRangeBatchExecutionResult> completedTask = await Task.WhenAny(inProgressTasksByPKRangeId);
+                completedResults.Add(await completedTask);
+                inProgressTasksByPKRangeId.Remove(completedTask);
+            }
+
+            IEnumerable<BatchResponse> serverResponses = completedResults.SelectMany(res => res.ServerResponses);
+            return new PartitionKeyBatchResponse(serverResponses, this.cosmosClientContext.CosmosSerializer);
         }
 
         private async Task<Dictionary<string, List<BatchAsyncOperationContext>>> GroupByPartitionKeyRangeIdsAsync(
@@ -292,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<BatchAsyncOperationContext> operations,
             CancellationToken cancellationToken)
         {
-            SemaphoreSlim limiter = this.GetLimiterForPartitionKeyRange(pkRangeId);
+            SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(pkRangeId);
             await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             try
@@ -330,35 +304,16 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             List<BatchResponse> serverResponses = new List<BatchResponse>();
-            List<ItemBatchOperation> overflowOperations = new List<ItemBatchOperation>();
             PartitionKeyServerBatchRequest serverRequest = await this.CreateServerRequestAsync(partitionKeyRangeId, operations, cancellationToken);
 
-            // In case some operations overflowed
-            overflowOperations.AddRange(BatchAsyncContainerExecutor.GetOverflowOperations(serverRequest, operations));
-            do
+            // In case some operations overflowed due to HybridRow serialization
+            IEnumerable<ItemBatchOperation> overFlowOperations = BatchAsyncContainerExecutor.GetOverflowOperations(serverRequest, operations);
+            serverResponses.Add(await this.ExecuteServerRequestAsync(serverRequest, cancellationToken));
+            if (overFlowOperations.Any())
             {
-                BatchResponse serverResponse = await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
-                if (serverResponse.StatusCode == HttpStatusCode.Gone
-                    && (serverResponse.SubStatusCode == SubStatusCodes.CompletingSplit
-                    || serverResponse.SubStatusCode == SubStatusCodes.CompletingPartitionMigration
-                    || serverResponse.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone))
-                {
-                    // lower layers would have refreshed the appropriate routing caches, but we need to retry the operations on the new PKRanges.
-                    return new PartitionKeyRangeBatchExecutionResult(partitionKeyRangeId, serverResponses, new List<ItemBatchOperation>(operations));
-                }
-                else
-                {
-                    serverResponses.Add(serverResponse);
-                }
-
-                serverRequest = null;
-                if (overflowOperations.Count > 0)
-                {
-                    serverRequest = await this.CreateServerRequestAsync(partitionKeyRangeId, overflowOperations, cancellationToken);
-                    overflowOperations.Clear();
-                }
+                serverRequest = await this.CreateServerRequestAsync(partitionKeyRangeId, overFlowOperations, cancellationToken);
+                serverResponses.Add(await this.ExecuteServerRequestAsync(serverRequest, cancellationToken));
             }
-            while (serverRequest != null);
 
             return new PartitionKeyRangeBatchExecutionResult(partitionKeyRangeId, serverResponses);
         }
@@ -400,7 +355,7 @@ namespace Microsoft.Azure.Cosmos
             return this.streamersByPartitionKeyRange[partitionKeyRangeId];
         }
 
-        private SemaphoreSlim GetLimiterForPartitionKeyRange(string partitionKeyRangeId)
+        private SemaphoreSlim GetOrAddLimiterForPartitionKeyRange(string partitionKeyRangeId)
         {
             if (this.limitersByPartitionkeyRange.TryGetValue(partitionKeyRangeId, out SemaphoreSlim limiter))
             {

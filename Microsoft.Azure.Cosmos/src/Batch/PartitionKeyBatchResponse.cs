@@ -155,6 +155,12 @@ namespace Microsoft.Azure.Cosmos
             return this.ActivityIds;
         }
 
+        internal bool ContainsSplit() => this.ServerResponses != null && this.ServerResponses.Any(serverResponse => 
+                                                    (serverResponse.StatusCode == HttpStatusCode.Gone
+                                                        && (serverResponse.SubStatusCode == SubStatusCodes.CompletingSplit
+                                                        || serverResponse.SubStatusCode == SubStatusCodes.CompletingPartitionMigration
+                                                        || serverResponse.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)));
+
         /// <summary>
         /// Disposes the disposable members held.
         /// </summary>

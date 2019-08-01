@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                PartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken);
+                PartitionKeyBatchResponse batchResponse = await this.InvokeExecutorAsync(cancellationToken);
 
                 // If the batch was not successful, we need to set all the responses
                 if (!batchResponse.IsSuccessStatusCode)
@@ -133,6 +133,20 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.cancellationTokenSource.Cancel();
+            this.cancellationTokenSource.Dispose();
+            this.tryAddLimiter.Dispose();
+        }
+
+        private async Task<PartitionKeyBatchResponse> InvokeExecutorAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            PartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken);
+            if (batchResponse.ContainsSplit())
+            {
+                // Retry batch as it contained a split
+                return await this.executor(this.batchOperations, cancellationToken);
+            }
+
+            return batchResponse;
         }
     }
 }
