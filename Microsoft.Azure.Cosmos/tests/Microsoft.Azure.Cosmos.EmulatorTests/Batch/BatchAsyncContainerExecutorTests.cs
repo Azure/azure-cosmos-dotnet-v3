@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<BatchOperationResult>> tasks = new List<Task<BatchOperationResult>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(executor.AddAsync(CreateItem(i.ToString()), default(CancellationToken)));
+                tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default(CancellationToken)));
             }
 
             await Task.WhenAll(tasks);
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string id = Guid.NewGuid().ToString();
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
 
-            Assert.IsFalse(await executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), new ItemRequestOptions() { SessionToken = "something" }));
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), new ItemRequestOptions() { SessionToken = "something" }));
         }
 
         [TestMethod]

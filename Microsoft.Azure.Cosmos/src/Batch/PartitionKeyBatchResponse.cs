@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-    class CrossPartitionKeyBatchResponse : BatchResponse
+    class PartitionKeyBatchResponse : BatchResponse
 #pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         // Results sorted in the order operations had been added.
@@ -28,14 +28,14 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CrossPartitionKeyBatchResponse"/> class.
+        /// Initializes a new instance of the <see cref="PartitionKeyBatchResponse"/> class.
         /// </summary>
         /// <param name="statusCode">Completion status code of the batch request.</param>
         /// <param name="subStatusCode">Provides further details about why the batch was not processed.</param>
         /// <param name="operations">Operations that were supposed to be executed, but weren't.</param>
         /// <param name="errorMessage">The reason for failure if any.</param>
         // This constructor is expected to be used when the batch is not executed at all (if it is a bad request).
-        internal CrossPartitionKeyBatchResponse(
+        internal PartitionKeyBatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
@@ -45,11 +45,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CrossPartitionKeyBatchResponse"/> class.
+        /// Initializes a new instance of the <see cref="PartitionKeyBatchResponse"/> class.
         /// </summary>
         /// <param name="serverResponses">Responses from the server.</param>
         /// <param name="serializer">Serializer to deserialize response resource body streams.</param>
-        internal CrossPartitionKeyBatchResponse(IEnumerable<BatchResponse> serverResponses, CosmosSerializer serializer)
+        internal PartitionKeyBatchResponse(IEnumerable<BatchResponse> serverResponses, CosmosSerializer serializer)
         {
             this.StatusCode = serverResponses.Any(r => r.StatusCode != HttpStatusCode.OK)
                 ? (HttpStatusCode)BatchExecUtils.StatusCodeMultiStatus

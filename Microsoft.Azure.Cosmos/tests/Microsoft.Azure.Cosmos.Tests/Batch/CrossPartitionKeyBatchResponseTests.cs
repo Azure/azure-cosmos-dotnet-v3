@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void StatusCodesAreSet()
         {
             const string errorMessage = "some error";
-            CrossPartitionKeyBatchResponse response = new CrossPartitionKeyBatchResponse(HttpStatusCode.NotFound, SubStatusCodes.ClientTcpChannelFull, errorMessage, null);
+            PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(HttpStatusCode.NotFound, SubStatusCodes.ClientTcpChannelFull, errorMessage, null);
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
             Assert.AreEqual(SubStatusCodes.ClientTcpChannelFull, response.SubStatusCode);
             Assert.AreEqual(errorMessage, response.ErrorMessage);
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
 
-            CrossPartitionKeyBatchResponse response = new CrossPartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+            PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
     }

@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly SemaphoreSlim tryAddLimiter;
         private readonly CosmosSerializer CosmosSerializer;
         private readonly List<BatchAsyncOperationContext> batchOperations;
-        private readonly Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<CrossPartitionKeyBatchResponse>> executor;
+        private readonly Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor;
         private readonly int maxBatchByteSize;
         private readonly int maxBatchOperationCount;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             int maxBatchOperationCount,
             int maxBatchByteSize,
             CosmosSerializer cosmosSerializer,
-            Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<CrossPartitionKeyBatchResponse>> executor)
+            Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(batchAsyncOperation));
             }
 
-            await this.tryAddLimiter.WaitAsync(this.cancellationTokenSource.Token).ConfigureAwait(false);
+            await this.tryAddLimiter.WaitAsync(this.cancellationTokenSource.Token);
             try
             {
                 if (this.batchOperations.Count == this.maxBatchOperationCount)
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                CrossPartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken).ConfigureAwait(false);
+                PartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken);
 
                 // If the batch was not successful, we need to set all the responses
                 if (!batchResponse.IsSuccessStatusCode)

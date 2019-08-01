@@ -8,16 +8,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal sealed class CrossPartitionKeyServerBatchRequest : ServerBatchRequest
+    internal sealed class PartitionKeyServerBatchRequest : ServerBatchRequest
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CrossPartitionKeyServerBatchRequest"/> class.
+        /// Initializes a new instance of the <see cref="PartitionKeyServerBatchRequest"/> class.
         /// </summary>
         /// <param name="partitionKeyRangeId">The partition key range id associated with all requests.</param>
         /// <param name="maxBodyLength">Maximum length allowed for the request body.</param>
         /// <param name="maxOperationCount">Maximum number of operations allowed in the request.</param>
         /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
-        public CrossPartitionKeyServerBatchRequest(
+        public PartitionKeyServerBatchRequest(
             string partitionKeyRangeId,
             int maxBodyLength,
             int maxOperationCount,
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         public string PartitionKeyRangeId { get; }
 
         /// <summary>
-        /// Creates an instance of <see cref="CrossPartitionKeyServerBatchRequest"/>.
+        /// Creates an instance of <see cref="PartitionKeyServerBatchRequest"/>.
         /// In case of direct mode requests, all the operations are expected to belong to the same PartitionKeyRange.
         /// The body of the request is populated with operations till it reaches the provided maxBodyLength.
         /// </summary>
@@ -44,8 +44,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="ensureContinuousOperationIndexes">Whether to stop adding operations to the request once there is non-continuity in the operation indexes.</param>
         /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A newly created instance of <see cref="CrossPartitionKeyServerBatchRequest"/>.</returns>
-        public static async Task<CrossPartitionKeyServerBatchRequest> CreateAsync(
+        /// <returns>A newly created instance of <see cref="PartitionKeyServerBatchRequest"/>.</returns>
+        public static async Task<PartitionKeyServerBatchRequest> CreateAsync(
             string partitionKeyRangeId,
             ArraySegment<ItemBatchOperation> operations,
             int maxBodyLength,
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer serializer,
             CancellationToken cancellationToken)
         {
-            CrossPartitionKeyServerBatchRequest request = new CrossPartitionKeyServerBatchRequest(partitionKeyRangeId, maxBodyLength, maxOperationCount, serializer);
+            PartitionKeyServerBatchRequest request = new PartitionKeyServerBatchRequest(partitionKeyRangeId, maxBodyLength, maxOperationCount, serializer);
             await request.CreateBodyStreamAsync(operations, cancellationToken, ensureContinuousOperationIndexes);
             return request;
         }

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private TimerPool TimerPool = new TimerPool(1);
 
         // Executor just returns a reponse matching the Id with Etag
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<CrossPartitionKeyBatchResponse>> Executor
+        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> Executor
             = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
                 List<BatchOperationResult> results = new List<BatchOperationResult>();
@@ -56,11 +56,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                CrossPartitionKeyBatchResponse response = new CrossPartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+                PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
                 return response;
             };
 
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<CrossPartitionKeyBatchResponse>> ExecutorWithFailure
+        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithFailure
             = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
                 throw expectedException;
