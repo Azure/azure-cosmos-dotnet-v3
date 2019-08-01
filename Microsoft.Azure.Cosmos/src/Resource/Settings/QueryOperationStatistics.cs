@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this, Formatting.Indented);
+            return JsonConvert.SerializeObject(this);
         }
     }
 }
