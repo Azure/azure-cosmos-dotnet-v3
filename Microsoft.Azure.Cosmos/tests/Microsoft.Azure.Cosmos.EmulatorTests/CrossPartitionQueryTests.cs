@@ -152,8 +152,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             string containerName = Guid.NewGuid().ToString() + "container";
-            await CosmosItemTests.CreateNonPartitionedContainer(
-                this.database.Id,
+            await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
+                this.database,
                 containerName,
                 indexingPolicy == null ? null : JsonConvert.SerializeObject(indexingPolicy));
 

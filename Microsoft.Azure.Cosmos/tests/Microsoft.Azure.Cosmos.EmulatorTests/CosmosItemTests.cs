@@ -34,11 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
-        private static readonly string utc_date = DateTime.UtcNow.ToString("r");
-
-        private static readonly string PreNonPartitionedMigrationApiVersion = "2018-09-17";
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
-
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
 
         [TestInitialize]
@@ -1263,9 +1259,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerCore fixedContainer = null;
             try
             {
-                fixedContainer = await this.CreateNonPartitionedContainer("ReadNonPartition" + Guid.NewGuid());
-                await this.CreateItemInNonPartitionedContainer(fixedContainer, nonPartitionItemId);
-                await this.CreateUndefinedPartitionItem((ContainerCore)this.Container);
+                fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
+                    this.database, 
+                    "ReadNonPartition" + Guid.NewGuid());
+
+                await NonPartitionedContainerHelper.CreateItemInNonPartitionedContainer(fixedContainer, nonPartitionItemId);
+                await NonPartitionedContainerHelper.CreateUndefinedPartitionItem((ContainerCore)this.Container, undefinedPartitionItemId);
 
                 ContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
                 Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
@@ -1390,13 +1389,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerCore fixedContainer = null;
             try
             {
-                fixedContainer = await this.CreateNonPartitionedContainer("ItemTestMigrateData" + Guid.NewGuid().ToString());
+                fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
+                    this.database,
+                    "ItemTestMigrateData" + Guid.NewGuid().ToString());
 
                 const int ItemsToCreate = 4;
                 // Insert a few items with no Partition Key
                 for (int i = 0; i < ItemsToCreate; i++)
                 {
-                    await this.CreateItemInNonPartitionedContainer(fixedContainer, Guid.NewGuid().ToString());
+                    await NonPartitionedContainerHelper.CreateItemInNonPartitionedContainer(fixedContainer, Guid.NewGuid().ToString());
                 }
 
                 // Read the container metadata
@@ -1643,124 +1644,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await iterator.ReadNextAsync();
                 Assert.AreEqual(expected, response.StatusCode, $"ExecuteReadFeedAsync substatuscode: {response.Headers.SubStatusCode} ");
             }
-        }
-
-        private async Task<ContainerCore> CreateNonPartitionedContainer(string id)
-        {
-            await CosmosItemTests.CreateNonPartitionedContainer(
-                this.database.Id,
-                id);
-
-            return (ContainerCore)this.cosmosClient.GetContainer(this.database.Id, id);
-        }
-
-        internal static async Task CreateNonPartitionedContainer(
-            string dbName,
-            string containerName,
-            string indexingPolicyString = null)
-        {
-            string authKey = ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
-            HttpClient client = new System.Net.Http.HttpClient();
-            Uri baseUri = new Uri(endpoint);
-            string verb = "POST";
-            string resourceType = "colls";
-            string resourceId = string.Format("dbs/{0}", dbName);
-            string resourceLink = string.Format("dbs/{0}/colls", dbName);
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
-            client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
-
-            string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
-
-            client.DefaultRequestHeaders.Add("authorization", authHeader);
-            DocumentCollection documentCollection = new DocumentCollection()
-            {
-                Id = containerName
-            };
-            if (indexingPolicyString != null)
-            {
-                documentCollection.IndexingPolicy = JsonConvert.DeserializeObject<IndexingPolicy>(indexingPolicyString);
-            }
-            string containerDefinition = documentCollection.ToString();
-            StringContent containerContent = new StringContent(containerDefinition);
-            Uri requestUri = new Uri(baseUri, resourceLink);
-            HttpResponseMessage response = await client.PostAsync(requestUri.ToString(), containerContent);
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, response.ToString());
-        }
-
-        private async Task CreateItemInNonPartitionedContainer(ContainerCore container, string itemId)
-        {
-            string authKey = ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            //Creating non partition Container item.
-            HttpClient client = new System.Net.Http.HttpClient();
-            Uri baseUri = new Uri(endpoint);
-            string verb = "POST";
-            string resourceType = "docs";
-            string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, container.Id);
-            string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, container.LinkUri.OriginalString, resourceType, authKey, "master", "1.0");
-
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
-            client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
-            client.DefaultRequestHeaders.Add("authorization", authHeader);
-
-            string itemDefinition = JsonConvert.SerializeObject(ToDoActivity.CreateRandomToDoActivity(id: itemId));
-            {
-                StringContent itemContent = new StringContent(itemDefinition);
-                Uri requestUri = new Uri(baseUri, resourceLink);
-                HttpResponseMessage response = await client.PostAsync(requestUri.ToString(), itemContent);
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, response.ToString());
-            }
-        }
-
-        private async Task CreateUndefinedPartitionItem(ContainerCore container)
-        {
-            string authKey = ConfigurationManager.AppSettings["MasterKey"];
-            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            //Creating undefined partition key  item, rest api used instead of .NET SDK api as it is not supported anymore.
-            HttpClient client = new System.Net.Http.HttpClient();
-            Uri baseUri = new Uri(endpoint);
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
-            client.DefaultRequestHeaders.Add("x-ms-version", CosmosItemTests.PreNonPartitionedMigrationApiVersion);
-            client.DefaultRequestHeaders.Add("x-ms-documentdb-partitionkey", "[{}]");
-
-            //Creating undefined partition Container item.
-            string verb = "POST";
-            string resourceType = "docs";
-            string resourceId = container.LinkUri.OriginalString;
-            string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", this.database.Id, container.Id);
-            string authHeader = CosmosItemTests.GenerateMasterKeyAuthorizationSignature(verb, resourceId, resourceType, authKey, "master", "1.0");
-
-            client.DefaultRequestHeaders.Remove("authorization");
-            client.DefaultRequestHeaders.Add("authorization", authHeader);
-
-            var payload = new { id = undefinedPartitionItemId, user = undefinedPartitionItemId };
-            string itemDefinition = JsonConvert.SerializeObject(payload);
-            StringContent itemContent = new StringContent(itemDefinition);
-            Uri requestUri = new Uri(baseUri, resourceLink);
-            await client.PostAsync(requestUri.ToString(), itemContent);
-        }
-
-        private static string GenerateMasterKeyAuthorizationSignature(string verb, string resourceId, string resourceType, string key, string keyType, string tokenVersion)
-        {
-            System.Security.Cryptography.HMACSHA256 hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
-
-            string payLoad = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}\n{1}\n{2}\n{3}\n{4}\n",
-                    verb.ToLowerInvariant(),
-                    resourceType.ToLowerInvariant(),
-                    resourceId,
-                    utc_date.ToLowerInvariant(),
-                    ""
-            );
-
-            byte[] hashPayLoad = hmacSha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payLoad));
-            string signature = Convert.ToBase64String(hashPayLoad);
-
-            return System.Web.HttpUtility.UrlEncode(string.Format(System.Globalization.CultureInfo.InvariantCulture, "type={0}&ver={1}&sig={2}",
-                keyType,
-                tokenVersion,
-                signature));
         }
 
         public class ToDoActivityAfterMigration

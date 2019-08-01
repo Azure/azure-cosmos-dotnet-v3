@@ -6104,9 +6104,11 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialType] get_SpatialTypes()"
         },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialType] SpatialTypes": {
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialType] SpatialTypes[Newtonsoft.Json.JsonPropertyAttribute(ItemConverterType = typeof(Newtonsoft.Json.Converters.StringEnumConverter), PropertyName = \"types\")]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
           "MethodInfo": null
         },
         "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
