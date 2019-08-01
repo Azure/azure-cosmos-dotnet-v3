@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         public async Task TestWithFixedLeaseContainer()
         {
-            await CosmosItemTests.CreateNonPartitionedContainer(
-                    this.database.Id,
+            await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
+                    this.database,
                     "fixedLeases");
 
             Container fixedLeasesContainer = this.cosmosClient.GetContainer(this.database.Id, "fixedLeases");
