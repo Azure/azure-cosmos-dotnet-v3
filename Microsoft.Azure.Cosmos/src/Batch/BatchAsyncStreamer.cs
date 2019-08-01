@@ -97,6 +97,12 @@ namespace Microsoft.Azure.Cosmos
             this.cancellationTokenSource.Cancel();
             this.currentBatcher?.Dispose();
             this.currentTimer.CancelTimer();
+            foreach (Task previousDispatchedTask in this.previousDispatchedTasks)
+            {
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+                previousDispatchedTask.GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+            }
         }
 
         private void StartTimer()
