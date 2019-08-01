@@ -196,5 +196,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
             Assert.IsFalse(batchAsyncBatcher.IsEmpty);
         }
+
+        [TestMethod]
+        [Owner("maquaran")]
+        public async Task CannotAddToDisposedBatch()
+        {
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
+            Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            batchAsyncBatcher.Dispose();
+            await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+        }
     }
 }
