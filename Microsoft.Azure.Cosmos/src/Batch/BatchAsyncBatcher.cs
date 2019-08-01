@@ -99,25 +99,26 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                PartitionKeyBatchResponse batchResponse = await this.InvokeExecutorAsync(cancellationToken);
-
-                // If the batch was not successful, we need to set all the responses
-                if (!batchResponse.IsSuccessStatusCode)
+                using (PartitionKeyBatchResponse batchResponse = await this.InvokeExecutorAsync(cancellationToken))
                 {
-                    BatchOperationResult errorResult = new BatchOperationResult(batchResponse.StatusCode);
-                    foreach (BatchAsyncOperationContext operation in this.batchOperations)
+                    // If the batch was not successful, we need to set all the responses
+                    if (!batchResponse.IsSuccessStatusCode)
                     {
-                        operation.Complete(errorResult);
+                        BatchOperationResult errorResult = new BatchOperationResult(batchResponse.StatusCode);
+                        foreach (BatchAsyncOperationContext operation in this.batchOperations)
+                        {
+                            operation.Complete(errorResult);
+                        }
+
+                        return;
                     }
 
-                    return;
-                }
-
-                for (int index = 0; index < this.batchOperations.Count; index++)
-                {
-                    BatchAsyncOperationContext operation = this.batchOperations[index];
-                    BatchOperationResult response = batchResponse[index];
-                    operation.Complete(response);
+                    for (int index = 0; index < this.batchOperations.Count; index++)
+                    {
+                        BatchAsyncOperationContext operation = this.batchOperations[index];
+                        BatchOperationResult response = batchResponse[index];
+                        operation.Complete(response);
+                    }
                 }
             }
             catch (Exception ex)
@@ -142,6 +143,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken);
             if (batchResponse.ContainsSplit())
             {
+                batchResponse.Dispose();
                 // Retry batch as it contained a split
                 return await this.executor(this.batchOperations, cancellationToken);
             }
