@@ -4,20 +4,10 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -65,11 +55,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
 
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
-                verb, 
-                resourceId, 
+                verb,
+                resourceId,
                 resourceType,
-                accountInfo.authKey, 
-                "master", 
+                accountInfo.authKey,
+                "master",
                 "1.0");
 
             client.DefaultRequestHeaders.Add("authorization", authHeader);
@@ -106,11 +96,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceId = container.LinkUri.OriginalString;
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", container.Database.Id, container.Id);
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
-                verb, 
-                resourceId, 
-                resourceType, 
-                accountInfo.authKey, 
-                "master", 
+                verb,
+                resourceId,
+                resourceType,
+                accountInfo.authKey,
+                "master",
                 "1.0");
 
             client.DefaultRequestHeaders.Remove("authorization");
@@ -124,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static async Task CreateItemInNonPartitionedContainer(
-            ContainerCore container, 
+            ContainerCore container,
             string itemId)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
@@ -135,10 +125,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceType = "docs";
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", container.Database.Id, container.Id);
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
-                verb, container.LinkUri.OriginalString, 
+                verb, container.LinkUri.OriginalString,
                 resourceType,
-                accountInfo.authKey, 
-                "master", 
+                accountInfo.authKey,
+                "master",
                 "1.0");
 
             client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
@@ -155,11 +145,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static string GenerateMasterKeyAuthorizationSignature(
-            string verb, 
-            string resourceId, 
-            string resourceType, 
-            string key, 
-            string keyType, 
+            string verb,
+            string resourceId,
+            string resourceType,
+            string key,
+            string keyType,
             string tokenVersion)
         {
             System.Security.Cryptography.HMACSHA256 hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
