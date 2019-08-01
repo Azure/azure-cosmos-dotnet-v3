@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage request = new RequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
-            Assert.IsTrue(request.IsPartitionedFeedOperation);
+            Assert.IsTrue(request.IsPartitionKeyRangeHandlerRequired);
         }
 
         [TestMethod]
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage request = new RequestMessage();
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Conflict;
-            Assert.IsTrue(request.IsPartitionedFeedOperation);
+            Assert.IsTrue(request.IsPartitionKeyRangeHandlerRequired);
         }
 
         [TestMethod]
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             request.OperationType = OperationType.ReadFeed;
             request.ResourceType = ResourceType.Document;
             request.PartitionKeyRangeId = new PartitionKeyRangeIdentity("something");
-            Assert.IsFalse(request.IsPartitionedFeedOperation);
+            Assert.IsFalse(request.IsPartitionKeyRangeHandlerRequired);
         }
 
         [TestMethod]
@@ -44,12 +44,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage request = new RequestMessage();
             request.OperationType = OperationType.Upsert;
             request.ResourceType = ResourceType.Document;
-            Assert.IsFalse(request.IsPartitionedFeedOperation);
+            Assert.IsFalse(request.IsPartitionKeyRangeHandlerRequired);
 
             RequestMessage request2 = new RequestMessage();
             request2.OperationType = OperationType.ReadFeed;
             request2.ResourceType = ResourceType.Database;
-            Assert.IsFalse(request2.IsPartitionedFeedOperation);
+            Assert.IsFalse(request2.IsPartitionKeyRangeHandlerRequired);
         }
     }
 }

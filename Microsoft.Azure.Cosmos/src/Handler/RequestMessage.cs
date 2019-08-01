@@ -91,9 +91,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
-        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && 
+        /// <summary>
+        /// The partition key range handler is only needed for read feed on partitioned resources 
+        /// where the partition key range needs to be computed. 
+        /// </summary>
+        internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed && 
             (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && 
-            this.PartitionKeyRangeId == null;
+            this.PartitionKeyRangeId == null && this.Headers.PartitionKey == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
