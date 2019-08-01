@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#612](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/612) Bug fix for ReadFeed with partition-key
+- [#614](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/614) Fixed SpatialPath serialization and compatibility with older index versions
 
 ## [3.1.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.0) - 2019-07-29
 
@@ -20,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#557](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/557) Added trigger options to item request options
 - [#571](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/571) Added a default JSON.net serializer with optional settings
 - [#572](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/572) Added partition key validation on CreateContainerIfNotExistsAsync
-- [#581](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/581) Adding LINQ to QueryDefinition API
+- [#581](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/581) Added LINQ to QueryDefinition API
 - [#592](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/592) Added CreateIfNotExistsAsync to container builder
 - [#597](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/597) Added continuation token property to ResponseMessage
 - [#604](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/604) Added LINQ ToStreamIterator extension method
