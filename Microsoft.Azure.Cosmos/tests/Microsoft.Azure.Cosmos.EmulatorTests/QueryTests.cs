@@ -2236,14 +2236,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .GetField("queryExecutionContext", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(documentQuery);
                 Type queryExecutionContextType = queryExecutionContext.GetType();
-                if (queryExecutionContextType == typeof(ProxyDocumentQueryExecutionContext))
-                {
-                    // UnWrap the inner context
-                    queryExecutionContext = queryExecutionContextType
-                        .GetField("innerExecutionContext", BindingFlags.NonPublic | BindingFlags.Instance)
-                        .GetValue(queryExecutionContext);
-                    queryExecutionContextType = queryExecutionContext.GetType();
-                }
 
                 object component = queryExecutionContextType
                     .GetField("component", BindingFlags.NonPublic | BindingFlags.Instance)
