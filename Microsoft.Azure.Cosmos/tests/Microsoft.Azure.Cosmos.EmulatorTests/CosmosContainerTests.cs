@@ -184,6 +184,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+
+
+            //Creating existing container with partition key having value for SystemKey
+            //https://github.com/Azure/azure-cosmos-dotnet-v3/issues/623
+            string v2ContainerName = "V2Container";
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            partitionKeyDefinition.Paths.Add("/test");
+            partitionKeyDefinition.IsSystemKey = false;
+            ContainerProperties containerPropertiesWithSystemKey = new ContainerProperties()
+            {
+                Id = v2ContainerName,
+                PartitionKey = partitionKeyDefinition,
+            };
+            await this.cosmosDatabase.CreateContainerAsync(containerPropertiesWithSystemKey);
+
+            ContainerProperties containerProperties = new ContainerProperties(v2ContainerName, "/test");
+            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(v2ContainerName, containerResponse.Resource.Id);
+            Assert.AreEqual("/test", containerResponse.Resource.PartitionKey.Paths.First());
+
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+
+            containerPropertiesWithSystemKey.PartitionKey.IsSystemKey = true;
+            await this.cosmosDatabase.CreateContainerAsync(containerPropertiesWithSystemKey);
+
+            containerProperties = new ContainerProperties(v2ContainerName, "/test");
+            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(v2ContainerName, containerResponse.Resource.Id);
+            Assert.AreEqual("/test", containerResponse.Resource.PartitionKey.Paths.First());
+
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+
         }
 
         [TestMethod]
