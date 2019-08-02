@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
         /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
-        /// <param name="accountKey">The cosmos account key to use to create the client.</param>
+        /// <param name="accountKey">The cosmos account key or resource token to use to create the client.</param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
         /// The CosmosClient is created with the AccountEndpoint, AccountKey and configured to use "East US 2" region.
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Uri Endpoint { get; }
 
         /// <summary>
-        /// Gets the AuthKey used by the client from the Azure Cosmos DB service.
+        /// Gets the AuthKey or resource token used by the client from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The AuthKey used by the client.

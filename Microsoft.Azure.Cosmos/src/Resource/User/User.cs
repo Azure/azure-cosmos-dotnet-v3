@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -93,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </exception>
-        /// <example>        
+        /// <example>
         /// <code language="c#">
         /// <![CDATA[
         /// UserProperties userProperties = userReadResponse;

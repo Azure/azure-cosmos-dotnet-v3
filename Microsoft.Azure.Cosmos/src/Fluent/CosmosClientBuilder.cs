@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
         /// </summary>
         /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
-        /// <param name="accountKey">The key to the account.</param>
+        /// <param name="accountKey">The key to the account or resource token.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/>
         /// <code language="c#">

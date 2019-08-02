@@ -70,9 +70,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return cosmosClientBuilder.Build();
         }
 
-        internal static CosmosClient CreateCosmosClient(CosmosClientOptions clientOptions)
+        internal static CosmosClient CreateCosmosClient(CosmosClientOptions clientOptions, string resourceToken = null)
         {
-            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string authKey = resourceToken == null ? ConfigurationManager.AppSettings["MasterKey"] : resourceToken;
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
             return new CosmosClient(endpoint, authKey, clientOptions);

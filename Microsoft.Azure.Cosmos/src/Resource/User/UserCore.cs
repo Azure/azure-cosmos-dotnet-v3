@@ -6,14 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-    using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing user by id.
@@ -314,12 +309,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<ResponseMessage> CreatePermissionStreamInternalAsync(
-            Stream streamPayload,            
+            Stream streamPayload,
             PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessPermissionCreateAsync(
-                streamPayload: streamPayload,                
+                streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
