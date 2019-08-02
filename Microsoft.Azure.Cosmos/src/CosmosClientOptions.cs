@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
         private readonly Collection<RequestHandler> customHandlers;
+        private readonly string currentEnvironmentInformation;
 
         private int gatewayModeMaxConnectionLimit;
 
@@ -49,6 +50,9 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClientOptions()
         {
             this.UserAgentContainer = new UserAgentContainer();
+            this.EnvironmentInformation = new EnvironmentInformation();
+            this.currentEnvironmentInformation = this.EnvironmentInformation.ToString();
+            this.UserAgentContainer.Suffix = this.currentEnvironmentInformation;
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
@@ -66,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         public string ApplicationName
         {
             get => this.UserAgentContainer.Suffix;
-            set => this.UserAgentContainer.Suffix = value;
+            set => this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + value;
         }
 
         /// <summary>
@@ -216,6 +220,8 @@ namespace Microsoft.Azure.Cosmos
         internal Protocol ConnectionProtocol { get; set; }
 
         internal UserAgentContainer UserAgentContainer { get; private set; }
+
+        internal EnvironmentInformation EnvironmentInformation { get; private set; }
 
         /// <summary>
         /// The event handler to be invoked before the request is sent.
