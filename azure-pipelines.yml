@@ -1,5 +1,6 @@
 jobs: 
-- job: Test Microsoft.Azure.Cosmos.Tests
+- job: 
+  displayName: Microsoft.Azure.Cosmos.Tests
   pool:
     vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
     
@@ -11,7 +12,8 @@ jobs:
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
       arguments: '--configuration $(buildConfiguration) --filter "FullyQualifiedName=Microsoft.Azure.Cosmos.ContractTests"'
 
-- job: Test Microsoft.Azure.Cosmos.Tests
+- job: 
+  displayName: Microsoft.Azure.NetFramework.Tests
   pool:
     vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   steps:
