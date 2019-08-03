@@ -1,0 +1,17 @@
+pool:
+  vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+steps:
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    command: build
+    projects: 'Microsoft.Azure.Cosmos/src/*.csproj'
+    arguments: '--configuration $(buildConfiguration)' 
+
+steps:
+- task: DotNetCoreCLI@2
+  inputs:
+    command: test
+    projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
+    arguments: '--configuration $(buildConfiguration)'
