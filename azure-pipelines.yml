@@ -9,7 +9,6 @@ steps:
     projects: 'Microsoft.Azure.Cosmos/src/*.csproj'
     arguments: '--configuration $(buildConfiguration)' 
 
-steps:
 - task: DotNetCoreCLI@2
   inputs:
     command: test
