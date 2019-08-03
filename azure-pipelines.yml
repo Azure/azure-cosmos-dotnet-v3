@@ -1,6 +1,31 @@
 pool:
   vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
+- pwsh:  |
+    Write-Host "Downloading Cosmos Emulator - $env:EMULATOR_MSI_URL"
+    wget "$env:EMULATOR_MSI_URL" -outfile "$env:temp\azure-cosmosdb-emulator.msi"
+    Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi"
+    dir "$env:temp" 
+    choco install lessmsi
+    choco upgrade lessmsi
+    mkdir "%TEMP%\Azure Cosmos DB Emulator"
+    lessmsi x "%TEMP%\azure-cosmosdb-emulator.msi" "%TEMP%\Azure Cosmos DB Emulator"
+    Write-Host "Starting Comsos DB Emulator"
+    Start-Process "$env:Temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio" -Verb RunAs
+    Import-Module "$env:Temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
+    Write-Host "Sleeping for 240 seconds"
+    sleep 240;
+    Write-Host "Cosmos DB Emulator Status:"
+    Get-CosmosDbEmulatorStatus
+    Get-Item env:* | Sort-Object -Property Name
+
+  displayName:  Install Public Cosmos DB Emulator
+  failOnStderr:  true
+  errorActionPreference:  stop
+  env: 
+    EMULATOR_MSI_URL: $(EmulatorMsiUrl)
+
+
 steps:
 - task: DotNetCoreCLI@2
   displayName: Build Microsoft.Azure.Cosmos Src
