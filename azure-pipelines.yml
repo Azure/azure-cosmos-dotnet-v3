@@ -29,11 +29,16 @@ jobs:
         Write-Host "Starting Comsos DB Emulator" -ForegroundColor green 
         Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio" -Verb RunAs
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
-        Write-Host "Sleeping for 240 seconds" -ForegroundColor yellow
-        sleep 240;
-        Write-Host "Cosmos DB Emulator Status:" -ForegroundColor yellow
-        Get-CosmosDbEmulatorStatus
         Get-Item env:* | Sort-Object -Property Name
+        for ($i=0; $i -lt 8; $i++) {
+          $status=Get-CosmosDbEmulatorStatus 
+          if ($status -ne "Running") {
+            sleep 30;
+            Write-Host "Cosmos DB Emulator Status: $status" -ForegroundColor yellow
+          } else {
+            break;
+          }
+        }
       
     displayName:  Install Public Cosmos DB Emulator
     failOnStderr:  true
