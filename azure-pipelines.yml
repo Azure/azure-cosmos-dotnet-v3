@@ -13,8 +13,8 @@ steps:
     mkdir "$env:temp\Azure Cosmos DB Emulator"
     lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator"
     Write-Host "Starting Comsos DB Emulator"
-    Start-Process "$env:Temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio" -Verb RunAs
-    Import-Module "$env:Temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
+    Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio" -Verb RunAs
+    Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
     Write-Host "Sleeping for 240 seconds"
     sleep 240;
     Write-Host "Cosmos DB Emulator Status:"
