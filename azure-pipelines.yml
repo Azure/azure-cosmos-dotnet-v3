@@ -2,8 +2,8 @@ pool:
   vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 - pwsh:  |
-    Write-Host "Downloading Cosmos Emulator - $env:EMULATOR_MSI_URL"
-    wget "$env:EMULATOR_MSI_URL" -outfile "$env:temp\azure-cosmosdb-emulator.msi"
+    Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL"
+    wget "$env:EMULATORMSIURL" -outfile "$env:temp\azure-cosmosdb-emulator.msi"
     Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi"
     dir "$env:temp" 
     choco install lessmsi
@@ -22,8 +22,6 @@ pool:
   displayName:  Install Public Cosmos DB Emulator
   failOnStderr:  true
   errorActionPreference:  stop
-  env: 
-    EMULATOR_MSI_URL: $(EmulatorMsiUrl)
 
 
 steps:
