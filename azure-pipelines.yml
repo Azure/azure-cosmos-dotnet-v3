@@ -1,6 +1,8 @@
 pool:
   vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
+steps:
+
 - pwsh:  |
     Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL"
     wget "$env:EMULATORMSIURL" -outfile "$env:temp\azure-cosmosdb-emulator.msi"
@@ -24,7 +26,6 @@ pool:
   errorActionPreference:  stop
 
 
-steps:
 - task: DotNetCoreCLI@2
   displayName: Build Microsoft.Azure.Cosmos Src
   inputs:
