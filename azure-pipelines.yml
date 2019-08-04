@@ -14,7 +14,7 @@ jobs:
     inputs:
       command: test 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ' --filter "TestCategory!=Quarantine" --collect:"Code Coverage"'
+      arguments: ' --filter "TestCategory!=Quarantine" --verbosity detailed --collect:"Code Coverage"'
       configuration: '$(BuildConfiguration)'
       publishTestResults: true 
 
