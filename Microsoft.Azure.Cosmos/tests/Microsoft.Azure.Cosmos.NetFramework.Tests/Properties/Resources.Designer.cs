@@ -68,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_Documents", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_Documents", resourceCulture);
             }
         }
 
@@ -80,8 +79,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_AddFormattedContinuationToHeader", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_AddFormattedContinuationToHeader", resourceCulture);
             }
         }
 
@@ -92,8 +90,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders", resourceCulture);
             }
         }
 
@@ -104,8 +101,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo", resourceCulture);
             }
         }
 
@@ -116,8 +112,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_PartitionSchemes", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_PartitionSchemes", resourceCulture);
             }
         }
 
@@ -128,8 +123,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_PathParser", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_PathParser", resourceCulture);
             }
         }
 
@@ -140,8 +134,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_PathParser_Extra", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_PathParser_Extra", resourceCulture);
             }
         }
 
@@ -152,8 +145,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_Queries", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_Queries", resourceCulture);
             }
         }
 
@@ -164,8 +156,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_QueryPartitionProvider", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_QueryPartitionProvider", resourceCulture);
             }
         }
 
@@ -176,8 +167,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                string obj = (string)ResourceManager.GetObject("BaselineTest_QueryPartitionProvider_Error", resourceCulture);
-                return (Encoding.UTF8.GetBytes(obj));
+                return (byte[])ResourceManager.GetObject("BaselineTest_QueryPartitionProvider_Error", resourceCulture);
             }
         }
     }
