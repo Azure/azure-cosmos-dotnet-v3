@@ -46,7 +46,9 @@ jobs:
   # AntiMalware scan
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@3
     displayName: 'AntiMalware'
-    
+    inputs:
+      EnableServices: true
+      
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
     displayName: 'BinSkim '
     inputs:
