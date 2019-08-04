@@ -22,12 +22,19 @@ jobs:
       IsService: true
       IsSoftware: true    
   
+  # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@1
+    displayName: 'Run PoliCheck'
+    inputs:
+      targetType: F
+    enabled: false
+    
   # Analyze source and build output text files for credentials
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
     displayName: 'Run CredScan'
     inputs:
       suppressionsFile: CredsSuppression.json 
-      debugMode: false
+      debugMode: true
 
   # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
