@@ -31,3 +31,21 @@ jobs:
       configuration: '$(BuildConfiguration)'
       publishTestResults: true 
 
+
+- job: 
+  displayName: Microsoft.Azure.Cosmos.EmulatorTests
+  pool:
+    vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+  steps:
+  - template:  templates/emulator-setup.yml
+
+  - task: DotNetCoreCLI@2
+    displayName: Test Microsoft.Azure.Cosmos.EmulatorTests
+    inputs:
+      command: test 
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
+      arguments: ' --filter "TestCategory!=Quarantine" '
+      configuration: '$(BuildConfiguration)'
+      publishTestResults: true 
+
