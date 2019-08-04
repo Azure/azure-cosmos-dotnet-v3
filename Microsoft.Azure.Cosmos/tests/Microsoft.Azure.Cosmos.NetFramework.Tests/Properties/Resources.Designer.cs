@@ -63,100 +63,120 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_Documents {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_Documents", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_Documents
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_Documents", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_PartitionRoutingHelper_AddFormattedContinuationToHeader {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_AddFormattedContinuationToHeader", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_PartitionRoutingHelper_AddFormattedContinuationToHeader
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_AddFormattedContinuationToHeader", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_PartitionSchemes {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_PartitionSchemes", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_PartitionSchemes
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_PartitionSchemes", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_PathParser {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_PathParser", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_PathParser
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_PathParser", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_PathParser_Extra {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_PathParser_Extra", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_PathParser_Extra
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_PathParser_Extra", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_Queries {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_Queries", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_Queries
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_Queries", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_QueryPartitionProvider {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_QueryPartitionProvider", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_QueryPartitionProvider
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_QueryPartitionProvider", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] BaselineTest_QueryPartitionProvider_Error {
-            get {
-                object obj = ResourceManager.GetObject("BaselineTest_QueryPartitionProvider_Error", resourceCulture);
-                return ((byte[])(obj));
+        internal static byte[] BaselineTest_QueryPartitionProvider_Error
+        {
+            get
+            {
+                string obj = (string)ResourceManager.GetObject("BaselineTest_QueryPartitionProvider_Error", resourceCulture);
+                return (Encoding.UTF8.GetBytes(obj));
             }
         }
     }
