@@ -5,6 +5,12 @@ jobs:
     vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
     
   steps:
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk'
+    inputs:
+      packageType: sdk
+      version: 2.2
+      
   - task: DotNetCoreCLI@2
     displayName: Test Microsoft.Azure.Cosmos.Tests
     inputs:
