@@ -13,7 +13,7 @@ jobs:
     inputs:
       command: test 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: '--configuration $(buildConfiguration) --filter "FullyQualifiedName=Microsoft.Azure.Cosmos.ContractTests"'
+      arguments: '--configuration $(buildConfiguration) --filter "TestCategory!=Quarantine" --logger trx --results-directory $(Agent.TempDirectory)'
 
 - job: 
   displayName: Microsoft.Azure.NetFramework.Tests
@@ -28,5 +28,5 @@ jobs:
     inputs:
       command: test 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.NetFramework.Tests/*.csproj'
-      arguments: '--configuration $(buildConfiguration)'
+      arguments: '--configuration $(buildConfiguration) --filter "TestCategory!=Quarantine" --logger trx --results-directory $(Agent.TempDirectory)'
 
