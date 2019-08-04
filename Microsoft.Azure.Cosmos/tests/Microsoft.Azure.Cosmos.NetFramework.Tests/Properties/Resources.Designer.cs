@@ -10,8 +10,9 @@
 
 namespace Microsoft.Azure.Cosmos.Properties {
     using System;
-    
-    
+    using System.Text;
+
+
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
