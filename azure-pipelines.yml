@@ -5,7 +5,7 @@ jobs:
     vmImage: 'windows-2019' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
     
   steps:
-  - task: DotNetCoreCLI@2
+  - task: DotNetCoreCLI@2.2
     displayName: Test Microsoft.Azure.Cosmos.Tests
     inputs:
       command: test 
@@ -20,7 +20,7 @@ jobs:
   steps:
   - template:  templates/emulator-setup.yml
 
-  - task: DotNetCoreCLI@2
+  - task: DotNetCoreCLI@2.2
     displayName: Test Microsoft.Azure.Cosmos.NetFramework.Tests
     inputs:
       command: test 
