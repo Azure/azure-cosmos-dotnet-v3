@@ -40,7 +40,7 @@ jobs:
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
     displayName: 'CredScan'
     inputs:
-      suppressionsFile: CredsSuppression.json 
+      suppressionsFile: CredScanSuppressions.json 
       debugMode: true
       
   # AntiMalware scan
@@ -49,10 +49,10 @@ jobs:
     inputs:
       EnableServices: true
       
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
-    displayName: 'BinSkim '
-    inputs:
-      InputType: Basic
+#  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
+#    displayName: 'BinSkim '
+#    inputs:
+#      InputType: Basic
   
   # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
