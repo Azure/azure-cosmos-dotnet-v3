@@ -16,7 +16,7 @@ jobs:
     displayName: Build Microsoft.Azure.Cosmos.sln
     inputs:
       command: build 
-      projects: 'Microsoft.Azure.Cosmos/**.csproj'
+      projects: 'Microsoft.Azure.Cosmos.sln'
       configuration: '$(BuildConfiguration)'
       publishTestResults: true 
       
