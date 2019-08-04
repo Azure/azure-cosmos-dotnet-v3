@@ -28,7 +28,15 @@ jobs:
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
     displayName: 'Vulnerability Assessment'
-    
+
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@2
+    displayName: 'Publish Security Analysis Logs'
+
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@1
+    displayName: 'Post Analysis'
+    inputs:
+      AllTools: true
+        
 #- job: 
 #  displayName: Microsoft.Azure.Cosmos.Tests
 #  pool:
