@@ -123,7 +123,13 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                return (byte[])ResourceManager.GetObject("BaselineTest_PathParser", resourceCulture);
+                object obj = ResourceManager.GetString("BaselineTest_PathParser", resourceCulture);
+                if (obj is string)
+                {
+                    return Encoding.ASCII.GetBytes(obj as string);
+                }
+
+                return (byte[])obj;
             }
         }
 
@@ -134,7 +140,13 @@ namespace Microsoft.Azure.Cosmos.Properties {
         {
             get
             {
-                return (byte[])ResourceManager.GetObject("BaselineTest_PathParser_Extra", resourceCulture);
+                object obj = ResourceManager.GetString("BaselineTest_PathParser_Extra", resourceCulture);
+                if (obj is string)
+                {
+                    return Encoding.ASCII.GetBytes(obj as string);
+                }
+
+                return (byte[])obj;
             }
         }
 
