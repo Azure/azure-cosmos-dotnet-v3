@@ -14,7 +14,7 @@ steps:
         Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio" -Verb RunAs
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
         Get-Item env:* | Sort-Object -Property Name
-        for ($i=0; $i -lt 8; $i++) {
+        for ($i=0; $i -lt 10; $i++) {
           $status=Get-CosmosDbEmulatorStatus 
           if ($status -ne "Running") {
             sleep 30;
