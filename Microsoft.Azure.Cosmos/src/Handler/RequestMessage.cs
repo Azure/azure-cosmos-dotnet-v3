@@ -157,11 +157,19 @@ namespace Microsoft.Azure.Cosmos
 
 #if DEBUG
             CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
-            ContainerProperties collectionFromCache =
-                await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
-            if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+
+            try
             {
-                Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
+                ContainerProperties collectionFromCache =
+                    await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
+                if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+                {
+                    Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
+                }
+            }
+            catch (DocumentClientException)
+            {
+                return;
             }
 #else
             await Task.CompletedTask;
