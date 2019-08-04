@@ -29,7 +29,15 @@ jobs:
       InternalRelease: true
       IsService: true
       IsSoftware: true    
-    
+
+  #Verifies that your software complies with the API Usage Standard of the Interoperability Policy
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-apiscan.APIScan@1
+    displayName: 'APIScan'
+    inputs:
+      softwareName: Microsoft.Azure.Cosmos
+      softwareVersionNum: 3.0.0
+      isLargeApp: false
+      
   # Analyze source and build output text files for credentials
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
     displayName: 'CredScan'
