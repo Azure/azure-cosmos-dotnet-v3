@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         static EnvironmentInformation()
         {
             Version sdkVersion = Assembly.GetAssembly(typeof(CosmosClient)).GetName().Version;
-            EnvironmentInformation.clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Revision}";
+            EnvironmentInformation.clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Build}";
             EnvironmentInformation.framework = RuntimeInformation.FrameworkDescription;
             EnvironmentInformation.architecture = RuntimeInformation.ProcessArchitecture.ToString();
             EnvironmentInformation.clientId = DateTime.UtcNow.Ticks.ToString();
