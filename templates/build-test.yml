@@ -22,8 +22,7 @@ jobs:
     inputs: 
       command: test 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj' 
-      arguments: ${{ parameters.Arguments }} --filter "FullyQualifiedName=Namespace.ClassName.MethodName" 
-      configuration: ${{ parameters.BuildConfiguration }} 
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} --filter "FullyQualifiedName=Namespace.ClassName.MethodName" 
       publishTestResults: true 
   
 ##- job: 
