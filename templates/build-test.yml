@@ -28,10 +28,16 @@ jobs:
   - task: VSTest@2
     displayName: VsTest Microsoft.Azure.Cosmos.Tests
     inputs:
-      testAssemblyVer2: '**\Microsoft.Azure.Cosmos.Tests.dll'
+      testAssemblyVer2: '**\bin\**\Microsoft.Azure.Cosmos.Tests.dll'
       testFiltercriteria: 'TestCategory!=Quarantine'
       runOnlyImpactedTests: true
-  
+      
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: VSTest 
+      publishRunAttachments: true 
+      
+    
 ##- job: 
 ##  displayName: ${{ parameters.BuildConfiguration }} Microsoft.Azure.NetFramework.Tests
 ##  pool:
