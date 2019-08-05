@@ -1,6 +1,6 @@
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine" --verbosity detailed'
-  RetailArguments: ' -p:Platform=x64 --filter "TestCategory!=Quarantine" --verbosity detailed '
+  RetailArguments: ' --filter "TestCategory!=Quarantine" --verbosity detailed '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 
