@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#612](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/612) Bug fix for ReadFeed with partition-key
 - [#614](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/614) Fixed SpatialPath serialization and compatibility with older index versions
+- [#629](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/629) Bug fix for CreateContainerIfNotExistsAsync api
 
 ## [3.1.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.0) - 2019-07-26
 
