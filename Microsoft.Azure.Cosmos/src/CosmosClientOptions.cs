@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly string currentEnvironmentInformation;
 
         private int gatewayModeMaxConnectionLimit;
+        private string applicationName;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -69,8 +70,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string ApplicationName
         {
-            get => this.UserAgentContainer.Suffix;
-            set => this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + value;
+            get => this.applicationName;
+            set
+            {
+                this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + value;
+                this.applicationName = value;
+            }
         }
 
         /// <summary>

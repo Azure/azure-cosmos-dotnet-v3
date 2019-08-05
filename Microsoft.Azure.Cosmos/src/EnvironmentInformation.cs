@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     //{SDK-id}: Should include the name, version, direct version
     internal sealed class EnvironmentInformation
     {
+        internal static readonly string clientId;
         internal static readonly string clientSDKVersion;
         internal static readonly string framework;
         internal static readonly string architecture;
@@ -21,7 +22,13 @@ namespace Microsoft.Azure.Cosmos
             EnvironmentInformation.clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Revision}";
             EnvironmentInformation.framework = RuntimeInformation.FrameworkDescription;
             EnvironmentInformation.architecture = RuntimeInformation.ProcessArchitecture.ToString();
+            EnvironmentInformation.clientId = Guid.NewGuid().ToString();
         }
+
+        /// <summary>
+        /// Unique identifier of a client
+        /// </summary>
+        public string ClientId => EnvironmentInformation.clientId;
 
         /// <summary>
         /// Version of the current client.
@@ -42,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return $"/{this.ClientVersion}-{this.RuntimeFramework}-{this.ProcessArchitecture}";
+            return $"/{this.ClientVersion}-{this.RuntimeFramework}-{this.ProcessArchitecture}-{this.ClientId}";
         }
     }
 }

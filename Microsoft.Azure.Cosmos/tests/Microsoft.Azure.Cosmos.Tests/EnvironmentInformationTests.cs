@@ -4,11 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -36,6 +31,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ClientIdIsNotNull()
+        {
+            var envInfo = new EnvironmentInformation();
+            Assert.IsNotNull(envInfo.ClientId);
+        }
+
+        [TestMethod]
         public void ToStringContainsAll()
         {
             var envInfo = new EnvironmentInformation();
@@ -43,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(serialization.Contains(envInfo.ClientVersion));
             Assert.IsTrue(serialization.Contains(envInfo.ProcessArchitecture));
             Assert.IsTrue(serialization.Contains(envInfo.RuntimeFramework));
+            Assert.IsTrue(serialization.Contains(envInfo.ClientId));
         }
     }
 }
