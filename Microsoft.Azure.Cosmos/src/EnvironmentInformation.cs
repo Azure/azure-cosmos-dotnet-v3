@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
     using System.Runtime.InteropServices;
 
-    //{SDK-id}-{process runtime}-{process-arch}-{host-rutnime}-{host-arch}
-    //{SDK-id}: Should include the name, version, direct version
     internal sealed class EnvironmentInformation
     {
         internal static readonly string clientId;
@@ -22,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
             EnvironmentInformation.clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Revision}";
             EnvironmentInformation.framework = RuntimeInformation.FrameworkDescription;
             EnvironmentInformation.architecture = RuntimeInformation.ProcessArchitecture.ToString();
-            EnvironmentInformation.clientId = Guid.NewGuid().ToString();
+            EnvironmentInformation.clientId = DateTime.UtcNow.Ticks.ToString();
         }
 
         /// <summary>
@@ -49,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return $"/{this.ClientVersion}-{this.RuntimeFramework}-{this.ProcessArchitecture}-{this.ClientId}";
+            return $" {this.ClientVersion}-{this.RuntimeFramework} {this.ProcessArchitecture} {this.ClientId}";
         }
     }
 }
