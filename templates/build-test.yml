@@ -31,13 +31,16 @@ jobs:
       testAssemblyVer2: '**\bin\**\Microsoft.Azure.Cosmos.Tests.dll'
       testFiltercriteria: 'TestCategory!=Quarantine'
       runOnlyImpactedTests: true
-      
-  - task: PublishTestResults@2
-    inputs:
-      testResultsFormat: VSTest 
-      publishRunAttachments: true 
-      
+      codeCoverageEnabled: true
     
+  - task: PublishTestResults@2
+    displayName: 'Publish Test Results *.trx'
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: '**\*.trx;**\*.coverage'
+      searchFolder: '$(Agent.TempDirectory)'
+    condition: always()      
+  
 ##- job: 
 ##  displayName: ${{ parameters.BuildConfiguration }} Microsoft.Azure.NetFramework.Tests
 ##  pool:
