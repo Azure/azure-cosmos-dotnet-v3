@@ -11,14 +11,6 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
     lfs: true  # whether to download Git-LFS files; defaults to false
-    
-  - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos.sln
-    inputs:
-      command: build 
-      projects: 'Microsoft.Azure.Cosmos.sln'
-      configuration: '$(BuildConfiguration)'
-      publishTestResults: true 
       
   #Analyze source code for type of content and target types to help determine which tools to run 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-autoapplicability.AutoApplicability@1
@@ -49,15 +41,23 @@ jobs:
     displayName: 'AntiMalware'
     inputs:
       EnableServices: true
+  
+  # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
+    displayName: 'Vulnerability Assessment'
+    
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.sln
+    inputs:
+      command: build 
+      projects: 'Microsoft.Azure.Cosmos.sln'
+      configuration: '$(BuildConfiguration)'
+      publishTestResults: true 
       
 #  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
 #    displayName: 'BinSkim '
 #    inputs:
 #      InputType: Basic
-  
-  # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
-    displayName: 'Vulnerability Assessment'
 
   # Publish Analysis Results (position after all tools ran)
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@2
