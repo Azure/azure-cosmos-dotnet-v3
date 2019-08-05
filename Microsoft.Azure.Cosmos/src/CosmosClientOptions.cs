@@ -51,8 +51,8 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClientOptions()
         {
             this.UserAgentContainer = new UserAgentContainer();
-            this.EnvironmentInformation = new EnvironmentInformation();
-            this.currentEnvironmentInformation = this.EnvironmentInformation.ToString();
+            EnvironmentInformation environmentInformation = new EnvironmentInformation();
+            this.currentEnvironmentInformation = environmentInformation.ToString();
             this.UserAgentContainer.Suffix = this.currentEnvironmentInformation;
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
@@ -225,8 +225,6 @@ namespace Microsoft.Azure.Cosmos
         internal Protocol ConnectionProtocol { get; set; }
 
         internal UserAgentContainer UserAgentContainer { get; private set; }
-
-        internal EnvironmentInformation EnvironmentInformation { get; private set; }
 
         /// <summary>
         /// The event handler to be invoked before the request is sent.
