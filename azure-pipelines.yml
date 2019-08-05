@@ -6,7 +6,7 @@ pr:
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine" --verbosity detailed'
-  RetailArguments: ' --filter "TestCategory!=Quarantine" --verbosity detailed '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity detailed '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 
@@ -87,7 +87,7 @@ jobs:
 
 - template:  templates/build-test.yml
   parameters:
-    BuildConfiguration: Retail
-    Arguments: $(RetailArguments)
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
   
