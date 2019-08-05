@@ -21,7 +21,7 @@ jobs:
     inputs:
       command: build 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }}
+      #arguments: ${{ parameters.Arguments }}
       configuration: ${{ parameters.BuildConfiguration }}
       publishTestResults: true 
 
