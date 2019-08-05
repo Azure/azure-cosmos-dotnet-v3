@@ -1,8 +1,5 @@
 pr:
-  branches:
-    include:
-    - releases/*
-#    - master
+  - releases/* 
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine" --verbosity detailed'

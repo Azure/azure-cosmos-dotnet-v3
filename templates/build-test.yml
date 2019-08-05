@@ -19,11 +19,11 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
     condition: succeeded() 
-    inputs:
+    inputs: 
       command: test 
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
-      arguments: ${{ parameters.Arguments }}
-      configuration: ${{ parameters.BuildConfiguration }}
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj' 
+      arguments: ${{ parameters.Arguments }} --filter "FullyQualifiedName=Namespace.ClassName.MethodName" 
+      configuration: ${{ parameters.BuildConfiguration }} 
       publishTestResults: true 
   
 ##- job: 
