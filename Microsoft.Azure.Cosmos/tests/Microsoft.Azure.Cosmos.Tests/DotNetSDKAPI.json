@@ -2115,11 +2115,6 @@
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])"
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}
@@ -2931,6 +2926,13 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Boolean IsPrimitive(System.Object)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator ToStreamIterator[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator ToStreamIterator[T](System.Linq.IQueryable`1[T])"
         },
         "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToFeedIterator[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -6097,9 +6099,11 @@
           "Attributes": [],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialType] get_SpatialTypes()"
         },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialType] SpatialTypes": {
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialType] SpatialTypes[Newtonsoft.Json.JsonPropertyAttribute(ItemConverterType = typeof(Newtonsoft.Json.Converters.StringEnumConverter), PropertyName = \"types\")]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
           "MethodInfo": null
         },
         "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
