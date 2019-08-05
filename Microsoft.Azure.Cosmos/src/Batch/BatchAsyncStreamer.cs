@@ -26,13 +26,12 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxBatchByteSize;
         private readonly Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor;
         private readonly int dispatchTimerInSeconds;
-        private readonly CosmosSerializer CosmosSerializer;
+        private readonly CosmosSerializer cosmosSerializer;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private BatchAsyncBatcher currentBatcher;
         private TimerPool timerPool;
         private PooledTimer currentTimer;
         private Task timerTask;
-        private bool disposed;
 
         public BatchAsyncStreamer(
             int maxBatchOperationCount,
@@ -72,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             this.executor = executor;
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = timerPool;
-            this.CosmosSerializer = cosmosSerializer;
+            this.cosmosSerializer = cosmosSerializer;
             this.dispatchLimiter = new SemaphoreSlim(1, 1);
             this.currentBatcher = this.CreateBatchAsyncBatcher();
 
@@ -85,7 +84,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Batcher is full
                 BatchAsyncBatcher toDispatch = await this.GetBatchToDispatchAndCreateAsync();
-                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                if (toDispatch != null)
+                {
+                    this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                }
+
                 bool addedContext = await this.currentBatcher.TryAddAsync(context);
                 Debug.Assert(addedContext, "Could not add context to batcher.");
             }
@@ -93,7 +96,6 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task DisposeAsync()
         {
-            this.disposed = true;
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
             this.currentBatcher?.Dispose();
@@ -117,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task DispatchTimerAsync()
         {
-            if (this.disposed)
+            if (this.cancellationTokenSource.IsCancellationRequested)
             {
                 return;
             }
@@ -153,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
 
         private BatchAsyncBatcher CreateBatchAsyncBatcher()
         {
-            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.CosmosSerializer, this.executor);
+            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.cosmosSerializer, this.executor);
         }
     }
 }

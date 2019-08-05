@@ -247,26 +247,5 @@ namespace Microsoft.Azure.Cosmos.Tests
             batchAsyncBatcher.Dispose();
             await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
         }
-
-        [TestMethod]
-        [Owner("maquaran")]
-        public async Task RetryOnSplit()
-        {
-            int executeCount = 0;
-            Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellationToken) =>
-            {
-                if (executeCount ++ == 0)
-                {
-                    return this.ExecutorWithSplit(operations, cancellationToken);
-                }
-
-                return this.Executor(operations, cancellationToken);
-            };
-
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), executor);
-            Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            await batchAsyncBatcher.DispatchAsync();
-            Assert.AreEqual(2, executeCount);
-        }
     }
 }
