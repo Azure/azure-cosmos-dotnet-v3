@@ -35,7 +35,7 @@ jobs:
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
     lfs: true  # whether to download Git-LFS files; defaults to false
 
-  - template:  templates/emulator-setup.yml
+  - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
     displayName: Test Microsoft.Azure.Cosmos.NetFramework.Tests
@@ -58,7 +58,7 @@ jobs:
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
     lfs: true  # whether to download Git-LFS files; defaults to false
 
-  - template:  templates/emulator-setup.yml
+  - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
     displayName: Test Microsoft.Azure.Cosmos.EmulatorTests
