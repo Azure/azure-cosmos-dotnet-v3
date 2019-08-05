@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// Interface for all JsonWriters that know how to write jsons of a specific serialization format.
     /// </summary>
-    internal interface IJsonWriter
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    interface IJsonWriter
     {
         /// <summary>
         /// Gets the SerializationFormat of the JsonWriter.

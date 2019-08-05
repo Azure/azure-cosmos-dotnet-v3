@@ -10,7 +10,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
-    internal static class CosmosElementSerializer
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    static class CosmosElementSerializer
     {
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
@@ -194,4 +201,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
     }
+#if INTERNAL
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }
