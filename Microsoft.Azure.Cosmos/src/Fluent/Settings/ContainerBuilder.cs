@@ -18,6 +18,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private UniqueKeyPolicy uniqueKeyPolicy;
         private ConflictResolutionPolicy conflictResolutionPolicy;
 
+        /// <summary>
+        /// Creates an instance for unit-testing
+        /// </summary>
+        protected ContainerBuilder()
+        {
+        }
+
         internal ContainerBuilder(
             Database cosmosContainers,
             CosmosClientContext clientContext,
