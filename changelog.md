@@ -5,6 +5,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- [#630](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/630) Added environment information to the User Agent
+
 ### Fixed
 
 - [#612](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/612) Bug fix for ReadFeed with partition-key
