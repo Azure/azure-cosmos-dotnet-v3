@@ -158,9 +158,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Batch\" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="Microsoft.Azure.Cosmos.Core">
       <HintPath>C:\Users\abpai\.nuget\packages\microsoft.azure.cosmos.direct.myget\3.0.0.33-preview\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll</HintPath>
     </Reference>
