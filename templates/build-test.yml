@@ -43,7 +43,7 @@ jobs:
     inputs:
       command: test 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.NetFramework.Tests/*.csproj'
-      arguments:       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} 
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} 
       publishTestResults: true 
 
 
@@ -65,6 +65,6 @@ jobs:
     inputs:
       command: test 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments:       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} 
+      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} 
       publishTestResults: true 
 
