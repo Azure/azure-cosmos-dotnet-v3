@@ -17,7 +17,7 @@ steps:
     command: build  
     configuration: $(BuildConfiguration)
     projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
-    arguments: ${{ parameters.ReleaseArguments }} --configuration $(BuildConfiguration) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
+    arguments: $(ReleaseArguments) --configuration $(BuildConfiguration) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
     
 - task: NuGetCommand@2
   displayName: 'NuGet push'
