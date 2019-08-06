@@ -1,5 +1,5 @@
 variables:
-  ReleaseArguments: ' --filter "FullyQualifiedName=Microsoft.Azure.Cosmos.Client.Test.SessionTokenTests" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
   VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   BuildConfiguration: Release
   IsNightly: true
