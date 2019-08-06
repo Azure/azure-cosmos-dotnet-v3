@@ -64,6 +64,9 @@
     <None Update="TestDocuments\MyTest2.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="testhost.dll.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="TestJsons\CombinedScriptsData.Json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
