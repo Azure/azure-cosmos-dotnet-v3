@@ -1,0 +1,19 @@
+schedules:
+- cron: "0 0 * * *" # cron syntax https://docs.microsoft.com/en-us/azure/devops/pipelines/build/triggers?view=azure-devops&tabs=yaml#scheduled-triggers
+  displayName: Cosmos Nightly 
+  branches:
+    include: master
+  always: boolean # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
+
+variables:
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal /p:IsNightly=true /p:GeneratePackageOnBuild=true '
+  VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+
+jobs: 
+- template:  templates/build-test.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+  
