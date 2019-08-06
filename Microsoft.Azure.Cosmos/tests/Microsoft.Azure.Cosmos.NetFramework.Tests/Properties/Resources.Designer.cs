@@ -10,8 +10,11 @@
 
 namespace Microsoft.Azure.Cosmos.Properties {
     using System;
-    
-    
+    using System.Diagnostics;
+    using System.IO;
+    using System.Text;
+
+
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -89,14 +92,22 @@ namespace Microsoft.Azure.Cosmos.Properties {
                 return ((byte[])(obj));
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         internal static byte[] BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo {
             get {
                 object obj = ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo", resourceCulture);
-                return ((byte[])(obj));
+                if (obj is string)
+                {
+                    Trace.TraceInformation((string)obj);
+                    return Encoding.UTF8.GetBytes((string)obj);
+                }
+                else
+                {
+                    return (byte[])obj;
+                }
             }
         }
         
