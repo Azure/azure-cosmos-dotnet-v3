@@ -1,30 +1,15 @@
 variables:
-  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
+  ReleaseArguments: ' --filter "FullyQualifiedName=Microsoft.Azure.Cosmos.Client.Test.SessionTokenTests" --verbosity normal '
   VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   BuildConfiguration: Release
 
 
 steps: 
-#- template:  templates/build-test.yml
-#  parameters:
-#    BuildConfiguration: $(BuildConfiguration)
-#    Arguments: $(ReleaseArguments)
-#    VmImage: $(VmImage)
-
-- task: DotNetCoreCLI@2
-  displayName: restore
-  inputs: 
-    command: restore  
-    configuration: $(BuildConfiguration)
-
-    
-- task: DotNetCoreCLI@2
-  displayName: Microsoft.Azure.Cosmos
-  inputs: 
-    command: build  
-    configuration: $(BuildConfiguration)
-    projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
-    arguments: --configuration $(BuildConfiguration) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
+- template:  templates/build-test.yml
+  parameters:
+    BuildConfiguration: $(BuildConfiguration)
+    Arguments: $(ReleaseArguments) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
+    VmImage: $(VmImage)
     
 - task: NuGetCommand@2
   displayName: 'NuGet push'
