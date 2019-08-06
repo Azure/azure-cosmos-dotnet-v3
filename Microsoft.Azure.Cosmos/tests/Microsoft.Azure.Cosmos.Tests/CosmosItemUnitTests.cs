@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosItemUnitTests
@@ -243,7 +244,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.IsNotNull(request.Headers.PartitionKey);
-                Assert.AreEqual(Documents.Routing.PartitionKeyInternal.Undefined.ToString().Replace("\\n", ""), request.Headers.PartitionKey.ToString());
+                JToken.Parse(Documents.Routing.PartitionKeyInternal.Undefined.ToString());
+                Assert.IsTrue(new JTokenEqualityComparer().Equals(
+                        JToken.Parse(Documents.Routing.PartitionKeyInternal.Undefined.ToString()),
+                        JToken.Parse(request.Headers.PartitionKey.ToString())),
+                        "Arguments {0} {1} ", Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.Headers.PartitionKey.ToString());
 
                 return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });
