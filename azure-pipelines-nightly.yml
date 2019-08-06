@@ -2,7 +2,8 @@ schedules:
 - cron: "0 0 * * *" # cron syntax https://docs.microsoft.com/en-us/azure/devops/pipelines/build/triggers?view=azure-devops&tabs=yaml#scheduled-triggers
   displayName: Cosmos Nightly 
   branches:
-    include: master
+    include:
+    - master
 
 variables:
   ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal /p:IsNightly=true /p:GeneratePackageOnBuild=true '
