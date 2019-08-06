@@ -11,7 +11,7 @@ jobs:
 ##    Arguments: $(ReleaseArguments) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
 ##    VmImage: $(VmImage)
 
--job:
+- job:
   displayName: $(BuildConfiguration) Microsoft.Azure.Cosmos
   pool:
     vmImage: ${{ parameters.VmImage }}
