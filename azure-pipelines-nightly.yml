@@ -5,11 +5,11 @@ variables:
 
 
 jobs: 
-- template:  templates/build-test.yml
-  parameters:
-    BuildConfiguration: $(BuildConfiguration)
-    Arguments: $(ReleaseArguments)
-    VmImage: $(VmImage)
+#- template:  templates/build-test.yml
+#  parameters:
+#    BuildConfiguration: $(BuildConfiguration)
+#    Arguments: $(ReleaseArguments)
+#    VmImage: $(VmImage)
     
 - task: DotNetCoreCLI@2
   displayName: Microsoft.Azure.Cosmos
