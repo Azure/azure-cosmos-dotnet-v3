@@ -10,7 +10,7 @@ variables:
 
 jobs: 
 - job: 
-  displayName: Static Analysis
+  displayName: Static Analysis 
   pool:
     vmImage: '$(VmImage)' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
     
