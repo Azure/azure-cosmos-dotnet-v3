@@ -1,3 +1,6 @@
+# A pipeline with no CI trigger
+trigger: none
+
 pr:
   branches:
     include:
