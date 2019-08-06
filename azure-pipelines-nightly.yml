@@ -10,6 +10,14 @@ steps:
 #    BuildConfiguration: $(BuildConfiguration)
 #    Arguments: $(ReleaseArguments)
 #    VmImage: $(VmImage)
+
+- task: DotNetCoreCLI@2
+  displayName: restore
+  inputs: 
+    command: restore  
+    configuration: $(BuildConfiguration)
+    projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
+
     
 - task: DotNetCoreCLI@2
   displayName: Microsoft.Azure.Cosmos
