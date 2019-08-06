@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.IsNotNull(request.Headers.PartitionKey);
-                Assert.AreEqual(Documents.Routing.PartitionKeyInternal.Undefined.ToString().Replace(@"\n", ""), request.Headers.PartitionKey.ToString());
+                Assert.AreEqual(Documents.Routing.PartitionKeyInternal.Undefined.ToString().Replace("\\n", ""), request.Headers.PartitionKey.ToString());
 
                 return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });

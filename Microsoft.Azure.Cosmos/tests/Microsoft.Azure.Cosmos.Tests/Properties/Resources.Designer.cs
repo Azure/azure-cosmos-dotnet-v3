@@ -128,8 +128,8 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PathParser_Extra {
             get {
-                object obj = ResourceManager.GetObject("BaselineTest_PathParser_Extra", resourceCulture);
-                return ((byte[])(obj));
+                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PathParser.Extra.json");
+                return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
         
