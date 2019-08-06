@@ -22,38 +22,38 @@ stages:
           
 
 - stage: Package generation and publish
-  displayName: $(BuildConfiguration) Microsoft.Azure.Cosmos
-  pool:
-    vmImage: $(VmImage)
+  - job:
+    pool:
+      vmImage: $(VmImage)
   
-  steps:
-  - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos
-    inputs: 
-      command: build  
-      configuration: $(BuildConfiguration)
-      nugetConfigPath: NuGet.config
-      projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
-      arguments: --configuration $(BuildConfiguration) 
-      versioningScheme: OFF
-      
-  - task: DotNetCoreCLI@2
-    displayName: Pack Microsoft.Azure.Cosmos
-    inputs: 
-      command: pack 
-      configuration: $(BuildConfiguration)
-      searchPatternPack: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj
-      arguments: --configuration $(BuildConfiguration) 
-      versioningScheme: OFF
-      
-  - task: DotNetCoreCLI@2
-    displayName: Push Microsoft.Azure.Cosmos
-    inputs: 
-      command: push 
-      configuration: $(BuildConfiguration)
-      searchPatternPack: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj
-      arguments: --configuration $(BuildConfiguration) 
-      packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
-      nuGetFeedType: 'internal'
-      publishVstsFeed: '4000bd49-81c3-47f2-94d8-d1392b95c228/04efb628-f46d-4b48-ac4d-5af5b1c75043' #azure-cosmos-dotnet
-      versioningScheme: OFF
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: Build Microsoft.Azure.Cosmos
+      inputs: 
+        command: build  
+        configuration: $(BuildConfiguration)
+        nugetConfigPath: NuGet.config
+        projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
+        arguments: --configuration $(BuildConfiguration) 
+        versioningScheme: OFF
+        
+    - task: DotNetCoreCLI@2
+      displayName: Pack Microsoft.Azure.Cosmos
+      inputs: 
+        command: pack 
+        configuration: $(BuildConfiguration)
+        searchPatternPack: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj
+        arguments: --configuration $(BuildConfiguration) 
+        versioningScheme: OFF
+        
+    - task: DotNetCoreCLI@2
+      displayName: Push Microsoft.Azure.Cosmos
+      inputs: 
+        command: push 
+        configuration: $(BuildConfiguration)
+        searchPatternPack: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj
+        arguments: --configuration $(BuildConfiguration) 
+        packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+        nuGetFeedType: 'internal'
+        publishVstsFeed: '4000bd49-81c3-47f2-94d8-d1392b95c228/04efb628-f46d-4b48-ac4d-5af5b1c75043' #azure-cosmos-dotnet
+        versioningScheme: OFF
