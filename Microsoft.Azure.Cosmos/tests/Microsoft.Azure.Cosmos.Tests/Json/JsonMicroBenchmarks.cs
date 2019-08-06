@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
+    [TestCategory("Functional")]
     public class JsonMicroBenchmarks
     {
         private static readonly bool runPerformanceTests = true;
