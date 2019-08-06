@@ -16,6 +16,11 @@ jobs:
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
     lfs: true  # whether to download Git-LFS files; defaults to false
 
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk 2.2'
+    inputs:
+      version: 2.2.x # https://github.com/Microsoft/azure-pipelines-tasks/blob/master/Tasks/UseDotNetV2/README.md
+
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
     condition: succeeded() 
@@ -41,7 +46,7 @@ jobs:
   - task: UseDotNet@2
     displayName: 'Use .NET Core sdk 2.2'
     inputs:
-      version: 2.2
+      version: 2.2.x # https://github.com/Microsoft/azure-pipelines-tasks/blob/master/Tasks/UseDotNetV2/README.md
       
   - task: DotNetCoreCLI@2
     displayName: Test Microsoft.Azure.Cosmos.NetFramework.Tests
