@@ -23,7 +23,7 @@ jobs:
       command: build  
       configuration: $(BuildConfiguration)
       nugetConfigPath: NuGet.config
-      projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
+      projects: 'Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj' 
       arguments: --configuration $(BuildConfiguration) /p:IsNightly=true 
       
   - task: DotNetCoreCLI@2
@@ -31,7 +31,7 @@ jobs:
     inputs: 
       command: pack 
       configuration: $(BuildConfiguration)
-      projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
+      projects: 'Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj' 
       arguments: --configuration $(BuildConfiguration) /p:IsNightly=true
       
   - task: DotNetCoreCLI@2
@@ -39,7 +39,7 @@ jobs:
     inputs: 
       command: push 
       configuration: $(BuildConfiguration)
-      projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
+      projects: 'Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj' 
       arguments: --configuration $(BuildConfiguration) /p:IsNightly=true
       packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
       nuGetFeedType: 'internal'
