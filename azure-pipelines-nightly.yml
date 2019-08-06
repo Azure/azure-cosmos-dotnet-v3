@@ -2,6 +2,7 @@ variables:
   ReleaseArguments: ' --filter "FullyQualifiedName=Microsoft.Azure.Cosmos.Client.Test.SessionTokenTests" --verbosity normal '
   VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   BuildConfiguration: Release
+  IsNightly: true
 
 
 jobs: 
@@ -23,8 +24,8 @@ jobs:
       command: build  
       configuration: $(BuildConfiguration)
       nugetConfigPath: NuGet.config
-      projects: 'Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj' 
-      arguments: --configuration $(BuildConfiguration) /p:IsNightly=true 
+      projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
+      arguments: --configuration $(BuildConfiguration) 
       versioningScheme: OFF
       
   - task: DotNetCoreCLI@2
@@ -33,7 +34,7 @@ jobs:
       command: pack 
       configuration: $(BuildConfiguration)
       searchPatternPack: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj
-      arguments: --configuration $(BuildConfiguration) /p:IsNightly=true
+      arguments: --configuration $(BuildConfiguration) 
       versioningScheme: OFF
       
   - task: DotNetCoreCLI@2
@@ -41,8 +42,8 @@ jobs:
     inputs: 
       command: push 
       configuration: $(BuildConfiguration)
-      searchPatternPack: 'Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj' 
-      arguments: --configuration $(BuildConfiguration) /p:IsNightly=true
+      searchPatternPack: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj
+      arguments: --configuration $(BuildConfiguration) 
       packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
       nuGetFeedType: 'internal'
       publishVstsFeed: '4000bd49-81c3-47f2-94d8-d1392b95c228/04efb628-f46d-4b48-ac4d-5af5b1c75043' #azure-cosmos-dotnet
