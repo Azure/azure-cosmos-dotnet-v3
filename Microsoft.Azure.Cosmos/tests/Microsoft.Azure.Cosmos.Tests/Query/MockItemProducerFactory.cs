@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<bool>(),
                         maxPageSize,
                         cancellationToken))
-                        .Callback(executeCallback)
+                        .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
 
 
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<bool>(),
                         maxPageSize,
                         cancellationToken))
-                        .Callback(executeCallback)
+                        .Callback(() =>executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
                 previousContinuationToken = newContinuationToken;
             }
