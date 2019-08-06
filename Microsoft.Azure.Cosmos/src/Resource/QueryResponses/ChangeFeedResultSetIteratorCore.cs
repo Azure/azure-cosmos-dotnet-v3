@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private string partitionKeyRangeId;
         private int? maxItemCount;
         private bool hasMoreResultsInternal;
+        private string initialNotModifiedPartitionKeyRangeId;
 
         internal ChangeFeedResultSetIteratorCore(
             CosmosClientContext clientContext,
@@ -73,6 +74,7 @@ namespace Microsoft.Azure.Cosmos
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             this.partitionKeyRangeId = rangeId;
+
             this.continuationToken = currentRangeToken.Token;
 
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
@@ -95,10 +97,15 @@ namespace Microsoft.Azure.Cosmos
                 currentRangeToken.Token = responseContinuationToken;
                 // Current Range is done, push it to the end
                 this.compositeContinuationToken.MoveToNextToken();
+                if (await this.ShouldContinueWithNextTokenAsync())
+                {
+                    return await this.ReadNextAsync(cancellationToken);
+                }
             }
             else if (response.IsSuccessStatusCode)
             {
                 currentRangeToken.Token = responseContinuationToken;
+                this.initialNotModifiedPartitionKeyRangeId = null;
             }
 
             // Send to the user the composite state for all ranges
@@ -175,6 +182,18 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);
+        }
+
+        private async Task<bool> ShouldContinueWithNextTokenAsync()
+        {
+            if (string.IsNullOrEmpty(this.initialNotModifiedPartitionKeyRangeId))
+            {
+                // First NotModified
+                this.initialNotModifiedPartitionKeyRangeId = this.partitionKeyRangeId;
+            }
+
+            (CompositeContinuationToken currentRangeTokenForRetry, string rangeForNextToken) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+            return !this.initialNotModifiedPartitionKeyRangeId.Equals(rangeForNextToken, StringComparison.InvariantCultureIgnoreCase);
         }
     }
 }
