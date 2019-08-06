@@ -12,6 +12,11 @@ jobs:
 ##    VmImage: $(VmImage)
 
 -job:
+  displayName: $(BuildConfiguration) Microsoft.Azure.Cosmos
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+  
+  steps:
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos
     inputs: 
