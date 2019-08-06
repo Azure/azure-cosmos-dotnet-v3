@@ -24,12 +24,24 @@ jobs:
       configuration: $(BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
-      arguments: --configuration $(BuildConfiguration) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
+      arguments: --configuration $(BuildConfiguration) /p:IsNightly=true 
       
-  - task: NuGetCommand@2
-    displayName: 'NuGet push'
-    inputs:
-      command: push
-      configuration: '$(BuildConfiguration)' 
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos
+    inputs: 
+      command: pack 
+      configuration: $(BuildConfiguration)
+      projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
+      arguments: --configuration $(BuildConfiguration) /p:IsNightly=true
+      
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos
+    inputs: 
+      command: push 
+      configuration: $(BuildConfiguration)
+      projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
+      arguments: --configuration $(BuildConfiguration) /p:IsNightly=true
+      packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+      nuGetFeedType: 'internal'
       publishVstsFeed: '4000bd49-81c3-47f2-94d8-d1392b95c228/04efb628-f46d-4b48-ac4d-5af5b1c75043' #azure-cosmos-dotnet
       
