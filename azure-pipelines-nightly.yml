@@ -4,7 +4,7 @@ variables:
   BuildConfiguration: Release
 
 
-jobs: 
+steps: 
 #- template:  templates/build-test.yml
 #  parameters:
 #    BuildConfiguration: $(BuildConfiguration)
@@ -19,7 +19,6 @@ jobs:
     projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
     arguments: ${{ parameters.ReleaseArguments }} --configuration $(BuildConfiguration) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
     
-steps:
 - task: NuGetCommand@2
   displayName: 'NuGet push'
   inputs:
