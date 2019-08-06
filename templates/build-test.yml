@@ -21,7 +21,7 @@ jobs:
     inputs:
       version: 2.2.x # https://github.com/Microsoft/azure-pipelines-tasks/blob/master/Tasks/UseDotNetV2/README.md
 
-  - task: DotNetCoreCLI@2
+  - task: DotNetCoreCLI@2.2
     displayName: Microsoft.Azure.Cosmos.Tests
     condition: succeeded() 
     inputs: 
