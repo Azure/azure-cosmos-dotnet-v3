@@ -8,7 +8,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract partial class CosmosArray : CosmosElement, IReadOnlyList<CosmosElement>
     {
         private sealed class LazyCosmosArray : CosmosArray
         {
@@ -67,4 +74,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

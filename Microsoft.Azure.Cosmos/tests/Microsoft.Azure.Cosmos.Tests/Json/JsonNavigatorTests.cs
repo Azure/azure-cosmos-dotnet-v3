@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using System.Globalization;
 
     [TestClass]
+    [TestCategory("Functional")]
     public class JsonNavigatorTests
     {
         [TestInitialize]
