@@ -152,8 +152,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.IndexingPolicy indexingPolicy = null)
         {
             string containerName = Guid.NewGuid().ToString() + "container";
-            await CosmosItemTests.CreateNonPartitionedContainer(
-                this.database.Id,
+            await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
+                this.database,
                 containerName,
                 indexingPolicy == null ? null : JsonConvert.SerializeObject(indexingPolicy));
 
@@ -1892,6 +1892,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [TestCategory("Functional")]
         public async Task TestQueryDistinct()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;

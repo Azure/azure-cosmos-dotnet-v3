@@ -244,11 +244,7 @@
                 // 4. Process stored procedure response.
                 continuationToken = response.Resource.Continuation;
 
-                Console.WriteLine("Printing documents filtered/ordered by '{0}' and ordered by '{1}', batch #{2}:", filterQuery, orderByFieldName, batchCount++);
-                foreach (dynamic doc in response.Resource.Result)
-                {
-                    Console.WriteLine(doc.ToString());
-                }
+                Console.WriteLine($"Printing documents filtered/ordered by '{filterQuery}' and ordered by '{orderByFieldName}', batch #{batchCount++}, count #{response.Resource.Result.Length}");
             } while (continuationToken != null);
             // 5. To take care of big response, loop until Response.continuation token is null (see OrderBy.js for details).
         }
