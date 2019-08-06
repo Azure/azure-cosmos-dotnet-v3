@@ -58,6 +58,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Routing\resources\BaselineTest.PartitionRoutingHelper.AddFormattedContinuationToHeader.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Routing\resources\BaselineTest.PartitionRoutingHelper.ExtractPartitionKeyRangeFromHeaders.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Routing\resources\BaselineTest.PartitionRoutingHelper.GetPartitionRoutingInfo.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Routing\resources\BaselineTest.PathParser.Extra.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Routing\resources\BaselineTest.PathParser.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="TestDocuments\MyTest.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
