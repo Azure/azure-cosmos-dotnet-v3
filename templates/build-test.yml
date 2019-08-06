@@ -39,9 +39,9 @@ jobs:
   - template:  emulator-setup.yml
 
   - task: UseDotNet@2
-    displayName: 'Use .NET Core sdk 2.1.503'
+    displayName: 'Use .NET Core sdk 2.2'
     inputs:
-      version: 2.1.503
+      version: 2.2
       
   - task: DotNetCoreCLI@2
     displayName: Test Microsoft.Azure.Cosmos.NetFramework.Tests
