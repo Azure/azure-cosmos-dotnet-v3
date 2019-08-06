@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos.Json
     /// The default underlying type of enumeration elements is integer.
     /// To declare an enum of another integral type, such as byte, use a colon after the identifier followed by the type, as shown in the following example.
     /// </remarks>
-    internal enum JsonSerializationFormat : byte
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    enum JsonSerializationFormat : byte
     {
         /// <summary>
         /// Plain text

@@ -31,7 +31,13 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ClientDllNamespaceTest()
         {
-            ContractTests.NamespaceCountTest(typeof(CosmosClient), 5);
+
+#if INTERNAL
+            int expected = 7;
+#else
+            int expected = 5;
+#endif
+            ContractTests.NamespaceCountTest(typeof(CosmosClient), expected);
         }
 
         private static void NamespaceCountTest(Type input, int expected)
