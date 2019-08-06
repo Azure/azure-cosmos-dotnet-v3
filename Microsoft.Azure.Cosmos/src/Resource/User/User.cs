@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserResponse> ReadUserAsync(
+        public abstract Task<UserResponse> ReadAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ResponseMessage> ReadUserStreamAsync(
+        public abstract Task<ResponseMessage> ReadStreamAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserResponse> ReplaceUserAsync(
+        public abstract Task<UserResponse> ReplaceAsync(
             UserProperties userProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<ResponseMessage> ReplaceUserStreamAsync(
+        public abstract Task<ResponseMessage> ReplaceStreamAsync(
             UserProperties userProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserResponse> DeleteUserAsync(
+        public abstract Task<UserResponse> DeleteAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
-        public abstract Task<ResponseMessage> DeleteUserStreamAsync(
+        public abstract Task<ResponseMessage> DeleteStreamAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

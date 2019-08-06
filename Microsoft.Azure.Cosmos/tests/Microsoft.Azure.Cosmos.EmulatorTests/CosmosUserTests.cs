@@ -59,15 +59,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string newUserId = Guid.NewGuid().ToString();
             userResponse.Resource.Id = newUserId;
 
-            userResponse = await this.cosmosDatabase.GetUser(userId).ReplaceUserAsync(userResponse.Resource);
+            userResponse = await this.cosmosDatabase.GetUser(userId).ReplaceAsync(userResponse.Resource);
             Assert.AreEqual(HttpStatusCode.OK, userResponse.StatusCode);
             Assert.AreEqual(newUserId, userResponse.Resource.Id);
 
-            userResponse = await this.cosmosDatabase.GetUser(userResponse.Resource.Id).ReadUserAsync();
+            userResponse = await this.cosmosDatabase.GetUser(userResponse.Resource.Id).ReadAsync();
             Assert.AreEqual(HttpStatusCode.OK, userResponse.StatusCode);
             Assert.AreEqual(newUserId, userResponse.Resource.Id);
 
-            userResponse = await this.cosmosDatabase.GetUser(newUserId).DeleteUserAsync();
+            userResponse = await this.cosmosDatabase.GetUser(newUserId).DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, userResponse.StatusCode);
         }
 
@@ -75,28 +75,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task StreamCRUDTest()
         {
             string userId = Guid.NewGuid().ToString();
-            CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
 
-            ResponseMessage responseMessage = await this.cosmosDatabase.CreateUserStreamAsync(new UserProperties { Id = userId });
+
+            ResponseMessage responseMessage = await this.cosmosDatabase.CreateUserStreamAsync(new UserProperties(userId));
             Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
-            UserProperties user = defaultJsonSerializer.FromStream<UserProperties>(responseMessage.Content);
+            UserProperties user = TestCommon.Serializer.FromStream<UserProperties>(responseMessage.Content);
             Assert.AreEqual(userId, user.Id);
             Assert.IsNotNull(user.ResourceId);
 
             string newUserId = Guid.NewGuid().ToString();
             user.Id = newUserId;
 
-            responseMessage = await this.cosmosDatabase.GetUser(userId).ReplaceUserStreamAsync(user);
-            user = defaultJsonSerializer.FromStream<UserProperties>(responseMessage.Content);
+            responseMessage = await this.cosmosDatabase.GetUser(userId).ReplaceStreamAsync(user);
+            user = TestCommon.Serializer.FromStream<UserProperties>(responseMessage.Content);
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.AreEqual(newUserId, user.Id);
 
-            responseMessage = await this.cosmosDatabase.GetUser(newUserId).ReadUserStreamAsync();
-            user = defaultJsonSerializer.FromStream<UserProperties>(responseMessage.Content);
+            responseMessage = await this.cosmosDatabase.GetUser(newUserId).ReadStreamAsync();
+            user = TestCommon.Serializer.FromStream<UserProperties>(responseMessage.Content);
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
             Assert.AreEqual(newUserId, user.Id);
 
-            responseMessage = await this.cosmosDatabase.GetUser(newUserId).DeleteUserStreamAsync();
+            responseMessage = await this.cosmosDatabase.GetUser(newUserId).DeleteStreamAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, responseMessage.StatusCode);
         }
 
@@ -142,8 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage message = await resultSet.ReadNextAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
-                    CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
-                    dynamic users = defaultJsonSerializer.FromStream<dynamic>(message.Content).Users;
+                    dynamic users = TestCommon.Serializer.FromStream<dynamic>(message.Content).Users;
                     foreach (dynamic user in users)
                     {
                         string id = user.id.ToString();

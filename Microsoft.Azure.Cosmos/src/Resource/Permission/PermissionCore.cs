@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="Cosmos.User"/> for creating new users, and reading/querying all user;
     /// </summary>
-    public class PermissionCore : Permission
+    internal class PermissionCore : Permission
     {
         /// <summary>
         /// Only used for unit testing

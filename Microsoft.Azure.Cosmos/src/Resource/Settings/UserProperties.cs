@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="UserProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
-        public UserProperties()
+        protected UserProperties()
         {
         }
 

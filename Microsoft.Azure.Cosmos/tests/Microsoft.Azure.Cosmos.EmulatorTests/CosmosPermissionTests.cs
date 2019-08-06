@@ -76,6 +76,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             permissionResponse = await user.GetPermission(permissionId).DeletePermissionAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, permissionResponse.StatusCode);
+
+            try
+            {
+                permissionResponse = await user.GetPermission(permissionId).ReadPermissionAsync();
+                Assert.Fail();
+            }
+            catch(CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+            }
         }
 
         [TestMethod]
@@ -94,8 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string permissionId = Guid.NewGuid().ToString();
             PermissionProperties permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.Read, containerResponse.Container);
             ResponseMessage responseMessage = await user.CreatePermissionStreamAsync(permissionProperties);
-            CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
-            PermissionProperties permission = defaultJsonSerializer.FromStream<PermissionProperties>(responseMessage.Content);
+            PermissionProperties permission = TestCommon.Serializer.FromStream<PermissionProperties>(responseMessage.Content);
             Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
             Assert.AreEqual(permissionId, permission.Id);
             Assert.AreEqual(permissionProperties.PermissionMode, permission.PermissionMode);
@@ -105,12 +114,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             responseMessage = await user.GetPermission(permissionId).ReplacePermissionStreamAsync(newPermissionProperties);
             //Backend returns Created instead of OK
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
-            permission = defaultJsonSerializer.FromStream<PermissionProperties>(responseMessage.Content);
+            permission = TestCommon.Serializer.FromStream<PermissionProperties>(responseMessage.Content);
             Assert.AreEqual(newPermissionProperties.PermissionMode, permission.PermissionMode);
 
             responseMessage = await user.GetPermission(permissionId).ReadPermissionStreamAsync();
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
-            permission = defaultJsonSerializer.FromStream<PermissionProperties>(responseMessage.Content);
+            permission = TestCommon.Serializer.FromStream<PermissionProperties>(responseMessage.Content);
             Assert.AreEqual(newPermissionProperties.Id, permission.Id);
             Assert.AreEqual(newPermissionProperties.PermissionMode, permission.PermissionMode);
 
@@ -182,8 +191,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (ResponseMessage message = await resultSet.ReadNextAsync())
                 {
                     Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
-                    CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
-                    dynamic permissions = defaultJsonSerializer.FromStream<dynamic>(message.Content).Permissions;
+                    dynamic permissions = TestCommon.Serializer.FromStream<dynamic>(message.Content).Permissions;
                     foreach (dynamic permission in permissions)
                     {
                         string id = permission.id.ToString();

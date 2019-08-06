@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// <see cref="Cosmos.User"/> for creating new users, and reading/querying all user;
     /// </summary>
-    public class UserCore : User
+    internal class UserCore : User
     {
         /// <summary>
         /// Only used for unit testing
@@ -39,12 +39,6 @@ namespace Microsoft.Azure.Cosmos
             this.Database = database;            
         }
 
-        /// <summary>
-        /// Cache the full URI segment without the last resource id.
-        /// This allows only a single con-cat operation instead of building the full URI string each time.
-        /// </summary>
-        private string cachedUriSegmentWithoutId { get; }
-
         /// <inheritdoc/>
         public override string Id { get; }
 
@@ -58,10 +52,10 @@ namespace Microsoft.Azure.Cosmos
         internal virtual CosmosClientContext ClientContext { get; }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> ReadUserAsync(RequestOptions requestOptions = null, 
+        public override Task<UserResponse> ReadAsync(RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadUserStreamAsync(
+            Task<ResponseMessage> response = this.ReadStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -69,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> ReadUserStreamAsync(RequestOptions requestOptions = null, 
+        public override Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
@@ -80,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> ReplaceUserAsync(UserProperties userProperties, 
+        public override Task<UserResponse> ReplaceAsync(UserProperties userProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -99,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> ReplaceUserStreamAsync(UserProperties userProperties, 
+        public override Task<ResponseMessage> ReplaceStreamAsync(UserProperties userProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -116,10 +110,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<UserResponse> DeleteUserAsync(RequestOptions requestOptions = null, 
+        public override Task<UserResponse> DeleteAsync(RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteUserStreamAsync(
+            Task<ResponseMessage> response = this.DeleteStreamAsync(
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -127,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<ResponseMessage> DeleteUserStreamAsync(RequestOptions requestOptions = null, 
+        public override Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
@@ -190,7 +184,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override FeedIterator<T> GetPermissionQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator<T> GetPermissionQueryIterator<T>(QueryDefinition queryDefinition, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
         {
             FeedIterator permissionStreamIterator = this.GetPermissionQueryStreamIterator(
                 queryDefinition,
