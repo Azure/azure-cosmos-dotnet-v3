@@ -1,4 +1,7 @@
-pr: none
+pr:
+  - master
+  - releases/* 
+
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
