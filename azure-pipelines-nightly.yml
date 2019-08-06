@@ -16,7 +16,6 @@ steps:
   inputs: 
     command: restore  
     configuration: $(BuildConfiguration)
-    projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
 
     
 - task: DotNetCoreCLI@2
