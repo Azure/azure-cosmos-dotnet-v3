@@ -8,7 +8,7 @@ jobs:
 - job: 
   displayName: Static Analysis 
   pool:
-    vmImage: '$(VmImage)' 
+    vmImage: '${{ parameters.VmImage }}' 
     
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
@@ -54,7 +54,7 @@ jobs:
     inputs:
       command: build 
       projects: 'Microsoft.Azure.Cosmos.sln'
-      configuration: '$(BuildConfiguration)'
+      configuration: '${{ parameters.BuildConfiguration }}'
       publishTestResults: true 
       
 #  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
