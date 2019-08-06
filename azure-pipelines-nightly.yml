@@ -6,7 +6,8 @@ variables:
 
 
 stages:
-- stage: Validation stage
+- stage:
+  displayName: Validation stage
   jobs:
     - template:  templates/static-tools.yml
       parameters:
@@ -21,7 +22,8 @@ stages:
         VmImage: $(VmImage)
           
 
-- stage: Package generation and publish
+- stage:
+  displayName: Package generation and publish
   jobs:
     - job:
       pool:
