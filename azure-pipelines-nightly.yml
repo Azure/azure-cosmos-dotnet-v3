@@ -18,26 +18,26 @@ jobs:
   
   steps:
   - task: DotNetCoreCLI@2
-    displayName: Microsoft.Azure.Cosmos
+    displayName: Build Microsoft.Azure.Cosmos
     inputs: 
       command: build  
       configuration: $(BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: 'Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj' 
       arguments: --configuration $(BuildConfiguration) /p:IsNightly=true 
-      versioningScheme: byPrereleaseNumber
+      versioningScheme: byBuildNumber
       
   - task: DotNetCoreCLI@2
-    displayName: Microsoft.Azure.Cosmos
+    displayName: Pack Microsoft.Azure.Cosmos
     inputs: 
       command: pack 
       configuration: $(BuildConfiguration)
       searchPatternPack: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj
       arguments: --configuration $(BuildConfiguration) /p:IsNightly=true
-      versioningScheme: byPrereleaseNumber
+      versioningScheme: byBuildNumber
       
   - task: DotNetCoreCLI@2
-    displayName: Microsoft.Azure.Cosmos
+    displayName: Push Microsoft.Azure.Cosmos
     inputs: 
       command: push 
       configuration: $(BuildConfiguration)
@@ -46,5 +46,5 @@ jobs:
       packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
       nuGetFeedType: 'internal'
       publishVstsFeed: '4000bd49-81c3-47f2-94d8-d1392b95c228/04efb628-f46d-4b48-ac4d-5af5b1c75043' #azure-cosmos-dotnet
-      versioningScheme: byPrereleaseNumber
+      versioningScheme: byBuildNumber
       
