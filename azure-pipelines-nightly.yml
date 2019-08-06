@@ -4,12 +4,21 @@ variables:
   BuildConfiguration: Release
 
 
-steps: 
-- template:  templates/build-test.yml
-  parameters:
-    BuildConfiguration: $(BuildConfiguration)
-    Arguments: $(ReleaseArguments) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
-    VmImage: $(VmImage)
+jobs: 
+##- template:  templates/build-test.yml
+##  parameters:
+##    BuildConfiguration: $(BuildConfiguration)
+##    Arguments: $(ReleaseArguments) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
+##    VmImage: $(VmImage)
+
+- task: DotNetCoreCLI@2
+  displayName: Microsoft.Azure.Cosmos
+  inputs: 
+    command: build  
+    configuration: $(BuildConfiguration)
+    nugetConfigPath: NuGet.config
+    projects: 'Microsoft.Azure.Cosmos/src/*.csproj' 
+    arguments: --configuration $(BuildConfiguration) /p:IsNightly=true /p:GeneratePackageOnBuild=true 
     
 - task: NuGetCommand@2
   displayName: 'NuGet push'
