@@ -173,10 +173,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// // An example on how to configure the serializer to ignore null values
         /// CosmosSerializer ignoreNullSerializer = new CosmosJsonDotNetSerializer(
-        ///         new JsonSerializerSettings()
-        ///         {
-        ///             NullValueHandling = NullValueHandling.Ignore
-        ///         });
+        ///             NullValueHandling = NullValueHandling.Ignore);
         ///         
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
