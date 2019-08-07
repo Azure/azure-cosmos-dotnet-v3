@@ -67,8 +67,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(batchAsyncOperation));
             }
 
-            await this.tryAddLimiter.WaitAsync(this.cancellationTokenSource.Token);
-            try
+            using (await this.tryAddLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
             {
                 if (this.batchOperations.Count == this.maxBatchOperationCount)
                 {
@@ -88,10 +87,6 @@ namespace Microsoft.Azure.Cosmos
                 batchAsyncOperation.Operation.OperationIndex = this.batchOperations.Count;
                 this.batchOperations.Add(batchAsyncOperation);
                 return true;
-            }
-            finally
-            {
-                this.tryAddLimiter.Release();
             }
         }
 

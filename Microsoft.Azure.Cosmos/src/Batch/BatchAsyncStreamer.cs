@@ -140,16 +140,11 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            await this.dispatchLimiter.WaitAsync(this.cancellationTokenSource.Token);
-            try
+            using (await this.dispatchLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
             {
                 BatchAsyncBatcher previousBatcher = this.currentBatcher;
                 this.currentBatcher = this.CreateBatchAsyncBatcher();
                 return previousBatcher;
-            }
-            finally
-            {
-                this.dispatchLimiter.Release();
             }
         }
 

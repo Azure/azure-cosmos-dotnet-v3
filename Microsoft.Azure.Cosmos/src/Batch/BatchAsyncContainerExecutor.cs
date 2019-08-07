@@ -310,15 +310,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             SemaphoreSlim limiter = this.GetOrAddLimiterForPartitionKeyRange(pkRangeId);
-            await limiter.WaitAsync(cancellationToken).ConfigureAwait(false);
-
-            try
+            using (await limiter.UsingWaitAsync(cancellationToken))
             {
                 return await this.ExecuteServerRequestsAsync(pkRangeId, operations.Select(o => o.Operation), cancellationToken);
-            }
-            finally
-            {
-                limiter.Release();
             }
         }
 
