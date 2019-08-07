@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading.Tasks;
     using Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Linq;
@@ -341,6 +342,120 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
         }
 
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task UserTests(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            Database database = client.GetDatabase(DatabaseId);
+            List<string> createdIds = new List<string>();
+
+            try
+            {
+                UserResponse userResponse = await database.CreateUserAsync("BasicQueryUser1");
+                createdIds.Add(userResponse.User.Id);
+
+                userResponse = await database.CreateUserAsync("BasicQueryUser2");
+                createdIds.Add(userResponse.User.Id);
+
+                userResponse = await database.CreateUserAsync("BasicQueryUser3");
+                createdIds.Add(userResponse.User.Id);
+
+                //Read All
+                List<UserProperties> results = await this.ToListAsync(
+                    database.GetUserQueryStreamIterator,
+                    database.GetUserQueryIterator<UserProperties>,
+                    null);
+
+                CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
+
+                //Basic query
+                List<UserProperties> queryResults = await this.ToListAsync(
+                    database.GetUserQueryStreamIterator,
+                    database.GetUserQueryIterator<UserProperties>,
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")"
+                );
+
+                CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
+            }
+            finally
+            {
+                foreach (var id in createdIds)
+                {
+                    await database.GetUser(id).DeleteAsync();
+                }
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task PermissionTests(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            Database database = client.GetDatabase(DatabaseId);
+            List<string> createdPermissionIds = new List<string>();
+            List<string> createdContainerIds = new List<string>();
+            string userId = Guid.NewGuid().ToString();
+            User user = null;
+
+            try
+            {
+                UserResponse createUserResponse = await database.CreateUserAsync(userId);
+                Assert.AreEqual(HttpStatusCode.Created, createUserResponse.StatusCode);
+                user = createUserResponse.User;
+
+                ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                Container container = createContainerResponse.Container;
+                PermissionResponse permissionResponse = await user.CreatePermissionAsync(PermissionProperties.CreateForContainer("BasicQueryPermission1", PermissionMode.All, container));
+                createdContainerIds.Add(createContainerResponse.Container.Id);
+                createdPermissionIds.Add(permissionResponse.Permission.Id);
+
+
+                createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                container = createContainerResponse.Container;
+                permissionResponse = await user.CreatePermissionAsync(PermissionProperties.CreateForContainer("BasicQueryPermission2", PermissionMode.All, container));
+                createdContainerIds.Add(createContainerResponse.Container.Id);
+                createdPermissionIds.Add(permissionResponse.Permission.Id);
+
+                createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                container = createContainerResponse.Container;
+                permissionResponse = await user.CreatePermissionAsync(PermissionProperties.CreateForContainer("BasicQueryPermission3", PermissionMode.All, container));
+                createdContainerIds.Add(createContainerResponse.Container.Id);
+                createdPermissionIds.Add(permissionResponse.Permission.Id);
+
+                //Read All
+                List<PermissionProperties> results = await this.ToListAsync(
+                    user.GetPermissionQueryStreamIterator,
+                    user.GetPermissionQueryIterator<PermissionProperties>,
+                    null);
+
+                CollectionAssert.IsSubsetOf(createdPermissionIds, results.Select(x => x.Id).ToList());
+
+                //Basic query
+                List<PermissionProperties> queryResults = await this.ToListAsync(
+                    user.GetPermissionQueryStreamIterator,
+                    user.GetPermissionQueryIterator<PermissionProperties>,
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryPermission\")"
+                );
+
+                CollectionAssert.AreEquivalent(createdPermissionIds, queryResults.Select(x => x.Id).ToList());
+            }
+            finally
+            {
+                foreach (var id in createdPermissionIds)
+                {
+                    await user.GetPermission(id).DeletePermissionAsync();
+                }
+                foreach (var id in createdContainerIds)
+                {
+                    await database.GetContainer(id).DeleteContainerAsync();
+                }
+                await user?.DeleteAsync();
+            }
+        }
+
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);
         private delegate FeedIterator QueryStream(string querytext, string continuationToken, QueryRequestOptions options);
 
@@ -378,10 +493,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(pagedStreamResults.Count, streamResults.Count);
 
-            // Both lists should be the same
+            // Both lists should be the same if not PermssionsProperties. PermissionProperties will have a different ResouceToken in the payload when read.
             string streamResultString = JsonConvert.SerializeObject(streamResults);
             string streamPagedResultString = JsonConvert.SerializeObject(pagedStreamResults);
-            Assert.AreEqual(streamPagedResultString, streamResultString);
+            if (typeof(T) != typeof(PermissionProperties))
+            {
+                Assert.AreEqual(streamPagedResultString, streamResultString);
+            }
 
             FeedIterator<T> feedIterator = createQuery(queryText, null, RequestOptions);
             List<T> results = new List<T>();
@@ -411,9 +529,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Both lists should be the same
             string resultString = JsonConvert.SerializeObject(results);
             string pagedResultString = JsonConvert.SerializeObject(pagedResults);
-            Assert.AreEqual(pagedResultString, resultString);
 
-            Assert.AreEqual(streamPagedResultString, resultString);
+            if (typeof(T) != typeof(PermissionProperties))
+            {
+                Assert.AreEqual(pagedResultString, resultString);
+                Assert.AreEqual(streamPagedResultString, resultString);
+            }
+
             return results;
         }
     }
