@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosSerializationOptions = this.CosmosSerializationOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 EnableGroupBy = this.EnableGroupBy,
-                Properties = this.Properties
+                Properties = this.Properties,
                 IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting
             };
 
