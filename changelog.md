@@ -5,8 +5,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Changed
-- [#650](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/650) CosmosJsonDotNetSerializer is replace with CosmosSerializerOptions
+### Added
+
+- [#650](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/650) CosmosSerializerOptions to customize serialization
 
 ### Fixed
 
