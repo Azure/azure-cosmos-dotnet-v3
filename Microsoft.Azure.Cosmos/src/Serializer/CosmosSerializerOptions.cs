@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     /// This class provides a way to configure basic
     /// serializer settings.
     /// </summary>
-    public struct CosmosSerializerSettings
+    public struct CosmosSerializerOptions
     {
         /// <summary>
         /// Get's if the serializer should ignore null properties
@@ -24,6 +24,6 @@ namespace Microsoft.Azure.Cosmos
         /// The naming policy of the serializer. This is used to configure
         /// camel casing
         /// </summary>
-        public CosmosNamingPolicy NamingPolicy { get; set; }
+        public CosmosNamingPolicy PropertyNamingPolicy { get; set; }
     }
 }

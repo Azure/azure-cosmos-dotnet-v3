@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The default Cosmos JSON.NET serializer.
     /// </summary>
-    public sealed class CosmosJsonDotNetSerializer : CosmosSerializer
+    internal sealed class CosmosJsonDotNetSerializer : CosmosSerializer
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
         private readonly JsonSerializer Serializer;
@@ -20,19 +20,30 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a serializer that uses the JSON.net serializer
         /// </summary>
-        /// <param name="ignoreNullValues">Ignore null values</param>
-        /// <param name="indented">Indent the JSON</param>
-        /// <param name="propertyNamingPolicy">Support different naming policy like CamelCase</param>
-        public CosmosJsonDotNetSerializer(
-            bool ignoreNullValues = false,
-            bool indented = false,
-            CosmosNamingPolicy propertyNamingPolicy = CosmosNamingPolicy.Default)
+        /// <remarks>
+        /// This is internal to reduce exposure of JSON.net types so
+        /// it is easier to convert to System.Text.Json
+        /// </remarks>
+        internal CosmosJsonDotNetSerializer()
+        {
+            this.Serializer = JsonSerializer.Create();
+        }
+
+        /// <summary>
+        /// Create a serializer that uses the JSON.net serializer
+        /// </summary>
+        /// <remarks>
+        /// This is internal to reduce exposure of JSON.net types so
+        /// it is easier to convert to System.Text.Json
+        /// </remarks>
+        internal CosmosJsonDotNetSerializer(
+            CosmosSerializerOptions cosmosSerializerOptions)
         {
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
             {
-                NullValueHandling = ignoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
-                Formatting = indented ? Formatting.Indented : Formatting.None,
-                ContractResolver = propertyNamingPolicy == CosmosNamingPolicy.CamelCase
+                NullValueHandling = cosmosSerializerOptions.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
+                Formatting = cosmosSerializerOptions.Indented ? Formatting.Indented : Formatting.None,
+                ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosNamingPolicy.CamelCase
                     ? new CamelCasePropertyNamesContractResolver() : null,
             };
 

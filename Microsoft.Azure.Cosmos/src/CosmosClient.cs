@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk"/>
         /// </remarks>
         public CosmosClient(
-            string connectionString, 
+            string connectionString,
             CosmosClientOptions clientOptions = null)
             : this(
                   CosmosClientOptions.GetAccountEndpoint(connectionString),
@@ -612,18 +612,19 @@ namespace Microsoft.Azure.Cosmos
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
+            CosmosSerializer userSerializer = this.ClientOptions.GetCosmosSerializerWithWrapperOrDefault();
             this.ResponseFactory = new CosmosResponseFactory(
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
-                userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault);
+                userJsonSerializer: userSerializer);
 
             CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
-                this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
-                this.ClientOptions.PropertiesSerializer);
+                cosmosSerializer: userSerializer,
+                propertiesSerializer: this.ClientOptions.PropertiesSerializer);
 
             this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
-                userJsonSerializer: this.ClientOptions.CosmosSerializerWithWrapperOrDefault,
+                userJsonSerializer: userSerializer,
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 sqlQuerySpecSerializer: sqlQuerySpecSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
@@ -632,7 +633,7 @@ namespace Microsoft.Azure.Cosmos
                 documentQueryClient: new DocumentQueryClient(this.DocumentClient));
         }
 
-        internal async virtual Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
+        internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
         {
             if (!this.accountConsistencyLevel.HasValue)
             {
