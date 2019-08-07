@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             dynamic testItem = new { id = "testid", description = (string)null, CamelCaseProperty = "TestCamelCase" };
             using (Stream stream = cosmosSerializer.ToStream<dynamic>(testItem))
             {
-                using(StreamReader sr = new StreamReader(stream))
+                using (StreamReader sr = new StreamReader(stream))
                 {
                     string jsonString = sr.ReadToEnd();
                     // Notice description is not included, camelCaseProperty starts lower case, the white space shows the indents
