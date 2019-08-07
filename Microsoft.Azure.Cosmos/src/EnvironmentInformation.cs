@@ -9,10 +9,11 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class EnvironmentInformation
     {
-        internal static readonly string clientId;
-        internal static readonly string clientSDKVersion;
-        internal static readonly string framework;
-        internal static readonly string architecture;
+        internal const string Delimiter = " ";
+        private static readonly string clientId;
+        private static readonly string clientSDKVersion;
+        private static readonly string framework;
+        private static readonly string architecture;
 
         static EnvironmentInformation()
         {

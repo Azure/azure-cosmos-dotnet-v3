@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.applicationName;
             set
             {
-                this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + value;
+                this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + EnvironmentInformation.Delimiter + value;
                 this.applicationName = value;
             }
         }
