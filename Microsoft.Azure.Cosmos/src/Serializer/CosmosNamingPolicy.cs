@@ -4,16 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.IO;
-
     /// <summary>
-    /// This class provides a way to configure basic
-    /// serializer settings.
+    /// Determines the naming policy used to convert a string-based name to another format, such as a camel-casing format.
     /// </summary>
-    public enum CosmosNamingPolicy
+    public enum CosmosPropertyNamingPolicy
     {
         /// <summary>
-        /// The default naming policy
+        /// No custom naming policy.
+        /// The property name will be the same as the source.
         /// </summary>
         Default = 0,
 

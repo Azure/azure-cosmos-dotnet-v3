@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosSerializerOptions cosmosSerializerOptions = new CosmosSerializerOptions()
             {
                 IgnoreNullValues = true,
-                PropertyNamingPolicy = CosmosNamingPolicy.CamelCase,
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
             };
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     IgnoreNullValues = true,
                     Indented = true,
-                    PropertyNamingPolicy = CosmosNamingPolicy.CamelCase
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
                 }
             };
 

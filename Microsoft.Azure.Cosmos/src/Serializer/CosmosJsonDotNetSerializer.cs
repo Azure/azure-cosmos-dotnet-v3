@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 NullValueHandling = cosmosSerializerOptions.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
                 Formatting = cosmosSerializerOptions.Indented ? Formatting.Indented : Formatting.None,
-                ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosNamingPolicy.CamelCase
+                ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase
                     ? new CamelCasePropertyNamesContractResolver() : null,
             };
 

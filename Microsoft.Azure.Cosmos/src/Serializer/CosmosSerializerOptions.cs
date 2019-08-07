@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos
         public bool Indented { get; set; }
 
         /// <summary>
-        /// The naming policy of the serializer. This is used to configure
-        /// camel casing
+        /// Determines the naming policy used to convert a string-based name to another format,
+        /// such as a camel-casing format.
         /// </summary>
-        public CosmosNamingPolicy PropertyNamingPolicy { get; set; }
+        public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
     }
 }
