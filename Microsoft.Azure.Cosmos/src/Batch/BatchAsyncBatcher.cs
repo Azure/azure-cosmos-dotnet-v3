@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxBatchByteSize;
         private readonly int maxBatchOperationCount;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        private volatile long currentSize = 0;
+        private long currentSize = 0;
 
         public bool IsEmpty => this.batchOperations.Count == 0;
 
