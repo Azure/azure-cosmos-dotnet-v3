@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int dispatchTimerInSeconds;
         private readonly CosmosSerializer cosmosSerializer;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        private BatchAsyncBatcher currentBatcher;
+        private volatile BatchAsyncBatcher currentBatcher;
         private TimerPool timerPool;
         private PooledTimer currentTimer;
         private Task timerTask;
