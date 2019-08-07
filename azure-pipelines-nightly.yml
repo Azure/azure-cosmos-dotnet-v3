@@ -8,7 +8,7 @@ schedules:
   displayName: Cosmos Nightly 
   branches:
     include: master
-  always: boolean # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
+  always: true # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
 
 
 variables:
