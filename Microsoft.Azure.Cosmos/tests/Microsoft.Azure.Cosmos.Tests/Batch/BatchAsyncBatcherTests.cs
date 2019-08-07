@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -58,25 +59,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return response;
             };
 
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithFailure
-            = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
-            {
-                throw expectedException;
-            };
-
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithSplit
+        // The response will include all but 2 operation responses
+        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithLessResponses
             = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
+                int operationCount = operations.Count - 2;
                 List<BatchOperationResult> results = new List<BatchOperationResult>();
-                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[operations.Count];
+                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[operationCount];
                 int index = 0;
-                foreach (BatchAsyncOperationContext operation in operations)
+                foreach (BatchAsyncOperationContext operation in operations.Take(operationCount))
                 {
                     results.Add(
-                    new BatchOperationResult(HttpStatusCode.Gone)
+                    new BatchOperationResult(HttpStatusCode.OK)
                     {
-                        ETag = operation.Operation.Id,
-                        SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
+                        ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
+                        ETag = operation.Operation.Id
                     });
 
                     arrayOperations[index++] = operation.Operation;
@@ -87,21 +84,24 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                    maxBodyLength: (int)responseContent.Length * operations.Count,
-                    maxOperationCount: operations.Count,
+                    maxBodyLength: (int)responseContent.Length * operationCount,
+                    maxOperationCount: operationCount,
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellation);
 
-                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent };
-                responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
-
                 BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
-                    responseMessage,
+                    new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
                 PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
                 return response;
+            };
+
+        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithFailure
+            = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
+            {
+                throw expectedException;
             };
 
         [DataTestMethod]
@@ -203,6 +203,49 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await batchAsyncBatcher.DispatchAsync();
 
+            for (int i = 0; i < 10; i++)
+            {
+                BatchAsyncOperationContext context = contexts[i];
+                Assert.AreEqual(TaskStatus.RanToCompletion, context.Task.Status);
+                BatchOperationResult result = await context.Task;
+                Assert.AreEqual(i.ToString(), result.ETag);
+            }
+        }
+
+        [TestMethod]
+        public async Task DispatchWithLessResponses()
+        {
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.ExecutorWithLessResponses);
+            BatchAsyncBatcher secondAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
+            List<BatchAsyncOperationContext> contexts = new List<BatchAsyncOperationContext>(10);
+            for (int i = 0; i < 10; i++)
+            {
+                BatchAsyncOperationContext context = new BatchAsyncOperationContext(string.Empty, new ItemBatchOperation(OperationType.Create, i, i.ToString()));
+                contexts.Add(context);
+                Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(context));
+            }
+
+            await batchAsyncBatcher.DispatchAsync();
+
+            for (int i = 0; i < 10; i++)
+            {
+                BatchAsyncOperationContext context = contexts[i];
+                // Some tasks should not be resolved
+                Assert.IsTrue(context.Task.Status == TaskStatus.RanToCompletion || context.Task.Status == TaskStatus.WaitingForActivation);
+                if (context.Task.Status == TaskStatus.RanToCompletion)
+                {
+                    BatchOperationResult result = await context.Task;
+                    Assert.AreEqual(i.ToString(), result.ETag);
+                }
+                else
+                {
+                    // Pass the pending one to another batcher
+                    Assert.IsTrue(await secondAsyncBatcher.TryAddAsync(context));
+                }
+            }
+
+            await secondAsyncBatcher.DispatchAsync();
+            // All tasks should be completed
             for (int i = 0; i < 10; i++)
             {
                 BatchAsyncOperationContext context = contexts[i];

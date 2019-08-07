@@ -111,8 +111,14 @@ namespace Microsoft.Azure.Cosmos
                     for (int index = 0; index < this.batchOperations.Count; index++)
                     {
                         BatchAsyncOperationContext operation = this.batchOperations[index];
-                        BatchOperationResult response = batchResponse[index];
-                        operation.Complete(response);
+                        try
+                        {
+                            BatchOperationResult response = batchResponse[operation.Operation.OperationIndex];
+                            operation.Complete(response);
+                        }
+                        catch (KeyNotFoundException)
+                        {
+                        }
                     }
                 }
             }
