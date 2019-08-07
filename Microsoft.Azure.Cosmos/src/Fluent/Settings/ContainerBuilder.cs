@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public ContainerBuilder()
+        protected ContainerBuilder()
         {
         }
 

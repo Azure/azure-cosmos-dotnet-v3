@@ -21,31 +21,6 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        /// <summary>
-        /// Create a FeedResponse object with the default properties set
-        /// </summary>
-        /// <param name="httpStatusCode">The status code of the response</param>
-        /// <param name="headers">The headers of the response</param>
-        /// <param name="resource">The object from the response</param>
-        internal FeedResponse(
-            HttpStatusCode httpStatusCode,
-            Headers headers,
-            IEnumerable<T> resource)
-        {
-            this.StatusCode = httpStatusCode;
-            this.Headers = headers;
-            this.Resource = resource;
-        }
-
-        /// <inheritdoc/>
-        public override Headers Headers { get; }
-
-        /// <inheritdoc/>
-        public override IEnumerable<T> Resource { get; }
-
-        /// <inheritdoc/>
-        public override HttpStatusCode StatusCode { get; }
-
         /// <inheritdoc/>
         public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
