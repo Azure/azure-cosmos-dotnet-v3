@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                             break;
                         }
 
-                        lastContinuation = response.Headers.Continuation;
+                        lastContinuation = response.Headers.ContinuationToken;
                         if (this.resultSetIterator.HasMoreResults)
                         {
                             await this.DispatchChangesAsync(response, cancellationToken).ConfigureAwait(false);
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         throw;
                     }
 
-                    DefaultTrace.TraceException(canceledException);
+                    Extensions.TraceException(canceledException);
                     DefaultTrace.TraceWarning("exception: lease token '{0}'", this.options.LeaseToken);
 
                     // ignore as it is caused by Cosmos DB client when StopAsync is called

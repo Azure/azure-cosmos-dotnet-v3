@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 (int)initialPageSize,
-                constructorParams.FeedOptions.RequestContinuation,
+                constructorParams.FeedOptions.RequestContinuationToken,
                 cancellationToken);
         }
 

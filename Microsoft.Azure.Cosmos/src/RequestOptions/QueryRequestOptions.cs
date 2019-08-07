@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Globalization;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -84,7 +85,29 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.PartitionKey"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
-        public PartitionKey PartitionKey { get; set; }
+        /// <remarks>
+        /// Only applicable to Item operations
+        /// </remarks>
+        public PartitionKey? PartitionKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The consistency level required for the request.
+        /// </value>
+        /// <remarks>
+        /// Azure Cosmos DB offers 5 different consistency levels. Strong, Bounded Staleness, Session, Consistent Prefix and Eventual - in order of strongest to weakest consistency. <see cref="ConnectionPolicy"/>
+        /// <para>
+        /// While this is set at a database account level, Azure Cosmos DB allows a developer to override the default consistency level
+        /// for each individual request.
+        /// </para>
+        /// </remarks>
+        public ConsistencyLevel? ConsistencyLevel
+        {
+            get => this.BaseConsistencyLevel;
+            set => this.BaseConsistencyLevel = value;
+        }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -117,23 +140,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal string SessionToken { get; set; }
 
-        /// <summary>
-        /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
-        /// </summary>
-        /// <value>
-        /// The consistency level required for the request.
-        /// </value>
-        /// <remarks>
-        /// Azure Cosmos DB offers 5 different consistency levels. Strong, Bounded Staleness, Session, Consistent Prefix and Eventual - in order of strongest to weakest consistency. <see cref="ConnectionPolicy"/>
-        /// <para>
-        /// While this is set at a database account level, Azure Cosmos DB allows a developer to override the default consistency level
-        /// for each individual request.
-        /// </para>
-        /// </remarks>
-        internal ConsistencyLevel? ConsistencyLevel { get; set; }
-
-        internal bool EnableCrossPartitionQuery { get; set; }
-
         internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
 
         /// <summary>
@@ -149,12 +155,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request">The <see cref="RequestMessage"/></param>
         internal override void PopulateRequestOptions(RequestMessage request)
         {
-            request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-            request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-            request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+            if (this.PartitionKey != null && request.ResourceType != ResourceType.Document)
+            {
+                throw new ArgumentException($"{nameof(this.PartitionKey)} can only be set for item operations");
+            }
+
+            // Cross partition is only applicable to item operations.
+            if (this.PartitionKey == null && !this.IsEffectivePartitionKeyRouting && request.ResourceType == ResourceType.Document)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+            }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
-            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
@@ -209,6 +221,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties
+                IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting
             };
 
             return queryRequestOptions;
@@ -236,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.Continuation, continuationToken);
+                request.Headers.ContinuationToken = continuationToken;
             }
         }
 

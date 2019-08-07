@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 {
                     updatedContinuationToken = new OffsetContinuationToken(
                         this.skipCount,
-                        sourcePage.Headers.Continuation).ToString();
+                        sourcePage.Headers.ContinuationToken).ToString();
                 }
             }
 

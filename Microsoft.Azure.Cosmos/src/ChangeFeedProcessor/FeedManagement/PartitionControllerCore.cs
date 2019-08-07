@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class PartitionControllerCore : PartitionController
     {
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (Exception e)
             {
-                DefaultTrace.TraceException(e);
+                Extensions.TraceException(e);
                 DefaultTrace.TraceWarning("Lease with token {0}: failed to remove lease", lease.CurrentLeaseToken);
             }
             finally
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (Exception e)
             {
-                DefaultTrace.TraceException(e);
+                Extensions.TraceException(e);
                 DefaultTrace.TraceWarning("Lease with token {0}: processing failed", e, lease.CurrentLeaseToken);
             }
 
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (Exception e)
             {
-                DefaultTrace.TraceException(e);
+                Extensions.TraceException(e);
                 DefaultTrace.TraceWarning("Lease with token {0}: failed to split", e, lease.CurrentLeaseToken);
             }
         }

@@ -19,7 +19,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy retryPolicyInstance = await GetRetryPolicyAsync(request);
+            IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
+            request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
             try
             {
@@ -42,6 +43,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return ex.ToCosmosResponseMessage(request);
             }
+            catch (CosmosException ex)
+            {
+                return ex.ToCosmosResponseMessage(request);
+            }
             catch (AggregateException ex)
             {
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
@@ -55,6 +60,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
 
                 throw;
+            }
+            finally
+            {
+                request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
             }
         }
 

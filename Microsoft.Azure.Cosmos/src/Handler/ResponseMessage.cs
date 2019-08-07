@@ -96,6 +96,14 @@ namespace Microsoft.Azure.Cosmos
         public virtual Headers Headers { get; }
 
         /// <summary>
+        /// Gets the Continuation Token in the current <see cref="ResponseMessage"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is only used in feed operations like query and change feed
+        /// </remarks>
+        public virtual string ContinuationToken => this.Headers?.ContinuationToken;
+
+        /// <summary>
         /// Gets the original request message
         /// </summary>
         public virtual RequestMessage RequestMessage { get; internal set; }
@@ -140,7 +148,6 @@ namespace Microsoft.Azure.Cosmos
         public void Dispose()
         {
             this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         internal string GetResourceAddress()

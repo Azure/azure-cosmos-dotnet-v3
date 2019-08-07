@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static readonly int serverStalenessIntervalInSeconds;
         private static readonly int masterStalenessIntervalInSeconds;
+        public static readonly CosmosSerializer Serializer = new CosmosJsonDotNetSerializer();
 
         static TestCommon()
         {
@@ -50,12 +51,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestCommon.masterStalenessIntervalInSeconds = int.Parse(ConfigurationManager.AppSettings["MasterStalenessIntervalInSeconds"], CultureInfo.InvariantCulture);
         }
 
-        internal static CosmosClientBuilder GetDefaultConfiguration()
+        internal static (string endpoint, string authKey) GetAccountInfo()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
-            return new CosmosClientBuilder(accountEndpoint: endpoint, accountKey: authKey);
+            return (endpoint, authKey);
+        }
+
+        internal static CosmosClientBuilder GetDefaultConfiguration()
+        {
+            (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
+
+            return new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, accountKey: accountInfo.authKey);
         }
 
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
@@ -67,6 +75,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             return cosmosClientBuilder.Build();
+        }
+
+        internal static CosmosClient CreateCosmosClient(CosmosClientOptions clientOptions)
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            return new CosmosClient(endpoint, authKey, clientOptions);
         }
 
         internal static CosmosClient CreateCosmosClient(
@@ -225,11 +241,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection localHeaders = null;
             if (headers != null)
             {
-                localHeaders = new StringKeyValueCollection(headers);
+                localHeaders = new DictionaryNameValueCollection(headers);
             }
             else
             {
-                localHeaders = new StringKeyValueCollection();
+                localHeaders = new DictionaryNameValueCollection();
             }
 
             string continuationToken = null;
@@ -397,11 +413,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             INameValueCollection localHeaders = null;
             if (headers != null)
             {
-                localHeaders = new StringKeyValueCollection(headers);
+                localHeaders = new DictionaryNameValueCollection(headers);
             }
             else
             {
-                localHeaders = new StringKeyValueCollection();
+                localHeaders = new DictionaryNameValueCollection();
             }
 
             string continuationToken = null;
@@ -1385,7 +1401,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<Cosmos.Database> databases = new List<Cosmos.Database>();
 
-            FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseIterator(maxItemCount: 10);
+            FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
+                queryDefinition: null,
+                continuationToken: null, 
+                requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
+
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10
             int totalCount = 0;
             while (resultSetIterator.HasMoreResults)
@@ -1413,7 +1433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static async Task DeleteDatabaseCollectionAsync(CosmosClient client, Cosmos.Database database)
         {
             //Delete them in chunks of 10.
-            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerIterator(maxItemCount: 10);
+            FeedIterator<ContainerProperties> resultSetIterator = database.GetContainerQueryIterator<ContainerProperties>(requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
             while (resultSetIterator.HasMoreResults)
             {
                 List<Task> deleteCollectionTasks = new List<Task>(10);

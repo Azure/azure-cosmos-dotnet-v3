@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 case JsonTokenType.String:
                     return Encoding.UTF8.GetString(this.BufferedToken.ToArray());
                 case JsonTokenType.Number:
-                    return this.Value.ToString();
+                    return this.Value.ToString(CultureInfo.InvariantCulture);
                 case JsonTokenType.True:
                     return "true";
                 case JsonTokenType.False:

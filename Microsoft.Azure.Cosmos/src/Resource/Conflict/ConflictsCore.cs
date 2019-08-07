@@ -38,11 +38,6 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
-
             if (conflict == null)
             {
                 throw new ArgumentNullException(nameof(conflict));
@@ -65,26 +60,67 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override FeedIterator<ConflictProperties> GetConflictIterator(
-            int? maxItemCount = null, 
-            string continuationToken = null)
+        public override FeedIterator GetConflictQueryStreamIterator(
+           string queryText = null,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null)
         {
-            return new FeedIteratorCore<ConflictProperties>(
-                maxItemCount,
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetConflictQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
-                null,
-                this.ConflictsFeedRequestExecutorAsync);
+                requestOptions);
         }
 
-        public override FeedIterator GetConflicttreamIterator(
-            int? maxItemCount = null, 
-            string continuationToken = null)
+        public override FeedIterator<T> GetConflictQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetConflictQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator GetConflictQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-                maxItemCount,
+               this.clientContext,
+               this.container.LinkUri,
+               ResourceType.Conflict,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        public override FeedIterator<T> GetConflictQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator databaseStreamIterator = this.GetConflictQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
-                null,
-                this.ConflictsFeedStreamRequestExecutorAsync);
+                requestOptions);
+
+            return new FeedIteratorCore<T>(
+                databaseStreamIterator,
+                this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
@@ -92,11 +128,6 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
-
             if (cosmosConflict == null)
             {
                 throw new ArgumentNullException(nameof(cosmosConflict));
@@ -159,54 +190,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return default(T);
-        }
-
-        private Task<ResponseMessage> ConflictsFeedStreamRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            return this.clientContext.ProcessResourceOperationAsync<ResponseMessage>(
-                resourceUri: this.container.LinkUri,
-                resourceType: ResourceType.Conflict,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                requestEnricher: request =>
-                {
-                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                responseCreator: response => response,
-                cosmosContainerCore: this.container,
-                partitionKey: null,
-                streamPayload: null,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<FeedResponse<ConflictProperties>> ConflictsFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            return this.clientContext.ProcessResourceOperationAsync<FeedResponse<ConflictProperties>>(
-                resourceUri: this.container.LinkUri,
-                resourceType: ResourceType.Conflict,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                cosmosContainerCore: this.container,
-                partitionKey: null,
-                streamPayload: null,
-                requestEnricher: request =>
-                {
-                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                responseCreator: response => this.clientContext.ResponseFactory.CreateResultSetQueryResponse<ConflictProperties>(response),
-                cancellationToken: cancellationToken);
         }
     }
 }

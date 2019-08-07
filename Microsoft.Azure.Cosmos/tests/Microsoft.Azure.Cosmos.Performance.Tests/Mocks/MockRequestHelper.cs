@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     response = new DocumentServiceResponse(
                         File.OpenRead("samplepayload.json"),
-                        new StringKeyValueCollection(),
+                        new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
                 }
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     response = new DocumentServiceResponse(
                         Stream.Null,
-                        new StringKeyValueCollection(),
+                        new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.NotFound
                     );
                 }
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     response = new DocumentServiceResponse(
                         File.OpenRead("samplepayload.json"),
-                        new StringKeyValueCollection(),
+                        new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
                 }
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     response = new DocumentServiceResponse(
                         Stream.Null,
-                        new StringKeyValueCollection(),
+                        new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.NotFound
                     );
                 }
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 response = new DocumentServiceResponse(
                         File.OpenRead("samplepayload.json"),
-                        new StringKeyValueCollection(),
+                        new DictionaryNameValueCollection(),
                         System.Net.HttpStatusCode.OK
                     );
             }

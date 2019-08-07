@@ -14,8 +14,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.collectionCache = collectionCache;
         }
 
-        public async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+        public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionRid,
             Range<string> range,
             bool forceRefresh = false)
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             HttpStatusCode lastStatusCode = HttpStatusCode.OK;
             do
             {
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
 
                 headers.Set(HttpConstants.HttpHeaders.PageSize, PageSizeString);
                 headers.Set(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);

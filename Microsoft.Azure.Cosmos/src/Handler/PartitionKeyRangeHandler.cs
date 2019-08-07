@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = null;
-            string originalContinuation = request.Headers.Continuation;
+            string originalContinuation = request.Headers.ContinuationToken;
             try
             {
                 RntdbEnumerationDirection rntdbEnumerationDirection = RntdbEnumerationDirection.Forward;
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         isMinInclusive: true,
                         isMaxInclusive: false)
                 };
-
+                
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
                 PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
@@ -150,6 +150,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
+            catch (CosmosException ex)
+            {
+                ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
+                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                return errorResponse;
+            }
             catch (AggregateException ex)
             {
                 SetOriginalContinuationToken(request, response, originalContinuation);
@@ -170,10 +176,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private void SetOriginalContinuationToken(RequestMessage request, ResponseMessage response, string originalContinuation)
         {
-            request.Headers.Continuation = originalContinuation;
+            request.Headers.ContinuationToken = originalContinuation;
             if (response != null)
             {
-                response.Headers.Continuation = originalContinuation;
+                response.Headers.ContinuationToken = originalContinuation;
             }
         }
     }

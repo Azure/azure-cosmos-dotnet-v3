@@ -81,8 +81,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateTriggersTest()
         {
             // Prevent failures if previous test did not clean up correctly 
-            await this.scripts.DeleteTriggerAsync("addTax");
-
+            try
+            {
+                await this.scripts.DeleteTriggerAsync("addTax");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //swallow
+            }
+            
             ToDoActivity item = new ToDoActivity()
             {
                 id = Guid.NewGuid().ToString(),
@@ -120,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TriggerProperties cosmosTrigger = await CreateRandomTrigger();
 
             HashSet<string> settings = new HashSet<string>();
-            FeedIterator<TriggerProperties> iter = this.scripts.GetTriggersIterator(); ;
+            FeedIterator<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(); ;
             while (iter.HasMoreResults)
             {
                 foreach (TriggerProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
@@ -191,14 +198,4 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createResponse;
         }
     }
-
-    public class ToDoActivity
-    {
-        public string id { get; set; }
-        public int taskNum { get; set; }
-        public double cost { get; set; }
-        public string description { get; set; }
-        public string status { get; set; }
-    }
-
 }

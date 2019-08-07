@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
+    using System.Runtime.ConstrainedExecution;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -36,7 +37,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default request timeout
         /// </summary>
-        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerCore());
+        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+
         private readonly Collection<RequestHandler> customHandlers;
 
         private int gatewayModeMaxConnectionLimit;
@@ -140,6 +142,12 @@ namespace Microsoft.Azure.Cosmos
         public ConnectionMode ConnectionMode { get; set; }
 
         /// <summary>
+        /// This can be used to weaken the database account consistency level for read operations.
+        /// If this is not set the database account consistency level will be used for all requests.
+        /// </summary>
+        public ConsistencyLevel? ConsistencyLevel { get; set; }
+
+        /// <summary>
         /// Get ot set the number of times client should retry on rate throttled requests.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
@@ -155,8 +163,28 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
-        /// Get ot set an optional serializer client should use to serialize or de-serialize cosmos request/responses.
+        /// Get to set an optional JSON serializer. The client will use it to serialize or de-serialize user's cosmos request/responses.
+        /// SDK owned types such as DatabaseProperties and ContainerProperties will always use the SDK default serializer.
         /// </summary>
+        /// <remarks>
+        /// To set a JSON.net serializer setting use <see cref="CosmosJsonDotNetSerializer"/>. 
+        /// The constructor supports passing in the JsonSerializerSettings.
+        /// </remarks>
+        /// <example>
+        /// // An example on how to configure the serializer to ignore null values
+        /// CosmosSerializer ignoreNullSerializer = new CosmosJsonDotNetSerializer(
+        ///         new JsonSerializerSettings()
+        ///         {
+        ///             NullValueHandling = NullValueHandling.Ignore
+        ///         });
+        ///         
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     Serializer = ignoreNullSerializer
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// </example>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer { get; set; }
 
@@ -171,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
         /// </summary>
-        [JsonConverter(typeof(ClientOptionJsonConverter))]
+        [JsonIgnore]
         internal CosmosSerializer CosmosSerializerWithWrapperOrDefault => this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
 
         /// <summary>
@@ -330,6 +358,30 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return connectionPolicy;
+        }
+
+        internal Documents.ConsistencyLevel? GetDocumentsConsistencyLevel()
+        {
+            if (!this.ConsistencyLevel.HasValue)
+            {
+                return null;
+            }
+
+            switch (this.ConsistencyLevel.Value)
+            {
+                case Cosmos.ConsistencyLevel.BoundedStaleness:
+                    return Documents.ConsistencyLevel.BoundedStaleness;
+                case Cosmos.ConsistencyLevel.ConsistentPrefix:
+                    return Documents.ConsistencyLevel.BoundedStaleness;
+                case Cosmos.ConsistencyLevel.Eventual:
+                    return Documents.ConsistencyLevel.Eventual;
+                case Cosmos.ConsistencyLevel.Session:
+                    return Documents.ConsistencyLevel.Session;
+                case Cosmos.ConsistencyLevel.Strong:
+                    return Documents.ConsistencyLevel.Strong;
+                default:
+                    throw new ArgumentException($"Unsupported ConsistencyLevel {this.ConsistencyLevel.Value}");
+            }
         }
 
         internal static string GetAccountEndpoint(string connectionString)

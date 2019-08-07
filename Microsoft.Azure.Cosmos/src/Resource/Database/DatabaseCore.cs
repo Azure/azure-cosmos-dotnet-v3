@@ -67,29 +67,6 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response);
         }
 
-        internal async Task<int?> ReadProvisionedThroughputAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosOfferResult offerResult = await this.ReadProvisionedThroughputIfExistsAsync(cancellationToken);
-            if (offerResult.StatusCode == HttpStatusCode.OK || offerResult.StatusCode == HttpStatusCode.NotFound)
-            {
-                return offerResult.Throughput;
-            }
-
-            throw offerResult.CosmosException;
-        }
-
-        internal async Task ReplaceProvisionedThroughputAsync(
-            int throughput,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            CosmosOfferResult offerResult = await this.ReplaceProvisionedThroughputIfExistsAsync(throughput, cancellationToken);
-            if (offerResult.StatusCode != HttpStatusCode.OK)
-            {
-                throw offerResult.CosmosException;
-            }
-        }
-
         public async override Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -101,25 +78,12 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetRIDAsync(cancellationToken)
-            .ContinueWith(task => this.ClientContext.Client.Offers.GetOfferV2Async(task.Result, cancellationToken),
-                cancellationToken)
-            .Unwrap();
-
-            if (offerV2 == null)
-            {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
-            }
-
-            Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
-                streamPayload: null,
-                operationType: OperationType.Read,
-                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
-                resourceType: ResourceType.Offer,
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReadThroughputAsync(
+                targetRID: rid,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
-
-            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(response);
         }
 
         public async override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -127,27 +91,13 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetRIDAsync(cancellationToken)
-             .ContinueWith(task => this.ClientContext.Client.Offers.GetOfferV2Async(task.Result, cancellationToken),
-                 cancellationToken)
-             .Unwrap();
-
-            if (offerV2 == null)
-            {
-                return new ThroughputResponse(httpStatusCode: HttpStatusCode.NotFound, headers: null, throughputProperties: null);
-            }
-
-            OfferV2 newOffer = new OfferV2(offerV2, throughput);
-
-            Task<ResponseMessage> response = this.ProcessResourceOperationStreamAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
-                operationType: OperationType.Replace,
-                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
-                resourceType: ResourceType.Offer,
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputAsync(
+                targetRID: rid,
+                throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
-
-            return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(response);
         }
 
         public override Task<ResponseMessage> ReadStreamAsync(
@@ -232,16 +182,29 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             Container container = this.GetContainer(containerProperties.Id);
-            ContainerResponse cosmosContainerResponse = await container.ReadContainerAsync(cancellationToken: cancellationToken);
-            if (cosmosContainerResponse.StatusCode != HttpStatusCode.NotFound)
+            ResponseMessage response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
+            if (response.StatusCode != HttpStatusCode.NotFound)
             {
-                return cosmosContainerResponse;
-            }
+                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
+                if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                {
+                    throw new ArgumentException(
+                        string.Format(
+                            ClientResources.PartitionKeyPathConflict,
+                            containerProperties.PartitionKeyPath,
+                            containerProperties.Id,
+                            retrivedContainerResponse.Resource.PartitionKeyPath),
+                        nameof(containerProperties.PartitionKey));
+                }
 
-            cosmosContainerResponse = await this.CreateContainerAsync(containerProperties, throughput, requestOptions, cancellationToken: cancellationToken);
-            if (cosmosContainerResponse.StatusCode != HttpStatusCode.Conflict)
+                return retrivedContainerResponse;
+            }
+            
+            this.ValidateContainerProperties(containerProperties);
+            response = await this.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, cancellationToken);
+            if (response.StatusCode != HttpStatusCode.Conflict)
             {
-                return cosmosContainerResponse;
+                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -268,17 +231,6 @@ namespace Microsoft.Azure.Cosmos
 
             ContainerProperties containerProperties = new ContainerProperties(id, partitionKeyPath);
             return this.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, cancellationToken);
-        }
-
-        public override FeedIterator<ContainerProperties> GetContainerIterator(
-            int? maxItemCount = null,
-            string continuationToken = null)
-        {
-            return new FeedIteratorCore<ContainerProperties>(
-                maxItemCount,
-                continuationToken,
-                null,
-                this.ContainerFeedRequestExecutorAsync);
         }
 
         public override Container GetContainer(string id)
@@ -314,16 +266,67 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override FeedIterator GetContainerStreamIterator(
-            int? maxItemCount = null,
+        public override FeedIterator GetContainerQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetContainerQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator<T> GetContainerQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetContainerQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public override FeedIterator GetContainerQueryStreamIterator(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
-                maxItemCount,
+               this.ClientContext,
+               this.LinkUri,
+               ResourceType.Collection,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        public override FeedIterator<T> GetContainerQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator databaseStreamIterator = this.GetContainerQueryStreamIterator(
+                queryDefinition,
                 continuationToken,
-                requestOptions,
-                this.ContainerStreamFeedRequestExecutorAsync);
+                requestOptions);
+
+            return new FeedIteratorCore<T>(
+                databaseStreamIterator,
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
         public override ContainerBuilder DefineContainer(
@@ -340,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyPath));
             }
 
-            return new ContainerBuilder(this, name, partitionKeyPath);
+            return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
         internal void ValidateContainerProperties(ContainerProperties containerProperties)
@@ -367,31 +370,10 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
-        internal Task<CosmosOfferResult> ReadProvisionedThroughputIfExistsAsync(
-            CancellationToken cancellationToken = default(CancellationToken))
+        internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.GetRIDAsync(cancellationToken)
-                .ContinueWith(task => this.ClientContext.Client.Offers.ReadProvisionedThroughputIfExistsAsync(task.Result, cancellationToken), cancellationToken)
-                .Unwrap();
-        }
-
-        internal Task<CosmosOfferResult> ReplaceProvisionedThroughputIfExistsAsync(
-            int throughput,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task<string> rid = this.GetRIDAsync(cancellationToken);
-            return rid.ContinueWith(task => this.ClientContext.Client.Offers.ReplaceThroughputIfExistsAsync(task.Result, throughput, cancellationToken), cancellationToken)
-                .Unwrap();
-        }
-
-        internal virtual Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ReadAsync(cancellationToken: cancellationToken)
-                .ContinueWith(task =>
-                {
-                    DatabaseResponse response = task.Result;
-                    return response.Resource.ResourceId;
-                }, cancellationToken);
+            DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
+            return databaseResponse?.Resource?.ResourceId;
         }
 
         private Task<ResponseMessage> CreateContainerStreamInternalAsync(
@@ -404,55 +386,6 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 throughput: throughput,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<ResponseMessage> ContainerStreamFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions requestOptions,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
-               resourceUri: this.LinkUri,
-               resourceType: ResourceType.Collection,
-               operationType: OperationType.ReadFeed,
-               cosmosContainerCore: null,
-               partitionKey: null,
-               streamPayload: null,
-               requestOptions: requestOptions,
-               requestEnricher: request =>
-               {
-                   QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                   QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-               },
-               cancellationToken: cancellationToken);
-        }
-
-        private Task<FeedResponse<ContainerProperties>> ContainerFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(state == null);
-
-            return this.ClientContext.ProcessResourceOperationAsync<FeedResponse<ContainerProperties>>(
-                resourceUri: this.LinkUri,
-                resourceType: ResourceType.Collection,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: null,
-                requestEnricher: request =>
-                {
-                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                responseCreator: response => this.ClientContext.ResponseFactory.CreateResultSetQueryResponse<ContainerProperties>(response),
                 cancellationToken: cancellationToken);
         }
 

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Fluent
 {
+    using System;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -11,24 +12,29 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// </summary>
     public class ContainerBuilder : ContainerDefinition<ContainerBuilder>
     {
-        private readonly Database cosmosContainers;
+        private readonly Database database;
+        private readonly CosmosClientContext clientContext;
+        private readonly Uri containerUri;
         private UniqueKeyPolicy uniqueKeyPolicy;
         private ConflictResolutionPolicy conflictResolutionPolicy;
 
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public ContainerBuilder()
+        protected ContainerBuilder()
         {
         }
 
         internal ContainerBuilder(
             Database cosmosContainers,
+            CosmosClientContext clientContext,
             string name,
             string partitionKeyPath = null)
             : base(name, partitionKeyPath)
         {
-            this.cosmosContainers = cosmosContainers;
+            this.database = cosmosContainers;
+            this.clientContext = clientContext;
+            this.containerUri = UriFactory.CreateDocumentCollectionUri(this.database.Id, name);
         }
 
         /// <summary>
@@ -65,7 +71,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             ContainerProperties containerProperties = this.Build();
 
-            return await this.cosmosContainers.CreateContainerAsync(containerProperties, throughput);
+            return await this.database.CreateContainerAsync(containerProperties, throughput);
+        }
+
+        /// <summary>
+        /// Creates a container if it does not exist with the current fluent definition.
+        /// </summary>
+        /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
+        /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
+        public async Task<ContainerResponse> CreateIfNotExistsAsync(int? throughput = null)
+        {
+            ContainerProperties containerProperties = this.Build();
+
+            return await this.database.CreateContainerIfNotExistsAsync(containerProperties, throughput);
         }
 
         /// <summary>
@@ -101,6 +122,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         private void AddConflictResolution(ConflictResolutionPolicy conflictResolutionPolicy)
         {
+            if (conflictResolutionPolicy.Mode == ConflictResolutionMode.Custom 
+                && !string.IsNullOrEmpty(conflictResolutionPolicy.ResolutionProcedure))
+            {
+                this.clientContext.ValidateResource(conflictResolutionPolicy.ResolutionProcedure);
+                conflictResolutionPolicy.ResolutionProcedure = UriFactory.CreateStoredProcedureUri(this.containerUri.ToString(), conflictResolutionPolicy.ResolutionProcedure).ToString();
+            }
+
             this.conflictResolutionPolicy = conflictResolutionPolicy;
         }
     }

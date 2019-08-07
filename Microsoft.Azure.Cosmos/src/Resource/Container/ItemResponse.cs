@@ -5,9 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Create a <see cref="ItemResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        public ItemResponse()
+        protected ItemResponse()
             : base()
         {
         }
@@ -31,11 +28,35 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             T item)
-            : base(
-                httpStatusCode,
-                headers,
-                item)
         {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = item;
         }
+
+        /// <inheritdoc/>
+        public override Headers Headers { get; }
+
+        /// <inheritdoc/>
+        public override T Resource { get; }
+
+        /// <inheritdoc/>
+        public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
+
+        /// <inheritdoc/>
+        public override string ActivityId => this.Headers?.ActivityId;
+
+        /// <inheritdoc/>
+        public override string ETag => this.Headers?.ETag;
+
+        /// <inheritdoc/>
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+
+        /// <inheritdoc/>
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+
     }
 }

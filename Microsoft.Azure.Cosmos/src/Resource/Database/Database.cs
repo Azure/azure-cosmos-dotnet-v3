@@ -99,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets database throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>Provisioned throughput in request units per second</returns>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
@@ -118,7 +119,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>Provisioned throughput in request units per second</returns>
         public abstract Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -127,6 +127,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The throughput response.</returns>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
@@ -158,7 +159,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>The throughput response.</returns>
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -169,6 +169,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="throughput">The cosmos database throughput expressed in Request Units per second.</param>
         /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The throughput response.</returns>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
@@ -180,7 +181,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>The throughput response.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
@@ -197,6 +197,16 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.
         /// </returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// //Reads a Database resource where
+        /// // - database_id is the ID property of the Database resource you wish to read.
+        /// Database database = this.cosmosClient.GetDatabase(database_id);
+        /// ResponseMessage response = await database.ReadContainerStreamAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract Task<ResponseMessage> ReadStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -207,6 +217,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// //Delete a Database resource where
+        /// // - database_id is the ID property of the Database resource you wish to delete.
+        /// Database database = this.cosmosClient.GetDatabase(database_id);
+        /// await database.DeleteStreamAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
         public abstract Task<ResponseMessage> DeleteStreamAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -215,9 +235,10 @@ namespace Microsoft.Azure.Cosmos
         /// Returns a reference to a container object. 
         /// </summary>
         /// <param name="id">The cosmos container id.</param>
+        /// <returns>Cosmos container reference</returns>
         /// <remarks>
-        /// Note that the container must be explicitly created, if it does not already exist, before
-        /// you can read from it or write to it.
+        /// Returns a Container reference. Reference doesn't guarantees existence.
+        /// Please ensure container already exists or is created through a create operation.
         /// </remarks>
         /// <example>
         /// <code language="c#">
@@ -227,7 +248,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <returns>Cosmos container proxy</returns>
         public abstract Container GetContainer(string id);
 
         /// <summary>
@@ -260,17 +280,18 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerProperties containerProperties = new ContainerProperties() 
-        /// { 
+        /// ContainerProperties containerProperties = new ContainerProperties()
+        /// {
         ///     Id = Guid.NewGuid().ToString(),
+        ///     PartitionKeyPath = "/pk",
         ///     IndexingPolicy = new IndexingPolicy()
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
         ///    };
         /// };
-        /// 
-        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(containerProperties);
+        ///
+        /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(containerProperties);
         /// ]]>
         /// </code>
         /// </example>
@@ -315,7 +336,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.cosmosDatabase.CreateContainerAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
         /// ]]>
         /// </code>
         /// </example>
@@ -331,8 +352,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Check if a container exists, and if it doesn't, create it.
-        /// This will make a read operation, and if the container is not found it will do a create operation.
+        /// <para>Check if a container exists, and if it doesn't, create it.
+        /// Only the container id is used to verify if there is an existing container. Other container properties such as throughput are not validated and can be different then the passed properties.</para>
         /// </summary>
         /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
@@ -357,21 +378,33 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </exception>
+        /// <list>
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Common success StatusCodes for the CreateDatabaseIfNotExistsAsync operation</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>201</term><description>Created - New database is created.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///     </item>
+        /// </list>
         /// <example>
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerProperties containerProperties = new ContainerProperties() 
-        /// { 
+        /// ContainerProperties containerProperties = new ContainerProperties()
+        /// {
         ///     Id = Guid.NewGuid().ToString(),
+        ///     PartitionKeyPath = "/pk",
         ///     IndexingPolicy = new IndexingPolicy()
         ///    {
         ///         Automatic = false,
         ///         IndexingMode = IndexingMode.Lazy,
         ///    };
         /// };
-        /// 
-        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
+        ///
+        /// ContainerResponse response = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
         /// ]]>
         /// </code>
         /// </example>
@@ -416,7 +449,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// ContainerResponse response = this.cosmosDatabase.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString());
+        /// ContainerResponse response = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk");
         /// ]]>
         /// </code>
         /// </example>
@@ -431,31 +464,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the containers for the database
-        /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
-        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
-        /// <example>
-        /// Get an iterator for all the containers under the database
-        /// <code language="c#">
-        /// <![CDATA[
-        /// FeedIterator<ContainerProperties> feedIterator = this.cosmosDatabase.GetContainerIterator();
-        /// while (feedIterator.HasMoreResults)
-        /// {
-        ///     foreach(ContainerProperties containerProperties in await feedIterator.ReadNextAsync())
-        ///     {
-        ///          Console.WriteLine(containerProperties.Id); 
-        ///     }
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator<ContainerProperties> GetContainerIterator(
-            int? maxItemCount = null,
-            string continuationToken = null);
-
-        /// <summary>
         /// Creates a container as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
@@ -463,6 +471,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the created resource record.</returns>
+        /// <example>
+        /// Creates a container as an asynchronous operation in the Azure Cosmos service and return stream response.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ContainerProperties containerProperties = new ContainerProperties()
+        /// {
+        ///     Id = Guid.NewGuid().ToString(),
+        ///     PartitionKeyPath = "/pk",
+        /// };
+        ///
+        /// using(ResponseMessage response = await this.cosmosDatabase.CreateContainerStreamAsync(containerProperties))
+        /// {
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         /// <seealso cref="DefineContainer(string, string)"/>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
@@ -474,19 +498,152 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets an iterator to go through all the containers for the database
+        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
-        /// <param name="maxItemCount">(Optional) The max item count to return as part of the query</param>
-        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the containers</returns>
-        public abstract FeedIterator GetContainerStreamIterator(
-            int? maxItemCount = null,
+        /// <example>
+        /// This create the type feed iterator for containers with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.id like @testId";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// queryDefinition.WithParameter("@testId", "testDatabaseId");
+        /// FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (ContainerProperties properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator<T> GetContainerQueryIterator<T>(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        /// Create an Azure Cosmos container through a Fluent API.
+        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the containers</returns>
+        /// <example>
+        /// This create the stream feed iterator for containers with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// FeedIterator resultSet = this.cosmosDatabase.GetContainerQueryStreamIterator(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///     {
+        ///         using (StreamReader sr = new StreamReader(response.Content))
+        ///         using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///         {
+        ///             JObject result = JObject.Load(jtr);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator GetContainerQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the containers</returns>
+        /// <example>
+        /// 1. This create the type feed iterator for containers with queryText as input,
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>(queryText);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        /// FeedResponse<ContainerProperties> iterator =
+        /// await feedIterator.ReadNextAsync(this.cancellationToken);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// 2. This create the type feed iterator for containers without queryText, retrieving all containers.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>();
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        /// FeedResponse<ContainerProperties> iterator =
+        /// await feedIterator.ReadNextAsync(this.cancellationToken);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator<T> GetContainerQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
+                /// <returns>An iterator to go through the containers</returns>
+            /// <example>
+        /// 1. This create the stream feed iterator for containers with queryText as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// FeedIterator resultSet = this.cosmosDatabase.GetContainerQueryStreamIterator(queryText);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        /// ResponseMessage iterator =
+        /// await feedIterator.ReadNextAsync(this.cancellationToken);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// 2. This create the stream feed iterator for containers without queryText, retrieving all container.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator resultSet = this.cosmosDatabase.GetContainerQueryStreamIterator();
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        /// ResponseMessage iterator =
+        /// await feedIterator.ReadNextAsync(this.cancellationToken);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator GetContainerQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// Creates a containerBuilder.
         /// </summary>
         /// <param name="name">Azure Cosmos container name to create.</param>
         /// <param name="partitionKeyPath">The path to the partition key. Example: /partitionKey</param>

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class EqualPartitionsBalancingStrategy : LoadBalancingStrategy
     {

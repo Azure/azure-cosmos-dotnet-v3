@@ -24,10 +24,18 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
+        private Cosmos.ConsistencyLevel accountConsistencyLevel;
 
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
+            this.Init();
+        }
+
+        public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel)
+            : base(new Uri("http://localhost"), null)
+        {
+            this.accountConsistencyLevel = accountConsistencyLevel;
             this.Init();
         }
 
@@ -99,6 +107,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         }
 
         public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
+
+        internal override Task<Cosmos.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        {
+            return Task.FromResult(this.accountConsistencyLevel);
+        }
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
@@ -190,9 +203,16 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+            this.partitionKeyRangeCache.Setup(
+                        m => m.TryGetOverlappingRangesAsync(
+                            It.IsAny<string>(),
+                            It.IsAny<Documents.Routing.Range<string>>(),
+                            It.IsAny<bool>()
+                        )
+                ).Returns(Task.FromResult<IReadOnlyList<PartitionKeyRange>>(new List<PartitionKeyRange>() { new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } }));
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
-
+            
             var sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
         }

@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -62,7 +63,8 @@
         private static Database database = null;
         private static Container container = null;
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -104,15 +106,20 @@
             }
             finally
             {
-                Console.WriteLine("End of demo, press any key to exit.");
-                Console.ReadKey();
+                if (Debugger.IsAttached)
+                {
+                    Console.WriteLine("End of demo, press any key to exit.");
+                    Console.ReadKey();
+                }
             }
         }
+        // </Main>
 
         /// <summary>
         /// Run basic item access methods as a console app demo
         /// </summary>
         /// <returns></returns>
+        // <RunItemsDemo>
         private static async Task RunItemsDemo()
         {
             await Program.RunBasicOperationsOnStronglyTypedObjects();
@@ -125,6 +132,7 @@
 
             await Program.AccessSystemDefinedProperties();
         }
+        // </RunItemsDemo>
 
         /// <summary>
         /// 1. Basic CRUD operations on a item
@@ -136,6 +144,7 @@
         /// 1.6 - Upsert a item
         /// 1.7 - Delete a item
         /// </summary>
+        // <RunBasicOperationsOnStronglyTypedObjects>
         private static async Task RunBasicOperationsOnStronglyTypedObjects()
         {
             SalesOrder result = await Program.CreateItemsAsync();
@@ -150,7 +159,9 @@
 
             await Program.DeleteItemAsync();
         }
+        // </RunBasicOperationsOnStronglyTypedObjects>
 
+        // <CreateItemsAsync>
         private static async Task<SalesOrder> CreateItemsAsync()
         {
             Console.WriteLine("\n1.1 - Creating items");
@@ -190,7 +201,9 @@
 
             return salesOrder;
         }
+        // </CreateItemsAsync>
 
+        // <ReadItemAsync>
         private static async Task ReadItemAsync()
         {
             Console.WriteLine("\n1.2 - Reading Item by Id");
@@ -223,7 +236,9 @@
                 }
             }
         }
+        // </ReadItemAsync>
 
+        // <QueryItems>
         private static async Task QueryItems()
         {
             //******************************************************************************************************************
@@ -237,13 +252,15 @@
 
             QueryDefinition query = new QueryDefinition(
                 "select * from sales s where s.AccountNumber = @AccountInput ")
-                .UseParameter("@AccountInput", "Account1");
+                .WithParameter("@AccountInput", "Account1");
 
             FeedIterator<SalesOrder> resultSet = container.GetItemQueryIterator<SalesOrder>(
                 query,
-                requestOptions : new QueryRequestOptions() {
+                requestOptions: new QueryRequestOptions()
+                {
                     PartitionKey = new PartitionKey("Account1"),
-                    MaxItemCount = 1});
+                    MaxItemCount = 1
+                });
 
             List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
             while (resultSet.HasMoreResults)
@@ -258,10 +275,12 @@
             // Use the same query as before but get the cosmos response message to access the stream directly
             FeedIterator streamResultSet = container.GetItemQueryStreamIterator(
                 query,
-                requestOptions: new QueryRequestOptions() {
+                requestOptions: new QueryRequestOptions()
+                {
                     PartitionKey = new PartitionKey("Account1"),
                     MaxItemCount = 10,
-                    MaxConcurrency = 1 });
+                    MaxConcurrency = 1
+                });
 
             List<SalesOrder> allSalesForAccount1FromStream = new List<SalesOrder>();
             while (streamResultSet.HasMoreResults)
@@ -290,7 +309,9 @@
                 throw new InvalidDataException($"Both query operations should return the same list");
             }
         }
+        // </QueryItems>
 
+        // <ReplaceItemAsync>
         private static async Task ReplaceItemAsync(SalesOrder order)
         {
             //******************************************************************************************************************
@@ -331,7 +352,9 @@
                 }
             }
         }
+        // </ReplaceItemAsync>
 
+        // <UpsertItemAsync>
         private static async Task UpsertItemAsync()
         {
             Console.WriteLine("\n1.6 - Upserting a item");
@@ -377,7 +400,9 @@
                 }
             }
         }
+        // </UpsertItemAsync>
 
+        // <DeleteItemAsync>
         private static async Task DeleteItemAsync()
         {
             Console.WriteLine("\n1.7 - Deleting a item");
@@ -388,6 +413,7 @@
             Console.WriteLine("Request charge of delete operation: {0}", response.RequestCharge);
             Console.WriteLine("StatusCode of operation: {0}", response.StatusCode);
         }
+        // </DeleteItemAsync>
 
         private static T FromStream<T>(Stream stream)
         {
@@ -492,6 +518,7 @@
         /// Cosmos does not require objects to be typed. Applications that merge data from different data sources, or 
         /// need to handle evolving schemas can write data directly as JSON or dynamic objects.
         /// </summary>
+        // <RunBasicOperationsOnDynamicObjects>
         private static async Task RunBasicOperationsOnDynamicObjects()
         {
             Console.WriteLine("\n2. Use Dynamics");
@@ -538,6 +565,7 @@
             Console.WriteLine("Request charge of operation: {0}", response.RequestCharge);
             Console.WriteLine("shippedDate: {0} and foo: {1} of replaced item", replaced.shippedDate, replaced.foo);
         }
+        // </RunBasicOperationsOnDynamicObjects>
 
         /// <summary>
         /// 3. Using ETags to control execution of operations
@@ -545,6 +573,7 @@
         /// 3.2 - Use ETag to control if ReadItem should only return a result if the ETag of the request does not match the Item
         /// </summary>
         /// <returns></returns>
+        // <UseETags>
         private static async Task UseETags()
         {
             //******************************************************************************************************************
@@ -634,11 +663,13 @@
 
             Console.WriteLine("Read doc with StatusCode of {0}", response.StatusCode);
         }
+        // </UseETags>
 
         /// <summary>
         /// 4. Access items system defined properties
         /// </summary>
         /// <returns></returns>
+        // <AccessSystemDefinedProperties>
         private static async Task AccessSystemDefinedProperties()
         {
             //******************************************************************************************************************
@@ -663,7 +694,9 @@
 
             Console.WriteLine("Timestamp of read item - {0}", itemResponse.Timestamp.ToShortDateString());
         }
+        // </AccessSystemDefinedProperties>
 
+        // <UseConsistencyLevels>
         private static async Task UseConsistencyLevels()
 
         {
@@ -673,6 +706,7 @@
                 id: "SalesOrder2",
                 requestOptions: new ItemRequestOptions() { ConsistencyLevel = ConsistencyLevel.Eventual });
         }
+        // </UseConsistencyLevels>
 
         private static async Task Cleanup()
         {
@@ -687,7 +721,8 @@
             database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
 
             // Delete the existing container to prevent create item conflicts
-            await database.GetContainer(containerId).DeleteContainerAsync();
+            using (await database.GetContainer(containerId).DeleteContainerStreamAsync())
+            { }
 
             // We create a partitioned collection here which needs a partition key. Partitioned collections
             // can be created with very high values of provisioned throughput (up to Throughput = 250,000)

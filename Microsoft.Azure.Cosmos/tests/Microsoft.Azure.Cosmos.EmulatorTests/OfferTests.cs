@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Documents;
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string collPrefix = Guid.NewGuid().ToString("N");
 
                 // V2 offer
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
                 headers.Add("x-ms-offer-throughput", "8000");
 
                 DocumentCollection[] collections = (from index in Enumerable.Range(1, 1)
@@ -314,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 dbprefix = Guid.NewGuid().ToString("N");
 
                 // V2 offer
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
                 headers.Add("x-ms-offer-throughput", "8000");
 
                 List<DocumentCollection> collections = new List<DocumentCollection>();
@@ -432,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     FeedOptions options = new FeedOptions
                     {
-                        RequestContinuation = continuation,
+                        RequestContinuationToken = continuation,
                         MaxItemCount = pageSize
                     };
 
@@ -687,7 +688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     IDocumentQuery<dynamic> invalidQuery = client.CreateOfferQuery(
                         "select * from root",
-                        new FeedOptions() { RequestContinuation = "-tEGAI2wSgAoAAAAAAAAAA==#count3" })
+                        new FeedOptions() { RequestContinuationToken = "-tEGAI2wSgAoAAAAAAAAAA==#count3" })
                         .AsDocumentQuery();
 
                     DocumentFeedResponse<dynamic> invalidResult = invalidQuery.ExecuteNextAsync().Result;

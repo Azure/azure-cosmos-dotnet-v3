@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal CosmosException(
-            ResponseMessage cosmosResponseMessage, 
+            ResponseMessage cosmosResponseMessage,
             string message,
             Error error = null)
             : base(message)
@@ -103,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        public virtual double RequestCharge { get; } 
+        public virtual double RequestCharge { get; }
 
         /// <summary>
         /// Gets the activity ID for the request from the Azure Cosmos DB service.
@@ -151,7 +150,17 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A string representation of the exception.</returns>
         public override string ToString()
         {
-            return $"CosmosRequestException;StatusCode={this.StatusCode};SubStatusCode={this.SubStatusCode};ActivityId={this.ActivityId ?? string.Empty};RequestCharge={this.RequestCharge};Message={this.Message};";
+            return $"{nameof(CosmosException)};StatusCode={this.StatusCode};SubStatusCode={this.SubStatusCode};ActivityId={this.ActivityId ?? string.Empty};RequestCharge={this.RequestCharge};Message={this.Message};";
+        }
+
+        internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
+        {
+            return new ResponseMessage(
+                 headers: this.Headers,
+                 requestMessage: request,
+                 errorMessage: this.Message,
+                 statusCode: this.StatusCode,
+                 error: this.Error);
         }
     }
 }

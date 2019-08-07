@@ -5,8 +5,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using Microsoft.Azure.Cosmos.Json;
-    
-    internal sealed class CosmosBoolean : CosmosElement
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    sealed class CosmosBoolean : CosmosElement
     {
         private static readonly CosmosBoolean True = new CosmosBoolean(true);
         private static readonly CosmosBoolean False = new CosmosBoolean(false);
@@ -37,4 +44,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             jsonWriter.WriteBoolValue(this.Value);
         }
     }
+#if INTERNAL
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

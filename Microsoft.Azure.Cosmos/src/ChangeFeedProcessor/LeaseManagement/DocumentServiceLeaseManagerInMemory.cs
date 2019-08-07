@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses In-Memory
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                null /*partitionKey*/,
+                Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
                     serverLease.Properties = lease.Properties;
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this.leaseUpdater.UpdateLeaseAsync(
                 refreshedLease,
                 refreshedLease.Id,
-                null /*partitionKey*/,
+                Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
                     serverLease.Owner = null;
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this.leaseUpdater.UpdateLeaseAsync(
                 refreshedLease,
                 refreshedLease.Id,
-                null /*partitionKey*/,
+                Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
                     return serverLease;
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                null /*partitionKey*/,
+                Cosmos.PartitionKey.Null,
                 serverLease =>
                 {
                     serverLease.Properties = lease.Properties;

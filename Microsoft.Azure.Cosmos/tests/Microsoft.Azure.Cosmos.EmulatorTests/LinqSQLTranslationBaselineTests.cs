@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
+    using System.Net;
 
     [TestClass]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -39,9 +40,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 })).WithConnectionModeGateway();
             });
 
-            await cosmosClient.GetDatabase(id: nameof(LinqSQLTranslationBaselineTest)).DeleteAsync();
-            testDb = await cosmosClient.CreateDatabaseAsync(nameof(LinqSQLTranslationBaselineTest));
+            try
+            {
+                await cosmosClient.GetDatabase(id: nameof(LinqSQLTranslationBaselineTest)).DeleteAsync();
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //swallow
+            }
 
+            testDb = await cosmosClient.CreateDatabaseAsync(nameof(LinqSQLTranslationBaselineTest));
         }
 
         [TestInitialize]
@@ -61,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             if (testDb != null)
             {
-                await testDb.DeleteAsync();
+                await testDb.DeleteStreamAsync();
             }
         }
 
