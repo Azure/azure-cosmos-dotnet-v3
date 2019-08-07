@@ -67,7 +67,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
         [DataTestMethod]
-        [Owner("maquaran")]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         [DataRow(0)]
         [DataRow(-1)]
@@ -77,7 +76,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [DataTestMethod]
-        [Owner("maquaran")]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         [DataRow(0)]
         [DataRow(-1)]
@@ -87,7 +85,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesExecutor()
         {
@@ -95,7 +92,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesSerializer()
         {
@@ -103,7 +99,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task ExceptionsOnBatchBubbleUpAsync()
         {
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure);
@@ -114,7 +109,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task TimerDispatchesAsync()
         {
             // Bigger batch size than the amount of operations, timer should dispatch
@@ -127,7 +121,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task DispatchesAsync()
         {
             // Expect all operations to complete as their batches get dispached
@@ -152,7 +145,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task DisposeAsyncShouldDisposeBatcher()
         {
             // Expect all operations to complete as their batches get dispached

@@ -38,8 +38,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(GenerateSplitResponseAsync(itemBatchOperation))
-                .Returns(GenerateOkResponseAsync(itemBatchOperation));
+                .Returns(this.GenerateSplitResponseAsync(itemBatchOperation))
+                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
 
             mockedContext.Setup(c => c.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
 
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(GenerateOkResponseAsync(itemBatchOperation));
+                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
 
             mockedContext.Setup(c => c.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
 

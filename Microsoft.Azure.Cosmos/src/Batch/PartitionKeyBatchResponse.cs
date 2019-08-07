@@ -14,14 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Response of a cross partition key batch request.
     /// </summary>
-#pragma warning disable CA1710 // Identifiers should have correct suffix
-    #if PREVIEW
-    public
-#else
-    internal
-#endif
-    class PartitionKeyBatchResponse : BatchResponse
-#pragma warning restore CA1710 // Identifiers should have correct suffix
+    internal class PartitionKeyBatchResponse : BatchResponse
     {
         // Results sorted in the order operations had been added.
         private readonly SortedList<int, BatchOperationResult> resultsByOperationIndex;
@@ -52,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         internal PartitionKeyBatchResponse(IEnumerable<BatchResponse> serverResponses, CosmosSerializer serializer)
         {
             this.StatusCode = serverResponses.Any(r => r.StatusCode != HttpStatusCode.OK)
-                ? (HttpStatusCode)BatchExecUtils.StatusCodeMultiStatus
+                ? (HttpStatusCode)StatusCodes.MultiStatus
                 : HttpStatusCode.OK;
 
             this.ServerResponses = serverResponses;
@@ -154,12 +147,6 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ActivityIds;
         }
-
-        internal bool ContainsSplit() => this.ServerResponses != null && this.ServerResponses.Any(serverResponse => 
-                                                    (serverResponse.StatusCode == HttpStatusCode.Gone
-                                                        && (serverResponse.SubStatusCode == SubStatusCodes.CompletingSplit
-                                                        || serverResponse.SubStatusCode == SubStatusCodes.CompletingPartitionMigration
-                                                        || serverResponse.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone)));
 
         /// <summary>
         /// Disposes the disposable members held.

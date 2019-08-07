@@ -105,7 +105,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
         [DataTestMethod]
-        [Owner("maquaran")]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         [DataRow(0)]
         [DataRow(-1)]
@@ -115,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [DataTestMethod]
-        [Owner("maquaran")]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         [DataRow(0)]
         [DataRow(-1)]
@@ -125,7 +123,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesExecutor()
         {
@@ -133,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesSerializer()
         {
@@ -141,7 +137,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task HasFixedSize()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
@@ -151,10 +146,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task HasFixedByteSize()
         {
-            await ItemBatchOperation.MaterializeResourceAsync(new CosmosJsonDotNetSerializer(), CancellationToken.None);
+            await this.ItemBatchOperation.MaterializeResourceAsync(new CosmosJsonDotNetSerializer(), CancellationToken.None);
             // Each operation is 2 bytes
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, new CosmosJsonDotNetSerializer(), this.Executor);
             Assert.IsTrue(await batchAsyncBatcher.TryAddAsync(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
@@ -163,7 +157,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public void TryAddIsThreadSafe()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
@@ -181,7 +174,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task ExceptionsFailOperationsAsync()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure);
@@ -198,7 +190,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task DispatchProcessInOrderAsync()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
@@ -222,7 +213,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public void IsEmptyWithNoOperations()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
@@ -230,7 +220,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task IsNotEmptyWithOperations()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
@@ -239,7 +228,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task CannotAddToDisposedBatch()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor);

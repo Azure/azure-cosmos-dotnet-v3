@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class BatchAsyncOperationContextTests
     {
         [TestMethod]
-        [Owner("maquaran")]
         public void PartitionKeyRangeIdIsSetOnInitialization()
         {
             string expectedPkRangeId = Guid.NewGuid().ToString();
@@ -28,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public void TaskIsCreatedOnInitialization()
         {
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
@@ -40,7 +38,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task TaskResultIsSetOnCompleteAsync()
         {
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
@@ -55,7 +52,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Owner("maquaran")]
         public async Task ExceptionIsSetOnFailAsync()
         {
             Exception failure = new Exception("It failed");

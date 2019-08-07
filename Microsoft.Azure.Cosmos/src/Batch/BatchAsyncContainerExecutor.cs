@@ -184,14 +184,28 @@ namespace Microsoft.Azure.Cosmos
             return operationsSentToRequest.Skip(totalOperations - operationsThatOverflowed);
         }
 
-        private Task<PartitionKeyBatchResponse> ExecuteAsync(
+        private static IReadOnlyList<BatchAsyncOperationContext> GetOperationsToRetry(
+            IReadOnlyList<BatchAsyncOperationContext> baseOperations,
+            IEnumerable<int> indexes)
+        {
+            List<BatchAsyncOperationContext> operations = new List<BatchAsyncOperationContext>();
+            foreach (int index in indexes)
+            {
+                operations.Add(baseOperations[index]);
+            }
+
+            return operations;
+        }
+
+        private async Task<PartitionKeyBatchResponse> ExecuteAsync(
             IReadOnlyList<BatchAsyncOperationContext> operations,
             CancellationToken cancellationToken)
         {
-            return this.ExecuteInternalAsync(operations, false, cancellationToken);
+            IEnumerable<BatchResponse> responses = await this.ExecuteInternalAsync(operations, false, cancellationToken);
+            return new PartitionKeyBatchResponse(responses, this.cosmosClientContext.CosmosSerializer);
         }
 
-        private async Task<PartitionKeyBatchResponse> ExecuteInternalAsync(
+        private async Task<IEnumerable<BatchResponse>> ExecuteInternalAsync(
             IReadOnlyList<BatchAsyncOperationContext> operations,
             bool refreshPartitionKeyRanges,
             CancellationToken cancellationToken)
@@ -207,7 +221,7 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 // If a refresh was requested, recalculate PKRange
-                Dictionary<string, List<BatchAsyncOperationContext>> operationsByPKRangeId = await this.GroupByPartitionKeyRangeIdsAsync(operations, refreshPartitionKeyRanges, cancellationToken);
+                Dictionary<string, List<BatchAsyncOperationContext>> operationsByPKRangeId = await this.GroupByPartitionKeyRangeIdsAsync(operations, cancellationToken);
                 foreach (KeyValuePair<string, List<BatchAsyncOperationContext>> operationsForPKRangeId in operationsByPKRangeId)
                 {
                     inProgressTasksByPKRangeId.Add(this.StartExecutionForPKRangeIdAsync(operationsForPKRangeId.Key, operationsForPKRangeId.Value, cancellationToken));
@@ -221,21 +235,25 @@ namespace Microsoft.Azure.Cosmos
                 inProgressTasksByPKRangeId.Remove(completedTask);
             }
 
-            IEnumerable<BatchResponse> serverResponses = completedResults.SelectMany(res => res.ServerResponses);
-            PartitionKeyBatchResponse batchResponse = new PartitionKeyBatchResponse(serverResponses, this.cosmosClientContext.CosmosSerializer);
-            if (batchResponse.ContainsSplit())
+            List<BatchResponse> responses = new List<BatchResponse>(operations.Count);
+            foreach (PartitionKeyRangeBatchExecutionResult result in completedResults)
             {
-                batchResponse.Dispose();
-                // Retry batch as it contained a split
-                return await this.ExecuteInternalAsync(operations, true, cancellationToken);
+                if (!result.ContainsSplit())
+                {
+                    responses.AddRange(result.ServerResponses);
+                }
+                else
+                {
+                    IReadOnlyList<BatchAsyncOperationContext> retryOperations = BatchAsyncContainerExecutor.GetOperationsToRetry(operations, result.Operations.Select(o => o.OperationIndex));
+                    responses.AddRange(await this.ExecuteInternalAsync(retryOperations, true, cancellationToken));
+                }
             }
 
-            return batchResponse;
+            return responses;
         }
 
         private async Task<Dictionary<string, List<BatchAsyncOperationContext>>> GroupByPartitionKeyRangeIdsAsync(
             IEnumerable<BatchAsyncOperationContext> contexts,
-            bool refreshPartitionKeyRanges,
             CancellationToken cancellationToken)
         {
             PartitionKeyDefinition partitionKeyDefinition = await this.cosmosContainer.GetPartitionKeyDefinitionAsync(cancellationToken).ConfigureAwait(false);
@@ -340,7 +358,7 @@ namespace Microsoft.Azure.Cosmos
                 serverResponses.Add(await this.ExecuteServerRequestAsync(serverRequest, cancellationToken));
             }
 
-            return new PartitionKeyRangeBatchExecutionResult(partitionKeyRangeId, serverResponses);
+            return new PartitionKeyRangeBatchExecutionResult(partitionKeyRangeId, operations, serverResponses);
         }
 
         private async Task<BatchResponse> ExecuteServerRequestAsync(PartitionKeyServerBatchRequest serverRequest, CancellationToken cancellationToken)
