@@ -1527,10 +1527,31 @@
           "Attributes": [],
           "MethodInfo": "T FromStream[T](System.IO.Stream)"
         },
-        "Void .ctor(Newtonsoft.Json.JsonSerializerSettings)": {
+        "Void .ctor(Boolean, Boolean, Microsoft.Azure.Cosmos.CosmosNamingPolicy)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "Void .ctor(Newtonsoft.Json.JsonSerializerSettings)"
+          "MethodInfo": "Void .ctor(Boolean, Boolean, Microsoft.Azure.Cosmos.CosmosNamingPolicy)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosNamingPolicy": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosNamingPolicy CamelCase": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosNamingPolicy Default": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
         }
       },
       "NestedTypes": {}
@@ -1550,10 +1571,10 @@
               "Attributes": [],
               "MethodInfo": "T FromStream[T](System.IO.Stream)"
             },
-            "Void .ctor(Newtonsoft.Json.JsonSerializerSettings)": {
+            "Void .ctor(Boolean, Boolean, Microsoft.Azure.Cosmos.CosmosNamingPolicy)": {
               "Type": "Constructor",
               "Attributes": [],
-              "MethodInfo": "Void .ctor(Newtonsoft.Json.JsonSerializerSettings)"
+              "MethodInfo": "Void .ctor(Boolean, Boolean, Microsoft.Azure.Cosmos.CosmosNamingPolicy)"
             }
           },
           "NestedTypes": {}
@@ -1569,6 +1590,72 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "T FromStream[T](System.IO.Stream)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosSerializerSettings": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean get_IgnoreNullValues()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute",
+            "IsReadOnlyAttribute"
+          ],
+          "MethodInfo": "Boolean get_IgnoreNullValues()"
+        },
+        "Boolean get_Indented()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute",
+            "IsReadOnlyAttribute"
+          ],
+          "MethodInfo": "Boolean get_Indented()"
+        },
+        "Boolean IgnoreNullValues": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Boolean Indented": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosNamingPolicy get_NamingPolicy()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute",
+            "IsReadOnlyAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosNamingPolicy get_NamingPolicy()"
+        },
+        "Microsoft.Azure.Cosmos.CosmosNamingPolicy NamingPolicy": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Void set_IgnoreNullValues(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_IgnoreNullValues(Boolean)"
+        },
+        "Void set_Indented(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Indented(Boolean)"
+        },
+        "Void set_NamingPolicy(Microsoft.Azure.Cosmos.CosmosNamingPolicy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_NamingPolicy(Microsoft.Azure.Cosmos.CosmosNamingPolicy)"
         }
       },
       "NestedTypes": {}

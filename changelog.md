@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- [#650](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/650) CosmosJsonDotNetSerializer changed constructor to use flags instead of JsonSerializerSettings
 ### Fixed
 
 - [#612](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/612) Bug fix for ReadFeed with partition-key
