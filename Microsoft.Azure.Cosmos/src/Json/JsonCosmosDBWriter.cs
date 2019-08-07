@@ -11,7 +11,12 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Wrapper class that implements Newtonsoft's JsonWriter,
     /// but calls into a CosmosDB JsonWriter for the implementation.
     /// </summary>
-    internal sealed class JsonCosmosDBWriter : Newtonsoft.Json.JsonWriter
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    sealed class JsonCosmosDBWriter : Newtonsoft.Json.JsonWriter
     {
         /// <summary>
         /// A CosmosDB JSON writer used for the actual implementation.
