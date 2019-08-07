@@ -10,9 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Aggregation;
-    using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Query execution component that groups groupings across continuations and pages.
@@ -45,8 +43,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     {
         public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
         private static readonly List<CosmosElement> EmptyResults = new List<CosmosElement>();
-        private static readonly StringKeyValueCollection EmptyHeaders = new StringKeyValueCollection();
-        private static readonly Dictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
 
         private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
         private readonly Dictionary<UInt192, GroupByValues> groupingTable;
@@ -73,13 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.groupByAliasToAggregateType = groupByAliasToAggregateType;
         }
 
-        public override bool IsDone
-        {
-            get
-            {
-                return this.isDone;
-            }
-        }
+        public override bool IsDone => this.isDone;
 
         public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
             string requestContinuation,
@@ -413,13 +403,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 private readonly IAggregator aggregator;
 
-                public override CosmosElement Result
-                {
-                    get
-                    {
-                        return this.aggregator.GetResult();
-                    }
-                }
+                public override CosmosElement Result => this.aggregator.GetResult();
 
                 private AggregateGroupByValue(IAggregator aggregator)
                 {

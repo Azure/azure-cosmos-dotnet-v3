@@ -3872,7 +3872,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         new QueryRequestOptions()
                         {
                             EnableGroupBy = true,
-                            EnableCrossPartitionQuery = true,
                             MaxItemCount = maxItemCount,
                             MaxBufferedItemCount = 100,
                         });
@@ -3906,7 +3905,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         new QueryRequestOptions()
                         {
                             EnableGroupBy = true,
-                            EnableCrossPartitionQuery = true
                         });
                     Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
                 }
