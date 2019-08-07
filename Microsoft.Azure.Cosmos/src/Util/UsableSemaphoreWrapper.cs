@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     internal class UsableSemaphoreWrapper : IDisposable
     {
         private readonly SemaphoreSlim semaphore;
-        private bool diposed;
+        private bool disposed;
         public UsableSemaphoreWrapper(SemaphoreSlim semaphore)
         {
             this.semaphore = semaphore;
@@ -18,13 +18,13 @@ namespace Microsoft.Azure.Cosmos
 
         public void Dispose()
         {
-            if (this.diposed)
+            if (this.disposed)
             {
                 return;
             }
 
             this.semaphore.Release();
-            this.diposed = true;
+            this.disposed = true;
         }
     }
 }
