@@ -1246,11 +1246,9 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.ConnectionMode get_ConnectionMode()"
         },
-        "Microsoft.Azure.Cosmos.CosmosSerializer get_Serializer()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosSerializer get_Serializer()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosSerializer get_Serializer()"
         },
         "Microsoft.Azure.Cosmos.CosmosSerializer Serializer[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClientOptions+ClientOptionJsonConverter))]": {
@@ -1267,9 +1265,11 @@
           ],
           "MethodInfo": null
         },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] get_CustomHandlers()": {
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] get_CustomHandlers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
-          "Attributes": [],
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] get_CustomHandlers()"
         },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
@@ -1283,6 +1283,16 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions] get_SerializerOptions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions] get_SerializerOptions()"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions] SerializerOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
         },
         "System.Nullable`1[System.Int32] get_MaxRetryAttemptsOnRateLimitedRequests()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1399,12 +1409,15 @@
           ],
           "MethodInfo": "Void set_RequestTimeout(System.TimeSpan)"
         },
-        "Void set_Serializer(Microsoft.Azure.Cosmos.CosmosSerializer)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_Serializer(Microsoft.Azure.Cosmos.CosmosSerializer)": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Void set_Serializer(Microsoft.Azure.Cosmos.CosmosSerializer)"
+        },
+        "Void set_SerializerOptions(System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_SerializerOptions(System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions])"
         }
       },
       "NestedTypes": {}
@@ -1514,28 +1527,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosJsonDotNetSerializer": {
-      "Subclasses": {},
-      "Members": {
-        "System.IO.Stream ToStream[T](T)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.IO.Stream ToStream[T](T)"
-        },
-        "T FromStream[T](System.IO.Stream)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T FromStream[T](System.IO.Stream)"
-        },
-        "Void .ctor(Boolean, Boolean, Microsoft.Azure.Cosmos.CosmosNamingPolicy)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor(Boolean, Boolean, Microsoft.Azure.Cosmos.CosmosNamingPolicy)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "CosmosNamingPolicy": {
+    "CosmosPropertyNamingPolicy": {
       "Subclasses": {},
       "Members": {
         "Int32 value__": {
@@ -1543,12 +1535,12 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosNamingPolicy CamelCase": {
+        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy CamelCase": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosNamingPolicy Default": {
+        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy Default": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
@@ -1557,29 +1549,7 @@
       "NestedTypes": {}
     },
     "CosmosSerializer": {
-      "Subclasses": {
-        "CosmosJsonDotNetSerializer": {
-          "Subclasses": {},
-          "Members": {
-            "System.IO.Stream ToStream[T](T)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "System.IO.Stream ToStream[T](T)"
-            },
-            "T FromStream[T](System.IO.Stream)": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "T FromStream[T](System.IO.Stream)"
-            },
-            "Void .ctor(Boolean, Boolean, Microsoft.Azure.Cosmos.CosmosNamingPolicy)": {
-              "Type": "Constructor",
-              "Attributes": [],
-              "MethodInfo": "Void .ctor(Boolean, Boolean, Microsoft.Azure.Cosmos.CosmosNamingPolicy)"
-            }
-          },
-          "NestedTypes": {}
-        }
-      },
+      "Subclasses": {},
       "Members": {
         "System.IO.Stream ToStream[T](T)": {
           "Type": "Method",
@@ -1594,7 +1564,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosSerializerSettings": {
+    "CosmosSerializerOptions": {
       "Subclasses": {},
       "Members": {
         "Boolean get_IgnoreNullValues()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1623,15 +1593,15 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosNamingPolicy get_NamingPolicy()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute",
             "IsReadOnlyAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosNamingPolicy get_NamingPolicy()"
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()"
         },
-        "Microsoft.Azure.Cosmos.CosmosNamingPolicy NamingPolicy": {
+        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy PropertyNamingPolicy": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -1650,12 +1620,12 @@
           ],
           "MethodInfo": "Void set_Indented(Boolean)"
         },
-        "Void set_NamingPolicy(Microsoft.Azure.Cosmos.CosmosNamingPolicy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_NamingPolicy(Microsoft.Azure.Cosmos.CosmosNamingPolicy)"
+          "MethodInfo": "Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy)"
         }
       },
       "NestedTypes": {}
@@ -2253,6 +2223,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializerOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializerOptions)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)": {
           "Type": "Method",
