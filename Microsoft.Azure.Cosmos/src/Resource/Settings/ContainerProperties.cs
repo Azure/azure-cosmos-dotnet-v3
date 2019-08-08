@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// <see cref="PartitionKeyDefinition"/> object.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
+        [JsonProperty(PropertyName = Constants.Properties.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>
