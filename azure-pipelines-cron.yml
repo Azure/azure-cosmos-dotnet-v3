@@ -14,9 +14,6 @@ schedules:
 
 variables:
   TestArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal ' 
-  WinVmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
-  LinuxVmImage: ubuntu-16.04
-  MacVmImage: macOS-10.14
   BuildConfiguration: Release 
 
 
@@ -24,28 +21,28 @@ jobs:
   - template:  templates/static-tools.yml
     parameters:
       BuildConfiguration: Release
-      VmImage: $(WinVmImage)
+      VmImage: vs2017-win2016
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
-      VmImage: $(WinVmImage)
+      VmImage: macOS-10.14
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
-      VmImage: $(LinuxVmImage)
+      VmImage: ubuntu-16.04
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
-      VmImage: $(MacVmImage)
+      VmImage: vs2017-win2016
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Debug
       Arguments: $(TestArguments) 
-      VmImage: $(WinVmImage)
+      VmImage: vs2017-win2016
