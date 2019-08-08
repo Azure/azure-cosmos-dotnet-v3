@@ -13,7 +13,7 @@ schedules:
 
 
 variables:
-  TestArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal ' 
+  TestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal ' 
   BuildConfiguration: Release 
 
 
