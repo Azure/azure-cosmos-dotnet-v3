@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal string SessionToken { get; set; }
 
-        internal CosmosSerializationOptions CosmosSerializationOptions { get; set; }
+        internal CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the flag that enables skip take across partitions.

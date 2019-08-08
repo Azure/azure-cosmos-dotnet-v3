@@ -36,8 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// This is internal to reduce exposure of JSON.net types so
         /// it is easier to convert to System.Text.Json
         /// </remarks>
-        internal CosmosJsonDotNetSerializer(
-            CosmosSerializerOptions cosmosSerializerOptions)
+        internal CosmosJsonDotNetSerializer(CosmosSerializationOptions cosmosSerializerOptions)
         {
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
             {
@@ -57,8 +56,7 @@ namespace Microsoft.Azure.Cosmos
         /// This is internal to reduce exposure of JSON.net types so
         /// it is easier to convert to System.Text.Json
         /// </remarks>
-        internal CosmosJsonDotNetSerializer(
-            JsonSerializerSettings jsonSerializerSettings)
+        internal CosmosJsonDotNetSerializer(JsonSerializerSettings jsonSerializerSettings)
         {
             this.Serializer = JsonSerializer.Create(jsonSerializerSettings);
         }

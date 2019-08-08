@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
-    /// Determines the naming policy used to convert a string-based name to another format, such as a camel-casing format.
+    /// Determines the naming policy used to convert a string-based name to another format, such as a camel-casing where the first letter is lower case.
     /// </summary>
     public enum CosmosPropertyNamingPolicy
     {
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         Default = 0,
 
         /// <summary>
-        /// Naming policy uses Camel Casing
+        /// First letter in the property name is lower case. 
         /// </summary>
         CamelCase = 1,
     }

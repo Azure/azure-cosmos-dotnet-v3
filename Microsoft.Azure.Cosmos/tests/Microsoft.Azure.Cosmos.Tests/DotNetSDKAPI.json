@@ -1284,12 +1284,12 @@
           ],
           "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()"
         },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions] get_SerializerOptions()": {
+        "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializationOptions] get_SerializerOptions()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions] get_SerializerOptions()"
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializationOptions] get_SerializerOptions()"
         },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions] SerializerOptions": {
+        "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializationOptions] SerializerOptions": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -1414,10 +1414,10 @@
           "Attributes": [],
           "MethodInfo": "Void set_Serializer(Microsoft.Azure.Cosmos.CosmosSerializer)"
         },
-        "Void set_SerializerOptions(System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions])": {
+        "Void set_SerializerOptions(System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializationOptions])": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Void set_SerializerOptions(System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializerOptions])"
+          "MethodInfo": "Void set_SerializerOptions(System.Nullable`1[Microsoft.Azure.Cosmos.CosmosSerializationOptions])"
         }
       },
       "NestedTypes": {}
@@ -1548,23 +1548,7 @@
       },
       "NestedTypes": {}
     },
-    "CosmosSerializer": {
-      "Subclasses": {},
-      "Members": {
-        "System.IO.Stream ToStream[T](T)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.IO.Stream ToStream[T](T)"
-        },
-        "T FromStream[T](System.IO.Stream)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T FromStream[T](System.IO.Stream)"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "CosmosSerializerOptions": {
+    "CosmosSerializationOptions": {
       "Subclasses": {},
       "Members": {
         "Boolean get_IgnoreNullValues()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1623,6 +1607,22 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy)"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "CosmosSerializer": {
+      "Subclasses": {},
+      "Members": {
+        "System.IO.Stream ToStream[T](T)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IO.Stream ToStream[T](T)"
+        },
+        "T FromStream[T](System.IO.Stream)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "T FromStream[T](System.IO.Stream)"
         }
       },
       "NestedTypes": {}
@@ -2221,10 +2221,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)"
         },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializerOptions)": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializationOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializerOptions)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializationOptions)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)": {
           "Type": "Method",

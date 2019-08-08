@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal ClientSideRequestStatistics RequestStatistics { get; }
 
-        internal virtual CosmosSerializationOptions CosmosSerializationOptions { get; set; }
+        internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
 
         internal bool GetHasMoreResults()
         {
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly IEnumerable<CosmosElement> cosmosElements;
         private readonly CosmosSerializer jsonSerializer;
-        private readonly CosmosSerializationOptions serializationOptions;
+        private readonly CosmosSerializationFormatOptions serializationOptions;
         private IEnumerable<T> resources;
 
         private QueryResponse(
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<CosmosElement> cosmosElements,
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
             CosmosSerializer jsonSerializer,
-            CosmosSerializationOptions serializationOptions)
+            CosmosSerializationFormatOptions serializationOptions)
         {
             this.cosmosElements = cosmosElements;
             this.QueryHeaders = responseMessageHeaders;

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ApiType apiType = ApiType.Sql;
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
-            CosmosSerializerOptions cosmosSerializerOptions = new CosmosSerializerOptions()
+            CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
             {
                 IgnoreNullValues = true,
                 PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
@@ -164,9 +164,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void GetCosmosSerializerWithWrapperOrDefaultWithOptionsTest()
         {
+            CosmosSerializationOptions serializerOptions = new CosmosSerializationOptions();
+            Assert.AreEqual(false, serializerOptions.IgnoreNullValues);
+            Assert.AreEqual(false, serializerOptions.Indented);
+            Assert.AreEqual(CosmosPropertyNamingPolicy.Default, serializerOptions.PropertyNamingPolicy);
+
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                SerializerOptions = new CosmosSerializerOptions()
+                SerializerOptions = new CosmosSerializationOptions()
                 {
                     IgnoreNullValues = true,
                     Indented = true,
@@ -203,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Serializer = new CosmosJsonDotNetSerializer()
             };
 
-            options.SerializerOptions = new CosmosSerializerOptions();
+            options.SerializerOptions = new CosmosSerializationOptions();
         }
 
         [TestMethod]
@@ -212,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                SerializerOptions = new CosmosSerializerOptions()
+                SerializerOptions = new CosmosSerializationOptions()
             };
 
             options.Serializer = new CosmosJsonDotNetSerializer();

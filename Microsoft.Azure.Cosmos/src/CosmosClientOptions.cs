@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
 
         private int gatewayModeMaxConnectionLimit;
         private string applicationName;
-        private CosmosSerializerOptions? serializerOptions;
+        private CosmosSerializationOptions? serializerOptions;
         private CosmosSerializer serializer;
 
         /// <summary>
@@ -169,9 +169,9 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
-        /// Get to set an optional serializer options. 
+        /// Get to set optional serializer options. 
         /// </summary>
-        public CosmosSerializerOptions? SerializerOptions
+        public CosmosSerializationOptions? SerializerOptions
         {
             get => this.serializerOptions;
             set
