@@ -28,6 +28,9 @@ namespace Microsoft.Azure.Cosmos
             catch(ArgumentNullException)
             {
             }
+            catch(DllNotFoundException)
+            {
+            }
 
             Assert.IsTrue(ServiceInteropWrapper.AssembliesExist.Value);
 
