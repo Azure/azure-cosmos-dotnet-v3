@@ -270,7 +270,8 @@ namespace Microsoft.Azure.Cosmos.Query
                   DocumentQueryExecutionContextFactory.IsAggregateQueryWithoutContinuation(
                       partitionedQueryExecutionInfo,
                       isContinuationExpected) ||
-                  DocumentQueryExecutionContextFactory.IsDistinctQuery(partitionedQueryExecutionInfo);
+                  DocumentQueryExecutionContextFactory.IsDistinctQuery(partitionedQueryExecutionInfo) ||
+                  DocumentQueryExecutionContextFactory.IsGroupByQuery(partitionedQueryExecutionInfo);
         }
 
         private static bool IsCrossPartitionQuery(
@@ -283,6 +284,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 && (feedOptions.PartitionKey == null && feedOptions.EnableCrossPartitionQuery)
                 && (partitionKeyDefinition.Paths.Count > 0)
                 && !(partitionedQueryExecutionInfo.QueryRanges.Count == 1 && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue);
+        }
+
+        private static bool IsParallelQuery(FeedOptions feedOptions)
+        {
+            return (feedOptions.MaxDegreeOfParallelism != 0);
         }
 
         private static bool IsTopOrderByQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
@@ -302,19 +308,19 @@ namespace Microsoft.Azure.Cosmos.Query
             return IsAggregateQuery(partitionedQueryExecutionInfo) && !isContinuationExpected;
         }
 
+        private static bool IsOffsetLimitQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+        {
+            return partitionedQueryExecutionInfo.QueryInfo.HasOffset && partitionedQueryExecutionInfo.QueryInfo.HasLimit;
+        }
+
         private static bool IsDistinctQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
             return partitionedQueryExecutionInfo.QueryInfo.HasDistinct;
         }
 
-        private static bool IsParallelQuery(FeedOptions feedOptions)
+        private static bool IsGroupByQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
         {
-            return (feedOptions.MaxDegreeOfParallelism != 0);
-        }
-
-        private static bool IsOffsetLimitQuery(PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
-        {
-            return partitionedQueryExecutionInfo.QueryInfo.HasOffset && partitionedQueryExecutionInfo.QueryInfo.HasLimit;
+            return partitionedQueryExecutionInfo.QueryInfo.HasGroupBy;
         }
 
         private static bool TryGetEpkProperty(
