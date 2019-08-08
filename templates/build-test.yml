@@ -7,7 +7,7 @@ parameters:
 
 jobs: 
 - job: 
-  displayName: ${{ parameters.BuildConfiguration }} Microsoft.Azure.Cosmos.Tests
+  displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.Tests
   pool:
     vmImage: ${{ parameters.VmImage }}
     
@@ -27,7 +27,7 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.Tests
   
 - job: 
-  displayName: ${{ parameters.BuildConfiguration }} Microsoft.Azure.Cosmos.EmulatorTests
+  displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.EmulatorTests
   pool:
     vmImage: ${{ parameters.VmImage }}
 

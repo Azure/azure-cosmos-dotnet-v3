@@ -37,7 +37,11 @@ namespace Microsoft.Azure.Cosmos
         /// Default request timeout
         /// </summary>
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+
+        private readonly string currentEnvironmentInformation;
+
         private int gatewayModeMaxConnectionLimit;
+        private string applicationName;
         private CosmosSerializerOptions? serializerOptions;
         private CosmosSerializer serializer;
 
@@ -47,6 +51,9 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClientOptions()
         {
             this.UserAgentContainer = new UserAgentContainer();
+            EnvironmentInformation environmentInformation = new EnvironmentInformation();
+            this.currentEnvironmentInformation = environmentInformation.ToString();
+            this.UserAgentContainer.Suffix = this.currentEnvironmentInformation;
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
@@ -63,8 +70,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string ApplicationName
         {
-            get => this.UserAgentContainer.Suffix;
-            set => this.UserAgentContainer.Suffix = value;
+            get => this.applicationName;
+            set
+            {
+                this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + EnvironmentInformation.Delimiter + value;
+                this.applicationName = value;
+            }
         }
 
         /// <summary>
@@ -162,10 +173,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosSerializerOptions? SerializerOptions
         {
-            get
-            {
-                return this.serializerOptions;
-            }
+            get => this.serializerOptions;
             set
             {
                 if (this.Serializer != null)
@@ -201,10 +209,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer
         {
-            get
-            {
-                return this.serializer;
-            }
+            get => this.serializer;
             set
             {
                 if (this.SerializerOptions != null)
