@@ -40,8 +40,10 @@ namespace Microsoft.Azure.Cosmos
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
         private readonly Collection<RequestHandler> customHandlers;
+        private readonly string currentEnvironmentInformation;
 
         private int gatewayModeMaxConnectionLimit;
+        private string applicationName;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -49,6 +51,9 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClientOptions()
         {
             this.UserAgentContainer = new UserAgentContainer();
+            EnvironmentInformation environmentInformation = new EnvironmentInformation();
+            this.currentEnvironmentInformation = environmentInformation.ToString();
+            this.UserAgentContainer.Suffix = this.currentEnvironmentInformation;
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
@@ -65,8 +70,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string ApplicationName
         {
-            get => this.UserAgentContainer.Suffix;
-            set => this.UserAgentContainer.Suffix = value;
+            get => this.applicationName;
+            set
+            {
+                this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + EnvironmentInformation.Delimiter + value;
+                this.applicationName = value;
+            }
         }
 
         /// <summary>
