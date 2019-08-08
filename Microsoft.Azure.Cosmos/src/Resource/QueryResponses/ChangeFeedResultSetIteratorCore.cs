@@ -26,10 +26,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int? originalMaxItemCount;
         private string containerRid;
         private string continuationToken;
-        private string partitionKeyRangeId;
         private int? maxItemCount;
-        private bool hasMoreResultsInternal;
-        private string initialNotModifiedPartitionKeyRangeId;
 
         internal ChangeFeedResultSetIteratorCore(
             CosmosClientContext clientContext,
@@ -46,7 +43,6 @@ namespace Microsoft.Azure.Cosmos
             this.maxItemCount = maxItemCount;
             this.originalMaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
-            this.hasMoreResultsInternal = true;
         }
 
         /// <summary>
@@ -54,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         protected readonly ChangeFeedRequestOptions changeFeedOptions;
 
-        public override bool HasMoreResults => this.hasMoreResultsInternal;
+        public override bool HasMoreResults => true;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -62,6 +58,33 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string initialNotModifiedPartitionKeyRangeId = null;
+            while (true)
+            {
+                (string executedPartitionKeyRangeId, ResponseMessage response) = await this.ReadNextInternalAsync(cancellationToken);
+                bool notNotModified = response.StatusCode != HttpStatusCode.NotModified;
+                if (notNotModified)
+                {
+                    return response;
+                }
+
+                if (string.IsNullOrEmpty(initialNotModifiedPartitionKeyRangeId))
+                {
+                    // First NotModified Response
+                    initialNotModifiedPartitionKeyRangeId = executedPartitionKeyRangeId;
+                }
+
+                (_, string rangeForNextToken) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+                // We need to keep checking across all ranges until one of them returns OK or we circle back to the start
+                if (initialNotModifiedPartitionKeyRangeId.Equals(rangeForNextToken, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return response;
+                }
+            }
+        }
+
+        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -73,42 +96,31 @@ namespace Microsoft.Azure.Cosmos
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-            this.partitionKeyRangeId = rangeId;
+            string partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
-            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                (CompositeContinuationToken currentRangeTokenForRetry, string rangeIdForRetry) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-                currentRangeToken = currentRangeTokenForRetry;
-                this.partitionKeyRangeId = rangeIdForRetry;
-                this.continuationToken = currentRangeToken.Token;
-                response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+                return await this.ReadNextInternalAsync(cancellationToken);
             }
 
             // Change Feed read uses Etag for continuation
             string responseContinuationToken = response.Headers.ETag;
-            bool hasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
-            if (!hasMoreResults)
+            bool isNotModified = response.StatusCode == HttpStatusCode.NotModified;
+            if (isNotModified)
             {
                 currentRangeToken.Token = responseContinuationToken;
                 // Current Range is done, push it to the end
                 this.compositeContinuationToken.MoveToNextToken();
-                if (await this.ShouldContinueWithNextTokenAsync())
-                {
-                    return await this.ReadNextAsync(cancellationToken);
-                }
             }
             else if (response.IsSuccessStatusCode)
             {
                 currentRangeToken.Token = responseContinuationToken;
-                this.initialNotModifiedPartitionKeyRangeId = null;
             }
 
             // Send to the user the composite state for all ranges
             response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
-            return response;
+            return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
         }
 
         /// <summary>
@@ -180,18 +192,6 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);
-        }
-
-        private async Task<bool> ShouldContinueWithNextTokenAsync()
-        {
-            if (string.IsNullOrEmpty(this.initialNotModifiedPartitionKeyRangeId))
-            {
-                // First NotModified
-                this.initialNotModifiedPartitionKeyRangeId = this.partitionKeyRangeId;
-            }
-
-            (CompositeContinuationToken currentRangeTokenForRetry, string rangeForNextToken) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-            return !this.initialNotModifiedPartitionKeyRangeId.Equals(rangeForNextToken, StringComparison.InvariantCultureIgnoreCase);
         }
     }
 }
