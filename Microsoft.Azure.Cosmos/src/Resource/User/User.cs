@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Operations for reading, replacing, or deleting a specific, existing user by id.   
+    /// Operations for reading, replacing, or deleting a specific existing user by id and query a user's permissions.
     /// </summary>
     public abstract class User
     {
@@ -138,6 +138,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a permission as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
+        /// <param name="resourceTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds).</param>
         /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
@@ -160,19 +161,23 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// PermissionProperties permissionProperties = new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId"), new PartitionKey("tenantId"))";
         /// 
-        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties);
+        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, resourceTokenExpirySeconds: 9000);
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<PermissionResponse> CreatePermissionAsync(
             PermissionProperties permissionProperties,
-            PermissionRequestOptions requestOptions = null,
+            int? resourceTokenExpirySeconds = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// This method creates a query for permissions under a database using a SQL statement. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
+        /// <remarks>
+        /// Reading permissions will generate a new ResourceTokens. Prior ResourceTokens will still be valid.
+        /// </remarks>
         /// <param name="queryDefinition">The cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>

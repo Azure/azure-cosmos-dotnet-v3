@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The permission id.</param>
         /// <param name="permissionMode">The <see cref="PermissionMode"/>.</param>
         /// <param name="container">The <see cref="Container"/> object.</param>
-        /// <param name="resourcePartitionKey">The partition key value for the permission in the Azure Cosmos DB service. see <see cref="PartitionKey"/></param>
+        /// <param name="resourcePartitionKey">(Optional) The partition key value for the permission in the Azure Cosmos DB service. see <see cref="PartitionKey"/></param>
         public PermissionProperties(string id,
             PermissionMode permissionMode,
             Container container,

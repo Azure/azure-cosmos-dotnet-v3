@@ -143,8 +143,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties, 
-            PermissionRequestOptions requestOptions = null, 
+        public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties,
+            int? resourceTokenExpirySeconds = null,
+            RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (permissionProperties == null)
@@ -156,14 +157,16 @@ namespace Microsoft.Azure.Cosmos
 
             Task<ResponseMessage> response = this.CreatePermissionStreamInternalAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
         }
 
-        public Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties, 
-            PermissionRequestOptions requestOptions = null, 
+        public Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties,
+            int? resourceTokenExpirySeconds,
+            RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (permissionProperties == null)
@@ -175,6 +178,7 @@ namespace Microsoft.Azure.Cosmos
 
             Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(permissionProperties);
             return this.CreatePermissionStreamInternalAsync(streamPayload,
+                resourceTokenExpirySeconds,
                 requestOptions,
                 cancellationToken);
         }
@@ -194,7 +198,9 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
-        public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
                this.ClientContext,
@@ -205,7 +211,9 @@ namespace Microsoft.Azure.Cosmos
                requestOptions);
         }
 
-        public FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -219,7 +227,9 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public FeedIterator GetPermissionQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator GetPermissionQueryStreamIterator(string queryText = null, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -235,7 +245,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<ResponseMessage> ProcessPermissionCreateAsync(
             Stream streamPayload,
-            PermissionRequestOptions requestOptions = null,
+            int? resourceTokenExpirySeconds = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -246,7 +257,13 @@ namespace Microsoft.Azure.Cosmos
                partitionKey: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
-               requestEnricher: null,
+               requestEnricher: (requestMessage) => 
+               {
+                   if (resourceTokenExpirySeconds.HasValue)
+                   {
+                       requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, resourceTokenExpirySeconds.Value.ToString());
+                   }
+               },
                cancellationToken: cancellationToken);
         }
 
@@ -299,11 +316,13 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<ResponseMessage> CreatePermissionStreamInternalAsync(
             Stream streamPayload,
-            PermissionRequestOptions requestOptions = null,
+            int? resourceTokenExpirySeconds = null,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessPermissionCreateAsync(
                 streamPayload: streamPayload,
+                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
