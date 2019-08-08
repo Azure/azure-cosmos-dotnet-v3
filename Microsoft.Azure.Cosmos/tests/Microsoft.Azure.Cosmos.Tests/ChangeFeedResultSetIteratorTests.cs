@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 mockContext.Object, (ContainerCore)client.GetContainer("myDb", "myColl"), null, 10, new ChangeFeedRequestOptions());
             ResponseMessage firstRequest = await iterator.ReadNextAsync();
             Assert.IsTrue(firstRequest.Headers.ContinuationToken.Contains(firstResponse.Headers.ETag), "Response should contain the first continuation");
+            Assert.IsTrue(!firstRequest.Headers.ContinuationToken.Contains(secondResponse.Headers.ETag), "Response should not contain the second continuation");
             Assert.AreEqual(HttpStatusCode.NotFound, firstRequest.StatusCode);
 
             mockContext.Verify(x => x.ProcessResourceOperationAsync<ResponseMessage>(

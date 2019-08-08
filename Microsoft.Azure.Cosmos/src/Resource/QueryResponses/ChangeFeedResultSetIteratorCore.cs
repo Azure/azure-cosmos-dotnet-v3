@@ -59,29 +59,35 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            string initialNotModifiedPartitionKeyRangeId = null;
-            while (true)
+            string firstNotModifiedKeyRangeId = null;
+            string currentKeyRangeId;
+            string nextKeyRangeId;
+            ResponseMessage response;
+            do
             {
-                (string executedPartitionKeyRangeId, ResponseMessage response) = await this.ReadNextInternalAsync(cancellationToken);
-                bool notNotModified = response.StatusCode != HttpStatusCode.NotModified;
-                if (notNotModified)
+                (currentKeyRangeId, response) = await this.ReadNextInternalAsync(cancellationToken);
+                if (response.StatusCode != HttpStatusCode.NotModified)
                 {
-                    return response;
+                    break;
                 }
 
-                if (string.IsNullOrEmpty(initialNotModifiedPartitionKeyRangeId))
+                // HttpStatusCode.NotModified
+                if (string.IsNullOrEmpty(firstNotModifiedKeyRangeId))
                 {
                     // First NotModified Response
-                    initialNotModifiedPartitionKeyRangeId = executedPartitionKeyRangeId;
+                    firstNotModifiedKeyRangeId = currentKeyRangeId;
                 }
 
-                (_, string rangeForNextToken) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-                // We need to keep checking across all ranges until one of them returns OK or we circle back to the start
-                if (initialNotModifiedPartitionKeyRangeId.Equals(rangeForNextToken, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    return response;
-                }
+                // Current Range is done, push it to the end
+                this.compositeContinuationToken.MoveToNextToken();
+                (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             }
+            // We need to keep checking across all ranges until one of them returns OK or we circle back to the start
+            while (!firstNotModifiedKeyRangeId.Equals(nextKeyRangeId, StringComparison.InvariantCultureIgnoreCase));
+
+            // Send to the user the composite state for all ranges
+            response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
+            return response;
         }
 
         internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
@@ -104,22 +110,13 @@ namespace Microsoft.Azure.Cosmos
                 return await this.ReadNextInternalAsync(cancellationToken);
             }
 
-            // Change Feed read uses Etag for continuation
-            string responseContinuationToken = response.Headers.ETag;
-            bool isNotModified = response.StatusCode == HttpStatusCode.NotModified;
-            if (isNotModified)
+            if (response.IsSuccessStatusCode
+                || response.StatusCode == HttpStatusCode.NotModified)
             {
-                currentRangeToken.Token = responseContinuationToken;
-                // Current Range is done, push it to the end
-                this.compositeContinuationToken.MoveToNextToken();
-            }
-            else if (response.IsSuccessStatusCode)
-            {
-                currentRangeToken.Token = responseContinuationToken;
+                // Change Feed read uses Etag for continuation
+                currentRangeToken.Token = response.Headers.ETag;
             }
 
-            // Send to the user the composite state for all ranges
-            response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
             return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
         }
 
