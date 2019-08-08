@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     public struct CosmosSerializerOptions
     {
         /// <summary>
-        /// Get's if the serializer should ignore null properties
+        /// Gets or sets if the serializer should ignore null properties
         /// </summary>
         public bool IgnoreNullValues { get; set; }
 
