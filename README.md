@@ -7,13 +7,13 @@ This client library enables client applications to connect to Azure Cosmos via t
 ```csharp
 CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
 Database database = await client.CreateDatabaseIfNotExistsAsync("MyDatabaseName");
-Container container = await database.CreateContainerIfNotExistsAsync(
+Container container = await database.Database.CreateContainerIfNotExistsAsync(
     "MyContainerName",
     "/partitionKeyPath",
     400);
 
 dynamic testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working" };
-ItemResponse<dynamic> response = await container.CreateItemAsync(testItem);
+ItemResponse<dynamic> response = await container.Container.CreateItemAsync(testItem);
 ```
 
 ## Install via [Nuget.org](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/)
