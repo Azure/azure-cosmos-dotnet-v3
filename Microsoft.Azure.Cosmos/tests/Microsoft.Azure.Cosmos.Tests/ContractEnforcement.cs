@@ -69,7 +69,8 @@
                 !x.AttributeType.Name.Contains("NonVersionableAttribute") &&
                 !x.AttributeType.Name.Contains("ReliabilityContractAttribute") &&
                 !x.AttributeType.Name.Contains("NonVersionableAttribute") &&
-                !x.AttributeType.Name.Contains("DebuggerStepThroughAttribute")
+                !x.AttributeType.Name.Contains("DebuggerStepThroughAttribute") &&
+                !x.AttributeType.Name.Contains("IsReadOnlyAttribute")
             );
         }
 
