@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         public bool IgnoreNullValues { get; set; }
 
         /// <summary>
-        /// Get's if the serializer should ignore null properties
+        /// Gets or sets if the serializer should use indentation
         /// </summary>
         public bool Indented { get; set; }
 
