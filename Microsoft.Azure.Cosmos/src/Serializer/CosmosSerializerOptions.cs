@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         public bool Indented { get; set; }
 
         /// <summary>
-        /// Determines the naming policy used to convert a string-based name to another format,
+        /// Gets or sets whether the naming policy used to convert a string-based name to another format,
         /// such as a camel-casing format.
         /// </summary>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
