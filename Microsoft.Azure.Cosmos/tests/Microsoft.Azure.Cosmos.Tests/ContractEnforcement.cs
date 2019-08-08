@@ -18,8 +18,8 @@
         [TestMethod]
         public void ContractChanges()
         {
-            Assert.IsTrue(
-                ContractEnforcement.IsContractSame("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
+            Assert.IsFalse(
+                ContractEnforcement.DoesContractContainBreakingChanges("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
                 $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
             );
         }
@@ -115,7 +115,7 @@
             return root;
         }
 
-        private static bool IsContractSame(string dllName, string baselinePath, string breakingChangesPath)
+        private static bool DoesContractContainBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
         {
             TypeTree locally = new TypeTree(typeof(object));
             ContractEnforcement.BuildTypeTree(locally, ContractEnforcement.GetAssemblyLocally(dllName).GetExportedTypes());
@@ -128,13 +128,13 @@
 
             if (string.Equals(localJson, baselineJson))
             {
-                return true;
+                return false;
             }
             else
             {
                 System.Diagnostics.Trace.TraceWarning($"Expected: {baselineJson}");
                 System.Diagnostics.Trace.TraceWarning($"Actual: {localJson}");
-                return false;
+                return true;
             }
         }
     }
