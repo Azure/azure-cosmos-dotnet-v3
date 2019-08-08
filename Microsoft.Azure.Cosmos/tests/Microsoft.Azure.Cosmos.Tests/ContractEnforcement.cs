@@ -126,7 +126,8 @@
             File.WriteAllText($"{breakingChangesPath}", localJson);
             string baselineJson = JsonConvert.SerializeObject(baseline, Formatting.Indented);
 
-            if (string.Equals(localJson, baselineJson))
+            System.Diagnostics.Trace.TraceWarning($"String length Expected: {baselineJson.Length};Actual:{localJson.Length}");
+            if (string.Equals(localJson, baselineJson, StringComparison.InvariantCulture))
             {
                 return false;
             }
