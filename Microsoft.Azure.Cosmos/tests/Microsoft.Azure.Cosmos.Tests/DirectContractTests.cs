@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Documents;
@@ -20,6 +21,11 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void TestInteropTest()
         {
+            if (! RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return;
+            }
+
             try
             {
                 CosmosClient client = new CosmosClient(connectionString: null);
@@ -28,15 +34,21 @@ namespace Microsoft.Azure.Cosmos
             catch(ArgumentNullException)
             {
             }
-            catch(DllNotFoundException)
-            {
-            }
 
             Assert.IsTrue(ServiceInteropWrapper.AssembliesExist.Value);
 
             string configJson = "{}";
             IntPtr provider;
             uint result = ServiceInteropWrapper.CreateServiceProvider(configJson, out provider);
+        }
+
+        [TestMethod]
+        public void ByPassQueryParsingTest()
+        {
+            bool interopDllExpected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                && RuntimeInformation.ProcessArchitecture == Architecture.X64;
+
+            Assert.AreEqual(interopDllExpected, CustomTypeExtensions.ByPassQueryParsing(), $"{RuntimeInformation.OSDescription} - {RuntimeInformation.FrameworkDescription}");
         }
 
         [TestMethod]
