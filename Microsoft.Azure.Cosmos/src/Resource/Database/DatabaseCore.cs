@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public override Task<UserResponse> CreateUserAsync(
+        public Task<UserResponse> CreateUserAsync(
                     UserProperties userProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
@@ -556,6 +556,5 @@ namespace Microsoft.Azure.Cosmos
               requestEnricher: null,
               cancellationToken: cancellationToken);
         }
-        
     }
 }

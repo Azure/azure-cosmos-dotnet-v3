@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (var id in createdPermissionIds)
                 {
-                    await user.GetPermission(id).DeletePermissionAsync();
+                    await user.GetPermission(id).DeleteAsync();
                 }
                 foreach (var id in createdContainerIds)
                 {

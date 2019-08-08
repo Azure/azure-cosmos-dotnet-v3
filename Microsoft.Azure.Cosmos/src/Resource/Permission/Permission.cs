@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<PermissionResponse> ReadPermissionAsync(
+        public abstract Task<PermissionResponse> ReadAsync(
             PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<PermissionResponse> ReplacePermissionAsync(
+        public abstract Task<PermissionResponse> ReplaceAsync(
             PermissionProperties permissionProperties,
             PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<PermissionResponse> DeletePermissionAsync(
+        public abstract Task<PermissionResponse> DeleteAsync(
             PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }

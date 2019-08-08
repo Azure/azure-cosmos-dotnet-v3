@@ -64,22 +64,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(permissionResponse.Resource.Token);
 
             PermissionProperties newPermissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, containerResponse.Container);
-            permissionResponse = await user.GetPermission(permissionId).ReplacePermissionAsync(newPermissionProperties);
+            permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(newPermissionProperties);
             //Backend returns Created instead of OK
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
             Assert.AreEqual(newPermissionProperties.PermissionMode, permissionResponse.Resource.PermissionMode);
 
-            permissionResponse = await user.GetPermission(permissionId).ReadPermissionAsync();
+            permissionResponse = await user.GetPermission(permissionId).ReadAsync();
             Assert.AreEqual(HttpStatusCode.OK, permissionResponse.StatusCode);
             Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
 
-            permissionResponse = await user.GetPermission(permissionId).DeletePermissionAsync();
+            permissionResponse = await user.GetPermission(permissionId).DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, permissionResponse.StatusCode);
 
             try
             {
-                permissionResponse = await user.GetPermission(permissionId).ReadPermissionAsync();
+                permissionResponse = await user.GetPermission(permissionId).ReadAsync();
                 Assert.Fail();
             }
             catch(CosmosException ex)
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            
             //update permission to PermissionMode.All
             permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, container);
-            permissionResponse = await user.GetPermission(permissionId).ReplacePermissionAsync(permissionProperties);
+            permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(permissionProperties);
             permission = permissionResponse.Resource;
 
             //delete resource with PermissionMode.All
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //update permission to PermissionMode.All
             permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, container);
-            permissionResponse = await user.GetPermission(permissionId).ReplacePermissionAsync(permissionProperties);
+            permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(permissionProperties);
             permission = permissionResponse.Resource;
 
             //delete resource with PermissionMode.All
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //update permission to PermissionMode.All
             permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, container);
-            permissionResponse = await user.GetPermission(permissionId).ReplacePermissionAsync(permissionProperties);
+            permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(permissionProperties);
             permission = permissionResponse.Resource;
 
             //delete resource with PermissionMode.All
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //update permission to PermissionMode.All
             permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, container);
-            permissionResponse = await user.GetPermission(permissionId).ReplacePermissionAsync(permissionProperties);
+            permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(permissionProperties);
             permission = permissionResponse.Resource;
 
             //delete resource with PermissionMode.All
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //update permission to PermissionMode.All
             permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, container);
-            permissionResponse = await user.GetPermission(permissionId).ReplacePermissionAsync(permissionProperties);
+            permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(permissionProperties);
             permission = permissionResponse.Resource;
 
             //delete resource with PermissionMode.All

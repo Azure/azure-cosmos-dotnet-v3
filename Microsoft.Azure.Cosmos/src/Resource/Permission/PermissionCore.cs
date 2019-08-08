@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         internal virtual CosmosClientContext ClientContext { get; }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> DeletePermissionAsync(PermissionRequestOptions requestOptions = null, 
+        public override Task<PermissionResponse> DeleteAsync(PermissionRequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.DeletePermissionStreamAsync(
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> ReadPermissionAsync(PermissionRequestOptions requestOptions = null,
+        public override Task<PermissionResponse> ReadAsync(PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.ReadPermissionStreamAsync(
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> ReplacePermissionAsync(PermissionProperties permissionProperties, 
+        public override Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties, 
             PermissionRequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {

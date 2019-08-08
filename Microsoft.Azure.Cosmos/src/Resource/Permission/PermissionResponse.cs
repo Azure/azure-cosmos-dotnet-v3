@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
-        /// Get <see cref="Cosmos.User"/> implicitly from <see cref="PermissionResponse"/>
+        /// Get <see cref="Cosmos.Permission"/> implicitly from <see cref="PermissionResponse"/>
         /// </summary>
         /// <param name="response">PermissionResponse</param>
         public static implicit operator Permission(PermissionResponse response)
