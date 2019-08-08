@@ -1567,19 +1567,17 @@
     "CosmosSerializerOptions": {
       "Subclasses": {},
       "Members": {
-        "Boolean get_IgnoreNullValues()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Boolean get_IgnoreNullValues()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
-            "CompilerGeneratedAttribute",
-            "IsReadOnlyAttribute"
+            "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_IgnoreNullValues()"
         },
-        "Boolean get_Indented()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Boolean get_Indented()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
-            "CompilerGeneratedAttribute",
-            "IsReadOnlyAttribute"
+            "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Boolean get_Indented()"
         },
@@ -1593,11 +1591,10 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()[System.Runtime.CompilerServices.IsReadOnlyAttribute()]-[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
-            "CompilerGeneratedAttribute",
-            "IsReadOnlyAttribute"
+            "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()"
         },
