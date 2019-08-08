@@ -74,9 +74,7 @@ namespace Microsoft.Azure.Cosmos
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             this.partitionKeyRangeId = rangeId;
-
             this.continuationToken = currentRangeToken.Token;
-
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {

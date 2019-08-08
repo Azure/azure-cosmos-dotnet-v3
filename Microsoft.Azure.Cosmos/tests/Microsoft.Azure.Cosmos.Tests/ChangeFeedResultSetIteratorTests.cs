@@ -67,7 +67,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
-
         [TestMethod]
         public async Task ShouldContinueUntilResponseOk()
         {
