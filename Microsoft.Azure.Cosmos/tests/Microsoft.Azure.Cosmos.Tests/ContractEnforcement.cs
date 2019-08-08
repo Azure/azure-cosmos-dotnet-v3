@@ -1,16 +1,14 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Microsoft.Azure.Cosmos.Tests
+﻿namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
+
     [TestClass]
     public class ContractEnforcement
     {
@@ -128,7 +126,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             File.WriteAllText($"{breakingChangesPath}", localJson);
             string baselineJson = JsonConvert.SerializeObject(baseline, Formatting.Indented);
 
+            for (int i=0; i < baselineJson.Length && i < localJson.Length; i++)
+            {
+                if (baselineJson[i] != localJson[i])
+                {
+                    // First byte of diff, trace next 200 bytes if-exists
+                    ContractEnforcement.TraceSubpartIfExists(baselineJson, 0, 200);
+                    ContractEnforcement.TraceSubpartIfExists(localJson, 0, 200);
+                }
+            }
+
             return baselineJson == localJson;
+        }
+
+        private static void TraceSubpartIfExists(string input, int position, int desiredLength)
+        {
+            if (position + desiredLength > input.Length)
+            {
+                System.Diagnostics.Trace.TraceWarning($"baseline: {input.Substring(position)}");
+            }
+            else
+            {
+                System.Diagnostics.Trace.TraceWarning($"baseline: {input.Substring(position, desiredLength)}");
+            }
         }
     }
 }
