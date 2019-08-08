@@ -8,12 +8,12 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// The cosmos user response
+    /// The cosmos permission response
     /// </summary>
     public class PermissionResponse : Response<PermissionProperties>
     {
         /// <summary>
-        /// Create a <see cref="UserResponse"/> as a no-op for mock testing
+        /// Create a <see cref="PermissionResponse"/> as a no-op for mock testing
         /// </summary>
         protected PermissionResponse()
             : base()
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The reference to the cosmos user. This allows additional operations on the user
+        /// The reference to the cosmos permission. This allows additional operations on the permission
         /// or for easy access permissions
         /// </summary>
         public virtual Permission Permission { get; private set; }
@@ -67,9 +67,9 @@ namespace Microsoft.Azure.Cosmos
         internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
-        /// Get <see cref="Cosmos.User"/> implicitly from <see cref="UserResponse"/>
+        /// Get <see cref="Cosmos.User"/> implicitly from <see cref="PermissionResponse"/>
         /// </summary>
-        /// <param name="response">UserResponse</param>
+        /// <param name="response">PermissionResponse</param>
         public static implicit operator Permission(PermissionResponse response)
         {
             return response.Permission;

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Converters;
 
     /// <summary> 
-    /// Represents a user in the Azure Cosmos DB service.
+    /// Represents a permission in the Azure Cosmos DB service.
     /// </summary>
     public class PermissionProperties
     {
@@ -26,7 +26,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="permissionMode">The permission mode of the resource in the Azure Cosmos service.</param>
-        internal PermissionProperties(string id, PermissionMode permissionMode) 
+        internal PermissionProperties(string id, 
+            PermissionMode permissionMode) 
             : this(id, permissionMode, PartitionKey.None)
         {
         }
@@ -37,7 +38,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         /// <param name="permissionMode">The permission mode of the resource in the Azure Cosmos service.</param>
         /// <param name="resourcePartitionKey">The partition key value for the permission in the Azure Cosmos DB service. see <see cref="PartitionKey"/></param>
-        internal PermissionProperties(string id, PermissionMode permissionMode, PartitionKey resourcePartitionKey)
+        internal PermissionProperties(string id, 
+            PermissionMode permissionMode, 
+            PartitionKey resourcePartitionKey)
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
@@ -83,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ResourceLink)]
         public string ResourceLink { get; private set; }
         
-        [JsonProperty(PropertyName = Constants.Properties.ResourcePartitionKey, NullValueHandling = NullValueHandling.Ignore)]        
+        [JsonProperty(PropertyName = Constants.Properties.ResourcePartitionKey, NullValueHandling = NullValueHandling.Ignore)]
         internal Documents.Routing.PartitionKeyInternal InternalResourcePartitionKey { get; private set; }
 
         /// <summary>
@@ -95,29 +98,29 @@ namespace Microsoft.Azure.Cosmos
         ///             For example absent/empty partition key is superset of all partition keys.
         /// </summary>
         [JsonIgnore]
-        public PartitionKey ResourcePartitionKey
+        public PartitionKey? ResourcePartitionKey
         {
             get
             {
                 if (this.InternalResourcePartitionKey == null)
                 {
-                    return PartitionKey.Null;
+                    return null;
                 }
                 if (this.InternalResourcePartitionKey.ToObjectArray().Length > 0)
                 {
                     return new PartitionKey(this.InternalResourcePartitionKey.ToObjectArray()[0]);
                 }
-                return PartitionKey.None;
+                return null;
             }
             set
             {
-                if (value.IsNone)
+                if (value == null || (value.HasValue && value.Value.IsNone))
                 {
                     this.InternalResourcePartitionKey = null;
                 }
                 else
                 {
-                    this.InternalResourcePartitionKey = value.InternalKey;
+                    this.InternalResourcePartitionKey = value.Value.InternalKey;
                 }
             }
         }
@@ -154,9 +157,10 @@ namespace Microsoft.Azure.Cosmos
         public string ETag { get; private set; }
 
         /// <summary>
-        /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
+        /// Gets the last modified time stamp associated with <see cref="PermissionProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
+        /// <remarks>ResourceToken generation does not apply.</remarks>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? LastModified { get; private set; }

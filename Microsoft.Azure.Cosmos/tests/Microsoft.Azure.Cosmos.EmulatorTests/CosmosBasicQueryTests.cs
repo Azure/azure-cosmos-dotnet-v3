@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task UserTests(bool directMode)
         {
             CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-            Database database = client.GetDatabase(DatabaseId);
+            DatabaseCore database = (DatabaseCore) client.GetDatabase(DatabaseId);
             List<string> createdIds = new List<string>();
 
             try
@@ -398,13 +398,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<string> createdPermissionIds = new List<string>();
             List<string> createdContainerIds = new List<string>();
             string userId = Guid.NewGuid().ToString();
-            User user = null;
+            UserCore user = null;
 
             try
             {
                 UserResponse createUserResponse = await database.CreateUserAsync(userId);
                 Assert.AreEqual(HttpStatusCode.Created, createUserResponse.StatusCode);
-                user = createUserResponse.User;
+                user = (UserCore) createUserResponse.User;
 
                 ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
                 Container container = createContainerResponse.Container;

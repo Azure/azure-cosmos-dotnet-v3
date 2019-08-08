@@ -70,34 +70,5 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             userResponse = await this.cosmosDatabase.GetUser(newUserId).DeleteAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, userResponse.StatusCode);
         }
-
-        [TestMethod]
-        public async Task StreamCRUDTest()
-        {
-            string userId = Guid.NewGuid().ToString();
-
-
-            ResponseMessage responseMessage = await this.cosmosDatabase.CreateUserStreamAsync(new UserProperties(userId));
-            Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
-            UserProperties user = TestCommon.Serializer.FromStream<UserProperties>(responseMessage.Content);
-            Assert.AreEqual(userId, user.Id);
-            Assert.IsNotNull(user.ResourceId);
-
-            string newUserId = Guid.NewGuid().ToString();
-            user.Id = newUserId;
-
-            responseMessage = await this.cosmosDatabase.GetUser(userId).ReplaceStreamAsync(user);
-            user = TestCommon.Serializer.FromStream<UserProperties>(responseMessage.Content);
-            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
-            Assert.AreEqual(newUserId, user.Id);
-
-            responseMessage = await this.cosmosDatabase.GetUser(newUserId).ReadStreamAsync();
-            user = TestCommon.Serializer.FromStream<UserProperties>(responseMessage.Content);
-            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
-            Assert.AreEqual(newUserId, user.Id);
-
-            responseMessage = await this.cosmosDatabase.GetUser(newUserId).DeleteStreamAsync();
-            Assert.AreEqual(HttpStatusCode.NoContent, responseMessage.StatusCode);
-        }
     }
 }

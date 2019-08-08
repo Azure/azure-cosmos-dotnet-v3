@@ -8,17 +8,40 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Operations for reading, replacing, or deleting a specific, existing permission by id.
+    /// Operations for reading, replacing, or deleting a specific permission by id. Permissions are used to create ResourceTokens. Resource tokens provide access to the application resources within a database. Resource tokens:
+    /// <list type="bullet">
+    /// <item>
+    /// <description>Provide access to specific containers, partition keys, documents, attachments, stored procedures, triggers, and UDFs.</description>
+    /// </item>
+    /// <item>
+    /// <description>Are created when a user is granted permissions to a specific resource.</description>
+    /// </item>
+    /// <item>
+    /// <description>Are recreated when a permission resource is acted upon on by POST, GET, or PUT call.</description>
+    /// </item>
+    /// <item>
+    /// <description>Use a hash resource token specifically constructed for the user, resource, and permission.</description>
+    /// </item>
+    /// <item>
+    /// <description>Are time bound with a customizable validity period. The default valid timespan is one hour. Token lifetime, however, may be explicitly specified, up to a maximum of 24 hours.</description>
+    /// </item>
+    /// <item>
+    /// <description>Provide a safe alternative to giving out the master key.</description>
+    /// </item>
+    /// <item>
+    /// <description>Enable clients to read, write, and delete resources in the Cosmos DB account according to the permissions they've been granted.</description>
+    /// </item>
+    /// </list>
     /// </summary>
     public abstract class Permission
     {
         /// <summary>
-        /// The Id of the Cosmos user
+        /// The Id of the Cosmos Permission
         /// </summary>
         public abstract string Id { get; }
 
         /// <summary>
-        /// Reads a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Reads a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation. Each read will return a new ResourceToken with its respective expiration. 
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -31,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>StatusCode</term><description>Reason for exception</description>
         ///     </listheader>
         ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to read did not exist.</description>
+        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to read did not exist.</description>
         ///     </item>
         ///     <item>
         ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
@@ -52,28 +75,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Reads a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.
-        /// </returns>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// User user = this.database.GetUser("userId");
-        /// Permission permission = this.user.GetPermission("permissionId");
-        /// ResponseMessage response = await permission.ReadPermissionStreamAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract Task<ResponseMessage> ReadPermissionStreamAsync(
-            PermissionRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Replace a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// Replace a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation. This will not revoke existing ResourceTokens.
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
@@ -87,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>StatusCode</term><description>Reason for exception</description>
         ///     </listheader>
         ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to read did not exist.</description>
+        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to read did not exist.</description>
         ///     </item>
         ///     <item>
         ///         <term>429</term><description>TooManyRequests - This means you have exceeded the number of request units per second. Consult the DocumentClientException.RetryAfter value to see how long you should wait before retrying this operation.</description>
@@ -110,31 +112,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Replace a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation.
-        /// </summary>
-        /// <param name="permissionProperties">The <see cref="PermissionProperties"/>.</param>
-        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the replace resource record.
-        /// </returns>
-        /// <example>
-        ///
-        /// <code language="c#">
-        /// <![CDATA[
-        /// PermissionProperties permissionProperties = permissionReadResponse;
-        /// permissionProperties.Id = "newuser";
-        /// ResponseMessage response = await user.ReplacePermissionStreamAsync(permissionProperties);
-        /// ]]>
-        /// </code>
-        /// </example>
-        public abstract Task<ResponseMessage> ReplacePermissionStreamAsync(
-            PermissionProperties permissionProperties,
-            PermissionRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Delete a <see cref="PermissionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Delete a <see cref="PermissionProperties"/> from the Azure Cosmos DB service as an asynchronous operation. This will not revoke existing ResourceTokens.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -145,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
         ///         <term>StatusCode</term><description>Reason for exception</description>
         ///     </listheader>
         ///     <item>
-        ///         <term>404</term><description>NotFound - This means the resource you tried to delete did not exist.</description>
+        ///         <term>404</term><description>NotFound - This means the resource or parent resource you tried to delete did not exist.</description>
         ///     </item>
         /// </list>
         /// </exception>
@@ -159,25 +137,6 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<PermissionResponse> DeletePermissionAsync(
-            PermissionRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
-
-        /// <summary>
-        /// Delete a <see cref="PermissionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
-        /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// User user = this.database.GetUser("userId");
-        /// Permission permission = user.GetPermission("permissionId");
-        /// ResponseMessage response = await permission.DeletePermissionStreamAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
-        public abstract Task<ResponseMessage> DeletePermissionStreamAsync(
             PermissionRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
     }

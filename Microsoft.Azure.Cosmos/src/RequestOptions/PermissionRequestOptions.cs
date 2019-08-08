@@ -23,8 +23,8 @@ namespace Microsoft.Azure.Cosmos
         /// to the authKeyOrResourceToken parameter of <see cref="Microsoft.Azure.Cosmos.CosmosClient"/> constructor
         /// <para>
         /// When requesting this Token, a RequestOption for ResourceTokenExpirySeconds can be used to set the length of time to elapse before the token expires.
-        /// This value can range from 10 seconds, to 5 hours (or 18,000 seconds)
-        /// The default value for this, should none be supplied is 1 hour (or 3,600 seconds).
+        /// This value can range from 10 seconds, to 24 hours (or 86,400 seconds)
+        /// The default value for this is 1 hour (or 3,600 seconds).
         /// </para>
         /// </remarks>
         /// <seealso cref="Microsoft.Azure.Cosmos.CosmosClient"/>

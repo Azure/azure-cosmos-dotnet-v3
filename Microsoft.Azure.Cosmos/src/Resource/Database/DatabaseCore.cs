@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos
                     id);
         }
 
-        public override Task<ResponseMessage> CreateUserStreamAsync(
+        public Task<ResponseMessage> CreateUserStreamAsync(
             UserProperties userProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
-        public override FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
                this.ClientContext,
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -422,7 +422,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public override FeedIterator GetUserQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator GetUserQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)

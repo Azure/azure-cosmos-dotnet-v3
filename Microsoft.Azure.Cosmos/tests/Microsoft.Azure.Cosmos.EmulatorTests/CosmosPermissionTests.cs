@@ -89,49 +89,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task StreamCRUDTest()
-        {
-            string containerId = Guid.NewGuid().ToString();
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-
-            string userId = Guid.NewGuid().ToString();
-            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
-            User user = userResponse.User;
-            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
-            Assert.AreEqual(userId, user.Id);
-
-            string permissionId = Guid.NewGuid().ToString();
-            PermissionProperties permissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.Read, containerResponse.Container);
-            ResponseMessage responseMessage = await user.CreatePermissionStreamAsync(permissionProperties);
-            PermissionProperties permission = TestCommon.Serializer.FromStream<PermissionProperties>(responseMessage.Content);
-            Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
-            Assert.AreEqual(permissionId, permission.Id);
-            Assert.AreEqual(permissionProperties.PermissionMode, permission.PermissionMode);
-            Assert.IsNotNull(permission.Token);
-
-            PermissionProperties newPermissionProperties = PermissionProperties.CreateForContainer(permissionId, PermissionMode.All, containerResponse.Container);
-            responseMessage = await user.GetPermission(permissionId).ReplacePermissionStreamAsync(newPermissionProperties);
-            //Backend returns Created instead of OK
-            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
-            permission = TestCommon.Serializer.FromStream<PermissionProperties>(responseMessage.Content);
-            Assert.AreEqual(newPermissionProperties.PermissionMode, permission.PermissionMode);
-
-            responseMessage = await user.GetPermission(permissionId).ReadPermissionStreamAsync();
-            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
-            permission = TestCommon.Serializer.FromStream<PermissionProperties>(responseMessage.Content);
-            Assert.AreEqual(newPermissionProperties.Id, permission.Id);
-            Assert.AreEqual(newPermissionProperties.PermissionMode, permission.PermissionMode);
-
-            responseMessage = await user.GetPermission(permissionId).DeletePermissionStreamAsync();
-            //Backend returns Created instead of NoContent
-            Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
-
-            responseMessage = await user.GetPermission(permissionId).ReadPermissionStreamAsync();
-            Assert.AreEqual(HttpStatusCode.NotFound, responseMessage.StatusCode);
-        }
-
-        [TestMethod]
         public async Task ContainerResourcePermissionTest()
         {
             //create user

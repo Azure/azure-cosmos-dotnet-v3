@@ -62,8 +62,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
         }
 
-        /// <inheritdoc/>
-        public override Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions = null, 
+        public Task<ResponseMessage> ReadStreamAsync(RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
@@ -92,8 +91,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
         }
 
-        /// <inheritdoc/>
-        public override Task<ResponseMessage> ReplaceStreamAsync(UserProperties userProperties, 
+        public Task<ResponseMessage> ReplaceStreamAsync(UserProperties userProperties, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -120,8 +118,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this, response);
         }
 
-        /// <inheritdoc/>
-        public override Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions = null, 
+        public Task<ResponseMessage> DeleteStreamAsync(RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
@@ -165,8 +162,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
         }
 
-        /// <inheritdoc/>
-        public override Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties, 
+        public Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties, 
             PermissionRequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -198,8 +194,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
-        /// <inheritdoc/>
-        public override FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator GetPermissionQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
                this.ClientContext,
@@ -210,8 +205,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions);
         }
 
-        /// <inheritdoc/>
-        public override FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -225,8 +219,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        /// <inheritdoc/>
-        public override FeedIterator GetPermissionQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator GetPermissionQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
