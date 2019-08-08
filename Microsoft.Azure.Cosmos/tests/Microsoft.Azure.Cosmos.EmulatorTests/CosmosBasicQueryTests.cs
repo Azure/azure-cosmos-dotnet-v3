@@ -408,20 +408,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
                 Container container = createContainerResponse.Container;
-                PermissionResponse permissionResponse = await user.CreatePermissionAsync(PermissionProperties.CreateForContainer("BasicQueryPermission1", PermissionMode.All, container));
+                PermissionResponse permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission1", PermissionMode.All, container));
                 createdContainerIds.Add(createContainerResponse.Container.Id);
                 createdPermissionIds.Add(permissionResponse.Permission.Id);
 
 
                 createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
                 container = createContainerResponse.Container;
-                permissionResponse = await user.CreatePermissionAsync(PermissionProperties.CreateForContainer("BasicQueryPermission2", PermissionMode.All, container));
+                permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission2", PermissionMode.All, container));
                 createdContainerIds.Add(createContainerResponse.Container.Id);
                 createdPermissionIds.Add(permissionResponse.Permission.Id);
 
                 createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
                 container = createContainerResponse.Container;
-                permissionResponse = await user.CreatePermissionAsync(PermissionProperties.CreateForContainer("BasicQueryPermission3", PermissionMode.All, container));
+                permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission3", PermissionMode.All, container));
                 createdContainerIds.Add(createContainerResponse.Container.Id);
                 createdPermissionIds.Add(permissionResponse.Permission.Id);
 

@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// PermissionProperties permissionProperties = PermissionProperties.CreateDatabasePermission();
+        /// PermissionProperties permissionProperties = new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId"), new PartitionKey("tenantId"))";
         /// 
         /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties);
         /// ]]>
