@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     internal class PartitionKeyBatchResponse : BatchResponse
     {
         // Results sorted in the order operations had been added.
-        private readonly SortedList<int, BatchOperationResult> resultsByOperationIndex;
+        private readonly BatchOperationResult[] resultsByOperationIndex;
         private bool isDisposed;
 
         /// <summary>
@@ -40,16 +40,20 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionKeyBatchResponse"/> class.
         /// </summary>
+        /// <param name="originalOperationsCount">Original operations that generated the server responses.</param>
         /// <param name="serverResponses">Responses from the server.</param>
         /// <param name="serializer">Serializer to deserialize response resource body streams.</param>
-        internal PartitionKeyBatchResponse(IEnumerable<BatchResponse> serverResponses, CosmosSerializer serializer)
+        internal PartitionKeyBatchResponse(
+            int originalOperationsCount,
+            IEnumerable<BatchResponse> serverResponses,
+            CosmosSerializer serializer)
         {
             this.StatusCode = serverResponses.Any(r => r.StatusCode != HttpStatusCode.OK)
                 ? (HttpStatusCode)StatusCodes.MultiStatus
                 : HttpStatusCode.OK;
 
             this.ServerResponses = serverResponses;
-            this.resultsByOperationIndex = new SortedList<int, BatchOperationResult>();
+            this.resultsByOperationIndex = new BatchOperationResult[originalOperationsCount];
 
             StringBuilder errorMessageBuilder = new StringBuilder();
             List<string> activityIds = new List<string>();
@@ -60,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
                 for (int index = 0; index < serverResponse.Operations.Count; index++)
                 {
                     int operationIndex = serverResponse.Operations[index].OperationIndex;
-                    if (!this.resultsByOperationIndex.ContainsKey(operationIndex)
+                    if (this.resultsByOperationIndex[operationIndex] == null
                         || this.resultsByOperationIndex[operationIndex].StatusCode == (HttpStatusCode)StatusCodes.TooManyRequests)
                     {
                         this.resultsByOperationIndex[operationIndex] = serverResponse[index];
@@ -102,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the number of operation results.
         /// </summary>
-        public override int Count => this.resultsByOperationIndex.Count;
+        public override int Count => this.resultsByOperationIndex.Length;
 
         /// <inheritdoc />
         public override BatchOperationResult this[int index] => this.resultsByOperationIndex[index];
@@ -137,9 +141,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Enumerator over the operation results.</returns>
         public override IEnumerator<BatchOperationResult> GetEnumerator()
         {
-            foreach (KeyValuePair<int, BatchOperationResult> pair in this.resultsByOperationIndex)
+            foreach (BatchOperationResult result in this.resultsByOperationIndex)
             {
-                yield return pair.Value;
+                yield return result;
             }
         }
 

@@ -55,8 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
-                return response;
+                return new PartitionKeyBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
             };
 
         // The response will include all but 2 operation responses
@@ -67,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 List<BatchOperationResult> results = new List<BatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[operationCount];
                 int index = 0;
-                foreach (BatchAsyncOperationContext operation in operations.Take(operationCount))
+                foreach (BatchAsyncOperationContext operation in operations.Skip(1).Take(operationCount))
                 {
                     results.Add(
                     new BatchOperationResult(HttpStatusCode.OK)
@@ -94,8 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
-                return response;
+                return new PartitionKeyBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
             };
 
         private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithFailure
@@ -227,11 +225,19 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await batchAsyncBatcher.DispatchAsync();
 
+            // Responses 1 and 10 should be missing
             for (int i = 0; i < 10; i++)
             {
                 BatchAsyncOperationContext context = contexts[i];
                 // Some tasks should not be resolved
-                Assert.IsTrue(context.Task.Status == TaskStatus.RanToCompletion || context.Task.Status == TaskStatus.WaitingForActivation);
+                if(i == 0 || i == 9)
+                {
+                    Assert.IsTrue(context.Task.Status == TaskStatus.WaitingForActivation);
+                }
+                else
+                {
+                    Assert.IsTrue(context.Task.Status == TaskStatus.RanToCompletion);
+                }
                 if (context.Task.Status == TaskStatus.RanToCompletion)
                 {
                     BatchOperationResult result = await context.Task;

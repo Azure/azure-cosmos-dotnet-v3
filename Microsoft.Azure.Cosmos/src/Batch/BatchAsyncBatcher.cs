@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// Maintains a batch of operations and dispatches the batch through an executor. Maps results into the original operation contexts.
@@ -85,6 +86,7 @@ namespace Microsoft.Azure.Cosmos
 
                 // Operation index is in the scope of the current batch
                 batchAsyncOperation.Operation.OperationIndex = this.batchOperations.Count;
+                batchAsyncOperation.CurrentBatcher = this;
                 this.batchOperations.Add(batchAsyncOperation);
                 return true;
             }
@@ -96,38 +98,24 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (PartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken))
                 {
-                    // If the batch was not successful, we need to set all the responses
-                    if (!batchResponse.IsSuccessStatusCode)
-                    {
-                        BatchOperationResult errorResult = new BatchOperationResult(batchResponse.StatusCode);
-                        foreach (BatchAsyncOperationContext operation in this.batchOperations)
-                        {
-                            operation.Complete(errorResult);
-                        }
-
-                        return;
-                    }
-
                     for (int index = 0; index < this.batchOperations.Count; index++)
                     {
                         BatchAsyncOperationContext operation = this.batchOperations[index];
-                        try
+                        BatchOperationResult response = batchResponse[operation.Operation.OperationIndex];
+                        if (response != null)
                         {
-                            BatchOperationResult response = batchResponse[operation.Operation.OperationIndex];
-                            operation.Complete(response);
-                        }
-                        catch (KeyNotFoundException)
-                        {
+                            operation.Complete(this, response);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
+                DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
                 // Exceptions happening during execution fail all the Tasks
                 foreach (BatchAsyncOperationContext operation in this.batchOperations)
                 {
-                    operation.Fail(ex);
+                    operation.Fail(this, ex);
                 }
             }
         }

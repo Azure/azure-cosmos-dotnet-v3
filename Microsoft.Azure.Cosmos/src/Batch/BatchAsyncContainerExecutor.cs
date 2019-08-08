@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = await this.GetOrAddStreamerForPartitionKeyRangeAsync(resolvedPartitionKeyRangeId).ConfigureAwait(false);
             BatchAsyncOperationContext context = new BatchAsyncOperationContext(resolvedPartitionKeyRangeId, operation);
-            await streamer.AddAsync(context).ConfigureAwait(false);
+            await streamer.AddAsync(context);
             return await context.Task;
         }
 
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
                 Debug.Assert(BatchAsyncContainerExecutor.ValidateOperationEPK(operation, itemRequestOptions));
             }
 
-            await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, cancellationToken).ConfigureAwait(false);
+            await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, cancellationToken);
 
             int itemByteSize = operation.GetApproximateSerializedLength();
 
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos
         {
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(context.Operation, cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = await this.GetOrAddStreamerForPartitionKeyRangeAsync(resolvedPartitionKeyRangeId).ConfigureAwait(false);
-            await streamer.AddAsync(context).ConfigureAwait(false);
+            await streamer.AddAsync(context);
         }
 
         private async Task<PartitionKeyBatchResponse> ExecuteAsync(
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            return new PartitionKeyBatchResponse(responses, this.cosmosClientContext.CosmosSerializer);
+            return new PartitionKeyBatchResponse(operations.Count, responses, this.cosmosClientContext.CosmosSerializer);
         }
 
         private async Task<string> ResolvePartitionKeyRangeIdAsync(

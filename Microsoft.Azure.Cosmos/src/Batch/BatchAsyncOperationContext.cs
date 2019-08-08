@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Threading;
+    using System.Diagnostics;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos
         public string PartitionKeyRangeId { get; }
 
         public ItemBatchOperation Operation { get; }
+
+        public BatchAsyncBatcher CurrentBatcher { get; set; }
 
         public Task<BatchOperationResult> Task => this.taskCompletionSource.Task;
 
@@ -29,13 +31,19 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKeyRangeId = partitionKeyRangeId;
         }
 
-        public void Complete(BatchOperationResult result)
+        public void Complete(
+            BatchAsyncBatcher completer,
+            BatchOperationResult result)
         {
+            Debug.Assert(this.CurrentBatcher == null || completer == this.CurrentBatcher);
             this.taskCompletionSource.SetResult(result);
         }
 
-        public void Fail(Exception exception)
+        public void Fail(
+            BatchAsyncBatcher completer,
+            Exception exception)
         {
+            Debug.Assert(this.CurrentBatcher == null || completer == this.CurrentBatcher);
             this.taskCompletionSource.SetException(exception);
         }
     }

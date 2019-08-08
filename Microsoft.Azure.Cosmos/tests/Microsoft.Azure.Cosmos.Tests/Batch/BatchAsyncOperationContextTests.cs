@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             BatchOperationResult expected = new BatchOperationResult(HttpStatusCode.OK);
 
-            batchAsyncOperationContext.Complete(expected);
+            batchAsyncOperationContext.Complete(null, expected);
 
             Assert.AreEqual(expected, await batchAsyncOperationContext.Task);
             Assert.AreEqual(TaskStatus.RanToCompletion, batchAsyncOperationContext.Task.Status);
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
             BatchAsyncOperationContext batchAsyncOperationContext = new BatchAsyncOperationContext(string.Empty, operation);
 
-            batchAsyncOperationContext.Fail(failure);
+            batchAsyncOperationContext.Fail(null, failure);
 
             Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => batchAsyncOperationContext.Task);
             Assert.AreEqual(failure, capturedException);

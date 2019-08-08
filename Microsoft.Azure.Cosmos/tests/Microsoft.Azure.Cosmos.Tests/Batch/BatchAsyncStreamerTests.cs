@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+                PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
                 return response;
             };
 
