@@ -19,7 +19,7 @@
         public void ContractChanges()
         {
             Assert.IsTrue(
-                ContractEnforcement.CheckBreakingChanges("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
+                ContractEnforcement.IsContractSame("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
                 $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
             );
         }
@@ -115,7 +115,7 @@
             return root;
         }
 
-        private static bool CheckBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
+        private static bool IsContractSame(string dllName, string baselinePath, string breakingChangesPath)
         {
             TypeTree locally = new TypeTree(typeof(object));
             ContractEnforcement.BuildTypeTree(locally, ContractEnforcement.GetAssemblyLocally(dllName).GetExportedTypes());
@@ -126,28 +126,15 @@
             File.WriteAllText($"{breakingChangesPath}", localJson);
             string baselineJson = JsonConvert.SerializeObject(baseline, Formatting.Indented);
 
-            for (int i=0; i < baselineJson.Length && i < localJson.Length; i++)
+            if (string.Equals(localJson, baselineJson))
             {
-                if (baselineJson[i] != localJson[i])
-                {
-                    // First byte of diff, trace next 200 bytes if-exists
-                    ContractEnforcement.TraceSubpartIfExists(baselineJson, 0, 200);
-                    ContractEnforcement.TraceSubpartIfExists(localJson, 0, 200);
-                }
-            }
-
-            return baselineJson == localJson;
-        }
-
-        private static void TraceSubpartIfExists(string input, int position, int desiredLength)
-        {
-            if (position + desiredLength > input.Length)
-            {
-                System.Diagnostics.Trace.TraceWarning($"baseline: {input.Substring(position)}");
+                return true;
             }
             else
             {
-                System.Diagnostics.Trace.TraceWarning($"baseline: {input.Substring(position, desiredLength)}");
+                System.Diagnostics.Trace.TraceWarning($"Expected: {baselineJson}");
+                System.Diagnostics.Trace.TraceWarning($"Actual: {localJson}");
+                return false;
             }
         }
     }
