@@ -131,8 +131,8 @@
                 if (baselineJson[i] != localJson[i])
                 {
                     // First byte of diff, trace next 200 bytes if-exists
-                    ContractEnforcement.TraceSubpartIfExists(nameof(baselineJson), baselineJson, 0, 200);
-                    ContractEnforcement.TraceSubpartIfExists(nameof(localJson), localJson, 0, 200);
+                    ContractEnforcement.TraceSubpartIfExists(nameof(baselineJson), baselineJson, 0, 20);
+                    ContractEnforcement.TraceSubpartIfExists(nameof(localJson), localJson, 0, 20);
                 }
             }
 
