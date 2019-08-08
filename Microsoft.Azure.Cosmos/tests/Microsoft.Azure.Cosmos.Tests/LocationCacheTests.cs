@@ -649,8 +649,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             NumberStyles.Integer,
                             CultureInfo.InvariantCulture) * 1000);
 
-                    CollectionAssert.AreEqual(currentWriteEndpoints, this.cache.WriteEndpoints);
-                    CollectionAssert.AreEqual(currentReadEndpoints, this.cache.ReadEndpoints);
+                    CollectionAssert.AreEqual(currentWriteEndpoints, this.cache.WriteEndpoints, $"expected: {string.Join(",", currentWriteEndpoints)} Actual: {string.Join(",", this.cache.WriteEndpoints)}");
+                    CollectionAssert.AreEqual(currentReadEndpoints, this.cache.ReadEndpoints, $"expected: {string.Join(",", currentReadEndpoints)} Actual: {string.Join(",", this.cache.ReadEndpoints)}");
                 }
             }
         }
