@@ -1013,6 +1013,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         RewrittenQuery = string.Format(CultureInfo.InvariantCulture, "SELECT VALUE [{{\"item\": {{\"sum\": SUM(r), \"count\": COUNT(r)}}}}]\nFROM r\nWHERE (r.key = {0})", 1),
                         HasSelectValue = true,
                         GroupByExpressions = new string[] { },
+                        GroupByAliasToAggregateType = new Dictionary<string, AggregateOperator?>(),
                     },
                     QueryRanges = new List<Range<string>>()
                     {
@@ -1031,6 +1032,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         RewrittenQuery = string.Format(CultureInfo.InvariantCulture, "SELECT VALUE [{{\"item\": {{\"sum\": SUM(r), \"count\": COUNT(r)}}}}]\nFROM r\nWHERE (r.key = {0})", 1),
                         HasSelectValue = true,
                         GroupByExpressions = new string[] { },
+                        GroupByAliasToAggregateType = new Dictionary<string, AggregateOperator?>(),
                     },
                     QueryRanges = new List<Range<string>>()
                     {
