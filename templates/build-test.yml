@@ -4,6 +4,7 @@ parameters:
   BuildConfiguration: ''
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+  runEmulatorTests: true 
 
 jobs: 
 - job: 
@@ -23,11 +24,13 @@ jobs:
       command: test 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj' 
       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }}
+      nugetConfigPath: NuGet.config 
       publishTestResults: true 
       testRunTitle: Microsoft.Azure.Cosmos.Tests
   
 - job: 
   displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.EmulatorTests
+  condition: and(succeeded(), eq('${{ parameters.runEmulatorTests }}', 'true'))
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -45,6 +48,7 @@ jobs:
       command: test 
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} 
+      nugetConfigPath: NuGet.config 
       publishTestResults: true 
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
 

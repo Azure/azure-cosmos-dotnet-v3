@@ -28,21 +28,25 @@ jobs:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
       VmImage: macOS-10.14
+      runEmulatorTests: false 
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
       VmImage: ubuntu-16.04
+      runEmulatorTests: false 
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
       VmImage: vs2017-win2016
+      runEmulatorTests: true 
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Debug
       Arguments: $(TestArguments) 
       VmImage: vs2017-win2016
+      runEmulatorTests: true 
