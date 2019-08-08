@@ -24,28 +24,28 @@ jobs:
   - template:  templates/static-tools.yml
     parameters:
       BuildConfiguration: Release
-      WinVmImage: $(WinVmImage)
+      VmImage: $(WinVmImage)
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
-      WinVmImage: $(WinVmImage)
+      VmImage: $(WinVmImage)
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
-      WinVmImage: $(LinuxVmImage)
+      VmImage: $(LinuxVmImage)
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
-      WinVmImage: $(MacVmImage)
+      VmImage: $(MacVmImage)
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Debug
       Arguments: $(TestArguments) 
-      WinVmImage: $(WinVmImage)
+      VmImage: $(WinVmImage)
