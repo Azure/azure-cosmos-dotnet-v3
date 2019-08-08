@@ -131,24 +131,21 @@
                 if (baselineJson[i] != localJson[i])
                 {
                     // First byte of diff, trace next 200 bytes if-exists
-                    ContractEnforcement.TraceSubpartIfExists(baselineJson, 0, 200);
-                    ContractEnforcement.TraceSubpartIfExists(localJson, 0, 200);
+                    ContractEnforcement.TraceSubpartIfExists(nameof(baselineJson), baselineJson, 0, 200);
+                    ContractEnforcement.TraceSubpartIfExists(nameof(localJson), localJson, 0, 200);
                 }
             }
 
             return baselineJson == localJson;
         }
 
-        private static void TraceSubpartIfExists(string input, int position, int desiredLength)
+        private static void TraceSubpartIfExists(string nameOfInput, string input, int position, int desiredLength)
         {
-            if (position + desiredLength > input.Length)
-            {
-                System.Diagnostics.Trace.TraceWarning($"baseline: {input.Substring(position)}");
-            }
-            else
-            {
-                System.Diagnostics.Trace.TraceWarning($"baseline: {input.Substring(position, desiredLength)}");
-            }
+            string tracePart = (position + desiredLength > input.Length) ?
+                    input.Substring(position) :
+                    input.Substring(position, desiredLength);
+
+            System.Diagnostics.Trace.TraceWarning($"{nameOfInput}: {tracePart.Replace("\n", "")}");
         }
     }
 }
