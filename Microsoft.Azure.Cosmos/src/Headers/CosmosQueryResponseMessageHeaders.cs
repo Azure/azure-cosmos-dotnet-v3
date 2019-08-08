@@ -64,7 +64,8 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosQueryResponseMessageHeaders(
                 continauationToken,
                 disallowContinuationTokenMessage, 
-                this.ResourceType, this.ContainerRid)
+                this.ResourceType,
+                this.ContainerRid)
             {
                 RequestCharge = this.RequestCharge,
                 ContentLength = this.ContentLength,
