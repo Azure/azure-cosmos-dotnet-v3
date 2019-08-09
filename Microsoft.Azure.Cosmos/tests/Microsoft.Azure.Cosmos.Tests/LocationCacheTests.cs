@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using System.Threading;
@@ -650,17 +649,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             NumberStyles.Integer,
                             CultureInfo.InvariantCulture) * 1000);
 
-                    Trace.TraceInformation($"writeLocationIndex: {writeLocationIndex}");
-                    Trace.TraceInformation($" readLocationIndex: {readLocationIndex}");
-
-                    Trace.TraceInformation($"currentWriteEndpoints: {string.Join(", ", currentWriteEndpoints)}");
-                    Trace.TraceInformation($" actualWriteEndpoints: {string.Join(", ", this.cache.WriteEndpoints)}");
-
-                    Trace.TraceInformation($"currentReadEndpoints: {string.Join(", ", currentReadEndpoints)}");
-                    Trace.TraceInformation($" actualReadEndpoints: {string.Join(", ", this.cache.ReadEndpoints)}");
-
-                    Assert.IsTrue(Enumerable.SequenceEqual(currentWriteEndpoints, this.cache.WriteEndpoints), "Write locations order didn't match");
-                    Assert.IsTrue(Enumerable.SequenceEqual(currentReadEndpoints, this.cache.ReadEndpoints), "Read locations order didn't match");
+                    CollectionAssert.AreEqual(currentWriteEndpoints, this.cache.WriteEndpoints);
+                    CollectionAssert.AreEqual(currentReadEndpoints, this.cache.ReadEndpoints);
                 }
             }
         }
