@@ -27,6 +27,8 @@ jobs:
       nugetConfigPath: NuGet.config 
       publishTestResults: true 
       testRunTitle: Microsoft.Azure.Cosmos.Tests
+      includeNuGetOrg: true 
+      noCache: true 
 
   - bash: |
      # Write your commands here
