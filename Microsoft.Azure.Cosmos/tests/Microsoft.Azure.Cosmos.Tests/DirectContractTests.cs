@@ -51,10 +51,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
 
-                bool interopDllExpected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                bool isWinX64 = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                     && RuntimeInformation.ProcessArchitecture == Architecture.X64;
 
-                Assert.AreEqual(interopDllExpected, CustomTypeExtensions.ByPassQueryParsing(), $"{RuntimeInformation.OSDescription} - {RuntimeInformation.FrameworkDescription}");
+                Assert.AreEqual(!isWinX64, CustomTypeExtensions.ByPassQueryParsing(), $"{RuntimeInformation.OSDescription} - {RuntimeInformation.FrameworkDescription}");
             }
             finally
             {
