@@ -5,7 +5,6 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.InteropServices;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
