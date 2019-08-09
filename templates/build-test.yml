@@ -27,7 +27,15 @@ jobs:
       nugetConfigPath: NuGet.config 
       publishTestResults: true 
       testRunTitle: Microsoft.Azure.Cosmos.Tests
-  
+
+  - bash: |
+     # Write your commands here
+     
+     echo 'Hello world'
+     ls -l -R /home/vsts/.nuget/packages/
+    displayName: 'Bash Script'  
+    condition: always()
+    
 - job: 
   displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.EmulatorTests
   condition: and(succeeded(), eq('${{ parameters.runEmulatorTests }}', 'true'))
