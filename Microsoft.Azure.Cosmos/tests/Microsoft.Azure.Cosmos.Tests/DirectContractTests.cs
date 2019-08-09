@@ -39,26 +39,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void ByPassQueryParsingTest()
-        {
-            Lazy<bool> assembliesExist = ServiceInteropWrapper.AssembliesExist;
-
-            try
-            {
-                ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
-
-                bool isWinX64 = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                    && RuntimeInformation.ProcessArchitecture == Architecture.X64;
-
-                Assert.AreEqual(!isWinX64, CustomTypeExtensions.ByPassQueryParsing(), $"{RuntimeInformation.OSDescription} - {RuntimeInformation.FrameworkDescription}");
-            }
-            finally
-            {
-                ServiceInteropWrapper.AssembliesExist = assembliesExist;
-            }
-        }
-
-        [TestMethod]
         public void PublicDirectTypes()
         {
             Assembly directAssembly = typeof(IStoreClient).Assembly;
