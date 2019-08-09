@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -105,8 +106,11 @@
             }
             finally
             {
-                Console.WriteLine("End of demo, press any key to exit.");
-                Console.ReadKey();
+                if (Debugger.IsAttached)
+                {
+                    Console.WriteLine("End of demo, press any key to exit.");
+                    Console.ReadKey();
+                }
             }
         }
         // </Main>

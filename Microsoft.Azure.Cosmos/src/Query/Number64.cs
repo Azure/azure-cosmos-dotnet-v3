@@ -13,7 +13,14 @@ namespace Microsoft.Azure.Cosmos
     /// Struct that represents either a double or 64 bit int
     /// </summary>
     [JsonConverter(typeof(Number64JsonConverter))]
-    internal struct Number64 : IComparable<Number64>, IEquatable<Number64>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    struct Number64 : IComparable<Number64>, IEquatable<Number64>
     {
         /// <summary>
         /// Maximum Number64.
@@ -613,4 +620,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
     }
+#if INTERNAL
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

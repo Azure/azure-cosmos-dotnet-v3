@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(Protocol.Https, policy.ConnectionProtocol);
             Assert.AreEqual(maxConnections, policy.MaxConnectionLimit);
             Assert.AreEqual(requestTimeout, policy.RequestTimeout);
-            Assert.AreEqual(userAgentSuffix, policy.UserAgentSuffix);
+            Assert.IsTrue(policy.UserAgentSuffix.Contains(userAgentSuffix));
             Assert.IsTrue(policy.UseMultipleWriteLocations);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
@@ -114,6 +114,23 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnNullEndpoint()
         {
             new CosmosClientBuilder(null, "testKey");
+        }
+
+        [TestMethod]
+        public void UserAgentContainsEnvironmentInformation()
+        {
+            var environmentInformation = new EnvironmentInformation();
+            var expectedValue = environmentInformation.ToString();
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            string userAgentSuffix = "testSuffix";
+            cosmosClientOptions.ApplicationName = userAgentSuffix;
+
+            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.EndsWith(userAgentSuffix));
+            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.Contains(expectedValue));
+
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            Assert.IsTrue(connectionPolicy.UserAgentSuffix.EndsWith(userAgentSuffix));
+            Assert.IsTrue(connectionPolicy.UserAgentSuffix.Contains(expectedValue));
         }
 
         [TestMethod]

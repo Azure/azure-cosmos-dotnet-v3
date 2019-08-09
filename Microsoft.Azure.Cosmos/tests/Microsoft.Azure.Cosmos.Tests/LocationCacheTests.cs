@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -648,8 +649,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             NumberStyles.Integer,
                             CultureInfo.InvariantCulture) * 1000);
 
-                    Assert.IsTrue(Enumerable.SequenceEqual(currentWriteEndpoints, this.cache.WriteEndpoints));
-                    Assert.IsTrue(Enumerable.SequenceEqual(currentReadEndpoints, this.cache.ReadEndpoints));
+                    CollectionAssert.AreEqual(currentWriteEndpoints, this.cache.WriteEndpoints);
+                    CollectionAssert.AreEqual(currentReadEndpoints, this.cache.ReadEndpoints);
                 }
             }
         }

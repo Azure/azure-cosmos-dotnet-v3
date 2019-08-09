@@ -186,9 +186,7 @@ namespace Microsoft.Azure.Cosmos
             if (response.StatusCode != HttpStatusCode.NotFound)
             {
                 ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
-                if (!PartitionKeyDefinition.AreEquivalent(
-                        retrivedContainerResponse.Resource.PartitionKey,
-                        containerProperties.PartitionKey))
+                if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
                 {
                     throw new ArgumentException(
                         string.Format(

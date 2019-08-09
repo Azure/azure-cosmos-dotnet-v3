@@ -1,0 +1,26 @@
+# A pipeline with no CI trigger
+trigger: none
+
+pr:
+  branches:
+    include:
+    - master
+    - releases/*
+  paths:
+    include:
+    - Microsoft.Azure.Cosmos/*
+    - NuGet.config
+
+variables:
+  DebugArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
+  VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+
+jobs: 
+- template:  templates/build-test.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+  

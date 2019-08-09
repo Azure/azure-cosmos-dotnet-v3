@@ -1012,6 +1012,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Aggregates = new AggregateOperator[] { AggregateOperator.Average },
                         RewrittenQuery = string.Format(CultureInfo.InvariantCulture, "SELECT VALUE [{{\"item\": {{\"sum\": SUM(r), \"count\": COUNT(r)}}}}]\nFROM r\nWHERE (r.key = {0})", 1),
                         HasSelectValue = true,
+                        GroupByExpressions = new string[] { },
+                        GroupByAliasToAggregateType = new Dictionary<string, AggregateOperator?>(),
                     },
                     QueryRanges = new List<Range<string>>()
                     {
@@ -1029,6 +1031,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Aggregates = new AggregateOperator[] { AggregateOperator.Average },
                         RewrittenQuery = string.Format(CultureInfo.InvariantCulture, "SELECT VALUE [{{\"item\": {{\"sum\": SUM(r), \"count\": COUNT(r)}}}}]\nFROM r\nWHERE (r.key = {0})", 1),
                         HasSelectValue = true,
+                        GroupByExpressions = new string[] { },
+                        GroupByAliasToAggregateType = new Dictionary<string, AggregateOperator?>(),
                     },
                     QueryRanges = new List<Range<string>>()
                     {
@@ -1216,7 +1220,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         OrderBy = new SortOrder[] { },
                         OrderByExpressions = new string[] { },
                         Aggregates = new AggregateOperator[] { },
-                        RewrittenQuery = string.Empty
+                        RewrittenQuery = string.Empty,
                     },
                     QueryRanges = queryRanges,
                 };
