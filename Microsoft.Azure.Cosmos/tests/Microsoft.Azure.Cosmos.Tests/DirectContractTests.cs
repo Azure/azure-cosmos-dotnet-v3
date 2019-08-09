@@ -15,17 +15,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    [TestCategory("Windows")]
     [TestClass]
     public class DirectContractTests
     {
         [TestMethod]
         public void TestInteropTest()
         {
-            if (! RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return;
-            }
-
             try
             {
                 CosmosClient client = new CosmosClient(connectionString: null);

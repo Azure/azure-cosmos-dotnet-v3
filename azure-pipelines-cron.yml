@@ -14,6 +14,7 @@ schedules:
 
 variables:
   TestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal ' 
+  NonWindowsTestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Windows" --verbosity normal /p:OS=Linux ' 
   BuildConfiguration: Release 
 
 
@@ -33,7 +34,7 @@ jobs:
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
-      Arguments: $(TestArguments) 
+      Arguments: $(NonWindowsTestArguments)
       VmImage: ubuntu-latest
       runEmulatorTests: false 
 
