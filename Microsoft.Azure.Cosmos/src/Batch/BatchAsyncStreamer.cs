@@ -80,17 +80,19 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task AddAsync(BatchAsyncOperationContext context)
         {
+            BatchAsyncBatcher toDispatch = null;
             using (await this.dispatchLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
             {
                 while (!this.currentBatcher.TryAdd(context))
                 {
                     // Batcher is full
-                    BatchAsyncBatcher toDispatch = this.GetBatchToDispatchAndCreate();
-                    if (toDispatch != null)
-                    {
-                        this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
-                    }
+                    toDispatch = this.GetBatchToDispatchAndCreate();
                 }
+            }
+
+            if (toDispatch != null)
+            {
+                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
             }
         }
 
@@ -113,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
             this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
             {
                 return this.DispatchTimerAsync();
-            });
+            }, this.cancellationTokenSource.Token);
         }
 
         private async Task DispatchTimerAsync()
@@ -123,13 +125,15 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            BatchAsyncBatcher toDispatch;
             using (await this.dispatchLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
             {
-                BatchAsyncBatcher toDispatch = this.GetBatchToDispatchAndCreate();
-                if (toDispatch != null)
-                {
-                    this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
-                }
+                toDispatch = this.GetBatchToDispatchAndCreate();
+            }
+
+            if (toDispatch != null)
+            {
+                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
             }
 
             this.ResetTimer();
