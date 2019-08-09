@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp2.1;net471</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
+    <DirectVersion>3.1.3</DirectVersion>
+    <HybridRowVersion>1.0.0-preview</HybridRowVersion>
+    <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
+    <DirectPackageName Condition=" '$(SignAssembly)' != 'true' ">Microsoft.Azure.Cosmos.Direct.MyGet</DirectPackageName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.11.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
+    <PackageReference Include="Moq" Version="4.10.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="$(DirectPackageName)" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="samplepayload.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+</Project>
