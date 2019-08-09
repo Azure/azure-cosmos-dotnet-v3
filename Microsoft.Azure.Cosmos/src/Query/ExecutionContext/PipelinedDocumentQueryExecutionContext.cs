@@ -148,6 +148,15 @@ namespace Microsoft.Azure.Cosmos.Query
                     DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                     constructorParams.CorrelatedActivityId));
 
+            QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
+
+            int actualPageSize = initialPageSize;
+            if (queryInfo.HasGroupBy)
+            {
+                initialPageSize = int.MaxValue;
+                constructorParams.QueryRequestOptions.MaxItemCount = int.MaxValue;
+            }
+
             Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByComponentFunc = async (continuationToken) =>
             {
                 CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
@@ -182,6 +191,7 @@ namespace Microsoft.Azure.Cosmos.Query
                partitionedQueryExecutionInfo.QueryInfo,
                initialPageSize,
                requestContinuation,
+               constructorParams.QueryRequestOptions.EnableGroupBy,
                createOrderByComponentFunc,
                createParallelComponentFunc));
         }
@@ -190,6 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryInfo queryInfo,
             int initialPageSize,
             string requestContinuation,
+            bool allowGroupBy,
             Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
             Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
         {
@@ -201,6 +212,23 @@ namespace Microsoft.Azure.Cosmos.Query
             else
             {
                 createComponentFunc = createParallelQueryExecutionContext;
+            }
+
+            if (queryInfo.HasGroupBy)
+            {
+                if (!allowGroupBy)
+                {
+                    throw new ArgumentException("Cross Partition GROUP BY is not supported.");
+                }
+
+                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                createComponentFunc = async (continuationToken) =>
+                {
+                    return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                        continuationToken,
+                        createSourceCallback,
+                        queryInfo.GroupByAliasToAggregateType);
+                };
             }
 
             if (queryInfo.HasAggregates)

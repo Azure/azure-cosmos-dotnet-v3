@@ -417,6 +417,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ContainerSettingsNullPartitionKeyTest()
+        {
+            ContainerProperties cosmosContainerSettings = new ContainerProperties("id", "/partitionKey")
+            {
+                PartitionKey = null
+            };
+
+            string cosmosSerialized = SettingsContractTests.CosmosSerialize(cosmosContainerSettings);
+            Assert.IsFalse(cosmosSerialized.Contains("partitionKey"));
+        }
+
+        [TestMethod]
         public async Task ContainerV2CompatTest()
         {
             string containerId = "SerializeContainerTest";

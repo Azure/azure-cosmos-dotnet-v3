@@ -1968,46 +1968,10 @@
           "Attributes": [],
           "MethodInfo": "Int32 get_Count()"
         },
-        "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers()"
-        },
-        "Microsoft.Azure.Cosmos.Headers Headers": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "System.Collections.Generic.IEnumerable`1[T] get_Resource()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Collections.Generic.IEnumerable`1[T] get_Resource()"
-        },
-        "System.Collections.Generic.IEnumerable`1[T] Resource": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
         "System.Collections.Generic.IEnumerator`1[T] GetEnumerator()": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Collections.Generic.IEnumerator`1[T] GetEnumerator()"
-        },
-        "System.Net.HttpStatusCode get_StatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Net.HttpStatusCode get_StatusCode()"
-        },
-        "System.Net.HttpStatusCode StatusCode": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
         },
         "System.String ActivityId": {
           "Type": "Property",
@@ -2115,11 +2079,6 @@
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32])"
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         }
       },
       "NestedTypes": {}

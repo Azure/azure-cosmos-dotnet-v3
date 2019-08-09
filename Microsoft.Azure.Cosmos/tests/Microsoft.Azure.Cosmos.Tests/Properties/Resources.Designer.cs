@@ -10,8 +10,11 @@
 
 namespace Microsoft.Azure.Cosmos.Properties {
     using System;
-    
-    
+    using System.Diagnostics;
+    using System.IO;
+    using System.Text;
+
+
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -85,18 +88,18 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders {
             get {
-                object obj = ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders", resourceCulture);
-                return ((byte[])(obj));
+                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PartitionRoutingHelper.ExtractPartitionKeyRangeFromHeaders.json");
+                return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         internal static byte[] BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo {
             get {
-                object obj = ResourceManager.GetObject("BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo", resourceCulture);
-                return ((byte[])(obj));
+                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PartitionRoutingHelper.GetPartitionRoutingInfo.json");
+                return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
         
@@ -105,8 +108,8 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PartitionSchemes {
             get {
-                object obj = ResourceManager.GetObject("BaselineTest_PartitionSchemes", resourceCulture);
-                return ((byte[])(obj));
+                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PartitionSchemes.json");
+                return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
         
@@ -115,8 +118,8 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PathParser {
             get {
-                object obj = ResourceManager.GetObject("BaselineTest_PathParser", resourceCulture);
-                return ((byte[])(obj));
+                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PathParser.json");
+                return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
         
@@ -125,8 +128,8 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PathParser_Extra {
             get {
-                object obj = ResourceManager.GetObject("BaselineTest_PathParser_Extra", resourceCulture);
-                return ((byte[])(obj));
+                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PathParser.Extra.json");
+                return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
         
