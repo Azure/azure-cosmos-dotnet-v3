@@ -165,9 +165,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void GetCosmosSerializerWithWrapperOrDefaultWithOptionsTest()
         {
             CosmosSerializationOptions serializerOptions = new CosmosSerializationOptions();
-            Assert.AreEqual(false, serializerOptions.IgnoreNullValues);
-            Assert.AreEqual(false, serializerOptions.Indented);
-            Assert.AreEqual(CosmosPropertyNamingPolicy.Default, serializerOptions.PropertyNamingPolicy);
+            Assert.IsNull(serializerOptions.IgnoreNullValues);
+            Assert.IsNull(serializerOptions.Indented);
+            Assert.IsNull(serializerOptions.PropertyNamingPolicy);
 
             CosmosClientOptions options = new CosmosClientOptions()
             {
