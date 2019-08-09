@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
             this.client = TestCommon.CreateClient(true, defaultConsistencyLevel: ConsistencyLevel.Session);
 
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                          new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                          ConfigurationManager.AppSettings["MasterKey"], (HttpMessageHandler)null, connectionPolicy: null);
 
-            this.CleanUp();
+            await this.CleanUp();
         }
 
         [ClassInitialize]
@@ -2779,15 +2779,9 @@ function sproc(feed) {
             queryAction(this.secondaryReadonlyClient);
         }
 
-        private void CleanUp()
+        private async Task CleanUp()
         {
-            IEnumerable<Database> allDatabases = from database in this.client.CreateDatabaseQuery()
-                                                 select database;
-
-            foreach (Database database in allDatabases)
-            {
-                this.client.DeleteDatabaseAsync(database.SelfLink).Wait();
-            }
+            await TestCommon.DeleteAllDatabasesAsync();
         }
 
         internal void TestQueryDocumentsWithIndexPaths(

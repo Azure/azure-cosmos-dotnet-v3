@@ -69,16 +69,21 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.queryPartitionProvider == null)
             {
-                await this.semaphore.WaitAsync(cancellationToken);
-
-                if (this.queryPartitionProvider == null)
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    IDictionary<string, object> queryConfiguration = await this.documentClient.GetQueryEngineConfigurationAsync();
-                    this.queryPartitionProvider = new QueryPartitionProvider(queryConfiguration);
-                }
+                    await this.semaphore.WaitAsync(cancellationToken);
 
-                this.semaphore.Release();
+                    if (this.queryPartitionProvider == null)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        IDictionary<string, object> queryConfiguration = await this.documentClient.GetQueryEngineConfigurationAsync();
+                        this.queryPartitionProvider = new QueryPartitionProvider(queryConfiguration);
+                    }
+                }
+                finally
+                {
+                    this.semaphore.Release();
+                }
             }
 
             return this.queryPartitionProvider.GetPartitionedQueryExecutionInfo(

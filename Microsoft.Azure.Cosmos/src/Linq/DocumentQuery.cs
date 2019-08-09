@@ -147,42 +147,21 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
         }
 
-        public Type ElementType
-        {
-            get { return typeof(T); }
-        }
+        public Type ElementType => typeof(T);
 
-        public Expression Expression
-        {
-            get { return this.expression; }
-        }
+        public Expression Expression => this.expression;
 
-        public IQueryProvider Provider
-        {
-            get { return this.queryProvider; }
-        }
+        public IQueryProvider Provider => this.queryProvider;
 
         /// <summary>
         /// Gets a value indicating whether there are additional results to retrieve. 
         /// </summary>
-        public bool HasMoreResults
-        {
-            get
-            {
-                return this.queryExecutionContext == null || !this.queryExecutionContext.IsDone;
-            }
-        }
+        public bool HasMoreResults => this.queryExecutionContext == null || !this.queryExecutionContext.IsDone;
 
         /// <summary>
         /// Gets the unique ID for this instance of DocumentQuery used to correlate all activityIds generated when fetching from a partition collection.
         /// </summary>
-        public Guid CorrelatedActivityId
-        {
-            get
-            {
-                return this.correlatedActivityId;
-            }
-        }
+        public Guid CorrelatedActivityId => this.correlatedActivityId;
 
         public void Dispose()
         {
@@ -213,14 +192,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             try
             {
-                if (!tracedFirstExecution)
+                if (!this.tracedFirstExecution)
                 {
                     DefaultTrace.TraceInformation(string.Format(
                         CultureInfo.InvariantCulture,
                         "{0}, CorrelatedActivityId: {1} | First ExecuteNextAsync",
                         DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                         this.CorrelatedActivityId));
-                    tracedFirstExecution = true;
+                    this.tracedFirstExecution = true;
                 }
 
                 this.executeNextAysncMetrics.Start();
@@ -229,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             finally
             {
                 this.executeNextAysncMetrics.Stop();
-                if (!this.HasMoreResults && !tracedLastExecution)
+                if (!this.HasMoreResults && !this.tracedLastExecution)
                 {
                     DefaultTrace.TraceInformation(
                         string.Format(
@@ -238,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                             this.CorrelatedActivityId,
                             this.executeNextAysncMetrics));
-                    tracedLastExecution = true;
+                    this.tracedLastExecution = true;
                 }
             }
         }
@@ -294,17 +273,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private Task<CosmosQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(bool isContinuationExpected, CancellationToken cancellationToken)
         {
-            return null;
-            //return DocumentQueryExecutionContextFactory.CreateDocumentQueryExecutionContextAsync(
-            //    this.client,
-            //    this.resourceTypeEnum,
-            //    this.resourceType,
-            //    this.expression,
-            //    this.feedOptions,
-            //    this.documentsFeedOrDatabaseLink,
-            //    isContinuationExpected,
-            //    cancellationToken,
-            //    this.CorrelatedActivityId);
+            throw new NotImplementedException();
         }
 
         internal async Task<List<T>> ExecuteAllAsync(CancellationToken cancellationToken = default(CancellationToken))
@@ -335,13 +304,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.queryExecutionContext = await this.CreateDocumentQueryExecutionContextAsync(true, cancellationToken);
             }
 
-            var response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
+            QueryResponse response = await this.queryExecutionContext.ExecuteNextAsync(cancellationToken);
             DocumentFeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<TResponse>(
                 response,
                 this.resourceTypeEnum,
                 this.feedOptions.JsonSerializerSettings);
 
-            if (!this.HasMoreResults && !tracedLastExecution)
+            if (!this.HasMoreResults && !this.tracedLastExecution)
             {
                 DefaultTrace.TraceInformation(
                     string.Format(
@@ -350,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                         this.CorrelatedActivityId,
                         this.executeNextAysncMetrics));
-                tracedLastExecution = true;
+                this.tracedLastExecution = true;
             }
             return typedFeedResponse;
         }
