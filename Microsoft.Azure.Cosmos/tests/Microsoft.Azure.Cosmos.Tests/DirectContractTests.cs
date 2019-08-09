@@ -45,10 +45,21 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ByPassQueryParsingTest()
         {
-            bool interopDllExpected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                && RuntimeInformation.ProcessArchitecture == Architecture.X64;
+            Lazy<bool> assembliesExist = ServiceInteropWrapper.AssembliesExist;
 
-            Assert.AreEqual(interopDllExpected, CustomTypeExtensions.ByPassQueryParsing(), $"{RuntimeInformation.OSDescription} - {RuntimeInformation.FrameworkDescription}");
+            try
+            {
+                ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
+
+                bool interopDllExpected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                    && RuntimeInformation.ProcessArchitecture == Architecture.X64;
+
+                Assert.AreEqual(interopDllExpected, CustomTypeExtensions.ByPassQueryParsing(), $"{RuntimeInformation.OSDescription} - {RuntimeInformation.FrameworkDescription}");
+            }
+            finally
+            {
+                ServiceInteropWrapper.AssembliesExist = assembliesExist;
+            }
         }
 
         [TestMethod]
