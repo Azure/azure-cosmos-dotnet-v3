@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchLimiter = new SemaphoreSlim(1, 1);
             this.currentBatcher = this.CreateBatchAsyncBatcher();
 
-            this.StartTimer();
+            this.ResetTimer();
         }
 
         public async Task AddAsync(BatchAsyncOperationContext context)
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchLimiter.Dispose();
         }
 
-        private void StartTimer()
+        private void ResetTimer()
         {
             this.currentTimer = this.timerPool.GetPooledTimer(this.dispatchTimerInSeconds);
             this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            this.StartTimer();
+            this.ResetTimer();
         }
 
         private BatchAsyncBatcher GetBatchToDispatchAndCreate()
