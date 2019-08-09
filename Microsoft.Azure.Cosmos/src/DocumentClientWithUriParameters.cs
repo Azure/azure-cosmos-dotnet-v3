@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException("databaseUri");
             }
-
+            
             if (documentCollection == null)
             {
                 throw new ArgumentNullException("documentCollection");
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
                      databaseUri.OriginalString, Paths.CollectionsPathSegment, Uri.EscapeUriString(documentCollection.Id)), UriKind.Relative);
 
             try
-            {
+            {   
                 return await this.ReadDocumentCollectionAsync(documentCollectionUri, options);
             }
             catch (DocumentClientException dce)
@@ -403,9 +403,9 @@ namespace Microsoft.Azure.Cosmos
 
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceDocumentCollectionPrivateAsync(
-                documentCollection,
-                options,
-                retryPolicyInstance,
+                documentCollection, 
+                options, 
+                retryPolicyInstance, 
                 documentCollectionUri.OriginalString), retryPolicyInstance);
         }
 
@@ -425,11 +425,11 @@ namespace Microsoft.Azure.Cosmos
 
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceStoredProcedurePrivateAsync(
-                storedProcedure,
-                options,
+                storedProcedure, 
+                options, 
                 retryPolicyInstance,
                 storedProcedureUri.OriginalString), retryPolicyInstance);
-        }
+       }
 
         /// <summary>
         /// Replaces a trigger as an asynchronous operation in the Azure Cosmos DB service.
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
 
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReplaceUserDefinedFunctionPrivateAsync(function, options, retryPolicyInstance, userDefinedFunctionUri.OriginalString), retryPolicyInstance);
-        }
+       }
 
         /// <summary>
         /// Replaces a user defined type as an asynchronous operation in the Azure Cosmos DB service.
@@ -1234,7 +1234,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="databaseUri">the URI to the database.</param>
         /// <param name="feedOptions">The options for processing the query results feed.</param>
         /// <returns>The query result set.</returns>
-        public IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(Uri databaseUri, FeedOptions feedOptions = null)
+        public IOrderedQueryable<DocumentCollection> CreateDocumentCollectionQuery(Uri databaseUri,  FeedOptions feedOptions = null)
         {
             if (databaseUri == null)
             {
