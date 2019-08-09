@@ -16,6 +16,18 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
+    /// <example>
+    /// An example on how to configure the serialization option to ignore null values
+    /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+    /// {
+    ///     SerializerOptions = new CosmosSerializationOptions(){
+    ///         IgnoreNullValues = true
+    ///     },
+    ///     ConnectionMode = ConnectionMode.Gateway,
+    /// };
+    /// 
+    /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+    /// </example>
     public class CosmosClientOptions
     {
         /// <summary>
@@ -171,6 +183,17 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get to set optional serializer options. 
         /// </summary>
+        /// <example>
+        /// An example on how to configure the serialization option to ignore null values
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     SerializerOptions = new CosmosSerializationOptions(){
+        ///         IgnoreNullValues = true
+        ///     }
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// </example>
         public CosmosSerializationOptions? SerializerOptions
         {
             get => this.serializerOptions;

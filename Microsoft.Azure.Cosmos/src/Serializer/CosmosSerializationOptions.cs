@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The default value is false
         /// </remarks>
-        public bool IgnoreNullValues { get; set; }
+        public bool? IgnoreNullValues { get; set; }
 
         /// <summary>
         /// Gets or sets if the serializer should use indentation
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The default value is false
         /// </remarks>
-        public bool Indented { get; set; }
+        public bool? Indented { get; set; }
 
         /// <summary>
         /// Gets or sets whether the naming policy used to convert a string-based name to another format,
@@ -33,6 +33,6 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
-        public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+        public CosmosPropertyNamingPolicy? PropertyNamingPolicy { get; set; }
     }
 }
