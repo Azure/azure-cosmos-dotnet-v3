@@ -14,41 +14,38 @@ schedules:
 
 variables:
   TestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal ' 
-  NonWindowsTestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Windows" --verbosity normal /p:OS=Linux ' 
+  NonWindowsTestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Windows" --verbosity normal ' 
   BuildConfiguration: Release 
 
 
 jobs:
-#  - template:  templates/static-tools.yml
-#    parameters:
-#      BuildConfiguration: Release
-#      VmImage: vs2017-win2016
+  - template:  templates/static-tools.yml
+    parameters:
+      BuildConfiguration: Release
+      VmImage: vs2017-win2016
 
-#  - template:  templates/build-test.yml
-#    parameters:
-#      BuildConfiguration: Release
-#      Arguments: $(TestArguments) 
-#      VmImage: macOS-10.14
-#      runEmulatorTests: false 
+  - template:  templates/build-test.yml
+    parameters:
+      BuildConfiguration: Release
+      Arguments: $(NonWindowsTestArguments)
+      VmImage: macOS-10.14
+      OS: MacOS
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
       Arguments: $(NonWindowsTestArguments)
       VmImage: ubuntu-latest
-      runEmulatorTests: false 
+      OS: Linux 
 
-#  - template:  templates/build-test.yml
-#    parameters:
-#      BuildConfiguration: Release
-#      Arguments: $(TestArguments) 
-#      VmImage: vs2017-win2016
-#      runEmulatorTests: true 
-#
-#  - template:  templates/build-test.yml
-#    parameters:
-#      BuildConfiguration: Debug
-#      Arguments: $(TestArguments) 
-#      VmImage: vs2017-win2016
-#      runEmulatorTests: true 
-#
+  - template:  templates/build-test.yml
+    parameters:
+      BuildConfiguration: Release
+      Arguments: $(TestArguments) 
+      VmImage: vs2017-win2016
+
+  - template:  templates/build-test.yml
+    parameters:
+      BuildConfiguration: Debug
+      Arguments: $(TestArguments) 
+      VmImage: vs2017-win2016
