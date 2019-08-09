@@ -103,6 +103,11 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Query\QueryClient\" />
+    <Folder Include="Query\QueryResponses\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
