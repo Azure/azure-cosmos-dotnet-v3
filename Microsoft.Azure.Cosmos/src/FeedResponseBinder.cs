@@ -47,28 +47,20 @@ namespace Microsoft.Azure.Cosmos
         /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
         /// </summary>
         public static DocumentFeedResponse<T> ConvertCosmosElementFeed<T>(
-            DocumentFeedResponse<CosmosElement> dynamicFeed,
+            QueryResponse dynamicFeed,
             ResourceType resourceType,
             JsonSerializerSettings settings)
         {
             if (dynamicFeed.Count == 0)
             {
-                return new DocumentFeedResponse<T>(
-                new List<T>(),
-                dynamicFeed.Count,
-                dynamicFeed.Headers,
-                dynamicFeed.UseETagAsContinuation,
-                dynamicFeed.QueryMetrics,
-                dynamicFeed.RequestStatistics,
-                dynamicFeed.DisallowContinuationTokenMessage,
-                dynamicFeed.ResponseLengthBytes);
+                throw new NotImplementedException();
             }
 
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
 
             jsonWriter.WriteArrayStart();
 
-            foreach (CosmosElement cosmosElement in dynamicFeed)
+            foreach (CosmosElement cosmosElement in dynamicFeed.CosmosElements)
             {
                 cosmosElement.WriteTo(jsonWriter);
             }
@@ -89,15 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 typedResults = JsonConvert.DeserializeObject<List<T>>(jsonText, settings);
             }
 
-            return new DocumentFeedResponse<T>(
-                typedResults,
-                dynamicFeed.Count,
-                dynamicFeed.Headers,
-                dynamicFeed.UseETagAsContinuation,
-                dynamicFeed.QueryMetrics,
-                dynamicFeed.RequestStatistics,
-                dynamicFeed.DisallowContinuationTokenMessage,
-                dynamicFeed.ResponseLengthBytes);
+            throw new NotImplementedException();
         }
     }
 }

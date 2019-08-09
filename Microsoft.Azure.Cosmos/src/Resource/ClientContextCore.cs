@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     internal class ClientContextCore : CosmosClientContext
@@ -23,8 +24,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer sqlQuerySpecSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
-            DocumentClient documentClient,
-            IDocumentQueryClient documentQueryClient)
+            DocumentClient documentClient)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
-            this.DocumentQueryClient = documentQueryClient;
         }
 
         /// <summary>
@@ -43,8 +42,6 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClient Client { get; }
 
         internal override DocumentClient DocumentClient { get; }
-
-        internal override IDocumentQueryClient DocumentQueryClient { get; }
 
         internal override CosmosSerializer CosmosSerializer { get; }
 
@@ -84,6 +81,24 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append("/");
             stringBuilder.Append(idUriEscaped);
             return new Uri(stringBuilder.ToString(), UriKind.Relative);
+        }
+
+        internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+            string containerUri,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+            try
+            {
+                return await collectionCache.ResolveByNameAsync(
+                    HttpConstants.Versions.CurrentVersion, 
+                    containerUri, 
+                    cancellationToken);
+            }
+            catch (DocumentClientException ex)
+            {
+                throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message, ex.Error);
+            }
         }
 
         internal override void ValidateResource(string resourceId)

@@ -22,7 +22,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<CollectionCache> GetCollectionCacheAsync();
 
-        internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken);
+        internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+            Uri containerLink,
+            CancellationToken cancellationToken);
 
         internal abstract Task<IRoutingMapProvider> GetRoutingMapProviderAsync();
 
@@ -55,12 +57,6 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken);
-
-        internal abstract Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync();
-
-        internal abstract Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync();
-
-        internal abstract Task EnsureValidOverwriteAsync(Documents.ConsistencyLevel desiredConsistencyLevel);
 
         internal abstract Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync();
 

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
-    /// The pipeline will consist of individual implementations of <see cref="IDocumentQueryExecutionContext"/>. 
+    /// The pipeline will consist of individual implementations of <see cref="CosmosQueryExecutionContext"/>. 
     /// Every member of the pipeline has a source of documents (another member of the pipeline or an actual partition),
     /// a method of draining documents (DrainAsync()) from said source, and a flag for whether that member of the pipeline is completely drained.
     /// <para>
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This bubbles down until you reach a component that has a DocumentProducer that fetches a document from the backend.
     /// </para>
     /// </summary>
-    internal sealed class PipelinedDocumentQueryExecutionContext : CosmosQueryExecutionContext, IDocumentQueryExecutionContext
+    internal sealed class PipelinedDocumentQueryExecutionContext : CosmosQueryExecutionContext
     {
         /// <summary>
         /// The root level component that all calls will be forwarded to.

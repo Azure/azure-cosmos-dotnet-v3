@@ -204,7 +204,9 @@ namespace Microsoft.Azure.Cosmos.Query
             cancellationToken.ThrowIfCancellationRequested();
 
             CosmosQueryClient cosmosQueryClient = this.cosmosQueryContext.QueryClient;
-            ContainerProperties containerProperties = await cosmosQueryClient.GetCachedContainerPropertiesAsync(cancellationToken);
+            ContainerProperties containerProperties = await cosmosQueryClient.GetCachedContainerPropertiesAsync(
+                this.cosmosQueryContext.ResourceLink,
+                cancellationToken);
             this.cosmosQueryContext.ContainerResourceId = containerProperties.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
