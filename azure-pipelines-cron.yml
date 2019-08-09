@@ -23,12 +23,12 @@ jobs:
 #      BuildConfiguration: Release
 #      VmImage: vs2017-win2016
 
-  - template:  templates/build-test.yml
-    parameters:
-      BuildConfiguration: Release
-      Arguments: $(TestArguments) 
-      VmImage: macOS-10.14
-      runEmulatorTests: false 
+#  - template:  templates/build-test.yml
+#    parameters:
+#      BuildConfiguration: Release
+#      Arguments: $(TestArguments) 
+#      VmImage: macOS-10.14
+#      runEmulatorTests: false 
 
   - template:  templates/build-test.yml
     parameters:
