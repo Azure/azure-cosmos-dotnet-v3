@@ -21,13 +21,11 @@ jobs:
     displayName: Microsoft.Azure.Cosmos.Tests
     condition: succeeded() 
     inputs: 
-      command: restore 
+      command: build 
       projects: 'Microsoft.Azure.Cosmos/**/*.csproj' 
       arguments: --configuration ${{ parameters.BuildConfiguration }}
       nugetConfigPath: NuGet.config 
-      publishTestResults: true 
       testRunTitle: Microsoft.Azure.Cosmos.Tests
-      noCache: true 
 
   - bash: |
      # Write your commands here
