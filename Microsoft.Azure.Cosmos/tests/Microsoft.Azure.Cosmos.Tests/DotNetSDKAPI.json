@@ -1551,62 +1551,62 @@
     "CosmosSerializationOptions": {
       "Subclasses": {},
       "Members": {
-        "Boolean get_IgnoreNullValues()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy] get_PropertyNamingPolicy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Boolean get_IgnoreNullValues()"
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy] get_PropertyNamingPolicy()"
         },
-        "Boolean get_Indented()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Boolean get_Indented()"
-        },
-        "Boolean IgnoreNullValues": {
+        "System.Nullable`1[Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy] PropertyNamingPolicy": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Boolean Indented": {
+        "System.Nullable`1[System.Boolean] get_IgnoreNullValues()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_IgnoreNullValues()"
+        },
+        "System.Nullable`1[System.Boolean] get_Indented()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_Indented()"
+        },
+        "System.Nullable`1[System.Boolean] IgnoreNullValues": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()"
-        },
-        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy PropertyNamingPolicy": {
+        "System.Nullable`1[System.Boolean] Indented": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Void set_IgnoreNullValues(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_IgnoreNullValues(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_IgnoreNullValues(Boolean)"
+          "MethodInfo": "Void set_IgnoreNullValues(System.Nullable`1[System.Boolean])"
         },
-        "Void set_Indented(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_Indented(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_Indented(Boolean)"
+          "MethodInfo": "Void set_Indented(System.Nullable`1[System.Boolean])"
         },
-        "Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_PropertyNamingPolicy(System.Nullable`1[Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy)"
+          "MethodInfo": "Void set_PropertyNamingPolicy(System.Nullable`1[Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy])"
         }
       },
       "NestedTypes": {}
