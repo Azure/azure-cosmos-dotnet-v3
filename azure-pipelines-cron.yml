@@ -34,7 +34,7 @@ jobs:
     parameters:
       BuildConfiguration: Release
       Arguments: $(TestArguments) 
-      VmImage: ubuntu-16.04
+      VmImage: ubuntu-latest
       runEmulatorTests: false 
 
 #  - template:  templates/build-test.yml
