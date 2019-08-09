@@ -18,14 +18,6 @@ jobs:
     lfs: true  # whether to download Git-LFS files; defaults to false
 
   - task: DotNetCoreCLI@2
-    displayName: Restroe Microsoft.Azure.Cosmos.Tests
-    condition: succeeded() 
-    inputs: 
-      command: restore  
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj' 
-      nugetConfigPath: NuGet.config 
-      
-  - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
     condition: succeeded() 
     inputs: 
