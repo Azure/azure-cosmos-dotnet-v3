@@ -89,9 +89,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(apiType, clientOptions.ApiType);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnRateLimitedRequests);
             Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnRateLimitedRequests);
-            Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.Value.IgnoreNullValues);
-            Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.Value.PropertyNamingPolicy);
-            Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Value.Indented);
+            Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.IgnoreNullValues);
+            Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
+            Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -165,9 +165,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void GetCosmosSerializerWithWrapperOrDefaultWithOptionsTest()
         {
             CosmosSerializationOptions serializerOptions = new CosmosSerializationOptions();
-            Assert.IsNull(serializerOptions.IgnoreNullValues);
-            Assert.IsNull(serializerOptions.Indented);
-            Assert.IsNull(serializerOptions.PropertyNamingPolicy);
+            Assert.IsFalse(serializerOptions.IgnoreNullValues);
+            Assert.IsFalse(serializerOptions.Indented);
+            Assert.AreEqual(CosmosPropertyNamingPolicy.Default, serializerOptions.PropertyNamingPolicy);
 
             CosmosClientOptions options = new CosmosClientOptions()
             {

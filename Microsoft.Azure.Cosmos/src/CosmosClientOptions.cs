@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         private int gatewayModeMaxConnectionLimit;
         private string applicationName;
-        private CosmosSerializationOptions? serializerOptions;
+        private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializer;
 
         /// <summary>
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
         /// </example>
-        public CosmosSerializationOptions? SerializerOptions
+        public CosmosSerializationOptions SerializerOptions
         {
             get => this.serializerOptions;
             set
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.SerializerOptions != null)
             {
-                CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer(this.SerializerOptions.Value);
+                CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer(this.SerializerOptions);
                 return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
             }
             else

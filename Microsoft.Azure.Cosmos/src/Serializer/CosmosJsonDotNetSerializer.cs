@@ -38,25 +38,14 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal CosmosJsonDotNetSerializer(CosmosSerializationOptions cosmosSerializerOptions)
         {
-            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings();
-
-            if (cosmosSerializerOptions.IgnoreNullValues.HasValue)
+            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
             {
-                jsonSerializerSettings.NullValueHandling = cosmosSerializerOptions.IgnoreNullValues.Value ? NullValueHandling.Ignore : NullValueHandling.Include;
-            }
-
-            if (cosmosSerializerOptions.Indented.HasValue)
-            {
-                jsonSerializerSettings.Formatting =
-                    cosmosSerializerOptions.Indented.Value ? Formatting.Indented : Formatting.None;
-            }
-
-            if (cosmosSerializerOptions.PropertyNamingPolicy.HasValue)
-            {
-                jsonSerializerSettings.ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy.Value == CosmosPropertyNamingPolicy.CamelCase
-                        ? new CamelCasePropertyNamesContractResolver()
-                        : null;
-            }
+                NullValueHandling = cosmosSerializerOptions.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
+                Formatting = cosmosSerializerOptions.Indented ? Formatting.Indented : Formatting.None,
+                ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase
+                    ? new CamelCasePropertyNamesContractResolver()
+                    : null
+            };
 
             this.Serializer = JsonSerializer.Create(jsonSerializerSettings);
         }
