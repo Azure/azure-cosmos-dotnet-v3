@@ -21,9 +21,9 @@ jobs:
     displayName: Microsoft.Azure.Cosmos.Tests
     condition: succeeded() 
     inputs: 
-      command: test 
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj' 
-      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }}
+      command: restore 
+      projects: 'Microsoft.Azure.Cosmos/**/*.csproj' 
+      arguments: --configuration ${{ parameters.BuildConfiguration }}
       nugetConfigPath: NuGet.config 
       publishTestResults: true 
       testRunTitle: Microsoft.Azure.Cosmos.Tests
@@ -36,16 +36,16 @@ jobs:
     displayName: 'Bash Script'  
     condition: always()
 
-  - task: DotNetCoreCLI@2
-    displayName: Microsoft.Azure.Cosmos.Tests
-    condition: always()
-    inputs: 
-      command: test 
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj' 
-      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }}
-      nugetConfigPath: NuGet.config 
-      publishTestResults: true 
-      testRunTitle: Microsoft.Azure.Cosmos.Tests
+#  - task: DotNetCoreCLI@2
+#    displayName: Microsoft.Azure.Cosmos.Tests
+#    condition: always()
+#    inputs: 
+#      command: test 
+#      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj' 
+#      arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }}
+#      nugetConfigPath: NuGet.config 
+#      publishTestResults: true 
+#      testRunTitle: Microsoft.Azure.Cosmos.Tests
       
 - job: 
   displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.EmulatorTests
