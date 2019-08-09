@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
 
             PartitionKeyRangeBatchExecutionResult result = await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
 
-            List<BatchResponse> responses = new List<BatchResponse>(serverRequest.Operations.Count);
+            List<BatchResponse> responses = new List<BatchResponse>(result.ServerResponses.Count);
             if (!result.ContainsSplit())
             {
                 responses.AddRange(result.ServerResponses);
@@ -272,7 +272,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             ArraySegment<ItemBatchOperation> operationsArraySegment = new ArraySegment<ItemBatchOperation>(operations.ToArray());
-
             PartitionKeyServerBatchRequest request = await PartitionKeyServerBatchRequest.CreateAsync(
                   partitionKeyRangeId,
                   operationsArraySegment,

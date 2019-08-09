@@ -80,17 +80,17 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task AddAsync(BatchAsyncOperationContext context)
         {
-            if (!await this.currentBatcher.TryAddAsync(context))
+            using (await this.dispatchLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
             {
-                // Batcher is full
-                BatchAsyncBatcher toDispatch = await this.GetBatchToDispatchAndCreateAsync();
-                if (toDispatch != null)
+                while (!this.currentBatcher.TryAdd(context))
                 {
-                    this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                    // Batcher is full
+                    BatchAsyncBatcher toDispatch = this.GetBatchToDispatchAndCreate();
+                    if (toDispatch != null)
+                    {
+                        this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                    }
                 }
-
-                bool addedContext = await this.currentBatcher.TryAddAsync(context);
-                Debug.Assert(addedContext, "Could not add context to batcher.");
             }
         }
 
@@ -98,7 +98,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
-            this.currentBatcher?.Dispose();
             this.currentTimer.CancelTimer();
             foreach (Task previousDispatchedTask in this.previousDispatchedTasks)
             {
@@ -124,28 +123,28 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            BatchAsyncBatcher toDispatch = await this.GetBatchToDispatchAndCreateAsync();
-            if (toDispatch != null)
+            using (await this.dispatchLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
             {
-                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                BatchAsyncBatcher toDispatch = this.GetBatchToDispatchAndCreate();
+                if (toDispatch != null)
+                {
+                    this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                }
             }
 
             this.StartTimer();
         }
 
-        private async Task<BatchAsyncBatcher> GetBatchToDispatchAndCreateAsync()
+        private BatchAsyncBatcher GetBatchToDispatchAndCreate()
         {
             if (this.currentBatcher.IsEmpty)
             {
                 return null;
             }
 
-            using (await this.dispatchLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
-            {
-                BatchAsyncBatcher previousBatcher = this.currentBatcher;
-                this.currentBatcher = this.CreateBatchAsyncBatcher();
-                return previousBatcher;
-            }
+            BatchAsyncBatcher previousBatcher = this.currentBatcher;
+            this.currentBatcher = this.CreateBatchAsyncBatcher();
+            return previousBatcher;
         }
 
         private BatchAsyncBatcher CreateBatchAsyncBatcher()
