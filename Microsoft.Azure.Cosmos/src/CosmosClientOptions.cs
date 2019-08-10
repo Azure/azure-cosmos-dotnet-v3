@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
-    using System.Runtime.ConstrainedExecution;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -17,6 +16,18 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
     /// </summary>
+    /// <example>
+    /// An example on how to configure the serialization option to ignore null values
+    /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+    /// {
+    ///     SerializerOptions = new CosmosSerializationOptions(){
+    ///         IgnoreNullValues = true
+    ///     },
+    ///     ConnectionMode = ConnectionMode.Gateway,
+    /// };
+    /// 
+    /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+    /// </example>
     public class CosmosClientOptions
     {
         /// <summary>
@@ -39,11 +50,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
-        private readonly Collection<RequestHandler> customHandlers;
         private readonly string currentEnvironmentInformation;
 
         private int gatewayModeMaxConnectionLimit;
         private string applicationName;
+        private CosmosSerializationOptions serializerOptions;
+        private CosmosSerializer serializer;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -59,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
-            this.customHandlers = new Collection<RequestHandler>();
+            this.CustomHandlers = new Collection<RequestHandler>();
         }
 
         /// <summary>
@@ -132,10 +144,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.AddCustomHandlers(RequestHandler[])"/>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        public Collection<RequestHandler> CustomHandlers
-        {
-            get => this.customHandlers;
-        }
+        public Collection<RequestHandler> CustomHandlers { get; }
 
         /// <summary>
         /// Get or set the connection mode used by the client when connecting to the Azure Cosmos DB service.
@@ -157,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
-        /// Get ot set the number of times client should retry on rate throttled requests.
+        /// Get or set the number of times client should retry on rate throttled requests.
         /// </summary>
         /// <seealso cref="CosmosClientBuilder.WithThrottlingRetryOptions(TimeSpan, int)"/>
         public int? MaxRetryAttemptsOnRateLimitedRequests { get; set; }
@@ -172,6 +181,35 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
+        /// Get to set optional serializer options. 
+        /// </summary>
+        /// <example>
+        /// An example on how to configure the serialization option to ignore null values
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     SerializerOptions = new CosmosSerializationOptions(){
+        ///         IgnoreNullValues = true
+        ///     }
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// </example>
+        public CosmosSerializationOptions SerializerOptions
+        {
+            get => this.serializerOptions;
+            set
+            {
+                if (this.Serializer != null)
+                {
+                    throw new ArgumentException(
+                        $"{nameof(this.SerializerOptions)} is not compatible with {nameof(this.Serializer)}. Only one can be set.  ");
+                }
+
+                this.serializerOptions = value;
+            }
+        }
+
+        /// <summary>
         /// Get to set an optional JSON serializer. The client will use it to serialize or de-serialize user's cosmos request/responses.
         /// SDK owned types such as DatabaseProperties and ContainerProperties will always use the SDK default serializer.
         /// </summary>
@@ -182,10 +220,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// // An example on how to configure the serializer to ignore null values
         /// CosmosSerializer ignoreNullSerializer = new CosmosJsonDotNetSerializer(
-        ///         new JsonSerializerSettings()
-        ///         {
-        ///             NullValueHandling = NullValueHandling.Ignore
-        ///         });
+        ///             NullValueHandling = NullValueHandling.Ignore);
         ///         
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
@@ -195,7 +230,20 @@ namespace Microsoft.Azure.Cosmos
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
         /// </example>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
-        public CosmosSerializer Serializer { get; set; }
+        public CosmosSerializer Serializer
+        {
+            get => this.serializer;
+            set
+            {
+                if (this.SerializerOptions != null)
+                {
+                    throw new ArgumentException(
+                        $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)}. Only one can be set.  ");
+                }
+
+                this.serializer = value;
+            }
+        }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
@@ -204,12 +252,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         internal CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
-
-        /// <summary>
-        /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
-        /// </summary>
-        [JsonIgnore]
-        internal CosmosSerializer CosmosSerializerWithWrapperOrDefault => this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
@@ -308,6 +350,22 @@ namespace Microsoft.Azure.Cosmos
         /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
+
+        /// <summary>
+        /// Gets the user json serializer with the CosmosJsonSerializerWrapper or the default
+        /// </summary>
+        internal CosmosSerializer GetCosmosSerializerWithWrapperOrDefault()
+        {
+            if (this.SerializerOptions != null)
+            {
+                CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer(this.SerializerOptions);
+                return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
+            }
+            else
+            {
+                return this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
+            }
+        }
 
         internal CosmosClientOptions Clone()
         {

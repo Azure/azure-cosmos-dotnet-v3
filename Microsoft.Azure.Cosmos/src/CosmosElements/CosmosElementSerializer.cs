@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         internal static CosmosArray ToCosmosElements(
             MemoryStream memoryStream,
             ResourceType resourceType,
-            CosmosSerializationOptions cosmosSerializationOptions = null)
+            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {
             if (!memoryStream.CanRead)
             {
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string containerRid,
             IEnumerable<CosmosElement> cosmosElements,
             ResourceType resourceType,
-            CosmosSerializationOptions cosmosSerializationOptions = null)
+            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {
             IJsonWriter jsonWriter;
             if (cosmosSerializationOptions != null)
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             IEnumerable<CosmosElement> cosmosElements,
             ResourceType resourceType,
             CosmosSerializer jsonSerializer,
-            CosmosSerializationOptions cosmosSerializationOptions = null)
+            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {
             if (!cosmosElements.Any())
             {
