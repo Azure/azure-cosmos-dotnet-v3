@@ -172,6 +172,43 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
+        /// Upsert a permission as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
+        /// <param name="resourceTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds).</param>
+        /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a permission are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new permission.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="PermissionProperties"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// PermissionProperties permissionProperties = new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId"), new PartitionKey("tenantId"))";
+        /// 
+        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, resourceTokenExpirySeconds: 9000);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<PermissionResponse> UpsertPermissionAsync(
+            PermissionProperties permissionProperties,
+            int? resourceTokenExpirySeconds = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
         /// This method creates a query for permissions under a database using a SQL statement. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>

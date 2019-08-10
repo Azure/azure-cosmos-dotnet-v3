@@ -183,6 +183,27 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
+        public override Task<PermissionResponse> UpsertPermissionAsync(PermissionProperties permissionProperties, 
+            int? resourceTokenExpirySeconds = null, 
+            RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (permissionProperties == null)
+            {
+                throw new ArgumentNullException(nameof(permissionProperties));
+            }
+
+            this.ClientContext.ValidateResource(permissionProperties.Id);
+
+            Task<ResponseMessage> response = this.UpsertPermissionStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
+                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this.GetPermission(permissionProperties.Id), response);
+        }
+
         /// <inheritdoc/>
         public override FeedIterator<T> GetPermissionQueryIterator<T>(QueryDefinition queryDefinition, 
             string continuationToken = null, 
@@ -267,6 +288,30 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
+        internal Task<ResponseMessage> ProcessPermissionUpsertAsync(
+            Stream streamPayload,
+            int? resourceTokenExpirySeconds = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
+               resourceType: ResourceType.Permission,
+               operationType: OperationType.Upsert,
+               cosmosContainerCore: null,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: (requestMessage) =>
+               {
+                   if (resourceTokenExpirySeconds.HasValue)
+                   {
+                       requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, resourceTokenExpirySeconds.Value.ToString());
+                   }
+               },
+               cancellationToken: cancellationToken);
+        }
+
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
             Stream streamPayload,
             RequestOptions requestOptions = null,
@@ -321,6 +366,19 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessPermissionCreateAsync(
+                streamPayload: streamPayload,
+                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> UpsertPermissionStreamInternalAsync(
+            Stream streamPayload,
+            int? resourceTokenExpirySeconds = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessPermissionUpsertAsync(
                 streamPayload: streamPayload,
                 resourceTokenExpirySeconds: resourceTokenExpirySeconds,
                 requestOptions: requestOptions,

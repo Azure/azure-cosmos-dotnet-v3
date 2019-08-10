@@ -540,6 +540,39 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
+        /// Upserts a user as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="userProperties">The cosmos user <see cref="UserProperties"/></param>
+        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="userProperties"/> is not set.</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new user.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="UserProperties"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// UserResponse response = await this.cosmosDatabase.CreateUserAsync(Guid.NewGuid().ToString());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<UserResponse> UpsertUserAsync(UserProperties userProperties, 
+            RequestOptions requestOptions = null, 
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
         /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>

@@ -322,6 +322,25 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
+        public override Task<UserResponse> UpsertUserAsync(UserProperties userProperties, 
+            RequestOptions requestOptions, 
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (userProperties == null)
+            {
+                throw new ArgumentNullException(nameof(userProperties));
+            }
+
+            this.ClientContext.ValidateResource(userProperties.Id);
+
+            Task<ResponseMessage> response = this.UpsertUserStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response);
+        }
+
         public override FeedIterator GetContainerQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
@@ -494,6 +513,23 @@ namespace Microsoft.Azure.Cosmos
                cancellationToken: cancellationToken);
         }
 
+        internal Task<ResponseMessage> ProcessUserUpsertAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
+               resourceType: ResourceType.User,
+               operationType: OperationType.Upsert,
+               cosmosContainerCore: null,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: null,
+               cancellationToken: cancellationToken);
+        }
+
         internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
@@ -519,6 +555,17 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessUserCreateAsync(
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> UpsertUserStreamInternalAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessUserUpsertAsync(
                 streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);

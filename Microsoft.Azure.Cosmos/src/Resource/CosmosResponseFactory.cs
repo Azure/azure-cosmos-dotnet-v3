@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal Task<PermissionResponse> CreatePermissionResponseAsync(
-            Permission user,
+            Permission permission,
             Task<ResponseMessage> cosmosResponseMessageTask)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     permissionProperties,
-                    user);
+                    permission);
             });
         }
 
