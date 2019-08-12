@@ -256,14 +256,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Set a custom serializer option. 
+        /// </summary>
+        /// <param name="cosmosSerializerOptions">The custom class that implements <see cref="CosmosSerializer"/> </param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="CosmosSerializer"/>
+        /// <seealso cref="CosmosClientOptions.SerializerOptions"/>
+        public CosmosClientBuilder WithSerializerOptions(CosmosSerializationOptions cosmosSerializerOptions)
+        {
+            this.clientOptions.SerializerOptions = cosmosSerializerOptions;
+            return this;
+        }
+
+        /// <summary>
         /// Set a custom JSON serializer. 
         /// </summary>
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosSerializer"/>
         /// <seealso cref="CosmosClientOptions.Serializer"/>
-        public CosmosClientBuilder WithCustomSerializer(
-            CosmosSerializer cosmosJsonSerializer)
+        public CosmosClientBuilder WithCustomSerializer(CosmosSerializer cosmosJsonSerializer)
         {
             this.clientOptions.Serializer = cosmosJsonSerializer;
             return this;

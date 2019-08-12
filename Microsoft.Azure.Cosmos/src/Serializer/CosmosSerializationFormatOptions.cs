@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal sealed class CosmosSerializationOptions
+    internal sealed class CosmosSerializationFormatOptions
     {
         public delegate IJsonNavigator CreateCustomNavigator(byte[] content);
 
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CreateCustomWriter CreateCustomWriterCallback { get; }
 
-        public CosmosSerializationOptions(
+        public CosmosSerializationFormatOptions(
             string contentSerializationFormat,
             CreateCustomNavigator createCustomNavigator,
             CreateCustomWriter createCustomWriter)

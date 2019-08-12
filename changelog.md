@@ -5,7 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [3.1.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.1) - 2019-08-09
+## [3.1.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.1) - 2019-08-12
+
+### Added
+
+- [#650](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/650) CosmosSerializerOptions to customize serialization
 
 ### Fixed
 
