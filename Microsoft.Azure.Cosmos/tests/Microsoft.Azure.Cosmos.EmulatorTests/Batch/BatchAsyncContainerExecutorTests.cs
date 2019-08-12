@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(storedDoc.Resource);
             }
 
-            await executor.DisposeAsync();
+            executor.Dispose();
         }
 
         [TestMethod]
