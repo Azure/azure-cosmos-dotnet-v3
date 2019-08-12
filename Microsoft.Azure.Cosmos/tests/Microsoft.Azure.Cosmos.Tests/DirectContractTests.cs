@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    [TestCategory("Windows")]
     [TestClass]
     public class DirectContractTests
     {
