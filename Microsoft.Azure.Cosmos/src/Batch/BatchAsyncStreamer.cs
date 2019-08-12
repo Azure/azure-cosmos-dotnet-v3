@@ -18,9 +18,8 @@ namespace Microsoft.Azure.Cosmos
     /// <see cref="AddAsync(BatchAsyncOperationContext)"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
     /// </remarks>
     /// <seealso cref="BatchAsyncBatcher"/>
-    internal class BatchAsyncStreamer
+    internal class BatchAsyncStreamer : IDisposable
     {
-        private readonly List<Task> previousDispatchedTasks = new List<Task>();
         private readonly SemaphoreSlim dispatchLimiter;
         private readonly int maxBatchOperationCount;
         private readonly int maxBatchByteSize;
@@ -92,20 +91,18 @@ namespace Microsoft.Azure.Cosmos
 
             if (toDispatch != null)
             {
-                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                // Discarded for Fire & Forget
+                _ = toDispatch.DispatchAsync(this.cancellationTokenSource.Token);
             }
         }
 
-        public async Task DisposeAsync()
+        public void Dispose()
         {
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
             this.currentTimer.CancelTimer();
-            foreach (Task previousDispatchedTask in this.previousDispatchedTasks)
-            {
-                await previousDispatchedTask;
-            }
-
+            this.currentTimer = null;
+            this.timerTask = null;
             this.dispatchLimiter.Dispose();
         }
 
@@ -133,7 +130,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (toDispatch != null)
             {
-                this.previousDispatchedTasks.Add(toDispatch.DispatchAsync(this.cancellationTokenSource.Token));
+                // Discarded for Fire & Forget
+                _ = toDispatch.DispatchAsync(this.cancellationTokenSource.Token);
             }
 
             this.ResetTimer();

@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task DisposeAsyncShouldDisposeBatcher()
+        public async Task DisposeShouldDisposeBatcher()
         {
             // Expect all operations to complete as their batches get dispached
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor);
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await Task.WhenAll(contexts);
 
-            await batchAsyncStreamer.DisposeAsync();
+            batchAsyncStreamer.Dispose();
             var newContext = CreateContext(new ItemBatchOperation(OperationType.Create, 0, "0"));
             // Disposed batcher's internal cancellation was signaled
             await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => batchAsyncStreamer.AddAsync(newContext));

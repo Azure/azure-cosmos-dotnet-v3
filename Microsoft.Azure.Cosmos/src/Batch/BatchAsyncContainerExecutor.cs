@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
     /// It groups operations by Partition Key Range and sends them to the Batch API and then unifies results as they become available. It uses <see cref="BatchAsyncStreamer"/> as batch processor and <see cref="ExecuteAsync(IReadOnlyList{BatchAsyncOperationContext}, System.Threading.CancellationToken)"/> as batch executing handler.
     /// </remarks>
     /// <seealso cref="BatchAsyncStreamer"/>
-    internal class BatchAsyncContainerExecutor
+    internal class BatchAsyncContainerExecutor : IDisposable
     {
         private const int DefaultDispatchTimer = 10;
         private const int MinimumDispatchTimerInSeconds = 1;
@@ -84,17 +84,17 @@ namespace Microsoft.Azure.Cosmos
             await this.ValidateOperationAsync(operation, itemRequestOptions, cancellationToken);
 
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
-            BatchAsyncStreamer streamer = await this.GetOrAddStreamerForPartitionKeyRangeAsync(resolvedPartitionKeyRangeId).ConfigureAwait(false);
+            BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
             BatchAsyncOperationContext context = new BatchAsyncOperationContext(resolvedPartitionKeyRangeId, operation);
             await streamer.AddAsync(context);
             return await context.Task;
         }
 
-        public async Task DisposeAsync()
+        public void Dispose()
         {
             foreach (KeyValuePair<string, BatchAsyncStreamer> streamer in this.streamersByPartitionKeyRange)
             {
-                await streamer.Value.DisposeAsync();
+                streamer.Value.Dispose();
             }
 
             foreach (KeyValuePair<string, SemaphoreSlim> limiter in this.limitersByPartitionkeyRange)
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(context.Operation, cancellationToken).ConfigureAwait(false);
-            BatchAsyncStreamer streamer = await this.GetOrAddStreamerForPartitionKeyRangeAsync(resolvedPartitionKeyRangeId).ConfigureAwait(false);
+            BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
             await streamer.AddAsync(context);
         }
 
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<BatchAsyncStreamer> GetOrAddStreamerForPartitionKeyRangeAsync(string partitionKeyRangeId)
+        private BatchAsyncStreamer GetOrAddStreamerForPartitionKeyRange(string partitionKeyRangeId)
         {
             if (this.streamersByPartitionKeyRange.TryGetValue(partitionKeyRangeId, out BatchAsyncStreamer streamer))
             {
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos
             BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(this.maxServerRequestOperationCount, this.maxServerRequestBodyLength, this.dispatchTimerInSeconds, this.timerPool, this.cosmosClientContext.CosmosSerializer, this.ExecuteAsync);
             if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
             {
-                await newStreamer.DisposeAsync();
+                newStreamer.Dispose();
             }
 
             return this.streamersByPartitionKeyRange[partitionKeyRangeId];
