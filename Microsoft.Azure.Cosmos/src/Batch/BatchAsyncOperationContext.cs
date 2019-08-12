@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Context for a particular Batch operation.
     /// </summary>
-    internal class BatchAsyncOperationContext
+    internal class BatchAsyncOperationContext : IDisposable
     {
         public string PartitionKeyRangeId { get; }
 
@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(this.CurrentBatcher == null || completer == this.CurrentBatcher);
             this.taskCompletionSource.SetResult(result);
+            this.Dispose();
         }
 
         public void Fail(
@@ -45,6 +46,13 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(this.CurrentBatcher == null || completer == this.CurrentBatcher);
             this.taskCompletionSource.SetException(exception);
+            this.Dispose();
+        }
+
+        public void Dispose()
+        {
+            this.Operation.Dispose();
+            this.CurrentBatcher = null;
         }
     }
 }

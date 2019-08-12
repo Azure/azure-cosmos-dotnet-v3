@@ -100,11 +100,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     for (int index = 0; index < this.batchOperations.Count; index++)
                     {
-                        BatchAsyncOperationContext operation = this.batchOperations[index];
-                        BatchOperationResult response = batchResponse[operation.Operation.OperationIndex];
+                        BatchAsyncOperationContext context = this.batchOperations[index];
+                        BatchOperationResult response = batchResponse[context.Operation.OperationIndex];
                         if (response != null)
                         {
-                            operation.Complete(this, response);
+                            context.Complete(this, response);
                         }
                     }
                 }
@@ -113,13 +113,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
                 // Exceptions happening during execution fail all the Tasks
-                foreach (BatchAsyncOperationContext operation in this.batchOperations)
+                foreach (BatchAsyncOperationContext context in this.batchOperations)
                 {
-                    operation.Fail(this, ex);
+                    context.Fail(this, ex);
                 }
             }
             finally
             {
+                this.batchOperations.Clear();
                 this.dispached = true;
             }
         }
