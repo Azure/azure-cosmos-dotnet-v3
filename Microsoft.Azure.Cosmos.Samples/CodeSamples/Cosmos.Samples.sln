@@ -21,8 +21,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureFunctions", "AzureFunc
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NonPartitionContainerMigration", "NonPartitionContainerMigration\NonPartitionContainerMigration.csproj", "{C1A42351-39FC-4600-A235-FF5A90B02628}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChangeFeed", "ChangeFeed\ChangeFeed.csproj", "{D8E52D76-36D7-4893-BCAD-605DFF947A94}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -65,10 +63,6 @@ Global
 		{C1A42351-39FC-4600-A235-FF5A90B02628}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1A42351-39FC-4600-A235-FF5A90B02628}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1A42351-39FC-4600-A235-FF5A90B02628}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D8E52D76-36D7-4893-BCAD-605DFF947A94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D8E52D76-36D7-4893-BCAD-605DFF947A94}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D8E52D76-36D7-4893-BCAD-605DFF947A94}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D8E52D76-36D7-4893-BCAD-605DFF947A94}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
