@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override Task<PermissionResponse> CreatePermissionAsync(PermissionProperties permissionProperties,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
 
             Task<ResponseMessage> response = this.CreatePermissionStreamInternalAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ResponseMessage> CreatePermissionStreamAsync(PermissionProperties permissionProperties,
-            int? resourceTokenExpirySeconds,
+            int? permissionTokenExpirySeconds,
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -178,13 +178,13 @@ namespace Microsoft.Azure.Cosmos
 
             Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(permissionProperties);
             return this.CreatePermissionStreamInternalAsync(streamPayload,
-                resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds,
                 requestOptions,
                 cancellationToken);
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(PermissionProperties permissionProperties, 
-            int? resourceTokenExpirySeconds = null, 
+            int? permissionTokenExpirySeconds = null, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
 
             Task<ResponseMessage> response = this.UpsertPermissionStreamInternalAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<ResponseMessage> ProcessPermissionCreateAsync(
             Stream streamPayload,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -280,9 +280,9 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                requestEnricher: (requestMessage) => 
                {
-                   if (resourceTokenExpirySeconds.HasValue)
+                   if (permissionTokenExpirySeconds.HasValue)
                    {
-                       requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, resourceTokenExpirySeconds.Value.ToString());
+                       requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, permissionTokenExpirySeconds.Value.ToString());
                    }
                },
                cancellationToken: cancellationToken);
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Task<ResponseMessage> ProcessPermissionUpsertAsync(
             Stream streamPayload,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -304,9 +304,9 @@ namespace Microsoft.Azure.Cosmos
                requestOptions: requestOptions,
                requestEnricher: (requestMessage) =>
                {
-                   if (resourceTokenExpirySeconds.HasValue)
+                   if (permissionTokenExpirySeconds.HasValue)
                    {
-                       requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, resourceTokenExpirySeconds.Value.ToString());
+                       requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, permissionTokenExpirySeconds.Value.ToString());
                    }
                },
                cancellationToken: cancellationToken);
@@ -361,26 +361,26 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<ResponseMessage> CreatePermissionStreamInternalAsync(
             Stream streamPayload,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessPermissionCreateAsync(
                 streamPayload: streamPayload,
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> UpsertPermissionStreamInternalAsync(
             Stream streamPayload,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessPermissionUpsertAsync(
                 streamPayload: streamPayload,
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

@@ -73,33 +73,33 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> ReadAsync(int? resourceTokenExpirySeconds = null,
+        public override Task<PermissionResponse> ReadAsync(int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.ReadPermissionStreamAsync(
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
         }
 
-        public Task<ResponseMessage> ReadPermissionStreamAsync(int? resourceTokenExpirySeconds = null,
+        public Task<ResponseMessage> ReadPermissionStreamAsync(int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
         /// <inheritdoc/>
         public override Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
             Task<ResponseMessage> response = this.ReplaceStreamInternalAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream(permissionProperties),
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -136,14 +136,14 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
             Stream streamPayload,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
                 streamPayload: streamPayload,
                 operationType: OperationType.Replace,
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<ResponseMessage> ProcessStreamAsync(
             Stream streamPayload,
             OperationType operationType,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: operationType,
                 linkUri: this.LinkUri,
                 resourceType: ResourceType.Permission,
-                resourceTokenExpirySeconds: resourceTokenExpirySeconds,
+                permissionTokenExpirySeconds: permissionTokenExpirySeconds,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
            OperationType operationType,
            Uri linkUri,
            ResourceType resourceType,
-           int? resourceTokenExpirySeconds = null,
+           int? permissionTokenExpirySeconds = null,
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -184,9 +184,9 @@ namespace Microsoft.Azure.Cosmos
               requestOptions: requestOptions,
               requestEnricher: (requestMessage) =>
               {
-                  if (resourceTokenExpirySeconds.HasValue)
+                  if (permissionTokenExpirySeconds.HasValue)
                   {
-                      requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, resourceTokenExpirySeconds.Value.ToString());
+                      requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, permissionTokenExpirySeconds.Value.ToString());
                   }
               },
               cancellationToken: cancellationToken);

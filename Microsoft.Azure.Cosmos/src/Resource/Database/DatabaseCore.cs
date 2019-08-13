@@ -265,8 +265,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
 
-            Task<ResponseMessage> response = this.CreateUserStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+            Task<ResponseMessage> response = this.CreateUserStreamAsync(
+                userProperties: userProperties,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
@@ -317,28 +317,29 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(userProperties.Id);
 
             Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(userProperties);
-            return this.CreateUserStreamInternalAsync(streamPayload,
-                requestOptions,
-                cancellationToken);
+            return this.ProcessUserCreateAsync(
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
         }
 
-        public override Task<UserResponse> UpsertUserAsync(UserProperties userProperties, 
+        public override Task<UserResponse> UpsertUserAsync(string id, 
             RequestOptions requestOptions, 
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (userProperties == null)
+            if (string.IsNullOrEmpty(id))
             {
-                throw new ArgumentNullException(nameof(userProperties));
+                throw new ArgumentNullException(nameof(id));
             }
 
-            this.ClientContext.ValidateResource(userProperties.Id);
+            this.ClientContext.ValidateResource(id);
 
-            Task<ResponseMessage> response = this.UpsertUserStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(userProperties),
+            Task<ResponseMessage> response = this.ProcessUserUpsertAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(new UserProperties(id)),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response);
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response);
         }
 
         public override FeedIterator GetContainerQueryStreamIterator(
@@ -545,28 +546,6 @@ namespace Microsoft.Azure.Cosmos
             return this.ProcessCollectionCreateAsync(
                 streamPayload: streamPayload,
                 throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<ResponseMessage> CreateUserStreamInternalAsync(
-            Stream streamPayload,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ProcessUserCreateAsync(
-                streamPayload: streamPayload,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<ResponseMessage> UpsertUserStreamInternalAsync(
-            Stream streamPayload,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            return this.ProcessUserUpsertAsync(
-                streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

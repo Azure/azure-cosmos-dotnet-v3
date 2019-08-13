@@ -487,7 +487,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Returns a reference to a user object. 
+        /// Returns a reference to a user object.
         /// </summary>
         /// <param name="id">The cosmos user id.</param>
         /// <returns>Cosmos user reference</returns>
@@ -500,6 +500,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// Database db = this.cosmosClient.GetDatabase("myDatabaseId");
         /// User user = await db.GetUser("userId");
+        /// UserResponse response = await user.ReadAsync();
         /// ]]>
         /// </code>
         /// </example>
@@ -542,11 +543,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Upserts a user as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
-        /// <param name="userProperties">The cosmos user <see cref="UserProperties"/></param>
+        /// <param name="id">The cosmos user id.</param>
         /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.</returns>
-        /// <exception cref="ArgumentNullException">If <paramref name="userProperties"/> is not set.</exception>
+        /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
         /// <list type="table">
         ///     <listheader>
@@ -568,7 +569,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserResponse> UpsertUserAsync(UserProperties userProperties, 
+        public abstract Task<UserResponse> UpsertUserAsync(string id, 
             RequestOptions requestOptions = null, 
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -744,7 +745,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract FeedIterator<T> GetUserQueryIterator<T>(
-            QueryDefinition queryDefinition,
+            QueryDefinition queryDefinition = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 

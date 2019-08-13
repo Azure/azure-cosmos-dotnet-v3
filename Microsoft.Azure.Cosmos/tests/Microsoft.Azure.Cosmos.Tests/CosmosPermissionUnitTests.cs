@@ -13,14 +13,14 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosPermissionUnitTests
     {
         [TestMethod]
-        public async Task ResourceTokenExpirySecondsHeaderIsAdded()
+        public async Task PermissionTokenExpirySecondsHeaderIsAdded()
         {
             int testHandlerHitCount = 0;
-            const int ResourceTokenExpirySeconds = 9000;
+            const int PermissionTokenExpirySeconds = 9000;
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.AreEqual(ResourceTokenExpirySeconds, int.Parse(request.Headers[Documents.HttpConstants.HttpHeaders.ResourceTokenExpiry]));
+                Assert.AreEqual(PermissionTokenExpirySeconds, int.Parse(request.Headers[Documents.HttpConstants.HttpHeaders.ResourceTokenExpiry]));
                 testHandlerHitCount++;
                 ResponseMessage response = new ResponseMessage(HttpStatusCode.OK, request, errorMessage: null);
                 response.Content = request.Content;
@@ -33,15 +33,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             Database database = client.GetDatabase("testdb");
             await database.GetUser("testUser").CreatePermissionAsync(
                 new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId")), 
-                resourceTokenExpirySeconds: ResourceTokenExpirySeconds
+                permissionTokenExpirySeconds: PermissionTokenExpirySeconds
             );
 
             await database.GetUser("testUser").GetPermission("permissionId").ReplaceAsync(
                 new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId")),
-                resourceTokenExpirySeconds: ResourceTokenExpirySeconds
+                permissionTokenExpirySeconds: PermissionTokenExpirySeconds
             );
 
-            await database.GetUser("testUser").GetPermission("permissionId").ReadAsync(resourceTokenExpirySeconds: ResourceTokenExpirySeconds);
+            await database.GetUser("testUser").GetPermission("permissionId").ReadAsync(permissionTokenExpirySeconds: PermissionTokenExpirySeconds);
 
             //create,read, and replace
             Assert.AreEqual(3, testHandlerHitCount);

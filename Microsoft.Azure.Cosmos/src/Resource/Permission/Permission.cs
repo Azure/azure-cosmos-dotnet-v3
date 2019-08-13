@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation. Each read will return a new ResourceToken with its respective expiration. 
         /// </summary>
-        /// <param name="resourceTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds).</param>
+        /// <param name="permissionTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
         /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -67,12 +67,12 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// User user = this.database.GetUser("userId");
         /// Permission permission= user.GetPermission("permissionId");
-        /// PermissionProperties permissionProperties = await permission.ReadAsync(resourceTokenExpirySeconds: 9000);
+        /// PermissionProperties permissionProperties = await permission.ReadAsync(permissionTokenExpirySeconds: 9000);
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<PermissionResponse> ReadAsync(
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         /// Replace a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation. This will not revoke existing ResourceTokens.
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
-        /// <param name="resourceTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds).</param>
+        /// <param name="permissionTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
         /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
@@ -104,14 +104,14 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// PermissionProperties permissionProperties = permissionReadResponse;
         /// permissionProperties.Id = "newuser";
-        /// PermissionResponse response = await permission.ReplaceAsync(permissionProperties, resourceTokenExpirySeconds: 9000);
+        /// PermissionResponse response = await permission.ReplaceAsync(permissionProperties, permissionTokenExpirySeconds: 9000);
         /// PermissionProperties replacedProperties = response;
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<PermissionResponse> ReplaceAsync(
             PermissionProperties permissionProperties,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

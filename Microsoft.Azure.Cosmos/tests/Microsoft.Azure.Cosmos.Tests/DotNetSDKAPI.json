@@ -1686,10 +1686,10 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.UserResponse] CreateUserAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.UserResponse] UpsertUserAsync(Microsoft.Azure.Cosmos.UserProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.UserResponse] UpsertUserAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.UserResponse] UpsertUserAsync(Microsoft.Azure.Cosmos.UserProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.UserResponse] UpsertUserAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
         "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] ReadThroughputAsync(System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -3178,12 +3178,12 @@
           ],
           "MethodInfo": "System.String get_Id()"
         },
-        "System.String get_ResourceLink()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ResourceUri()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.String get_ResourceLink()"
+          "MethodInfo": "System.String get_ResourceUri()"
         },
         "System.String get_Token()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3199,7 +3199,7 @@
           ],
           "MethodInfo": null
         },
-        "System.String ResourceLink[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"resource\")]": {
+        "System.String ResourceUri[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"resource\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -3212,11 +3212,6 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": null
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "Void .ctor()"
         },
         "Void .ctor(System.String, Microsoft.Azure.Cosmos.PermissionMode, Microsoft.Azure.Cosmos.Container, Microsoft.Azure.Cosmos.PartitionKey, System.String)": {
           "Type": "Constructor",

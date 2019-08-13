@@ -71,14 +71,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, userResponse.StatusCode);
 
             userId = Guid.NewGuid().ToString();
-            userResponse = await this.cosmosDatabase.UpsertUserAsync(new UserProperties(userId));
+            userResponse = await this.cosmosDatabase.UpsertUserAsync(userId);
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(userId, userResponse.Resource.Id);
             Assert.IsNotNull(userResponse.Resource.ResourceId);
 
             newUserId = Guid.NewGuid().ToString();
             userResponse.Resource.Id = newUserId;
-            userResponse = await this.cosmosDatabase.UpsertUserAsync(userResponse.Resource);
+            userResponse = await this.cosmosDatabase.UpsertUserAsync(userResponse.Resource.Id);
             Assert.AreEqual(newUserId, userResponse.Resource.Id);
         }
     }

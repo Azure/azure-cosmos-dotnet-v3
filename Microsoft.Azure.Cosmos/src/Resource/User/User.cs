@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a permission as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
-        /// <param name="resourceTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds).</param>
+        /// <param name="permissionTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
         /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
@@ -161,13 +161,13 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// PermissionProperties permissionProperties = new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId"), new PartitionKey("tenantId"))";
         /// 
-        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, resourceTokenExpirySeconds: 9000);
+        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, permissionTokenExpirySeconds: 9000);
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<PermissionResponse> CreatePermissionAsync(
             PermissionProperties permissionProperties,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upsert a permission as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
-        /// <param name="resourceTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds).</param>
+        /// <param name="permissionTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
         /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
@@ -198,13 +198,13 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// PermissionProperties permissionProperties = new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId"), new PartitionKey("tenantId"))";
         /// 
-        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, resourceTokenExpirySeconds: 9000);
+        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, permissionTokenExpirySeconds: 9000);
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<PermissionResponse> UpsertPermissionAsync(
             PermissionProperties permissionProperties,
-            int? resourceTokenExpirySeconds = null,
+            int? permissionTokenExpirySeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

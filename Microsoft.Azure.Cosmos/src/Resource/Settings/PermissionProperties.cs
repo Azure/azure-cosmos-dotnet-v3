@@ -15,13 +15,6 @@ namespace Microsoft.Azure.Cosmos
     public class PermissionProperties
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="PermissionProperties"/> class for the Azure Cosmos DB service.
-        /// </summary>
-        public PermissionProperties()
-        {
-        }
-
-        /// <summary>
         /// Initialize a new instance of the <see cref="PermissionProperties"/> with permssion to <see cref="Container"/>.
         /// </summary>
         /// <param name="id">The permission id.</param>
@@ -35,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            this.ResourceLink = ((ContainerCore)container).LinkUri.OriginalString;
+            this.ResourceUri = ((ContainerCore)container).LinkUri.OriginalString;
             if (resourcePartitionKey == null)
             {
                 this.InternalResourcePartitionKey = null;
@@ -62,11 +55,18 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            ResourceLink = ((ContainerCore)container).ClientContext.CreateLink(
+            ResourceUri = ((ContainerCore)container).ClientContext.CreateLink(
                     parentLink: ((ContainerCore)container).LinkUri.OriginalString,
                     uriPathSegment: Paths.DocumentsPathSegment,
                     id: id).OriginalString;
             this.InternalResourcePartitionKey = resourcePartitionKey.InternalKey;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PermissionProperties"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        internal PermissionProperties()
+        {
         }
 
         /// <summary>
@@ -91,21 +91,18 @@ namespace Microsoft.Azure.Cosmos
         public string Id { get; private set; }
 
         /// <summary> 
-        /// Gets the self-link of resource to which the permission applies in the Azure Cosmos DB service.
+        /// Gets the self-uri of resource to which the permission applies in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// The self-link of the resource to which the permission applies.
+        /// The-uri of the resource to which the permission applies.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.ResourceLink)]
-        public string ResourceLink { get; private set; }
-
-        [JsonProperty(PropertyName = Constants.Properties.ResourcePartitionKey, NullValueHandling = NullValueHandling.Ignore)]
-        internal Documents.Routing.PartitionKeyInternal InternalResourcePartitionKey { get; private set; }
+        public string ResourceUri { get; private set; }
 
         /// <summary>
         /// Gets optional partition key value for the permission in the Azure Cosmos DB service.
         /// A permission applies to resources when two conditions are met:
-        ///       1. <see cref="ResourceLink"/> is prefix of resource's link.
+        ///       1. <see cref="ResourceUri"/> is prefix of resource's link.
         ///             For example "/dbs/mydatabase/colls/mycollection" applies to "/dbs/mydatabase/colls/mycollection" and "/dbs/mydatabase/colls/mycollection/docs/mydocument"
         ///       2. <see cref="ResourcePartitionKey"/> is superset of resource's partition key.
         ///             For example absent/empty partition key is superset of all partition keys.
@@ -173,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the last modified time stamp associated with <see cref="PermissionProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
-        /// <remarks>ResourceToken generation does not apply.</remarks>
+        /// <remarks>ResourceToken generation and reading does not apply.</remarks>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? LastModified { get; private set; }
@@ -191,5 +188,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
         internal string ResourceId { get; private set; }
+
+        [JsonProperty(PropertyName = Constants.Properties.ResourcePartitionKey, NullValueHandling = NullValueHandling.Ignore)]
+        internal Documents.Routing.PartitionKeyInternal InternalResourcePartitionKey { get; private set; }
     }
 }
