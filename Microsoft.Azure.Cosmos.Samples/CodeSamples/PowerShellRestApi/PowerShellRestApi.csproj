@@ -9,37 +9,7 @@
     <PackageReference Include="Microsoft.PowerShell.SDK" Version="6.2.2" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="PowerShellScripts\CreateDB.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\ReadDB.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\DeleteDB.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\CreateContainer.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\ReadContainer.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\ReplaceContainer.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\DeleteContainer.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\CreateItem.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\ReplaceItem.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\ReadItem.ps1">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="PowerShellScripts\DeleteItem.ps1">
+    <None Include="PowerShellScripts\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
