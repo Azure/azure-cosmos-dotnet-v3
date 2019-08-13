@@ -13,7 +13,8 @@ schedules:
 
 
 variables:
-  TestArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal ' 
+  TestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal ' 
+  NonWindowsTestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Windows" --verbosity normal ' 
   BuildConfiguration: Release 
 
 
@@ -26,14 +27,16 @@ jobs:
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
-      Arguments: $(TestArguments) 
+      Arguments: $(NonWindowsTestArguments)
       VmImage: macOS-10.14
+      OS: MacOS
 
   - template:  templates/build-test.yml
     parameters:
       BuildConfiguration: Release
-      Arguments: $(TestArguments) 
-      VmImage: ubuntu-16.04
+      Arguments: $(NonWindowsTestArguments)
+      VmImage: ubuntu-latest
+      OS: Linux 
 
   - template:  templates/build-test.yml
     parameters:

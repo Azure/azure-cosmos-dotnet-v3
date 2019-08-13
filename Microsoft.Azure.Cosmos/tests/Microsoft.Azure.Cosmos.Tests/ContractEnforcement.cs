@@ -9,6 +9,7 @@
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
+    [TestCategory("Windows")]
     [TestClass]
     public class ContractEnforcement
     {
