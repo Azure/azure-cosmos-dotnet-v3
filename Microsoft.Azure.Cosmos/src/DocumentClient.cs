@@ -4168,9 +4168,9 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// // Find the offer for the collection by SelfLink
         /// Offer offer = client.CreateOfferQuery(
-        ///     string.Format("SELECT * FROM offers o WHERE o.resource = '{0}'", collectionSelfLink)).AsEnumerable().FirstOrDefault();
+        ///     $"SELECT * FROM offers o WHERE o.resource = '{collectionSelfLink}'").AsEnumerable().FirstOrDefault();
         /// ResourceResponse<Offer> response = await client.ReadOfferAsync(offer.SelfLink);
-        /// string minimumRUsForCollection = readResponse.Headers["x-ms-cosmos-min-throughput"];
+        /// int minimumRUsForCollection = int.Parse(response.ResponseHeaders["x-ms-cosmos-min-throughput"]);
         /// ]]>
         /// </code>
         /// </para>
