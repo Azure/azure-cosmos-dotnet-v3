@@ -203,6 +203,7 @@
         {
             await Program.InitializeAsync(databaseId, client);
 
+            // <StartProcessorEstimator>
             Container leaseContainer = client.GetContainer(databaseId, Program.leasesContainer);
             Container monitoredContainer = client.GetContainer(databaseId, Program.monitoredContainer);
             ChangeFeedProcessor changeFeedProcessor = monitoredContainer
@@ -210,6 +211,7 @@
                     .WithInstanceName("consoleHost")
                     .WithLeaseContainer(leaseContainer)
                     .Build();
+            // </StartProcessorEstimator>
 
             Console.WriteLine($"Starting Change Feed Processor...");
             await changeFeedProcessor.StartAsync();
