@@ -9,13 +9,14 @@ Function Generate-MasterKeyAuthorizationSignature{
         [string] $ResourceType,
         [string] $Date,
         [string] $MasterKey,
-		[String] $KeyType,
+    	[String] $KeyType,
         [String] $TokenVersion
     )
 
     $keyBytes = [System.Convert]::FromBase64String($MasterKey)
 
     $sigCleartext = @($Verb.ToLower() + "`n" + $ResourceType.ToLower() + "`n" + $ResourceId + "`n" + $Date.ToString().ToLower() + "`n" + "" + "`n")
+	Write-Host "sigCleartext = " $sigCleartext
 
     $bytesSigClear = [Text.Encoding]::UTF8.GetBytes($sigCleartext)
 
@@ -61,17 +62,14 @@ $header = @{
 
         "Accept"                = "application/json";
 
-        "Host"                  = "localhost:8081";
-
         "User-Agent"            = "PowerShell-RestApi-Samples"
     }
 
-try
-{
-$result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json"
-Write-Host $containerId" container deleted"
-return "DeleteContainerSuccess";
-} 
+try {
+    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json"
+    Write-Host $containerId" container deleted"
+    return "DeleteContainerSuccess";
+}
 catch {
     # Dig into the exception to get the Response details.
     # Note that value__ is not a typo.

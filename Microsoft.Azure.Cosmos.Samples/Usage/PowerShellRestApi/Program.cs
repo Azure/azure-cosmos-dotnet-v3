@@ -20,11 +20,11 @@ namespace PowerShellRestApi
         {
             try
             {
-                //Database crud operations
+                Console.WriteLine($"\n1. Database crud operations started.");
                 await DatabaseOperations();
-                //Container crud operations
+                Console.WriteLine($"\n2. Container crud operations started.");
                 await ContainerOperations();
-                //Item crud operations
+                Console.WriteLine($"\n3. Item crud operations started.");
                 await ItemOperations();
             }
             catch (Exception e)
