@@ -387,7 +387,9 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
         {
             FeedIterator userStreamIterator = this.GetUserQueryStreamIterator(
                 queryDefinition,
@@ -399,7 +401,9 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
-        public FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
                this.ClientContext,
@@ -410,7 +414,9 @@ namespace Microsoft.Azure.Cosmos
                requestOptions);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
@@ -424,7 +430,9 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public FeedIterator GetUserQueryStreamIterator(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public FeedIterator GetUserQueryStreamIterator(string queryText = null, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)
