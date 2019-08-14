@@ -12,15 +12,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -561,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Ignore conflicts since the object already exists
             }
 
-            foreach (var queryDefinition in queryDefinitions)
+            foreach (QueryDefinition queryDefinition in queryDefinitions)
             {
                 toStreamCount = 0;
                 fromStreamCount = 0;
@@ -1260,7 +1257,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
-                    this.database, 
+                    this.database,
                     "ReadNonPartition" + Guid.NewGuid());
 
                 await NonPartitionedContainerHelper.CreateItemInNonPartitionedContainer(fixedContainer, nonPartitionItemId);

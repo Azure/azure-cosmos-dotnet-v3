@@ -150,6 +150,21 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableGroupBy { get; set; }
 
         /// <summary>
+        /// Get or set the partition key range id for the v2 query logic
+        /// </summary>
+        internal string PartitionKeyRangeId { get; set; }
+
+        /// <summary>
+        /// Get or set the enable cross partition query for the v2 query logic
+        /// </summary>
+        internal bool? EnableCrossPartitionQuery { get; set; }
+
+        /// <summary>
+        ///  Get or set the enable cross partition query for the v2 query logic
+        /// </summary>
+        internal bool? PopulateQueryMetrics { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
@@ -160,13 +175,30 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"{nameof(this.PartitionKey)} can only be set for item operations");
             }
 
-            // Cross partition is only applicable to item operations.
-            if (this.PartitionKey == null && !this.IsEffectivePartitionKeyRouting && request.ResourceType == ResourceType.Document)
+            // Cross partition is only applicable to item operations. The EnableCrossPartitionQuery is only supported in the v2 SDK
+            if (this.EnableCrossPartitionQuery.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, this.EnableCrossPartitionQuery.Value ? bool.TrueString : bool.FalseString);
+            }
+            else if (this.PartitionKey == null && !this.IsEffectivePartitionKeyRouting && request.ResourceType == ResourceType.Document)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
             }
 
-            RequestOptions.SetSessionToken(request, this.SessionToken);
+            if (this.PopulateQueryMetrics.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, this.PopulateQueryMetrics.Value ? bool.TrueString : bool.FalseString);
+            }
+
+            if (this.PartitionKey != null && request.ResourceType != ResourceType.Document)
+            {
+                throw new ArgumentException($"{nameof(this.PartitionKey)} can only be set for item operations");
+            }
+
+            if (!string.IsNullOrWhiteSpace(this.SessionToken))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.SessionToken, this.SessionToken);
+            }
 
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)

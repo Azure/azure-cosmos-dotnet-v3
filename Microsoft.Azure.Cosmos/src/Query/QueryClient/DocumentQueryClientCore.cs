@@ -107,9 +107,35 @@ namespace Microsoft.Azure.Cosmos
             int pageSize,
             CancellationToken cancellationToken)
         {
+            RequestMessage requestMessage = new RequestMessage();
+            requestOptions.PopulateRequestOptions(requestMessage);
+            INameValueCollection headers = requestMessage.Headers.CosmosMessageHeaders;
 
+            if (requestOptions.ConsistencyLevel.HasValue)
+            {
+                Documents.ConsistencyLevel defaultConsistencyLevel = (Documents.ConsistencyLevel)await this.documentClient.GetDefaultConsistencyLevelAsync();
+                Documents.ConsistencyLevel? desiredConsistencyLevel = await this.documentClient.GetDesiredConsistencyLevelAsync();
+                if (!string.IsNullOrEmpty(requestOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(resourceType, OperationType.ReadFeed))
+                {
+                    if (defaultConsistencyLevel == Documents.ConsistencyLevel.Session || (desiredConsistencyLevel.HasValue && desiredConsistencyLevel.Value == Documents.ConsistencyLevel.Session))
+                    {
+                        // Query across partitions is not supported today. Master resources (for e.g., database) 
+                        // can span across partitions, whereas server resources (viz: collection, document and attachment)
+                        // don't span across partitions. Hence, session token returned by one partition should not be used 
+                        // when quering resources from another partition. 
+                        // Since master resources can span across partitions, don't send session token to the backend.
+                        // As master resources are sync replicated, we should always get consistent query result for master resources,
+                        // irrespective of the chosen replica.
+                        // For server resources, which don't span partitions, specify the session token 
+                        // for correct replica to be chosen for servicing the query result.
+                        headers.Add(HttpConstants.HttpHeaders.SessionToken, requestOptions.SessionToken);
+                    }
+                }
+            }
+
+            ResponseMessage responseMessage = null;
             using (DocumentServiceRequest request = DocumentQueryExecutionContextBase.CreateQueryDocumentServiceRequest(
-                requestHeaders,
+                headers,
                 sqlQuerySpec,
                 this.documentClient.QueryCompatibilityMode,
                 resourceType,
@@ -119,11 +145,14 @@ namespace Microsoft.Azure.Cosmos
                     request,
                     new NonRetriableInvalidPartitionExceptionRetryPolicy(await this.GetCollectionCacheAsync(), this.documentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
                     cancellationToken);
+
+                responseMessage = dsr.ToCosmosResponseMessage(null);
             }
 
+            return this.GetCosmosElementResponse(requestOptions, resourceType, containerResourceId, responseMessage);
         }
 
-        internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+        internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -131,24 +160,7 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: null,
-                partitionKey: null,
-                cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
-                requestEnricher: requestEnricher,
-                cancellationToken: cancellationToken))
-            {
-                // Syntax exception are argument exceptions and thrown to the user.
-                message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.CosmosSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
-            }
-
-            return partitionedQueryExecutionInfo;
+            throw new NotSupportedException("V2 Document Client does not currently support execute query plan request operations.");
         }
 
         internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
@@ -282,132 +294,6 @@ namespace Microsoft.Azure.Cosmos
                         .RouteTo(partitionKeyRangeIdentity);
                 }
             }
-        }
-
-        private async Task<INameValueCollection> CreateCommonHeadersAsync(FeedOptions feedOptions)
-        {
-            INameValueCollection requestHeaders = new DictionaryNameValueCollection();
-
-            Documents.ConsistencyLevel defaultConsistencyLevel = (Documents.ConsistencyLevel)await this.documentClient.GetDefaultConsistencyLevelAsync();
-            Documents.ConsistencyLevel? desiredConsistencyLevel = await this.documentClient.GetDesiredConsistencyLevelAsync();
-            if (!string.IsNullOrEmpty(feedOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(this.resourceTypeEnum, OperationType.ReadFeed))
-            {
-                if (defaultConsistencyLevel == Documents.ConsistencyLevel.Session || (desiredConsistencyLevel.HasValue && desiredConsistencyLevel.Value == Documents.ConsistencyLevel.Session))
-                {
-                    // Query across partitions is not supported today. Master resources (for e.g., database) 
-                    // can span across partitions, whereas server resources (viz: collection, document and attachment)
-                    // don't span across partitions. Hence, session token returned by one partition should not be used 
-                    // when quering resources from another partition. 
-                    // Since master resources can span across partitions, don't send session token to the backend.
-                    // As master resources are sync replicated, we should always get consistent query result for master resources,
-                    // irrespective of the chosen replica.
-                    // For server resources, which don't span partitions, specify the session token 
-                    // for correct replica to be chosen for servicing the query result.
-                    requestHeaders[HttpConstants.HttpHeaders.SessionToken] = feedOptions.SessionToken;
-                }
-            }
-
-            requestHeaders[HttpConstants.HttpHeaders.Continuation] = feedOptions.RequestContinuationToken;
-            requestHeaders[HttpConstants.HttpHeaders.IsQuery] = bool.TrueString;
-
-            // Flow the pageSize only when we are not doing client eval
-            if (feedOptions.MaxItemCount.HasValue)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.PageSize] = feedOptions.MaxItemCount.ToString();
-            }
-
-            requestHeaders[HttpConstants.HttpHeaders.EnableCrossPartitionQuery] = feedOptions.EnableCrossPartitionQuery.ToString();
-
-            if (feedOptions.MaxDegreeOfParallelism != 0)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery] = bool.TrueString;
-            }
-
-            if (this.feedOptions.EnableScanInQuery != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.EnableScanInQuery] = this.feedOptions.EnableScanInQuery.ToString();
-            }
-
-            if (this.feedOptions.EmitVerboseTracesInQuery != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.EmitVerboseTracesInQuery] = this.feedOptions.EmitVerboseTracesInQuery.ToString();
-            }
-
-            if (this.feedOptions.EnableLowPrecisionOrderBy != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy] = this.feedOptions.EnableLowPrecisionOrderBy.ToString();
-            }
-
-            if (!string.IsNullOrEmpty(this.feedOptions.FilterBySchemaResourceId))
-            {
-                requestHeaders[HttpConstants.HttpHeaders.FilterBySchemaResourceId] = this.feedOptions.FilterBySchemaResourceId;
-            }
-
-            if (this.feedOptions.ResponseContinuationTokenLimitInKb != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB] = this.feedOptions.ResponseContinuationTokenLimitInKb.ToString();
-            }
-
-            if (this.feedOptions.ConsistencyLevel.HasValue)
-            {
-                await this.client.EnsureValidOverwriteAsync((Documents.ConsistencyLevel)feedOptions.ConsistencyLevel.Value);
-                requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.feedOptions.ConsistencyLevel.Value.ToString());
-            }
-            else if (desiredConsistencyLevel.HasValue)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.ConsistencyLevel, desiredConsistencyLevel.Value.ToString());
-            }
-
-            if (this.feedOptions.EnumerationDirection.HasValue)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.feedOptions.EnumerationDirection.Value.ToString());
-            }
-
-            if (this.feedOptions.ReadFeedKeyType.HasValue)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.ReadFeedKeyType, this.feedOptions.ReadFeedKeyType.Value.ToString());
-            }
-
-            if (this.feedOptions.StartId != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.StartId, this.feedOptions.StartId);
-            }
-
-            if (this.feedOptions.EndId != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EndId, this.feedOptions.EndId);
-            }
-
-            if (this.feedOptions.StartEpk != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.StartEpk, this.feedOptions.StartEpk);
-            }
-
-            if (this.feedOptions.EndEpk != null)
-            {
-                requestHeaders.Set(HttpConstants.HttpHeaders.EndEpk, this.feedOptions.EndEpk);
-            }
-
-            if (this.feedOptions.PopulateQueryMetrics)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.PopulateQueryMetrics] = bool.TrueString;
-            }
-
-            if (this.feedOptions.ForceQueryScan)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ForceQueryScan] = bool.TrueString;
-            }
-
-            if (this.feedOptions.CosmosSerializationOptions != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationOptions.ContentSerializationFormat;
-            }
-            else if (this.feedOptions.ContentSerializationFormat.HasValue)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.ContentSerializationFormat.Value.ToString();
-            }
-
-            return requestHeaders;
         }
     }
 }

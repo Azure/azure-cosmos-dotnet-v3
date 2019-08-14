@@ -2,8 +2,6 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System.Runtime.CompilerServices;
-
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -11,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq.Expressions;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
