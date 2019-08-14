@@ -38,13 +38,26 @@ namespace Microsoft.Azure.Cosmos.Query
             return standByFeedContinuationToken;
         }
 
-        public static StandByFeedContinuationToken CreateForRange(
+        public static string CreateForRange(
             string containerRid,
             string minInclusive,
-            string maxExclusive,
-            PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
+            string maxExclusive)
         {
-            return new StandByFeedContinuationToken(containerRid, minInclusive, maxExclusive, pkRangeCacheDelegate);
+            if (string.IsNullOrWhiteSpace(containerRid)) throw new ArgumentNullException(nameof(containerRid));
+            // MinInclusive can be an empty string
+            if (minInclusive == null) throw new ArgumentNullException(nameof(minInclusive));
+            if (string.IsNullOrWhiteSpace(maxExclusive)) throw new ArgumentNullException(nameof(maxExclusive));
+            return StandByFeedContinuationToken.SerializeTokens(new CompositeContinuationToken[1] { StandByFeedContinuationToken.CreateCompositeContinuationTokenForRange(minInclusive, maxExclusive, null) });
+        }
+
+        public static string SerializeTokens(IEnumerable<CompositeContinuationToken> compositeContinuationTokens)
+        {
+            return JsonConvert.SerializeObject(compositeContinuationTokens);
+        }
+
+        public static List<CompositeContinuationToken> DeserializeTokens(string continuationToken)
+        {
+            return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(continuationToken);
         }
 
         private StandByFeedContinuationToken(
@@ -58,23 +71,6 @@ namespace Microsoft.Azure.Cosmos.Query
             this.containerRid = containerRid;
             this.pkRangeCacheDelegate = pkRangeCacheDelegate;
             this.inputContinuationToken = initialStandByFeedContinuationToken;
-        }
-
-        private StandByFeedContinuationToken(
-            string containerRid,
-            string minInclusive,
-            string maxExclusive,
-            PartitionKeyRangeCacheDelegate pkRangeCacheDelegate)
-        {
-            if (string.IsNullOrWhiteSpace(containerRid)) throw new ArgumentNullException(nameof(containerRid));
-            // MinInclusive can be an empty string
-            if (minInclusive == null) throw new ArgumentNullException(nameof(minInclusive));
-            if (string.IsNullOrWhiteSpace(maxExclusive)) throw new ArgumentNullException(nameof(maxExclusive));
-            if (pkRangeCacheDelegate == null) throw new ArgumentNullException(nameof(pkRangeCacheDelegate));
-
-            this.containerRid = containerRid;
-            this.pkRangeCacheDelegate = pkRangeCacheDelegate;
-            this.InitializeCompositeTokens(new CompositeContinuationToken[1] { StandByFeedContinuationToken.CreateCompositeContinuationTokenForRange(minInclusive, maxExclusive, null) });
         }
 
         public async Task<Tuple<CompositeContinuationToken, string>> GetCurrentTokenAsync(bool forceRefresh = false)
@@ -104,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return null;
             }
 
-            return JsonConvert.SerializeObject(this.compositeContinuationTokens);
+            return StandByFeedContinuationToken.SerializeTokens(this.compositeContinuationTokens);
         }
 
         private static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
@@ -168,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             try
             {
-                return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken);
+                return StandByFeedContinuationToken.DeserializeTokens(initialContinuationToken);
             }
             catch (JsonReaderException ex)
             {

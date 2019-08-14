@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos
                             isMaxInclusive: false),
                         true);
 
-            return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive, pkRangeCache.TryGetOverlappingRangesAsync).ToString());
+            return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
         }
 
         internal FeedIterator GetStandByFeedIterator(

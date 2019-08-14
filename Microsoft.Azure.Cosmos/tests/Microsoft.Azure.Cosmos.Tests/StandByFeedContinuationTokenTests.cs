@@ -196,42 +196,27 @@ namespace Microsoft.Azure.Cosmos
         [ExpectedException(typeof(ArgumentNullException))]
         public void ConstructorWithNullMinRange()
         {
-            StandByFeedContinuationToken.CreateForRange("containerRid", null, "FF", null);
+            StandByFeedContinuationToken.CreateForRange("containerRid", null, "FF");
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ConstructorWithNullMaxRange()
         {
-            StandByFeedContinuationToken.CreateForRange("containerRid", "", null, null);
+            StandByFeedContinuationToken.CreateForRange("containerRid", "", null);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void ConstructorForRangeWithNullDelegate()
+        public void ConstructorWithRangeGeneratesSingleQueue()
         {
-            StandByFeedContinuationToken.CreateForRange("containerRid", "", "FF", null);
-        }
+            string min = "";
+            string max = "FF";
+            string standByFeedContinuationToken = StandByFeedContinuationToken.CreateForRange("containerRid", min, max);
 
-        [TestMethod]
-        public async Task ConstructorWithRangeGeneratesSingleQueue()
-        {
-            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
-            {
-                new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive ="FF", Id = "0" }
-            };
-
-            StandByFeedContinuationToken standByFeedContinuationToken = StandByFeedContinuationToken.CreateForRange("containerRid", keyRanges[0].MinInclusive, keyRanges[0].MaxExclusive, CreateCacheFromRange(keyRanges));
-            (CompositeContinuationToken token, string rangeId) = await standByFeedContinuationToken.GetCurrentTokenAsync();
-            Assert.AreEqual(keyRanges[0].Id, rangeId);
-            Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
-
-            standByFeedContinuationToken.MoveToNextToken();
-            (CompositeContinuationToken nextToken, string nextRangeId) = await standByFeedContinuationToken.GetCurrentTokenAsync();
-            Assert.AreEqual(keyRanges[0].Id, nextRangeId);
-            Assert.AreEqual(keyRanges[0].MinInclusive, nextToken.Range.Min);
-            Assert.AreEqual(keyRanges[0].MaxExclusive, nextToken.Range.Max);
+            List<CompositeContinuationToken> deserialized = StandByFeedContinuationToken.DeserializeTokens(standByFeedContinuationToken);
+            Assert.AreEqual(1, deserialized.Count);
+            Assert.AreEqual(min, deserialized[0].Range.Min);
+            Assert.AreEqual(max, deserialized[0].Range.Max);
         }
 
         [TestMethod]
