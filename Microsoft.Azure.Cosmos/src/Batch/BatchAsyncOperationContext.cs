@@ -5,8 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Diagnostics;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// Context for a particular Batch operation.
@@ -35,8 +35,11 @@ namespace Microsoft.Azure.Cosmos
             BatchAsyncBatcher completer,
             BatchOperationResult result)
         {
-            Debug.Assert(this.CurrentBatcher == null || completer == this.CurrentBatcher);
-            this.taskCompletionSource.SetResult(result);
+            if (this.AssertBatcher(completer))
+            {
+                this.taskCompletionSource.SetResult(result);
+            }
+
             this.Dispose();
         }
 
@@ -44,8 +47,11 @@ namespace Microsoft.Azure.Cosmos
             BatchAsyncBatcher completer,
             Exception exception)
         {
-            Debug.Assert(this.CurrentBatcher == null || completer == this.CurrentBatcher);
-            this.taskCompletionSource.SetException(exception);
+            if (this.AssertBatcher(completer))
+            {
+                this.taskCompletionSource.SetException(exception);
+            }
+
             this.Dispose();
         }
 
@@ -53,6 +59,18 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Operation.Dispose();
             this.CurrentBatcher = null;
+        }
+
+        private bool AssertBatcher(BatchAsyncBatcher completer)
+        {
+            if (!object.ReferenceEquals(completer, this.CurrentBatcher))
+            {
+                DefaultTrace.TraceCritical($"Operation {this.Operation.Id} was completed by incorrect batcher.");
+                this.taskCompletionSource.SetException(new Exception($"Operation {this.Operation.Id} was completed by incorrect batcher."));
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -5,25 +5,25 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Handles operation queueing and dispatching. 
+    /// Handles operation queueing and dispatching.
+    /// Fills batches efficiently and maintains a timer for early dispatching in case of partially-filled batches and to optimize for throughput.
     /// </summary>
     /// <remarks>
-    /// <see cref="AddAsync(BatchAsyncOperationContext)"/> will add the operation to the current batcher or if full, dispatch it, create a new one and add the operation to it.
+    /// There is always one batch at a time being filled. Locking is in place to avoid concurrent threads trying to Add operations while the timer might be Dispatching the current batch.
+    /// The current batch is dispatched and a new one is readied to be filled by new operations, the dispatched batch runs independently through a fire & forget pattern.
     /// </remarks>
     /// <seealso cref="BatchAsyncBatcher"/>
     internal class BatchAsyncStreamer : IDisposable
     {
-        private readonly SemaphoreSlim dispatchLimiter;
+        private readonly object dispatchLimiter = new object();
         private readonly int maxBatchOperationCount;
         private readonly int maxBatchByteSize;
-        private readonly Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor;
+        private readonly BatchAsyncBatcherExecuteDelegate executor;
         private readonly int dispatchTimerInSeconds;
         private readonly CosmosSerializer cosmosSerializer;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             int dispatchTimerInSeconds,
             TimerPool timerPool,
             CosmosSerializer cosmosSerializer,
-            Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor)
+            BatchAsyncBatcherExecuteDelegate executor)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -71,16 +71,15 @@ namespace Microsoft.Azure.Cosmos
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = timerPool;
             this.cosmosSerializer = cosmosSerializer;
-            this.dispatchLimiter = new SemaphoreSlim(1, 1);
             this.currentBatcher = this.CreateBatchAsyncBatcher();
 
             this.ResetTimer();
         }
 
-        public async Task AddAsync(BatchAsyncOperationContext context)
+        public void Add(BatchAsyncOperationContext context)
         {
             BatchAsyncBatcher toDispatch = null;
-            using (await this.dispatchLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
+            lock (this.dispatchLimiter)
             {
                 while (!this.currentBatcher.TryAdd(context))
                 {
@@ -103,7 +102,6 @@ namespace Microsoft.Azure.Cosmos
             this.currentTimer.CancelTimer();
             this.currentTimer = null;
             this.timerTask = null;
-            this.dispatchLimiter.Dispose();
         }
 
         private void ResetTimer()
@@ -111,11 +109,11 @@ namespace Microsoft.Azure.Cosmos
             this.currentTimer = this.timerPool.GetPooledTimer(this.dispatchTimerInSeconds);
             this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
             {
-                return this.DispatchTimerAsync();
+                this.DispatchTimer();
             }, this.cancellationTokenSource.Token);
         }
 
-        private async Task DispatchTimerAsync()
+        private void DispatchTimer()
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -123,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             BatchAsyncBatcher toDispatch;
-            using (await this.dispatchLimiter.UsingWaitAsync(this.cancellationTokenSource.Token))
+            lock (this.dispatchLimiter)
             {
                 toDispatch = this.GetBatchToDispatchAndCreate();
             }

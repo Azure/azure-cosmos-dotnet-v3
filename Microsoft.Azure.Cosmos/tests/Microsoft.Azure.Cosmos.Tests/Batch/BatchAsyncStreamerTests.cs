@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private TimerPool TimerPool = new TimerPool(1);
 
         // Executor just returns a reponse matching the Id with Etag
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> Executor
+        private BatchAsyncBatcherExecuteDelegate Executor
             = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
                 List<BatchOperationResult> results = new List<BatchOperationResult>();
@@ -56,11 +56,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+                PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
                 return response;
             };
 
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithFailure
+        private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
             = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
                 throw expectedException;
@@ -102,8 +102,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ExceptionsOnBatchBubbleUpAsync()
         {
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure);
-            var context = CreateContext(this.ItemBatchOperation);
-            await batchAsyncStreamer.AddAsync(context);
+            BatchAsyncOperationContext context = CreateContext(this.ItemBatchOperation);
+            batchAsyncStreamer.Add(context);
             Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => context.Task);
             Assert.AreEqual(expectedException, capturedException);
         }
@@ -113,8 +113,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Bigger batch size than the amount of operations, timer should dispatch
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor);
-            var context = CreateContext(this.ItemBatchOperation);
-            await batchAsyncStreamer.AddAsync(context);
+            BatchAsyncOperationContext context = CreateContext(this.ItemBatchOperation);
+            batchAsyncStreamer.Add(context);
             BatchOperationResult result = await context.Task;
 
             Assert.AreEqual(this.ItemBatchOperation.Id, result.ETag);
@@ -128,8 +128,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Task<BatchOperationResult>> contexts = new List<Task<BatchOperationResult>>(10);
             for (int i = 0; i < 10; i++)
             {
-                var context = CreateContext(new ItemBatchOperation(OperationType.Create, i, i.ToString()));
-                await batchAsyncStreamer.AddAsync(context);
+                BatchAsyncOperationContext context = CreateContext(new ItemBatchOperation(OperationType.Create, i, i.ToString()));
+                batchAsyncStreamer.Add(context);
                 contexts.Add(context.Task);
             }
 
@@ -142,27 +142,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 BatchOperationResult result = await context;
                 Assert.AreEqual(i.ToString(), result.ETag);
             }
-        }
-
-        [TestMethod]
-        public async Task DisposeShouldDisposeBatcher()
-        {
-            // Expect all operations to complete as their batches get dispached
-            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor);
-            List<Task<BatchOperationResult>> contexts = new List<Task<BatchOperationResult>>(10);
-            for (int i = 0; i < 10; i++)
-            {
-                var context = CreateContext(new ItemBatchOperation(OperationType.Create, i, i.ToString()));
-                await batchAsyncStreamer.AddAsync(context);
-                contexts.Add(context.Task);
-            }
-
-            await Task.WhenAll(contexts);
-
-            batchAsyncStreamer.Dispose();
-            var newContext = CreateContext(new ItemBatchOperation(OperationType.Create, 0, "0"));
-            // Disposed batcher's internal cancellation was signaled
-            await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => batchAsyncStreamer.AddAsync(newContext));
         }
 
         private static BatchAsyncOperationContext CreateContext(ItemBatchOperation operation) => new BatchAsyncOperationContext(string.Empty, operation);

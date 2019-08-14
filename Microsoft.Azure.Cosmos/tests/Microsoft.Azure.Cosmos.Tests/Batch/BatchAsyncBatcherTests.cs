@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     [TestClass]
     public class BatchAsyncBatcherTests
@@ -22,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
 
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> Executor
+        private BatchAsyncBatcherExecuteDelegate Executor
             = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
                 List<BatchOperationResult> results = new List<BatchOperationResult>();
@@ -55,11 +54,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                return new PartitionKeyBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+                return new PartitionKeyRangeBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
             };
 
         // The response will include all but 2 operation responses
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithLessResponses
+        private BatchAsyncBatcherExecuteDelegate ExecutorWithLessResponses
             = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
                 int operationCount = operations.Count - 2;
@@ -93,10 +92,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                return new PartitionKeyBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+                return new PartitionKeyRangeBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
             };
 
-        private Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> ExecutorWithFailure
+        private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
             = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
             {
                 throw expectedException;

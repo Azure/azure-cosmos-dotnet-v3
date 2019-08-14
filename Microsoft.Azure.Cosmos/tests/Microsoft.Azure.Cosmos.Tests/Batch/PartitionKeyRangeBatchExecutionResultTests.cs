@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
 
-            PartitionKeyBatchResponse response = new PartitionKeyBatchResponse(arrayOperations.Length, new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 

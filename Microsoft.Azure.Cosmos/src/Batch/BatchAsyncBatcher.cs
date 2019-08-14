@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosSerializer CosmosSerializer;
         private readonly List<BatchAsyncOperationContext> batchOperations;
-        private readonly Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor;
+        private readonly BatchAsyncBatcherExecuteDelegate executor;
         private readonly int maxBatchByteSize;
         private readonly int maxBatchOperationCount;
         private long currentSize = 0;
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             int maxBatchOperationCount,
             int maxBatchByteSize,
             CosmosSerializer cosmosSerializer,
-            Func<IReadOnlyList<BatchAsyncOperationContext>, CancellationToken, Task<PartitionKeyBatchResponse>> executor)
+            BatchAsyncBatcherExecuteDelegate executor)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -59,44 +59,47 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosSerializer = cosmosSerializer;
         }
 
-        public bool TryAdd(BatchAsyncOperationContext batchAsyncOperation)
+        public virtual bool TryAdd(BatchAsyncOperationContext operationContext)
         {
             if (this.dispached)
             {
+                DefaultTrace.TraceCritical($"Add operation attempted on dispatched batch.");
                 return false;
             }
 
-            if (batchAsyncOperation == null)
+            if (operationContext == null)
             {
-                throw new ArgumentNullException(nameof(batchAsyncOperation));
+                throw new ArgumentNullException(nameof(operationContext));
             }
 
             if (this.batchOperations.Count == this.maxBatchOperationCount)
             {
+                DefaultTrace.TraceVerbose($"Batch is full - Max operation count {this.maxBatchOperationCount} reached.");
                 return false;
             }
 
-            int itemByteSize = batchAsyncOperation.Operation.GetApproximateSerializedLength();
+            int itemByteSize = operationContext.Operation.GetApproximateSerializedLength();
 
             if (itemByteSize + this.currentSize > this.maxBatchByteSize)
             {
+                DefaultTrace.TraceVerbose($"Batch is full - Max byte size {this.maxBatchByteSize} reached.");
                 return false;
             }
 
             this.currentSize += itemByteSize;
 
             // Operation index is in the scope of the current batch
-            batchAsyncOperation.Operation.OperationIndex = this.batchOperations.Count;
-            batchAsyncOperation.CurrentBatcher = this;
-            this.batchOperations.Add(batchAsyncOperation);
+            operationContext.Operation.OperationIndex = this.batchOperations.Count;
+            operationContext.CurrentBatcher = this;
+            this.batchOperations.Add(operationContext);
             return true;
         }
 
-        public async Task DispatchAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task DispatchAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {
-                using (PartitionKeyBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken))
+                using (PartitionKeyRangeBatchResponse batchResponse = await this.executor(this.batchOperations, cancellationToken))
                 {
                     for (int index = 0; index < this.batchOperations.Count; index++)
                     {
@@ -125,4 +128,10 @@ namespace Microsoft.Azure.Cosmos
             }
         }
     }
+
+    /// <summary>
+    /// Executor implementation that processes a list of operations.
+    /// </summary>
+    /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
+    internal delegate Task<PartitionKeyRangeBatchResponse> BatchAsyncBatcherExecuteDelegate(IReadOnlyList<BatchAsyncOperationContext> operationContexts, CancellationToken cancellationToken);
 }
