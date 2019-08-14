@@ -253,26 +253,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        public Task<UserResponse> CreateUserAsync(
-                    UserProperties userProperties,
-                    RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (userProperties == null)
-            {
-                throw new ArgumentNullException(nameof(userProperties));
-            }
-
-            this.ClientContext.ValidateResource(userProperties.Id);
-
-            Task<ResponseMessage> response = this.CreateUserStreamAsync(
-                userProperties: userProperties,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-
-            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response);
-        }
-
         public override Task<UserResponse> CreateUserAsync(
             string id,
             RequestOptions requestOptions = null,
@@ -285,10 +265,12 @@ namespace Microsoft.Azure.Cosmos
 
             UserProperties userProperties = new UserProperties(id);
 
-            return this.CreateUserAsync(
-                userProperties,
-                requestOptions,
-                cancellationToken);
+            Task<ResponseMessage> response = this.CreateUserStreamAsync(
+                userProperties: userProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response);
         }
 
         public override User GetUser(string id)
@@ -428,7 +410,7 @@ namespace Microsoft.Azure.Cosmos
                requestOptions);
         }
 
-        public FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
+        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, string continuationToken = null, QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
             if (queryText != null)

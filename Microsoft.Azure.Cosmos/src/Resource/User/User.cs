@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a permission as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
-        /// <param name="permissionTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
+        /// <param name="tokenExpiryInSeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
         /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
@@ -161,13 +161,13 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// PermissionProperties permissionProperties = new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId"), new PartitionKey("tenantId"))";
         /// 
-        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, permissionTokenExpirySeconds: 9000);
+        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds: 9000);
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<PermissionResponse> CreatePermissionAsync(
             PermissionProperties permissionProperties,
-            int? permissionTokenExpirySeconds = null,
+            int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upsert a permission as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="permissionProperties">The <see cref="PermissionProperties"/> object.</param>
-        /// <param name="permissionTokenExpirySeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
+        /// <param name="tokenExpiryInSeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
         /// <param name="requestOptions">(Optional) The options for the permission request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="PermissionResponse"/> which wraps a <see cref="PermissionProperties"/> containing the read resource record.</returns>
@@ -198,15 +198,55 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// PermissionProperties permissionProperties = new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId"), new PartitionKey("tenantId"))";
         /// 
-        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, permissionTokenExpirySeconds: 9000);
+        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds: 9000);
         /// ]]>
         /// </code>
         /// </example>
         public abstract Task<PermissionResponse> UpsertPermissionAsync(
             PermissionProperties permissionProperties,
-            int? permissionTokenExpirySeconds = null,
+            int? tokenExpiryInSeconds = null,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// This method creates a query for permission under a user using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the permission</returns>
+        /// <example>
+        /// 1. This create the type feed iterator for permission with queryText as input,
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// FeedIterator<PermissionProperties> resultSet = this.users.GetPermissionQueryIterator<PermissionProperties>(queryText);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<PermissionProperties> iterator =
+        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// 2. This create the type feed iterator for permissions without queryText, retrieving all permissions.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<PermissionProperties> resultSet = this.user.GetPermissionQueryIterator<PermissionProperties>();
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<PermissionProperties> iterator =
+        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator<T> GetPermissionQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
 
         /// <summary>
         /// This method creates a query for permissions under a database using a SQL statement. It returns a FeedIterator.

@@ -1606,6 +1606,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetUserQueryIterator[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
         },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetUserQueryIterator[T](System.String, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetUserQueryIterator[T](System.String, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+        },
         "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder DefineContainer(System.String, System.String)": {
           "Type": "Method",
           "Attributes": [],
@@ -6610,6 +6615,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetPermissionQueryIterator[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
+        },
+        "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetPermissionQueryIterator[T](System.String, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetPermissionQueryIterator[T](System.String, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)"
         },
         "Microsoft.Azure.Cosmos.Permission GetPermission(System.String)": {
           "Type": "Method",
