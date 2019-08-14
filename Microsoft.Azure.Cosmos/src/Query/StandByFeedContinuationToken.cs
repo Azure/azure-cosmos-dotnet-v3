@@ -199,8 +199,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 new Documents.Routing.Range<string>(
                     targetRange.Min,
                     targetRange.Max,
-                    isMaxInclusive: true,
-                    isMinInclusive: false),
+                    isMaxInclusive: false,
+                    isMinInclusive: true),
                 forceRefresh);
 
             if (keyRanges.Count == 0)
