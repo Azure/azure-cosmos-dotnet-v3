@@ -16,24 +16,20 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
-    internal class CosmosQueryClientCore : CosmosQueryClient
+    internal class DocumentQueryClientCore : CosmosQueryClient
     {
-        private readonly CosmosClientContext clientContext;
-        private readonly ContainerCore cosmosContainerCore;
         private readonly DocumentClient documentClient;
         private readonly SemaphoreSlim semaphore;
         private QueryPartitionProvider queryPartitionProvider;
 
-        internal CosmosQueryClientCore(
-            CosmosClientContext clientContext,
-            ContainerCore cosmosContainerCore)
+        internal DocumentQueryClientCore(
+            DocumentClient documentClient)
         {
-            this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
-            this.cosmosContainerCore = cosmosContainerCore ?? throw new ArgumentException(nameof(cosmosContainerCore));
-            this.documentClient = this.clientContext.DocumentClient;
+            this.documentClient = documentClient;
             this.semaphore = new SemaphoreSlim(1, 1);
         }
 
@@ -44,12 +40,15 @@ namespace Microsoft.Azure.Cosmos
             return await this.documentClient.GetCollectionCacheAsync();
         }
 
-        internal override Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+        internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             Uri containerLink,
             CancellationToken cancellationToken)
         {
-            return this.clientContext.GetCachedContainerPropertiesAsync(
-                containerLink.OriginalString, 
+            ClientCollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+
+            return await collectionCache.ResolveByNameAsync(
+                HttpConstants.Versions.CurrentVersion,
+                containerLink.OriginalString,
                 cancellationToken);
         }
 
@@ -108,39 +107,52 @@ namespace Microsoft.Azure.Cosmos
             int pageSize,
             CancellationToken cancellationToken)
         {
-            ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: requestOptions.PartitionKey,
-                cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
-                requestEnricher: (cosmosRequestMessage) =>
-                {
-                    this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
-                    cosmosRequestMessage.Headers.Add(
-                        HttpConstants.HttpHeaders.IsContinuationExpected,
-                        isContinuationExpected.ToString());
-                    QueryRequestOptions.FillContinuationToken(
-                        cosmosRequestMessage,
-                        continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(
-                        cosmosRequestMessage,
-                        pageSize);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                },
-                cancellationToken: cancellationToken);
+            RequestMessage requestMessage = new RequestMessage();
+            requestOptions.PopulateRequestOptions(requestMessage);
+            INameValueCollection headers = requestMessage.Headers.CosmosMessageHeaders;
 
-            return this.GetCosmosElementResponse(
-                requestOptions,
+            if (requestOptions.ConsistencyLevel.HasValue)
+            {
+                Documents.ConsistencyLevel defaultConsistencyLevel = (Documents.ConsistencyLevel)await this.documentClient.GetDefaultConsistencyLevelAsync();
+                Documents.ConsistencyLevel? desiredConsistencyLevel = await this.documentClient.GetDesiredConsistencyLevelAsync();
+                if (!string.IsNullOrEmpty(requestOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(resourceType, OperationType.ReadFeed))
+                {
+                    if (defaultConsistencyLevel == Documents.ConsistencyLevel.Session || (desiredConsistencyLevel.HasValue && desiredConsistencyLevel.Value == Documents.ConsistencyLevel.Session))
+                    {
+                        // Query across partitions is not supported today. Master resources (for e.g., database) 
+                        // can span across partitions, whereas server resources (viz: collection, document and attachment)
+                        // don't span across partitions. Hence, session token returned by one partition should not be used 
+                        // when quering resources from another partition. 
+                        // Since master resources can span across partitions, don't send session token to the backend.
+                        // As master resources are sync replicated, we should always get consistent query result for master resources,
+                        // irrespective of the chosen replica.
+                        // For server resources, which don't span partitions, specify the session token 
+                        // for correct replica to be chosen for servicing the query result.
+                        headers.Add(HttpConstants.HttpHeaders.SessionToken, requestOptions.SessionToken);
+                    }
+                }
+            }
+
+            ResponseMessage responseMessage = null;
+            using (DocumentServiceRequest request = DocumentQueryExecutionContextBase.CreateQueryDocumentServiceRequest(
+                headers,
+                sqlQuerySpec,
+                this.documentClient.QueryCompatibilityMode,
                 resourceType,
-                containerResourceId,
-                message);
+                resourceUri.OriginalString))
+            {
+                DocumentServiceResponse dsr = await this.documentClient.ExecuteQueryAsync(
+                    request,
+                    new NonRetriableInvalidPartitionExceptionRetryPolicy(await this.GetCollectionCacheAsync(), this.documentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
+                    cancellationToken);
+
+                responseMessage = dsr.ToCosmosResponseMessage(null);
+            }
+
+            return this.GetCosmosElementResponse(requestOptions, resourceType, containerResourceId, responseMessage);
         }
 
-        internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+        internal override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -148,24 +160,7 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: null,
-                partitionKey: null,
-                cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
-                requestEnricher: requestEnricher,
-                cancellationToken: cancellationToken))
-            {
-                // Syntax exception are argument exceptions and thrown to the user.
-                message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.CosmosSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
-            }
-
-            return partitionedQueryExecutionInfo;
+            throw new NotSupportedException("V2 Document Client does not currently support execute query plan request operations.");
         }
 
         internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
@@ -233,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override void ClearSessionTokenCache(string collectionFullName)
         {
-            ISessionContainer sessionContainer = this.clientContext.DocumentClient.sessionContainer;
+            ISessionContainer sessionContainer = this.documentClient.sessionContainer;
             sessionContainer.ClearTokenByCollectionFullname(collectionFullName);
         }
 

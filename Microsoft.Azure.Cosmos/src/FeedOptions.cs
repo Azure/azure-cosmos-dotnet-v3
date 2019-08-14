@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="FeedOptions"/> class for the Azure Cosmos DB service.
         /// </summary>
         public FeedOptions()
-        { 
+        {
         }
 
         internal FeedOptions(FeedOptions options)
@@ -405,8 +405,37 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the custom serialization options for query
         /// </summary>
-        internal CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
+        internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         internal IDictionary<string, object> Properties { get; set; }
+
+        internal QueryRequestOptions GetQueryRequestOptions()
+        {
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
+                MaxItemCount = this.MaxItemCount,
+                EnableScanInQuery = this.EnableScanInQuery,
+                MaxBufferedItemCount = this.MaxBufferedItemCount,
+                MaxConcurrency = this.MaxDegreeOfParallelism,
+                EnableGroupBy = this.EnableGroupBy,
+                CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
+                Properties = this.Properties,
+                ConsistencyLevel = this.ConsistencyLevel,
+                SessionToken = this.SessionToken,
+                ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
+                EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
+                PopulateQueryMetrics = this.PopulateQueryMetrics
+            };
+
+            if (this.PartitionKey != null)
+            {
+                requestOptions.PartitionKey = new PartitionKey(partitionKeyInternal: this.PartitionKey.InternalKey);
+            }
+
+            requestOptions.PartitionKeyRangeId = this.PartitionKeyRangeId;
+
+            return requestOptions;
+        }
     }
 }

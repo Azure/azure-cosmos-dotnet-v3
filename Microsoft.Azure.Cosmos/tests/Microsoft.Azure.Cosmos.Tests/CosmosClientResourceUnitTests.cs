@@ -30,8 +30,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null,
-                documentQueryClient: new Mock<IDocumentQueryClient>().Object);
+                documentClient: null);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);

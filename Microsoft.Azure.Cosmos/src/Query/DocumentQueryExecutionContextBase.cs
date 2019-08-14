@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             INameValueCollection requestHeaders = new DictionaryNameValueCollection();
 
-            Cosmos.ConsistencyLevel defaultConsistencyLevel = (Cosmos.ConsistencyLevel)(await this.client.GetDefaultConsistencyLevelAsync());
+            Cosmos.ConsistencyLevel defaultConsistencyLevel = (Cosmos.ConsistencyLevel)await this.client.GetDefaultConsistencyLevelAsync();
             Cosmos.ConsistencyLevel? desiredConsistencyLevel = (Cosmos.ConsistencyLevel?)await this.client.GetDesiredConsistencyLevelAsync();
             if (!string.IsNullOrEmpty(feedOptions.SessionToken) && !ReplicatedResourceClient.IsReadingFromMaster(this.resourceTypeEnum, OperationType.ReadFeed))
             {
@@ -306,9 +306,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders[HttpConstants.HttpHeaders.ForceQueryScan] = bool.TrueString;
             }
 
-            if (this.feedOptions.CosmosSerializationOptions != null)
+            if (this.feedOptions.CosmosSerializationFormatOptions != null)
             {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationOptions.ContentSerializationFormat;
+                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationFormatOptions.ContentSerializationFormat;
             }
             else if (this.feedOptions.ContentSerializationFormat.HasValue)
             {
@@ -532,7 +532,12 @@ namespace Microsoft.Azure.Cosmos.Query
         private DocumentServiceRequest CreateDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec)
         {
             DocumentServiceRequest request = querySpec != null ?
-                this.CreateQueryDocumentServiceRequest(requestHeaders, querySpec) :
+                DocumentQueryExecutionContextBase.CreateQueryDocumentServiceRequest(
+                    requestHeaders,
+                    querySpec,
+                    this.client.QueryCompatibilityMode,
+                    this.ResourceTypeEnum,
+                    this.ResourceLink) :
                 this.CreateReadFeedDocumentServiceRequest(requestHeaders);
 
             if (this.feedOptions.JsonSerializerSettings != null)
@@ -543,25 +548,30 @@ namespace Microsoft.Azure.Cosmos.Query
             return request;
         }
 
-        private DocumentServiceRequest CreateQueryDocumentServiceRequest(INameValueCollection requestHeaders, SqlQuerySpec querySpec)
+        internal static DocumentServiceRequest CreateQueryDocumentServiceRequest(
+            INameValueCollection requestHeaders,
+            SqlQuerySpec querySpec,
+            QueryCompatibilityMode queryCompatibilityMode,
+            ResourceType resourceType,
+            string resourceLink)
         {
             DocumentServiceRequest executeQueryRequest;
 
             string queryText;
-            switch (this.client.QueryCompatibilityMode)
+            switch (queryCompatibilityMode)
             {
                 case QueryCompatibilityMode.SqlQuery:
                     if (querySpec.Parameters != null && querySpec.Parameters.Count > 0)
                     {
                         throw new ArgumentException(
-                            string.Format(CultureInfo.InvariantCulture, "Unsupported argument in query compatibility mode '{0}'", this.client.QueryCompatibilityMode),
+                            string.Format(CultureInfo.InvariantCulture, "Unsupported argument in query compatibility mode '{0}'", queryCompatibilityMode),
                             "querySpec.Parameters");
                     }
 
                     executeQueryRequest = DocumentServiceRequest.Create(
                         OperationType.SqlQuery,
-                        this.resourceTypeEnum,
-                        this.resourceLink,
+                        resourceType,
+                        resourceLink,
                         AuthorizationTokenType.PrimaryMasterKey,
                         requestHeaders);
 
@@ -574,8 +584,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 default:
                     executeQueryRequest = DocumentServiceRequest.Create(
                         OperationType.Query,
-                        this.resourceTypeEnum,
-                        this.resourceLink,
+                        resourceType,
+                        resourceLink,
                         AuthorizationTokenType.PrimaryMasterKey,
                         requestHeaders);
 
@@ -662,9 +672,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // Use the users custom navigator first. If it returns null back try the
             // internal navigator.
-            if (this.feedOptions.CosmosSerializationOptions != null)
+            if (this.feedOptions.CosmosSerializationFormatOptions != null)
             {
-                jsonNavigator = this.feedOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
+                jsonNavigator = this.feedOptions.CosmosSerializationFormatOptions.CreateCustomNavigatorCallback(content);
                 if (jsonNavigator == null)
                 {
                     throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");

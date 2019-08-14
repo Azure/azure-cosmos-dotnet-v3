@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
@@ -8,11 +9,13 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq.Expressions;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -192,14 +195,29 @@ namespace Microsoft.Azure.Cosmos.Query
             Debug.Assert(initialPageSize > 0 && initialPageSize <= int.MaxValue,
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
-            return await PipelinedDocumentQueryExecutionContext.CreateDocumentQueryExecutionContextAsync(
-                constructorParams,
-                collectionRid,
-                partitionedQueryExecutionInfo,
-                targetRanges,
-                (int)initialPageSize,
-                constructorParams.FeedOptions.RequestContinuationToken,
-                cancellationToken);
+            SqlQuerySpec sqlQuerySpec = DocumentQueryEvaluator.Evaluate(constructorParams.Expression);
+
+            CosmosQueryContext queryContext = new CosmosQueryContext(
+                client: null,
+                resourceTypeEnum: constructorParams.ResourceTypeEnum,
+                operationType: OperationType.Query,
+                sqlQuerySpecFromUser: sqlQuerySpec,
+                resourceType: constructorParams.ResourceType,
+                queryRequestOptions: null,
+                resourceLink: new Uri(constructorParams.ResourceLink, UriKind.Relative),
+                isContinuationExpected: isContinuationExpected,
+                allowNonValueAggregateQuery: true,
+                correlatedActivityId: constructorParams.CorrelatedActivityId);
+
+            CosmosQueryExecutionContext executionContext = await CosmosQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContextAsync(
+                    cosmosQueryContext: queryContext,
+                    partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
+                    targetRanges: targetRanges,
+                    collectionRid: collectionRid,
+                    continuationToken: constructorParams.FeedOptions.RequestContinuationToken,
+                    cancellationToken: cancellationToken);
+
+            return new CosmosToDocumentQueryExecutionContext(executionContext);
         }
 
         /// <summary>
@@ -256,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             // We need to aggregate the total results with Pipelined~Context if isContinuationExpected is false.
             return
-                (DocumentQueryExecutionContextFactory.IsCrossPartitionQuery(
+                ((DocumentQueryExecutionContextFactory.IsCrossPartitionQuery(
                     resourceTypeEnum,
                     feedOptions,
                     partitionKeyDefinition,
@@ -264,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Query
                  (DocumentQueryExecutionContextFactory.IsTopOrderByQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsAggregateQuery(partitionedQueryExecutionInfo) ||
                   DocumentQueryExecutionContextFactory.IsOffsetLimitQuery(partitionedQueryExecutionInfo) ||
-                  DocumentQueryExecutionContextFactory.IsParallelQuery(feedOptions)) ||
+                  DocumentQueryExecutionContextFactory.IsParallelQuery(feedOptions))) ||
                   !string.IsNullOrEmpty(feedOptions.PartitionKeyRangeId)) ||
                   // Even if it's single partition query we create a specialized context to aggregate the aggregates and distinct of distinct.
                   DocumentQueryExecutionContextFactory.IsAggregateQueryWithoutContinuation(

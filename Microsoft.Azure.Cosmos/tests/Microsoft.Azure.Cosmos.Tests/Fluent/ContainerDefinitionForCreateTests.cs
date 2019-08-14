@@ -287,8 +287,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: new MockDocumentClient(),
-                documentQueryClient: null);
+                documentClient: new MockDocumentClient());
         }
     }
 }

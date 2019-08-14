@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal string SessionToken { get; set; }
 
-        internal CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
+        internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the flag that enables skip take across partitions.
@@ -148,6 +148,21 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableCrossPartitionSkipTake { get; set; }
 
         internal bool EnableGroupBy { get; set; }
+
+        /// <summary>
+        /// Get or set the partition key range id for the v2 query logic
+        /// </summary>
+        internal string PartitionKeyRangeId { get; set; }
+
+        /// <summary>
+        /// Get or set the enable cross partition query for the v2 query logic
+        /// </summary>
+        internal bool? EnableCrossPartitionQuery { get; set; }
+
+        /// <summary>
+        ///  Get or set the enable cross partition query for the v2 query logic
+        /// </summary>
+        internal bool? PopulateQueryMetrics { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -160,13 +175,30 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"{nameof(this.PartitionKey)} can only be set for item operations");
             }
 
-            // Cross partition is only applicable to item operations.
-            if (this.PartitionKey == null && !this.IsEffectivePartitionKeyRouting && request.ResourceType == ResourceType.Document)
+            // Cross partition is only applicable to item operations. The EnableCrossPartitionQuery is only supported in the v2 SDK
+            if (this.EnableCrossPartitionQuery.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, this.EnableCrossPartitionQuery.Value ? bool.TrueString : bool.FalseString);
+            }
+            else if (this.PartitionKey == null && !this.IsEffectivePartitionKeyRouting && request.ResourceType == ResourceType.Document)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
             }
 
-            RequestOptions.SetSessionToken(request, this.SessionToken);
+            if (this.PopulateQueryMetrics.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, this.PopulateQueryMetrics.Value ? bool.TrueString : bool.FalseString);
+            }
+
+            if (this.PartitionKey != null && request.ResourceType != ResourceType.Document)
+            {
+                throw new ArgumentException($"{nameof(this.PartitionKey)} can only be set for item operations");
+            }
+
+            if (!string.IsNullOrWhiteSpace(this.SessionToken))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.SessionToken, this.SessionToken);
+            }
 
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
@@ -194,9 +226,9 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
 
-            if (this.CosmosSerializationOptions != null)
+            if (this.CosmosSerializationFormatOptions != null)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationOptions.ContentSerializationFormat);
+                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
             }
 
             base.PopulateRequestOptions(request);
@@ -217,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel = this.ConsistencyLevel,
                 MaxConcurrency = this.MaxConcurrency,
                 PartitionKey = this.PartitionKey,
-                CosmosSerializationOptions = this.CosmosSerializationOptions,
+                CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties,
@@ -237,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableScanInQuery = this.EnableScanInQuery,
                 EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
                 MaxBufferedItemCount = this.MaxBufferedItemCount.HasValue ? this.MaxBufferedItemCount.Value : 0,
-                CosmosSerializationOptions = this.CosmosSerializationOptions,
+                CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
                 Properties = this.Properties,
                 EnableGroupBy = this.EnableGroupBy
             };
