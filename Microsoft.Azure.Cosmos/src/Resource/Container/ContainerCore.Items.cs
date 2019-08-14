@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos
                             Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                             isMinInclusive: true,
                             isMaxInclusive: false),
-                        false);
+                        true);
 
             return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive, pkRangeCache.TryGetOverlappingRangesAsync).ToString());
         }
