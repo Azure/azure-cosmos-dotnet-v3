@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
         }
 
-        public CosmosQueryContext(
+        internal CosmosQueryContext(
             CosmosQueryClient client,
             ResourceType resourceTypeEnum,
             OperationType operationType,

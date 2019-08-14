@@ -104,7 +104,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Query\QueryClient\" />
     <Folder Include="Query\QueryResponses\" />
   </ItemGroup>
 

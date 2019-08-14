@@ -8,14 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -104,13 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query
                   correlatedActivityId: correlatedActivityId);
         }
 
-        public override bool HasMoreResults
-        {
-            get
-            {
-                return this.innerExecutionContext != null ? !this.innerExecutionContext.IsDone : true;
-            }
-        }
+        public override bool HasMoreResults => this.innerExecutionContext != null ? !this.innerExecutionContext.IsDone : true;
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken)
         {
@@ -226,9 +218,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 //if collection is deleted/created with same name.
                 //need to make it not rely on information from collection cache.
                 PartitionKeyDefinition partitionKeyDefinition;
-                object partitionKeyDefinitionObject;
                 if (this.cosmosQueryContext.QueryRequestOptions?.Properties != null
-                    && this.cosmosQueryContext.QueryRequestOptions.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
+                    && this.cosmosQueryContext.QueryRequestOptions.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out object partitionKeyDefinitionObject))
                 {
                     if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
                     {
@@ -290,18 +281,20 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             return await CreateSpecializedDocumentQueryExecutionContextAsync(
-                rewrittenComosQueryContext,
-                partitionedQueryExecutionInfo,
-                targetRanges,
-                containerProperties.ResourceId,
-                cancellationToken);
+                cosmosQueryContext: rewrittenComosQueryContext,
+                partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
+                targetRanges: targetRanges,
+                collectionRid: containerProperties.ResourceId,
+                continuationToken: this.InitialUserContinuationToken,
+                cancellationToken: cancellationToken);
         }
 
-        public async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
+        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
             CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
             string collectionRid,
+            string continuationToken,
             CancellationToken cancellationToken)
         {
             if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo?.RewrittenQuery))
@@ -373,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 (int)initialPageSize,
-                this.InitialUserContinuationToken,
+                continuationToken,
                 cancellationToken);
         }
 
