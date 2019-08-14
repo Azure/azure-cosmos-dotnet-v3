@@ -28,6 +28,9 @@ jobs:
       nugetConfigPath: NuGet.config 
       testRunTitle: Microsoft.Azure.Cosmos.Tests
 
+  - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+    displayName: 'Component Detection'
+  
 - job: 
   displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.EmulatorTests
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
@@ -52,3 +55,5 @@ jobs:
       publishTestResults: true 
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
 
+  - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+    displayName: 'Component Detection'
