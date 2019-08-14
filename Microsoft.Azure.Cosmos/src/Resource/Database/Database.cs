@@ -784,7 +784,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract FeedIterator<T> GetUserQueryIterator<T>(
-            QueryDefinition queryDefinition = null,
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
