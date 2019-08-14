@@ -193,6 +193,48 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ConstructorWithNullMinRange()
+        {
+            StandByFeedContinuationToken.CreateForRange("containerRid", null, "FF", null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ConstructorWithNullMaxRange()
+        {
+            StandByFeedContinuationToken.CreateForRange("containerRid", "", null, null);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ConstructorForRangeWithNullDelegate()
+        {
+            StandByFeedContinuationToken.CreateForRange("containerRid", "", "FF", null);
+        }
+
+        [TestMethod]
+        public async Task ConstructorWithRangeGeneratesSingleQueue()
+        {
+            IReadOnlyList<Documents.PartitionKeyRange> keyRanges = new List<Documents.PartitionKeyRange>()
+            {
+                new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive ="FF", Id = "0" }
+            };
+
+            StandByFeedContinuationToken standByFeedContinuationToken = StandByFeedContinuationToken.CreateForRange("containerRid", keyRanges[0].MinInclusive, keyRanges[0].MaxExclusive, CreateCacheFromRange(keyRanges));
+            (CompositeContinuationToken token, string rangeId) = await standByFeedContinuationToken.GetCurrentTokenAsync();
+            Assert.AreEqual(keyRanges[0].Id, rangeId);
+            Assert.AreEqual(keyRanges[0].MinInclusive, token.Range.Min);
+            Assert.AreEqual(keyRanges[0].MaxExclusive, token.Range.Max);
+
+            standByFeedContinuationToken.MoveToNextToken();
+            (CompositeContinuationToken nextToken, string nextRangeId) = await standByFeedContinuationToken.GetCurrentTokenAsync();
+            Assert.AreEqual(keyRanges[0].Id, nextRangeId);
+            Assert.AreEqual(keyRanges[0].MinInclusive, nextToken.Range.Min);
+            Assert.AreEqual(keyRanges[0].MaxExclusive, nextToken.Range.Max);
+        }
+
+        [TestMethod]
         public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
             RequestMessage request = new RequestMessage();
