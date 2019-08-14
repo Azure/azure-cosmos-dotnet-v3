@@ -1,3 +1,5 @@
+Add-Type -AssemblyName System.Web
+
 Function Generate-MasterKeyAuthorizationSignature{
 
     [CmdletBinding()]
@@ -16,7 +18,7 @@ Function Generate-MasterKeyAuthorizationSignature{
     $keyBytes = [System.Convert]::FromBase64String($MasterKey)
 
     $sigCleartext = @($Verb.ToLower() + "`n" + $ResourceType.ToLower() + "`n" + $ResourceId + "`n" + $Date.ToString().ToLower() + "`n" + "" + "`n")
-	Write-Host "sigCleartext = " $sigCleartext
+	Write-Host "sigCleartext = " $sigCleartext >> .\output.txt
 
     $bytesSigClear = [Text.Encoding]::UTF8.GetBytes($sigCleartext)
 
