@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndPoint: endpoint,
+                accountEndpoint: endpoint,
                 accountKey: key);
             cosmosClientBuilder.WithConnectionModeDirect(
                 idleTcpConnectionTimeout,
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxRequestsPerTcpConnection = 30;
             int maxTcpConnectionsPerEndpoint = 65535;
 
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions(endpoint, key)
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Gateway            
             };

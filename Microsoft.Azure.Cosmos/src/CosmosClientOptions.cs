@@ -273,8 +273,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
-        /// If no custom JSON converter was set it uses the default <see cref="CosmosJsonSerializerCore"/>
+        /// Get to set optional serializer options.
         /// </summary>
         /// <example>
         /// An example on how to configure the serialization option to ignore null values
