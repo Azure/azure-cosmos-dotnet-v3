@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
-        public virtual CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
+        public CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
             TimeSpan? openTcpConnectionTimeout = null,
             int? maxRequestsPerTcpConnection = null,
             int? maxTcpConnectionsPerEndpoint = null)

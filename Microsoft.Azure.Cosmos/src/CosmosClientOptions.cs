@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
-        public virtual ConnectionMode ConnectionMode
+        public ConnectionMode ConnectionMode
         {
             get => this.connectionMode;
             set
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Mainly useful for sparse infrequent access to a large database account.
         /// </remarks>
-        public virtual TimeSpan? IdleTcpConnectionTimeout
+        public TimeSpan? IdleTcpConnectionTimeout
         {
             get => this.idleTcpConnectionTimeout;
             set
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
         /// </remarks>
-        public virtual TimeSpan? OpenTcpConnectionTimeout
+        public TimeSpan? OpenTcpConnectionTimeout
         {
             get => this.openTcpConnectionTimeout;
             set
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Applications with a very high degree of parallelism per connection, with large requests or responses, or with very tight latency requirements might get better performance with 8-16 requests per connection.
         /// </remarks>
-        public virtual int? MaxRequestsPerTcpConnection
+        public int? MaxRequestsPerTcpConnection
         {
             get => this.maxRequestsPerTcpConnection;
             set
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The default value is 65,535. Value must be greater than or equal to 16.
         /// </value>
-        public virtual int? MaxTcpConnectionsPerEndpoint
+        public int? MaxTcpConnectionsPerEndpoint
         {           
             get => this.maxTcpConnectionsPerEndpoint;
             set
