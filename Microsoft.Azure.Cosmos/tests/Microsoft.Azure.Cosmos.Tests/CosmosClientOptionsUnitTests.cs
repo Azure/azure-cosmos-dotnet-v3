@@ -135,57 +135,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             string userAgentSuffix = "testSuffix";
             cosmosClientOptions.ApplicationName = userAgentSuffix;
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.EndsWith(userAgentSuffix));
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.Contains(expectedValue));
+            Assert.AreEqual(userAgentSuffix, cosmosClientOptions.UserAgentContainer.Suffix);
+            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.UserAgent.StartsWith(expectedValue));
+            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
 
             ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
-            Assert.IsTrue(connectionPolicy.UserAgentSuffix.EndsWith(userAgentSuffix));
-            Assert.IsTrue(connectionPolicy.UserAgentSuffix.Contains(expectedValue));
-        }
-
-        [TestMethod]
-        public void UserAgentContainsEnvironmentInformation_WithLargeApplicationName()
-        {
-            // When the user suffix is larger than the max, we send the user suffix as is, no environment information
-            EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            string environmentString = environmentInformation.ToString();
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-            string userAgentSuffix = new string('a', 100);
-            string truncatedUserAgentSuffix = new string('a', 64);
-
-            cosmosClientOptions.ApplicationName = userAgentSuffix;
-            Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-
-            // It will get truncated by the UserAgentContainer
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.EndsWith(truncatedUserAgentSuffix));
-            Assert.IsTrue(!cosmosClientOptions.UserAgentContainer.Suffix.Contains(environmentString));
-
-            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
-            Assert.IsTrue(connectionPolicy.UserAgentSuffix.EndsWith(truncatedUserAgentSuffix));
-            Assert.IsTrue(!connectionPolicy.UserAgentSuffix.Contains(environmentString));
-        }
-
-        [TestMethod]
-        public void UserAgentContainsEnvironmentInformation_WithMediumApplicationName()
-        {
-            // When the user suffix is larger, we cannot put the entire environment information to avoid truncating the user suffix
-            EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            string environmentString = environmentInformation.ToString();
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-            string userAgentSuffix = new string('a', 64 - environmentString.Length + 10);
-            string truncatedEnvironmentString = environmentString.Substring(0, environmentString.Length - 10 - EnvironmentInformation.Delimiter.Length);
-
-            cosmosClientOptions.ApplicationName = userAgentSuffix;
-            Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.EndsWith(userAgentSuffix));
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.Contains(truncatedEnvironmentString));
-            Assert.IsTrue(!cosmosClientOptions.UserAgentContainer.Suffix.Contains(environmentString));
-
-            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
-            Assert.IsTrue(connectionPolicy.UserAgentSuffix.EndsWith(userAgentSuffix));
-            Assert.IsTrue(connectionPolicy.UserAgentSuffix.Contains(truncatedEnvironmentString));
-            Assert.IsTrue(!connectionPolicy.UserAgentSuffix.Contains(environmentString));
+            Assert.AreEqual(userAgentSuffix, connectionPolicy.UserAgentSuffix);
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
         }
 
         [TestMethod]

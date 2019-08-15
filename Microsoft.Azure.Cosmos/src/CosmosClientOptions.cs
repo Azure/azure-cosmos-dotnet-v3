@@ -45,17 +45,12 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
-        private const int UserAgentSuffixMaxLength = 64;
-
         /// <summary>
         /// Default request timeout
         /// </summary>
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
-        private readonly string currentEnvironmentInformation;
-
         private int gatewayModeMaxConnectionLimit;
-        private string applicationName;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializer;
 
@@ -64,10 +59,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientOptions()
         {
-            this.UserAgentContainer = new UserAgentContainer();
-            EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            this.currentEnvironmentInformation = environmentInformation.ToString();
-            this.UserAgentContainer.Suffix = this.currentEnvironmentInformation;
+            this.UserAgentContainer = new Cosmos.UserAgentContainer();
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
@@ -84,31 +76,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string ApplicationName
         {
-            get => this.applicationName;
-            set
-            {
-                this.applicationName = value;
-
-                if (string.IsNullOrEmpty(value))
-                {
-                    return;
-                }
-
-                if (value.Length > UserAgentSuffixMaxLength)
-                {
-                    // Prioritize user suffix
-                    this.UserAgentContainer.Suffix = value;
-                }
-                else if ((value.Length + this.currentEnvironmentInformation.Length + EnvironmentInformation.Delimiter.Length) > UserAgentSuffixMaxLength)
-                {
-                    // Prioritize user suffix
-                    this.UserAgentContainer.Suffix = this.currentEnvironmentInformation.Substring(0, UserAgentSuffixMaxLength - value.Length - EnvironmentInformation.Delimiter.Length) + EnvironmentInformation.Delimiter + value;
-                }
-                else
-                {
-                    this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + EnvironmentInformation.Delimiter + value;
-                }
-            }
+            get => this.UserAgentContainer.Suffix;
+            set => this.UserAgentContainer.Suffix = value;
         }
 
         /// <summary>

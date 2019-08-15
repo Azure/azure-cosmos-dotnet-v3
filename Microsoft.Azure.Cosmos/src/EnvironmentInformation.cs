@@ -9,18 +9,22 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class EnvironmentInformation
     {
-        internal const string Delimiter = " ";
         private static readonly string clientId;
         private static readonly string clientSDKVersion;
+        private static readonly string directPackageVersion;
         private static readonly string framework;
         private static readonly string architecture;
+        private static readonly string os;
 
         static EnvironmentInformation()
         {
             Version sdkVersion = Assembly.GetAssembly(typeof(CosmosClient)).GetName().Version;
             EnvironmentInformation.clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Build}";
+            Version directVersion = Assembly.GetAssembly(typeof(Documents.UserAgentContainer)).GetName().Version;
+            EnvironmentInformation.directPackageVersion = $"{directVersion.Major}.{directVersion.Minor}.{directVersion.Build}";
             EnvironmentInformation.framework = RuntimeInformation.FrameworkDescription;
             EnvironmentInformation.architecture = RuntimeInformation.ProcessArchitecture.ToString();
+            EnvironmentInformation.os = RuntimeInformation.OSDescription;
             string now = DateTime.UtcNow.Ticks.ToString();
             EnvironmentInformation.clientId = now.Substring(now.Length - 5); // 5 most significative digits
         }
@@ -31,9 +35,20 @@ namespace Microsoft.Azure.Cosmos
         public string ClientId => EnvironmentInformation.clientId;
 
         /// <summary>
+        /// Version of the current direct package.
+        /// </summary>
+        public string DirectVersion => EnvironmentInformation.directPackageVersion;
+
+        /// <summary>
         /// Version of the current client.
         /// </summary>
         public string ClientVersion => EnvironmentInformation.clientSDKVersion;
+
+        /// <summary>
+        /// Identifier of the Operating System.
+        /// </summary>
+        /// <seealso cref="RuntimeInformation.FrameworkDescription"/>
+        public string OperatingSystem => EnvironmentInformation.os;
 
         /// <summary>
         /// Identifier of the Framework.
@@ -49,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return $" {this.ClientVersion}-{this.RuntimeFramework} {this.ProcessArchitecture} {this.ClientId}";
+            return $"{this.OperatingSystem}/{this.ProcessArchitecture} {this.ClientVersion}/{this.DirectVersion}-{this.RuntimeFramework} {this.ClientId}";
         }
     }
 }
