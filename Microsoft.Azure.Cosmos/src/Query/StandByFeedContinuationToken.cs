@@ -50,12 +50,12 @@ namespace Microsoft.Azure.Cosmos.Query
             return StandByFeedContinuationToken.SerializeTokens(new CompositeContinuationToken[1] { StandByFeedContinuationToken.CreateCompositeContinuationTokenForRange(minInclusive, maxExclusive, null) });
         }
 
-        public static string SerializeTokens(IEnumerable<CompositeContinuationToken> compositeContinuationTokens)
+        private static string SerializeTokens(IEnumerable<CompositeContinuationToken> compositeContinuationTokens)
         {
             return JsonConvert.SerializeObject(compositeContinuationTokens);
         }
 
-        public static List<CompositeContinuationToken> DeserializeTokens(string continuationToken)
+        private static List<CompositeContinuationToken> DeserializeTokens(string continuationToken)
         {
             return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(continuationToken);
         }
