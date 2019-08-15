@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -353,6 +354,22 @@ namespace Microsoft.Azure.Cosmos
             return new BatchCore(this, partitionKey);
         }
 #endif
+
+        internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            string containerRid = await this.GetRIDAsync(cancellationToken);
+            IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(
+                        containerRid,
+                        new Documents.Routing.Range<string>(
+                            Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: false),
+                        true);
+
+            return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
+        }
 
         internal FeedIterator GetStandByFeedIterator(
             string continuationToken = null,
