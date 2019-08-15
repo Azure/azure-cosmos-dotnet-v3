@@ -10,7 +10,12 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Base abstract class for JSON navigators.
     /// The navigator defines methods that allow random access to JSON document nodes.
     /// </summary>
-    internal abstract partial class JsonNavigator : IJsonNavigator
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonNavigator : IJsonNavigator
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonNavigator"/> class.
@@ -28,9 +33,10 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Creates a JsonNavigator that can navigate a supplied buffer
         /// </summary>
         /// <param name="buffer">The buffer to navigate</param>
+        /// <param name="jsonStringDictionary">The optional json string dictionary for binary encoding.</param>
         /// <param name="skipValidation">Whether validation should be skipped.</param>
         /// <returns>A concrete JsonNavigator that can navigate the supplied buffer.</returns>
-        public static IJsonNavigator Create(byte[] buffer, bool skipValidation = false)
+        public static IJsonNavigator Create(byte[] buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
         {
             if (buffer == null)
             {
@@ -44,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 // Explicitly pick from the set of supported formats
                 case JsonSerializationFormat.Binary:
-                    return new JsonBinaryNavigator(buffer, skipValidation);
+                    return new JsonBinaryNavigator(buffer, jsonStringDictionary, skipValidation);
                 default:
                     // or otherwise assume text format
                     return new JsonTextNavigator(buffer, skipValidation);

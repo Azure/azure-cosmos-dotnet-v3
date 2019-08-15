@@ -19,25 +19,35 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
+    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryClientCore : CosmosQueryClient
     {
         private readonly CosmosClientContext clientContext;
-        private readonly CosmosContainerCore cosmosContainerCore;
-        internal readonly IDocumentQueryClient DocumentQueryClient;
+        private readonly ContainerCore cosmosContainerCore;
+        private readonly IDocumentQueryClient DocumentQueryClient;
 
         internal CosmosQueryClientCore(
             CosmosClientContext clientContext,
-            CosmosContainerCore cosmosContainerCore)
+            ContainerCore cosmosContainerCore)
         {
             this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
             this.cosmosContainerCore = cosmosContainerCore ?? throw new ArgumentException(nameof(cosmosContainerCore));
             this.DocumentQueryClient = clientContext.DocumentQueryClient ?? throw new ArgumentException(nameof(clientContext));
         }
 
+        internal override Action<IQueryable> OnExecuteScalarQueryCallback => this.DocumentQueryClient.OnExecuteScalarQueryCallback;
+
         internal override Task<CollectionCache> GetCollectionCacheAsync()
         {
             return this.DocumentQueryClient.GetCollectionCacheAsync();
+        }
+
+        internal override Task<ContainerProperties> GetCachedContainerPropertiesAsync(CancellationToken cancellationToken)
+        {
+            return this.cosmosContainerCore.GetCachedContainerPropertiesAsync(cancellationToken);
         }
 
         internal override Task<IRoutingMapProvider> GetRoutingMapProviderAsync()
@@ -71,24 +81,41 @@ namespace Microsoft.Azure.Cosmos
             string containerResourceId,
             QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
-            Action<CosmosRequestMessage> requestEnricher,
+            string continuationToken,
+            PartitionKeyRangeIdentity partitionKeyRange,
+            bool isContinuationExpected,
+            int pageSize,
             CancellationToken cancellationToken)
         {
-            CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+            ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
                 partitionKey: requestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.CosmosSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
-                requestEnricher: requestEnricher,
+                streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
+                requestEnricher: (cosmosRequestMessage) =>
+                {
+                    this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
+                    cosmosRequestMessage.Headers.Add(
+                        HttpConstants.HttpHeaders.IsContinuationExpected,
+                        isContinuationExpected.ToString());
+                    QueryRequestOptions.FillContinuationToken(
+                        cosmosRequestMessage,
+                        continuationToken);
+                    QueryRequestOptions.FillMaxItemCount(
+                        cosmosRequestMessage,
+                        pageSize);
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                },
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(
-                requestOptions, 
-                resourceType, 
-                containerResourceId, 
+                requestOptions,
+                resourceType,
+                containerResourceId,
                 message);
         }
 
@@ -97,18 +124,18 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            using (CosmosResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
+            using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: null,
                 partitionKey: null,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.CosmosSerializer.ToStream<SqlQuerySpec>(sqlQuerySpec),
+                streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
                 requestEnricher: requestEnricher,
                 cancellationToken: cancellationToken))
             {
@@ -116,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
                 message.EnsureSuccessStatusCode();
                 partitionedQueryExecutionInfo = this.clientContext.CosmosSerializer.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
-                
+
             return partitionedQueryExecutionInfo;
         }
 
@@ -198,11 +225,17 @@ namespace Microsoft.Azure.Cosmos
             return CustomTypeExtensions.ByPassQueryParsing();
         }
 
+        internal override void ClearSessionTokenCache(string collectionFullName)
+        {
+            ISessionContainer sessionContainer = this.clientContext.DocumentClient.sessionContainer;
+            sessionContainer.ClearTokenByCollectionFullname(collectionFullName);
+        }
+
         private QueryResponse GetCosmosElementResponse(
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             string containerResourceId,
-            CosmosResponseMessage cosmosResponseMessage)
+            ResponseMessage cosmosResponseMessage)
         {
             using (cosmosResponseMessage)
             {
@@ -225,8 +258,8 @@ namespace Microsoft.Azure.Cosmos
 
                 long responseLengthBytes = memoryStream.Length;
                 CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
-                    memoryStream, 
-                    resourceType, 
+                    memoryStream,
+                    resourceType,
                     requestOptions.CosmosSerializationOptions);
 
                 int itemCount = cosmosArray.Count;
@@ -235,6 +268,30 @@ namespace Microsoft.Azure.Cosmos
                     count: itemCount,
                     responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType, containerResourceId),
                     responseLengthBytes: responseLengthBytes);
+            }
+        }
+
+        private void PopulatePartitionKeyRangeInfo(
+            RequestMessage request,
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (request.ResourceType.IsPartitioned())
+            {
+                // If the request already has the logical partition key,
+                // then we shouldn't add the physical partition key range id.
+
+                bool hasPartitionKey = request.Headers.PartitionKey != null;
+                if (!hasPartitionKey)
+                {
+                    request
+                        .ToDocumentServiceRequest()
+                        .RouteTo(partitionKeyRangeIdentity);
+                }
             }
         }
     }

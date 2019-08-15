@@ -24,10 +24,18 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
+        private Cosmos.ConsistencyLevel accountConsistencyLevel;
 
         public MockDocumentClient()
             : base(new Uri("http://localhost"), null)
         {
+            this.Init();
+        }
+
+        public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel)
+            : base(new Uri("http://localhost"), null)
+        {
+            this.accountConsistencyLevel = accountConsistencyLevel;
             this.Init();
         }
 
@@ -100,6 +108,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
 
         public override Documents.ConsistencyLevel ConsistencyLevel => Documents.ConsistencyLevel.Session;
 
+        internal override Task<Cosmos.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        {
+            return Task.FromResult(this.accountConsistencyLevel);
+        }
+
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync()
@@ -122,6 +135,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return null;
         }
 
+        internal virtual IReadOnlyList<PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
+        {
+            return (IReadOnlyList<PartitionKeyRange>) new List<Documents.PartitionKeyRange>() {new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } };
+        }
+
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null);
@@ -134,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                     )
                 ).Returns(() =>
                 {
-                    CosmosContainerSettings cosmosContainerSetting = CosmosContainerSettings.CreateWithResourceId("test");
+                    ContainerProperties cosmosContainerSetting = ContainerProperties.CreateWithResourceId("test");
                     cosmosContainerSetting.PartitionKey = new PartitionKeyDefinition()
                     {
                         Kind = PartitionKind.Hash,
@@ -154,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                         It.IsAny<CancellationToken>()
                     )
                 ).Returns(() => {
-                    CosmosContainerSettings containerSettings = CosmosContainerSettings.CreateWithResourceId("test");
+                    ContainerProperties containerSettings = ContainerProperties.CreateWithResourceId("test");
                     containerSettings.PartitionKey.Paths = new Collection<string>() { pkPath };
                     return Task.FromResult(containerSettings);
                 });
@@ -168,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                     )
                 ).Returns(() =>
                 {
-                    CosmosContainerSettings cosmosContainerSetting = CosmosContainerSettings.CreateWithResourceId("test");
+                    ContainerProperties cosmosContainerSetting = ContainerProperties.CreateWithResourceId("test");
                     cosmosContainerSetting.PartitionKey = new PartitionKeyDefinition()
                     {
                         Kind = PartitionKind.Hash,
@@ -190,9 +208,19 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<CancellationToken>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+            this.partitionKeyRangeCache.Setup(
+                        m => m.TryGetOverlappingRangesAsync(
+                            It.IsAny<string>(),
+                            It.IsAny<Documents.Routing.Range<string>>(),
+                            It.IsAny<bool>()
+                        )
+                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) =>
+                {
+                    return Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh));
+                });
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
-
+            
             var sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
         }

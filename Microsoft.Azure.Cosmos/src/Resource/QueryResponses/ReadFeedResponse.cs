@@ -10,24 +10,25 @@ namespace Microsoft.Azure.Cosmos
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
         protected ReadFeedResponse(
-            IEnumerable<T> resource,
-            CosmosResponseMessageHeaders responseMessageHeaders,
-            bool hasMoreResults)
-            : base(
-                httpStatusCode: HttpStatusCode.Accepted,
-                headers: responseMessageHeaders,
-                resource: resource)
+            HttpStatusCode httpStatusCode,
+            ICollection<T> resource,
+            Headers responseMessageHeaders)
         {
-            this.HasMoreResults = hasMoreResults;
+            this.Count = resource.Count;
+            this.Headers = responseMessageHeaders;
+            this.Resource = resource;
+            this.StatusCode = httpStatusCode;
         }
 
         public override int Count { get; }
 
-        public override string Continuation => this.Headers.Continuation;
+        public override string ContinuationToken => this.Headers?.ContinuationToken;
 
-        internal override string InternalContinuationToken => this.Continuation;
+        public override Headers Headers { get; }
 
-        internal override bool HasMoreResults { get; }
+        public override IEnumerable<T> Resource { get; }
+
+        public override HttpStatusCode StatusCode { get; }
 
         public override IEnumerator<T> GetEnumerator()
         {
@@ -35,35 +36,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            CosmosResponseMessageHeaders responseMessageHeaders,
-            Stream stream,
-            CosmosJsonSerializer jsonSerializer,
-            bool hasMoreResults)
+            ResponseMessage responseMessage,
+            CosmosSerializer jsonSerializer)
         {
-            using (stream)
+            using (responseMessage)
             {
-                CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(stream);
-                IEnumerable<TInput> resources = response.Data;
+                ICollection<TInput> resources = default(ICollection<TInput>);
+                if (responseMessage.Content != null)
+                {
+                    CosmosFeedResponseUtil<TInput> response = jsonSerializer.FromStream<CosmosFeedResponseUtil<TInput>>(responseMessage.Content);
+                    resources = response.Data;
+                }
+
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
+                    httpStatusCode: responseMessage.StatusCode,
                     resource: resources,
-                    responseMessageHeaders: responseMessageHeaders,
-                    hasMoreResults: hasMoreResults);
+                    responseMessageHeaders: responseMessage.Headers);
 
                 return readFeedResponse;
             }
-        }
-
-        internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
-            CosmosResponseMessageHeaders responseMessageHeaders,
-            IEnumerable<TInput> resources,
-            bool hasMoreResults)
-        {
-            ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
-                resource: resources,
-                responseMessageHeaders: responseMessageHeaders,
-                hasMoreResults: hasMoreResults);
-
-            return readFeedResponse;
         }
     }
 }

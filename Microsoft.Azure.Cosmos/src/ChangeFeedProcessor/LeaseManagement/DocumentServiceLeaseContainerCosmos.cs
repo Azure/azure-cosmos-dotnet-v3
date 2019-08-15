@@ -10,20 +10,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
     internal sealed class DocumentServiceLeaseContainerCosmos : DocumentServiceLeaseContainer
     {
-        private readonly CosmosContainer container;
-        private readonly DocumentServiceLeaseStoreManagerSettings settings;
+        private readonly Container container;
+        private readonly DocumentServiceLeaseStoreManagerOptions options;
+        private static readonly QueryRequestOptions queryRequestOptions = new QueryRequestOptions() { MaxConcurrency = 0 };
 
         public DocumentServiceLeaseContainerCosmos(
-            CosmosContainer container,
-            DocumentServiceLeaseStoreManagerSettings settings)
+            Container container,
+            DocumentServiceLeaseStoreManagerOptions options)
         {
             this.container = container;
-            this.settings = settings;
+            this.options = options;
         }
 
         public override async Task<IReadOnlyList<DocumentServiceLease>> GetAllLeasesAsync()
         {
-            return await this.ListDocumentsAsync(this.settings.GetPartitionLeasePrefix()).ConfigureAwait(false);
+            return await this.ListDocumentsAsync(this.options.GetPartitionLeasePrefix()).ConfigureAwait(false);
         }
 
         public override async Task<IEnumerable<DocumentServiceLease>> GetOwnedLeasesAsync()
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             var ownedLeases = new List<DocumentServiceLease>();
             foreach (DocumentServiceLease lease in await this.GetAllLeasesAsync().ConfigureAwait(false))
             {
-                if (string.Compare(lease.Owner, this.settings.HostName, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Compare(lease.Owner, this.options.HostName, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     ownedLeases.Add(lease);
                 }
@@ -45,13 +46,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (string.IsNullOrEmpty(prefix))
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
-            var query = this.container.CreateItemQuery<DocumentServiceLeaseCore>(
+            var query = this.container.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
-                0 /* max concurrency */);
+                continuationToken: null,
+                requestOptions: queryRequestOptions);
+
             var leases = new List<DocumentServiceLeaseCore>();
             while (query.HasMoreResults)
             {
-                leases.AddRange(await query.FetchNextSetAsync().ConfigureAwait(false));
+                leases.AddRange(await query.ReadNextAsync().ConfigureAwait(false));
             }
 
             return leases;

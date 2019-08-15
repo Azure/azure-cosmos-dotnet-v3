@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
     /// </summary>
-    internal abstract partial class JsonNavigator : IJsonNavigator
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonNavigator : IJsonNavigator
     {
         /// <summary>
         /// JsonNavigator that know how to navigate JSONs in text serialization.
@@ -26,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="skipValidation">whether to skip validation or not.</param>
             public JsonTextNavigator(byte[] buffer, bool skipValidation = false)
             {
-                IJsonReader jsonTextReader = JsonReader.Create(buffer, skipValidation);
+                IJsonReader jsonTextReader = JsonReader.Create(buffer: buffer, jsonStringDictionary: null, skipValidation: skipValidation);
                 if (jsonTextReader.SerializationFormat != JsonSerializationFormat.Text)
                 {
                     throw new ArgumentException("jsonTextReader's serialization format must actually be text");

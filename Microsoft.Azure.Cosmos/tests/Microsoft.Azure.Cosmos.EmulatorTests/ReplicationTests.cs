@@ -92,11 +92,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     typeof(T) == typeof(UserDefinedFunction) ||
                     typeof(T) == typeof(Trigger))
                 {
-                    TestCommon.ListAllScriptDirect<T>(client, collectionId, headers ?? new StringKeyValueCollection());
+                    TestCommon.ListAllScriptDirect<T>(client, collectionId, headers ?? new DictionaryNameValueCollection());
                 }
                 else
                 {
-                    TestCommon.ListAll<T>(client, collectionId, headers ?? new StringKeyValueCollection(), true);
+                    TestCommon.ListAll<T>(client, collectionId, headers ?? new DictionaryNameValueCollection(), true);
                 }
             }
 
@@ -105,10 +105,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 BackoffRetryUtility<bool>.ExecuteAsync((bool isInRetry) =>
                 {
                     var feeds = new DocumentFeedResponse<T>[replicaClients.Length];
-                    var allHeaders = new StringKeyValueCollection[replicaClients.Length];
+                    var allHeaders = new DictionaryNameValueCollection[replicaClients.Length];
                     for (int i = 0; i < replicaClients.Length; i++)
                     {
-                        var header = new StringKeyValueCollection();
+                        var header = new DictionaryNameValueCollection();
                         if (headers != null)
                         {
                             foreach (string key in headers)
@@ -405,9 +405,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             where T : Resource, new()
         {
             if (headers != null)
-                headers = new StringKeyValueCollection(headers); // dont mess with the input headers
+                headers = new DictionaryNameValueCollection(headers); // dont mess with the input headers
             else
-                headers = new StringKeyValueCollection();
+                headers = new DictionaryNameValueCollection();
 
             int maxTries = 5;
             const int minIndexInterval = 5000; // 5 seconds

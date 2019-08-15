@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>()
                     )
-                ).Returns(Task.FromResult(CosmosContainerSettings.CreateWithResourceId("test")));
+                ).Returns(Task.FromResult(ContainerProperties.CreateWithResourceId("test")));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(
@@ -110,9 +110,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             Mock<IServiceConfigurationReader> mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            mockAuthorizationTokenProvider.Setup(provider => provider.GetSystemAuthorizationTokenAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                .ReturnsAsync("dummyauthtoken");
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
 
             this.StoreModel = new ServerStoreModel(new StoreClient(

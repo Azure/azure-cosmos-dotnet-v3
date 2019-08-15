@@ -38,6 +38,28 @@ namespace Microsoft.Azure.Cosmos.Query
             return standByFeedContinuationToken;
         }
 
+        public static string CreateForRange(
+            string containerRid,
+            string minInclusive,
+            string maxExclusive)
+        {
+            if (string.IsNullOrWhiteSpace(containerRid)) throw new ArgumentNullException(nameof(containerRid));
+            // MinInclusive can be an empty string
+            if (minInclusive == null) throw new ArgumentNullException(nameof(minInclusive));
+            if (string.IsNullOrWhiteSpace(maxExclusive)) throw new ArgumentNullException(nameof(maxExclusive));
+            return StandByFeedContinuationToken.SerializeTokens(new CompositeContinuationToken[1] { StandByFeedContinuationToken.CreateCompositeContinuationTokenForRange(minInclusive, maxExclusive, null) });
+        }
+
+        private static string SerializeTokens(IEnumerable<CompositeContinuationToken> compositeContinuationTokens)
+        {
+            return JsonConvert.SerializeObject(compositeContinuationTokens);
+        }
+
+        private static List<CompositeContinuationToken> DeserializeTokens(string continuationToken)
+        {
+            return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(continuationToken);
+        }
+
         private StandByFeedContinuationToken(
             string containerRid,
             string initialStandByFeedContinuationToken,
@@ -78,7 +100,19 @@ namespace Microsoft.Azure.Cosmos.Query
                 return null;
             }
 
-            return JsonConvert.SerializeObject(this.compositeContinuationTokens);
+            return StandByFeedContinuationToken.SerializeTokens(this.compositeContinuationTokens);
+        }
+
+        private static CompositeContinuationToken CreateCompositeContinuationTokenForRange(
+            string minInclusive,
+            string maxExclusive,
+            string token)
+        {
+            return new CompositeContinuationToken()
+            {
+                Range = new Documents.Routing.Range<string>(minInclusive, maxExclusive, true, false),
+                Token = token
+            };
         }
 
         private void HandleSplit(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
@@ -91,11 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query
             // Add children
             foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
             {
-                this.compositeContinuationTokens.Enqueue(new CompositeContinuationToken()
-                {
-                    Range = new Documents.Routing.Range<string>(keyRange.MinInclusive, keyRange.MaxExclusive, true, false),
-                    Token = this.currentToken.Token
-                });
+                this.compositeContinuationTokens.Enqueue(StandByFeedContinuationToken.CreateCompositeContinuationTokenForRange(keyRange.MinInclusive, keyRange.MaxExclusive, this.currentToken.Token));
             }
         }
 
@@ -129,16 +159,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Initial state for a scenario where user does not provide any initial continuation token.
                 // StartTime and StartFromBeginning can handle the logic if the user wants to start reading from any particular point in time
                 // After the first iteration, token will be updated with a recent value
-                return allRanges.Select(e => new CompositeContinuationToken()
-                {
-                    Range = new Documents.Routing.Range<string>(e.MinInclusive, e.MaxExclusive, isMinInclusive: true, isMaxInclusive: false),
-                    Token = null,
-                });
+                return allRanges.Select(e => StandByFeedContinuationToken.CreateCompositeContinuationTokenForRange(e.MinInclusive, e.MaxExclusive, null));
             }
 
             try
             {
-                return JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(initialContinuationToken);
+                return StandByFeedContinuationToken.DeserializeTokens(initialContinuationToken);
             }
             catch (JsonReaderException ex)
             {
@@ -169,8 +195,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 new Documents.Routing.Range<string>(
                     targetRange.Min,
                     targetRange.Max,
-                    isMaxInclusive: true,
-                    isMinInclusive: false),
+                    isMaxInclusive: false,
+                    isMinInclusive: true),
                 forceRefresh);
 
             if (keyRanges.Count == 0)

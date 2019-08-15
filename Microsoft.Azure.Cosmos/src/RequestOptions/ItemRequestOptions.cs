@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// Only valid when used with Create, Replace and Delete methods for documents.
         /// Currently only one PreTrigger is permitted per operation.
         /// </remarks>
-        internal IEnumerable<string> PreTriggers { get; set; }
+        public IEnumerable<string> PreTriggers { get; set; }
 
         /// <summary>
         /// Gets or sets the trigger to be invoked after the operation in the Azure Cosmos DB service.
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         /// Only valid when used with Create, Replace and Delete methods for documents.
         /// Currently only one PreTrigger is permitted per operation.
         /// </remarks>
-        internal IEnumerable<string> PostTriggers { get; set; }
+        public IEnumerable<string> PostTriggers { get; set; }
 
         /// <summary>
         /// Gets or sets the indexing directive (Include or Exclude) for the request in the Azure Cosmos DB service.
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <seealso cref="Microsoft.Azure.Cosmos.IndexingPolicy"/>
         /// <seealso cref="IndexingDirective"/>
-        public virtual IndexingDirective? IndexingDirective { get; set; }
+        public IndexingDirective? IndexingDirective { get; set; }
 
         /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         ///
         /// </para>
         /// </remarks>
-        public virtual string SessionToken { get; set; }
+        public string SessionToken { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
@@ -91,13 +91,17 @@ namespace Microsoft.Azure.Cosmos
         /// for each individual request.
         /// </para>
         /// </remarks>
-        public virtual ConsistencyLevel? ConsistencyLevel { get; set; }
+        public ConsistencyLevel? ConsistencyLevel
+        {
+            get => this.BaseConsistencyLevel;
+            set => this.BaseConsistencyLevel = value;
+        }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
-        /// <param name="request">The <see cref="CosmosRequestMessage"/></param>
-        public override void FillRequestOptions(CosmosRequestMessage request)
+        /// <param name="request">The <see cref="RequestMessage"/></param>
+        internal override void PopulateRequestOptions(RequestMessage request)
         {
             if (this.PreTriggers != null && this.PreTriggers.Any())
             {
@@ -111,13 +115,14 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.IndexingDirective != null && this.IndexingDirective.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.IndexingDirective, this.IndexingDirective.Value.ToString());
+                request.Headers.Add(
+                    HttpConstants.HttpHeaders.IndexingDirective, 
+                    IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
-            RequestOptions.SetConsistencyLevel(request, this.ConsistencyLevel);
 
-            base.FillRequestOptions(request);
+            base.PopulateRequestOptions(request);
         }
     }
 }

@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task GetCosmosDatabaseAccountSettings()
         {
-            CosmosAccountSettings settings = await this.cosmosClient.GetAccountSettingsAsync();
-            Assert.IsNotNull(settings);
-            Assert.IsNotNull(settings.Id);
-            Assert.IsNotNull(settings.ReadableLocations);
-            Assert.IsTrue(settings.ReadableLocations.Count() > 0);
-            Assert.IsNotNull(settings.WritableLocations);
-            Assert.IsTrue(settings.WritableLocations.Count() > 0);
+            AccountProperties accountProperties = await this.cosmosClient.ReadAccountAsync();
+            Assert.IsNotNull(accountProperties);
+            Assert.IsNotNull(accountProperties.Id);
+            Assert.IsNotNull(accountProperties.ReadableRegions);
+            Assert.IsTrue(accountProperties.ReadableRegions.Count() > 0);
+            Assert.IsNotNull(accountProperties.WritableRegions);
+            Assert.IsTrue(accountProperties.WritableRegions.Count() > 0);
         }
     }
 }

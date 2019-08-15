@@ -5,6 +5,8 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.Globalization;
     using Newtonsoft.Json;
 
     internal sealed class JsonNewtonsoftReader : Microsoft.Azure.Cosmos.Json.JsonReader
@@ -40,14 +42,14 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
             object value = this.reader.Value;
             if (value is double)
             {
-                numberString = ((double)value).ToString("R");
+                numberString = ((double)value).ToString("R", CultureInfo.InvariantCulture);
             }
             else
             {
                 numberString = value.ToString();
             }
 
-            return double.Parse(numberString);
+            return double.Parse(numberString, CultureInfo.InvariantCulture);
         }
 
         public override string GetStringValue()

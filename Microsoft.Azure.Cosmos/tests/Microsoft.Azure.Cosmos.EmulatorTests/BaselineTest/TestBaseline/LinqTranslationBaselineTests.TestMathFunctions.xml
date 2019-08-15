@@ -2,11 +2,11 @@
   <Result>
     <Input>
       <Description><![CDATA[Abs decimal]]></Description>
-      <Expression><![CDATA[query.Select(doc => Abs(Convert(doc.NumericField, Decimal)))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => Abs(doc.DecimalField))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ABS(root["NumericField"]) 
+SELECT VALUE ABS(root["DecimalField"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -36,13 +36,13 @@ WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]
   <Result>
     <Input>
       <Description><![CDATA[Abs int]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((doc.NumericField >= -2147483648) AndAlso (doc.NumericField <= 2147483647))).Select(doc => Abs(Convert(doc.NumericField, Int32)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((doc.IntField >= -2147483648) AndAlso (doc.IntField <= 2147483647))).Select(doc => Abs(Convert(doc.IntField, Int32)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ABS(root["NumericField"]) 
+SELECT VALUE ABS(root["IntField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -2147483648) AND (root["NumericField"] <= 2147483647)) ]]></SqlQuery>
+WHERE ((root["IntField"] >= -2147483648) AND (root["IntField"] <= 2147483647)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>

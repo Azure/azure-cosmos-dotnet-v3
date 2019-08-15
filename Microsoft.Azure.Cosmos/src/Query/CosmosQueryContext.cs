@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryContext
     {
@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public virtual ResourceType ResourceTypeEnum { get; }
         public virtual OperationType OperationTypeEnum { get; }
         public virtual Type ResourceType { get; }
-        public SqlQuerySpec SqlQuerySpec { get; internal set; }
+        public virtual SqlQuerySpec SqlQuerySpec { get; internal set; }
         public virtual QueryRequestOptions QueryRequestOptions { get; }
         public virtual bool IsContinuationExpected { get; }
         public virtual bool AllowNonValueAggregateQuery { get; }
@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec sqlQuerySpecFromUser,
             QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
-            bool getLazyFeedResponse,
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -79,22 +78,28 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CorrelatedActivityId = correlatedActivityId;
         }
 
-        internal virtual async Task<QueryResponse> ExecuteQueryAsync(
+        internal virtual Task<QueryResponse> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
-            CancellationToken cancellationToken,
-            Action<CosmosRequestMessage> requestEnricher = null)
+            string continuationToken,
+            PartitionKeyRangeIdentity partitionKeyRange,
+            bool isContinuationExpected,
+            int pageSize,
+            CancellationToken cancellationToken)
         {
             QueryRequestOptions requestOptions = this.QueryRequestOptions.Clone();
 
-            return await this.QueryClient.ExecuteItemQueryAsync(
-                           this.ResourceLink,
-                           this.ResourceTypeEnum,
-                           this.OperationTypeEnum,
-                           this.ContainerResourceId,
-                           requestOptions,
-                           querySpecForInit,
-                           requestEnricher,
-                           cancellationToken);
+            return this.QueryClient.ExecuteItemQueryAsync(
+                           resourceUri: this.ResourceLink,
+                           resourceType: this.ResourceTypeEnum,
+                           operationType: this.OperationTypeEnum,
+                           containerResourceId: this.ContainerResourceId,
+                           requestOptions: requestOptions,
+                           sqlQuerySpec: querySpecForInit,
+                           continuationToken: continuationToken,
+                           partitionKeyRange: partitionKeyRange,
+                           isContinuationExpected: isContinuationExpected,
+                           pageSize: pageSize,
+                           cancellationToken: cancellationToken);
         }
     }
 }

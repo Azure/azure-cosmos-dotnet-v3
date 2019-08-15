@@ -5,32 +5,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class PartitionKeyTests
     {
-        [ExpectedException(typeof(ArgumentNullException))]
         [TestMethod]
         public void NullValue()
         {
             new PartitionKey(null);
-        }
-
-        [TestMethod]
-        public void WithDocumentPartitionKey()
-        {
-            const string somePK = "somePK";
-            Documents.PartitionKey v2PK = new Documents.PartitionKey(somePK);
-            PartitionKey pk = new PartitionKey(v2PK);
-            Assert.AreEqual(v2PK.InternalKey.ToJsonString(), pk.ToString());
-        }
-
-        [TestMethod]
-        public void ValueContainsOriginalValue()
-        {
-            const string somePK = "somePK";
-            PartitionKey pk = new PartitionKey(somePK);
-            Assert.AreEqual(somePK, pk.Value);
         }
 
         [TestMethod]
@@ -43,30 +26,66 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void WithCosmosPartitionKey()
-        {
-            const string somePK = "somePK";
-            PartitionKey v3PK = new PartitionKey(somePK);
-            PartitionKey pk = new PartitionKey(v3PK);
-            Assert.AreEqual(v3PK.ToString(), pk.ToString());
-        }
-
-        [TestMethod]
         public void TestPartitionKeyValues()
         {
-            Tuple<object, string>[] testcases =
+            Tuple<dynamic, string>[] testcases =
             {
-                Tuple.Create<object, string>(Documents.Undefined.Value, "[{}]"),
-                Tuple.Create<object, string>(false, "[false]"),
-                Tuple.Create<object, string>(true, "[true]"),
-                Tuple.Create<object, string>(123.456, "[123.456]"),
-                Tuple.Create<object, string>("PartitionKeyValue", "[\"PartitionKeyValue\"]"),
+                Tuple.Create<dynamic, string>(Documents.Undefined.Value, "[{}]"),
+                Tuple.Create<dynamic, string>(Documents.Undefined.Value, "[{}]"),
+                Tuple.Create<dynamic, string>(false, "[false]"),
+                Tuple.Create<dynamic, string>(true, "[true]"),
+                Tuple.Create<dynamic, string>(123.456, "[123.456]"),
+                Tuple.Create<dynamic, string>("PartitionKeyValue", "[\"PartitionKeyValue\"]"),
             };
 
             foreach (Tuple<object, string> testcase in testcases)
             {
                 Assert.AreEqual(testcase.Item2, new PartitionKey(testcase.Item1).ToString());
             }
+        }
+
+        [TestMethod]
+        public void TestPartitionKeyDefinitionAreEquivalent()
+        {
+            //Different partition key path test
+            PartitionKeyDefinition definition1 = new PartitionKeyDefinition();
+            definition1.Paths.Add("/pk1");
+
+            PartitionKeyDefinition definition2 = new PartitionKeyDefinition();
+            definition2.Paths.Add("/pk2");
+
+            Assert.IsFalse(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
+
+            //Different partition kind test
+            definition1 = new PartitionKeyDefinition();
+            definition1.Paths.Add("/pk1");
+            definition1.Kind = PartitionKind.Hash;
+
+            definition2 = new PartitionKeyDefinition();
+            definition2.Paths.Add("/pk1");
+            definition2.Kind = PartitionKind.Range;
+
+            Assert.IsFalse(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
+
+            //Different partition version test
+            definition1 = new PartitionKeyDefinition();
+            definition1.Paths.Add("/pk1");
+            definition1.Version = PartitionKeyDefinitionVersion.V1;
+
+            definition2 = new PartitionKeyDefinition();
+            definition2.Paths.Add("/pk1");
+            definition2.Version = PartitionKeyDefinitionVersion.V2;
+
+            Assert.IsFalse(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
+
+            //Same partition key path test
+            definition1 = new PartitionKeyDefinition();
+            definition1.Paths.Add("/pk1");
+
+            definition2 = new PartitionKeyDefinition();
+            definition2.Paths.Add("/pk1");
+
+            Assert.IsTrue(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
         }
     }
 }

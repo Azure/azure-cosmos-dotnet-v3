@@ -215,19 +215,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             public string id { get; set; }
         }
 
-        private static CosmosContainerCore GetMockedContainer(string containerName = null)
+        private static ContainerCore GetMockedContainer(string containerName = null)
         {
-            Mock<CosmosContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
+            Mock<ContainerCore> mockedContainer = MockCosmosUtil.CreateMockContainer(containerName: containerName);
             mockedContainer.Setup(c => c.ClientContext).Returns(ChangeFeedProcessorCoreTests.GetMockedClientContext());
             return mockedContainer.Object;
         }
 
         private static CosmosClientContext GetMockedClientContext()
         {
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
+
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonSerializerCore());
+            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
+            mockContext.Setup(x => x.Client).Returns(mockClient.Object);
             return mockContext.Object;
         }
     }

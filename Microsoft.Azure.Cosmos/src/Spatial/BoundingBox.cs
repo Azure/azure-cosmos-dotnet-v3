@@ -5,12 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a coordinate range for geometries in the Azure Cosmos DB service.
     /// </summary>
+    [DataContract]
     [JsonConverter(typeof(BoundingBoxJsonConverter))]
     public sealed class BoundingBox : IEquatable<BoundingBox>
     {
@@ -50,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Lowest values for all axes of the bounding box.
         /// </value>
+        [DataMember(Name = "min")]
         public Position Min { get; private set; }
 
         /// <summary>
@@ -58,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Highest values for all axes of the bounding box.
         /// </value>
+        [DataMember(Name = "max")]
         public Position Max { get; private set; }
 
         /// <summary>

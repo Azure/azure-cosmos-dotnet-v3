@@ -11,8 +11,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary> 
@@ -21,69 +19,67 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <seealso cref="CosmosLinqQueryProvider"/>  
     internal sealed class CosmosLinqQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
-        private readonly Expression expression;
         private readonly CosmosLinqQueryProvider queryProvider;
         private readonly Guid correlatedActivityId;
 
-        private readonly CosmosContainerCore container;
-        private readonly CosmosQueryClient queryClient;
-        private readonly CosmosJsonSerializer cosmosJsonSerializer;
+        private readonly ContainerCore container;
+        private readonly CosmosQueryClientCore queryClient;
+        private readonly CosmosResponseFactory responseFactory;
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
+        private readonly string continuationToken;
 
         public CosmosLinqQuery(
-           CosmosContainerCore container,
-           CosmosJsonSerializer cosmosJsonSerializer,
-           CosmosQueryClient queryClient,
+           ContainerCore container,
+           CosmosResponseFactory responseFactory,
+           CosmosQueryClientCore queryClient,
+           string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
            bool allowSynchronousQueryExecution)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
-            this.cosmosJsonSerializer = cosmosJsonSerializer;
-            this.queryClient = queryClient;
+            this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
+            this.queryClient = queryClient ?? throw new ArgumentNullException(nameof(queryClient));
+            this.continuationToken = continuationToken;
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
-            this.expression = expression ?? Expression.Constant(this);
+            this.Expression = expression ?? Expression.Constant(this);
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
+            this.correlatedActivityId = Guid.NewGuid();
+
             this.queryProvider = new CosmosLinqQueryProvider(
               container,
-              cosmosJsonSerializer,
+              responseFactory,
               queryClient,
+              this.continuationToken,
               cosmosQueryRequestOptions,
-              this.allowSynchronousQueryExecution);
-            this.correlatedActivityId = Guid.NewGuid();
+              this.allowSynchronousQueryExecution,
+              this.queryClient.OnExecuteScalarQueryCallback);
         }
 
         public CosmosLinqQuery(
-          CosmosContainerCore container,
-          CosmosJsonSerializer cosmosJsonSerializer,
-          CosmosQueryClient queryClient,
+          ContainerCore container,
+          CosmosResponseFactory responseFactory,
+          CosmosQueryClientCore queryClient,
+          string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution)
             : this(
               container,
-              cosmosJsonSerializer,
+              responseFactory,
               queryClient,
+              continuationToken,
               cosmosQueryRequestOptions,
               null,
               allowSynchronousQueryExecution)
         {
         }
 
-        public Type ElementType
-        {
-            get { return typeof(T); }
-        }
+        public Type ElementType => typeof(T);
 
-        public Expression Expression
-        {
-            get { return this.expression; }
-        }
+        public Expression Expression { get; }
 
-        public IQueryProvider Provider
-        {
-            get { return this.queryProvider; }
-        }
+        public IQueryProvider Provider => this.queryProvider;
 
         public bool HasMoreResults => throw new NotImplementedException();
 
@@ -98,26 +94,20 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (!this.allowSynchronousQueryExecution)
             {
-                throw new NotSupportedException("To execute LINQ query please set " + nameof(allowSynchronousQueryExecution) + " true or" +
-                    " use CreateItemQuery returning CosmosFeedIterator which execute asynchronously via CosmosFeedIterator");
+                throw new NotSupportedException("To execute LINQ query please set " + nameof(this.allowSynchronousQueryExecution) + " true or" +
+                    " use GetItemsQueryIterator to execute asynchronously");
             }
 
-            using (CosmosQueryExecutionContext localQueryExecutionContext = CreateCosmosQueryExecutionContext())
+            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
+            while (localFeedIterator.HasMoreResults)
             {
-                while (!localQueryExecutionContext.IsDone)
-                {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                    QueryResponse cosmosQueryResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextAsync(CancellationToken.None), null).GetAwaiter().GetResult();
+                FeedResponse<T> items = TaskHelper.InlineIfPossible(() => localFeedIterator.ReadNextAsync(CancellationToken.None), null).GetAwaiter().GetResult();
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                    QueryResponse<T> responseIterator = QueryResponse<T>.CreateResponse<T>(
-                        cosmosQueryResponse: cosmosQueryResponse,
-                        jsonSerializer: cosmosJsonSerializer,
-                        hasMoreResults: !localQueryExecutionContext.IsDone);
 
-                    foreach (T item in responseIterator)
-                    {
-                        yield return item;
-                    }
+                foreach (T item in items)
+                {
+                    yield return item;
                 }
             }
         }
@@ -133,24 +123,29 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public override string ToString()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
             if (querySpec != null)
             {
                 return JsonConvert.SerializeObject(querySpec);
             }
 
-            return container.LinkUri.ToString();
+            return this.container.LinkUri.ToString();
         }
 
-        public string ToSqlQueryText()
+        public QueryDefinition ToQueryDefinition()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.expression);
-            if (querySpec != null)
-            {
-                return (querySpec.QueryText);
-            }
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
+            return new QueryDefinition(querySpec);
+        }
 
-            return container.LinkUri.ToString();
+        public FeedIterator<T> ToFeedIterator()
+        {
+            return this.CreateFeedIterator(true);
+        }
+
+        public FeedIterator ToStreamIterator()
+        {
+            return this.CreateStreamIterator(true);
         }
 
         public void Dispose()
@@ -168,20 +163,25 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
-        private CosmosQueryExecutionContext CreateCosmosQueryExecutionContext()
+        private FeedIterator CreateStreamIterator(bool isContinuationExcpected)
         {
-            CosmosQueryExecutionContext cosmosQueryExecution = new CosmosQueryExecutionContextFactory(
-                client: this.queryClient,
-                resourceTypeEnum: ResourceType.Document,
-                operationType: OperationType.Query,
-                resourceType: typeof(T),
-                sqlQuerySpec: DocumentQueryEvaluator.Evaluate(expression),
-                queryRequestOptions: this.cosmosQueryRequestOptions,
-                resourceLink: this.container.LinkUri,
-                isContinuationExpected: true,
-                allowNonValueAggregateQuery: true,
-                correlatedActivityId: Guid.NewGuid());
-            return cosmosQueryExecution;
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
+
+            return this.container.GetItemQueryStreamIteratorInternal(
+                sqlQuerySpec: querySpec,
+                isContinuationExcpected: isContinuationExcpected,
+                continuationToken: this.continuationToken,
+                requestOptions: this.cosmosQueryRequestOptions);
+        }
+
+        private FeedIterator<T> CreateFeedIterator(bool isContinuationExcpected)
+        {
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
+
+            FeedIterator streamIterator = this.CreateStreamIterator(isContinuationExcpected);
+            return new FeedIteratorCore<T>(
+                streamIterator,
+                this.responseFactory.CreateQueryFeedResponse<T>);
         }
     }
 }

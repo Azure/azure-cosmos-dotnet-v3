@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -13,8 +11,8 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Base class for IndexingPolicy Indexes in the Azure Cosmos DB service, you should use a concrete Index like HashIndex or RangeIndex.
     /// </summary> 
-    [JsonConverter(typeof(IndexJsonConverter))]
-    internal abstract class Index 
+    [JsonConverter(typeof(CosmosIndexJsonConverter))]
+    internal abstract class Index
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Index"/> class for the Azure Cosmos DB service.

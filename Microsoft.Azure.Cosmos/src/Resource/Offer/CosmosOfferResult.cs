@@ -7,10 +7,10 @@ namespace Microsoft.Azure.Cosmos
 
     internal class CosmosOfferResult
     {
-        public CosmosOfferResult(int? requestUnitsPerSecond)
+        public CosmosOfferResult(int? throughput)
         {
-            this.RequestUnitsPerSecond = requestUnitsPerSecond;
-            this.StatusCode = requestUnitsPerSecond.HasValue ? HttpStatusCode.OK : HttpStatusCode.NotFound;
+            this.Throughput = throughput;
+            this.StatusCode = throughput.HasValue ? HttpStatusCode.OK : HttpStatusCode.NotFound;
         }
 
         public CosmosOfferResult(
@@ -25,6 +25,6 @@ namespace Microsoft.Azure.Cosmos
 
         public HttpStatusCode StatusCode { get; }
 
-        public int? RequestUnitsPerSecond { get; }
+        public int? Throughput { get; }
     }
 }

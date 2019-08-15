@@ -13,6 +13,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     {
         public override FeedOptions CreateFeedOptions() => null;
 
-        public override PartitionKey GetPartitionKey(string itemId) => new PartitionKey(Documents.Undefined.Value);
+        public override PartitionKey GetPartitionKey(string itemId) => PartitionKey.None;
     }
 }

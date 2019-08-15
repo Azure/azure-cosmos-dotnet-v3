@@ -7,27 +7,30 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.Serialization;
     using System.Text;
     using Newtonsoft.Json;
 
     /// <summary>
     /// <para>
-    /// Return value of <see cref="GeometryOperationExtensions.IsValidDetailed"/> in the Azure Cosmos DB service.
+    /// Return value of <see cref="Geometry.IsValidDetailed"/> in the Azure Cosmos DB service.
     /// </para>
     /// <para>
     /// Contains detailed description why a geometyr is invalid.
     /// </para>
     /// </summary>
+    [DataContract]
     [JsonObject(MemberSerialization.OptIn)]
-    internal class GeometryValidationResult
+    public class GeometryValidationResult
     {
         /// <summary>
-        /// Returns a value indicating whether geometry for which <see cref="GeometryOperationExtensions.IsValidDetailed"/>
+        /// Returns a value indicating whether geometry for which <see cref="Geometry.IsValidDetailed"/>
         /// was called is valid or not in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// <c>true</c> if geometry for which <see cref="GeometryOperationExtensions.IsValidDetailed"/> was called is valid. <c>false</c> otherwise.
+        /// <c>true</c> if geometry for which <see cref="Geometry.IsValidDetailed"/> was called is valid. <c>false</c> otherwise.
         /// </value>
+        [DataMember(Name = "valid")]
         [JsonProperty("valid", Required = Required.Always, Order = 0)]
         public bool IsValid { get; private set; }
 
@@ -37,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Description why a geometry is invalid.
         /// </value>
+        [DataMember(Name = "reason")]
         [JsonProperty("reason", Order = 1)]
         public string Reason { get; private set; }
     }

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     public class ItemBenchmark
     {
         private readonly CosmosClient clientForTests;
-        private readonly CosmosContainer container;
+        private readonly Container container;
         private JObject baseItem;
         private Stream baseStream;
 
@@ -76,8 +76,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             this.baseStream.Position = 0;
             var response = await this.container.UpsertItemStreamAsync(
-                    new Cosmos.PartitionKey(Constants.ValidOperationId),
-                    this.baseStream);
+                    this.baseStream,
+                    new Cosmos.PartitionKey(Constants.ValidOperationId));
             if ((int)response.StatusCode > 300 || response.Content.Length == 0)
             {
                 throw new Exception();
@@ -92,8 +92,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItem()
         {
             var response = await this.container.ReadItemAsync<JObject>(
-                new Cosmos.PartitionKey(Constants.ValidOperationId), 
-                Constants.ValidOperationId);
+                Constants.ValidOperationId,
+                new Cosmos.PartitionKey(Constants.ValidOperationId));
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Resource == null)
             {
                 throw new Exception();
@@ -107,12 +107,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task ReadItemNotExists()
         {
-            var response = await this.container.ReadItemAsync<JObject>(
-                new Cosmos.PartitionKey(Constants.ValidOperationId),
-                Constants.NotFoundOperationId);
-            if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+            try
             {
-                throw new Exception();
+                var response = await this.container.ReadItemAsync<JObject>(
+                    Constants.NotFoundOperationId,
+                    new Cosmos.PartitionKey(Constants.ValidOperationId));
+            }
+            catch(CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
             }
         }
 
@@ -124,8 +126,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task ReadItemStream()
         {
             var response = await this.container.ReadItemStreamAsync(
-                new Cosmos.PartitionKey(Constants.ValidOperationId), 
-                Constants.ValidOperationId);
+                Constants.ValidOperationId,
+                new Cosmos.PartitionKey(Constants.ValidOperationId));
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
             {
                 throw new Exception();
@@ -139,9 +141,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task UpdateItem()
         {
-            var response = await this.container.ReplaceItemAsync(                
-                Constants.ValidOperationId, 
+            var response = await this.container.ReplaceItemAsync(
                 this.baseItem,
+                Constants.ValidOperationId, 
                 new Cosmos.PartitionKey(Constants.ValidOperationId));
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Resource == null)
             {
@@ -157,8 +159,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task DeleteItem()
         {
             var response = await this.container.DeleteItemAsync<JObject>(
-                new Cosmos.PartitionKey(Constants.ValidOperationId),
-                Constants.ValidOperationId);
+                Constants.ValidOperationId,
+                new Cosmos.PartitionKey(Constants.ValidOperationId));
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 throw new Exception();
@@ -172,12 +174,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task DeleteItemNotExists()
         {
-            var response = await this.container.DeleteItemAsync<JObject>(
-                new Cosmos.PartitionKey(Constants.ValidOperationId),
-                Constants.NotFoundOperationId);
-            if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+            try
             {
-                throw new Exception();
+                var response = await this.container.DeleteItemAsync<JObject>(
+                    Constants.NotFoundOperationId,
+                    new Cosmos.PartitionKey(Constants.ValidOperationId));
+            }
+            catch(CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
             }
         }
     }

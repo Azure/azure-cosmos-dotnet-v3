@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal sealed class PartitionSynchronizerCore : PartitionSynchronizer
@@ -22,14 +23,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         internal static int DefaultDegreeOfParallelism = 25;
 #pragma warning restore SA1401 // Fields should be private
 
-        private readonly CosmosContainerCore container;
+        private readonly ContainerCore container;
         private readonly DocumentServiceLeaseContainer leaseContainer;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly int degreeOfParallelism;
         private readonly int maxBatchSize;
 
         public PartitionSynchronizerCore(
-            CosmosContainerCore container,
+            ContainerCore container,
             DocumentServiceLeaseContainer leaseContainer,
             DocumentServiceLeaseManager leaseManager,
             int degreeOfParallelism,
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 FeedOptions feedOptions = new FeedOptions
                 {
                     MaxItemCount = this.maxBatchSize,
-                    RequestContinuation = response?.ResponseContinuation,
+                    RequestContinuationToken = response?.ResponseContinuation,
                 };
 
                 response = await this.container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(containerUri, feedOptions).ConfigureAwait(false);
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         /// </summary>
         private async Task CreateLeasesAsync(HashSet<string> partitionIds)
         {
-            // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
+            // Get leases after getting ranges, to make sure that no other hosts checked in continuation token for split partition after we got leases.
             IEnumerable<DocumentServiceLease> leases = await this.leaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
             HashSet<string> existingPartitionIds = new HashSet<string>(leases.Select(lease => lease.CurrentLeaseToken));
             HashSet<string> addedPartitionIds = new HashSet<string>(partitionIds);

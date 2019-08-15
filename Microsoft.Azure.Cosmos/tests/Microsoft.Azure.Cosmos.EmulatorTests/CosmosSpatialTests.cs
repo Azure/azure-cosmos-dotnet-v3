@@ -13,14 +13,13 @@
     [TestClass]
     public class CosmosSpatialTests
     {
-        private CosmosContainerCore Container = null;
+        private ContainerCore Container = null;
         private DocumentClient documentClient;
-        private CosmosJsonSerializerCore jsonSerializer = null;
         private readonly string spatialName = "SpatialName";
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
         protected CosmosClient cosmosClient = null;
-        protected CosmosDatabase database = null;
+        protected Database database = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -36,13 +35,12 @@
 
             string PartitionKey = "/partitionKey";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
-            this.Container = (CosmosContainerCore)response;
-            this.jsonSerializer = new CosmosJsonSerializerCore();
+            this.Container = (ContainerCore)response;
         }
 
         [TestCleanup]
@@ -60,7 +58,7 @@
 
             if (this.database != null)
             {
-                await this.database.DeleteAsync(
+                await this.database.DeleteStreamAsync(
                     requestOptions: null,
                     cancellationToken: this.cancellationToken);
             }

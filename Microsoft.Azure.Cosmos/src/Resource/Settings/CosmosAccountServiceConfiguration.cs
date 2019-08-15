@@ -6,39 +6,38 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     internal class CosmosAccountServiceConfiguration : IServiceConfigurationReader
     {
-        private Func<Task<CosmosAccountSettings>> accountSettingsTaskFunc { get; }
+        private Func<Task<AccountProperties>> accountPropertiesTaskFunc { get; }
 
-        internal CosmosAccountSettings AccountSettings { get; private set; }
+        internal AccountProperties AccountProperties { get; private set; }
 
-        public CosmosAccountServiceConfiguration(Func<Task<CosmosAccountSettings>> accountSettingsTaskFunc)
+        public CosmosAccountServiceConfiguration(Func<Task<AccountProperties>> accountPropertiesTaskFunc)
         {
-            if (accountSettingsTaskFunc == null)
+            if (accountPropertiesTaskFunc == null)
             {
-                throw new ArgumentNullException(nameof(accountSettingsTaskFunc));
+                throw new ArgumentNullException(nameof(accountPropertiesTaskFunc));
             }
 
-            this.accountSettingsTaskFunc = accountSettingsTaskFunc;
+            this.accountPropertiesTaskFunc = accountPropertiesTaskFunc;
         }
 
-        public IDictionary<string, object> QueryEngineConfiguration => this.AccountSettings.QueryEngineConfiuration;
+        public IDictionary<string, object> QueryEngineConfiguration => this.AccountProperties.QueryEngineConfiuration;
 
         public string DatabaseAccountId => throw new NotImplementedException();
 
         public Uri DatabaseAccountApiEndpoint => throw new NotImplementedException();
 
-        public ReplicationPolicy UserReplicationPolicy => this.AccountSettings.ReplicationPolicy;
+        public ReplicationPolicy UserReplicationPolicy => this.AccountProperties.ReplicationPolicy;
 
-        public ReplicationPolicy SystemReplicationPolicy => this.AccountSettings.SystemReplicationPolicy;
+        public ReplicationPolicy SystemReplicationPolicy => this.AccountProperties.SystemReplicationPolicy;
 
-        public Documents.ConsistencyLevel DefaultConsistencyLevel => (Documents.ConsistencyLevel)this.AccountSettings.ConsistencySetting.DefaultConsistencyLevel;
+        public Documents.ConsistencyLevel DefaultConsistencyLevel => (Documents.ConsistencyLevel)this.AccountProperties.Consistency.DefaultConsistencyLevel;
 
-        public ReadPolicy ReadPolicy => this.AccountSettings.ReadPolicy;
+        public ReadPolicy ReadPolicy => this.AccountProperties.ReadPolicy;
 
         public string PrimaryMasterKey => throw new NotImplementedException();
 
@@ -56,9 +55,9 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task InitializeAsync()
         {
-            if (this.AccountSettings == null)
+            if (this.AccountProperties == null)
             {
-                this.AccountSettings = await accountSettingsTaskFunc();
+                this.AccountProperties = await this.accountPropertiesTaskFunc();
             }
         }
     }

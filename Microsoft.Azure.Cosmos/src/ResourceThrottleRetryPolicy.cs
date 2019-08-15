@@ -6,10 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     // Retry when we receive the throttling from server.
@@ -75,11 +74,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary> 
         /// Should the caller retry the operation.
         /// </summary>
-        /// <param name="cosmosResponseMessage"><see cref="CosmosResponseMessage"/> in return of the request</param>
+        /// <param name="cosmosResponseMessage"><see cref="ResponseMessage"/> in return of the request</param>
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage,
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

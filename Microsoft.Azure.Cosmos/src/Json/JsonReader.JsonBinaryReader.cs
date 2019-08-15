@@ -7,12 +7,17 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation
     /// </summary>
-    internal abstract partial class JsonReader : IJsonReader
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonReader : IJsonReader
     {
         /// <summary>
         /// JsonReader that can read from a json serialized in binary <see cref="JsonBinaryEncoding"/>.
@@ -25,23 +30,28 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly JsonBinaryBufferBase jsonBinaryBuffer;
 
             /// <summary>
+            /// Dictionary used for user string encoding.
+            /// </summary>
+            private readonly JsonStringDictionary jsonStringDictionary;
+
+            /// <summary>
             /// For binary there is no end of token marker in the actual binary, but the JsonReader interface still needs to surface ObjectEndToken and ArrayEndToken.
             /// To accommodate for this we have a progress stack to let us know how many bytes there are left to read for all levels of nesting. 
             /// With this information we know that we are at the end of a context and can now surface an end object / array token.
             /// </summary>
             private readonly ProgressStack progressStack;
 
-            public JsonBinaryReader(byte[] buffer, bool skipValidation = false)
-                : this(new JsonBinaryArrayBuffer(buffer))
+            public JsonBinaryReader(byte[] buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
+                : this(new JsonBinaryArrayBuffer(buffer, jsonStringDictionary))
             {
             }
 
-            public JsonBinaryReader(Stream stream, bool skipValidation = false)
-                : this(new JsonBinaryStreamBuffer(stream))
+            public JsonBinaryReader(Stream stream, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
+                : this(new JsonBinaryStreamBuffer(stream, jsonStringDictionary))
             {
             }
 
-            private JsonBinaryReader(JsonBinaryBufferBase jsonBinaryBuffer, bool skipValidation = false)
+            private JsonBinaryReader(JsonBinaryBufferBase jsonBinaryBuffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
                 : base(skipValidation)
             {
                 this.jsonBinaryBuffer = jsonBinaryBuffer;
@@ -49,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // First byte is the serialization format so we are skipping over it
                 this.jsonBinaryBuffer.ReadByte();
                 this.progressStack = new ProgressStack();
+                this.jsonStringDictionary = jsonStringDictionary;
             }
 
             /// <summary>
@@ -619,13 +630,15 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Note that this reader is able to read from a little endian stream even if the client is on a big endian machine.
                 /// </summary>
                 protected readonly LittleEndianBinaryReader BinaryReader;
+                protected readonly JsonStringDictionary jsonStringDictionary;
                 private JsonTokenType currentTokenType;
 
                 /// <summary>
                 /// Initializes a new instance of the JsonBinaryBufferBase class from an array of bytes.
                 /// </summary>
                 /// <param name="stream">A stream to read from.</param>
-                protected JsonBinaryBufferBase(Stream stream)
+                /// <param name="jsonStringDictionary">The JSON string dictionary to use for user string encoding.</param>
+                protected JsonBinaryBufferBase(Stream stream, JsonStringDictionary jsonStringDictionary = null)
                 {
                     if (stream == null)
                     {
@@ -633,6 +646,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     this.BinaryReader = new LittleEndianBinaryReader(stream, Encoding.UTF8);
+                    this.jsonStringDictionary = jsonStringDictionary;
                 }
 
                 /// <summary>
@@ -870,7 +884,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 private string GetStringValue(ArraySegment<byte> jsonToken)
                 {
                     BinaryReader binaryReader = this.GetBinaryReaderAtToken(jsonToken);
-                    return JsonBinaryEncoding.GetStringValue(binaryReader);
+                    return JsonBinaryEncoding.GetStringValue(binaryReader, this.jsonStringDictionary);
                 }
             }
             #endregion
@@ -889,8 +903,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Initializes a new instance of the JsonBinaryArrayBuffer class.
                 /// </summary>
                 /// <param name="buffer">The source buffer to read from.</param>
-                public JsonBinaryArrayBuffer(byte[] buffer)
-                    : base(new MemoryStream(buffer, 0, buffer.Length, false, true))
+                /// <param name="jsonStringDictionary">The string dictionary to use for dictionary encoding.</param>
+                public JsonBinaryArrayBuffer(byte[] buffer, JsonStringDictionary jsonStringDictionary = null)
+                    : base(new MemoryStream(buffer, 0, buffer.Length, false, true), jsonStringDictionary)
                 {
                     if (buffer == null)
                     {
@@ -970,8 +985,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Initializes a new instance of the JsonBinaryStreamBuffer class.
                 /// </summary>
                 /// <param name="stream">The stream to buffer from.</param>
-                public JsonBinaryStreamBuffer(Stream stream)
-                    : base(stream)
+                /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
+                public JsonBinaryStreamBuffer(Stream stream, JsonStringDictionary jsonStringDictionary = null)
+                    : base(stream, jsonStringDictionary)
                 {
                     if (stream == null)
                     {

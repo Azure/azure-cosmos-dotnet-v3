@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
 
@@ -99,9 +99,9 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<CosmosAccountSettings> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<AccountProperties> GetDatabaseAccountAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
         {
-            CosmosAccountSettings databaseAccount = null;
+            AccountProperties databaseAccount = null;
 
             // Get the ServiceDocumentResource from the gateway.
             using (HttpResponseMessage responseMessage =
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
-                    databaseAccount = CosmosResource.FromStream<CosmosAccountSettings>(documentServiceResponse);
+                    databaseAccount = CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                 }
 
                 long longValue;

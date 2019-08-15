@@ -6,13 +6,19 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Text;
 
     /// <summary>
     /// JsonReader partial.
     /// </summary>
-    internal abstract partial class JsonReader : IJsonReader
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonReader : IJsonReader
     {
         /// <summary>
         /// JsonReader that knows how to read text
@@ -911,7 +917,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public double GetNumberValue()
                 {
                     string stringDouble = this.encoding.GetString(this.bufferedToken.GetBuffer(), 0, this.tokenLength);
-                    return double.Parse(stringDouble);
+                    return double.Parse(stringDouble, CultureInfo.InvariantCulture);
                 }
 
                 /// <summary>

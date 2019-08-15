@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     foreach (var index in Enumerable.Range(1, 3))
                     {
                         string name = string.Format(CultureInfo.InvariantCulture, "{0}{1}", dbprefix, index);
-                        CosmosDatabaseSettings queriedDatabases = documentClient.CreateDatabaseQuery(@"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<CosmosDatabaseSettings>();
+                        DatabaseProperties queriedDatabases = documentClient.CreateDatabaseQuery(@"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<DatabaseProperties>();
                         Assert.AreEqual(databases[index - 1].ResourceId, queriedDatabases.ResourceId, "Expect queried id to match the id with the same name in the created database");
                     }
                 };
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     foreach (var index in Enumerable.Range(1, 3))
                     {
                         string name = string.Format(CultureInfo.InvariantCulture, "{0}{1}", collprefix, index);
-                        CosmosContainerSettings queriedCollections = documentClient.CreateDocumentCollectionQuery(database, @"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<CosmosContainerSettings>();
+                        ContainerProperties queriedCollections = documentClient.CreateDocumentCollectionQuery(database, @"select * from root r where r.id = """ + name + @"""").AsEnumerable().Single().ToObject<ContainerProperties>();
                         Assert.AreEqual(collections[index - 1].ResourceId, queriedCollections.ResourceId, "Expect queried id to match the id with the same name in the created documents");
                     }
                 };
@@ -469,7 +469,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         NumericField2 = index
                     };
 
-                    INameValueCollection headers = new StringKeyValueCollection();
+                    INameValueCollection headers = new DictionaryNameValueCollection();
                     if (!collection.IndexingPolicy.Automatic)
                     {
                         headers.Add("x-ms-indexing-directive", "include");
@@ -601,7 +601,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc.StringField = "222";
                 Document documentDefinition = (Document)doc;
                 documentDefinition.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new StringKeyValueCollection();
+                INameValueCollection requestHeaders = new DictionaryNameValueCollection();
                 requestHeaders.Add("x-ms-indexing-directive", "exclude");
                 this.client.Create<Document>(collection.GetIdOrFullName(), documentDefinition, requestHeaders);
 
@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     StringField = "333",
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection requestHeaders = new StringKeyValueCollection();
+                INameValueCollection requestHeaders = new DictionaryNameValueCollection();
                 requestHeaders.Add("x-ms-indexing-directive", "include");
 
                 QueryDocument docCreated = this.client.Create<QueryDocument>(collection.GetIdOrFullName(), doc, requestHeaders);
@@ -790,7 +790,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     sourceCollection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                     DocumentCollection collection = testClient.Create<DocumentCollection>(database.GetIdOrFullName(), sourceCollection);
 
-                    INameValueCollection requestHeaders = new StringKeyValueCollection();
+                    INameValueCollection requestHeaders = new DictionaryNameValueCollection();
                     requestHeaders.Add("x-ms-indexing-directive", "include");
 
                     Action<string, string, string> testDocumentSQL = (name, rawValue, escapedValue) =>
@@ -1436,8 +1436,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 response = await client.ReadDocumentFeedAsync(coll, feedOptions);
                 result.AddRange(response);
-                feedOptions.RequestContinuation = response.ResponseContinuation;
-            } while (!string.IsNullOrEmpty(feedOptions.RequestContinuation));
+                feedOptions.RequestContinuationToken = response.ResponseContinuation;
+            } while (!string.IsNullOrEmpty(feedOptions.RequestContinuationToken));
             double totalMillParallelReedFeed2 = (DateTime.Now - startTime).TotalMilliseconds;
 
             var enumerableIds2 = result.Select(doc => ((Document)doc).Id).ToArray();
@@ -1642,7 +1642,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             {
                                 EnableCrossPartitionQuery = true,
                                 MaxItemCount = 1,
-                                RequestContinuation = continuationToken,
+                                RequestContinuationToken = continuationToken,
                                 MaxDegreeOfParallelism = maxDop
                             }).AsDocumentQuery().ExecuteNextAsync();
                     Assert.Fail("Expected exception");
@@ -1669,7 +1669,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 SqlQuerySpec querySpec = new SqlQuerySpec(string.Format("SELECT * FROM r"));
                 using (HttpClient httpClient = new HttpClient())
                 {
-                    var headers = new StringKeyValueCollection();
+                    var headers = new DictionaryNameValueCollection();
                     httpClient.AddMasterAuthorizationHeader("post", coll.ResourceId, "docs", headers, masterKey);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
@@ -2473,7 +2473,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             EnableCrossPartitionQuery = true,
                             MaxDegreeOfParallelism = -1,
-                            RequestContinuation = continuationToken,
+                            RequestContinuationToken = continuationToken,
                             MaxItemCount = pageSize,
                             PopulateQueryMetrics = true
                         };
@@ -2743,7 +2743,7 @@ function sproc(feed) {
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
                 doc.SetPropertyValue("pk", "test");
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
                     headers.Add("x-ms-indexing-directive", "include");
@@ -2814,7 +2814,7 @@ function sproc(feed) {
                     StringField = index.ToString(CultureInfo.InvariantCulture),
                 };
 
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
                 if (!collection.IndexingPolicy.Automatic && manualIndex)
                 {
                     headers.Add("x-ms-indexing-directive", "include");

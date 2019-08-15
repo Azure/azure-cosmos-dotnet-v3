@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 

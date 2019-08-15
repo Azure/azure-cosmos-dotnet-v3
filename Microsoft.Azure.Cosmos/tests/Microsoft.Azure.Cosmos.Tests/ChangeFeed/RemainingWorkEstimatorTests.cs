@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }).ToList();
 
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
-            mockIterator.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
+            mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:1"));
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
@@ -98,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             Mock<FeedIterator> mockIteratorPKRange0 = new Mock<FeedIterator>();
-            mockIteratorPKRange0.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
+            mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "0:" + globalLsnPKRange0.ToString()));
 
             Mock<FeedIterator> mockIteratorPKRange1 = new Mock<FeedIterator>();
-            mockIteratorPKRange1.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
+            mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.NotModified, "1:" + globalLsnPKRange1.ToString()));
 
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
@@ -149,11 +149,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             Mock<FeedIterator> mockIteratorPKRange0 = new Mock<FeedIterator>();
-            mockIteratorPKRange0.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
+            mockIteratorPKRange0.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.OK, "0:" + globalLsnPKRange0.ToString(), processedLsnPKRange0.ToString()));
 
             Mock<FeedIterator> mockIteratorPKRange1 = new Mock<FeedIterator>();
-            mockIteratorPKRange1.Setup(i => i.FetchNextSetAsync(It.IsAny<CancellationToken>()))
+            mockIteratorPKRange1.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(HttpStatusCode.OK, "1:" + globalLsnPKRange1.ToString(), processedLsnPKRange1.ToString()));
 
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
@@ -203,9 +203,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Assert.AreEqual(expectedLsn, RemainingWorkEstimatorCore.ExtractLsnFromSessionToken(newTokenWithRegionalLsn));
         }
 
-        private static CosmosResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, string itemLsn = null)
+        private static ResponseMessage GetResponse(HttpStatusCode statusCode, string localLsn, string itemLsn = null)
         {
-            CosmosResponseMessage message = new CosmosResponseMessage(statusCode);
+            ResponseMessage message = new ResponseMessage(statusCode);
             message.Headers.Add(Documents.HttpConstants.HttpHeaders.SessionToken, localLsn);
             if (!string.IsNullOrEmpty(itemLsn))
             {
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     firstDocument
                 };
 
-                message.Content = (new CosmosJsonSerializerCore()).ToStream(cosmosFeedResponse);
+                message.Content = (new CosmosJsonDotNetSerializer()).ToStream(cosmosFeedResponse);
             }
 
             return message;

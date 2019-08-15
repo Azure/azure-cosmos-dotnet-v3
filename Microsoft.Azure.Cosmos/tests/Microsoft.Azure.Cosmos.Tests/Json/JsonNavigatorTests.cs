@@ -12,8 +12,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Json;
     using System.IO;
+    using System.Globalization;
 
     [TestClass]
+    [TestCategory("Functional")]
     public class JsonNavigatorTests
     {
         [TestInitialize]
@@ -364,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             this.VerifyNavigator(json, performExtraChecks);
         }
-#endregion
+        #endregion
 
         private void VerifyNavigator(string input, bool performExtraChecks = true)
         {
@@ -373,23 +375,56 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
         private void VerifyNavigator(string input, Exception expectedException, bool performExtraChecks = true)
         {
-            IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(input));
-            JsonTokenInfo[] tokensFromReader = JsonNavigatorTests.GetTokensWithReader(jsonReader);
+            CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
 
-            // Test text
-            IJsonNavigator textNavigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(input));
-            IJsonNavigatorNode textRootNode = textNavigator.GetRootNode();
-            JsonTokenInfo[] tokensFromTextNavigator = JsonNavigatorTests.GetTokensFromNode(textRootNode, textNavigator, performExtraChecks);
+            CultureInfo[] cultureInfoList = new CultureInfo[]
+            {
+                defaultCultureInfo,
+                System.Globalization.CultureInfo.GetCultureInfo("fr-FR")
+            };
 
-            Assert.IsTrue(tokensFromTextNavigator.SequenceEqual(tokensFromReader));
+            try
+            {
+                foreach (CultureInfo cultureInfo in cultureInfoList)
+                {
+                    System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
 
-            // Test binary
-            byte[] binaryInput = JsonTestUtils.ConvertTextToBinary(input);
-            IJsonNavigator binaryNavigator = JsonNavigator.Create(binaryInput);
-            IJsonNavigatorNode binaryRootNode = binaryNavigator.GetRootNode();
-            JsonTokenInfo[] tokensFromBinaryNavigator = JsonNavigatorTests.GetTokensFromNode(binaryRootNode, binaryNavigator, performExtraChecks);
+                    IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(input));
+                    JsonTokenInfo[] tokensFromReader = JsonNavigatorTests.GetTokensWithReader(jsonReader);
 
-            Assert.IsTrue(tokensFromBinaryNavigator.SequenceEqual(tokensFromReader));
+                    // Test text
+                    IJsonNavigator textNavigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(input));
+                    IJsonNavigatorNode textRootNode = textNavigator.GetRootNode();
+                    JsonTokenInfo[] tokensFromTextNavigator = JsonNavigatorTests.GetTokensFromNode(textRootNode, textNavigator, performExtraChecks);
+
+                    Assert.IsTrue(tokensFromTextNavigator.SequenceEqual(tokensFromReader));
+
+                    // Test binary
+                    byte[] binaryInput = JsonTestUtils.ConvertTextToBinary(input);
+                    IJsonNavigator binaryNavigator = JsonNavigator.Create(binaryInput);
+                    IJsonNavigatorNode binaryRootNode = binaryNavigator.GetRootNode();
+                    JsonTokenInfo[] tokensFromBinaryNavigator = JsonNavigatorTests.GetTokensFromNode(binaryRootNode, binaryNavigator, performExtraChecks);
+
+                    Assert.IsTrue(tokensFromBinaryNavigator.SequenceEqual(tokensFromReader));
+
+                    // Test binary + user string encoding
+                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 4096);
+                    byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
+                    if (jsonStringDictionary.TryGetStringAtIndex(index: 0, value: out string temp))
+                    {
+                        Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be different with user string encoding");
+                    }
+                    IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);
+                    IJsonNavigatorNode binaryRootNodeWithUserStringEncoding = binaryNavigatorWithUserStringEncoding.GetRootNode();
+                    JsonTokenInfo[] tokensFromBinaryNavigatorWithUserStringEncoding = JsonNavigatorTests.GetTokensFromNode(binaryRootNode, binaryNavigator, performExtraChecks);
+
+                    Assert.IsTrue(tokensFromBinaryNavigatorWithUserStringEncoding.SequenceEqual(tokensFromReader));
+                }
+            }
+            finally
+            {
+                System.Threading.Thread.CurrentThread.CurrentCulture = defaultCultureInfo;
+            }
         }
 
         internal static JsonTokenInfo[] GetTokensWithReader(IJsonReader jsonReader)
@@ -543,7 +578,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    Assert.AreEqual(navigator.SerializationFormat, JsonSerializationFormat.Binary);   
+                    Assert.AreEqual(navigator.SerializationFormat, JsonSerializationFormat.Binary);
                 }
                 catch (ArgumentOutOfRangeException)
                 {

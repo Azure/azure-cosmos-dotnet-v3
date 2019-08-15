@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         private static void QueryPlanRequestEnricher(
-            CosmosRequestMessage requestMessage)
+            RequestMessage requestMessage)
         {
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQueryPlanRequest, bool.TrueString);

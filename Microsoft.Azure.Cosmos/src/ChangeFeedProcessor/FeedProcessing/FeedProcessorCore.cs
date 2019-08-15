@@ -15,25 +15,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
-        private readonly ProcessorSettings settings;
+        private readonly ProcessorOptions options;
         private readonly PartitionCheckpointer checkpointer;
         private readonly ChangeFeedObserver<T> observer;
         private readonly FeedIterator resultSetIterator;
-        private readonly CosmosJsonSerializer cosmosJsonSerializer;
+        private readonly CosmosSerializer cosmosJsonSerializer;
 
         public FeedProcessorCore(
             ChangeFeedObserver<T> observer,
             FeedIterator resultSetIterator, 
-            ProcessorSettings settings, 
+            ProcessorOptions options, 
             PartitionCheckpointer checkpointer, 
-            CosmosJsonSerializer cosmosJsonSerializer)
+            CosmosSerializer cosmosJsonSerializer)
         {
             this.observer = observer;
-            this.settings = settings;
+            this.options = options;
             this.checkpointer = checkpointer;
             this.resultSetIterator = resultSetIterator;
             this.cosmosJsonSerializer = cosmosJsonSerializer;
@@ -41,20 +42,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public override async Task RunAsync(CancellationToken cancellationToken)
         {
-            string lastContinuation = this.settings.StartContinuation;
+            string lastContinuation = this.options.StartContinuation;
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                TimeSpan delay = this.settings.FeedPollDelay;
+                TimeSpan delay = this.options.FeedPollDelay;
 
                 try
                 {
                     do
                     {
-                        CosmosResponseMessage response = await this.resultSetIterator.FetchNextSetAsync(cancellationToken).ConfigureAwait(false);
+                        ResponseMessage response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
-                            DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.settings.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
+                            DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
                             this.HandleFailedRequest(response.StatusCode, (int)response.Headers.SubStatusCode, lastContinuation);
 
                             if (response.Headers.RetryAfter.HasValue)
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                             break;
                         }
 
-                        lastContinuation = response.Headers.Continuation;
+                        lastContinuation = response.Headers.ContinuationToken;
                         if (this.resultSetIterator.HasMoreResults)
                         {
                             await this.DispatchChangesAsync(response, cancellationToken).ConfigureAwait(false);
@@ -81,8 +82,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         throw;
                     }
 
-                    DefaultTrace.TraceException(canceledException);
-                    DefaultTrace.TraceWarning("exception: lease token '{0}'", this.settings.LeaseToken);
+                    Extensions.TraceException(canceledException);
+                    DefaultTrace.TraceWarning("exception: lease token '{0}'", this.options.LeaseToken);
 
                     // ignore as it is caused by Cosmos DB client when StopAsync is called
                 }
@@ -110,9 +111,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        private Task DispatchChangesAsync(CosmosResponseMessage response, CancellationToken cancellationToken)
+        private Task DispatchChangesAsync(ResponseMessage response, CancellationToken cancellationToken)
         {
-            ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.settings.LeaseToken, response, this.checkpointer);
+            ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.options.LeaseToken, response, this.checkpointer);
             Collection<T> asFeedResponse;
             try
             {

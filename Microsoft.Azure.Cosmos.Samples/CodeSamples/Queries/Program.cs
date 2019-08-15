@@ -21,11 +21,12 @@
     {
         //Read configuration
         private static readonly string CosmosDatabaseId = "samples";
-        private static readonly string containerId = "container-samples";
+        private static readonly string containerId = "query-samples";
 
-        private static CosmosDatabase cosmosDatabase = null;
+        private static Database cosmosDatabase = null;
 
-        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute 
+        // Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
+        // <Main>
         public static async Task Main(string[] args)
         {
             try
@@ -46,7 +47,7 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                //Read the Cosmos endpointUrl and authorisationKeys from configuration
+                //Read the Cosmos endpointUrl and authorizationKey from configuration
                 //These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
                 //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
@@ -69,11 +70,13 @@
                 Console.ReadKey();
             }
         }
+        // </Main>
 
+        // <RunDemoAsync>
         private static async Task RunDemoAsync(CosmosClient client)
         {
             cosmosDatabase = await client.CreateDatabaseIfNotExistsAsync(CosmosDatabaseId);
-            CosmosContainer container = await Program.GetOrCreateContainerAsync(cosmosDatabase, containerId);
+            Container container = await Program.GetOrCreateContainerAsync(cosmosDatabase, containerId);
 
             await Program.CreateItems(container);
 
@@ -90,18 +93,21 @@
             // Uncomment to Cleanup
             //await cosmosDatabase.DeleteAsync();
         }
+        // </RunDemoAsync>
 
-        private static async Task ItemFeed(CosmosContainer container)
+        // <ItemFeed>
+        private static async Task ItemFeed(Container container)
         {
             List<Family> families = new List<Family>();
 
             // SQL
-            FeedIterator<Family> setIterator = container.GetItemsIterator<Family>(maxItemCount: 1);
+            FeedIterator<Family> setIterator = container.GetItemQueryIterator<Family>(requestOptions: new QueryRequestOptions { MaxItemCount =  1});
             while (setIterator.HasMoreResults)
             {
                 int count = 0;
-                foreach (Family item in await setIterator.FetchNextSetAsync())
+                foreach (Family item in await setIterator.ReadNextAsync())
                 {
+                    count++;
                     Assert("Should only return 1 result at a time.", count <= 1);
                     families.Add(item);
                 }
@@ -109,17 +115,19 @@
 
             Assert("Expected two families", families.ToList().Count == 2);
         }
+        // </ItemFeed>
 
-        private static async Task ItemStreamFeed(CosmosContainer container)
+        // <ItemStreamFeed>
+        private static async Task ItemStreamFeed(Container container)
         {
             int totalCount = 0;
 
             // SQL
-            FeedIterator setIterator = container.GetItemsStreamIterator();
+            FeedIterator setIterator = container.GetItemQueryStreamIterator();
             while (setIterator.HasMoreResults)
             {
                 int count = 0;
-                using (CosmosResponseMessage response = await setIterator.FetchNextSetAsync())
+                using (ResponseMessage response = await setIterator.ReadNextAsync())
                 {
                     response.EnsureSuccessStatusCode();
                     count++;
@@ -136,20 +144,24 @@
 
             Assert("Expected two families", totalCount == 2);
         }
+        // </ItemStreamFeed>
 
-        private static async Task QueryItemsInPartitionAsStreams(CosmosContainer container)
+        // <QueryItemsInPartitionAsStreams>
+        private static async Task QueryItemsInPartitionAsStreams(Container container)
         {
             // SQL
-            FeedIterator setIterator = container.CreateItemQueryStream(
+            FeedIterator setIterator = container.GetItemQueryStreamIterator(
                 "SELECT F.id, F.LastName, F.IsRegistered FROM Families F",
-                partitionKey: new PartitionKey("Anderson"),
-                maxConcurrency: 1,
-                maxItemCount: 1);
+                requestOptions: new QueryRequestOptions() {
+                    PartitionKey = new PartitionKey("Anderson"),
+                    MaxConcurrency = 1,
+                    MaxItemCount = 1
+                });
 
             int count = 0;
             while (setIterator.HasMoreResults)
             {
-                using (CosmosResponseMessage response = await setIterator.FetchNextSetAsync())
+                using (ResponseMessage response = await setIterator.ReadNextAsync())
                 {
                     Assert("Response failed", response.IsSuccessStatusCode);
                     count++;
@@ -167,41 +179,44 @@
 
             Assert("Expected 1 family", count == 1);
         }
+        // </QueryItemsInPartitionAsStreams>
 
-        private static async Task QueryWithSqlParameters(CosmosContainer container)
+        // <QueryWithSqlParameters>
+        private static async Task QueryWithSqlParameters(Container container)
         {
             // Query using two properties within each item. WHERE Id == "" AND Address.City == ""
             // notice here how we are doing an equality comparison on the string value of City
 
-            CosmosSqlQueryDefinition query = new CosmosSqlQueryDefinition("SELECT * FROM Families f WHERE f.id = @id AND f.Address.City = @city")
-                .UseParameter("@id", "AndersonFamily")
-                .UseParameter("@city", "Seattle");
+            QueryDefinition query = new QueryDefinition("SELECT * FROM Families f WHERE f.id = @id AND f.Address.City = @city")
+                .WithParameter("@id", "AndersonFamily")
+                .WithParameter("@city", "Seattle");
 
             List<Family> results = new List<Family>();
-            FeedIterator<Family> resultSetIterator = container.CreateItemQuery<Family>(query, partitionKey: new PartitionKey("Anderson"));
+            FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(query, requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey("Anderson")});
             while (resultSetIterator.HasMoreResults)
             {
-                results.AddRange((await resultSetIterator.FetchNextSetAsync()));
+                results.AddRange((await resultSetIterator.ReadNextAsync()));
             }
 
             Assert("Expected only 1 family", results.Count == 1);
         }
+        // </QueryWithSqlParameters>
 
-        private static async Task QueryPartitionedContainerInParallelAsync(CosmosContainer container)
+        // <QueryPartitionedContainerInParallelAsync>
+        private static async Task QueryPartitionedContainerInParallelAsync(Container container)
         {
             List<Family> familiesSerial = new List<Family>();
             string queryText = "SELECT * FROM Families";
 
             // 0 maximum parallel tasks, effectively serial execution
             QueryRequestOptions options = new QueryRequestOptions() { MaxBufferedItemCount = 100 };
-
-            FeedIterator<Family> query = container.CreateItemQuery<Family>(
+            options.MaxConcurrency = 0;
+            FeedIterator<Family> query = container.GetItemQueryIterator<Family>(
                 queryText,
-                maxConcurrency: 0,
                 requestOptions: options);
             while (query.HasMoreResults)
             {
-                foreach (Family family in await query.FetchNextSetAsync())
+                foreach (Family family in await query.ReadNextAsync())
                 {
                     familiesSerial.Add(family);
                 }
@@ -212,14 +227,14 @@
             // 1 maximum parallel tasks, 1 dedicated asynchronous task to continuously make REST calls
             List<Family> familiesParallel1 = new List<Family>();
 
-            query = container.CreateItemQuery<Family>(
+            options.MaxConcurrency = 1;
+            query = container.GetItemQueryIterator<Family>(
                 queryText,
-                maxConcurrency: 1,
                 requestOptions: options);
 
             while (query.HasMoreResults)
             {
-                foreach (Family family in await query.FetchNextSetAsync())
+                foreach (Family family in await query.ReadNextAsync())
                 {
                     familiesParallel1.Add(family);
                 }
@@ -232,14 +247,14 @@
             // 10 maximum parallel tasks, a maximum of 10 dedicated asynchronous tasks to continuously make REST calls
             List<Family> familiesParallel10 = new List<Family>();
 
-            query = container.CreateItemQuery<Family>(
+            options.MaxConcurrency = 10;
+            query = container.GetItemQueryIterator<Family>(
                 queryText,
-                maxConcurrency: 10,
                 requestOptions: options);
 
             while (query.HasMoreResults)
             {
-                foreach (Family family in await query.FetchNextSetAsync())
+                foreach (Family family in await query.ReadNextAsync())
                 {
                     familiesParallel10.Add(family);
                 }
@@ -248,13 +263,15 @@
             Assert("Parallel Query expected two families", familiesParallel10.ToList().Count == 2);
             AssertSequenceEqual("Parallel query returns result out of order compared to serial execution", familiesSerial, familiesParallel10);
         }
+        // </QueryPartitionedContainerInParallelAsync>
 
         /// <summary>
         /// Creates the items used in this Sample
         /// </summary>
         /// <param name="container">The selfLink property for the CosmosContainer where items will be created.</param>
         /// <returns>None</returns>
-        private static async Task CreateItems(CosmosContainer container)
+        // <CreateItems>
+        private static async Task CreateItems(Container container)
         {
             Family AndersonFamily = new Family
             {
@@ -319,20 +336,23 @@
 
             await container.UpsertItemAsync<Family>(WakefieldFamily, new PartitionKey(WakefieldFamily.PartitionKey));
         }
+        // </CreateItems>
 
         /// <summary>
         /// Get a DocuemntContainer by id, or create a new one if one with the id provided doesn't exist.
         /// </summary>
         /// <param name="id">The id of the CosmosContainer to search for, or create.</param>
         /// <returns>The matched, or created, CosmosContainer object</returns>
-        private static async Task<CosmosContainer> GetOrCreateContainerAsync(CosmosDatabase database, string containerId)
+        // <GetOrCreateContainerAsync>
+        private static async Task<Container> GetOrCreateContainerAsync(Database database, string containerId)
         {
-            CosmosContainerSettings containerDefinition = new CosmosContainerSettings(id: containerId, partitionKeyPath: "/LastName");
+            ContainerProperties containerProperties = new ContainerProperties(id: containerId, partitionKeyPath: "/LastName");
 
             return await database.CreateContainerIfNotExistsAsync(
-                containerSettings: containerDefinition,
-                requestUnitsPerSecond: 400);
+                containerProperties: containerProperties,
+                throughput: 400);
         }
+        // </GetOrCreateContainerAsync>
 
         private static void Assert(string message, bool condition)
         {

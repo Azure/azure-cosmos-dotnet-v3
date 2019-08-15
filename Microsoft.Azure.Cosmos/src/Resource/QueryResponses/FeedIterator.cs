@@ -15,14 +15,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
         /// </summary>
-        public virtual bool HasMoreResults { get; protected set; }
+        public abstract bool HasMoreResults { get; }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public abstract Task<CosmosResponseMessage> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 
     /// <summary>
@@ -33,13 +33,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Tells if there is more results that need to be retrieved from the service
         /// </summary>
-        public virtual bool HasMoreResults { get; protected set; }
+        public abstract bool HasMoreResults { get; }
 
         /// <summary>
         /// Get the next set of results from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public abstract Task<FeedResponse<T>> FetchNextSetAsync(CancellationToken cancellationToken = default(CancellationToken));
+        public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken));
     }
 }

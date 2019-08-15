@@ -5,17 +5,13 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.ObjectModel;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// This retry policy is designed to work with in a pair with ClientRetryPolicy.
@@ -57,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage,
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = await this.retryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
@@ -102,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        CosmosContainerSettings collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                        ContainerProperties collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
 
                         if (collectionInfo == null)
                         {

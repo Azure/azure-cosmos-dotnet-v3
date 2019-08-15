@@ -19,15 +19,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeDocument;
             }
-            else if (valueAsType == typeof(CosmosStoredProcedureSettings))
+            else if (valueAsType == typeof(StoredProcedureProperties))
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeStoredProcedure;
             }
-            else if (valueAsType == typeof(CosmosTriggerSettings))
+            else if (valueAsType == typeof(TriggerProperties))
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeTrigger;
             }
-            else if (valueAsType == typeof(CosmosUserDefinedFunctionSettings))
+            else if (valueAsType == typeof(UserDefinedFunctionProperties))
             {
                 resourceType = Documents.Constants.Properties.ResourceTypeUserDefinedFunction;
             }
@@ -54,15 +54,15 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (string.Equals(Documents.Constants.Properties.ResourceTypeStoredProcedure, resourceType, StringComparison.OrdinalIgnoreCase))
             {
-                return typeof(CosmosStoredProcedureSettings);
+                return typeof(StoredProcedureProperties);
             }
             else if (string.Equals(Documents.Constants.Properties.ResourceTypeTrigger, resourceType, StringComparison.OrdinalIgnoreCase))
             {
-                return typeof(CosmosTriggerSettings);
+                return typeof(TriggerProperties);
             }
             else if (string.Equals(Documents.Constants.Properties.ResourceTypeUserDefinedFunction, resourceType, StringComparison.OrdinalIgnoreCase))
             {
-                return typeof(CosmosUserDefinedFunctionSettings);
+                return typeof(UserDefinedFunctionProperties);
             }
             else
             {

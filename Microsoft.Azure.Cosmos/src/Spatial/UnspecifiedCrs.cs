@@ -5,10 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
+    using System.Runtime.Serialization;
 
     /// <summary>
     /// Unspecified CRS. If a geometry has this CRS, no CRS can be assumed for it according to GeoJSON spec.
     /// </summary>
+    [DataContract]
     internal class UnspecifiedCrs : Crs, IEquatable<UnspecifiedCrs>
     {
         /// <summary>

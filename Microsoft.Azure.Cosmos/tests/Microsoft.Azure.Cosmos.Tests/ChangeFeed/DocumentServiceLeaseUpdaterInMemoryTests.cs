@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task RetriesIfCannotFind()
         {
             string itemId = "1";
-            object partitionKey = "1";
+            string partitionKey = "1";
             
             List<KeyValuePair<string, DocumentServiceLease>> state = new List<KeyValuePair<string, DocumentServiceLease>>();
 
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task UpdatesLease()
         {
             string itemId = "1";
-            object partitionKey = "1";
+            string partitionKey = "1";
             
             List<KeyValuePair<string, DocumentServiceLease>> state = new List<KeyValuePair<string, DocumentServiceLease>>()
             {

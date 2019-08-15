@@ -29,9 +29,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract IDocumentQueryClient DocumentQueryClient { get; }
 
-        internal abstract CosmosJsonSerializer CosmosSerializer { get; }
+        internal abstract CosmosSerializer CosmosSerializer { get; }
 
-        internal abstract CosmosJsonSerializer SettingsSerializer { get; }
+        internal abstract CosmosSerializer PropertiesSerializer { get; }
+
+        internal abstract CosmosSerializer SqlQuerySpecSerializer { get; }
 
         internal abstract CosmosResponseFactory ResponseFactory { get; }
 
@@ -57,19 +59,19 @@ namespace Microsoft.Azure.Cosmos
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
         /// in a resource can be unit tested.
         /// </summary>
-        internal abstract Task<CosmosResponseMessage> ProcessResourceOperationStreamAsync(
+        internal abstract Task<ResponseMessage> ProcessResourceOperationStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
-            PartitionKey partitionKey,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
+            Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken);
 
         /// <summary>
-        /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
+        /// This is a wrapper around request invoker method. This allows the calls to be mocked so logic done 
         /// in a resource can be unit tested.
         /// </summary>
         internal abstract Task<T> ProcessResourceOperationAsync<T>(
@@ -77,11 +79,11 @@ namespace Microsoft.Azure.Cosmos
            ResourceType resourceType,
            OperationType operationType,
            RequestOptions requestOptions,
-           CosmosContainerCore cosmosContainerCore,
-           PartitionKey partitionKey,
+           ContainerCore cosmosContainerCore,
+           PartitionKey? partitionKey,
            Stream streamPayload,
-           Action<CosmosRequestMessage> requestEnricher,
-           Func<CosmosResponseMessage, T> responseCreator,
+           Action<RequestMessage> requestEnricher,
+           Func<ResponseMessage, T> responseCreator,
            CancellationToken cancellationToken);
     }
 }

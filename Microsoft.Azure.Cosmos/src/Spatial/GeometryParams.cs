@@ -6,10 +6,12 @@ namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.Serialization;
 
     /// <summary>
     /// Not frequently used geometry parameters in the Azure Cosmos DB service.
     /// </summary>
+    [DataContract]
     public class GeometryParams
     {
         /// <summary>
@@ -18,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Additional geometry properties.
         /// </value>
+        [DataMember(Name = "properties")]
         public IDictionary<string, object> AdditionalProperties { get; set; }
 
         /// <summary>
@@ -26,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Coordinate Reference System for the geometry.
         /// </value>
+        [DataMember(Name = "crs")]
         public Crs Crs { get; set; }
 
         /// <summary>
@@ -34,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Bounding box for the geometry.
         /// </value>
+        [DataMember(Name = "bbox")]
         public BoundingBox BoundingBox { get; set; }
     }
 }

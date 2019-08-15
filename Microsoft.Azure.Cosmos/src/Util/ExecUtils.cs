@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Action<RequestMessage> requestEnricher,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
             return ExecUtils.ProcessResourceOperationAsync(
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
             return ExecUtils.ProcessResourceOperationAsync(
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             Stream streamPayload,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
             return ExecUtils.ProcessResourceOperationAsync(
@@ -94,11 +94,11 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
-            PartitionKey partitionKey,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Action<RequestMessage> requestEnricher,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
             if (client == null)
@@ -126,11 +126,11 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             RequestOptions requestOptions,
-            CosmosContainerCore cosmosContainerCore,
-            PartitionKey partitionKey,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
             Stream streamPayload,
-            Action<CosmosRequestMessage> requestEnricher,
-            Func<CosmosResponseMessage, T> responseCreator,
+            Action<RequestMessage> requestEnricher,
+            Func<ResponseMessage, T> responseCreator,
             CancellationToken cancellationToken)
         {
             if (requestHandler == null)
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(responseCreator));
             }
 
-            CosmosResponseMessage response = await requestHandler.SendAsync(
+            ResponseMessage response = await requestHandler.SendAsync(
                 resourceUri,
                 resourceType,
                 operationType,

@@ -5,8 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Linq;
-    using System.Reflection;
+    using System.IO;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -24,30 +23,35 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyCosmosConfigurationPropertiesGetUpdated()
         {
             string endpoint = AccountEndpoint;
-            string key = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
-            string region = CosmosRegions.WestCentralUS;
+            string key = Guid.NewGuid().ToString();
+            string region = Regions.WestCentralUS;
             ConnectionMode connectionMode = ConnectionMode.Gateway;
             TimeSpan requestTimeout = TimeSpan.FromDays(1);
             int maxConnections = 9001;
             string userAgentSuffix = "testSuffix";
-            CosmosRequestHandler preProcessHandler = new TestHandler();
+            RequestHandler preProcessHandler = new TestHandler();
             ApiType apiType = ApiType.Sql;
             int maxRetryAttemptsOnThrottledRequests = 9999;
             TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
+            CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
+            {
+                IgnoreNullValues = true,
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+            };
             TimeSpan idleTcpConnectionTimeout = new TimeSpan(0, 10, 0);
             TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
             int maxRequestsPerTcpConnection = 30;
             int maxTcpConnectionsPerEndpoint = 65535;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
-                accountEndPoint: endpoint,
-                accountKey: MockCosmosUtil.MockAccountKey);
+                accountEndpoint: endpoint,
+                accountKey: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
 
-            Assert.AreEqual(endpoint, clientOptions.EndPoint.OriginalString, "AccountEndPoint did not save correctly");
-            Assert.AreEqual(MockCosmosUtil.MockAccountKey, clientOptions.AccountKey.Key, "AccountKey did not save correctly");
+            Assert.AreEqual(endpoint, cosmosClient.Endpoint.OriginalString, "AccountEndpoint did not save correctly");
+            Assert.AreEqual(key, cosmosClient.AccountKey, "AccountKey did not save correctly");
 
             //Verify the default values are different from the new values
             Assert.AreNotEqual(region, clientOptions.ApplicationRegion);
@@ -56,7 +60,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
             Assert.AreNotEqual(userAgentSuffix, clientOptions.ApplicationName);
             Assert.AreNotEqual(apiType, clientOptions.ApiType);
-            Assert.IsNull(clientOptions.CustomHandlers);
+            Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
+            Assert.IsNull(clientOptions.SerializerOptions);
+            Assert.IsNull(clientOptions.Serializer);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -75,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithApplicationName(userAgentSuffix)
                 .AddCustomHandlers(preProcessHandler)
                 .WithApiType(apiType)
-                .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests);
+                .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                .WithSerializerOptions(cosmosSerializerOptions);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -88,8 +95,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(userAgentSuffix, clientOptions.ApplicationName);
             Assert.AreEqual(preProcessHandler, clientOptions.CustomHandlers[0]);
             Assert.AreEqual(apiType, clientOptions.ApiType);
-            Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnThrottledRequests);
-            Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnThrottledRequests);
+            Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnRateLimitedRequests);
+            Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnRateLimitedRequests);
+            Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.IgnoreNullValues);
+            Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
+            Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -98,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(Protocol.Https, policy.ConnectionProtocol);
             Assert.AreEqual(maxConnections, policy.MaxConnectionLimit);
             Assert.AreEqual(requestTimeout, policy.RequestTimeout);
-            Assert.AreEqual(userAgentSuffix, policy.UserAgentSuffix);
+            Assert.IsTrue(policy.UserAgentSuffix.Contains(userAgentSuffix));
             Assert.IsTrue(policy.UseMultipleWriteLocations);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
@@ -132,29 +142,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void VerifyCosmosClientOptionsHasNonePublicNonVirtualSetMethods()
-        {
-            // All of the public properties and methods should be virtual to allow users to 
-            // create unit tests by mocking the different types.
-            Type type = typeof(CosmosClientOptions);
-
-
-            System.Collections.Generic.List<PropertyInfo> publicProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => x.GetSetMethod() != null && x.GetSetMethod().IsPublic && (!x.GetMethod.IsVirtual || !x.SetMethod.IsVirtual)).ToList();
-
-            Assert.IsFalse(publicProperties.Any(), $"CosmosClientOptions should be read only. These are public {string.Join(";", publicProperties.Select(x => x.Name))}");
-        }
-
-        [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnBadDelegatingHandler()
         {
-            CosmosRequestHandler handler = new TestHandler();
-            CosmosRequestHandler innerHandler = new TestHandler();
+            RequestHandler handler = new TestHandler();
+            RequestHandler innerHandler = new TestHandler();
 
             //Inner handler is required to be null to allow the client to connect it to other handlers
             handler.InnerHandler = innerHandler;
-            new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, MockCosmosUtil.MockAccountKey)
+            new CosmosClientBuilder(CosmosClientOptionsUnitTests.AccountEndpoint, "testKey")
                 .AddCustomHandlers(handler);
         }
 
@@ -163,6 +159,103 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ThrowOnNullEndpoint()
         {
             new CosmosClientBuilder(null, "testKey");
+        }
+
+        [TestMethod]
+        public void UserAgentContainsEnvironmentInformation()
+        {
+            EnvironmentInformation environmentInformation = new EnvironmentInformation();
+            string expectedValue = environmentInformation.ToString();
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            string userAgentSuffix = "testSuffix";
+            cosmosClientOptions.ApplicationName = userAgentSuffix;
+
+            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.EndsWith(userAgentSuffix));
+            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.Contains(expectedValue));
+
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            Assert.IsTrue(connectionPolicy.UserAgentSuffix.EndsWith(userAgentSuffix));
+            Assert.IsTrue(connectionPolicy.UserAgentSuffix.Contains(expectedValue));
+        }
+
+        [TestMethod]
+        public void GetCosmosSerializerWithWrapperOrDefaultTest()
+        {
+            CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                Serializer = serializer
+            };
+
+            CosmosSerializer cosmosSerializer = options.GetCosmosSerializerWithWrapperOrDefault();
+            Assert.AreNotEqual(cosmosSerializer, options.PropertiesSerializer, "Serializer should be custom not the default");
+            Assert.AreNotEqual(cosmosSerializer, serializer, "Serializer should be in the CosmosJsonSerializerWrapper");
+
+            CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = cosmosSerializer as CosmosJsonSerializerWrapper;
+            Assert.IsNotNull(cosmosJsonSerializerWrapper);
+            Assert.AreEqual(cosmosJsonSerializerWrapper.InternalJsonSerializer, serializer);
+        }
+
+        [TestMethod]
+        public void GetCosmosSerializerWithWrapperOrDefaultWithOptionsTest()
+        {
+            CosmosSerializationOptions serializerOptions = new CosmosSerializationOptions();
+            Assert.IsFalse(serializerOptions.IgnoreNullValues);
+            Assert.IsFalse(serializerOptions.Indented);
+            Assert.AreEqual(CosmosPropertyNamingPolicy.Default, serializerOptions.PropertyNamingPolicy);
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                SerializerOptions = new CosmosSerializationOptions()
+                {
+                    IgnoreNullValues = true,
+                    Indented = true,
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+            };
+
+            CosmosSerializer cosmosSerializer = options.GetCosmosSerializerWithWrapperOrDefault();
+            Assert.AreNotEqual(cosmosSerializer, options.PropertiesSerializer, "Serializer should be custom not the default");
+
+            CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = cosmosSerializer as CosmosJsonSerializerWrapper;
+            Assert.IsNotNull(cosmosJsonSerializerWrapper);
+
+            // Verify the custom settings are being honored
+            dynamic testItem = new { id = "testid", description = (string)null, CamelCaseProperty = "TestCamelCase" };
+            using (Stream stream = cosmosSerializer.ToStream<dynamic>(testItem))
+            {
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    string jsonString = sr.ReadToEnd();
+                    // Notice description is not included, camelCaseProperty starts lower case, the white space shows the indents
+                    string expectedJsonString = "{\r\n  \"id\": \"testid\",\r\n  \"camelCaseProperty\": \"TestCamelCase\"\r\n}";
+                    Assert.AreEqual(expectedJsonString, jsonString);
+                }
+            }
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnSerializerOptionsWithCustomSerializer()
+        {
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                Serializer = new CosmosJsonDotNetSerializer()
+            };
+
+            options.SerializerOptions = new CosmosSerializationOptions();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnCustomSerializerWithSerializerOptions()
+        {
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                SerializerOptions = new CosmosSerializationOptions()
+            };
+
+            options.Serializer = new CosmosJsonDotNetSerializer();
         }
 
         [TestMethod]
@@ -192,19 +285,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void AssertJsonSerializer()
         {
             string connectionString = "AccountEndpoint=https://localtestcosmos.documents.azure.com:443/;AccountKey=425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==;";
-            var cosmosClientBuilder = new CosmosClientBuilder(connectionString);
-            var cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.IsInstanceOfType(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
-            Assert.AreEqual(cosmosClient.ClientOptions.CosmosSerializerWithWrapperOrDefault, cosmosClient.ClientOptions.SettingsSerializer);
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(connectionString);
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            Assert.IsInstanceOfType(cosmosClient.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), typeof(CosmosJsonSerializerWrapper));
+            Assert.AreEqual(cosmosClient.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), cosmosClient.ClientOptions.PropertiesSerializer);
 
-            CosmosJsonSerializer defaultSerializer = cosmosClient.ClientOptions.SettingsSerializer;
-            CosmosJsonSerializer mockJsonSerializer = new Mock<CosmosJsonSerializer>().Object;
-            cosmosClientBuilder.WithCustomJsonSerializer(mockJsonSerializer);
-            var cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
-            Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.SettingsSerializer);
-            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.CosmosSerializer);
-            Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault, typeof(CosmosJsonSerializerWrapper));
-            Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.CosmosSerializerWithWrapperOrDefault).InternalJsonSerializer);
+            CosmosSerializer defaultSerializer = cosmosClient.ClientOptions.PropertiesSerializer;
+            CosmosSerializer mockJsonSerializer = new Mock<CosmosSerializer>().Object;
+            cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer);
+            CosmosClient cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
+            Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.PropertiesSerializer);
+            Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.Serializer);
+            Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), typeof(CosmosJsonSerializerWrapper));
+            Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.GetCosmosSerializerWithWrapperOrDefault()).InternalJsonSerializer);
         }
 
         [TestMethod]

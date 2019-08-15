@@ -13,21 +13,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         public static int ChangeFeedSetupTime = 1000;
         public static int ChangeFeedCleanupTime = 5000;
 
-        public CosmosContainer Container = null;
-        public CosmosContainer LeaseContainer = null;
+        public Container Container = null;
+        public Container LeaseContainer = null;
 
         public async Task ChangeFeedTestInit()
         {
             await base.TestInit();
             string PartitionKey = "/id";
             ContainerResponse response = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings(id: "monitored", partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: "monitored", partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
             this.Container = response;
 
 
             response = await this.database.CreateContainerAsync(
-                new CosmosContainerSettings(id: "leases", partitionKeyPath: PartitionKey),
+                new ContainerProperties(id: "leases", partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
 
             this.LeaseContainer = response;

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -168,11 +169,6 @@ namespace Microsoft.Azure.Cosmos
         //Callback for on execution of scalar LINQ queries event.
         //This callback is meant for tests only.
         private Action<IQueryable> onExecuteScalarQueryCallback;
-
-        static DocumentClient()
-        {
-            StringKeyValueCollection.SetNameValueCollectionFactory(new DictionaryNameValueCollectionFactory());
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -448,80 +444,6 @@ namespace Microsoft.Azure.Cosmos
                 desiredConsistencyLevel: desiredConsistencyLevel,
                 handler: handler, 
                 sessionContainer: sessionContainer, 
-                enableCpuMonitor: enableCpuMonitor,
-                storeClientFactory: storeClientFactory);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
-        /// specified service endpoint, an authorization key (or resource token) and a connection policy
-        /// for the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
-        /// <param name="authKeyOrResourceTokenHash">The authorization key or resource token to use to create the client.</param>
-        /// <param name="sendingRequestEventArgs"> The event handler to be invoked before the request is sent.</param>
-        /// <param name="receivedResponseEventArgs"> The event handler to be invoked after a response has been received.</param>
-        /// <param name="connectionPolicy">(Optional) The connection policy for the client.</param>
-        /// <param name="desiredConsistencyLevel">(Optional) The default consistency policy for client operations.</param>
-        /// <param name="serializerSettings">The custom JsonSerializer settings to be used for serialization/derialization.</param>
-        /// <param name="apitype">Api type for the account</param>
-        /// <param name="handler">The HTTP handler stack to use for sending requests (e.g., HttpClientHandler).</param>
-        /// <param name="sessionContainer">The default session container with which DocumentClient is created.</param>
-        /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
-        /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
-        /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
-        /// <remarks>
-        /// The service endpoint can be obtained from the Azure Management Portal.
-        /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
-        /// If however you are connecting as a specific Azure Cosmos DB User, the value passed to <paramref name="authKeyOrResourceTokenHash"/> is the ResourceToken obtained from the permission feed for the user.
-        /// <para>
-        /// Using Direct connectivity, wherever possible, is recommended.
-        /// </para>
-        /// </remarks>
-        /// <seealso cref="Uri"/>
-        /// <seealso cref="ConnectionPolicy"/>
-        /// <seealso cref="ConsistencyLevel"/>
-        internal DocumentClient(Uri serviceEndpoint,
-                              IComputeHash authKeyOrResourceTokenHash,
-                              EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
-                              ConnectionPolicy connectionPolicy = null,
-                              Documents.ConsistencyLevel? desiredConsistencyLevel = null,
-                              JsonSerializerSettings serializerSettings = null,
-                              ApiType apitype = ApiType.None,
-                              EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
-                              HttpMessageHandler handler = null,
-                              ISessionContainer sessionContainer = null,
-                              bool? enableCpuMonitor = null,
-                              Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null)
-        {
-            if (sendingRequestEventArgs != null)
-            {
-                this.sendingRequest += sendingRequestEventArgs;
-            }
-
-            if (serializerSettings != null)
-            {
-                this.serializerSettings = serializerSettings;
-            }
-
-            this.ApiType = apitype;
-
-            if (receivedResponseEventArgs != null)
-            {
-                this.receivedResponse += receivedResponseEventArgs;
-            }
-
-            this.authKeyHashFunction = authKeyOrResourceTokenHash ?? throw new ArgumentNullException("authKeyOrResourceTokenHash");
-
-            this.transportClientHandlerFactory = transportClientHandlerFactory;
-
-            this.Initialize(
-                serviceEndpoint: serviceEndpoint,
-                connectionPolicy: connectionPolicy,
-                desiredConsistencyLevel: desiredConsistencyLevel,
-                handler: handler,
-                sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory);
         }
@@ -837,14 +759,14 @@ namespace Microsoft.Azure.Cosmos
         private async Task OpenPrivateAsync(CancellationToken cancellationToken)
         {
             // Initialize caches for all databases and collections
-            ResourceFeedReader<Database> databaseFeedReader = this.CreateDatabaseFeedReader(
+            ResourceFeedReader<Documents.Database> databaseFeedReader = this.CreateDatabaseFeedReader(
                 new FeedOptions { MaxItemCount = -1 });
 
             try
             {
                 while (databaseFeedReader.HasMoreResults)
                 {
-                    foreach (Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
+                    foreach (Documents.Database database in await databaseFeedReader.ExecuteNextAsync(cancellationToken))
                     {
                         ResourceFeedReader<DocumentCollection> collectionFeedReader = this.CreateDocumentCollectionFeedReader(
                             database.SelfLink,
@@ -1194,7 +1116,7 @@ namespace Microsoft.Azure.Cosmos
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
-                CosmosContainerSettings resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 resolvedCollection.ResourceId,
                 new Range<string>(
@@ -1517,7 +1439,7 @@ namespace Microsoft.Azure.Cosmos
             return this.accountServiceConfiguration.QueryEngineConfiguration;
         }
 
-        internal async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             await this.EnsureValidClientAsync();
             return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
@@ -1651,13 +1573,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> CreateDatabaseAsync(Database database, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> CreateDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.CreateDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> CreateDatabasePrivateAsync(Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> CreateDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -1679,7 +1601,7 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 SerializationFormattingPolicy.None))
             {
-                return new ResourceResponse<Database>(await this.CreateAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.CreateAsync(request, retryPolicyInstance));
             }
         }
 
@@ -1720,12 +1642,12 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsAsync(Database database, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             return TaskHelper.InlineIfPossible(() => CreateDatabaseIfNotExistsPrivateAsync(database, options), null);
         }
 
-        private async Task<ResourceResponse<Database>> CreateDatabaseIfNotExistsPrivateAsync(Database database,
+        private async Task<ResourceResponse<Documents.Database>> CreateDatabaseIfNotExistsPrivateAsync(Documents.Database database,
             Documents.Client.RequestOptions options)
         {
             if (database == null)
@@ -2082,7 +2004,7 @@ namespace Microsoft.Azure.Cosmos
 
             // ReadDatabaseAsync call is needed to support this API that takes databaseLink as a parameter, to be consistent with CreateDocumentCollectionAsync. We need to construct the collectionLink to make
             // ReadDocumentCollectionAsync call, in case database selfLink got passed to this API. We cannot simply concat the database selfLink with /colls/{collectionId} to get the collectionLink.
-            Database database = await this.ReadDatabaseAsync(databaseLink);
+            Documents.Database database = await this.ReadDatabaseAsync(databaseLink);
 
             // Doing a Read before Create will give us better latency for existing collections.
             // Also, in emulator case when you hit the max allowed partition count and you use this API for a collection that already exists,
@@ -2617,13 +2539,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<ResourceResponse<Database>> DeleteDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> DeleteDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.DeleteDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> DeleteDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> DeleteDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -2640,7 +2562,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                return new ResourceResponse<Database>(await this.DeleteAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.DeleteAsync(request, retryPolicyInstance));
             }
         }
 
@@ -3611,13 +3533,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
         /// <seealso cref="System.Uri"/>
-        public Task<ResourceResponse<Database>> ReadDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
+        public Task<ResourceResponse<Documents.Database>> ReadDatabaseAsync(string databaseLink, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.ReadDatabasePrivateAsync(databaseLink, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> ReadDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> ReadDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -3634,7 +3556,7 @@ namespace Microsoft.Azure.Cosmos
                 AuthorizationTokenType.PrimaryMasterKey,
                 headers))
             {
-                return new ResourceResponse<Database>(await this.ReadAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.ReadAsync(request, retryPolicyInstance));
             }
         }
 
@@ -4491,14 +4413,14 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        public Task<DocumentFeedResponse<Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
+        public Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedAsync(FeedOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(
                 () => this.ReadDatabaseFeedPrivateAsync(options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<DocumentFeedResponse<Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5398,13 +5320,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Documents.Client.RequestOptions"/>
         /// <seealso cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/>
         /// <seealso cref="System.Threading.Tasks.Task"/>
-        internal Task<ResourceResponse<Database>> UpsertDatabaseAsync(Database database, Documents.Client.RequestOptions options = null)
+        internal Task<ResourceResponse<Documents.Database>> UpsertDatabaseAsync(Documents.Database database, Documents.Client.RequestOptions options = null)
         {
             IDocumentClientRetryPolicy retryPolicyInstance = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             return TaskHelper.InlineIfPossible(() => this.UpsertDatabasePrivateAsync(database, options, retryPolicyInstance), retryPolicyInstance);
         }
 
-        private async Task<ResourceResponse<Database>> UpsertDatabasePrivateAsync(Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
+        private async Task<ResourceResponse<Documents.Database>> UpsertDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
             await this.EnsureValidClientAsync();
 
@@ -5426,7 +5348,7 @@ namespace Microsoft.Azure.Cosmos
                 headers,
                 SerializationFormattingPolicy.None))
             {
-                return new ResourceResponse<Database>(await this.UpsertAsync(request, retryPolicyInstance));
+                return new ResourceResponse<Documents.Database>(await this.UpsertAsync(request, retryPolicyInstance));
             }
         }
 
@@ -6156,16 +6078,22 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        Task<string> IAuthorizationTokenProvider.GetSystemAuthorizationTokenAsync(
-            string federationName,
-            string resourceAddress,
-            string resourceType,
-            string requestVerb,
-            INameValueCollection headers,
-            AuthorizationTokenType tokenType)
+        Task IAuthorizationTokenProvider.AddSystemAuthorizationHeaderAsync(
+            DocumentServiceRequest request,
+            string federationId,
+            string verb,
+            string resourceId)
         {
-            return Task.FromResult(
-                ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(resourceAddress, resourceType, requestVerb, headers, tokenType));
+            request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+
+            request.Headers[HttpConstants.HttpHeaders.Authorization] = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+                resourceId ?? request.ResourceAddress,
+                PathsHelper.GetResourcePath(request.ResourceType),
+                verb,
+                request.Headers,
+                request.RequestAuthorizationTokenType);
+
+            return Task.FromResult(0);
         }
 
         #endregion
@@ -6328,31 +6256,31 @@ namespace Microsoft.Azure.Cosmos
         #endregion
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountSettings"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public Task<CosmosAccountSettings> GetDatabaseAccountAsync()
+        public Task<AccountProperties> GetDatabaseAccountAsync()
         {
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
         /// <summary>
-        /// Read the <see cref="CosmosAccountSettings"/> as an asynchronous operation
+        /// Read the <see cref="AccountProperties"/> as an asynchronous operation
         /// given a specific reginal endpoint url.
         /// </summary>
         /// <param name="serviceEndpoint">The reginal url of the serice endpoint.</param>
         /// <param name="cancellationToken">The CancellationToken</param>
         /// <returns>
-        /// A <see cref="CosmosAccountSettings"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        Task<CosmosAccountSettings> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
+        Task<AccountProperties> IDocumentClientInternal.GetDatabaseAccountInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
         {
             return this.GetDatabaseAccountPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
-        private async Task<CosmosAccountSettings> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default(CancellationToken))
         {
             await this.EnsureValidClientAsync();
             GatewayStoreModel gatewayModel = this.gatewayStoreModel as GatewayStoreModel;
@@ -6360,7 +6288,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (HttpRequestMessage request = new HttpRequestMessage())
                 {
-                    INameValueCollection headersCollection = new StringKeyValueCollection();
+                    INameValueCollection headersCollection = new DictionaryNameValueCollection();
                     string xDate = DateTime.UtcNow.ToString("r");
                     headersCollection.Add(HttpConstants.HttpHeaders.XDate, xDate);
                     request.Headers.Add(HttpConstants.HttpHeaders.XDate, xDate);
@@ -6386,7 +6314,7 @@ namespace Microsoft.Azure.Cosmos
                     request.Method = HttpMethod.Get;
                     request.RequestUri = serviceEndpoint;
 
-                    CosmosAccountSettings databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
+                    AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(request);
 
                     this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
 
@@ -6509,7 +6437,7 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            return ValidationHelpers.ValidateConsistencyLevel(backendConsistency, desiredConsistency);
+            return ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistency, desiredConsistency);
         }
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
@@ -6612,10 +6540,10 @@ namespace Microsoft.Azure.Cosmos
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
-            CosmosAccountSettings accountSettings = this.accountServiceConfiguration.AccountSettings;
-            this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountSettings.EnableMultipleWriteLocations;
+            AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
+            this.useMultipleWriteLocations = this.connectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
-            await this.globalEndpointManager.RefreshLocationAsync(accountSettings);
+            await this.globalEndpointManager.RefreshLocationAsync(accountProperties);
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
@@ -6677,7 +6605,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
@@ -6700,7 +6628,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync();
-            CosmosContainerSettings collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             // For backward compatibility, if collection doesn't have partition key defined, we assume all documents
@@ -6740,7 +6668,7 @@ namespace Microsoft.Azure.Cosmos
                 this.initializeTask.IsCompleted,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
-            INameValueCollection headers = new StringKeyValueCollection();
+            INameValueCollection headers = new DictionaryNameValueCollection();
 
             if (this.useMultipleWriteLocations)
             {

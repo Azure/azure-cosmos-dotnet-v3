@@ -4,6 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
+    using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.ObjectModel;
     using System.IO;
@@ -11,10 +17,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class SettingsContractTests
@@ -22,39 +24,39 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void DatabaseSettingsDefaults()
         {
-            CosmosDatabaseSettings dbSettings = new CosmosDatabaseSettings();
+            DatabaseProperties dbSettings = new DatabaseProperties();
 
             Assert.IsNull(dbSettings.LastModified);
             Assert.IsNull(dbSettings.ResourceId);
             Assert.IsNull(dbSettings.Id);
             Assert.IsNull(dbSettings.ETag);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosDatabaseSettings), "Id");
+            SettingsContractTests.TypeAccessorGuard(typeof(DatabaseProperties), "Id");
         }
 
         [TestMethod]
         public void StoredProecdureSettingsDefaults()
         {
-            CosmosStoredProcedureSettings dbSettings = new CosmosStoredProcedureSettings();
+            StoredProcedureProperties dbSettings = new StoredProcedureProperties();
 
             Assert.IsNull(dbSettings.LastModified);
             Assert.IsNull(dbSettings.ResourceId);
             Assert.IsNull(dbSettings.Id);
             Assert.IsNull(dbSettings.ETag);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosStoredProcedureSettings), "Id", "Body");
+            SettingsContractTests.TypeAccessorGuard(typeof(StoredProcedureProperties), "Id", "Body");
         }
 
         [TestMethod]
         public void ConflictsSettingsDefaults()
         {
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings();
+            ConflictProperties conflictSettings = new ConflictProperties();
 
             Assert.IsNull(conflictSettings.ResourceType);
             Assert.AreEqual(Cosmos.OperationKind.Invalid, conflictSettings.OperationKind);
             Assert.IsNull(conflictSettings.Id);
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosConflictSettings), "Id", "OperationKind", "ResourceType", "SourceResourceId");
+            SettingsContractTests.TypeAccessorGuard(typeof(ConflictProperties), "Id", "OperationKind", "ResourceType", "SourceResourceId");
         }
 
         [TestMethod]
@@ -66,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TriggerOperationMatchesDirect()
         {
-            AssertEnums<Scripts.TriggerOperation, Documents.TriggerOperation>();
+            AssertEnums<Cosmos.Scripts.TriggerOperation, Documents.TriggerOperation>();
         }
 
         [TestMethod]
@@ -87,8 +89,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_etag\":\"" + etag
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
-            CosmosDatabaseSettings deserializedPayload = 
-                JsonConvert.DeserializeObject<CosmosDatabaseSettings>(testPyaload);
+            DatabaseProperties deserializedPayload =
+                JsonConvert.DeserializeObject<DatabaseProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -115,8 +117,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_etag\":\"" + etag
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
-            CosmosContainerSettings deserializedPayload =
-                JsonConvert.DeserializeObject<CosmosContainerSettings>(testPyaload);
+            ContainerProperties deserializedPayload =
+                JsonConvert.DeserializeObject<ContainerProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -143,8 +145,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_etag\":\"" + etag
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
-            CosmosStoredProcedureSettings deserializedPayload =
-                JsonConvert.DeserializeObject<CosmosStoredProcedureSettings>(testPyaload);
+            StoredProcedureProperties deserializedPayload =
+                JsonConvert.DeserializeObject<StoredProcedureProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -158,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string id = Guid.NewGuid().ToString();
 
-            CosmosDatabaseSettings databaseSettings = new CosmosDatabaseSettings()
+            DatabaseProperties databaseSettings = new DatabaseProperties()
             {
                 Id = id
             };
@@ -172,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(db);
 
             // Swap de-serialize and validate 
-            CosmosDatabaseSettings dbDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosDatabaseSettings>(directSerialized);
+            DatabaseProperties dbDeserSettings = SettingsContractTests.CosmosDeserialize<DatabaseProperties>(directSerialized);
             Database dbDeser = SettingsContractTests.DirectDeSerialize<Database>(cosmosSerialized);
 
             Assert.AreEqual(dbDeserSettings.Id, dbDeser.Id);
@@ -192,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 _etag: '00002000-0000-0000-0000-5b3ad0ab0000'
                 }";
 
-            CosmosDatabaseSettings databaseSettings = SettingsContractTests.CosmosDeserialize<CosmosDatabaseSettings>(dbResponsePayload);
+            DatabaseProperties databaseSettings = SettingsContractTests.CosmosDeserialize<DatabaseProperties>(dbResponsePayload);
             Database db = SettingsContractTests.DirectDeSerialize<Database>(dbResponsePayload);
 
             // Not all are exposed in CosmosDatabaseSettings
@@ -213,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string pkPath = "/partitionKey";
 
             // Two equivalent definitions 
-            CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath);
+            ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
             DocumentCollection collection = new DocumentCollection()
             {
                 Id = id,
@@ -227,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(collection);
 
             // Swap de-serialize and validate 
-            CosmosContainerSettings containerDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosContainerSettings>(directSerialized);
+            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(directSerialized);
             DocumentCollection collectionDeser = SettingsContractTests.DirectDeSerialize<DocumentCollection>(cosmosSerialized);
 
             Assert.AreEqual(collection.Id, containerDeserSettings.Id);
@@ -250,13 +252,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             string pkPath = "/partitionKey";
 
             // Two equivalent definitions 
-            CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath)
+            ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath)
             {
                 ConflictResolutionPolicy = new Cosmos.ConflictResolutionPolicy()
                 {
                     Mode = Cosmos.ConflictResolutionMode.Custom,
-                    ConflictResolutionPath = "/path",
-                    ConflictResolutionProcedure = "sp"
+                    ResolutionPath = "/path",
+                    ResolutionProcedure = "sp"
                 }
             };
 
@@ -275,13 +277,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(collection);
 
             // Swap de-serialize and validate 
-            CosmosContainerSettings containerDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosContainerSettings>(directSerialized);
+            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(directSerialized);
             DocumentCollection collectionDeser = SettingsContractTests.DirectDeSerialize<DocumentCollection>(cosmosSerialized);
 
             Assert.AreEqual(cosmosContainerSettings.Id, collectionDeser.Id);
             Assert.AreEqual((int)cosmosContainerSettings.ConflictResolutionPolicy.Mode, (int)collectionDeser.ConflictResolutionPolicy.Mode);
-            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionPath, collectionDeser.ConflictResolutionPolicy.ConflictResolutionPath);
-            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ConflictResolutionProcedure, collectionDeser.ConflictResolutionPolicy.ConflictResolutionProcedure);
+            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ResolutionPath, collectionDeser.ConflictResolutionPolicy.ConflictResolutionPath);
+            Assert.AreEqual(cosmosContainerSettings.ConflictResolutionPolicy.ResolutionProcedure, collectionDeser.ConflictResolutionPolicy.ConflictResolutionProcedure);
         }
 
         [TestMethod]
@@ -291,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string pkPath = "/partitionKey";
 
             // Two equivalent definitions 
-            CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath);
+            ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
             cosmosContainerSettings.IndexingPolicy.Automatic = true;
             cosmosContainerSettings.IndexingPolicy.IncludedPaths.Add(new Cosmos.IncludedPath() { Path = "/id1/*" });
 
@@ -318,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(collection);
 
             // Swap de-serialize and validate 
-            CosmosContainerSettings containerDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosContainerSettings>(directSerialized);
+            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(directSerialized);
             DocumentCollection collectionDeser = SettingsContractTests.DirectDeSerialize<DocumentCollection>(cosmosSerialized);
 
             Assert.AreEqual(collection.Id, containerDeserSettings.Id);
@@ -348,18 +350,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             string id = Guid.NewGuid().ToString();
             string pkPath = "/partitionKey";
 
-            SettingsContractTests.TypeAccessorGuard(typeof(CosmosContainerSettings), 
-                "Id", 
-                "UniqueKeyPolicy", 
-                "DefaultTimeToLive", 
-                "IndexingPolicy", 
+            SettingsContractTests.TypeAccessorGuard(typeof(ContainerProperties),
+                "Id",
+                "UniqueKeyPolicy",
+                "DefaultTimeToLive",
+                "IndexingPolicy",
                 "TimeToLivePropertyPath",
                 "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
                 "ConflictResolutionPolicy");
 
             // Two equivalent definitions 
-            CosmosContainerSettings cosmosContainerSettings = new CosmosContainerSettings(id, pkPath);
+            ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
 
             Assert.AreEqual(id, cosmosContainerSettings.Id);
             Assert.AreEqual(pkPath, cosmosContainerSettings.PartitionKeyPath);
@@ -388,34 +390,166 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task ContainerSettingsIndexTest()
+        {
+            string containerJsonString = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"includedPaths\":[{\"path\":\"/*\",\"indexes\":[{\"dataType\":\"Number\",\"precision\":-1,\"kind\":\"Range\"},{\"dataType\":\"String\",\"precision\":-1,\"kind\":\"Range\"}]}],\"excludedPaths\":[{\"path\":\"/\\\"_etag\\\"/?\"}],\"compositeIndexes\":[],\"spatialIndexes\":[]},\"id\":\"MigrationTest\",\"partitionKey\":{\"paths\":[\"/id\"],\"kind\":\"Hash\"}}";
+
+            CosmosJsonDotNetSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            ContainerProperties containerProperties = null;
+            using (MemoryStream memory = new MemoryStream(Encoding.UTF8.GetBytes(containerJsonString)))
+            {
+                containerProperties = cosmosSerializer.FromStream<ContainerProperties>(memory);
+            }
+
+            Assert.IsNotNull(containerProperties);
+            Assert.AreEqual("MigrationTest", containerProperties.Id);
+
+            string containerJsonAfterConversion = null;
+            using (Stream stream = cosmosSerializer.ToStream<ContainerProperties>(containerProperties))
+            {
+                using (StreamReader sr = new StreamReader(stream))
+                {
+                    containerJsonAfterConversion = await sr.ReadToEndAsync();
+                }
+            }
+
+            Assert.AreEqual(containerJsonString, containerJsonAfterConversion);
+        }
+
+        [TestMethod]
+        public void ContainerSettingsNullPartitionKeyTest()
+        {
+            ContainerProperties cosmosContainerSettings = new ContainerProperties("id", "/partitionKey")
+            {
+                PartitionKey = null
+            };
+
+            string cosmosSerialized = SettingsContractTests.CosmosSerialize(cosmosContainerSettings);
+            Assert.IsFalse(cosmosSerialized.Contains("partitionKey"));
+        }
+
+        [TestMethod]
+        public async Task ContainerV2CompatTest()
+        {
+            string containerId = "SerializeContainerTest";
+            DocumentCollection documentCollection = new DocumentCollection()
+            {
+                Id = containerId,
+                PartitionKey = new PartitionKeyDefinition()
+                {
+                    Paths = new Collection<string>()
+                    {
+                        "/pkPath"
+                    }
+                },
+                IndexingPolicy = new IndexingPolicy()
+                {
+                    IncludedPaths = new Collection<IncludedPath>()
+                    {
+                        new IncludedPath()
+                        {
+                            Path = "/*"
+                        }
+                    },
+                    CompositeIndexes = new Collection<Collection<CompositePath>>()
+                    {
+                        new Collection<CompositePath>()
+                        {
+                            new CompositePath()
+                            {
+                                Path = "/address/test/*",
+                                Order = CompositePathSortOrder.Ascending
+                            },
+                            new CompositePath()
+                            {
+                                Path = "/address/test2/*",
+                                Order = CompositePathSortOrder.Ascending
+                            }
+                        }
+                    },
+                    SpatialIndexes = new Collection<SpatialSpec>()
+                    {
+                        new SpatialSpec()
+                        {
+                            Path = "/name/first/*",
+                            SpatialTypes = new Collection<SpatialType>()
+                            {
+                                SpatialType.LineString
+                            }
+                        }
+                    }
+                },
+            };
+
+            
+            string documentJsonString = null;
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                documentCollection.SaveTo(memoryStream);
+                memoryStream.Position = 0;
+                using (StreamReader sr = new StreamReader(memoryStream))
+                {
+                    documentJsonString = await sr.ReadToEndAsync();
+                }
+            }
+
+            Assert.IsNotNull(documentJsonString);
+
+            string cosmosJsonString = null;
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                documentCollection.SaveTo(memoryStream);
+                memoryStream.Position = 0;
+
+                CosmosJsonDotNetSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+                ContainerProperties containerProperties = cosmosSerializer.FromStream<ContainerProperties>(memoryStream);
+
+                Assert.IsNotNull(containerProperties);
+                Assert.AreEqual(containerId, containerProperties.Id);
+
+                using (Stream stream = cosmosSerializer.ToStream<ContainerProperties>(containerProperties))
+                {
+                    using (StreamReader sr = new StreamReader(stream))
+                    {
+                        cosmosJsonString = await sr.ReadToEndAsync();
+                    }
+                }
+            }
+
+            JObject jObjectDocumentCollection = JObject.Parse(documentJsonString);
+            JObject jObjectContainer = JObject.Parse(cosmosJsonString);
+            Assert.IsTrue(JToken.DeepEquals(jObjectDocumentCollection, jObjectContainer));
+        }
+
+        [TestMethod]
         public void CosmosAccountSettingsSerializationTest()
         {
-            CosmosAccountSettings cosmosAccountSettings = new CosmosAccountSettings();
+            AccountProperties cosmosAccountSettings = new AccountProperties();
             cosmosAccountSettings.Id = "someId";
             cosmosAccountSettings.EnableMultipleWriteLocations = true;
             cosmosAccountSettings.ResourceId = "/uri";
             cosmosAccountSettings.ETag = "etag";
-            cosmosAccountSettings.WriteLocationsInternal = new Collection<CosmosAccountLocation>() { new CosmosAccountLocation() { Name="region1", DatabaseAccountEndpoint = "endpoint1" } };
-            cosmosAccountSettings.ReadLocationsInternal = new Collection<CosmosAccountLocation>() { new CosmosAccountLocation() { Name = "region2", DatabaseAccountEndpoint = "endpoint2" } };
+            cosmosAccountSettings.WriteLocationsInternal = new Collection<AccountRegion>() { new AccountRegion() { Name = "region1", Endpoint = "endpoint1" } };
+            cosmosAccountSettings.ReadLocationsInternal = new Collection<AccountRegion>() { new AccountRegion() { Name = "region2", Endpoint = "endpoint2" } };
             cosmosAccountSettings.AddressesLink = "link";
-            cosmosAccountSettings.ConsistencySetting = new CosmosAccountConsistency() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
+            cosmosAccountSettings.Consistency = new AccountConsistency() { DefaultConsistencyLevel = Cosmos.ConsistencyLevel.BoundedStaleness };
             cosmosAccountSettings.ReplicationPolicy = new ReplicationPolicy() { AsyncReplication = true };
             cosmosAccountSettings.ReadPolicy = new ReadPolicy() { PrimaryReadCoefficient = 10 };
 
             string cosmosSerialized = SettingsContractTests.CosmosSerialize(cosmosAccountSettings);
 
-            CosmosAccountSettings accountDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosAccountSettings>(cosmosSerialized);
+            AccountProperties accountDeserSettings = SettingsContractTests.CosmosDeserialize<AccountProperties>(cosmosSerialized);
 
             Assert.AreEqual(cosmosAccountSettings.Id, accountDeserSettings.Id);
             Assert.AreEqual(cosmosAccountSettings.EnableMultipleWriteLocations, accountDeserSettings.EnableMultipleWriteLocations);
             Assert.AreEqual(cosmosAccountSettings.ResourceId, accountDeserSettings.ResourceId);
             Assert.AreEqual(cosmosAccountSettings.ETag, accountDeserSettings.ETag);
             Assert.AreEqual(cosmosAccountSettings.WriteLocationsInternal[0].Name, accountDeserSettings.WriteLocationsInternal[0].Name);
-            Assert.AreEqual(cosmosAccountSettings.WriteLocationsInternal[0].DatabaseAccountEndpoint, accountDeserSettings.WriteLocationsInternal[0].DatabaseAccountEndpoint);
+            Assert.AreEqual(cosmosAccountSettings.WriteLocationsInternal[0].Endpoint, accountDeserSettings.WriteLocationsInternal[0].Endpoint);
             Assert.AreEqual(cosmosAccountSettings.ReadLocationsInternal[0].Name, accountDeserSettings.ReadLocationsInternal[0].Name);
-            Assert.AreEqual(cosmosAccountSettings.ReadLocationsInternal[0].DatabaseAccountEndpoint, accountDeserSettings.ReadLocationsInternal[0].DatabaseAccountEndpoint);
+            Assert.AreEqual(cosmosAccountSettings.ReadLocationsInternal[0].Endpoint, accountDeserSettings.ReadLocationsInternal[0].Endpoint);
             Assert.AreEqual(cosmosAccountSettings.AddressesLink, accountDeserSettings.AddressesLink);
-            Assert.AreEqual(cosmosAccountSettings.ConsistencySetting.DefaultConsistencyLevel, accountDeserSettings.ConsistencySetting.DefaultConsistencyLevel);
+            Assert.AreEqual(cosmosAccountSettings.Consistency.DefaultConsistencyLevel, accountDeserSettings.Consistency.DefaultConsistencyLevel);
             Assert.AreEqual(cosmosAccountSettings.ReplicationPolicy.AsyncReplication, accountDeserSettings.ReplicationPolicy.AsyncReplication);
             Assert.AreEqual(cosmosAccountSettings.ReadPolicy.PrimaryReadCoefficient, accountDeserSettings.ReadPolicy.PrimaryReadCoefficient);
         }
@@ -425,11 +559,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string id = Guid.NewGuid().ToString();
 
-            CosmosConflictSettings conflictSettings = new CosmosConflictSettings()
+            ConflictProperties conflictSettings = new ConflictProperties()
             {
                 Id = id,
                 OperationKind = Cosmos.OperationKind.Create,
-                ResourceType = typeof(CosmosStoredProcedureSettings)
+                ResourceType = typeof(StoredProcedureProperties)
             };
 
             Conflict conflict = new Conflict()
@@ -443,13 +577,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(conflict);
 
             // Swap de-serialize and validate 
-            CosmosConflictSettings conflictDeserSettings = SettingsContractTests.CosmosDeserialize<CosmosConflictSettings>(directSerialized);
+            ConflictProperties conflictDeserSettings = SettingsContractTests.CosmosDeserialize<ConflictProperties>(directSerialized);
             Conflict conflictDeser = SettingsContractTests.DirectDeSerialize<Conflict>(cosmosSerialized);
 
             Assert.AreEqual(conflictDeserSettings.Id, conflictDeser.Id);
             Assert.AreEqual((int)conflictDeserSettings.OperationKind, (int)conflictDeser.OperationKind);
             Assert.AreEqual(typeof(StoredProcedure), conflictDeser.ResourceType);
-            Assert.AreEqual(typeof(CosmosStoredProcedureSettings), conflictDeserSettings.ResourceType);
+            Assert.AreEqual(typeof(StoredProcedureProperties), conflictDeserSettings.ResourceType);
             Assert.AreEqual(conflictDeserSettings.Id, conflict.Id);
         }
 
@@ -462,13 +596,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                  resourceType: 'trigger'
                 }";
 
-            CosmosConflictSettings conflictSettings = SettingsContractTests.CosmosDeserialize<CosmosConflictSettings>(conflictResponsePayload);
+            ConflictProperties conflictSettings = SettingsContractTests.CosmosDeserialize<ConflictProperties>(conflictResponsePayload);
             Conflict conflict = SettingsContractTests.DirectDeSerialize<Conflict>(conflictResponsePayload);
 
             Assert.AreEqual(conflict.Id, conflictSettings.Id);
             Assert.AreEqual((int)conflictSettings.OperationKind, (int)conflict.OperationKind);
             Assert.AreEqual(typeof(Trigger), conflict.ResourceType);
-            Assert.AreEqual(typeof(CosmosTriggerSettings), conflictSettings.ResourceType);
+            Assert.AreEqual(typeof(TriggerProperties), conflictSettings.ResourceType);
 
             Assert.AreEqual("Conflict1", conflictSettings.Id);
         }
@@ -486,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private static T DirectDeSerialize<T>(string payload) where T: JsonSerializable, new()
+        private static T DirectDeSerialize<T>(string payload) where T : JsonSerializable, new()
         {
             using (MemoryStream ms = new MemoryStream())
             {
@@ -510,7 +644,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private static string DirectSerialize<T>(T input) where T: JsonSerializable
+        private static string DirectSerialize<T>(T input) where T : JsonSerializable
         {
             using (MemoryStream ms = new MemoryStream())
             {
@@ -527,7 +661,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static void TypeAccessorGuard(Type input, params string[] publicSettable)
         {
             // All properties are public readable only by-default
-            PropertyInfo[] allProperties = input.GetProperties(BindingFlags.Instance|BindingFlags.Public);
+            PropertyInfo[] allProperties = input.GetProperties(BindingFlags.Instance | BindingFlags.Public);
             foreach (PropertyInfo pInfo in allProperties)
             {
                 MethodInfo[] accessors = pInfo.GetAccessors();
@@ -550,7 +684,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private void AssertEnums<TFirstEnum,TSecondEnum>() where TFirstEnum : struct, IConvertible where TSecondEnum : struct, IConvertible
+        private void AssertEnums<TFirstEnum, TSecondEnum>() where TFirstEnum : struct, IConvertible where TSecondEnum : struct, IConvertible
         {
             string[] allCosmosEntries = Enum.GetNames(typeof(TFirstEnum));
             string[] allDocumentsEntries = Enum.GetNames(typeof(TSecondEnum));

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            CosmosResponseMessage cosmosResponseMessage, 
+            ResponseMessage cosmosResponseMessage, 
             CancellationToken cancellationToken)
         {
             // Only used for collection cache whcih doesn't participate in pipeline
