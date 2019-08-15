@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
             string max = "FF";
             string standByFeedContinuationToken = StandByFeedContinuationToken.CreateForRange("containerRid", min, max);
 
-            List<CompositeContinuationToken> deserialized = StandByFeedContinuationToken.DeserializeTokens(standByFeedContinuationToken);
+            List<CompositeContinuationToken> deserialized = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(standByFeedContinuationToken);
             Assert.AreEqual(1, deserialized.Count);
             Assert.AreEqual(min, deserialized[0].Range.Min);
             Assert.AreEqual(max, deserialized[0].Range.Max);
