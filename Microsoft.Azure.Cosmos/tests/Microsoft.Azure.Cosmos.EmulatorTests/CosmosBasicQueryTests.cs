@@ -426,7 +426,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     database.GetUserQueryStreamIterator,
                     database.GetUserQueryIterator<UserProperties>,
                     null,
-                    new QueryRequestOptions());
+                    CosmosBasicQueryTests.RequestOptions
+                );
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
@@ -435,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     database.GetUserQueryStreamIterator,
                     database.GetUserQueryIterator<UserProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")",
-                    new QueryRequestOptions()
+                    CosmosBasicQueryTests.RequestOptions
                 );
 
                 CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
@@ -491,7 +492,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     user.GetPermissionQueryStreamIterator,
                     user.GetPermissionQueryIterator<PermissionProperties>,
                     null,
-                    new QueryRequestOptions());
+                    CosmosBasicQueryTests.RequestOptions
+                );
 
                 CollectionAssert.IsSubsetOf(createdPermissionIds, results.Select(x => x.Id).ToList());
 
@@ -500,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     user.GetPermissionQueryStreamIterator,
                     user.GetPermissionQueryIterator<PermissionProperties>,
                     "select * from T where STARTSWITH(T.id, \"BasicQueryPermission\")",
-                    new QueryRequestOptions()
+                    CosmosBasicQueryTests.RequestOptions
                 );
 
                 CollectionAssert.AreEquivalent(createdPermissionIds, queryResults.Select(x => x.Id).ToList());
@@ -567,6 +569,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Both lists should be the same if not PermssionsProperties. PermissionProperties will have a different ResouceToken in the payload when read.
             string streamResultString = JsonConvert.SerializeObject(streamResults);
             string streamPagedResultString = JsonConvert.SerializeObject(pagedStreamResults);
+
             if (typeof(T) != typeof(PermissionProperties))
             {
                 Assert.AreEqual(streamPagedResultString, streamResultString);
