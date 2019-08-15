@@ -45,6 +45,8 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
+        private const int UserAgentSuffixMaxLength = 64;
+
         /// <summary>
         /// Default request timeout
         /// </summary>
@@ -85,8 +87,27 @@ namespace Microsoft.Azure.Cosmos
             get => this.applicationName;
             set
             {
-                this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + EnvironmentInformation.Delimiter + value;
                 this.applicationName = value;
+
+                if (string.IsNullOrEmpty(value))
+                {
+                    return;
+                }
+
+                if (value.Length > UserAgentSuffixMaxLength)
+                {
+                    // Prioritize user suffix
+                    this.UserAgentContainer.Suffix = value;
+                }
+                else if ((value.Length + this.currentEnvironmentInformation.Length + EnvironmentInformation.Delimiter.Length) > UserAgentSuffixMaxLength)
+                {
+                    // Prioritize user suffix
+                    this.UserAgentContainer.Suffix = this.currentEnvironmentInformation.Substring(0, UserAgentSuffixMaxLength - value.Length - EnvironmentInformation.Delimiter.Length) + EnvironmentInformation.Delimiter + value;
+                }
+                else
+                {
+                    this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + EnvironmentInformation.Delimiter + value;
+                }
             }
         }
 

@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos
             EnvironmentInformation.clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Build}";
             EnvironmentInformation.framework = RuntimeInformation.FrameworkDescription;
             EnvironmentInformation.architecture = RuntimeInformation.ProcessArchitecture.ToString();
-            EnvironmentInformation.clientId = DateTime.UtcNow.Ticks.ToString();
+            string now = DateTime.UtcNow.Ticks.ToString();
+            EnvironmentInformation.clientId = now.Substring(now.Length - 5); // 5 most significative digits
         }
 
         /// <summary>
