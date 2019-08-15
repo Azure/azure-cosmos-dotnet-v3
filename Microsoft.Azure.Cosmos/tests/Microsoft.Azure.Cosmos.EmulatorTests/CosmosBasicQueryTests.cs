@@ -77,7 +77,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<DatabaseProperties> results = await this.ToListAsync(
                     client.GetDatabaseQueryStreamIterator,
                     client.GetDatabaseQueryIterator<DatabaseProperties>,
-                    null);
+                    null,
+                    CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
@@ -85,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<DatabaseProperties> queryResults = await this.ToListAsync(
                     client.GetDatabaseQueryStreamIterator,
                     client.GetDatabaseQueryIterator<DatabaseProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryDb\")");
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryDb\")",
+                    CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
             }
@@ -122,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<ContainerProperties> results = await this.ToListAsync(
                     database.GetContainerQueryStreamIterator,
                     database.GetContainerQueryIterator<ContainerProperties>,
-                    null);
+                    null,
+                    CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
@@ -130,7 +133,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<ContainerProperties> queryResults = await this.ToListAsync(
                     database.GetContainerQueryStreamIterator,
                     database.GetContainerQueryIterator<ContainerProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryContainer\")");
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryContainer\")",
+                    CosmosBasicQueryTests.RequestOptions);
 
                 CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
             }
@@ -161,7 +165,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<dynamic> queryResults = await this.ToListAsync(
                   container.GetItemQueryStreamIterator,
                  container.GetItemQueryIterator<dynamic>,
-                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")");
+                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
+                 CosmosBasicQueryTests.RequestOptions);
 
             if (queryResults.Count < 3)
             {
@@ -179,7 +184,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryResults = await this.ToListAsync(
                   container.GetItemQueryStreamIterator,
                  container.GetItemQueryIterator<dynamic>,
-                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")");
+                 "select * from T where STARTSWITH(T.id, \"BasicQueryItem\")",
+                 CosmosBasicQueryTests.RequestOptions);
             }
 
             List<string> ids = queryResults.Select(x => (string)x.id).ToList();
@@ -189,10 +195,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<dynamic> results = await this.ToListAsync(
                 container.GetItemQueryStreamIterator,
                 container.GetItemQueryIterator<dynamic>,
-                null);
+                null,
+                CosmosBasicQueryTests.RequestOptions);
+
 
             ids = results.Select(x => (string)x.id).ToList();
             CollectionAssert.IsSubsetOf(createdIds, ids);
+
+            //Read All with partition key
+             results = await this.ToListAsync(
+                container.GetItemQueryStreamIterator,
+                container.GetItemQueryIterator<dynamic>,
+                null,
+                new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new PartitionKey("BasicQueryItem")
+                });
+
+            Assert.AreEqual(1, results.Count);
+
+            //Read All with partition key
+            results = container.GetItemLinqQueryable<dynamic>(
+                allowSynchronousQueryExecution: true,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new PartitionKey("BasicQueryItem")
+                }).ToList();
+
+            Assert.AreEqual(1, results.Count);
+
+            // LINQ to feed iterator Read All with partition key
+            FeedIterator<dynamic> iterator = container.GetItemLinqQueryable<dynamic>(
+                allowSynchronousQueryExecution: true,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new PartitionKey("BasicQueryItem")
+                }).ToFeedIterator();
+
+            List<dynamic> linqResults = new List<dynamic>();
+            while (iterator.HasMoreResults)
+            {
+                linqResults.AddRange(await iterator.ReadNextAsync());
+            }
+
+            Assert.AreEqual(1, linqResults.Count);
+            Assert.AreEqual("BasicQueryItem", linqResults.First().pk.ToString());
         }
 
         [TestMethod]
@@ -214,7 +264,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<StoredProcedureProperties> queryResults = await this.ToListAsync(
                 scripts.GetStoredProcedureQueryStreamIterator,
                 scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
-                "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")");
+                "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")",
+                CosmosBasicQueryTests.RequestOptions);
 
             if(queryResults.Count < 3)
             {
@@ -230,7 +281,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryResults = await this.ToListAsync(
                     scripts.GetStoredProcedureQueryStreamIterator,
                     scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")");
+                    "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")",
+                    CosmosBasicQueryTests.RequestOptions);
             }
 
             CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
@@ -239,7 +291,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<StoredProcedureProperties> results = await this.ToListAsync(
                 scripts.GetStoredProcedureQueryStreamIterator,
                 scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
-                null);
+                null,
+                CosmosBasicQueryTests.RequestOptions);
 
             CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
         }
@@ -263,7 +316,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<UserDefinedFunctionProperties> queryResults = await this.ToListAsync(
                 scripts.GetUserDefinedFunctionQueryStreamIterator,
                 scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
-                "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")");
+                "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")",
+                CosmosBasicQueryTests.RequestOptions);
 
             if (queryResults.Count < 3)
             {
@@ -279,7 +333,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryResults = await this.ToListAsync(
                     scripts.GetUserDefinedFunctionQueryStreamIterator,
                     scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")");
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")",
+                    CosmosBasicQueryTests.RequestOptions);
             }
 
             CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
@@ -288,7 +343,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<UserDefinedFunctionProperties> results = await this.ToListAsync(
                 scripts.GetUserDefinedFunctionQueryStreamIterator,
                 scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
-                null);
+                null,
+                CosmosBasicQueryTests.RequestOptions);
 
             CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
         }
@@ -312,7 +368,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<TriggerProperties> queryResults = await this.ToListAsync(
                 scripts.GetTriggerQueryStreamIterator,
                 scripts.GetTriggerQueryIterator<TriggerProperties>,
-                "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")");
+                "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")",
+                CosmosBasicQueryTests.RequestOptions);
 
             if (queryResults.Count < 3)
             {
@@ -328,7 +385,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryResults = await this.ToListAsync(
                     scripts.GetTriggerQueryStreamIterator,
                     scripts.GetTriggerQueryIterator<TriggerProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")");
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")",
+                    CosmosBasicQueryTests.RequestOptions);
             }
 
             CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
@@ -337,7 +395,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<TriggerProperties> results = await this.ToListAsync(
                 scripts.GetTriggerQueryStreamIterator,
                 scripts.GetTriggerQueryIterator<TriggerProperties>,
-                null);
+                null,
+                CosmosBasicQueryTests.RequestOptions);
 
             CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
         }
@@ -459,14 +518,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);
         private delegate FeedIterator QueryStream(string querytext, string continuationToken, QueryRequestOptions options);
 
-        private async Task<List<T>> ToListAsync<T>(QueryStream createStreamQuery, Query<T> createQuery, string queryText)
+        private async Task<List<T>> ToListAsync<T>(
+            QueryStream createStreamQuery, 
+            Query<T> createQuery, 
+            string queryText,
+            QueryRequestOptions requestOptions)
         {
-            FeedIterator feedStreamIterator = createStreamQuery(queryText, null, RequestOptions);
+            HttpStatusCode expectedStatus = HttpStatusCode.OK;
+            FeedIterator feedStreamIterator = createStreamQuery(queryText, null, requestOptions);
             List<T> streamResults = new List<T>();
             while (feedStreamIterator.HasMoreResults)
             {
                 ResponseMessage response = await feedStreamIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
+                Assert.AreEqual(expectedStatus, response.StatusCode);
 
                 StreamReader sr = new StreamReader(response.Content);
                 string result = await sr.ReadToEndAsync();
@@ -480,15 +545,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<T> pagedStreamResults = new List<T>();
             do
             {
-                FeedIterator pagedFeedIterator = createStreamQuery(queryText, continuationToken, RequestOptions);
+                FeedIterator pagedFeedIterator = createStreamQuery(queryText, continuationToken, requestOptions);
                 ResponseMessage response = await pagedFeedIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
+                Assert.AreEqual(expectedStatus, response.StatusCode);
 
                 ICollection<T> responseResults = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
                 Assert.IsTrue(responseResults.Count <= 1);
 
                 pagedStreamResults.AddRange(responseResults);
                 continuationToken = response.Headers.ContinuationToken;
+                Assert.AreEqual(response.ContinuationToken, response.Headers.ContinuationToken);
             } while (continuationToken != null);
 
             Assert.AreEqual(pagedStreamResults.Count, streamResults.Count);
@@ -501,27 +568,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(streamPagedResultString, streamResultString);
             }
 
-            FeedIterator<T> feedIterator = createQuery(queryText, null, RequestOptions);
+            FeedIterator<T> feedIterator = createQuery(queryText, null, requestOptions);
             List<T> results = new List<T>();
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<T> iterator = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(iterator.Count <= 1);
-                Assert.IsTrue(iterator.Resource.Count() <= 1);
+                FeedResponse<T> response = await feedIterator.ReadNextAsync();
+                Assert.AreEqual(expectedStatus, response.StatusCode);
+                Assert.IsTrue(response.Count <= 1);
+                Assert.IsTrue(response.Resource.Count() <= 1);
 
-                results.AddRange(iterator);
+                results.AddRange(response);
             }
 
             continuationToken = null;
             List<T> pagedResults = new List<T>();
             do
             {
-                FeedIterator<T> pagedFeedIterator = createQuery(queryText, continuationToken, RequestOptions);
-                FeedResponse<T> iterator = await pagedFeedIterator.ReadNextAsync();
-                Assert.IsTrue(iterator.Count <= 1);
-                Assert.IsTrue(iterator.Resource.Count() <= 1);
-                pagedResults.AddRange(iterator);
-                continuationToken = iterator.ContinuationToken;
+                FeedIterator<T> pagedFeedIterator = createQuery(queryText, continuationToken, requestOptions);
+                FeedResponse<T> response = await pagedFeedIterator.ReadNextAsync();
+                Assert.AreEqual(expectedStatus, response.StatusCode);
+                Assert.IsTrue(response.Count <= 1);
+                Assert.IsTrue(response.Resource.Count() <= 1);
+                pagedResults.AddRange(response);
+                continuationToken = response.ContinuationToken;
             } while (continuationToken != null);
 
             Assert.AreEqual(pagedResults.Count, results.Count);

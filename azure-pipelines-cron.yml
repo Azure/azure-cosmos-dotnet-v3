@@ -1,0 +1,51 @@
+# A pipeline with no CI trigger
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 0,6,12,18 * * *" # Every 6Hrs https://docs.microsoft.com/en-us/azure/devops/pipelines/build/triggers?view=azure-devops&tabs=yaml#scheduled-triggers
+  displayName: Cosmos Cron
+  branches:
+    include: 
+    - master
+  always: true # Run always irrespective of changes
+
+
+variables:
+  TestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal ' 
+  NonWindowsTestArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Windows" --verbosity normal ' 
+  BuildConfiguration: Release 
+
+
+jobs:
+  - template:  templates/static-tools.yml
+    parameters:
+      BuildConfiguration: Release
+      VmImage: vs2017-win2016
+
+  - template:  templates/build-test.yml
+    parameters:
+      BuildConfiguration: Release
+      Arguments: $(NonWindowsTestArguments)
+      VmImage: macOS-10.14
+      OS: MacOS
+
+  - template:  templates/build-test.yml
+    parameters:
+      BuildConfiguration: Release
+      Arguments: $(NonWindowsTestArguments)
+      VmImage: ubuntu-latest
+      OS: Linux 
+
+  - template:  templates/build-test.yml
+    parameters:
+      BuildConfiguration: Release
+      Arguments: $(TestArguments) 
+      VmImage: vs2017-win2016
+
+  - template:  templates/build-test.yml
+    parameters:
+      BuildConfiguration: Debug
+      Arguments: $(TestArguments) 
+      VmImage: vs2017-win2016

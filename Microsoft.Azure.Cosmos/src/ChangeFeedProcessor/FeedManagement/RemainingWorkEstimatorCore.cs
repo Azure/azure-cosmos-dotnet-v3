@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                             }
                             catch (CosmosException ex)
                             {
-                                DefaultTrace.TraceException(ex);
+                                Cosmos.Extensions.TraceException(ex);
                                 DefaultTrace.TraceWarning("Getting estimated work for lease token {0} failed!", item.CurrentLeaseToken);
                             }
                         }
@@ -208,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (Exception clientException)
             {
-                DefaultTrace.TraceException(clientException);
+                Cosmos.Extensions.TraceException(clientException);
                 DefaultTrace.TraceWarning("GetEstimateWork > exception: lease token '{0}'", existingLease.CurrentLeaseToken);
                 throw;
             }

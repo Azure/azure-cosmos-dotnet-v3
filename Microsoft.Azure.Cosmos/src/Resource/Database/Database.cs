@@ -352,8 +352,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Check if a container exists, and if it doesn't, create it.
-        /// This will make a read operation, and if the container is not found it will do a create operation.
+        /// <para>Check if a container exists, and if it doesn't, create it.
+        /// Only the container id is used to verify if there is an existing container. Other container properties such as throughput are not validated and can be different then the passed properties.</para>
         /// </summary>
         /// <param name="containerProperties">The <see cref="ContainerProperties"/> object.</param>
         /// <param name="throughput">(Optional) The throughput provisioned for a container in measurement of Requests Units per second in the Azure Cosmos DB service.</param>
@@ -378,6 +378,17 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </exception>
+        /// <list>
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Common success StatusCodes for the CreateDatabaseIfNotExistsAsync operation</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>201</term><description>Created - New database is created.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///     </item>
+        /// </list>
         /// <example>
         ///
         /// <code language="c#">

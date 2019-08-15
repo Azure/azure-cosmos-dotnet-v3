@@ -13,12 +13,17 @@ namespace Microsoft.Azure.Cosmos.Json
     /// The reader defines methods that allow for reading a JSON encoded value as a stream of tokens.
     /// The tokens are traversed in the same order as they appear in the JSON document.
     /// </summary>
-    internal abstract partial class JsonReader : IJsonReader
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonReader : IJsonReader
     {
         /// <summary>
         /// The <see cref="JsonObjectState"/>
         /// </summary>
-        protected readonly JsonObjectState JsonObjectState;
+        internal readonly JsonObjectState JsonObjectState;
 
         /// <summary>
         /// Whether to skip validation.

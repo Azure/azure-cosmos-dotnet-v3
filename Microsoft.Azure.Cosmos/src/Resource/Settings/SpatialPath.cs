@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public sealed class SpatialPath
     {
-        [JsonProperty(PropertyName = Constants.Properties.Types, ItemConverterType = typeof(StringEnumConverter))]
         private Collection<SpatialType> spatialTypesInternal;
 
         /// <summary>
@@ -27,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Path's spatial type
         /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.Types, ItemConverterType = typeof(StringEnumConverter))]
         public Collection<SpatialType> SpatialTypes
         {
             get

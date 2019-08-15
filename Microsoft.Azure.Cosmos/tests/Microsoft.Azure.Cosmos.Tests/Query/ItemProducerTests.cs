@@ -127,11 +127,31 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ConcurrentMoveNextAndBufferMore()
         {
+            bool blockExecute = true;
+            int callBackCount = 0;
+            Action callbackBlock = () =>
+            {
+                int callBackWaitCount = 0;
+                callBackCount++;
+                while (blockExecute)
+                {
+                    if (callBackWaitCount++ > 200)
+                    {
+                        Assert.Fail("The task never started to buffer the items. The callback was never called");
+                    }
+
+                    Thread.Sleep(TimeSpan.FromSeconds(.1));
+                }
+
+                // Reset the block for the  next call
+                blockExecute = true;
+            };
+
             int[] pageSizes = new int[] { 2, 3, 1, 4 };
             (ItemProducer itemProducer, ReadOnlyCollection<ToDoItem> allItems) itemFactory = MockItemProducerFactory.Create(
                responseMessagesPageSize: pageSizes,
                maxPageSize: 10,
-               responseDelay: TimeSpan.FromSeconds(1),
+               executeCallback: callbackBlock,
                cancellationToken: this.cancellationToken);
 
             ItemProducer itemProducer = itemFactory.itemProducer;
@@ -139,8 +159,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             // BufferMore
             // Fire and Forget this task.
 #pragma warning disable 4014
-            Task.Run(() => itemProducer.BufferMoreDocumentsAsync(this.cancellationToken));
-#pragma warning restore 4014
+            Task bufferTask = Task.Run(()=> itemProducer.BufferMoreDocumentsAsync(this.cancellationToken));
+
+            // Verify the task started
+            int waitCount = 0;
+            while(callBackCount == 0)
+            {
+                if(waitCount++ > 100)
+                {
+                    Assert.Fail("The task never started to buffer the items. The callback was never called");
+                }
+
+                Thread.Sleep(TimeSpan.FromSeconds(.1));
+            }
 
             List<ToDoItem> itemsRead = new List<ToDoItem>();
             Assert.AreEqual(0, itemProducer.BufferedItemCount, "Mocked response should be delayed until after move next is called.");
@@ -148,18 +179,59 @@ namespace Microsoft.Azure.Cosmos.Tests
             int itemsToRead = pageSizes[0] + pageSizes[1];
             // Call move next while buffer more is waiting for response. 
             // Move next should wait for buffer more to complete then use the results of the buffer more.
-            List<ToDoItem> currentPage = await this.ReadItemProducer(itemProducer, itemsToRead);
-            itemsRead.AddRange(currentPage);
+#pragma warning disable 4014
+            bool readTaskRunning = false;
+            Task readTask = Task.Run(async () =>
+            {
+                readTaskRunning = true;
+                List<ToDoItem> currentPage = await this.ReadItemProducer(itemProducer, itemsToRead);
+                itemsRead.AddRange(currentPage);
+            });
+#pragma warning restore 4014
 
+            // Verify the task started
+            while (readTaskRunning == false)
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(.1));
+            }
+
+            Assert.AreEqual(0, itemProducer.BufferedItemCount, "The call back block will prevent any item from being buffered");
+            Assert.AreEqual(1, callBackCount, "Buffer more should have a lock which prevents multiple executes.");
+
+            // Unblock the buffer task
+            blockExecute = false;
+            await bufferTask;
+            Assert.AreEqual(2, itemProducer.BufferedItemCount, "Buffer should be completed and have 2 items from first page");
+
+            // Unblock the read task
+            blockExecute = false;
+            await readTask;
             Assert.AreEqual(itemsToRead, itemsRead.Count, "All of the first and 2nd page should be read.");
             Assert.AreEqual(1, itemProducer.BufferedItemCount, "The last element should still be buffered. Moving next will cause another buffer.");
 
             itemsToRead = pageSizes[2] + pageSizes[3];
 #pragma warning disable 4014
-            Task.Run(() => itemProducer.MoveNextAsync(this.cancellationToken));
+            Task moveNext = Task.Run(() => itemProducer.MoveNextAsync(this.cancellationToken));
 #pragma warning restore 4014
+            while (callBackCount == 2)
+            {
+                if (waitCount++ > 100)
+                {
+                    Assert.Fail("The task never started to buffer the items. The callback was never called");
+                }
 
-            await itemProducer.BufferMoreDocumentsAsync(this.cancellationToken);
+                Thread.Sleep(TimeSpan.FromSeconds(.1));
+            }
+
+            bufferTask = Task.Run(() => itemProducer.BufferMoreDocumentsAsync(this.cancellationToken));
+
+            Assert.AreEqual(3, callBackCount, "Buffer more should have a lock which prevents multiple executes.");
+
+            blockExecute = false;
+            await moveNext;
+
+            blockExecute = false;
+            await bufferTask;
             Assert.AreEqual(itemsToRead, itemProducer.BufferedItemCount, "2nd Page should be loaded.");
         }
 

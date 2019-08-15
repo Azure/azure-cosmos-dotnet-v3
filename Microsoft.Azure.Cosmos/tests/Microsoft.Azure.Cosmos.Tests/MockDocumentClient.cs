@@ -135,6 +135,11 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             return null;
         }
 
+        internal virtual IReadOnlyList<PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
+        {
+            return (IReadOnlyList<PartitionKeyRange>) new List<Documents.PartitionKeyRange>() {new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } };
+        }
+
         private void Init()
         {
             this.collectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), new ServerStoreModel(null), null, null);
@@ -209,7 +214,10 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<Documents.Routing.Range<string>>(),
                             It.IsAny<bool>()
                         )
-                ).Returns(Task.FromResult<IReadOnlyList<PartitionKeyRange>>(new List<PartitionKeyRange>() { new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } }));
+                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) =>
+                {
+                    return Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh));
+                });
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
             

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class BootstrapperCore : Bootstrapper
     {

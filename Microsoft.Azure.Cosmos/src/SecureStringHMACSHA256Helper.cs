@@ -8,8 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.ComponentModel;
     using System.Runtime.InteropServices;
     using System.Security;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// Manufactures SHA256 HMACs of byte payloads using a key. The key is a Base64-encoded SecureString.

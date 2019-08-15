@@ -184,7 +184,19 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
             if (response.StatusCode != HttpStatusCode.NotFound)
             {
-                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
+                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(container, Task.FromResult(response));
+                if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                {
+                    throw new ArgumentException(
+                        string.Format(
+                            ClientResources.PartitionKeyPathConflict,
+                            containerProperties.PartitionKeyPath,
+                            containerProperties.Id,
+                            retrivedContainerResponse.Resource.PartitionKeyPath),
+                        nameof(containerProperties.PartitionKey));
+                }
+
+                return retrivedContainerResponse;
             }
             
             this.ValidateContainerProperties(containerProperties);
