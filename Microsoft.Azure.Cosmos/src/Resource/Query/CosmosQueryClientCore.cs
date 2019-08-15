@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerCore cosmosContainerCore)
         {
             this.clientContext = clientContext ?? throw new ArgumentException(nameof(clientContext));
-            this.cosmosContainerCore = cosmosContainerCore ?? throw new ArgumentException(nameof(cosmosContainerCore));
+            this.cosmosContainerCore = cosmosContainerCore;
             this.documentClient = this.clientContext.DocumentClient;
             this.semaphore = new SemaphoreSlim(1, 1);
         }

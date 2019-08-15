@@ -126,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         feedOptions);
 
                     return await CreateSpecializedDocumentQueryExecutionContextAsync(
+                        client,
                         constructorParams,
                         partitionedQueryExecutionInfo,
                         targetRanges,
@@ -139,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public static async Task<IDocumentQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
+            IDocumentQueryClient client,
             DocumentQueryExecutionContextBase.InitParams constructorParams,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<PartitionKeyRange> targetRanges,
@@ -198,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec sqlQuerySpec = DocumentQueryEvaluator.Evaluate(constructorParams.Expression);
 
             CosmosQueryContext queryContext = new CosmosQueryContext(
-                client: null,
+                client: client.CosmosQueryClient,
                 resourceTypeEnum: constructorParams.ResourceTypeEnum,
                 operationType: OperationType.Query,
                 sqlQuerySpecFromUser: sqlQuerySpec,

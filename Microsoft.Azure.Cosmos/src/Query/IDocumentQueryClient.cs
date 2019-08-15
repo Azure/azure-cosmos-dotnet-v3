@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal interface IDocumentQueryClient : IDisposable
     {
+        CosmosQueryClient CosmosQueryClient { get; }
+
         QueryCompatibilityMode QueryCompatibilityMode { get; set; }
 
         IRetryPolicyFactory ResetSessionTokenRetryPolicy { get; }

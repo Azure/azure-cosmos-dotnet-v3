@@ -132,13 +132,13 @@ namespace Microsoft.Azure.Cosmos.Query
             DefaultDocumentQueryExecutionContext queryExecutionContext =
                 (DefaultDocumentQueryExecutionContext)this.innerExecutionContext;
 
-            List<PartitionKeyRange> partitionKeyRanges =
-                await
-                    queryExecutionContext.GetTargetPartitionKeyRangesAsync(collection.ResourceId,
-                        partitionedQueryExecutionInfo.QueryRanges);
+            List<PartitionKeyRange> partitionKeyRanges = await queryExecutionContext.GetTargetPartitionKeyRangesAsync(
+                this.collection.ResourceId,
+                partitionedQueryExecutionInfo.QueryRanges);
 
             DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, correlatedActivityId);
             this.innerExecutionContext = await DocumentQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContextAsync(
+                this.client,
                 constructorParams,
                 partitionedQueryExecutionInfo,
                 partitionKeyRanges,

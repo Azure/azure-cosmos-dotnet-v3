@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
+        CosmosQueryClient IDocumentQueryClient.CosmosQueryClient => this.innerClient.CosmosQueryClient.Value;
+
         QueryCompatibilityMode IDocumentQueryClient.QueryCompatibilityMode
         {
             get
@@ -79,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get { return this.innerClient.OnExecuteScalarQueryCallback; }
         }
-
+        
         async Task<CollectionCache> IDocumentQueryClient.GetCollectionCacheAsync()
         {
             return await this.innerClient.GetCollectionCacheAsync();

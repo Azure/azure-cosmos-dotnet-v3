@@ -1019,6 +1019,18 @@ namespace Microsoft.Azure.Cosmos
 
             this.mediaClient.Timeout = this.connectionPolicy.MediaRequestTimeout;
 
+            this.CosmosQueryClient = new Lazy<CosmosQueryClient>(() =>
+            {
+                CosmosClient cosmosClient = new CosmosClient(
+                    accountEndpoint: serviceEndpoint.OriginalString,
+                    accountKey: this.AuthKey.ToString(),
+                    cosmosClientOptions: null,
+                    documentClient: this);
+
+                CosmosQueryClient cosmosQueryClient = new CosmosQueryClientCore(cosmosClient.ClientContext, null);
+                return cosmosQueryClient;
+            });
+
             this.desiredConsistencyLevel = desiredConsistencyLevel;
             // Setup the proxy to be  used based on connection mode.
             // For gateway: GatewayProxy.
@@ -1207,6 +1219,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal bool UseMultipleWriteLocations => this.useMultipleWriteLocations;
+
+        internal Lazy<CosmosQueryClient> CosmosQueryClient
+        {
+            get;
+            private set;
+        }
 
         /// <summary>
         /// Gets the endpoint Uri for the service endpoint from the Azure Cosmos DB service.
