@@ -161,6 +161,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Sets the connection mode to Direct. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
+        /// <remarks>
+        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// </remarks>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
+        public CosmosClientBuilder WithConnectionModeDirect()
+        {
+            this.clientOptions.ConnectionMode = ConnectionMode.Direct;
+            this.clientOptions.ConnectionProtocol = Protocol.Tcp;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the connection mode to Direct. This is used by the client when connecting to the Azure Cosmos DB service.
+        /// </summary>
         /// <param name="idleTcpConnectionTimeout">
         /// Controls the amount of idle time after which unused connections are closed.
         /// By default, idle connections are kept open indefinitely. Value must be greater than or equal to 10 minutes. Recommended values are between 20 minutes and 24 hours.
@@ -189,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
-        public CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
+        internal CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
             TimeSpan? openTcpConnectionTimeout = null,
             int? maxRequestsPerTcpConnection = null,
             int? maxTcpConnectionsPerEndpoint = null)
