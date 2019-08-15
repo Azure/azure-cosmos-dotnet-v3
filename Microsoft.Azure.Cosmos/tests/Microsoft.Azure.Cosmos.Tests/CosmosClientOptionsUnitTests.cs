@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
-                accountKey: key);
+                authKeyOrResourceToken: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
