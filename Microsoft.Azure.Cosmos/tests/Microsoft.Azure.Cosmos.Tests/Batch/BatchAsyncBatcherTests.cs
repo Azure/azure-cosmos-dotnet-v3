@@ -13,30 +13,31 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class BatchAsyncBatcherTests
     {
         private static Exception expectedException = new Exception();
 
-        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
+        private ItemBatchOperation ItemBatchOperation() => new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
 
         private BatchAsyncBatcherExecuteDelegate Executor
-            = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
+            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 List<BatchOperationResult> results = new List<BatchOperationResult>();
-                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[operations.Count];
+                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
                 int index = 0;
-                foreach (BatchAsyncOperationContext operation in operations)
+                foreach (ItemBatchOperation operation in request.Operations)
                 {
                     results.Add(
                     new BatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
-                        ETag = operation.Operation.Id
+                        ETag = operation.Id
                     });
 
-                    arrayOperations[index++] = operation.Operation;
+                    arrayOperations[index++] = operation;
                 }
 
                 MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
@@ -44,37 +45,76 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
-                    maxBodyLength: (int)responseContent.Length * operations.Count,
-                    maxOperationCount: operations.Count,
+                    maxBodyLength: (int)responseContent.Length * request.Operations.Count,
+                    maxOperationCount: request.Operations.Count,
                     serializer: new CosmosJsonDotNetSerializer(),
-                cancellationToken: cancellation);
+                cancellationToken: cancellationToken);
 
                 BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                return new PartitionKeyRangeBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+                return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, new List<BatchResponse>() { batchresponse });
+            };
+
+        private BatchAsyncBatcherExecuteDelegate ExecutorWithSplit
+            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+            {
+                List<BatchOperationResult> results = new List<BatchOperationResult>();
+                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
+                int index = 0;
+                foreach (ItemBatchOperation operation in request.Operations)
+                {
+                    results.Add(
+                    new BatchOperationResult(HttpStatusCode.Gone)
+                    {
+                        ETag = operation.Id,
+                        SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
+                    });
+
+                    arrayOperations[index++] = operation;
+                }
+
+                MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+                SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                    partitionKey: null,
+                    operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                    maxBodyLength: (int)responseContent.Length * request.Operations.Count,
+                    maxOperationCount: request.Operations.Count,
+                    serializer: new CosmosJsonDotNetSerializer(),
+                cancellationToken: cancellationToken);
+
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent };
+                responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
+
+                BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
+                    responseMessage,
+                    batchRequest,
+                    new CosmosJsonDotNetSerializer());
+
+                return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, new List<BatchResponse>() { batchresponse });
             };
 
         // The response will include all but 2 operation responses
         private BatchAsyncBatcherExecuteDelegate ExecutorWithLessResponses
-            = async (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
+            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
-                int operationCount = operations.Count - 2;
+                int operationCount = request.Operations.Count - 2;
                 List<BatchOperationResult> results = new List<BatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[operationCount];
                 int index = 0;
-                foreach (BatchAsyncOperationContext operation in operations.Skip(1).Take(operationCount))
+                foreach (ItemBatchOperation operation in request.Operations.Skip(1).Take(operationCount))
                 {
                     results.Add(
                     new BatchOperationResult(HttpStatusCode.OK)
                     {
                         ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
-                        ETag = operation.Operation.Id
+                        ETag = operation.Id
                     });
 
-                    arrayOperations[index++] = operation.Operation;
+                    arrayOperations[index++] = operation;
                 }
 
                 MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
@@ -85,21 +125,26 @@ namespace Microsoft.Azure.Cosmos.Tests
                     maxBodyLength: (int)responseContent.Length * operationCount,
                     maxOperationCount: operationCount,
                     serializer: new CosmosJsonDotNetSerializer(),
-                cancellationToken: cancellation);
+                cancellationToken: cancellationToken);
 
                 BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
                     new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
-                return new PartitionKeyRangeBatchResponse(operations.Count, new List <BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+                return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, new List<BatchResponse>() { batchresponse });
             };
 
         private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
-            = (IReadOnlyList<BatchAsyncOperationContext> operations, CancellationToken cancellation) =>
+            = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 throw expectedException;
             };
+
+        private BatchAsyncBatcherRetryDelegate Retrier = (BatchAsyncOperationContext operation, CancellationToken cancellation) =>
+        {
+            return Task.CompletedTask;
+        };
 
         [DataTestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -107,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesSize(int size)
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(size, 1, new CosmosJsonDotNetSerializer(), this.Executor);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(size, 1, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
         }
 
         [DataTestMethod]
@@ -116,49 +161,57 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesByteSize(int size)
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, size, new CosmosJsonDotNetSerializer(), this.Executor);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, size, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesExecutor()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1, new CosmosJsonDotNetSerializer(), null);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1, new CosmosJsonDotNetSerializer(), null, this.Retrier);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ValidatesRetrier()
+        {
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1, new CosmosJsonDotNetSerializer(), this.Executor, null);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesSerializer()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1, null, this.Executor);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1, null, this.Executor, this.Retrier);
         }
 
         [TestMethod]
         public void HasFixedSize()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Assert.IsFalse(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation())));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation())));
+            Assert.IsFalse(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation())));
         }
 
         [TestMethod]
         public async Task HasFixedByteSize()
         {
-            await this.ItemBatchOperation.MaterializeResourceAsync(new CosmosJsonDotNetSerializer(), CancellationToken.None);
+            ItemBatchOperation itemBatchOperation = this.ItemBatchOperation();
+            await itemBatchOperation.MaterializeResourceAsync(new CosmosJsonDotNetSerializer(), default(CancellationToken));
             // Each operation is 2 bytes
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, new CosmosJsonDotNetSerializer(), this.Executor);
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
-            Assert.IsFalse(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, itemBatchOperation)));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, itemBatchOperation)));
+            Assert.IsFalse(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, itemBatchOperation)));
         }
 
         [TestMethod]
         public async Task ExceptionsFailOperationsAsync()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure);
-            BatchAsyncOperationContext context1 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation);
-            BatchAsyncOperationContext context2 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure, this.Retrier);
+            BatchAsyncOperationContext context1 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation());
+            BatchAsyncOperationContext context2 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation());
             batchAsyncBatcher.TryAdd(context1);
             batchAsyncBatcher.TryAdd(context2);
             await batchAsyncBatcher.DispatchAsync();
@@ -172,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DispatchProcessInOrderAsync()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
             List<BatchAsyncOperationContext> contexts = new List<BatchAsyncOperationContext>(10);
             for (int i = 0; i < 10; i++)
             {
@@ -195,8 +248,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DispatchWithLessResponses()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.ExecutorWithLessResponses);
-            BatchAsyncBatcher secondAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.ExecutorWithLessResponses, this.Retrier);
+            BatchAsyncBatcher secondAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
             List<BatchAsyncOperationContext> contexts = new List<BatchAsyncOperationContext>(10);
             for (int i = 0; i < 10; i++)
             {
@@ -246,25 +299,80 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void IsEmptyWithNoOperations()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
             Assert.IsTrue(batchAsyncBatcher.IsEmpty);
         }
 
         [TestMethod]
         public void IsNotEmptyWithOperations()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation())));
             Assert.IsFalse(batchAsyncBatcher.IsEmpty);
         }
 
         [TestMethod]
         public async Task CannotAddToDispatchedBatch()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor);
-            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation())));
             await batchAsyncBatcher.DispatchAsync();
-            Assert.IsFalse(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation)));
+            Assert.IsFalse(batchAsyncBatcher.TryAdd(new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation())));
+        }
+
+        [TestMethod]
+        public async Task RetrierGetsCalledOnSplit()
+        {
+            BatchAsyncOperationContext context1 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation());
+            BatchAsyncOperationContext context2 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation());
+
+            Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
+
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, new CosmosJsonDotNetSerializer(), this.ExecutorWithSplit, retryDelegate.Object);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(context1));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(context2));
+            await batchAsyncBatcher.DispatchAsync();
+            retryDelegate.Verify(a => a(It.Is<BatchAsyncOperationContext>(o => o == context1), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<BatchAsyncOperationContext>(o => o == context2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<BatchAsyncOperationContext>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+
+        [TestMethod]
+        public async Task RetrierGetsCalledOnOverFlow()
+        {
+            BatchAsyncOperationContext context1 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation());
+            BatchAsyncOperationContext context2 = new BatchAsyncOperationContext(string.Empty, this.ItemBatchOperation());
+
+            Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
+            Mock<BatchAsyncBatcherExecuteDelegate> executeDelegate = new Mock<BatchAsyncBatcherExecuteDelegate>();
+
+            BatchAsyncBatcherThatOverflows batchAsyncBatcher = new BatchAsyncBatcherThatOverflows(2, 1000, new CosmosJsonDotNetSerializer(), executeDelegate.Object, retryDelegate.Object);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(context1));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(context2));
+            await batchAsyncBatcher.DispatchAsync();
+            retryDelegate.Verify(a => a(It.Is<BatchAsyncOperationContext>(o => o == context1), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<BatchAsyncOperationContext>(o => o == context2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<BatchAsyncOperationContext>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        private class BatchAsyncBatcherThatOverflows : BatchAsyncBatcher
+        {
+            public BatchAsyncBatcherThatOverflows(
+                int maxBatchOperationCount,
+                int maxBatchByteSize,
+                CosmosSerializer cosmosSerializer,
+                BatchAsyncBatcherExecuteDelegate executor,
+                BatchAsyncBatcherRetryDelegate retrier) : base (maxBatchOperationCount, maxBatchByteSize, cosmosSerializer, executor, retrier)
+            {
+
+            }
+
+            internal override int GetOverflowOperations(
+                PartitionKeyRangeServerBatchRequest request,
+                IReadOnlyList<BatchAsyncOperationContext> operationsSentToRequest)
+            {
+                return 1;
+            }
         }
     }
 }

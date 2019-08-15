@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <remarks>
     /// There is always one batch at a time being filled. Locking is in place to avoid concurrent threads trying to Add operations while the timer might be Dispatching the current batch.
-    /// The current batch is dispatched and a new one is readied to be filled by new operations, the dispatched batch runs independently through a fire & forget pattern.
+    /// The current batch is dispatched and a new one is readied to be filled by new operations, the dispatched batch runs independently through a fire and forget pattern.
     /// </remarks>
     /// <seealso cref="BatchAsyncBatcher"/>
     internal class BatchAsyncStreamer : IDisposable
@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxBatchOperationCount;
         private readonly int maxBatchByteSize;
         private readonly BatchAsyncBatcherExecuteDelegate executor;
+        private readonly BatchAsyncBatcherRetryDelegate retrier;
         private readonly int dispatchTimerInSeconds;
         private readonly CosmosSerializer cosmosSerializer;
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -38,7 +39,8 @@ namespace Microsoft.Azure.Cosmos
             int dispatchTimerInSeconds,
             TimerPool timerPool,
             CosmosSerializer cosmosSerializer,
-            BatchAsyncBatcherExecuteDelegate executor)
+            BatchAsyncBatcherExecuteDelegate executor,
+            BatchAsyncBatcherRetryDelegate retrier)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -60,6 +62,11 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(executor));
             }
 
+            if (retrier == null)
+            {
+                throw new ArgumentNullException(nameof(retrier));
+            }
+
             if (cosmosSerializer == null)
             {
                 throw new ArgumentNullException(nameof(cosmosSerializer));
@@ -68,6 +75,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxBatchOperationCount = maxBatchOperationCount;
             this.maxBatchByteSize = maxBatchByteSize;
             this.executor = executor;
+            this.retrier = retrier;
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = timerPool;
             this.cosmosSerializer = cosmosSerializer;
@@ -149,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
 
         private BatchAsyncBatcher CreateBatchAsyncBatcher()
         {
-            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.cosmosSerializer, this.executor);
+            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.cosmosSerializer, this.executor, this.retrier);
         }
     }
 }

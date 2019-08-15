@@ -168,17 +168,6 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
         }
 
-        /// <summary>
-        /// If because of HybridRow serialization overhead, not all operations fit in the request, we send those extra operations in a separate request.
-        /// </summary>
-        private static int GetOverflowOperations(
-            PartitionKeyRangeServerBatchRequest request,
-            IReadOnlyList<BatchAsyncOperationContext> operationsSentToRequest)
-        {
-            int totalOperations = operationsSentToRequest.Count;
-            return totalOperations - request.Operations.Count;
-        }
-
         private async Task ReBatchAsync(
             BatchAsyncOperationContext context,
             CancellationToken cancellationToken)
@@ -186,39 +175,6 @@ namespace Microsoft.Azure.Cosmos
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(context.Operation, cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
             streamer.Add(context);
-        }
-
-        private async Task<PartitionKeyRangeBatchResponse> ExecuteAsync(
-            IReadOnlyList<BatchAsyncOperationContext> operationContexts,
-            CancellationToken cancellationToken)
-        {
-            // All operations should be for the same PKRange
-            string partitionKeyRangeId = operationContexts[0].PartitionKeyRangeId;
-            PartitionKeyRangeServerBatchRequest serverRequest = await this.CreateServerRequestAsync(partitionKeyRangeId, operationContexts, cancellationToken);
-            // Any overflow goes to a new batch
-            int overFlowOperations = BatchAsyncContainerExecutor.GetOverflowOperations(serverRequest, operationContexts);
-            while (overFlowOperations > 0)
-            {
-                await this.ReBatchAsync(operationContexts[operationContexts.Count - overFlowOperations], cancellationToken);
-                overFlowOperations--;
-            }
-
-            PartitionKeyRangeBatchExecutionResult result = await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
-
-            List<BatchResponse> responses = new List<BatchResponse>(result.ServerResponses.Count);
-            if (!result.ContainsSplit())
-            {
-                responses.AddRange(result.ServerResponses);
-            }
-            else
-            {
-                foreach (ItemBatchOperation operationToRetry in result.Operations)
-                {
-                    await this.ReBatchAsync(operationContexts[operationToRetry.OperationIndex], cancellationToken);
-                }
-            }
-
-            return new PartitionKeyRangeBatchResponse(operationContexts.Count, responses, this.cosmosClientContext.CosmosSerializer);
         }
 
         private async Task<string> ResolvePartitionKeyRangeIdAsync(
@@ -248,31 +204,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<PartitionKeyRangeServerBatchRequest> CreateServerRequestAsync(
-            string partitionKeyRangeId,
-            IReadOnlyList<BatchAsyncOperationContext> operationContexts,
-            CancellationToken cancellationToken)
-        {
-            ItemBatchOperation[] operations = new ItemBatchOperation[operationContexts.Count];
-            for (int i = 0; i < operationContexts.Count; i++)
-            {
-                operations[i] = operationContexts[i].Operation;
-            }
-
-            ArraySegment<ItemBatchOperation> operationsArraySegment = new ArraySegment<ItemBatchOperation>(operations);
-            PartitionKeyRangeServerBatchRequest request = await PartitionKeyRangeServerBatchRequest.CreateAsync(
-                  partitionKeyRangeId,
-                  operationsArraySegment,
-                  this.maxServerRequestBodyLength,
-                  this.maxServerRequestOperationCount,
-                  ensureContinuousOperationIndexes: false,
-                  serializer: this.cosmosClientContext.CosmosSerializer,
-                  cancellationToken: cancellationToken).ConfigureAwait(false);
-
-            return request;
-        }
-
-        private async Task<PartitionKeyRangeBatchExecutionResult> ExecuteServerRequestAsync(
+        private async Task<PartitionKeyRangeBatchExecutionResult> ExecuteAsync(
             PartitionKeyRangeServerBatchRequest serverRequest,
             CancellationToken cancellationToken)
         {
@@ -308,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
                 return streamer;
             }
 
-            BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(this.maxServerRequestOperationCount, this.maxServerRequestBodyLength, this.dispatchTimerInSeconds, this.timerPool, this.cosmosClientContext.CosmosSerializer, this.ExecuteAsync);
+            BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(this.maxServerRequestOperationCount, this.maxServerRequestBodyLength, this.dispatchTimerInSeconds, this.timerPool, this.cosmosClientContext.CosmosSerializer, this.ExecuteAsync, this.ReBatchAsync);
             if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
             {
                 newStreamer.Dispose();
