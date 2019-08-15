@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                foreach (var id in createdIds)
+                foreach (string id in createdIds)
                 {
                     //Don't wait for the container cleanup
                     await database.GetContainer(id).DeleteContainerAsync();
@@ -425,7 +425,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<UserProperties> results = await this.ToListAsync(
                     database.GetUserQueryStreamIterator,
                     database.GetUserQueryIterator<UserProperties>,
-                    null);
+                    null,
+                    new QueryRequestOptions());
 
                 CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
@@ -433,14 +434,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<UserProperties> queryResults = await this.ToListAsync(
                     database.GetUserQueryStreamIterator,
                     database.GetUserQueryIterator<UserProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")"
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")",
+                    new QueryRequestOptions()
                 );
 
                 CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
             }
             finally
             {
-                foreach (var id in createdIds)
+                foreach (string id in createdIds)
                 {
                     await database.GetUser(id).DeleteAsync();
                 }
@@ -488,7 +490,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<PermissionProperties> results = await this.ToListAsync(
                     user.GetPermissionQueryStreamIterator,
                     user.GetPermissionQueryIterator<PermissionProperties>,
-                    null);
+                    null,
+                    new QueryRequestOptions());
 
                 CollectionAssert.IsSubsetOf(createdPermissionIds, results.Select(x => x.Id).ToList());
 
@@ -496,18 +499,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<PermissionProperties> queryResults = await this.ToListAsync(
                     user.GetPermissionQueryStreamIterator,
                     user.GetPermissionQueryIterator<PermissionProperties>,
-                    "select * from T where STARTSWITH(T.id, \"BasicQueryPermission\")"
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryPermission\")",
+                    new QueryRequestOptions()
                 );
 
                 CollectionAssert.AreEquivalent(createdPermissionIds, queryResults.Select(x => x.Id).ToList());
             }
             finally
             {
-                foreach (var id in createdPermissionIds)
+                foreach (string id in createdPermissionIds)
                 {
                     await user.GetPermission(id).DeleteAsync();
                 }
-                foreach (var id in createdContainerIds)
+                foreach (string id in createdContainerIds)
                 {
                     await database.GetContainer(id).DeleteContainerAsync();
                 }
