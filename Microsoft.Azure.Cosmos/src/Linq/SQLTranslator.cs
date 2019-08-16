@@ -16,29 +16,36 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// This function exists for testing only.
         /// </summary>
         /// <param name="inputExpression">Expression to translate.</param>
+        /// <param name="serializationOptions">Optional serializer options.</param>
         /// <returns>A string describing the expression translation.</returns>
-        internal static string TranslateExpression(Expression inputExpression)
+        internal static string TranslateExpression(
+            Expression inputExpression,
+            CosmosSerializationOptions serializationOptions = null)
         {
-            TranslationContext context = new TranslationContext();
+            TranslationContext context = new TranslationContext(serializationOptions);
 
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
             SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
             return scalarExpression.ToString();
         }
 
-        internal static string TranslateExpressionOld(Expression inputExpression)
+        internal static string TranslateExpressionOld(
+            Expression inputExpression,
+            CosmosSerializationOptions serializationOptions = null)
         {
-            TranslationContext context = new TranslationContext();
+            TranslationContext context = new TranslationContext(serializationOptions);
 
             inputExpression = ConstantFolding.Fold(inputExpression);
             SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
             return scalarExpression.ToString();
         }
 
-        internal static SqlQuerySpec TranslateQuery(Expression inputExpression)
+        internal static SqlQuerySpec TranslateQuery(
+            Expression inputExpression,
+            CosmosSerializationOptions serializationOptions = null)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression);
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, serializationOptions);
             return new SqlQuerySpec(query.ToString());
         }
     }

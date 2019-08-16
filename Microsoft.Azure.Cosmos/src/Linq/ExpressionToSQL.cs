@@ -80,10 +80,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Toplevel entry point.
         /// </summary>
         /// <param name="inputExpression">An Expression representing a Query on a IDocumentQuery object.</param>
+        /// <param name="serializationOptions">Optional serializer options.</param>
         /// <returns>The corresponding SQL query.</returns>
-        public static SqlQuery TranslateQuery(Expression inputExpression)
+        public static SqlQuery TranslateQuery(
+            Expression inputExpression,
+            CosmosSerializationOptions serializationOptions = null)
         {
-            TranslationContext context = new TranslationContext();
+            TranslationContext context = new TranslationContext(serializationOptions);
             ExpressionToSql.Translate(inputExpression, context); // ignore result here
 
             QueryUnderConstruction query = context.currentQuery;
@@ -789,7 +792,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression VisitMemberAccess(MemberExpression inputExpression, TranslationContext context)
         {
             SqlScalarExpression memberExpression = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
-            string memberName = inputExpression.Member.GetMemberName();
+            string memberName = inputExpression.Member.GetMemberName(context.serializationOptions);
 
             // if expression is nullable
             if (inputExpression.Expression.Type.IsNullable())
@@ -836,7 +839,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlObjectProperty VisitMemberAssignment(MemberAssignment inputExpression, TranslationContext context)
         {
             SqlScalarExpression assign = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
-            string memberName = inputExpression.Member.GetMemberName();
+            string memberName = inputExpression.Member.GetMemberName(context.serializationOptions);
             SqlPropertyName propName = SqlPropertyName.Create(memberName);
             SqlObjectProperty prop = SqlObjectProperty.Create(propName, assign);
             return prop;
@@ -878,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 MemberInfo member = members[i];
                 SqlScalarExpression value = ExpressionToSql.VisitScalarExpression(arg, context);
 
-                string memberName = member.GetMemberName();
+                string memberName = member.GetMemberName(context.serializationOptions);
                 SqlPropertyName propName = SqlPropertyName.Create(memberName);
                 SqlObjectProperty prop = SqlObjectProperty.Create(propName, value);
                 result[i] = prop;

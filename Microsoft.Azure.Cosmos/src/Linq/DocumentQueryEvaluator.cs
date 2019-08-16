@@ -13,7 +13,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         private const string SQLMethod = "AsSQL";
 
-        public static SqlQuerySpec Evaluate(Expression expression)
+        public static SqlQuerySpec Evaluate(
+            Expression expression,
+            CosmosSerializationOptions serializationOptions = null)
         {
             switch (expression.NodeType)
             {
@@ -23,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case ExpressionType.Call:
                     {
-                        return DocumentQueryEvaluator.HandleMethodCallExpression((MethodCallExpression)expression);
+                        return DocumentQueryEvaluator.HandleMethodCallExpression((MethodCallExpression)expression, serializationOptions);
                     }
 
                 default:
@@ -69,7 +71,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             return null;
         }
 
-        private static SqlQuerySpec HandleMethodCallExpression(MethodCallExpression expression)
+        private static SqlQuerySpec HandleMethodCallExpression(
+            MethodCallExpression expression,
+            CosmosSerializationOptions serializationOptions = null)
         {
             if (DocumentQueryEvaluator.IsTransformExpression(expression))
             {
@@ -86,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            return SqlTranslator.TranslateQuery(expression);
+            return SqlTranslator.TranslateQuery(expression, serializationOptions);
         }
 
         /// <summary>
