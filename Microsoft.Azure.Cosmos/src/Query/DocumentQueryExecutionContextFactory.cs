@@ -205,11 +205,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 operationType: OperationType.Query,
                 sqlQuerySpecFromUser: sqlQuerySpec,
                 resourceType: constructorParams.ResourceType,
-                queryRequestOptions: null,
+                queryRequestOptions: constructorParams.FeedOptions.GetQueryRequestOptions(),
                 resourceLink: new Uri(constructorParams.ResourceLink, UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: true,
-                correlatedActivityId: constructorParams.CorrelatedActivityId);
+                correlatedActivityId: constructorParams.CorrelatedActivityId,
+                containerResourceId: collectionRid);
 
             CosmosQueryExecutionContext executionContext = await CosmosQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContextAsync(
                     cosmosQueryContext: queryContext,

@@ -1024,7 +1024,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosClient cosmosClient = new CosmosClient(
                     accountEndpoint: serviceEndpoint.OriginalString,
                     accountKey: this.AuthKey.ToString(),
-                    cosmosClientOptions: null,
+                    cosmosClientOptions: new CosmosClientOptions(),
                     documentClient: this);
 
                 CosmosQueryClient cosmosQueryClient = new CosmosQueryClientCore(cosmosClient.ClientContext, null);

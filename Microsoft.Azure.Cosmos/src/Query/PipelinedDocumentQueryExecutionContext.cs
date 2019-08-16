@@ -262,13 +262,13 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             };
 
-            return (CosmosQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
+            return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                partitionedQueryExecutionInfo.QueryInfo,
                initialPageSize,
                requestContinuation,
                constructorParams.QueryRequestOptions.EnableGroupBy,
                createOrderByComponentFunc,
-               createParallelComponentFunc));
+               createParallelComponentFunc);
         }
 
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(

@@ -427,6 +427,8 @@ namespace Microsoft.Azure.Cosmos
                 EnableCrossPartitionQuery = this.EnableCrossPartitionQuery,
                 PopulateQueryMetrics = this.PopulateQueryMetrics
             };
+            
+            requestOptions.EnableCrossPartitionSkipTake = true;
 
             if (this.PartitionKey != null)
             {
