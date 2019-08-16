@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Text;
     using Microsoft.Azure.Documents;
@@ -41,67 +40,55 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="PartitionKeyRangeBatchResponse"/> class.
         /// </summary>
         /// <param name="originalOperationsCount">Original operations that generated the server responses.</param>
-        /// <param name="serverResponses">Responses from the server.</param>
+        /// <param name="serverResponse">Response from the server.</param>
         /// <param name="serializer">Serializer to deserialize response resource body streams.</param>
         internal PartitionKeyRangeBatchResponse(
             int originalOperationsCount,
-            IEnumerable<BatchResponse> serverResponses,
+            BatchResponse serverResponse,
             CosmosSerializer serializer)
         {
-            this.StatusCode = serverResponses.Any(r => r.StatusCode != HttpStatusCode.OK)
-                ? (HttpStatusCode)StatusCodes.MultiStatus
-                : HttpStatusCode.OK;
+            this.StatusCode = serverResponse.StatusCode;
 
-            this.ServerResponses = serverResponses;
+            this.ServerResponse = serverResponse;
             this.resultsByOperationIndex = new BatchOperationResult[originalOperationsCount];
 
             StringBuilder errorMessageBuilder = new StringBuilder();
             List<string> activityIds = new List<string>();
             List<ItemBatchOperation> itemBatchOperations = new List<ItemBatchOperation>();
-            foreach (BatchResponse serverResponse in serverResponses)
+            // We expect number of results == number of operations here
+            for (int index = 0; index < serverResponse.Operations.Count; index++)
             {
-                // We expect number of results == number of operations here
-                for (int index = 0; index < serverResponse.Operations.Count; index++)
+                int operationIndex = serverResponse.Operations[index].OperationIndex;
+                if (this.resultsByOperationIndex[operationIndex] == null
+                    || this.resultsByOperationIndex[operationIndex].StatusCode == (HttpStatusCode)StatusCodes.TooManyRequests)
                 {
-                    int operationIndex = serverResponse.Operations[index].OperationIndex;
-                    if (this.resultsByOperationIndex[operationIndex] == null
-                        || this.resultsByOperationIndex[operationIndex].StatusCode == (HttpStatusCode)StatusCodes.TooManyRequests)
-                    {
-                        this.resultsByOperationIndex[operationIndex] = serverResponse[index];
-                    }
+                    this.resultsByOperationIndex[operationIndex] = serverResponse[index];
                 }
-
-                itemBatchOperations.AddRange(serverResponse.Operations);
-                this.RequestCharge += serverResponse.RequestCharge;
-
-                if (!string.IsNullOrEmpty(serverResponse.ErrorMessage))
-                {
-                    errorMessageBuilder.AppendFormat("{0}; ", serverResponse.ErrorMessage);
-                }
-
-                activityIds.Add(serverResponse.ActivityId);
             }
 
-            this.ActivityIds = activityIds;
+            itemBatchOperations.AddRange(serverResponse.Operations);
+            this.RequestCharge += serverResponse.RequestCharge;
+
+            if (!string.IsNullOrEmpty(serverResponse.ErrorMessage))
+            {
+                errorMessageBuilder.AppendFormat("{0}; ", serverResponse.ErrorMessage);
+            }
+
+            this.ActivityId = serverResponse.ActivityId;
             this.ErrorMessage = errorMessageBuilder.Length > 2 ? errorMessageBuilder.ToString(0, errorMessageBuilder.Length - 2) : null;
             this.Operations = itemBatchOperations;
             this.Serializer = serializer;
         }
 
         /// <summary>
-        /// Gets the ActivityIds that identify the server requests made to execute the batch request.
+        /// Gets the ActivityId that identifies the server request made to execute the batch request.
         /// </summary>
-#pragma warning disable CA1721 // Property names should not match get methods
-        public virtual IEnumerable<string> ActivityIds { get; }
-#pragma warning restore CA1721 // Property names should not match get methods
-
-        /// <inheritdoc />
-        public override string ActivityId => this.ActivityIds.First();
+        public override string ActivityId { get; }
 
         internal override CosmosSerializer Serializer { get; }
 
         // for unit testing only
-        internal IEnumerable<BatchResponse> ServerResponses { get; private set; }
+        internal BatchResponse ServerResponse { get; private set; }
 
         /// <summary>
         /// Gets the number of operation results.
@@ -149,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override IEnumerable<string> GetActivityIds()
         {
-            return this.ActivityIds;
+            return new string[1] { this.ActivityId };
         }
 
         /// <summary>
@@ -161,15 +148,7 @@ namespace Microsoft.Azure.Cosmos
             if (disposing && !this.isDisposed)
             {
                 this.isDisposed = true;
-                if (this.ServerResponses != null)
-                {
-                    foreach (BatchResponse response in this.ServerResponses)
-                    {
-                        response.Dispose();
-                    }
-
-                    this.ServerResponses = null;
-                }
+                this.ServerResponse?.Dispose();
             }
 
             base.Dispose(disposing);

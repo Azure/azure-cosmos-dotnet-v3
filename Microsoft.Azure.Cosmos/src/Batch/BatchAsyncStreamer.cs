@@ -84,12 +84,12 @@ namespace Microsoft.Azure.Cosmos
             this.ResetTimer();
         }
 
-        public void Add(BatchAsyncOperationContext context)
+        public void Add(ItemBatchOperation operation)
         {
             BatchAsyncBatcher toDispatch = null;
             lock (this.dispatchLimiter)
             {
-                while (!this.currentBatcher.TryAdd(context))
+                while (!this.currentBatcher.TryAdd(operation))
                 {
                     // Batcher is full
                     toDispatch = this.GetBatchToDispatchAndCreate();

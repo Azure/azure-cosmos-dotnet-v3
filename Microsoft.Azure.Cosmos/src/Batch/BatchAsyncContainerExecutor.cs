@@ -86,8 +86,9 @@ namespace Microsoft.Azure.Cosmos
 
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
-            BatchAsyncOperationContext context = new BatchAsyncOperationContext(resolvedPartitionKeyRangeId, operation);
-            streamer.Add(context);
+            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId);
+            operation.AttachContext(context);
+            streamer.Add(operation);
             return await context.Task;
         }
 
@@ -169,12 +170,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task ReBatchAsync(
-            BatchAsyncOperationContext context,
+            ItemBatchOperation operation,
             CancellationToken cancellationToken)
         {
-            string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(context.Operation, cancellationToken).ConfigureAwait(false);
+            string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
-            streamer.Add(context);
+            streamer.Add(operation);
         }
 
         private async Task<string> ResolvePartitionKeyRangeIdAsync(
@@ -228,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
                     
                     BatchResponse serverResponse = await BatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
 
-                    return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, new List<BatchResponse>() { serverResponse });
+                    return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
                 }
             }
         }

@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="serializer">Serializer to serialize user provided objects to JSON.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A newly created instance of <see cref="PartitionKeyRangeServerBatchRequest"/>.</returns>
-        public static async Task<PartitionKeyRangeServerBatchRequest> CreateAsync(
+        public static async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateAsync(
             string partitionKeyRangeId,
             ArraySegment<ItemBatchOperation> operations,
             int maxBodyLength,
@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             PartitionKeyRangeServerBatchRequest request = new PartitionKeyRangeServerBatchRequest(partitionKeyRangeId, maxBodyLength, maxOperationCount, serializer);
-            await request.CreateBodyStreamAsync(operations, cancellationToken, ensureContinuousOperationIndexes);
-            return request;
+            ArraySegment<ItemBatchOperation> pendingOperations = await request.CreateBodyStreamAsync(operations, cancellationToken, ensureContinuousOperationIndexes);
+            return new Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>(request, pendingOperations);
         }
     }
 }

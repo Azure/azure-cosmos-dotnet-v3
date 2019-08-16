@@ -11,11 +11,9 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Context for a particular Batch operation.
     /// </summary>
-    internal class BatchAsyncOperationContext : IDisposable
+    internal class ItemBatchOperationContext : IDisposable
     {
         public string PartitionKeyRangeId { get; }
-
-        public ItemBatchOperation Operation { get; }
 
         public BatchAsyncBatcher CurrentBatcher { get; set; }
 
@@ -23,11 +21,8 @@ namespace Microsoft.Azure.Cosmos
 
         private TaskCompletionSource<BatchOperationResult> taskCompletionSource = new TaskCompletionSource<BatchOperationResult>();
 
-        public BatchAsyncOperationContext(
-            string partitionKeyRangeId,
-            ItemBatchOperation operation)
+        public ItemBatchOperationContext(string partitionKeyRangeId)
         {
-            this.Operation = operation;
             this.PartitionKeyRangeId = partitionKeyRangeId;
         }
 
@@ -47,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             BatchAsyncBatcher completer,
             Exception exception)
         {
-            if (this.AssertBatcher(completer))
+            if (this.AssertBatcher(completer, exception))
             {
                 this.taskCompletionSource.SetException(exception);
             }
@@ -57,16 +52,17 @@ namespace Microsoft.Azure.Cosmos
 
         public void Dispose()
         {
-            this.Operation.Dispose();
             this.CurrentBatcher = null;
         }
 
-        private bool AssertBatcher(BatchAsyncBatcher completer)
+        private bool AssertBatcher(
+            BatchAsyncBatcher completer,
+            Exception innerException = null)
         {
             if (!object.ReferenceEquals(completer, this.CurrentBatcher))
             {
-                DefaultTrace.TraceCritical($"Operation {this.Operation.Id} was completed by incorrect batcher.");
-                this.taskCompletionSource.SetException(new Exception($"Operation {this.Operation.Id} was completed by incorrect batcher."));
+                DefaultTrace.TraceCritical($"Operation was completed by incorrect batcher.");
+                this.taskCompletionSource.SetException(new Exception($"Operation was completed by incorrect batcher.", innerException));
                 return false;
             }
 

@@ -12,24 +12,24 @@ namespace Microsoft.Azure.Cosmos
     {
         public string PartitionKeyRangeId { get; }
 
-        public IReadOnlyList<BatchResponse> ServerResponses { get; }
+        public BatchResponse ServerResponse { get; }
 
         public IEnumerable<ItemBatchOperation> Operations { get; }
 
         public PartitionKeyRangeBatchExecutionResult(
             string pkRangeId,
             IEnumerable<ItemBatchOperation> operations,
-            List<BatchResponse> serverResponses)
+            BatchResponse serverResponse)
         {
             this.PartitionKeyRangeId = pkRangeId;
-            this.ServerResponses = serverResponses;
+            this.ServerResponse = serverResponse;
             this.Operations = operations;
         }
 
-        internal bool ContainsSplit() => this.ServerResponses != null && this.ServerResponses.Any(serverResponse =>
-                                            serverResponse.StatusCode == HttpStatusCode.Gone
-                                                && (serverResponse.SubStatusCode == Documents.SubStatusCodes.CompletingSplit
-                                                || serverResponse.SubStatusCode == Documents.SubStatusCodes.CompletingPartitionMigration
-                                                || serverResponse.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone));
+        internal bool IsSplit() => this.ServerResponse != null &&
+                                            this.ServerResponse.StatusCode == HttpStatusCode.Gone
+                                                && (this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.CompletingSplit
+                                                || this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.CompletingPartitionMigration
+                                                || this.ServerResponse.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone);
     }
 }

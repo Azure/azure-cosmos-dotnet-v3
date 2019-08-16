@@ -89,6 +89,14 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Operational context used in stream operations.
+        /// </summary>
+        /// <seealso cref="BatchAsyncBatcher"/>
+        /// <seealso cref="BatchAsyncStreamer"/>
+        /// <seealso cref="BatchAsyncContainerExecutor"/>
+        internal ItemBatchOperationContext Context { get; private set; }
+
+        /// <summary>
         /// Disposes the current <see cref="ItemBatchOperation"/>.
         /// </summary>
         public void Dispose()
@@ -287,6 +295,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.body = await BatchExecUtils.StreamToMemoryAsync(this.ResourceStream, Constants.MaxResourceSizeInBytes, cancellationToken);
             }
+        }
+
+        /// <summary>
+        /// Attached a context to the current operation to track resolution.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">If the operation already had an attached context.</exception>
+        internal void AttachContext(ItemBatchOperationContext context)
+        {
+            if (this.Context != null)
+            {
+                throw new InvalidOperationException("Cannot modify the current context of an operation.");
+            }
+
+            this.Context = context;
         }
 
         /// <summary>
