@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
 
-            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, new List<BatchResponse> { batchresponse }, new CosmosJsonDotNetSerializer());
+            PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, new CosmosJsonDotNetSerializer());
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         }
 
@@ -101,9 +101,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 new CosmosJsonDotNetSerializer());
 
-            PartitionKeyRangeBatchExecutionResult result = new PartitionKeyRangeBatchExecutionResult("0", arrayOperations, new List <BatchResponse> { batchresponse });
+            PartitionKeyRangeBatchExecutionResult result = new PartitionKeyRangeBatchExecutionResult("0", arrayOperations, batchresponse);
 
-            return result.ContainsSplit();
+            return result.IsSplit();
         }
     }
 }

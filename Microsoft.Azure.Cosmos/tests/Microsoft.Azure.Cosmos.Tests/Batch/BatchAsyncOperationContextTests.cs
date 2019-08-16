@@ -18,10 +18,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string expectedPkRangeId = Guid.NewGuid().ToString();
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
-            BatchAsyncOperationContext batchAsyncOperationContext = new BatchAsyncOperationContext(expectedPkRangeId, operation);
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(expectedPkRangeId);
+            operation.AttachContext(batchAsyncOperationContext);
 
             Assert.IsNotNull(batchAsyncOperationContext.Task);
-            Assert.AreEqual(operation, batchAsyncOperationContext.Operation);
+            Assert.AreEqual(batchAsyncOperationContext, operation.Context);
             Assert.AreEqual(expectedPkRangeId, batchAsyncOperationContext.PartitionKeyRangeId);
             Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.Task.Status);
         }
@@ -30,10 +31,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void TaskIsCreatedOnInitialization()
         {
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
-            BatchAsyncOperationContext batchAsyncOperationContext = new BatchAsyncOperationContext(string.Empty, operation);
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
+            operation.AttachContext(batchAsyncOperationContext);
 
             Assert.IsNotNull(batchAsyncOperationContext.Task);
-            Assert.AreEqual(operation, batchAsyncOperationContext.Operation);
+            Assert.AreEqual(batchAsyncOperationContext, operation.Context);
             Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.Task.Status);
         }
 
@@ -41,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TaskResultIsSetOnCompleteAsync()
         {
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
-            BatchAsyncOperationContext batchAsyncOperationContext = new BatchAsyncOperationContext(string.Empty, operation);
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
+            operation.AttachContext(batchAsyncOperationContext);
 
             BatchOperationResult expected = new BatchOperationResult(HttpStatusCode.OK);
 
@@ -56,13 +59,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Exception failure = new Exception("It failed");
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
-            BatchAsyncOperationContext batchAsyncOperationContext = new BatchAsyncOperationContext(string.Empty, operation);
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
+            operation.AttachContext(batchAsyncOperationContext);
 
             batchAsyncOperationContext.Fail(null, failure);
 
             Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => batchAsyncOperationContext.Task);
             Assert.AreEqual(failure, capturedException);
             Assert.AreEqual(TaskStatus.Faulted, batchAsyncOperationContext.Task.Status);
+        }
+
+        [TestMethod]
+        public void CannotAttachMoreThanOnce()
+        {
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty));
+            Assert.ThrowsException<InvalidOperationException>(() => operation.AttachContext(new ItemBatchOperationContext(string.Empty)));
         }
     }
 }
