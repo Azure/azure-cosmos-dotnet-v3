@@ -78,7 +78,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
 
-
         internal bool GetHasMoreResults()
         {
             return !string.IsNullOrEmpty(this.Headers.ContinuationToken);
