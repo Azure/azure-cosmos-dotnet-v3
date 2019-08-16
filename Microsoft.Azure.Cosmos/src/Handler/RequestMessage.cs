@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -156,12 +157,19 @@ namespace Microsoft.Azure.Cosmos
             }
 
 #if DEBUG
-            CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
-            ContainerProperties collectionFromCache =
-                await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
-            if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+            try
             {
-                Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
+                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
+                ContainerProperties collectionFromCache =
+                    await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
+                if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+                {
+                    Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
+                }
+            }
+            catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Ignore container non-existence
             }
 #else
             await Task.CompletedTask;

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    [TestCategory("Windows")]
     [TestClass]
     public class DirectContractTests
     {
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
             if(locationNames.Length > cosmosRegions.Length)
             {
                 HashSet<string> missingLocationNames = new HashSet<string>(locationNames);
-                foreach(var region in cosmosRegions)
+                foreach(string region in cosmosRegions)
                 {
                     missingLocationNames.Remove(region);
                 }
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             foreach (string nuspecFile in files)
             {
                 Dictionary<string, string> nuspecDependencies = DirectContractTests.GetNuspecDependencies(nuspecFile);
-                foreach(var e in nuspecDependencies)
+                foreach(KeyValuePair<string, string> e in nuspecDependencies)
                 {
                     if (!allDependencies.ContainsKey(e.Key))
                     {
@@ -117,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Dependency version should match
-            foreach(var e in allDependencies)
+            foreach(KeyValuePair<string, string> e in allDependencies)
             {
                 Assert.AreEqual(e.Value, projDependencies[e.Key]);
             }

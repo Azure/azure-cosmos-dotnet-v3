@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading.Tasks;
     using Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Linq;
@@ -409,12 +410,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string queryText,
             QueryRequestOptions requestOptions)
         {
+            HttpStatusCode expectedStatus = HttpStatusCode.OK;
             FeedIterator feedStreamIterator = createStreamQuery(queryText, null, requestOptions);
             List<T> streamResults = new List<T>();
             while (feedStreamIterator.HasMoreResults)
             {
                 ResponseMessage response = await feedStreamIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
+                Assert.AreEqual(expectedStatus, response.StatusCode);
 
                 StreamReader sr = new StreamReader(response.Content);
                 string result = await sr.ReadToEndAsync();
@@ -431,6 +434,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedIterator pagedFeedIterator = createStreamQuery(queryText, continuationToken, requestOptions);
                 ResponseMessage response = await pagedFeedIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
+                Assert.AreEqual(expectedStatus, response.StatusCode);
 
                 ICollection<T> responseResults = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
                 Assert.IsTrue(responseResults.Count <= 1);
@@ -451,11 +455,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<T> results = new List<T>();
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<T> iterator = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(iterator.Count <= 1);
-                Assert.IsTrue(iterator.Resource.Count() <= 1);
+                FeedResponse<T> response = await feedIterator.ReadNextAsync();
+                Assert.AreEqual(expectedStatus, response.StatusCode);
+                Assert.IsTrue(response.Count <= 1);
+                Assert.IsTrue(response.Resource.Count() <= 1);
 
-                results.AddRange(iterator);
+                results.AddRange(response);
             }
 
             continuationToken = null;
@@ -463,11 +468,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             do
             {
                 FeedIterator<T> pagedFeedIterator = createQuery(queryText, continuationToken, requestOptions);
-                FeedResponse<T> iterator = await pagedFeedIterator.ReadNextAsync();
-                Assert.IsTrue(iterator.Count <= 1);
-                Assert.IsTrue(iterator.Resource.Count() <= 1);
-                pagedResults.AddRange(iterator);
-                continuationToken = iterator.ContinuationToken;
+                FeedResponse<T> response = await pagedFeedIterator.ReadNextAsync();
+                Assert.AreEqual(expectedStatus, response.StatusCode);
+                Assert.IsTrue(response.Count <= 1);
+                Assert.IsTrue(response.Resource.Count() <= 1);
+                pagedResults.AddRange(response);
+                continuationToken = response.ContinuationToken;
             } while (continuationToken != null);
 
             Assert.AreEqual(pagedResults.Count, results.Count);

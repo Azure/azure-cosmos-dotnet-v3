@@ -193,6 +193,33 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ConstructorWithNullMinRange()
+        {
+            StandByFeedContinuationToken.CreateForRange("containerRid", null, "FF");
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ConstructorWithNullMaxRange()
+        {
+            StandByFeedContinuationToken.CreateForRange("containerRid", "", null);
+        }
+
+        [TestMethod]
+        public void ConstructorWithRangeGeneratesSingleQueue()
+        {
+            string min = "";
+            string max = "FF";
+            string standByFeedContinuationToken = StandByFeedContinuationToken.CreateForRange("containerRid", min, max);
+
+            List<CompositeContinuationToken> deserialized = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(standByFeedContinuationToken);
+            Assert.AreEqual(1, deserialized.Count);
+            Assert.AreEqual(min, deserialized[0].Range.Min);
+            Assert.AreEqual(max, deserialized[0].Range.Max);
+        }
+
+        [TestMethod]
         public void ChangeFeedRequestOptions_ContinuationIsSet()
         {
             RequestMessage request = new RequestMessage();
