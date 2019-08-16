@@ -198,6 +198,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
 
             SqlQuerySpec sqlQuerySpec = DocumentQueryEvaluator.Evaluate(constructorParams.Expression);
+            QueryRequestOptions queryRequestOptions = constructorParams.FeedOptions.GetQueryRequestOptions() ?? new QueryRequestOptions();
 
             CosmosQueryContext queryContext = new CosmosQueryContext(
                 client: client.CosmosQueryClient,
@@ -205,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 operationType: OperationType.Query,
                 sqlQuerySpecFromUser: sqlQuerySpec,
                 resourceType: constructorParams.ResourceType,
-                queryRequestOptions: constructorParams.FeedOptions.GetQueryRequestOptions(),
+                queryRequestOptions: queryRequestOptions,
                 resourceLink: new Uri(constructorParams.ResourceLink, UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: true,

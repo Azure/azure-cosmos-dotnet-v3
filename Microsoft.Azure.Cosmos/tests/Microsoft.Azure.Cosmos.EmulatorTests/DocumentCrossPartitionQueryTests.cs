@@ -758,6 +758,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         gotBadRequest = true;
                     }
+
+                    DocumentClientException dce = inner as DocumentClientException;
+                    if (dce != null && dce.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        gotBadRequest = true;
+                    }
                 }
 
                 Assert.IsTrue(gotBadRequest);
@@ -1611,7 +1617,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                         else
                         {
-                            Assert.AreEqual(argument.ExpectedValue, items.Single(), message);
+                            object expected = argument.ExpectedValue;
+                            object actual = items.Single();
+
+                            if (expected is long)
+                            {
+                                expected = (double)((long)expected);
+                            }
+
+                            if (actual is long)
+                            {
+                                actual = (double)((long)actual);
+                            }
+
+                            Assert.AreEqual(expected, actual, message);
                         }
                     }
                 }
@@ -1624,7 +1643,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Tuple.Create<string, object>("COUNT", (long)numberOfDocumentSamePartitionKey),
                     Tuple.Create<string, object>("MAX", (long)numberOfDocumentSamePartitionKey),
                     Tuple.Create<string, object>("MIN", (long)1),
-                    Tuple.Create<string, object>("SUM", singlePartitionSum),
+                    Tuple.Create<string, object>("SUM", (long)singlePartitionSum),
                 };
 
                 string field = aggregateTestArgs.Field;
@@ -1633,8 +1652,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     string query = $"SELECT VALUE {data.Item1}(r.{field}) FROM r WHERE r.{partitionKey} = '{uniquePartitionKey}'";
                     dynamic aggregate = documentClient.CreateDocumentQuery(collection, query).ToList().Single();
+                    object expected = data.Item2;
+
+                    if (aggregate is long)
+                    {
+                        aggregate = (long)aggregate;
+                    }
+
+                    if (expected is long)
+                    {
+                        expected = (long)expected;
+                    }
+
                     Assert.AreEqual(
-                        data.Item2,
+                        expected,
                         aggregate,
                         $"query: {query}, data: {JsonConvert.SerializeObject(data)}");
 
@@ -3886,10 +3917,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 DocumentFeedResponse<dynamic> feedResponse = await documentQuery.ExecuteNextAsync<dynamic>();
 
                                 numberOfDocuments += feedResponse.Count;
-                                foreach (QueryMetrics queryMetrics in feedResponse.QueryMetrics.Values)
-                                {
-                                    aggregatedQueryMetrics += queryMetrics;
-                                }
+
+                                //v3 query metrics
+                                //foreach (QueryMetrics queryMetrics in feedResponse.QueryMetrics.Values)
+                                //{
+                                //    aggregatedQueryMetrics += queryMetrics;
+                                //}
                             }
 
                             Assert.IsTrue(

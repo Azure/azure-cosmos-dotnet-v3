@@ -116,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             },
                             response.RequestStatistics,
                             response.DisallowContinuationTokenMessage,
+                            response.InternalResponseContinuation,
                             response.ResponseLengthBytes);
                     }
 

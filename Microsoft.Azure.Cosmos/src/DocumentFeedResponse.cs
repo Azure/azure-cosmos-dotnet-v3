@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool useETagAsContinuation;
         private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;        
         private INameValueCollection responseHeaders;
+        private string internalContinuationTokenHelper;
 
         /// <summary>
         /// Constructor exposed for mocking purposes.
@@ -55,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null,
             ClientSideRequestStatistics requestStats = null,
             string disallowContinuationTokenMessage = null,
+            string continuationToken = null,
             long responseLengthBytes = 0)
             : this(result)
         {
@@ -66,6 +68,7 @@ namespace Microsoft.Azure.Cosmos
             this.queryMetrics = queryMetrics;
             this.RequestStatistics = requestStats;
             this.disallowContinuationTokenMessage = disallowContinuationTokenMessage;
+            this.internalContinuationTokenHelper = continuationToken;
             this.ResponseLengthBytes = responseLengthBytes;
         }
 
@@ -355,9 +358,21 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The continuation token to be used for continuing enumeration.
         /// </value>
-        internal string InternalResponseContinuation => this.useETagAsContinuation ?
-                    this.ETag :
-                    this.responseHeaders[HttpConstants.HttpHeaders.Continuation];
+        internal string InternalResponseContinuation
+        {
+            get
+            {
+                if (this.internalContinuationTokenHelper == null)
+                {
+                   this.internalContinuationTokenHelper = this.useETagAsContinuation ?
+                       this.ETag :
+                       this.responseHeaders[HttpConstants.HttpHeaders.Continuation];
+                }
+
+                return this.internalContinuationTokenHelper;
+            }
+           
+        }
 
         // This is used by FeedResponseBinder.
         internal bool UseETagAsContinuation => this.useETagAsContinuation;

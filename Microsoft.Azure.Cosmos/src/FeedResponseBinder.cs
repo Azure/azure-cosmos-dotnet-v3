@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.QueryMetrics,
                 dynamicFeed.RequestStatistics,
                 dynamicFeed.DisallowContinuationTokenMessage,
+                dynamicFeed.InternalResponseContinuation,
                 dynamicFeed.ResponseLengthBytes);
             }
 
@@ -97,6 +98,7 @@ namespace Microsoft.Azure.Cosmos
                 dynamicFeed.QueryMetrics,
                 dynamicFeed.RequestStatistics,
                 dynamicFeed.DisallowContinuationTokenMessage,
+                dynamicFeed.InternalResponseContinuation,
                 dynamicFeed.ResponseLengthBytes);
         }
     }
