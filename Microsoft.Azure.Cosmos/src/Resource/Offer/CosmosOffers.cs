@@ -28,7 +28,31 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
+            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+
+            return await this.GetThroughputResponseAsync(
+                streamPayload: null,
+                operationType: OperationType.Read,
+                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                resourceType: ResourceType.Offer,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+            string targetRID,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+
+            if (offerV2 == null)
+            {
+                return new ThroughputResponse(
+                    HttpStatusCode.NotFound,
+                    headers: null,
+                    throughputProperties: null);
+            }
 
             return await this.GetThroughputResponseAsync(
                 streamPayload: null,
@@ -45,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
+            OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
             return await this.GetThroughputResponseAsync(
@@ -57,8 +81,45 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal async Task<OfferV2> GetOfferV2Async(
+        internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
             string targetRID,
+            int throughput,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            try
+            {
+                OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+                OfferV2 newOffer = new OfferV2(offerV2, throughput);
+
+                return await this.GetThroughputResponseAsync(
+                    streamPayload: this.ClientContext.PropertiesSerializer.ToStream(newOffer),
+                    operationType: OperationType.Replace,
+                    linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                    resourceType: ResourceType.Offer,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            }
+            catch (DocumentClientException dce)
+            {
+                return new ThroughputResponse(
+                    dce.StatusCode ?? HttpStatusCode.InternalServerError,
+                    headers: null,
+                    throughputProperties: null);
+            }
+            catch (AggregateException ex)
+            {
+                DocumentClientException dce = ex.Flatten().InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException) as DocumentClientException;
+                return new ThroughputResponse(
+                    dce?.StatusCode ?? HttpStatusCode.InternalServerError,
+                    headers: null,
+                    throughputProperties: null);
+            }
+        }
+
+        private async Task<OfferV2> GetOfferV2Async(
+            string targetRID,
+            bool failIfNotConfigured = true,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrWhiteSpace(targetRID))
@@ -73,7 +134,8 @@ namespace Microsoft.Azure.Cosmos
                  queryDefinition);
             OfferV2 offerV2 = await this.SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
 
-            if (offerV2 == null)
+            if (offerV2 == null &&
+                failIfNotConfigured)
             {
                 throw new CosmosException(HttpStatusCode.NotFound, "Throughput is not configured");
             }
@@ -111,22 +173,6 @@ namespace Microsoft.Azure.Cosmos
                queryDefinition,
                continuationToken,
                requestOptions);
-        }
-
-        private CosmosOfferResult GetThroughputIfExists(Offer offer)
-        {
-            if (offer == null)
-            {
-                return new CosmosOfferResult(null);
-            }
-
-            OfferV2 offerV2 = offer as OfferV2;
-            if (offerV2 == null)
-            {
-                throw new NotImplementedException();
-            }
-
-            return new CosmosOfferResult(offerV2.Content.OfferThroughput);
         }
 
         private async Task<T> SingleOrDefaultAsync<T>(

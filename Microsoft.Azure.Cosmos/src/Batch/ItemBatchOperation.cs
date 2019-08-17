@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         public ItemBatchOperation(
             OperationType operationType,
             int operationIndex,
-            PartitionKey? partitionKey,
+            PartitionKey partitionKey,
             string id = null,
             Stream resourceStream = null,
             BatchItemRequestOptions requestOptions = null)
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestOptions = requestOptions;
         }
 
-        public PartitionKey? PartitionKey { get; }
+        public PartitionKey? PartitionKey { get; internal set; }
 
         public string Id { get; }
 
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
                         return r;
                     }
                 }
-                 
+
                 if (options.IfMatchEtag != null)
                 {
                     r = writer.WriteString("ifMatch", options.IfMatchEtag);

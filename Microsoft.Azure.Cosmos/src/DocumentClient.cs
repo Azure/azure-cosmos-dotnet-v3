@@ -5937,8 +5937,11 @@ namespace Microsoft.Azure.Cosmos
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType) // unused, use token based upon what is passed in constructor 
+            AuthorizationTokenType tokenType,
+            out string payload) // unused, use token based upon what is passed in constructor 
         {
+            payload = null;
+
             if (this.hasAuthKeyResourceToken && this.resourceTokens == null)
             {
                 // If the input auth token is a resource token, then use it as a bearer-token.
@@ -6091,7 +6094,8 @@ namespace Microsoft.Azure.Cosmos
                 PathsHelper.GetResourcePath(request.ResourceType),
                 verb,
                 request.Headers,
-                request.RequestAuthorizationTokenType);
+                request.RequestAuthorizationTokenType,
+                payload: out _);
 
             return Task.FromResult(0);
         }
@@ -6109,9 +6113,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("request");
             }
 
-            string authorization = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(request.ResourceAddress,
+            string authorization = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+                request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
-                HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                HttpConstants.HttpMethods.Post,
+                request.Headers,
+                AuthorizationTokenType.PrimaryMasterKey,
+                payload: out _);
+
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             return this.ProcessRequestAsync(request, retryPolicy, cancellationToken);
@@ -6127,11 +6136,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("request");
             }
 
-            string authorization = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(request.ResourceAddress,
+            string authorization = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+                request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 HttpConstants.HttpMethods.Put,
                 request.Headers,
-                AuthorizationTokenType.PrimaryMasterKey);
+                AuthorizationTokenType.PrimaryMasterKey,
+                payload: out _);
 
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
@@ -6148,10 +6159,12 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("request");
             }
 
-            string authorizationToken = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(request.ResourceAddress,
+            string authorizationToken = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+                request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 HttpConstants.HttpMethods.Get, request.Headers,
-                AuthorizationTokenType.PrimaryMasterKey);
+                AuthorizationTokenType.PrimaryMasterKey,
+                payload: out _);
 
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 
@@ -6168,9 +6181,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("request");
             }
 
-            string authorizationToken = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(request.ResourceAddress,
+            string authorizationToken = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+                request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
-                HttpConstants.HttpMethods.Get, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                HttpConstants.HttpMethods.Get, request.Headers,
+                AuthorizationTokenType.PrimaryMasterKey,
+                payload: out _);
+
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 
             return this.ProcessRequestAsync(request, retryPolicy, cancellationToken);
@@ -6190,7 +6207,8 @@ namespace Microsoft.Azure.Cosmos
                     PathsHelper.GetResourcePath(request.ResourceType),
                     HttpConstants.HttpMethods.Delete,
                     request.Headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    payload: out _);
 
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 
@@ -6209,8 +6227,13 @@ namespace Microsoft.Azure.Cosmos
 
             request.Headers[HttpConstants.HttpHeaders.ContentType] = RuntimeConstants.MediaTypes.Json;
             request.Headers[HttpConstants.HttpHeaders.Authorization] =
-                            ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(request.ResourceAddress,
-                            PathsHelper.GetResourcePath(request.ResourceType), HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                            ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
+                                request.ResourceAddress,
+                                PathsHelper.GetResourcePath(request.ResourceType),
+                                HttpConstants.HttpMethods.Post,
+                                request.Headers,
+                                AuthorizationTokenType.PrimaryMasterKey,
+                                payload: out _);
 
             return this.ProcessRequestAsync(request, retryPolicy, cancellationToken);
         }
@@ -6228,7 +6251,10 @@ namespace Microsoft.Azure.Cosmos
             string authorizationToken = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
                 request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
-                HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                HttpConstants.HttpMethods.Post, request.Headers,
+                AuthorizationTokenType.PrimaryMasterKey,
+                payload: out _);
+
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 
             return this.ProcessRequestAsync(request, retryPolicy, cancellationToken);
@@ -6246,7 +6272,10 @@ namespace Microsoft.Azure.Cosmos
 
             string authorization = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
-                HttpConstants.HttpMethods.Post, request.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                HttpConstants.HttpMethods.Post, request.Headers,
+                AuthorizationTokenType.PrimaryMasterKey,
+                payload: out _);
+
             request.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             request.Headers[HttpConstants.HttpHeaders.IsUpsert] = bool.TrueString;
@@ -6346,7 +6375,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType = request.OperationType;
 
             if (resourceType == ResourceType.Offer ||
-                resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript ||
+                (resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript) ||
                 resourceType == ResourceType.PartitionKeyRange)
             {
                 return this.gatewayStoreModel;

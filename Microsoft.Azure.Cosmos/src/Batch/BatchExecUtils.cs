@@ -10,7 +10,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Util methods for batch requests.
@@ -87,7 +89,47 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public static string GetPartitionKeyRangeId(PartitionKeyInternal partitionKeyInternal, PartitionKeyDefinition partitionKeyDefinition, CollectionRoutingMap collectionRoutingMap)
+        {
+            string effectivePartitionKey = partitionKeyInternal.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            return collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey).Id;
+        }
+
+        public static void GetServerRequestLimits(out int maxServerRequestBodyLength, out int maxServerRequestOperationCount)
+        {
+            maxServerRequestBodyLength = Constants.MaxDirectModeBatchRequestBodySizeInBytes;
+            maxServerRequestOperationCount = Constants.MaxOperationsInDirectModeBatchRequest;
+        }
+
+        public static ResponseMessage EnsureValidStream(
+            IReadOnlyList<ItemBatchOperation> operations,
+            RequestOptions batchOptions,
+            int? maxOperationCount = null)
+        {
+            string errorMessage = BatchExecUtils.EnsureValidInternal(operations, batchOptions, maxOperationCount);
+
+            if (errorMessage != null)
+            {
+                return new ResponseMessage(HttpStatusCode.BadRequest, errorMessage: errorMessage);
+            }
+
+            return new ResponseMessage(HttpStatusCode.OK);
+        }
+
         public static void EnsureValid(
+            IReadOnlyList<ItemBatchOperation> operations,
+            RequestOptions batchOptions,
+            int? maxOperationCount = null)
+        {
+            string errorMessage = BatchExecUtils.EnsureValidInternal(operations, batchOptions, maxOperationCount);
+
+            if (errorMessage != null)
+            {
+                throw new ArgumentException(errorMessage);
+            }
+        }
+
+        private static string EnsureValidInternal(
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions,
             int? maxOperationCount = null)
@@ -139,10 +181,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (errorMessage != null)
-            {
-                throw new ArgumentException(errorMessage);
-            }
+            return errorMessage;
         }
     }
 }
