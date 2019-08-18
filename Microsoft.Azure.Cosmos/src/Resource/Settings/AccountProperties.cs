@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -18,14 +18,14 @@ namespace Microsoft.Azure.Cosmos
         private Collection<AccountRegion> readRegions;
         private Collection<AccountRegion> writeRegions;
 
-        internal readonly Lazy<IDictionary<string, object>> QueryEngineConfiurationInternal;
+        internal readonly Lazy<IDictionary<string, object>> QueryEngineConfigurationInternal;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AccountProperties"/> class.
         /// </summary>
         internal AccountProperties()
         {
-            this.QueryEngineConfiurationInternal = new Lazy<IDictionary<string, object>>(() => QueryStringToDictConverter());
+            this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => QueryStringToDictConverter());
         }
 
         /// <summary>
@@ -214,19 +214,19 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.ReadPolicy)]
         internal ReadPolicy ReadPolicy { get; set; }
 
-        internal IDictionary<string, object> QueryEngineConfiuration => this.QueryEngineConfiurationInternal.Value;
+        internal IDictionary<string, object> QueryEngineConfiguration => this.QueryEngineConfigurationInternal.Value;
 
         [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
-        internal string QueryEngineConfiurationString { get; set; }
+        internal string QueryEngineConfigurationString { get; set; }
 
         [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
         internal bool EnableMultipleWriteLocations { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()
         {
-            if (!string.IsNullOrEmpty(this.QueryEngineConfiurationString))
+            if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
             {
-                return JsonConvert.DeserializeObject<Dictionary<string, object>>(this.QueryEngineConfiurationString);
+                return JsonConvert.DeserializeObject<Dictionary<string, object>>(this.QueryEngineConfigurationString);
             }
             else
             {
