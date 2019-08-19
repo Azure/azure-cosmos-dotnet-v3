@@ -34,8 +34,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 using (new ActivityScope(Guid.NewGuid()))
                 {
+                    PointOperationStatistics pointOperationStatistics = new PointOperationStatistics();
                     DocumentServiceResponse response = await this.ProcessMessageAsync(request, cancellationToken);
-                    return response.ToCosmosResponseMessage(request);
+                    ResponseMessage responseMessage = response.ToCosmosResponseMessage(request);
+                    this.updateDiagnostics(responseMessage, request, pointOperationStatistics, response);
+                    return responseMessage;
                 }
             }
             //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request
@@ -115,6 +118,44 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
             this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
             return response;
+        }
+
+        private void updateDiagnostics(
+            ResponseMessage responseMessage,
+            RequestMessage request,
+            PointOperationStatistics pointOperationStatistics,
+            DocumentServiceResponse response)
+        {
+            pointOperationStatistics.userAgent = this.client.ClientOptions.UserAgentContainer.UserAgent;
+            if (request.requestDiagnosticContext != null)
+            {
+                request.requestDiagnosticContext.updateRequestEndTime();
+                pointOperationStatistics.customHandlerLatency = request.requestDiagnosticContext.customHandlerLatency;
+                pointOperationStatistics.costOfFetchingPK = request.requestDiagnosticContext.costOfFetchingPK;
+                pointOperationStatistics.deserializationLatency = request.requestDiagnosticContext.deserializationLatencyinMS;
+                pointOperationStatistics.serializationLatency = request.requestDiagnosticContext.serializationLatencyinMS;
+                pointOperationStatistics.requestStartTime = request.requestDiagnosticContext.requestStartTime;
+                pointOperationStatistics.requestEndTime = request.requestDiagnosticContext.requestEndTime;
+            }
+
+            if (request.ResourceType == ResourceType.Document &&
+                this.client.ClientOptions.ConnectionMode == ConnectionMode.Gateway &&
+                request.OperationType != OperationType.Query && request.OperationType != OperationType.ReadFeed)
+            {
+                pointOperationStatistics.RecordGateWayResponse(response, request);
+                responseMessage.cosmosDiagnostics = new CosmosDiagnostics()
+                {
+                    pointOperationStatistics = pointOperationStatistics
+                };
+            }
+            else if (response.RequestStats != null)
+            {
+                pointOperationStatistics.RecordDirectResponse(response, request);
+                responseMessage.cosmosDiagnostics = new CosmosDiagnostics()
+                {
+                    pointOperationStatistics = pointOperationStatistics
+                };
+            }
         }
     }
 }

@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Create,
                 requestOptions,
                 extractPartitionKeyIfNeeded: false,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
         }
 
@@ -61,13 +62,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException(nameof(item));
             }
-
+            RequestDiagnosticContext requestDiagnosticContext = new RequestDiagnosticContext();
+            Stream streamPayload = this.GetStream(item, requestDiagnosticContext);
             Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                 partitionKey: partitionKey,
                 itemId: null,
-                streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
+                streamPayload: streamPayload,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
+                requestDiagnosticContext: requestDiagnosticContext,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
@@ -86,6 +89,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Read,
                 requestOptions,
                 extractPartitionKeyIfNeeded: false,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
         }
 
@@ -117,6 +121,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Upsert,
                 requestOptions,
                 extractPartitionKeyIfNeeded: false,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
         }
 
@@ -131,12 +136,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
+            RequestDiagnosticContext requestDiagnosticContext = new RequestDiagnosticContext();
+            Stream streamPayload = this.GetStream(item, requestDiagnosticContext);
             Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                 partitionKey: partitionKey,
                 itemId: null,
-                streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
+                streamPayload: streamPayload,
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
+                requestDiagnosticContext: requestDiagnosticContext,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
@@ -156,6 +164,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Replace,
                 requestOptions,
                 extractPartitionKeyIfNeeded: false,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
         }
 
@@ -176,12 +185,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(item));
             }
 
+            RequestDiagnosticContext requestDiagnosticContext = new RequestDiagnosticContext();
+            Stream streamPayload = this.GetStream(item, requestDiagnosticContext);
             Task<ResponseMessage> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
                partitionKey: partitionKey,
                itemId: id,
-               streamPayload: this.ClientContext.CosmosSerializer.ToStream<T>(item),
+               streamPayload: streamPayload,
                operationType: OperationType.Replace,
                requestOptions: requestOptions,
+               requestDiagnosticContext: requestDiagnosticContext,
                cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response);
@@ -200,6 +212,7 @@ namespace Microsoft.Azure.Cosmos
                 OperationType.Delete,
                 requestOptions,
                 extractPartitionKeyIfNeeded: false,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
         }
 
@@ -439,6 +452,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
+            RequestDiagnosticContext requestDiagnosticContext,
             CancellationToken cancellationToken)
         {
             PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
@@ -451,6 +465,7 @@ namespace Microsoft.Azure.Cosmos
                     operationType,
                     requestOptions,
                     extractPartitionKeyIfNeeded: true,
+                    requestDiagnosticContext: requestDiagnosticContext,
                     cancellationToken: cancellationToken);
 
                 if (responseMessage.IsSuccessStatusCode)
@@ -478,6 +493,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             bool extractPartitionKeyIfNeeded,
+            RequestDiagnosticContext requestDiagnosticContext,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
@@ -485,9 +501,18 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey = null;
             }
 
+            if (requestDiagnosticContext == null)
+            {
+                requestDiagnosticContext = new RequestDiagnosticContext();
+            }
+
             if (extractPartitionKeyIfNeeded && partitionKey == null)
             {
-                partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
+                using (CosmosDiagnosticTimer cosmosDiagnosticTimer = new CosmosDiagnosticTimer())
+                {
+                    partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
+                    requestDiagnosticContext.costOfFetchingPK = cosmosDiagnosticTimer.GetElapsedTime();
+                }
             }
 
             ContainerCore.ValidatePartitionKey(partitionKey, requestOptions);
@@ -502,6 +527,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey,
                 streamPayload,
                 null,
+                requestDiagnosticContext,
                 cancellationToken);
         }
 
@@ -652,6 +678,16 @@ namespace Microsoft.Azure.Cosmos
         private Uri ContcatCachedUriWithId(string resourceId)
         {
             return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+        }
+
+        private Stream GetStream<T>(T item, RequestDiagnosticContext requestDiagnosticContext)
+        {
+            using (CosmosDiagnosticTimer timer = new CosmosDiagnosticTimer())
+            {
+                Stream stream = this.ClientContext.CosmosSerializer.ToStream<T>(item);
+                requestDiagnosticContext.serializationLatencyinMS = timer.GetElapsedTime();
+                return stream;
+            }
         }
     }
 }

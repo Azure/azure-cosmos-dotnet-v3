@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
         }
 
@@ -162,6 +163,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: null,
                 requestEnricher: null,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
 
             return await this.clientContext.ResponseFactory.CreateItemResponseAsync<T>(response);

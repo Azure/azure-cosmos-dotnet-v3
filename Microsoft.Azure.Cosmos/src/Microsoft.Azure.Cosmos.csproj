@@ -76,8 +76,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
-
-    <PackageReference Include="$(DirectPackageName)" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
 
     <!--Direct Dependencies-->
@@ -101,6 +99,12 @@
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Azure.Cosmos.Direct">
+      <HintPath>..\..\..\..\..\..\CosmosDB\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\bin\x64\Debug\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <PropertyGroup>

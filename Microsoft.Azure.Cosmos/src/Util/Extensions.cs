@@ -36,15 +36,6 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponse.Headers.Add(key, response.Headers[key]);
                 }
             }
-
-            if (response.RequestStats != null)
-            {
-                cosmosResponse.cosmosDiagnostics = new CosmosDiagnostics()
-                {
-                    pointOperationStatistics = new PointOperationStatistics((CosmosClientSideRequestStatistics)response.RequestStats)
-                };
-            }
-
             return cosmosResponse;
         }
 

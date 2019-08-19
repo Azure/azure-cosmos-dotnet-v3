@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
+                T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer, true);
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
+        internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer, bool captureSerializerLatency = false)
         {            
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
@@ -170,6 +170,18 @@ namespace Microsoft.Azure.Cosmos
                 return default(T);
             }
 
+            if (captureSerializerLatency)
+            {
+                using (CosmosDiagnosticTimer timer = new CosmosDiagnosticTimer())
+                {
+                    T obj = jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
+                    if (cosmosResponseMessage.cosmosDiagnostics.pointOperationStatistics != null)
+                    {
+                        cosmosResponseMessage.cosmosDiagnostics.pointOperationStatistics.deserializationLatency = timer.GetElapsedTime();
+                    }
+                    return obj;
+                }
+            }
             return jsonSerializer.FromStream<T>(cosmosResponseMessage.Content);
         }
     }

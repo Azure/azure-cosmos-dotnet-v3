@@ -68,6 +68,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            RequestDiagnosticContext requestDiagnosticContext,
             CancellationToken cancellationToken);
 
         /// <summary>

@@ -689,6 +689,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 streamPayload: streamPayload,
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
         }
 

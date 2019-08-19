@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
+            this.requestDiagnosticContext = new RequestDiagnosticContext();
         }
 
         /// <summary>
@@ -42,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Method = method;
             this.RequestUri = requestUri;
+            this.requestDiagnosticContext = new RequestDiagnosticContext();
         }
 
         /// <summary>
@@ -73,6 +75,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal RequestOptions RequestOptions { get; set; }
+
+        internal RequestDiagnosticContext requestDiagnosticContext { get; set; }
 
         internal ResourceType ResourceType { get; set; }
 

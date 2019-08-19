@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
 
     /// <summary>
     /// Abstraction which allows defining of custom message handlers.
@@ -36,7 +37,28 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
+            updateCustomerHandlerStatistics(request);
             return this.InnerHandler.SendAsync(request, cancellationToken);
+        }
+
+        private void updateCustomerHandlerStatistics(RequestMessage request)
+        {
+            if (request.requestDiagnosticContext.handlerRequestStartTime != null &&
+                    request.requestDiagnosticContext.handlerRequestEndTime == null)
+            {
+                request.requestDiagnosticContext.handlerRequestEndTime = DateTime.UtcNow;
+                request.requestDiagnosticContext.customHandlerLatency.Add(Tuple.Create(
+                    request.requestDiagnosticContext.currentHandlerName,
+                    (request.requestDiagnosticContext.handlerRequestEndTime.Value - request.requestDiagnosticContext.handlerRequestStartTime.Value)));
+                request.requestDiagnosticContext.handlerRequestStartTime = null;
+                request.requestDiagnosticContext.handlerRequestEndTime = null;
+            }
+
+            //  if (!this.InnerHandler.GetType().Namespace.Equals(typeof(RequestInvokerHandler).Namespace))
+            //{
+            request.requestDiagnosticContext.handlerRequestStartTime = DateTime.UtcNow;
+            request.requestDiagnosticContext.currentHandlerName = this.InnerHandler.GetType().Name;
+            // }
         }
     }
 }

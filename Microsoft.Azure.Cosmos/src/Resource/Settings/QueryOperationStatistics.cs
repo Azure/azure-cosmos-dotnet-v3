@@ -4,10 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Newtonsoft.Json;
 
-    internal class QueryOperationStatistics
+    internal class QueryOperationStatistics : BaseStatistics
     {
         public QueryOperationStatistics(IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
         {

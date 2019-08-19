@@ -162,6 +162,7 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
+              requestDiagnosticContext: null,
               cancellationToken: cancellationToken);
             return await this.ClientContext.ResponseFactory.CreateThroughputResponseAsync(responseMessage);
         }

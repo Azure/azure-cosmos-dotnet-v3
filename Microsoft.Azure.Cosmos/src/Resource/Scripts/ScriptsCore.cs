@@ -607,6 +607,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: null,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
         }
 

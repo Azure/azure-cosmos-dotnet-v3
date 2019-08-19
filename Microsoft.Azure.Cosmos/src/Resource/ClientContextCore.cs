@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            RequestDiagnosticContext requestDiagnosticContext,
             CancellationToken cancellationToken)
         {
             return this.RequestHandler.SendAsync(
@@ -111,6 +112,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
+                requestDiagnosticContext: requestDiagnosticContext,
                 cancellationToken: cancellationToken);
         }
 

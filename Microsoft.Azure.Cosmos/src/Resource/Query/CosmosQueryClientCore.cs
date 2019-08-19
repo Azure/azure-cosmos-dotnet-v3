@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(
@@ -137,6 +138,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
                 requestEnricher: requestEnricher,
+                requestDiagnosticContext: null,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.

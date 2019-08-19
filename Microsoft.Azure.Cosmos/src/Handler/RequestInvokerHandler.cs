@@ -92,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
+            RequestDiagnosticContext requestDiagnosticContext = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (resourceUri == null)
@@ -108,6 +109,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 RequestOptions = requestOptions,
                 Content = streamPayload
             };
+            
+            if (requestDiagnosticContext != null)
+            {
+                request.requestDiagnosticContext = requestDiagnosticContext;
+            }
+            else
+            {
+                request.requestDiagnosticContext = new RequestDiagnosticContext();
+            }
+            request.requestDiagnosticContext.handlerRequestStartTime = DateTime.UtcNow;
+            request.requestDiagnosticContext.currentHandlerName = this.GetType().Name;
 
             if (partitionKey != null)
             {
