@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        public CosmosDiagnostic cosmosDiagnostic { get; set; }
+        public CosmosDiagnostics cosmosDiagnostics { get; set; }
 
         /// <summary>
         /// Gets the internal error object.

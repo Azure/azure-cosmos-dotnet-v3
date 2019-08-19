@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             double requestCharge = 0;
             long responseLengthBytes = 0;
             List<Uri> replicaUris = new List<Uri>();
-            ClientSideRequestStatistics requestStatistics = new ClientSideRequestStatistics();
+            IClientSideRequestStatistics requestStatistics = new CosmosClientSideRequestStatistics();
             PartitionedQueryMetrics partitionedQueryMetrics = new PartitionedQueryMetrics();
             ResourceType resourceType = ResourceType.Document;
             string containerRid = null;

@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This value is currently used for tracking replica Uris.
         /// </remarks>
-        internal ClientSideRequestStatistics RequestStatistics { get; }
+        internal IClientSideRequestStatistics RequestStatistics { get; }
 
         internal IReadOnlyDictionary<string, QueryMetrics> queryMetrics { get; set; }
 
@@ -151,13 +151,13 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             IEnumerable<CosmosElement> cosmosElements,
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
-            CosmosDiagnostic cosmosDiagnostic,
+            CosmosDiagnostics cosmosDiagnostics,
             CosmosSerializer jsonSerializer,
             CosmosSerializationFormatOptions serializationOptions)
         {
             this.cosmosElements = cosmosElements;
             this.QueryHeaders = responseMessageHeaders;
-            this.cosmosDiagnostic = cosmosDiagnostic;
+            this.cosmosDiagnostics = cosmosDiagnostics;
             this.jsonSerializer = jsonSerializer;
             this.serializationOptions = serializationOptions;
             this.StatusCode = httpStatusCode;
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                     httpStatusCode: cosmosQueryResponse.StatusCode,
                     cosmosElements: cosmosQueryResponse.CosmosElements,
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
-                    cosmosDiagnostic: cosmosQueryResponse.cosmosDiagnostic,
+                    cosmosDiagnostics: cosmosQueryResponse.cosmosDiagnostics,
                     jsonSerializer: jsonSerializer,
                     serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
             }

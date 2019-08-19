@@ -39,9 +39,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (response.RequestStats != null)
             {
-                cosmosResponse.cosmosDiagnostic = new CosmosDiagnostic()
+                cosmosResponse.cosmosDiagnostics = new CosmosDiagnostics()
                 {
-                    pointOperationStatistics = new PointOperationStatistics(response.RequestStats)
+                    pointOperationStatistics = new PointOperationStatistics((CosmosClientSideRequestStatistics)response.RequestStats)
                 };
             }
 
