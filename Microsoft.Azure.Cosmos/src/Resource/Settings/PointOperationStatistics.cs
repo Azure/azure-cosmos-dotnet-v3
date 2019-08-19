@@ -8,7 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Documents.ClientSideRequestStatistics;
+    using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
+    using static Microsoft.Azure.Documents.IClientSideRequestStatistics;
 
     internal class PointOperationStatistics
     {
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
 
         public TimeSpan requestLatency { get; private set; }
 
-        public PointOperationStatistics(ClientSideRequestStatistics clientSideRequestStatistics)
+        public PointOperationStatistics(CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
             this.requestStartTime = clientSideRequestStatistics.requestStartTime;
             this.requestEndTime = clientSideRequestStatistics.requestEndTime;
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList.Count;
-            int countToRemove = Math.Max(supplementalResponseStatisticsListCount - ClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
+            int countToRemove = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
             if (countToRemove > 0)
             {
                 this.supplementalResponseStatisticsList.RemoveRange(0, countToRemove);

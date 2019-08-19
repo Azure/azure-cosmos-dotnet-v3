@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the clientside request statics for execution of stored procedure.
         /// </summary>
         /// <value>The clientside request statics for execution of stored procedure.</value>
-        internal ClientSideRequestStatistics RequestStatistics
+        internal IClientSideRequestStatistics RequestStatistics
         {
             get
             {

@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item,
-                    cosmosResponseMessage.cosmosDiagnostic);
+                    cosmosResponseMessage.cosmosDiagnostics);
             });
         }
 

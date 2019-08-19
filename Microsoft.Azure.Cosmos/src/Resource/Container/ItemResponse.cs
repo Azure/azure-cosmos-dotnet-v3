@@ -28,12 +28,12 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             T item,
-            CosmosDiagnostic cosmosDiagnostic)
+            CosmosDiagnostics cosmosDiagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = item;
-            this.cosmosDiagnostic = cosmosDiagnostic;
+            this.cosmosDiagnostics = cosmosDiagnostics;
         }
 
         /// <inheritdoc/>

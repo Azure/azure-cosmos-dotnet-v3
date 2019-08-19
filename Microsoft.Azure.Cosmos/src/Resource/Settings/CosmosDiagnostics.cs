@@ -7,24 +7,24 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     ///  Contains the cosmos diagnostic information for the current request to Azure Cosmos DB service.
     /// </summary>
-    public class CosmosDiagnostic
+    public class CosmosDiagnostics
     {
         internal PointOperationStatistics pointOperationStatistics { get; set; }
         internal QueryOperationStatistics queryOperationStatistics { get; set; }
 
         /// <summary>
-        /// Gets the string field <see cref="Microsoft.Azure.Cosmos.CosmosDiagnostic"/> instance in the Azure DocumentDB database service.
+        /// Gets the string field <see cref="Microsoft.Azure.Cosmos.CosmosDiagnostics"/> instance in the Azure DocumentDB database service.
         /// </summary>
-        /// <returns>The string field <see cref="Microsoft.Azure.Cosmos.CosmosDiagnostic"/> instance in the Azure DocumentDB database service.</returns>
+        /// <returns>The string field <see cref="Microsoft.Azure.Cosmos.CosmosDiagnostics"/> instance in the Azure DocumentDB database service.</returns>
         public override string ToString()
         {
-            if (pointOperationStatistics != null)
+            if (this.pointOperationStatistics != null)
             {
-                return pointOperationStatistics.ToString();
+                return this.pointOperationStatistics.ToString();
             }
-            else if (queryOperationStatistics != null)
+            else if (this.queryOperationStatistics != null)
             {
-                return queryOperationStatistics.ToString();
+                return this.queryOperationStatistics.ToString();
             }
 
             return string.Empty;

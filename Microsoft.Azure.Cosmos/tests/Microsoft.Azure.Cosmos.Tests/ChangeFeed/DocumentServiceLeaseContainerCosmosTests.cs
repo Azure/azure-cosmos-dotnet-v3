@@ -67,12 +67,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Headers headers = new Headers();
             headers.ContinuationToken = string.Empty;
 
+            Mock<FeedResponse<DocumentServiceLeaseCore>> mockFeedResponse = new Mock<FeedResponse<DocumentServiceLeaseCore>>();
+            mockFeedResponse.Setup(x => x.ContinuationToken).Returns(string.Empty);
+            mockFeedResponse.Setup(x => x.Headers).Returns(headers);
+            mockFeedResponse.Setup(x => x.Resource).Returns(DocumentServiceLeaseContainerCosmosTests.allLeases);
+            mockFeedResponse.Setup(x => x.Headers).Returns(headers);
+            mockFeedResponse.Setup(x => x.GetEnumerator()).Returns(DocumentServiceLeaseContainerCosmosTests.allLeases.GetEnumerator());
+
             Mock<FeedIterator<DocumentServiceLeaseCore>> mockedQuery = new Mock<FeedIterator<DocumentServiceLeaseCore>>();
             mockedQuery.Setup(q => q.ReadNextAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => ReadFeedResponse<DocumentServiceLeaseCore>.CreateResponse(
-                    responseMessageHeaders: headers,
-                    resources: DocumentServiceLeaseContainerCosmosTests.allLeases,
-                    hasMoreResults: false));
+                .ReturnsAsync(() => mockFeedResponse.Object);
             mockedQuery.SetupSequence(q => q.HasMoreResults)
                 .Returns(true)
                 .Returns(false);

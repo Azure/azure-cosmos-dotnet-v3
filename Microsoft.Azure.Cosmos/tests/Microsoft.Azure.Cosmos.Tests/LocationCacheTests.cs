@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -505,12 +506,20 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         [Owner("atulk")]
         public async Task ValidateAsync()
         {
-            for (int i = 0; i < 8; i++)
+            bool[] boolValues = new bool[] {true, false};
+
+            foreach (bool useMultipleWriteEndpoints in boolValues)
             {
-                bool useMultipleWriteEndpoints = (i & 1) > 0;
-                bool endpointDiscoveryEnabled = (i & 2) > 0;
-                bool isPreferredListEmpty = (i & 4) > 0;
-                await this.ValidateLocationCacheAsync(useMultipleWriteEndpoints, endpointDiscoveryEnabled, isPreferredListEmpty);
+                foreach (bool endpointDiscoveryEnabled in boolValues)
+                {
+                    foreach (bool isPreferredListEmpty in boolValues)
+                    {
+                        await this.ValidateLocationCacheAsync(
+                            useMultipleWriteEndpoints,
+                            endpointDiscoveryEnabled,
+                            isPreferredListEmpty);
+                    }
+                }
             }
         }
 
@@ -641,15 +650,34 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                         preferredAvailableWriteEndpoints,
                         preferredAvailableReadEndpoints);
 
-                    // wait for TTL on unavailablity info
-                    await Task.Delay(
-                        int.Parse(
-                            System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"],
-                            NumberStyles.Integer,
-                            CultureInfo.InvariantCulture) * 1000);
+                    // wait for TTL on unavailability info
+                    string expirationTime = System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"];
+                    int delayInMilliSeconds = int.Parse(
+                                                  expirationTime,
+                                                  NumberStyles.Integer,
+                                                  CultureInfo.InvariantCulture) * 1000 * 2;
+                    await Task.Delay(delayInMilliSeconds);
 
-                    Assert.IsTrue(Enumerable.SequenceEqual(currentWriteEndpoints, this.cache.WriteEndpoints));
-                    Assert.IsTrue(Enumerable.SequenceEqual(currentReadEndpoints, this.cache.ReadEndpoints));
+                    string config =  $"Delay{expirationTime};" + 
+                                     $"useMultipleWriteLocations:{useMultipleWriteLocations};" +
+                                     $"endpointDiscoveryEnabled:{endpointDiscoveryEnabled};" +
+                                     $"isPreferredListEmpty:{isPreferredListEmpty}";
+
+                    CollectionAssert.AreEqual(
+                        currentWriteEndpoints, 
+                        this.cache.WriteEndpoints, 
+                        "Write Endpoints failed;" +
+                            $"config:{config};" +
+                            $"Current:{string.Join(",", currentWriteEndpoints)};" +
+                            $"Cache:{string.Join(",", this.cache.WriteEndpoints)};");
+
+                    CollectionAssert.AreEqual(
+                        currentReadEndpoints, 
+                        this.cache.ReadEndpoints,
+                        "Read Endpoints failed;" +
+                            $"config:{config};" +
+                            $"Current:{string.Join(",", currentReadEndpoints)};" +
+                            $"Cache:{string.Join(",", this.cache.ReadEndpoints)};");
                 }
             }
         }

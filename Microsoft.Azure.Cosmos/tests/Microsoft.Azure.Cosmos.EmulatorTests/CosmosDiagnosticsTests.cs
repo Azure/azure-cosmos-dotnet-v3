@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
 
     [TestClass]
-    public class CosmosDiagnosticTests : BaseCosmosClientHelper
+    public class CosmosDiagnosticsTests : BaseCosmosClientHelper
     {
         private Container Container = null;
         private ContainerProperties containerSettings = null;
@@ -43,41 +43,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
-            Assert.IsNotNull(createResponse.cosmosDiagnostic.pointOperationStatistics);
+            Assert.IsNotNull(createResponse.cosmosDiagnostics.pointOperationStatistics);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(id: testItem.id, partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(readResponse.cosmosDiagnostic.pointOperationStatistics);
+            Assert.IsNotNull(readResponse.cosmosDiagnostics.pointOperationStatistics);
 
             testItem.description = "NewDescription";
             ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(item: testItem, id: testItem.id, partitionKey: new PartitionKey(testItem.status));
             Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
-            Assert.IsNotNull(replaceResponse.cosmosDiagnostic.pointOperationStatistics);
+            Assert.IsNotNull(replaceResponse.cosmosDiagnostics.pointOperationStatistics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
-            Assert.IsNotNull(deleteResponse.cosmosDiagnostic.pointOperationStatistics);
+            Assert.IsNotNull(deleteResponse.cosmosDiagnostics.pointOperationStatistics);
 
             //Checking point operation diagnostics on stream operations
             ResponseMessage createStreamResponse =  await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
-            Assert.IsNotNull(createStreamResponse.cosmosDiagnostic.pointOperationStatistics);
+            Assert.IsNotNull(createStreamResponse.cosmosDiagnostics.pointOperationStatistics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(readStreamResponse.cosmosDiagnostic.pointOperationStatistics);
+            Assert.IsNotNull(readStreamResponse.cosmosDiagnostics.pointOperationStatistics);
 
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
                streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem),
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(replaceStreamResponse.cosmosDiagnostic.pointOperationStatistics);
+            Assert.IsNotNull(replaceStreamResponse.cosmosDiagnostics.pointOperationStatistics);
 
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(deleteStreamResponse.cosmosDiagnostic.pointOperationStatistics);
+            Assert.IsNotNull(deleteStreamResponse.cosmosDiagnostics.pointOperationStatistics);
 
 
         }
@@ -95,7 +95,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 MaxItemCount = 1,
                 MaxConcurrency = 1,
-                PopulateQueryMetrics = true,
             };
 
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
@@ -105,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull(iter.cosmosDiagnostic.queryOperationStatistics);
+                Assert.IsNotNull(iter.cosmosDiagnostics.queryOperationStatistics);
             }
 
             sql = new QueryDefinition("select * from ToDoActivity t ORDER BY t.cost");
@@ -115,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull(iter.cosmosDiagnostic.queryOperationStatistics);
+                Assert.IsNotNull(iter.cosmosDiagnostics.queryOperationStatistics);
             }
 
             sql = new QueryDefinition("select DISTINCT t.cost from ToDoActivity t");
@@ -125,8 +124,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull(iter.cosmosDiagnostic.queryOperationStatistics);
-                Assert.AreEqual(1, iter.cosmosDiagnostic.queryOperationStatistics.queryMetrics.Values.First().OutputDocumentCount);
+                Assert.IsNotNull(iter.cosmosDiagnostics.queryOperationStatistics);
+                Assert.AreEqual(1, iter.cosmosDiagnostics.queryOperationStatistics.queryMetrics.Values.First().OutputDocumentCount);
             }
 
             sql = new QueryDefinition("select * from ToDoActivity OFFSET 1 LIMIT 1");
@@ -136,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull(iter.cosmosDiagnostic.queryOperationStatistics);
+                Assert.IsNotNull(iter.cosmosDiagnostics.queryOperationStatistics);
             }
 
             //Checking query metrics on stream query
@@ -148,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (iterator.HasMoreResults)
             {
                 ResponseMessage responseMessage = await iterator.ReadNextAsync();
-                Assert.IsNotNull(responseMessage.cosmosDiagnostic.queryOperationStatistics);
+                Assert.IsNotNull(responseMessage.cosmosDiagnostics.queryOperationStatistics);
             }
         }
     }
