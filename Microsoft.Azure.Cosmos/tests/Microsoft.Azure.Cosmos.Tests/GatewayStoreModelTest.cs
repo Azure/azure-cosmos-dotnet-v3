@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Moq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// Tests for <see cref="GatewayStoreModel"/>.
@@ -26,16 +27,48 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class GatewayStoreModelTest
     {
+        private class TestTraceListener : TraceListener
+        {
+            public Action<string> Callback { get; set; }
+            public override bool IsThreadSafe => true;
+            public override void Write(string message) => this.Callback(message);
+            public override void WriteLine(string message) => this.Callback(message);
+
+        }
 
         /// <summary>
         /// Tests to make sure OpenAsync should fail fast with bad url.
         /// </summary>
         [TestMethod]
+        [Owner("kraman")]
         public async Task TestOpenAsyncFailFast()
         {
-            Stopwatch watch = new Stopwatch();
+            const string accountEndpoint = "https://veryrandomurl123456789.documents.azure.com:443/";
 
-            string accountEndpoint = "https://veryrandomurl123456789.documents.azure.com:443/";
+            bool failedToResolve = false;
+            bool didNotRetry = false;
+
+            const string failedToResolveMessage = "Fail to reach global gateway https://veryrandomurl123456789.documents.azure.com/, ";
+            string didNotRetryMessage = null;
+
+            void TraceHandler(string message)
+            {
+                if (message.Contains(failedToResolveMessage))
+                {
+                    Assert.IsFalse(failedToResolve, "Failure to resolve should happen only once.");
+                    failedToResolve = true;
+                    didNotRetryMessage = message.Substring(failedToResolveMessage.Length).Split('\n')[0];
+                }
+
+                if (failedToResolve && message.Contains("NOT be retried") && message.Contains(didNotRetryMessage))
+                {
+                    didNotRetry = true;
+                }
+
+                Console.WriteLine(message);
+            }
+
+            DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
 
             try
             {
@@ -44,22 +77,15 @@ namespace Microsoft.Azure.Cosmos
                     {
                     });
 
-                watch.Start();
-
                 await myclient.OpenAsync();
             }
-            catch (Exception)
+            catch
             {
-
             }
-            finally
-            {
-                watch.Stop();
-            }
-            double totalms = watch.Elapsed.TotalMilliseconds;
 
             // it should fail fast and not into the retry logic.
-            Assert.IsTrue(totalms < 400, $"time {totalms}ms is greater than 400ms, expected it to fail fast with no retries");
+            Assert.IsTrue(failedToResolve, "OpenAsync did not fail to resolve. No matching trace was received.");
+            Assert.IsTrue(didNotRetry, "OpenAsync did not fail without retrying. No matching trace was received.");
         }
 
         /// <summary>
