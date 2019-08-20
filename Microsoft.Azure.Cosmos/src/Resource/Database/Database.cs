@@ -567,16 +567,13 @@ namespace Microsoft.Azure.Cosmos
         ///     <item>
         ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new user.</description>
         ///     </item>
-        ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="UserProperties"/> with an id matching the id you supplied already existed.</description>
-        ///     </item>
         /// </list>
         /// </exception>
         /// <example>
         ///
         /// <code language="c#">
         /// <![CDATA[
-        /// UserResponse response = await this.cosmosDatabase.CreateUserAsync(Guid.NewGuid().ToString());
+        /// UserResponse response = await this.cosmosDatabase.UpsertUserAsync(Guid.NewGuid().ToString());
         /// ]]>
         /// </code>
         /// </example>

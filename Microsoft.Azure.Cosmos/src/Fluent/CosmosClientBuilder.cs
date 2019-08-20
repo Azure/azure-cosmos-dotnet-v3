@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Extracts the account endpoint and key from the connection string.
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
-        /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResouceToken.</param>
+        /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResourceToken.</param>
         public CosmosClientBuilder(string connectionString)
         {
             if (connectionString == null)

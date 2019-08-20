@@ -187,9 +187,6 @@ namespace Microsoft.Azure.Cosmos
         ///     <item>
         ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new permission.</description>
         ///     </item>
-        ///     <item>
-        ///         <term>409</term><description>Conflict - This means a <see cref="PermissionProperties"/> with an id matching the id you supplied already existed.</description>
-        ///     </item>
         /// </list>
         /// </exception>
         /// <example>
@@ -198,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// PermissionProperties permissionProperties = new PermissionProperties("permissionId", PermissionMode.All, database.GetContainer("containerId"), new PartitionKey("tenantId"))";
         /// 
-        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds: 9000);
+        /// PermissionResponse response = await this.cosmosDatabase.GetUser("userId").UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds: 9000);
         /// ]]>
         /// </code>
         /// </example>
