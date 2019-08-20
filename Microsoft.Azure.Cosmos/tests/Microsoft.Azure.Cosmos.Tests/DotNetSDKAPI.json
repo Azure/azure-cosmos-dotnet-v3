@@ -941,10 +941,11 @@
           ],
           "MethodInfo": null
         },
-        "System.String TimeToLivePropertyPath[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"ttlPropertyPath\")]": {
+        "System.String TimeToLivePropertyPath[System.ObsoleteAttribute()]-[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"ttlPropertyPath\")]": {
           "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonPropertyAttribute",
+            "ObsoleteAttribute"
           ],
           "MethodInfo": null
         },
