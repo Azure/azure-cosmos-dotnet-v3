@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class ContainerSettingsTests : BaseCosmosClientHelper
     {
-        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - (new DateTime(1970, 1, 1))).TotalSeconds;
+        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            var serializer = new CosmosJsonDotNetSerializer();
+            CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
             Stream stream = serializer.ToStream(containerProperties);
             ContainerProperties deserialziedTest = serializer.FromStream<ContainerProperties>(stream);
 
@@ -523,7 +523,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    .CreateAsync();
             Container container = containerResponse;
             Assert.AreEqual(timeToLivetimeToLiveInSeconds, containerResponse.Resource.DefaultTimeToLive);
+#pragma warning disable 0612
             Assert.AreEqual("/creationDate", containerResponse.Resource.TimeToLivePropertyPath);
+#pragma warning restore 0612
 
             //Creating an item and reading before expiration
             var payload = new { id = "testId", user = "testUser", creationDate = ToEpoch(DateTime.UtcNow) };
