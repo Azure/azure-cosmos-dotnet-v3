@@ -122,7 +122,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
             if (this.timeToLivePropertyPath != null)
             {
-                containerProperties.TimeToLivePropertyPath = timeToLivePropertyPath;
+#pragma warning disable 0612
+                containerProperties.TimeToLivePropertyPath = this.timeToLivePropertyPath;
+#pragma warning restore 0612
             }
 
             containerProperties.ValidateRequiredProperties();

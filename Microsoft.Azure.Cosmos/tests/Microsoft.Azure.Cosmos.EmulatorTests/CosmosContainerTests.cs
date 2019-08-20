@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient cosmosClient = null;
         private Cosmos.Database cosmosDatabase = null;
-        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - (new DateTime(1970, 1, 1))).TotalSeconds;
+        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
 
         [TestInitialize]
         public async Task TestInit()
@@ -50,20 +50,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ContainerContractTest()
         {
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(new Guid().ToString(), "/id");
-            ValidateCreateContainerResponseContract(response);
+            this.ValidateCreateContainerResponseContract(response);
         }
 
         [TestMethod]
         public async Task ContainerBuilderContractTest()
         {
             ContainerResponse response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateAsync();
-            ValidateCreateContainerResponseContract(response);
+            this.ValidateCreateContainerResponseContract(response);
 
             response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateIfNotExistsAsync();
-            ValidateCreateContainerResponseContract(response);
+            this.ValidateCreateContainerResponseContract(response);
 
             response = await this.cosmosDatabase.DefineContainer(response.Container.Id, "/id").CreateIfNotExistsAsync();
-            ValidateCreateContainerResponseContract(response);
+            this.ValidateCreateContainerResponseContract(response);
         }
 
         [Ignore]
@@ -589,6 +589,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// This test verifies that we are able to set the ttl property path correctly using SDK.
         /// Also this test will successfully read active item based on its TimeToLivePropertyPath value.
         /// </summary>
+        [Obsolete]
         [TestMethod]
         public async Task TimeToLivePropertyPath()
         {
