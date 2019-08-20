@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.batchOperations.Count == this.maxBatchOperationCount)
             {
-                DefaultTrace.TraceVerbose($"Batch is full - Max operation count {this.maxBatchOperationCount} reached.");
+                DefaultTrace.TraceInformation($"Batch is full - Max operation count {this.maxBatchOperationCount} reached.");
                 return false;
             }
 
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (itemByteSize + this.currentSize > this.maxBatchByteSize)
             {
-                DefaultTrace.TraceVerbose($"Batch is full - Max byte size {this.maxBatchByteSize} reached.");
+                DefaultTrace.TraceInformation($"Batch is full - Max byte size {this.maxBatchByteSize} reached.");
                 return false;
             }
 
@@ -119,14 +119,34 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task DispatchAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (this.interlockIncrementCheck.EnterLockCheck())
+            this.interlockIncrementCheck.EnterLockCheck();
+
+            PartitionKeyRangeServerBatchRequest serverRequest = null;
+            ArraySegment<ItemBatchOperation> pendingOperations;
+
+            try
             {
-                // HybridRow serialization might leave some pending operations out of the batch
-                (PartitionKeyRangeServerBatchRequest serverRequest, ArraySegment<ItemBatchOperation> pendingOperations) = await this.CreateServerRequestAsync(cancellationToken);
-                // Any overflow goes to a new batch
-                foreach (ItemBatchOperation operation in pendingOperations)
+                try
                 {
-                    await this.retrier(operation, cancellationToken);
+                    // HybridRow serialization might leave some pending operations out of the batch
+                    Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>> createRequestResponse = await this.CreateServerRequestAsync(cancellationToken);
+                    serverRequest = createRequestResponse.Item1;
+                    pendingOperations = createRequestResponse.Item2;
+                    // Any overflow goes to a new batch
+                    foreach (ItemBatchOperation operation in pendingOperations)
+                    {
+                        await this.retrier(operation, cancellationToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Exceptions happening during request creation, fail the entire list
+                    foreach (ItemBatchOperation itemBatchOperation in this.batchOperations)
+                    {
+                        itemBatchOperation.Context.Fail(this, ex);
+                    }
+
+                    throw;
                 }
 
                 try
@@ -137,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         foreach (ItemBatchOperation operationToRetry in result.Operations)
                         {
-                            await this.retrier(this.batchOperations[operationToRetry.OperationIndex], cancellationToken);
+                            await this.retrier(operationToRetry, cancellationToken);
                         }
 
                         return;
@@ -145,32 +165,33 @@ namespace Microsoft.Azure.Cosmos
 
                     using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.cosmosSerializer))
                     {
-                        for (int index = 0; index < this.batchOperations.Count; index++)
+                        foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
-                            ItemBatchOperation operation = this.batchOperations[index];
-                            BatchOperationResult response = batchResponse[operation.OperationIndex];
-                            if (response != null)
-                            {
-                                operation.Context.Complete(this, response);
-                            }
+                            BatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
+                            itemBatchOperation.Context.Complete(this, response);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
                     // Exceptions happening during execution fail all the Tasks part of the request (excluding overflow)
                     foreach (ItemBatchOperation itemBatchOperation in serverRequest.Operations)
                     {
-                        ItemBatchOperation operation = this.batchOperations[itemBatchOperation.OperationIndex];
-                        operation.Context.Fail(this, ex);
+                        itemBatchOperation.Context.Fail(this, ex);
                     }
+
+                    throw;
                 }
-                finally
-                {
-                    this.batchOperations.Clear();
-                    this.dispached = true;
-                }
+                
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
+            }
+            finally
+            {
+                this.batchOperations.Clear();
+                this.dispached = true;
             }
         }
 

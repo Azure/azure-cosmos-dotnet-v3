@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This class is used to assert that a region of code can only be called concurrently by a limited amount of threads.
     /// </summary>
-    internal class InterlockIncrementCheck : IDisposable
+    internal class InterlockIncrementCheck
     {
         private readonly int maxConcurrentOperations;
         private int counter = 0;
@@ -37,20 +37,13 @@ namespace Microsoft.Azure.Cosmos
         /// }
         ///
         /// </example>
-        public InterlockIncrementCheck EnterLockCheck()
+        public void EnterLockCheck()
         {
             Interlocked.Increment(ref this.counter);
             if (this.counter > this.maxConcurrentOperations)
             {
                 throw new InvalidOperationException($"InterlockIncrementCheck detected {this.counter} with a maximum of {this.maxConcurrentOperations}.");
             }
-
-            return this;
-        }
-
-        public void Dispose()
-        {
-            Interlocked.Decrement(ref this.counter);
         }
     }
 }

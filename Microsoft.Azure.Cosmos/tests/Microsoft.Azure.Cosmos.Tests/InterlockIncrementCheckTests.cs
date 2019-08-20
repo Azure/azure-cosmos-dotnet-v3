@@ -21,19 +21,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void AllowsMultipleChainedOperations()
-        {
-            InterlockIncrementCheck check = new InterlockIncrementCheck();
-            using (check.EnterLockCheck())
-            {
-            }
-
-            using (check.EnterLockCheck())
-            {
-            }
-        }
-
-        [TestMethod]
         public async Task AllowsMultipleConcurrentOperations()
         {
             InterlockIncrementCheck check = new InterlockIncrementCheck(2);
@@ -56,10 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task RunLock(InterlockIncrementCheck check)
         {
-            using (check.EnterLockCheck())
-            {
-                await Task.Delay(500);
-            }
+            check.EnterLockCheck();
+            await Task.Delay(500);
         }
     }
 }
