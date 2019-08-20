@@ -57,6 +57,13 @@ namespace Microsoft.Azure.Cosmos
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializer;
 
+        private ConnectionMode connectionMode;
+        private Protocol connectionProtocol;
+        private TimeSpan? idleTcpConnectionTimeout;
+        private TimeSpan? openTcpConnectionTimeout;
+        private int? maxRequestsPerTcpConnection;
+        private int? maxTcpConnectionsPerEndpoint;
+
         /// <summary>
         /// Creates a new CosmosClientOptions
         /// </summary>
@@ -155,9 +162,17 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect()"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
-        public ConnectionMode ConnectionMode { get; set; }
+        public ConnectionMode ConnectionMode
+        {
+            get => this.connectionMode;
+            set
+            {
+                this.ValidateDirectTCPSettings();
+                this.connectionMode = value;
+            }
+        }
 
         /// <summary>
         /// This can be used to weaken the database account consistency level for read operations.
@@ -181,7 +196,84 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
-        /// Get to set optional serializer options. 
+        /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
+        /// </summary>
+        /// <value>
+        /// By default, idle connections are kept open indefinitely. Value must be greater than or equal to 10 minutes. Recommended values are between 20 minutes and 24 hours.
+        /// </value>
+        /// <remarks>
+        /// Mainly useful for sparse infrequent access to a large database account.
+        /// </remarks>
+        public TimeSpan? IdleTcpConnectionTimeout
+        {
+            get => this.idleTcpConnectionTimeout;
+            set
+            {
+                this.idleTcpConnectionTimeout = value;
+                this.ValidateDirectTCPSettings();                
+            }
+        }      
+
+        /// <summary>
+        /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
+        /// </summary>
+        /// <value>
+        /// The default timeout is 5 seconds. Recommended values are greater than or equal to 5 seconds.
+        /// </value>
+        /// <remarks>
+        /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// </remarks>
+        public TimeSpan? OpenTcpConnectionTimeout
+        {
+            get => this.openTcpConnectionTimeout;
+            set
+            {
+                this.openTcpConnectionTimeout = value;
+                this.ValidateDirectTCPSettings();                
+            }
+        }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.
+        /// </summary>
+        /// <value>
+        /// The default settings allow 30 simultaneous requests per connection.
+        /// Do not set this value lower than 4 requests per connection or higher than 50-100 requests per connection.       
+        /// The former can lead to a large number of connections to be created. 
+        /// The latter can lead to head of line blocking, high latency and timeouts.
+        /// </value>
+        /// <remarks>
+        /// Applications with a very high degree of parallelism per connection, with large requests or responses, or with very tight latency requirements might get better performance with 8-16 requests per connection.
+        /// </remarks>
+        public int? MaxRequestsPerTcpConnection
+        {
+            get => this.maxRequestsPerTcpConnection;
+            set
+            {
+                this.maxRequestsPerTcpConnection = value;
+                this.ValidateDirectTCPSettings();                
+            }
+        }
+
+        /// <summary>
+        /// (Direct/TCP) Controls the maximum number of TCP connections that may be opened to each Cosmos DB back-end.
+        /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
+        /// </summary>
+        /// <value>
+        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// </value>
+        public int? MaxTcpConnectionsPerEndpoint
+        {           
+            get => this.maxTcpConnectionsPerEndpoint;
+            set
+            {
+                this.maxTcpConnectionsPerEndpoint = value;
+                this.ValidateDirectTCPSettings();                
+            }
+        }
+
+        /// <summary>
+        /// Get to set optional serializer options.
         /// </summary>
         /// <example>
         /// An example on how to configure the serialization option to ignore null values
@@ -264,7 +356,15 @@ namespace Microsoft.Azure.Cosmos
         /// Gateway mode only supports HTTPS.
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
         /// </remarks>
-        internal Protocol ConnectionProtocol { get; set; }
+        internal Protocol ConnectionProtocol
+        {
+            get => this.connectionProtocol;
+            set
+            {
+                this.ValidateDirectTCPSettings();
+                this.connectionProtocol = value;
+            }
+        }
 
         internal UserAgentContainer UserAgentContainer { get; private set; }
 
@@ -375,6 +475,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal ConnectionPolicy GetConnectionPolicy()
         {
+            this.ValidateDirectTCPSettings();
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -383,6 +484,10 @@ namespace Microsoft.Azure.Cosmos
                 ConnectionProtocol = this.ConnectionProtocol,
                 UserAgentContainer = this.UserAgentContainer,
                 UseMultipleWriteLocations = true,
+                IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
+                OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
+                MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
             };
 
             if (this.ApplicationRegion != null)
@@ -479,6 +584,35 @@ namespace Microsoft.Azure.Cosmos
             }
 
             throw new ArgumentException("The connection string is missing a required property: " + keyName);
+        }
+
+        private void ValidateDirectTCPSettings()
+        {
+            string settingName = string.Empty;
+            if (!(this.ConnectionMode == ConnectionMode.Direct && this.ConnectionProtocol == Protocol.Tcp))
+            {
+                if (this.IdleTcpConnectionTimeout.HasValue)
+                {
+                    settingName = nameof(this.IdleTcpConnectionTimeout);
+                }
+                else if (this.OpenTcpConnectionTimeout.HasValue)
+                {
+                    settingName = nameof(this.OpenTcpConnectionTimeout);
+                }
+                else if (this.MaxRequestsPerTcpConnection.HasValue)
+                {
+                    settingName = nameof(this.MaxRequestsPerTcpConnection);
+                }
+                else if (this.MaxTcpConnectionsPerEndpoint.HasValue)
+                {
+                    settingName = nameof(this.MaxTcpConnectionsPerEndpoint);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(settingName))
+            {
+                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
+            }            
         }
 
         /// <summary>

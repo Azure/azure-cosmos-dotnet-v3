@@ -1239,11 +1239,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.ConnectionMode get_ConnectionMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.ConnectionMode get_ConnectionMode()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ConnectionMode get_ConnectionMode()"
         },
         "Microsoft.Azure.Cosmos.CosmosSerializationOptions get_SerializerOptions()": {
@@ -1294,6 +1292,11 @@
           ],
           "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()"
         },
+        "System.Nullable`1[System.Int32] get_MaxRequestsPerTcpConnection()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_MaxRequestsPerTcpConnection()"
+        },
         "System.Nullable`1[System.Int32] get_MaxRetryAttemptsOnRateLimitedRequests()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1301,10 +1304,30 @@
           ],
           "MethodInfo": "System.Nullable`1[System.Int32] get_MaxRetryAttemptsOnRateLimitedRequests()"
         },
+        "System.Nullable`1[System.Int32] get_MaxTcpConnectionsPerEndpoint()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_MaxTcpConnectionsPerEndpoint()"
+        },
+        "System.Nullable`1[System.Int32] MaxRequestsPerTcpConnection": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.Nullable`1[System.Int32] MaxRetryAttemptsOnRateLimitedRequests": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "System.Nullable`1[System.Int32] MaxTcpConnectionsPerEndpoint": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.TimeSpan] get_IdleTcpConnectionTimeout()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_IdleTcpConnectionTimeout()"
         },
         "System.Nullable`1[System.TimeSpan] get_MaxRetryWaitTimeOnRateLimitedRequests()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -1313,7 +1336,22 @@
           ],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] get_MaxRetryWaitTimeOnRateLimitedRequests()"
         },
+        "System.Nullable`1[System.TimeSpan] get_OpenTcpConnectionTimeout()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_OpenTcpConnectionTimeout()"
+        },
+        "System.Nullable`1[System.TimeSpan] IdleTcpConnectionTimeout": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.Nullable`1[System.TimeSpan] MaxRetryWaitTimeOnRateLimitedRequests": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.Nullable`1[System.TimeSpan] OpenTcpConnectionTimeout": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
@@ -1369,11 +1407,9 @@
           ],
           "MethodInfo": "Void set_ApplicationRegion(System.String)"
         },
-        "Void set_ConnectionMode(Microsoft.Azure.Cosmos.ConnectionMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_ConnectionMode(Microsoft.Azure.Cosmos.ConnectionMode)": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Void set_ConnectionMode(Microsoft.Azure.Cosmos.ConnectionMode)"
         },
         "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1388,6 +1424,16 @@
           "Attributes": [],
           "MethodInfo": "Void set_GatewayModeMaxConnectionLimit(Int32)"
         },
+        "Void set_IdleTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_IdleTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])"
+        },
+        "Void set_MaxRequestsPerTcpConnection(System.Nullable`1[System.Int32])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_MaxRequestsPerTcpConnection(System.Nullable`1[System.Int32])"
+        },
         "Void set_MaxRetryAttemptsOnRateLimitedRequests(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1401,6 +1447,16 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_MaxRetryWaitTimeOnRateLimitedRequests(System.Nullable`1[System.TimeSpan])"
+        },
+        "Void set_MaxTcpConnectionsPerEndpoint(System.Nullable`1[System.Int32])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_MaxTcpConnectionsPerEndpoint(System.Nullable`1[System.Int32])"
+        },
+        "Void set_OpenTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_OpenTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])"
         },
         "Void set_RequestTimeout(System.TimeSpan)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
