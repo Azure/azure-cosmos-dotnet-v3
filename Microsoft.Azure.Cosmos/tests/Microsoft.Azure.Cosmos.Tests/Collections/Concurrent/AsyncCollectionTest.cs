@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>

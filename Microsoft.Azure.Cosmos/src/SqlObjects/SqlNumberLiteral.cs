@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System.Linq;
     using System.Text;
     using Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core;
     using Newtonsoft.Json;
 
     internal sealed class SqlNumberLiteral : SqlLiteral

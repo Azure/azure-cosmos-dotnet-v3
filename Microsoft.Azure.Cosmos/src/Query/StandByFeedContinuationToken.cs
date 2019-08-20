@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
     /// <summary>

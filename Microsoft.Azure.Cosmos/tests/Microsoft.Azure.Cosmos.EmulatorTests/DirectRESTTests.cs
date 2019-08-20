@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http.Headers;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.CSharp.RuntimeBinder;

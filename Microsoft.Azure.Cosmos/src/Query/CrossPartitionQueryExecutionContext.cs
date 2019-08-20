@@ -12,15 +12,16 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Common;
-    using ExecutionComponent;
+    using Core.ExecutionComponent;
+    using Core.ParallelQuery;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using ParallelQuery;
-    using Routing;
 
     /// <summary>
     /// This class is responsible for maintaining a forest of <see cref="DocumentProducerTree"/>.

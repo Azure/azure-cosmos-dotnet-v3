@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
+    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL

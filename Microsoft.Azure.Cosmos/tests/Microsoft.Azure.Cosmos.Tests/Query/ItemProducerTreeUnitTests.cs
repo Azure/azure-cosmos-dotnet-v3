@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query;
@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.ObjectModel;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     [TestClass]
     public class ItemProducerTreeUnitTests

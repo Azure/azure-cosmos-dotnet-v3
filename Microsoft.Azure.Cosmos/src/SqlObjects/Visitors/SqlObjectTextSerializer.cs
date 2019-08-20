@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core;
     using Newtonsoft.Json;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor

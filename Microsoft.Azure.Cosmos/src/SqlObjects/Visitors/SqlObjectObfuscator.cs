@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core;
 
     internal sealed class SqlObjectObfuscator : SqlObjectVisitor<SqlObject>
     {

@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ParallelQuery;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     [TestClass]
     public class QueryTests

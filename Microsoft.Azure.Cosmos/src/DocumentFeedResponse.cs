@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -348,7 +349,7 @@ namespace Microsoft.Azure.Cosmos
         public NameValueCollection ResponseHeaders => this.responseHeaders.ToNameValueCollection();
 
         /// <summary>
-        /// Get <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> for each individual partition in the Azure Cosmos DB service
+        /// Get <see cref="Microsoft.Azure.Cosmos.Query.Core.QueryMetrics"/> for each individual partition in the Azure Cosmos DB service
         /// </summary>
         public IReadOnlyDictionary<string, QueryMetrics> QueryMetrics => this.queryMetrics;
 

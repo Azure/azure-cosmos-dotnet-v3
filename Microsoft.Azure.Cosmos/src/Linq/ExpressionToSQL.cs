@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents;

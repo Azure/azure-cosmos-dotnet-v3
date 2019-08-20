@@ -20,9 +20,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
-    using Microsoft.Azure.Cosmos.Query.ParallelQuery;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ParallelQuery;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
