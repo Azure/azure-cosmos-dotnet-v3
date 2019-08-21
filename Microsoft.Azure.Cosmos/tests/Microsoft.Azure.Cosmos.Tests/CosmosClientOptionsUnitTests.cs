@@ -38,10 +38,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 IgnoreNullValues = true,
                 PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
             };
+            TimeSpan idleTcpConnectionTimeout = new TimeSpan(0, 10, 0);
+            TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
+            int maxRequestsPerTcpConnection = 30;
+            int maxTcpConnectionsPerEndpoint = 65535;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
-                accountKey: key);
+                authKeyOrResourceToken: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
@@ -66,6 +70,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(Protocol.Tcp, policy.ConnectionProtocol);
             Assert.AreEqual(clientOptions.GatewayModeMaxConnectionLimit, policy.MaxConnectionLimit);
             Assert.AreEqual(clientOptions.RequestTimeout, policy.RequestTimeout);
+            Assert.IsNull(policy.IdleTcpConnectionTimeout);
+            Assert.IsNull(policy.OpenTcpConnectionTimeout);
+            Assert.IsNull(policy.MaxRequestsPerTcpConnection);
+            Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections)
@@ -104,6 +112,33 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.UseMultipleWriteLocations);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
+
+            //Verify Direct Mode settings
+            cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+            cosmosClientBuilder.WithConnectionModeDirect(
+                idleTcpConnectionTimeout,
+                openTcpConnectionTimeout,
+                maxRequestsPerTcpConnection,
+                maxTcpConnectionsPerEndpoint
+            );
+
+            cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
+            clientOptions = cosmosClient.ClientOptions;
+
+            //Verify all the values are updated
+            Assert.AreEqual(idleTcpConnectionTimeout, clientOptions.IdleTcpConnectionTimeout);
+            Assert.AreEqual(openTcpConnectionTimeout, clientOptions.OpenTcpConnectionTimeout);
+            Assert.AreEqual(maxRequestsPerTcpConnection, clientOptions.MaxRequestsPerTcpConnection);
+            Assert.AreEqual(maxTcpConnectionsPerEndpoint, clientOptions.MaxTcpConnectionsPerEndpoint);
+
+            //Verify GetConnectionPolicy returns the correct values
+            policy = clientOptions.GetConnectionPolicy();
+            Assert.AreEqual(idleTcpConnectionTimeout, policy.IdleTcpConnectionTimeout);
+            Assert.AreEqual(openTcpConnectionTimeout, policy.OpenTcpConnectionTimeout);
+            Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
+            Assert.AreEqual(maxTcpConnectionsPerEndpoint, policy.MaxTcpConnectionsPerEndpoint);
         }
 
         [TestMethod]
@@ -193,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     string jsonString = sr.ReadToEnd();
                     // Notice description is not included, camelCaseProperty starts lower case, the white space shows the indents
-                    string expectedJsonString = "{\r\n  \"id\": \"testid\",\r\n  \"camelCaseProperty\": \"TestCamelCase\"\r\n}";
+                    string expectedJsonString = $"{{{Environment.NewLine}  \"id\": \"testid\",{Environment.NewLine}  \"camelCaseProperty\": \"TestCamelCase\"{Environment.NewLine}}}";
                     Assert.AreEqual(expectedJsonString, jsonString);
                 }
             }
@@ -263,6 +298,25 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(mockJsonSerializer, cosmosClientCustom.ClientOptions.Serializer);
             Assert.IsInstanceOfType(cosmosClientCustom.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), typeof(CosmosJsonSerializerWrapper));
             Assert.AreEqual(mockJsonSerializer, ((CosmosJsonSerializerWrapper)cosmosClientCustom.ClientOptions.GetCosmosSerializerWithWrapperOrDefault()).InternalJsonSerializer);
+        }
+
+        [TestMethod]
+        public void VerifyGetConnectionPolicyThrowIfDirectTcpSettingAreUsedInGatewayMode()
+        {
+            TimeSpan idleTcpConnectionTimeout = new TimeSpan(0, 10, 0);
+            TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
+            int maxRequestsPerTcpConnection = 30;
+            int maxTcpConnectionsPerEndpoint = 65535;
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway            
+            };
+            
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout; });
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout; });
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection; });
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint; });
         }
     }
 }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosItemChangeFeedTests : BaseCosmosClientHelper
     {
         private ContainerCore Container = null;
+        private ContainerCore LargerContainer = null;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -31,7 +33,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
+
+            ContainerResponse largerContainer = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+                throughput: 20000,
+                cancellationToken: this.cancellationToken);
+
             this.Container = (ContainerCore)response;
+            this.LargerContainer = (ContainerCore)largerContainer;
         }
 
         [TestCleanup]
@@ -57,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int pkRangesCount = (await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri)).Count;
             int visitedPkRanges = 0;
 
-            await this.CreateRandomItems(batchSize, randomPartitionKey: true);
+            await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             ContainerCore itemsCore = (ContainerCore)this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
@@ -99,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             visitedPkRanges = 0;
 
             // Insert another batch of 25 and use the last continuation token from the first cycle
-            await this.CreateRandomItems(batchSize, randomPartitionKey: true);
+            await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             FeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(lastcontinuation);
 
@@ -173,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         if(visitedPkRanges == 0)
                         {
-                            await this.CreateRandomItems(expectedDocuments, randomPartitionKey: true);
+                            await this.CreateRandomItems(this.Container, expectedDocuments, randomPartitionKey: true);
                         }
                     }
 
@@ -230,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StandByFeedIterator_WithMaxItemCount()
         {
-            await this.CreateRandomItems(2, randomPartitionKey: true);
+            await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
             ContainerCore itemsCore = (ContainerCore)this.Container;
             FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
 
@@ -261,11 +270,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StandByFeedIterator_NoFetchNext()
         {
-            var pkRanges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
+            int pkRangesCount = (await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri)).Count;
 
             int expected = 25;
             int iterations = 0;
-            await this.CreateRandomItems(expected, randomPartitionKey: true);
+            await this.CreateRandomItems(this.Container, expected, randomPartitionKey: true);
             ContainerCore itemsCore = (ContainerCore)this.Container;
             string continuationToken = null;
             int count = 0;
@@ -296,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     break;
                 }
 
-                if (iterations++ > pkRanges.Count)
+                if (iterations++ > pkRangesCount)
                 {
                     Assert.Fail("Feed does not contain all elements even after looping through PK ranges. Either the continuation is not moving forward or there is some state problem.");
 
@@ -320,7 +329,61 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task<IList<ToDoActivity>> CreateRandomItems(int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
+        [TestMethod]
+        public async Task GetChangeFeedTokensAsync_MatchesPkRanges()
+        {
+            int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
+            ContainerCore itemsCore = (ContainerCore)this.LargerContainer;
+            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
+            Assert.AreEqual(pkRangesCount, tokens.Count());
+        }
+
+        [TestMethod]
+        public async Task GetChangeFeedTokensAsync_AllowsParallelProcessing()
+        {
+            int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
+            ContainerCore itemsCore = (ContainerCore)this.LargerContainer;
+            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
+            Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
+            Assert.AreEqual(pkRangesCount, tokens.Count());
+            int totalDocuments = 200;
+            await this.CreateRandomItems(this.LargerContainer, totalDocuments, randomPartitionKey: true);
+            List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
+            {
+                int count = 0;
+                FeedIterator iteratorForToken =
+                    itemsCore.GetStandByFeedIterator(continuationToken: token, requestOptions: new ChangeFeedRequestOptions() { StartTime = DateTime.MinValue });
+                while (true)
+                {
+                    using (ResponseMessage responseMessage =
+                    await iteratorForToken.ReadNextAsync(this.cancellationToken))
+                    {
+                        if (!responseMessage.IsSuccessStatusCode)
+                        {
+                            break;
+                        }
+
+                        Collection<ToDoActivity> response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        count += response.Count;
+                    }
+                }
+
+                return count;
+
+            })).ToList();
+
+            await Task.WhenAll(tasks);
+
+            int documentsRead = 0;
+            foreach(Task<int> task in tasks)
+            {
+                documentsRead += task.Result;
+            }
+
+            Assert.AreEqual(totalDocuments, documentsRead);
+        }
+
+        private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerCore container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
 
@@ -339,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     createdList.Add(temp);
 
-                    await this.Container.CreateItemAsync<ToDoActivity>(item: temp);
+                    await container.CreateItemAsync<ToDoActivity>(item: temp);
                 }
             }
 

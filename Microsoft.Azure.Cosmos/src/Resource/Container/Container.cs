@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Container container = this.database.Containers["containerId"];
+        /// Container container = this.database.GetContainer("containerId");
         /// ContainerResponse response = await container.DeleteContainerAsync();
         /// ]]>
         /// </code>

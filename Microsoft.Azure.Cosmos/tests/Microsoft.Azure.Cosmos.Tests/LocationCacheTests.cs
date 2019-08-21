@@ -655,7 +655,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     int delayInMilliSeconds = int.Parse(
                                                   expirationTime,
                                                   NumberStyles.Integer,
-                                                  CultureInfo.InvariantCulture) * 1000;
+                                                  CultureInfo.InvariantCulture) * 1000 * 2;
                     await Task.Delay(delayInMilliSeconds);
 
                     string config =  $"Delay{expirationTime};" + 

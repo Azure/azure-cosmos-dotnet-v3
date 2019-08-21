@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             this.accountPropertiesTaskFunc = accountPropertiesTaskFunc;
         }
 
-        public IDictionary<string, object> QueryEngineConfiguration => this.AccountProperties.QueryEngineConfiuration;
+        public IDictionary<string, object> QueryEngineConfiguration => this.AccountProperties.QueryEngineConfiguration;
 
         public string DatabaseAccountId => throw new NotImplementedException();
 

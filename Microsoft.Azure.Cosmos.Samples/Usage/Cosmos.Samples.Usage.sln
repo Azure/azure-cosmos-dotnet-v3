@@ -23,6 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NonPartitionContainerMigrat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomSerialization", "CustomSerialization\CustomSerialization.csproj", "{61EA3F61-F2ED-4FD4-89EC-06342C5AE3C9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PowerShellRestApi", "PowerShellRestApi\PowerShellRestApi.csproj", "{A67B259B-9E3F-4689-9691-B250A88593BB}"
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChangeFeed", "ChangeFeed\ChangeFeed.csproj", "{D4959F3F-14FD-4AEA-851F-EEF944393603}"
 EndProject
 Global
@@ -71,6 +72,10 @@ Global
 		{61EA3F61-F2ED-4FD4-89EC-06342C5AE3C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61EA3F61-F2ED-4FD4-89EC-06342C5AE3C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61EA3F61-F2ED-4FD4-89EC-06342C5AE3C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A67B259B-9E3F-4689-9691-B250A88593BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A67B259B-9E3F-4689-9691-B250A88593BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A67B259B-9E3F-4689-9691-B250A88593BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A67B259B-9E3F-4689-9691-B250A88593BB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D4959F3F-14FD-4AEA-851F-EEF944393603}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D4959F3F-14FD-4AEA-851F-EEF944393603}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4959F3F-14FD-4AEA-851F-EEF944393603}.Release|Any CPU.ActiveCfg = Release|Any CPU
