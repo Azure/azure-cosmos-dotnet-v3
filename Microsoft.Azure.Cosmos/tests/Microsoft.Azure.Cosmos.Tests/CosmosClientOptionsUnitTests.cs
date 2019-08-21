@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
-                accountKey: key);
+                authKeyOrResourceToken: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
-                accountKey: key);
+                authKeyOrResourceToken: key);
             cosmosClientBuilder.WithConnectionModeDirect(
                 idleTcpConnectionTimeout,
                 openTcpConnectionTimeout,
