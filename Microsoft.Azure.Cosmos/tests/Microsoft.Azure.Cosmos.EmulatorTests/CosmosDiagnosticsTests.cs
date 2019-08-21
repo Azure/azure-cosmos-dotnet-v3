@@ -78,8 +78,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
             Assert.IsNotNull(deleteStreamResponse.cosmosDiagnostics.pointOperationStatistics);
-
-
         }
 
         [TestMethod]
@@ -104,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull(iter.cosmosDiagnostics.queryOperationStatistics);
+                Assert.IsTrue(iter.cosmosDiagnostics.queryOperationStatistics.queryMetrics.Values.First().OutputDocumentCount > 0);
             }
 
             sql = new QueryDefinition("select * from ToDoActivity t ORDER BY t.cost");
@@ -114,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull(iter.cosmosDiagnostics.queryOperationStatistics);
+                Assert.IsTrue(iter.cosmosDiagnostics.queryOperationStatistics.queryMetrics.Values.First().OutputDocumentCount > 0);
             }
 
             sql = new QueryDefinition("select DISTINCT t.cost from ToDoActivity t");
@@ -128,6 +126,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, iter.cosmosDiagnostics.queryOperationStatistics.queryMetrics.Values.First().OutputDocumentCount);
             }
 
+            //No query metrics return from server if user explicitly set PopulateQueryMetrics = false
+            requestOptions.PopulateQueryMetrics = false;
+            sql = new QueryDefinition("select DISTINCT t.cost from ToDoActivity t");
+            feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+                   sql,
+                   requestOptions: requestOptions);
+            if (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
+                Assert.IsNotNull(iter.cosmosDiagnostics.queryOperationStatistics);
+                Assert.AreEqual(0, iter.cosmosDiagnostics.queryOperationStatistics.queryMetrics.Values.First().OutputDocumentCount);
+                requestOptions.PopulateQueryMetrics = true;
+            }
+
             sql = new QueryDefinition("select * from ToDoActivity OFFSET 1 LIMIT 1");
             feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
                   sql,
@@ -135,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull(iter.cosmosDiagnostics.queryOperationStatistics);
+                Assert.IsTrue(iter.cosmosDiagnostics.queryOperationStatistics.queryMetrics.Values.First().OutputDocumentCount > 0);
             }
 
             //Checking query metrics on stream query
@@ -147,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (iterator.HasMoreResults)
             {
                 ResponseMessage responseMessage = await iterator.ReadNextAsync();
-                Assert.IsNotNull(responseMessage.cosmosDiagnostics.queryOperationStatistics);
+                Assert.IsTrue(responseMessage.cosmosDiagnostics.queryOperationStatistics.queryMetrics.Values.First().OutputDocumentCount > 0);
             }
         }
     }

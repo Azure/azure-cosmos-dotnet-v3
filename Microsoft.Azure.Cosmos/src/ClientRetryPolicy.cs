@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
 
-        private IClientSideRequestStatistics sharedStatistics;
+        private ClientSideRequestStatistics sharedStatistics;
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.sessionTokenRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
 
-            this.sharedStatistics = new CosmosClientSideRequestStatistics();
+            this.sharedStatistics = new ClientSideRequestStatistics();
         }
 
         /// <summary> 

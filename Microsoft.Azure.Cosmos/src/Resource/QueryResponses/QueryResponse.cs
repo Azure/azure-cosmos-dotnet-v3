@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This value is currently used for tracking replica Uris.
         /// </remarks>
-        internal IClientSideRequestStatistics RequestStatistics { get; }
+        internal ClientSideRequestStatistics RequestStatistics { get; }
 
         internal IReadOnlyDictionary<string, QueryMetrics> queryMetrics { get; set; }
 

@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 cosmosResponse.cosmosDiagnostics = new CosmosDiagnostics()
                 {
-                    pointOperationStatistics = new PointOperationStatistics((CosmosClientSideRequestStatistics)response.RequestStats)
+                    pointOperationStatistics = new PointOperationStatistics(response.RequestStats)
                 };
             }
 
