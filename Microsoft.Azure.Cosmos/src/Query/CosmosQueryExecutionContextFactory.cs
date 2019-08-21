@@ -181,11 +181,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (response?.queryMetrics != null && response?.queryMetrics.Count > 0)
             {
-                QueryOperationStatistics queryOperationStatistics = new QueryOperationStatistics(response.queryMetrics);
-                response.cosmosDiagnostics = new CosmosDiagnostics
-                {
-                    queryOperationStatistics = queryOperationStatistics
-                };
+                response.cosmosDiagnostics = new QueryOperationStatistics(response.queryMetrics);
             }
 
             return response;
@@ -296,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 rewrittenComosQueryContext = this.cosmosQueryContext;
             }
 
-            return await CreateSpecializedDocumentQueryExecutionContextAsync(
+            return await this.CreateSpecializedDocumentQueryExecutionContextAsync(
                 rewrittenComosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,

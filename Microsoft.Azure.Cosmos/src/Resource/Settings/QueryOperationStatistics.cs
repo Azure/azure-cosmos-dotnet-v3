@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using Newtonsoft.Json;
 
-    internal class QueryOperationStatistics
+    internal sealed class QueryOperationStatistics : CosmosDiagnostics
     {
         public QueryOperationStatistics(IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
         {

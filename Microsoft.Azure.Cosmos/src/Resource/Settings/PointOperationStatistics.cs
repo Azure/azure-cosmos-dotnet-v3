@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Documents;
 
-    internal class PointOperationStatistics
+    internal sealed class PointOperationStatistics : CosmosDiagnostics
     {
         private ClientSideRequestStatistics clientSideRequestStatistics;
 

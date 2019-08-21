@@ -40,10 +40,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (response.RequestStats != null)
             {
-                cosmosResponse.cosmosDiagnostics = new CosmosDiagnostics()
-                {
-                    pointOperationStatistics = new PointOperationStatistics(response.RequestStats)
-                };
+                cosmosResponse.cosmosDiagnostics = new PointOperationStatistics(response.RequestStats);
             }
 
             return cosmosResponse;
