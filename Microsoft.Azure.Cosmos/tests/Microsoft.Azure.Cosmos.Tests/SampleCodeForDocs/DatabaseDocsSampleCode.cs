@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
 
         internal void intitialize()
         {
-            cosmosClient = new CosmosClient(
+            this.cosmosClient = new CosmosClient(
                 accountEndpoint: "TestAccount",
-                accountKey: "TestKey",
+                authKeyOrResourceToken: "TestKey",
                 clientOptions: new CosmosClientOptions());
         }
 

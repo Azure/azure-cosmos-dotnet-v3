@@ -76,6 +76,36 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        internal Task<UserResponse> CreateUserResponseAsync(
+            User user,
+            Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                UserProperties userProperties = this.ToObjectInternal<UserProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new UserResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    userProperties,
+                    user);
+            });
+        }
+
+        internal Task<PermissionResponse> CreatePermissionResponseAsync(
+            Permission permission,
+            Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                PermissionProperties permissionProperties = this.ToObjectInternal<PermissionProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new PermissionResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    permissionProperties,
+                    permission);
+            });
+        }
+
         internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
             Database database,
             Task<ResponseMessage> cosmosResponseMessageTask)
