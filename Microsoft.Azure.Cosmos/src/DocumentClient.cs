@@ -1022,14 +1022,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.CosmosQueryClient = new Lazy<CosmosQueryClient>(() =>
             {
-                CosmosClient cosmosClient = new CosmosClient(
-                    accountEndpoint: serviceEndpoint.OriginalString,
-                    accountKey: this.AuthKey.ToString(),
-                    cosmosClientOptions: new CosmosClientOptions(),
-                    documentClient: this);
-
-                CosmosQueryClient cosmosQueryClient = new CosmosQueryClientCore(cosmosClient.ClientContext, null);
-                return cosmosQueryClient;
+                return new DocumentQueryClientCore(this);
             });
 
             this.desiredConsistencyLevel = desiredConsistencyLevel;
