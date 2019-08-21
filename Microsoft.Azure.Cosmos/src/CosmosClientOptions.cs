@@ -305,14 +305,9 @@ namespace Microsoft.Azure.Cosmos
         /// Get to set an optional JSON serializer. The client will use it to serialize or de-serialize user's cosmos request/responses.
         /// SDK owned types such as DatabaseProperties and ContainerProperties will always use the SDK default serializer.
         /// </summary>
-        /// <remarks>
-        /// To set a JSON.net serializer setting use <see cref="CosmosJsonDotNetSerializer"/>. 
-        /// The constructor supports passing in the JsonSerializerSettings.
-        /// </remarks>
         /// <example>
-        /// // An example on how to configure the serializer to ignore null values
-        /// CosmosSerializer ignoreNullSerializer = new CosmosJsonDotNetSerializer(
-        ///             NullValueHandling = NullValueHandling.Ignore);
+        /// // An example on how to set a custom serializer. For basic serializer options look at CosmosSerializationOptions
+        /// CosmosSerializer ignoreNullSerializer = new MyCustomIgnoreNullSerializer();
         ///         
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
