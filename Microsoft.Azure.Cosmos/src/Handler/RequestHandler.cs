@@ -37,7 +37,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
-            updateCustomerHandlerStatistics(request);
+            //to get the processing time of all handler including customs minus transport handler, not a clean solution but just an idea
+            //this.updateCustomerHandlerStatistics(request);
             return this.InnerHandler.SendAsync(request, cancellationToken);
         }
 
@@ -49,16 +50,13 @@ namespace Microsoft.Azure.Cosmos
                 request.requestDiagnosticContext.handlerRequestEndTime = DateTime.UtcNow;
                 request.requestDiagnosticContext.customHandlerLatency.Add(Tuple.Create(
                     request.requestDiagnosticContext.currentHandlerName,
-                    (request.requestDiagnosticContext.handlerRequestEndTime.Value - request.requestDiagnosticContext.handlerRequestStartTime.Value)));
+                    request.requestDiagnosticContext.handlerRequestEndTime.Value - request.requestDiagnosticContext.handlerRequestStartTime.Value));
                 request.requestDiagnosticContext.handlerRequestStartTime = null;
                 request.requestDiagnosticContext.handlerRequestEndTime = null;
             }
 
-            //  if (!this.InnerHandler.GetType().Namespace.Equals(typeof(RequestInvokerHandler).Namespace))
-            //{
             request.requestDiagnosticContext.handlerRequestStartTime = DateTime.UtcNow;
             request.requestDiagnosticContext.currentHandlerName = this.InnerHandler.GetType().Name;
-            // }
         }
     }
 }

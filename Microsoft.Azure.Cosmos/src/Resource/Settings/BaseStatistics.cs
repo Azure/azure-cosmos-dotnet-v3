@@ -10,19 +10,24 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class BaseStatistics
     {
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        internal JsonSerializerSettings jsonSerializerSettings;
+
         public string userAgent { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string connectivityMode { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<Tuple<string, TimeSpan>> customHandlerLatency { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public TimeSpan? deserializationLatency { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public TimeSpan? serializationLatency { get; set; }
+
+        public BaseStatistics()
+        {
+            this.jsonSerializerSettings = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+        }
     }
 }

@@ -6,62 +6,44 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Reflection;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
-    using static Microsoft.Azure.Documents.IClientSideRequestStatistics;
 
     internal class PointOperationStatistics : BaseStatistics
     {
         private object lockObject = new object();
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? requestStartTime { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? requestEndTime { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public TimeSpan? requestLatency { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? directFlowStartTime { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? directFlowEndTime { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public TimeSpan? directFlowLatency { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public TimeSpan costOfFetchingPK { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<StoreResponseStatistics> responseStatisticsList { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<StoreResponseStatistics> supplementalResponseStatisticsList { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics { get; private set; }
 
         internal List<Uri> contactedReplicas { get; private set; }
 
         internal HashSet<Uri> failedReplicas { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public HashSet<Uri> regionsContacted { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string operationType { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public long? requestPayloadinBytes { get; private set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public long? responsePayloadinBytes { get; private set; }
 
         public void RecordDirectResponse(
@@ -133,7 +115,8 @@ namespace Microsoft.Azure.Cosmos
                     this.supplementalResponseStatisticsList.RemoveRange(0, countToRemove);
                 }
             }
-            return JsonConvert.SerializeObject(this);
+
+            return JsonConvert.SerializeObject(this, this.jsonSerializerSettings);
         }
     }
 }

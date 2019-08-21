@@ -4,9 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using Newtonsoft.Json;
 
     internal class QueryOperationStatistics : BaseStatistics
@@ -20,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.SerializeObject(this, this.jsonSerializerSettings);
         }
     }
 }
