@@ -70,7 +70,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="operations">Operations to be added; read-only.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <param name="ensureContinuousOperationIndexes">Whether to stop adding operations to the request once there is non-continuity in the operation indexes.</param>
-        protected async Task CreateBodyStreamAsync(
+        /// <returns>Any pending operations that were not included in the request.</returns>
+        protected async Task<ArraySegment<ItemBatchOperation>> CreateBodyStreamAsync(
             ArraySegment<ItemBatchOperation> operations,
             CancellationToken cancellationToken,
             bool ensureContinuousOperationIndexes = false)
@@ -132,6 +133,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new RequestEntityTooLargeException(RMResources.RequestTooLarge);
             }
+
+            return new ArraySegment<ItemBatchOperation>(operations.Array, materializedCount, operations.Count - materializedCount);
         }
 
         private Result WriteOperation(long index, out ReadOnlyMemory<byte> buffer)
