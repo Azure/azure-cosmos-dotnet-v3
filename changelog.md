@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/100) Configurable Tcp settings to CosmosClientOptions
+- [#615](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/615) Adding basic request diagnostics for V3
 
 ### Fixed
 
