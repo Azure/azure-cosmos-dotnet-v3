@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
                                 WFConstants.BackendHeaders.EffectivePartitionKeyString);
                         }
 
-                        if (operation.PartitionKey != null)
+                        if (operation.PartitionKey != null && !operation.RequestOptions.IsEffectivePartitionKeyRouting)
                         {
                             errorMessage = ClientResources.PKAndEpkSetTogether;
                         }
