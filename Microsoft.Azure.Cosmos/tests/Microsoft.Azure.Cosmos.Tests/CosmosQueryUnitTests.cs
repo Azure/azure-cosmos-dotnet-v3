@@ -112,7 +112,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
                 operators.ToArray(),
-                null,
+                new Dictionary<string, AggregateOperator?>()
+                {
+                    { "test", AggregateOperator.Count }
+                },
                 false,
                 null,
                 setupContext.func));
