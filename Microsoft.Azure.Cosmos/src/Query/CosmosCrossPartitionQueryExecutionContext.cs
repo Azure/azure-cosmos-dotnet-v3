@@ -236,14 +236,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             this.SetQueryMetrics();
 
-            IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics = this.GetQueryMetrics();
-            if (groupedQueryMetrics != null && groupedQueryMetrics.Count != 0)
-            {
-                responseHeaders[HttpConstants.HttpHeaders.QueryMetrics] = QueryMetrics
-                .CreateFromIEnumerable(groupedQueryMetrics.Values)
-                .ToDelimitedString();
-            }
-
             responseHeaders.RequestCharge = this.requestChargeTracker.GetAndResetCharge();
 
             return responseHeaders;
