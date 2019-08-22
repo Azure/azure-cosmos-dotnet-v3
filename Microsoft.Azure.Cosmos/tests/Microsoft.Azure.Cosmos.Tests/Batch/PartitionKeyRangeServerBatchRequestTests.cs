@@ -59,5 +59,73 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(operations[1].Id, pendingOperations[0].Id);
             Assert.AreEqual(operations[2].Id, pendingOperations[1].Id);
         }
+
+        [TestMethod]
+        public async Task PartitionKeyRangeServerBatchRequestSizeTests()
+        {
+            const int docSizeInBytes = 250;
+            const int operationCount = 10;
+
+            foreach (int expectedRequestCount in new int[] { 1, 2, 5, 10 })
+            {
+                await PartitionKeyRangeServerBatchRequestTests.VerifyServerRequestCreationsBySizeAsync(expectedRequestCount, operationCount, docSizeInBytes);
+                await PartitionKeyRangeServerBatchRequestTests.VerifyServerRequestCreationsByCountAsync(expectedRequestCount, operationCount, docSizeInBytes);
+            }
+        }
+
+        private static async Task VerifyServerRequestCreationsBySizeAsync(
+            int expectedRequestCount,
+            int operationCount,
+            int docSizeInBytes)
+        {
+            const int perRequestOverheadEstimateInBytes = 30;
+            const int perDocOverheadEstimateInBytes = 50;
+            int maxServerRequestBodyLength = ((docSizeInBytes + perDocOverheadEstimateInBytes) * expectedRequestCount) + perRequestOverheadEstimateInBytes;
+            int maxServerRequestOperationCount = int.MaxValue;
+
+            (PartitionKeyRangeServerBatchRequest request, ArraySegment<ItemBatchOperation> overflow) = await PartitionKeyRangeServerBatchRequestTests.GetBatchWithCreateOperationsAsync(operationCount, maxServerRequestBodyLength, maxServerRequestOperationCount, docSizeInBytes);
+
+            Assert.AreEqual(expectedRequestCount, request.Operations.Count);
+            Assert.AreEqual(overflow.Count, operationCount - request.Operations.Count);
+        }
+
+        private static async Task VerifyServerRequestCreationsByCountAsync(
+            int expectedRequestCount,
+            int operationCount,
+            int docSizeInBytes)
+        {
+            int maxServerRequestBodyLength = int.MaxValue;
+            int maxServerRequestOperationCount = expectedRequestCount;
+
+            (PartitionKeyRangeServerBatchRequest request, ArraySegment<ItemBatchOperation> overflow) = await PartitionKeyRangeServerBatchRequestTests.GetBatchWithCreateOperationsAsync(operationCount, maxServerRequestBodyLength, maxServerRequestOperationCount, docSizeInBytes);
+
+            Assert.AreEqual(expectedRequestCount, request.Operations.Count);
+            Assert.AreEqual(overflow.Count, operationCount - request.Operations.Count);
+        }
+
+        private static async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> GetBatchWithCreateOperationsAsync(
+            int operationCount,
+            int maxServerRequestBodyLength,
+            int maxServerRequestOperationCount,
+            int docSizeInBytes = 20)
+        {
+            List<ItemBatchOperation> operations = new List<ItemBatchOperation>();
+
+            byte[] body = new byte[docSizeInBytes];
+            Random random = new Random();
+            random.NextBytes(body);
+            for (int i = 0; i < operationCount; i++)
+            {
+                operations.Add(new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(body)));
+            }
+
+            return await PartitionKeyRangeServerBatchRequest.CreateAsync("0",
+                new ArraySegment<ItemBatchOperation>(operations.ToArray()),
+                maxServerRequestBodyLength,
+                maxServerRequestOperationCount,
+                false,
+                new CosmosJsonDotNetSerializer(),
+                default(CancellationToken));
+        }
     }
 }

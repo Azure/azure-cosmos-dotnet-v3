@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new RequestEntityTooLargeException(RMResources.RequestTooLarge);
             }
 
-            return new ArraySegment<ItemBatchOperation>(operations.Array, materializedCount, operations.Count - materializedCount);
+            return new ArraySegment<ItemBatchOperation>(operations.Array, this.operations.Count, operations.Count - this.operations.Count);
         }
 
         private Result WriteOperation(long index, out ReadOnlyMemory<byte> buffer)
