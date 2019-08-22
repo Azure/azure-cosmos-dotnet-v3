@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/100) Configurable Tcp settings to CosmosClientOptions
+- [#729](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/729) Adding compute(CountAsync/SumAsync etc.) extensions for LINQ query
 
 ### Fixed
 
