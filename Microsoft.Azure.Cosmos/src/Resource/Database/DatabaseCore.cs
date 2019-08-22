@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -266,6 +265,77 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
+        public override Task<UserResponse> CreateUserAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            UserProperties userProperties = new UserProperties(id);
+
+            Task<ResponseMessage> response = this.CreateUserStreamAsync(
+                userProperties: userProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response);
+        }
+
+        public override User GetUser(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return new UserCore(
+                    this.ClientContext,
+                    this,
+                    id);
+        }
+
+        public Task<ResponseMessage> CreateUserStreamAsync(
+            UserProperties userProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (userProperties == null)
+            {
+                throw new ArgumentNullException(nameof(userProperties));
+            }
+
+            this.ClientContext.ValidateResource(userProperties.Id);
+
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(userProperties);
+            return this.ProcessUserCreateAsync(
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        public override Task<UserResponse> UpsertUserAsync(string id, 
+            RequestOptions requestOptions, 
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            this.ClientContext.ValidateResource(id);
+
+            Task<ResponseMessage> response = this.ProcessUserUpsertAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(new UserProperties(id)),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response);
+        }
+
         public override FeedIterator GetContainerQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
@@ -319,14 +389,73 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            FeedIterator databaseStreamIterator = this.GetContainerQueryStreamIterator(
+            FeedIterator containerStreamIterator = this.GetContainerQueryStreamIterator(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
 
             return new FeedIteratorCore<T>(
-                databaseStreamIterator,
+                containerStreamIterator,
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+        }
+
+        public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
+        {
+            FeedIterator userStreamIterator = this.GetUserQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+
+            return new FeedIteratorCore<T>(
+                userStreamIterator,
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+        }
+
+        public FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+               this.ClientContext,
+               this.LinkUri,
+               ResourceType.User,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
+        }
+
+        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetUserQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
+        }
+
+        public FeedIterator GetUserQueryStreamIterator(string queryText = null, 
+            string continuationToken = null, 
+            QueryRequestOptions requestOptions = null)
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetUserQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
         }
 
         public override ContainerBuilder DefineContainer(
@@ -367,6 +496,40 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
+               cancellationToken: cancellationToken);
+        }
+
+        internal Task<ResponseMessage> ProcessUserCreateAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
+               resourceType: ResourceType.User,
+               operationType: OperationType.Create,
+               cosmosContainerCore: null,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: null,
+               cancellationToken: cancellationToken);
+        }
+
+        internal Task<ResponseMessage> ProcessUserUpsertAsync(
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+               resourceUri: this.LinkUri,
+               resourceType: ResourceType.User,
+               operationType: OperationType.Upsert,
+               cosmosContainerCore: null,
+               partitionKey: null,
+               streamPayload: streamPayload,
+               requestOptions: requestOptions,
+               requestEnricher: null,
                cancellationToken: cancellationToken);
         }
 

@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
-                accountKey: key);
+                authKeyOrResourceToken: key);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
-                accountKey: key);
+                authKeyOrResourceToken: key);
             cosmosClientBuilder.WithConnectionModeDirect(
                 idleTcpConnectionTimeout,
                 openTcpConnectionTimeout,
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     string jsonString = sr.ReadToEnd();
                     // Notice description is not included, camelCaseProperty starts lower case, the white space shows the indents
-                    string expectedJsonString = "{\r\n  \"id\": \"testid\",\r\n  \"camelCaseProperty\": \"TestCamelCase\"\r\n}";
+                    string expectedJsonString = $"{{{Environment.NewLine}  \"id\": \"testid\",{Environment.NewLine}  \"camelCaseProperty\": \"TestCamelCase\"{Environment.NewLine}}}";
                     Assert.AreEqual(expectedJsonString, jsonString);
                 }
             }

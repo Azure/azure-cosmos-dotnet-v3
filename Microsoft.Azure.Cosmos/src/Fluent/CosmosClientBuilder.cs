@@ -23,14 +23,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
         /// </summary>
         /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
-        /// <param name="accountKey">The key to the account.</param>
+        /// <param name="authKeyOrResourceToken">The key to the account or resource token.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/>
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey");
+        ///     authKeyOrResourceToken: "SuperSecretKey");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
         /// </code>
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey")
+        ///     authKeyOrResourceToken: "SuperSecretKey")
         /// .WithConsistencyLevel(ConsistencyLevel.Strong)
         /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
@@ -50,27 +50,27 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </example>
         public CosmosClientBuilder(
             string accountEndpoint,
-            string accountKey)
+            string authKeyOrResourceToken)
         {
             if (accountEndpoint == null)
             {
                 throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
             }
 
-            if (accountKey == null)
+            if (authKeyOrResourceToken == null)
             {
-                throw new ArgumentNullException(nameof(accountKey));
+                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
 
             this.accountEndpoint = accountEndpoint;
-            this.accountKey = accountKey;
+            this.accountKey = authKeyOrResourceToken;
         }
 
         /// <summary>
         /// Extracts the account endpoint and key from the connection string.
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
-        /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey.</param>
+        /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResourceToken.</param>
         public CosmosClientBuilder(string connectionString)
         {
             if (connectionString == null)
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey")
+        ///     authKeyOrResourceToken: "SuperSecretKey")
         /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>

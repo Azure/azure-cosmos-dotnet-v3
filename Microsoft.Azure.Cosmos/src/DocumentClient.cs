@@ -533,7 +533,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="ConsistencyLevel"/>
         public DocumentClient(
             Uri serviceEndpoint,
-            IList<Permission> permissionFeed,
+            IList<Documents.Permission> permissionFeed,
             ConnectionPolicy connectionPolicy = null,
             Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : this(serviceEndpoint,
@@ -543,7 +543,7 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        private static List<ResourceToken> GetResourceTokens(IList<Permission> permissionFeed)
+        private static List<ResourceToken> GetResourceTokens(IList<Documents.Permission> permissionFeed)
         {
             if (permissionFeed == null)
             {
