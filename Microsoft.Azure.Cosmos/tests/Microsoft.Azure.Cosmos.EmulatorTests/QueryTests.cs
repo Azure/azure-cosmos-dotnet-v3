@@ -2244,6 +2244,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .GetField("innerExecutionContext", BindingFlags.NonPublic | BindingFlags.Instance)
                         .GetValue(queryExecutionContext);
                     queryExecutionContextType = queryExecutionContext.GetType();
+
+                    // UnWrap the inner context
+                    queryExecutionContext = queryExecutionContextType
+                        .GetProperty("innerExecutionContext", BindingFlags.NonPublic | BindingFlags.Instance)
+                        .GetValue(queryExecutionContext);
+                    queryExecutionContextType = queryExecutionContext.GetType();
                 }
 
                 object component = queryExecutionContextType

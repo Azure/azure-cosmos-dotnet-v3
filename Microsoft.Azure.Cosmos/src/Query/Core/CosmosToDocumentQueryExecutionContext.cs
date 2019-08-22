@@ -17,23 +17,23 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </summary>
     internal class CosmosToDocumentQueryExecutionContext : IDocumentQueryExecutionContext
     {
-        public bool IsDone => this.cosmosQueryExecutionContext.IsDone;
+        public bool IsDone => this.innerExecutionContext.IsDone;
 
-        private CosmosQueryExecutionContext cosmosQueryExecutionContext { get; }
+        private CosmosQueryExecutionContext innerExecutionContext { get; }
 
         internal CosmosToDocumentQueryExecutionContext(CosmosQueryExecutionContext cosmosQueryExecutionContext)
         {
-            this.cosmosQueryExecutionContext = cosmosQueryExecutionContext;
+            this.innerExecutionContext = cosmosQueryExecutionContext;
         }
 
         public void Dispose()
         {
-            this.cosmosQueryExecutionContext.Dispose();
+            this.innerExecutionContext.Dispose();
         }
 
         public async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
         {
-            QueryResponse response = await this.cosmosQueryExecutionContext.ExecuteNextAsync(token);
+            QueryResponse response = await this.innerExecutionContext.ExecuteNextAsync(token);
             INameValueCollection nameValueCollection = new DictionaryNameValueCollection();
             nameValueCollection.Add(HttpConstants.HttpHeaders.Continuation, response.QueryHeaders.InternalContinuationToken);
             nameValueCollection.Add(HttpConstants.HttpHeaders.RequestCharge, response.QueryHeaders.RequestCharge.ToString(CultureInfo.InvariantCulture));
