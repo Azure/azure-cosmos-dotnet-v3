@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Dynamic;
     using System.Threading.Tasks;
@@ -72,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestOptions: requestOptions).ToFeedIterator();
                 }
 
-                var responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken);
+                FeedResponse<ToDoActivity> responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken);
                 lastContinuationToken = responseMessage.ContinuationToken;
 
                 foreach (ToDoActivity toDoActivity in responseMessage)
@@ -100,11 +102,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestOptions: requestOptions).ToStreamIterator();
                 }
 
-                using (var responseMessage = await streamIterator.ReadNextAsync(this.cancellationToken))
+                using (ResponseMessage responseMessage = await streamIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastContinuationToken = responseMessage.Headers.ContinuationToken;
 
-                    var items = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    Collection<ToDoActivity> items = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in items)
                     {
                         if (itemIds.Contains(toDoActivity.id))
@@ -126,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void LinqQueryToIteratorBlockTest(bool isStreamIterator)
         {
             //Checking for exception in case of ToFeedIterator() use on non cosmos linq IQueryable.
-            IQueryable<ToDoActivity> nonLinqQueryable = (new List<ToDoActivity> { ToDoActivity.CreateRandomToDoActivity() }).AsQueryable();
+            IQueryable<ToDoActivity> nonLinqQueryable = new List<ToDoActivity> { ToDoActivity.CreateRandomToDoActivity() }.AsQueryable();
             if (isStreamIterator)
             {
                 nonLinqQueryable.ToStreamIterator();
@@ -161,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
 
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
-            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.taskNum < 100);
             //V3 Asynchronous query execution with LINQ query generation sql text.
             FeedIterator<ToDoActivity> setIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
                 queriable.ToQueryDefinition(),
@@ -185,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //LINQ query execution without partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true);
-            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            queriable = linqQueryable.Where(item => item.taskNum < 100);
 
             Assert.AreEqual(2, queriable.Count());
             Assert.AreEqual(itemList[0].id, queriable.ToList()[0].id);
@@ -195,14 +197,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 allowSynchronousQueryExecution: true,
                 requestOptions: new QueryRequestOptions() { PartitionKey = new Cosmos.PartitionKey("test") });
-            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(0, queriable.Count());
 
             //LINQ query execution with correct partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 allowSynchronousQueryExecution: true,
                 requestOptions: new QueryRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual, PartitionKey = new Cosmos.PartitionKey(itemList[1].status) });
-            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(1, queriable.Count());
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
         }
@@ -217,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryRequestOptions.MaxConcurrency = 1;
             queryRequestOptions.MaxItemCount = 5;
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(requestOptions: queryRequestOptions);
-            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.taskNum < 100);
             FeedIterator<ToDoActivity> feedIterator = queriable.ToFeedIterator();
 
             int firstItemSet = 0;
@@ -234,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(continuationToken: continuationToken, requestOptions: queryRequestOptions);
-            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            queriable = linqQueryable.Where(item => item.taskNum < 100);
             feedIterator = queriable.ToFeedIterator();
 
             //Test continuationToken with LINQ query generation and asynchronous feedIterator execution.
@@ -249,8 +251,95 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Test continuationToken with blocking LINQ execution
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, continuationToken: continuationToken, requestOptions: queryRequestOptions);
-            int linqExecutionItemCount = linqQueryable.Where(item => (item.taskNum < 100)).Count();
+            int linqExecutionItemCount = linqQueryable.Where(item => item.taskNum < 100).Count();
             Assert.AreEqual(10 - firstItemSet, linqExecutionItemCount);
+        }
+
+        [TestMethod]
+        public async Task QueryableExtentionFunctionsTest()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
+            
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
+
+            int count = await linqQueryable.CountAsync();
+            Assert.AreEqual(10, count);
+
+            int intSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
+            Assert.AreEqual(420, intSum);
+
+            int? intNullableSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
+            Assert.AreEqual(420, intNullableSum);
+
+            float floatSum = await linqQueryable.Select(item => (float)item.taskNum).SumAsync();
+            Assert.AreEqual(420, intSum);
+
+            float? floatNullableSum = await linqQueryable.Select(item => (float?)item.taskNum).SumAsync();
+            Assert.AreEqual(420, intNullableSum);
+
+            double doubleSum = await linqQueryable.Select(item => (double)item.taskNum).SumAsync();
+            Assert.AreEqual(420, doubleSum);
+
+            double? doubleNullableSum = await linqQueryable.Select(item => (double?)item.taskNum).SumAsync();
+            Assert.AreEqual(420, doubleNullableSum);
+
+            long longSum = await linqQueryable.Select(item => (long)item.taskNum).SumAsync();
+            Assert.AreEqual(420, longSum);
+
+            long? longNullableSum = await linqQueryable.Select(item => (long?)item.taskNum).SumAsync();
+            Assert.AreEqual(420, longNullableSum);
+
+            decimal decimalSum = await linqQueryable.Select(item => (decimal)item.taskNum).SumAsync();
+            Assert.AreEqual(420, decimalSum);
+
+            decimal? decimalNullableSum = await linqQueryable.Select(item => (decimal?)item.taskNum).SumAsync();
+            Assert.AreEqual(420, decimalNullableSum);
+
+            double intToDoubleAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
+            Assert.AreEqual(42, intToDoubleAvg);
+
+            double? intToDoubleNulableAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
+            Assert.AreEqual(42, intToDoubleNulableAvg);
+
+            float floatAvg = await linqQueryable.Select(item => (float)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, floatAvg);
+
+            float? floatNullableAvg = await linqQueryable.Select(item => (float?)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, floatNullableAvg);
+
+            double doubleAvg = await linqQueryable.Select(item => (double)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, doubleAvg);
+
+            double? doubleNullableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, doubleNullableAvg);
+
+            double longToDoubleAvg = await linqQueryable.Select(item => (long)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, longToDoubleAvg);
+
+            double? longToNullableDoubleAvg = await linqQueryable.Select(item => (long?)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, longToNullableDoubleAvg);
+
+            decimal decimalAvg = await linqQueryable.Select(item => (decimal)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, decimalAvg);
+
+            decimal? decimalNullableAvg = await linqQueryable.Select(item => (decimal?)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, decimalNullableAvg);
+
+            //Adding more items to test min and max function
+            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+            toDoActivity.taskNum = 20;
+            toDoActivity.id = "minTaskNum";
+            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.status));
+            toDoActivity.taskNum = 100;
+            toDoActivity.id = "maxTaskNum";
+            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.status));
+
+            int minTaskNum = await linqQueryable.Select(item => item.taskNum).MinAsync();
+            Assert.AreEqual(20, minTaskNum);
+
+            int maxTaskNum = await linqQueryable.Select(item => item.taskNum).MaxAsync();
+            Assert.AreEqual(100, maxTaskNum);
         }
     }
 }

@@ -163,6 +163,18 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
+        internal async Task<List<T>> ExecuteAllAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            List<T> result = new List<T>();
+            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
+            while (localFeedIterator.HasMoreResults)
+            {
+                FeedResponse<T> response = await localFeedIterator.ReadNextAsync();
+                result.AddRange(response);
+            }
+            return result;
+        }
+
         private FeedIterator CreateStreamIterator(bool isContinuationExcpected)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression);
