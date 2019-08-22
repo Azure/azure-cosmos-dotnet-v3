@@ -96,6 +96,9 @@ namespace Microsoft.Azure.Cosmos
             private static readonly ArgumentException QueryContainsUnsupportedTop = new ArgumentException(
                 QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.Top)));
 
+            private static readonly ArgumentException QueryContainsUnsupportedNonValueAggregate = new ArgumentException(
+               QueryPlanExceptionFactory.FormatExceptionMessage(nameof(QueryFeatures.NonValueAggregate)));
+
             public static void ThrowIfNotSupported(
                 QueryInfo queryInfo,
                 QueryFeatures supportedQueryFeatures)
@@ -140,9 +143,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (queryInfo.HasAggregates)
                 {
-                    if (queryInfo.Aggregates.Length == 1)
+                    bool isSingleAggregate = (queryInfo.Aggregates.Length == 1)
+                        || (queryInfo.GroupByAliasToAggregateType.Values.Where(aggregateOperator => aggregateOperator.HasValue).Count() == 1);
+                    if (isSingleAggregate)
                     {
-                        // Single aggregate must be a composite or just a VALUE <Aggregate>
                         if (queryInfo.HasSelectValue)
                         {
                             if (!supportedQueryFeatures.HasFlag(QueryFeatures.Aggregate))
@@ -152,14 +156,19 @@ namespace Microsoft.Azure.Cosmos
                         }
                         else
                         {
-                            if (!supportedQueryFeatures.HasFlag(QueryFeatures.CompositeAggregate))
+                            if (!supportedQueryFeatures.HasFlag(QueryFeatures.NonValueAggregate))
                             {
-                                exceptions.Value.Add(QueryContainsUnsupportedCompositeAggregate);
+                                exceptions.Value.Add(QueryContainsUnsupportedNonValueAggregate);
                             }
                         }
                     }
                     else
                     {
+                        if (!supportedQueryFeatures.HasFlag(QueryFeatures.NonValueAggregate))
+                        {
+                            exceptions.Value.Add(QueryContainsUnsupportedNonValueAggregate);
+                        }
+
                         if (!supportedQueryFeatures.HasFlag(QueryFeatures.MultipleAggregates))
                         {
                             exceptions.Value.Add(QueryContainsUnsupportedMultipleAggregates);

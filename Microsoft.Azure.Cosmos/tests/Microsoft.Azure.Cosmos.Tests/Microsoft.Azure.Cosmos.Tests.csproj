@@ -22,6 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="BaselineTest\TestBaseline\QueryPartitionProviderTest - Copy (2).Top.xml" />
+    <None Remove="BaselineTest\TestBaseline\QueryPartitionProviderTest - Copy.Top.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="$(DirectPackageName)" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />

@@ -113,6 +113,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
                 operators.ToArray(),
                 null,
+                false,
+                null,
                 setupContext.func));
 
             components.Add(await DistinctDocumentQueryExecutionComponent.CreateAsync(
