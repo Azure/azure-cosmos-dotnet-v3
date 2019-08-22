@@ -59,7 +59,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure => throw expectedException;
+        private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        {
+            throw expectedException;
+        };
 
         private BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) =>
         {
