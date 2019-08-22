@@ -9,7 +9,10 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public abstract class CosmosDiagnostics
     {
-        // For now only ToString() will be used, having child concrete PointOperationStatistics
-        // and QueryOperationStatistics
+        /// <summary>
+        /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
+        /// </summary>
+        /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>
+        public abstract override string ToString();
     }
 }

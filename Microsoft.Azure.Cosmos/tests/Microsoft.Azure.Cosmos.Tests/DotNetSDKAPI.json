@@ -1481,7 +1481,13 @@
     },
     "CosmosDiagnostics": {
       "Subclasses": {},
-      "Members": {},
+      "Members": {
+        "System.String ToString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToString()"
+        }
+      },
       "NestedTypes": {}
     },
     "CosmosException": {
