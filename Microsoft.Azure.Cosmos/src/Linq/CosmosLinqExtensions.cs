@@ -175,7 +175,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<TSource> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<TSource>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Max());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<TSource>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<TSource>, TSource>(Queryable.Max),
                     source.Expression),
@@ -193,7 +199,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<TSource> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<TSource>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Min());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<TSource>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<TSource>, TSource>(Queryable.Min),
                     source.Expression),
@@ -210,7 +222,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<decimal> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<decimal>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<decimal>, decimal>(Queryable.Average),
                     source.Expression),
@@ -227,7 +245,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<decimal?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<decimal?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<decimal?>, decimal?>(Queryable.Average),
                     source.Expression),
@@ -244,7 +268,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<double> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<double>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<double>, double>(Queryable.Average),
                     source.Expression),
@@ -261,7 +291,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<double?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<double?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<double?>, double?>(Queryable.Average),
                     source.Expression),
@@ -278,7 +314,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<float> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<float>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<float>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<float>, float>(Queryable.Average),
                     source.Expression),
@@ -295,7 +337,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<float?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<float?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<float?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<float?>, float?>(Queryable.Average),
                     source.Expression),
@@ -312,7 +360,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<int> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<double>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<int>, double>(Queryable.Average),
                     source.Expression),
@@ -329,7 +383,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<int?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<double?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<int?>, double?>(Queryable.Average),
                     source.Expression),
@@ -346,7 +406,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<long> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<double>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<long>, double>(Queryable.Average),
                     source.Expression),
@@ -363,7 +429,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<long?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<double?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<long?>, double?>(Queryable.Average),
                     source.Expression),
@@ -380,7 +452,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<decimal> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<decimal>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<decimal>, decimal>(Queryable.Sum),
                     source.Expression),
@@ -397,7 +475,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<decimal?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<decimal?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<decimal?>, decimal?>(Queryable.Sum),
                     source.Expression),
@@ -414,7 +498,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<double> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<double>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<double>, double>(Queryable.Sum),
                     source.Expression),
@@ -431,7 +521,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<double?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<double?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<double?>, double?>(Queryable.Sum),
                     source.Expression),
@@ -448,7 +544,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<float> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<float>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<float>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<float>, float>(Queryable.Sum),
                     source.Expression),
@@ -465,7 +567,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<float?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<float?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<float?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<float?>, float?>(Queryable.Sum),
                     source.Expression),
@@ -482,7 +590,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<int> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<int>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<int>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<int>, int>(Queryable.Sum),
                     source.Expression),
@@ -499,7 +613,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<int?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<int?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAggregateAsync<int?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<int?>, int?>(Queryable.Sum),
                     source.Expression),
@@ -516,7 +636,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<long> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<long>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<long>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<long>, long>(Queryable.Sum),
                     source.Expression),
@@ -533,7 +659,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<long?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<long?>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<long?>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<long?>, long?>(Queryable.Sum),
                     source.Expression),
@@ -551,7 +683,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             this IQueryable<TSource> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAsync<int>(
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Count());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<int>(
                 Expression.Call(
                     GetMethodInfoOf<IQueryable<TSource>, int>(Queryable.Count),
                     source.Expression),
