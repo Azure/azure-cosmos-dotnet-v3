@@ -7,17 +7,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.IO;
     using System.Net;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+    using Moq;
 
     [TestClass]
     public class CosmosNotFoundTests
     {
         public const string DoesNotExist = "DoesNotExist-69E1BD04-EC99-449B-9365-34DA9F4D4ECE";
         private static CosmosClient client = null;
-        
+
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
         {
@@ -53,29 +52,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await container.DeleteContainerAsync();
 
-            var crossPartitionQueryIterator = container.GetItemQueryStreamIterator(
-                "select * from t where true", 
-                requestOptions: new QueryRequestOptions() { MaxConcurrency= 2});
-
-            var queryResponse = await crossPartitionQueryIterator.ReadNextAsync();
-            Assert.IsNotNull(queryResponse);
-            Assert.AreEqual(HttpStatusCode.NotFound, queryResponse.StatusCode);
-
-            var queryIterator = container.GetItemQueryStreamIterator(
+            FeedIterator crossPartitionQueryIterator = container.GetItemQueryStreamIterator(
                 "select * from t where true",
-                requestOptions: new QueryRequestOptions()
-                    {
-                        MaxConcurrency = 1,
-                        PartitionKey = new Cosmos.PartitionKey("testpk"),
-                });
-
-            this.VerifyNotFoundResponse(await queryIterator.ReadNextAsync());
-
-            var crossPartitionQueryIterator2 = container.GetItemQueryStreamIterator(
-                "select * from t where true", 
                 requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
-            this.VerifyQueryNotFoundResponse(await crossPartitionQueryIterator2.ReadNextAsync());
+            await this.VerifyQueryNotFoundResponse(crossPartitionQueryIterator);
+
+            FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+                "select * from t where true",
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxConcurrency = 1,
+                    PartitionKey = new Cosmos.PartitionKey("testpk"),
+                });
+
+            await this.VerifyQueryNotFoundResponse(queryIterator);
+
+            FeedIterator crossPartitionQueryIterator2 = container.GetItemQueryStreamIterator(
+                "select * from t where true",
+                requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
+
+            await this.VerifyQueryNotFoundResponse(crossPartitionQueryIterator2);
 
             await db.DeleteAsync();
         }
@@ -118,13 +115,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Stream create = TestCommon.Serializer.ToStream<dynamic>(randomItem);
                 this.VerifyNotFoundResponse(await container.CreateItemStreamAsync(create, new PartitionKey(randomItem.pk)));
 
-                var queryIterator = container.GetItemQueryStreamIterator(
-                    "select * from t where true", 
+                FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+                    "select * from t where true",
                     requestOptions: new QueryRequestOptions() { MaxConcurrency = 2 });
 
                 this.VerifyNotFoundResponse(await queryIterator.ReadNextAsync());
 
-                var feedIterator = container.GetItemQueryStreamIterator();
+                FeedIterator feedIterator = container.GetItemQueryStreamIterator();
                 this.VerifyNotFoundResponse(await feedIterator.ReadNextAsync());
 
                 dynamic randomUpsertItem = new { id = DoesNotExist, pk = DoesNotExist, status = 42 };
@@ -145,10 +142,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 streamPayload: replace));
         }
 
-        private void VerifyQueryNotFoundResponse(ResponseMessage response)
+        private async Task VerifyQueryNotFoundResponse(FeedIterator iterator)
         {
-            Assert.IsNotNull(response);
-            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+            // Verify that even if the user ignores the HasMoreResults it still returns the exception
+            for(int i = 0; i < 3; i++)
+            {
+                ResponseMessage response = await iterator.ReadNextAsync();
+                Assert.IsNotNull(response);
+                Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+                Assert.IsFalse(iterator.HasMoreResults);
+            }
         }
 
         private void VerifyNotFoundResponse(ResponseMessage response)
