@@ -880,10 +880,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="usersLink">The link for users</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{User}"/> instance.</returns>
-        public static ResourceFeedReader<User> CreateUserFeedReader(this DocumentClient client, Documents.Database owner,
+        public static ResourceFeedReader<Documents.User> CreateUserFeedReader(this DocumentClient client, Documents.Database owner,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<User>(client, ResourceType.User, options, owner.GetLink());
+            return new ResourceFeedReader<Documents.User>(client, ResourceType.User, options, owner.GetLink());
         }
 
         /// <summary>
@@ -893,10 +893,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="permissionsLink"></param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Permission}"/> instance.</returns>
-        public static ResourceFeedReader<Permission> CreatePermissionFeedReader(this DocumentClient client, User user,
+        public static ResourceFeedReader<Documents.Permission> CreatePermissionFeedReader(this DocumentClient client, Documents.User user,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<Permission>(client, ResourceType.Permission, options, user.GetLink());
+            return new ResourceFeedReader<Documents.Permission>(client, ResourceType.Permission, options, user.GetLink());
         }
 
         /// <summary>
