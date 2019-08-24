@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#726](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/726) Query iterator HasMoreResults now returns false if an exception is hit
+- [#705](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/705) User agent suffix gets truncated
 
 
 
