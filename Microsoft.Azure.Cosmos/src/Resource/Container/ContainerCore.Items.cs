@@ -43,6 +43,15 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
+            {
+                return this.ProcessItemStreamWithExecutorAsync(
+                    partitionKey,
+                    null,
+                    streamPayload,
+                    OperationType.Create);
+            }
+
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
@@ -505,6 +514,18 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload,
                 null,
                 cancellationToken);
+        }
+
+        internal async Task<ResponseMessage> ProcessItemStreamWithExecutorAsync(
+            PartitionKey partitionKey,
+            string id,
+            Stream streamPayload,
+            OperationType operationType,
+            BatchItemRequestOptions requestOptions = null)
+        {
+            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, 0, partitionKey, id, streamPayload, requestOptions);
+            BatchOperationResult operationResult = await this.batchAsyncContainerExecutor.AddAsync(itemBatchOperation);
+            return operationResult.ToResponseMessage();
         }
 
         internal async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
