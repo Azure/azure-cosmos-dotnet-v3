@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosQueryClient queryClient;
 
-        private readonly BatchAsyncContainerExecutor batchAsyncContainerExecutor;
+        private readonly BatchExecutorRetryHandler batchExecutorRetryHandler;
 
         public override Task<ResponseMessage> CreateItemStreamAsync(
                     Stream streamPayload,
@@ -528,9 +529,7 @@ namespace Microsoft.Azure.Cosmos
         {
             BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, id, streamPayload, batchItemRequestOptions);
-            await this.batchAsyncContainerExecutor.ValidateOperationAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
-            BatchOperationResult operationResult = await this.batchAsyncContainerExecutor.AddAsync(itemBatchOperation, itemRequestOptions);
-            return operationResult.ToResponseMessage();
+            return await this.batchExecutorRetryHandler.SendAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
         }
 
         internal async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(

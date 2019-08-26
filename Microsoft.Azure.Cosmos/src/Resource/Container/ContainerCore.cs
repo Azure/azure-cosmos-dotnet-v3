@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
-            this.batchAsyncContainerExecutor = this.InitializeBatchExecutorForContainer();
+            this.batchExecutorRetryHandler = new BatchExecutorRetryHandler(this.ClientContext, this.InitializeBatchExecutorForContainer());
         }
 
         public override string Id { get; }

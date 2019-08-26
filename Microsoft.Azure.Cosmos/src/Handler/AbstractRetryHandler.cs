@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private static async Task<ResponseMessage> ExecuteHttpRequestAsync(
+        internal static async Task<ResponseMessage> ExecuteHttpRequestAsync(
            Func<Task<ResponseMessage>> callbackMethod,
            Func<ResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
            Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
