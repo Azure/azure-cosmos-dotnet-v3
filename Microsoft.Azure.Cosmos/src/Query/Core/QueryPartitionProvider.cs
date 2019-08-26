@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
@@ -163,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             List<string[]> pathParts = new List<string[]>();
             paths.ForEach(path =>
                 {
-                    pathParts.Add(PathParser.GetPathParts(path).ToArray());
+                    pathParts.Add(Cosmos.Routing.PathParser.GetPathParts(path).ToArray());
                 });
 
             string[] allParts = pathParts.SelectMany(parts => parts).ToArray();
