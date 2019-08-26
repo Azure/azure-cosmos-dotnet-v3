@@ -42,10 +42,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task InsertItem()
         {
-            var response = await this.container.CreateItemAsync(
-                this.baseItem,
+            var response = await this.container.CreateItemStreamAsync(
+                this.baseStream,
                 new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if ((int)response.StatusCode > 300 || response.Resource == null)
+            if ((int)response.StatusCode > 300)
             {
                 throw new Exception();
             }
@@ -93,10 +93,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         [Benchmark]
         public async Task ReadItem()
         {
-            var response = await this.container.ReadItemAsync<JObject>(
+            var response = await this.container.ReadItemStreamAsync(
                 Constants.ValidOperationId,
                 new Cosmos.PartitionKey(Constants.ValidOperationId));
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Resource == null)
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 throw new Exception();
             }
