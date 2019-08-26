@@ -1225,6 +1225,18 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
+        "Boolean get_HighThroughputModeEnabled()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_HighThroughputModeEnabled()"
+        },
+        "Boolean HighThroughputModeEnabled": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Int32 GatewayModeMaxConnectionLimit": {
           "Type": "Property",
           "Attributes": [],
@@ -1424,6 +1436,13 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_GatewayModeMaxConnectionLimit(Int32)"
+        },
+        "Void set_HighThroughputModeEnabled(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_HighThroughputModeEnabled(Boolean)"
         },
         "Void set_IdleTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])": {
           "Type": "Method",
@@ -2302,6 +2321,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Microsoft.Azure.Cosmos.CosmosSerializer)"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithHighThroughputMode(Boolean)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithHighThroughputMode(Boolean)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)": {
           "Type": "Method",
