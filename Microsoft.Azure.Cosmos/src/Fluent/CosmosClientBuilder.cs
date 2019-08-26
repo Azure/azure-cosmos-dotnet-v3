@@ -330,6 +330,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enables a high throughput mode in which ingest operations will be optimized to execute in batch requests.
+        /// </summary>
+        /// <param name="enabled">Whether <see cref="CosmosClientOptions.HighThroughputModeEnabled"/> is enabled.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithHighThroughputMode(bool enabled)
+        {
+            this.clientOptions.HighThroughputModeEnabled = enabled;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)

@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
             Assert.AreNotEqual(userAgentSuffix, clientOptions.ApplicationName);
             Assert.AreNotEqual(apiType, clientOptions.ApiType);
+            Assert.IsFalse(clientOptions.HighThroughputModeEnabled);
             Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
             Assert.IsNull(clientOptions.SerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
@@ -82,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .AddCustomHandlers(preProcessHandler)
                 .WithApiType(apiType)
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                .WithHighThroughputMode(true)
                 .WithSerializerOptions(cosmosSerializerOptions);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -100,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.IgnoreNullValues);
             Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
+            Assert.IsTrue(clientOptions.HighThroughputModeEnabled);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
