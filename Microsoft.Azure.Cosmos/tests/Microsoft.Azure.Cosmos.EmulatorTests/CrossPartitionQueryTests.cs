@@ -1320,11 +1320,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestUnsupportedQueries()
         {
             await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
                 NoDocuments,
                 this.TestUnsupportedQueriesHelper);
         }
@@ -1338,15 +1339,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MaxBufferedItemCount = 7000,
             };
 
-            string aggregateWithoutValue = "SELECT COUNT(1) FROM c";
             string compositeAggregate = "SELECT COUNT(1) + 5 FROM c";
-            string multipleAggregates = "SELECT COUNT(1) + SUM(c) FROM c";
 
             string[] unsupportedQueries = new string[]
             {
-                aggregateWithoutValue,
                 compositeAggregate,
-                multipleAggregates
             };
 
             foreach (string unsupportedQuery in unsupportedQueries)
@@ -4180,7 +4177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
                             .Select(grouping => grouping.Key)),
 
-                 // ------------------------------------------
+                // ------------------------------------------
                 // Corner Cases
                 // ------------------------------------------
 
@@ -4188,8 +4185,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "SELECT AVG(\"asdf\") as avg_asdf FROM c GROUP BY c.age",
                         documentsAsJTokens
                             .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
+                            .Select(grouping => new JObject())),
+
+                new Tuple<string, IEnumerable<JToken>>(
+                    @"SELECT 
+                        c.age, 
+                        AVG(c.doesNotExist) as undefined_avg,
+                        MIN(c.doesNotExist) as undefined_min,
+                        MAX(c.doesNotExist) as undefined_max,
+                        COUNT(c.doesNotExist) as undefined_count,
+                        SUM(c.doesNotExist) as undefined_sum
+                    FROM c 
+                    GROUP BY c.age",
+                        documentsAsJTokens
+                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
                             .Select(grouping => new JObject(
-                                new JProperty("avg_asdf", new JObject())))),
+                                new JProperty("age", grouping.Key),
+                                // sum and count default the counter at 0
+                                new JProperty("undefined_sum", 0),
+                                new JProperty("undefined_count", 0)))),
+
+                new Tuple<string, IEnumerable<JToken>>(
+                    @"SELECT 
+                        c.age, 
+                        c.doesNotExist
+                    FROM c 
+                    GROUP BY c.age, c.doesNotExist",
+                        documentsAsJTokens
+                            .GroupBy(document => new JObject(
+                                new JProperty("age", document["age"]),
+                                new JProperty("doesNotExist", document["doesNotExist"])),
+                                JsonTokenEqualityComparer.Value)
+                            .Select(grouping => new JObject(
+                                new JProperty("age", grouping.Key["age"])))),
             };
 
             // Test query correctness.
@@ -4209,12 +4237,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxItemCount = maxItemCount,
                             MaxBufferedItemCount = 100,
                         });
+
                     HashSet<JToken> actualSet = new HashSet<JToken>(actual, JsonTokenEqualityComparer.Value);
-                    Assert.AreEqual(actualSet.Count, actual.Count);
 
                     List<JToken> expected = expectedResults.ToList();
                     HashSet<JToken> expectedSet = new HashSet<JToken>(expected, JsonTokenEqualityComparer.Value);
-                    Assert.AreEqual(expectedSet.Count, expected.Count);
 
                     Assert.IsTrue(
                        actualSet.SetEquals(expectedSet),
