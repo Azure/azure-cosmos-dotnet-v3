@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     /// Benchmark for Item related operations.
     /// </summary>
     [MemoryDiagnoser]
-    [NetThroughput(new BenchmarkFrameworks[] { BenchmarkFrameworks.NetFx471, BenchmarkFrameworks.NetCore21 }, maxIterations: 50)]
+    [NetThroughput(new BenchmarkFrameworks[] { BenchmarkFrameworks.NetCore21 }, maxIterations: 50)]
     public class ItemBenchmark
     {
         private readonly CosmosClient clientForTests;
@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
+        /*
         /// <summary>
         /// Benchmark for UpsertItemAsync.
         /// </summary>
@@ -83,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 throw new Exception();
             }
         }
+        */
 
         /// <summary>
         /// Benchmark for ReadItemAsync.
@@ -100,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
+        /*
         /// <summary>
         /// Benchmark for ReadItemAsync.
         /// </summary>
@@ -184,5 +187,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
             }
         }
+        */
     }
 }

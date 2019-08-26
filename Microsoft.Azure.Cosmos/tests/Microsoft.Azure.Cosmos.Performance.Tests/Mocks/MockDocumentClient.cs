@@ -99,8 +99,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         {
             this.GatewayStoreModel = GetMockGatewayStoreModel();
 
-            var sessionContainer = new SessionContainer("localhost");
-            this.Session = sessionContainer;
+            this.sessionContainer = new SessionContainer("localhost");
+            this.Session = this.sessionContainer;
 
             AddressInformation[] addressInformation = GetMockAddressInformation();
             var mockAddressCache = GetMockAddressCache(addressInformation);
