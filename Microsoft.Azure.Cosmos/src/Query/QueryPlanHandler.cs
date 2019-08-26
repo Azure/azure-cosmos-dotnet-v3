@@ -160,11 +160,6 @@ namespace Microsoft.Azure.Cosmos
                             {
                                 exceptions.Value.Add(QueryContainsUnsupportedNonValueAggregate);
                             }
-
-                            if (!supportedQueryFeatures.HasFlag(QueryFeatures.CompositeAggregate))
-                            {
-                                exceptions.Value.Add(QueryContainsUnsupportedCompositeAggregate);
-                            }
                         }
                     }
                     else
