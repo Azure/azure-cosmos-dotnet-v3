@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new NotImplementedException();
         }
 
-        internal async Task<IList<T>> ToListAsync(CancellationToken cancellationToken = default(CancellationToken))
+        internal async Task<IList<T>> AggregateResultAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             List<T> result = new List<T>();
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);

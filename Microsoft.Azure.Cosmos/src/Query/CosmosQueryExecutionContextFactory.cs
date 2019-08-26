@@ -32,6 +32,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private CosmosQueryExecutionContext innerExecutionContext;
 
         /// <summary>
+        /// Store the failed response
+        /// </summary>
+        private ResponseMessage responseMessageException;
+
+        /// <summary>
         /// Test flag for making the query use the opposite code path for query plan retrieval.
         /// If the SDK would have went to Gateway, then it will use ServiceInterop and visa versa.
         /// </summary>
@@ -108,35 +113,52 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
+                // No more results if an exception is hit
+                if (this.responseMessageException != null)
+                {
+                    return false;
+                }
+
                 return this.innerExecutionContext != null ? !this.innerExecutionContext.IsDone : true;
             }
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken)
         {
+            if (this.responseMessageException != null)
+            {
+                return this.responseMessageException;
+            }
+
             // This catches exception thrown by the pipeline and converts it to QueryResponse
+            ResponseMessage response;
             try
             {
-                return await this.ExecuteNextHelperAsync(cancellationToken);
+                response = await this.ExecuteNextHelperAsync(cancellationToken);
             }
             catch (DocumentClientException exception)
             {
-                return exception.ToCosmosResponseMessage(request: null);
+                response = exception.ToCosmosResponseMessage(request: null);
             }
             catch (CosmosException exception)
             {
-                return exception.ToCosmosResponseMessage(request: null);
+                response = exception.ToCosmosResponseMessage(request: null);
             }
             catch (AggregateException ae)
             {
-                ResponseMessage errorMessage = TransportHandler.AggregateExceptionConverter(ae, null);
-                if (errorMessage != null)
+                response = TransportHandler.AggregateExceptionConverter(ae, null);
+                if (response == null)
                 {
-                    return errorMessage;
+                    throw;
                 }
-
-                throw;
             }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                this.responseMessageException = response;
+            }
+
+            return response;
         }
 
         /// <summary>

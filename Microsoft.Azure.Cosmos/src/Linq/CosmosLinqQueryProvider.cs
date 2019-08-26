@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution);
-            IList<TResult> result = await cosmosLINQQuery.ToListAsync();
+            IList<TResult> result = await cosmosLINQQuery.AggregateResultAsync();
             return result.FirstOrDefault();
         }
     }
