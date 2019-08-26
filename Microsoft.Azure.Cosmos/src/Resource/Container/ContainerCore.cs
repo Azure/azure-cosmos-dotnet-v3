@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
             this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
+            this.batchAsyncContainerExecutor = this.InitializeBatchExecutorForContainer();
         }
 
         public override string Id { get; }
@@ -258,6 +259,19 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken);
                 })
                 .Unwrap();
+        }
+
+        internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
+        {
+            int maxOperations = Constants.MaxOperationsInDirectModeBatchRequest;
+            int maxBodySize = Constants.MaxDirectModeBatchRequestBodySizeInBytes;
+            if (this.ClientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway)
+            {
+                maxOperations = Constants.MaxOperationsInGatewayModeBatchRequest;
+                maxBodySize = Constants.MaxGatewayModeBatchRequestBodySizeInBytes;
+            }
+
+            return new BatchAsyncContainerExecutor(this, this.ClientContext, maxOperations, maxBodySize);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(

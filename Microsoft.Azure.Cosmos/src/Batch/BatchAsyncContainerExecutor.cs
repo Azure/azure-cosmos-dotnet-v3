@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="BatchAsyncStreamer"/>
     internal class BatchAsyncContainerExecutor : IDisposable
     {
-        private const int DefaultDispatchTimer = 10;
+        private const int DefaultDispatchTimerInSeconds = 1;
         private const int MinimumDispatchTimerInSeconds = 1;
 
         private readonly ContainerCore cosmosContainer;
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClientContext cosmosClientContext,
             int maxServerRequestOperationCount,
             int maxServerRequestBodyLength,
-            int dispatchTimerInSeconds = BatchAsyncContainerExecutor.DefaultDispatchTimer)
+            int dispatchTimerInSeconds = BatchAsyncContainerExecutor.DefaultDispatchTimerInSeconds)
         {
             if (cosmosContainer == null)
             {

@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosQueryClient queryClient;
 
+        private readonly BatchAsyncContainerExecutor batchAsyncContainerExecutor;
+
         public override Task<ResponseMessage> CreateItemStreamAsync(
                     Stream streamPayload,
                     PartitionKey partitionKey,
