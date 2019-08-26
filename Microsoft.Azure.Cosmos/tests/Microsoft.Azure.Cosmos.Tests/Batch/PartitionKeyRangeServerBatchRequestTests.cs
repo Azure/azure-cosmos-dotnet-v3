@@ -59,5 +59,97 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(operations[1].Id, pendingOperations[0].Id);
             Assert.AreEqual(operations[2].Id, pendingOperations[1].Id);
         }
+
+        /// <summary>
+        /// Verifies that the pending operations algorithm takes into account Offset
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        public async Task OverflowsBasedOnCount_WithOffset()
+        {
+            List<ItemBatchOperation> operations = new List<ItemBatchOperation>()
+            {
+                CreateItemBatchOperation("1"),
+                CreateItemBatchOperation("2"),
+                CreateItemBatchOperation("3")
+            };
+
+            // Setting max count to 1
+            (PartitionKeyRangeServerBatchRequest request, ArraySegment<ItemBatchOperation> pendingOperations) = await PartitionKeyRangeServerBatchRequest.CreateAsync("0", new ArraySegment<ItemBatchOperation>(operations.ToArray(), 1, 2), 200000, 1, false, new CosmosJsonDotNetSerializer(), default(CancellationToken));
+
+            Assert.AreEqual(1, request.Operations.Count);
+            // The first element is not taken into account due to an Offset of 1
+            Assert.AreEqual(operations[1].Id, request.Operations[0].Id);
+            Assert.AreEqual(1, pendingOperations.Count);
+            Assert.AreEqual(operations[2].Id, pendingOperations[0].Id);
+        }
+
+        [TestMethod]
+        public async Task PartitionKeyRangeServerBatchRequestSizeTests()
+        {
+            const int docSizeInBytes = 250;
+            const int operationCount = 10;
+
+            foreach (int expectedOperationCount in new int[] { 1, 2, 5, 10 })
+            {
+                await PartitionKeyRangeServerBatchRequestTests.VerifyServerRequestCreationsBySizeAsync(expectedOperationCount, operationCount, docSizeInBytes);
+                await PartitionKeyRangeServerBatchRequestTests.VerifyServerRequestCreationsByCountAsync(expectedOperationCount, operationCount, docSizeInBytes);
+            }
+        }
+
+        private static async Task VerifyServerRequestCreationsBySizeAsync(
+            int expectedOperationCount,
+            int operationCount,
+            int docSizeInBytes)
+        {
+            const int perRequestOverheadEstimateInBytes = 30;
+            const int perDocOverheadEstimateInBytes = 50;
+            int maxServerRequestBodyLength = ((docSizeInBytes + perDocOverheadEstimateInBytes) * expectedOperationCount) + perRequestOverheadEstimateInBytes;
+            int maxServerRequestOperationCount = int.MaxValue;
+
+            (PartitionKeyRangeServerBatchRequest request, ArraySegment<ItemBatchOperation> overflow) = await PartitionKeyRangeServerBatchRequestTests.GetBatchWithCreateOperationsAsync(operationCount, maxServerRequestBodyLength, maxServerRequestOperationCount, docSizeInBytes);
+
+            Assert.AreEqual(expectedOperationCount, request.Operations.Count);
+            Assert.AreEqual(overflow.Count, operationCount - request.Operations.Count);
+        }
+
+        private static async Task VerifyServerRequestCreationsByCountAsync(
+            int expectedOperationCount,
+            int operationCount,
+            int docSizeInBytes)
+        {
+            int maxServerRequestBodyLength = int.MaxValue;
+            int maxServerRequestOperationCount = expectedOperationCount;
+
+            (PartitionKeyRangeServerBatchRequest request, ArraySegment<ItemBatchOperation> overflow) = await PartitionKeyRangeServerBatchRequestTests.GetBatchWithCreateOperationsAsync(operationCount, maxServerRequestBodyLength, maxServerRequestOperationCount, docSizeInBytes);
+
+            Assert.AreEqual(expectedOperationCount, request.Operations.Count);
+            Assert.AreEqual(overflow.Count, operationCount - request.Operations.Count);
+        }
+
+        private static async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> GetBatchWithCreateOperationsAsync(
+            int operationCount,
+            int maxServerRequestBodyLength,
+            int maxServerRequestOperationCount,
+            int docSizeInBytes = 20)
+        {
+            List<ItemBatchOperation> operations = new List<ItemBatchOperation>();
+
+            byte[] body = new byte[docSizeInBytes];
+            Random random = new Random();
+            random.NextBytes(body);
+            for (int i = 0; i < operationCount; i++)
+            {
+                operations.Add(new ItemBatchOperation(OperationType.Create, 0, string.Empty, new MemoryStream(body)));
+            }
+
+            return await PartitionKeyRangeServerBatchRequest.CreateAsync("0",
+                new ArraySegment<ItemBatchOperation>(operations.ToArray()),
+                maxServerRequestBodyLength,
+                maxServerRequestOperationCount,
+                false,
+                new CosmosJsonDotNetSerializer(),
+                default(CancellationToken));
+        }
     }
 }

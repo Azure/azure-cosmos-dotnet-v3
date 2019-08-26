@@ -110,16 +110,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        ///  Gets or sets the PopulateQueryMetrics request option for item query requests in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// PopulateQueryMetrics is used to enable/disable getting metrics relating to query execution on item query requests.
-        /// </para>
-        /// </remarks>
-        public bool? PopulateQueryMetrics { get; set; }
-
-        /// <summary>
         /// Gets or sets the token for use with session consistency in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -209,10 +199,7 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationOptions.ContentSerializationFormat);
             }
 
-            if (this.PopulateQueryMetrics == null || this.PopulateQueryMetrics.Value)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
-            }
+            request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 
             base.PopulateRequestOptions(request);
         }
@@ -237,7 +224,6 @@ namespace Microsoft.Azure.Cosmos
                 EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties,
                 IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting,
-                PopulateQueryMetrics = this.PopulateQueryMetrics
             };
 
             return queryRequestOptions;

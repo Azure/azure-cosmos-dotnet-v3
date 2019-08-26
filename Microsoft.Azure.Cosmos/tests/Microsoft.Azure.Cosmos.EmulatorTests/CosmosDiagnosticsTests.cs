@@ -126,20 +126,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(1, ((QueryOperationStatistics)iter.cosmosDiagnostics).queryMetrics.Values.First().OutputDocumentCount);
             }
 
-            //No query metrics return from server if user explicitly set PopulateQueryMetrics = false
-            requestOptions.PopulateQueryMetrics = false;
-            sql = new QueryDefinition("select DISTINCT t.cost from ToDoActivity t");
-            feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
-                   sql,
-                   requestOptions: requestOptions);
-            if (feedIterator.HasMoreResults)
-            {
-                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull((QueryOperationStatistics)iter.cosmosDiagnostics);
-                Assert.AreEqual(0, ((QueryOperationStatistics)iter.cosmosDiagnostics).queryMetrics.Values.First().OutputDocumentCount);
-                requestOptions.PopulateQueryMetrics = true;
-            }
-
             sql = new QueryDefinition("select * from ToDoActivity OFFSET 1 LIMIT 1");
             feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
                   sql,
