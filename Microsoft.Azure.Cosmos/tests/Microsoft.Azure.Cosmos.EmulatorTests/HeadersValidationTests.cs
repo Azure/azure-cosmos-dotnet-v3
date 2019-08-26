@@ -443,7 +443,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             const string suffix = " MyCustomUserAgent/1.0";
             ConnectionPolicy policy = new ConnectionPolicy();
             policy.UserAgentSuffix = suffix;
-            var expectedUserAgent = UserAgentContainer.baseUserAgent + suffix;
+            var expectedUserAgent = Cosmos.UserAgentContainer.baseUserAgent + Cosmos.UserAgentContainer.Delimiter +  suffix;
             Assert.AreEqual(expectedUserAgent, policy.UserAgentContainer.UserAgent);
 
             byte[] expectedUserAgentUTF8 = Encoding.UTF8.GetBytes(expectedUserAgent);

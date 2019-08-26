@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public double cost { get; set; }
         public string description { get; set; }
         public string status { get; set; }
+        public string CamelCase { get; set; }
 
         public override bool Equals(Object obj)
         {
@@ -79,7 +80,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 description = "CreateRandomToDoActivity",
                 status = pk,
                 taskNum = 42,
-                cost = double.MaxValue
+                cost = double.MaxValue,
+                CamelCase = "camelCase"
             };
         }
     }

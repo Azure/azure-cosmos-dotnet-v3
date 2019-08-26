@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
@@ -260,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
-            
+
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
 
             int count = await linqQueryable.CountAsync();
@@ -340,6 +341,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             int maxTaskNum = await linqQueryable.Select(item => item.taskNum).MaxAsync();
             Assert.AreEqual(100, maxTaskNum);
+        }
+
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ItemLINQWithCamelCaseSerializerOptions(bool isGatewayMode)
+        {
+            Action<CosmosClientBuilder> builder = action =>
+            {
+                action.WithSerializerOptions(new CosmosSerializationOptions()
+                {
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+                    );
+                if (isGatewayMode)
+                {
+                    action.WithConnectionModeGateway();
+                }
+            };
+            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder);
+            Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
+            Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            //Testing query without camelCase CosmosSerializationOptions using this.Container, should not return any result
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            string queryText = queriable.ToQueryDefinition().QueryText;
+            Assert.AreEqual(queriable.Count(), 0);
+
+            //Testing query with camelCase CosmosSerializationOptions using containerFromCamelCaseClient, should return all the items
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            queryText = queriable.ToQueryDefinition().QueryText;
+            Assert.AreEqual(queriable.Count(), 2);
         }
     }
 }

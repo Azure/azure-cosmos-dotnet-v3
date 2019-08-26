@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly bool allowSynchronousQueryExecution;
         private readonly Action<IQueryable> onExecuteScalarQueryCallback;
         private readonly string continuationToken;
+        private readonly CosmosSerializationOptions serializationOptions;
 
         public CosmosLinqQueryProvider(
            ContainerCore container,
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Linq
            string continuationToken,
            QueryRequestOptions cosmosQueryRequestOptions,
            bool allowSynchronousQueryExecution,
-           Action<IQueryable> onExecuteScalarQueryCallback = null)
+           Action<IQueryable> onExecuteScalarQueryCallback = null,
+           CosmosSerializationOptions serializationOptions = null)
         {
             this.container = container;
             this.responseFactory = responseFactory;
@@ -41,6 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
             this.onExecuteScalarQueryCallback = onExecuteScalarQueryCallback;
+            this.serializationOptions = serializationOptions;
         }
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
@@ -52,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
                 expression,
-                this.allowSynchronousQueryExecution);
+                this.allowSynchronousQueryExecution,
+                this.serializationOptions);
         }
 
         public IQueryable CreateQuery(Expression expression)
@@ -67,7 +71,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
                 expression,
-                this.allowSynchronousQueryExecution);
+                this.allowSynchronousQueryExecution,
+                this.serializationOptions);
         }
 
         public TResult Execute<TResult>(Expression expression)
@@ -81,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
                 expression,
-                this.allowSynchronousQueryExecution);
+                this.allowSynchronousQueryExecution,
+                this.serializationOptions);
             this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
             return cosmosLINQQuery.ToList().FirstOrDefault();
         }
@@ -97,7 +103,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.queryClient,
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
-                this.allowSynchronousQueryExecution);
+                this.allowSynchronousQueryExecution,
+                this.serializationOptions);
             this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
             return cosmosLINQQuery.ToList().FirstOrDefault();
         }
