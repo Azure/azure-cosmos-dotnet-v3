@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -162,6 +163,37 @@ namespace Microsoft.Azure.Cosmos.Tests
             //null should return null
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(MockCosmosUtil.Serializer.ToStream(new { pk = (object)null }));
             Assert.AreEqual(Cosmos.PartitionKey.Null, pkValue);
+        }
+
+        [TestMethod]
+        public async Task HighThroughputSendsToExecutor()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
+            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+
+            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
+            {
+                ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+                using (ResponseMessage streamResponse = await container.CreateItemStreamAsync(
+                    partitionKey: partitionKey,
+                    streamPayload: itemStream))
+                {
+                    container.MockedExecutor.Verify(c => c.ValidateOperationAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                    container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                }
+            }
         }
 
         [TestMethod]
@@ -399,6 +431,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(10, testHandlerHitCount, "A stream operation did not make it to the handler");
+        }
+
+        private class ExecutorContainerCore : ContainerCore
+        {
+            public readonly Mock<BatchAsyncContainerExecutor> MockedExecutor = new Mock<BatchAsyncContainerExecutor>();
+            public ExecutorContainerCore(
+                CosmosClientContext clientContext,
+                DatabaseCore database,
+                string containerId) : base (clientContext, database, containerId)
+            {
+                this.MockedExecutor
+                    .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new BatchOperationResult(HttpStatusCode.OK));
+            }
+
+            internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;
         }
     }
 }
