@@ -37,6 +37,13 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly TimerPool timerPool;
 
+        /// <summary>
+        /// For unit testing.
+        /// </summary>
+        internal BatchAsyncContainerExecutor()
+        {
+        }
+
         public BatchAsyncContainerExecutor(
             ContainerCore cosmosContainer,
             CosmosClientContext cosmosClientContext,
@@ -72,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
         }
 
-        public async Task<BatchOperationResult> AddAsync(
+        public virtual async Task<BatchOperationResult> AddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -107,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
             this.timerPool.Dispose();
         }
 
-        internal async Task ValidateOperationAsync(
+        internal virtual async Task ValidateOperationAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
