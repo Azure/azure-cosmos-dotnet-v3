@@ -49,7 +49,9 @@ namespace Microsoft.Azure.Cosmos
                     partitionKey,
                     null,
                     streamPayload,
-                    OperationType.Create);
+                    OperationType.Create,
+                    requestOptions,
+                    cancellationToken);
             }
 
             return this.ProcessItemStreamAsync(
@@ -516,15 +518,18 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        internal async Task<ResponseMessage> ProcessItemStreamWithExecutorAsync(
+        internal virtual async Task<ResponseMessage> ProcessItemStreamWithExecutorAsync(
             PartitionKey partitionKey,
             string id,
             Stream streamPayload,
             OperationType operationType,
-            BatchItemRequestOptions requestOptions = null)
+            ItemRequestOptions itemRequestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
-            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, 0, partitionKey, id, streamPayload, requestOptions);
-            BatchOperationResult operationResult = await this.batchAsyncContainerExecutor.AddAsync(itemBatchOperation);
+            BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
+            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, id, streamPayload, batchItemRequestOptions);
+            await this.batchAsyncContainerExecutor.ValidateOperationAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
+            BatchOperationResult operationResult = await this.batchAsyncContainerExecutor.AddAsync(itemBatchOperation, itemRequestOptions);
             return operationResult.ToResponseMessage();
         }
 
