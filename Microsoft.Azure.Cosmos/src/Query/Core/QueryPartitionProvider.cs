@@ -181,19 +181,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 fixed (byte* bytePtr = buffer)
                 {
                     errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery(
-                        this.serviceProvider,
-                        queryText,
-                        requireFormattableOrderByQuery,
-                        isContinuationExpected,
-                        allowNonValueAggregateQuery,
-                        hasLogicalPartitionKey,
-                        allParts,
-                        partsLengths,
-                        (uint)partitionKeyDefinition.Paths.Count,
-                        partitionKind,
-                        new IntPtr(bytePtr),
-                        (uint)buffer.Length,
-                        out serializedQueryExecutionInfoResultLength);
+                        serviceProvider: this.serviceProvider,
+                        query: queryText,
+                        requireFormattableOrderByQuery: requireFormattableOrderByQuery,
+                        isContinuationExpected: isContinuationExpected,
+                        allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                        hasLogicalPartitionKey: hasLogicalPartitionKey,
+                        partitionKeyDefinitionPathTokens: allParts,
+                        partitionKeyDefinitionPathTokenLengths: partsLengths,
+                        partitionKeyDefinitionPathCount: (uint)partitionKeyDefinition.Paths.Count,
+                        partitionKind: partitionKind,
+                        serializedQueryExecutionInfoBuffer: new IntPtr(bytePtr),
+                        serializedQueryExecutionInfoBufferLength: (uint)buffer.Length,
+                        serializedQueryExecutionInfoResultLength: out serializedQueryExecutionInfoResultLength);
 
                     if (errorCode == DISP_E_BUFFERTOOSMALL)
                     {
@@ -201,19 +201,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         fixed (byte* bytePtr2 = buffer)
                         {
                             errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery(
-                                this.serviceProvider,
-                                queryText,
-                                requireFormattableOrderByQuery,
-                                isContinuationExpected,
-                                allowNonValueAggregateQuery,
-                                hasLogicalPartitionKey, // has logical partition key
-                                allParts,
-                                partsLengths,
-                                (uint)partitionKeyDefinition.Paths.Count,
-                                partitionKind,
-                                new IntPtr(bytePtr2),
-                                (uint)buffer.Length,
-                                out serializedQueryExecutionInfoResultLength);
+                                serviceProvider: this.serviceProvider,
+                                query: queryText,
+                                requireFormattableOrderByQuery: requireFormattableOrderByQuery,
+                                isContinuationExpected: isContinuationExpected,
+                                allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                                hasLogicalPartitionKey: hasLogicalPartitionKey, // has logical partition key
+                                partitionKeyDefinitionPathTokens: allParts,
+                                partitionKeyDefinitionPathTokenLengths: partsLengths,
+                                partitionKeyDefinitionPathCount: (uint)partitionKeyDefinition.Paths.Count,
+                                partitionKind: partitionKind,
+                                serializedQueryExecutionInfoBuffer: new IntPtr(bytePtr2),
+                                serializedQueryExecutionInfoBufferLength: (uint)buffer.Length,
+                                serializedQueryExecutionInfoResultLength: out serializedQueryExecutionInfoResultLength);
                         }
                     }
                 }
