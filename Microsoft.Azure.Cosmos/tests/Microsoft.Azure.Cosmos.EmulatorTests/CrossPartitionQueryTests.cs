@@ -1320,12 +1320,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task TestUnsupportedQueries()
         {
             await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct,
-                CollectionTypes.MultiPartition,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 NoDocuments,
                 this.TestUnsupportedQueriesHelper);
         }
@@ -1360,7 +1359,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (Exception e)
                 {
-                    Assert.IsTrue(e.Message.Contains("Query contains 1 or more unsupported features. Upgrade your SDK to a version that does support the requested features:"),
+                    Assert.IsTrue(e.Message.Contains("Compositions of aggregates and other expressions are not allowed."),
                         e.Message);
                 }
             }
