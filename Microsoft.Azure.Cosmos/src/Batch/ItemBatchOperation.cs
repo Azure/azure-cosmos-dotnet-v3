@@ -299,11 +299,14 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Attached a context to the current operation to track resolution.
+        /// If the current context is completed, a new context can be attached, for the case of retries.
         /// </summary>
-        /// <exception cref="InvalidOperationException">If the operation already had an attached context.</exception>
+        /// <exception cref="InvalidOperationException">If the operation already had an attached context which is in progress.</exception>
         internal void AttachContext(ItemBatchOperationContext context)
         {
-            if (this.Context != null)
+            if (this.Context != null
+                && !this.Context.Task.IsCompleted
+                && !this.Context.Task.IsFaulted)
             {
                 throw new InvalidOperationException("Cannot modify the current context of an operation.");
             }
