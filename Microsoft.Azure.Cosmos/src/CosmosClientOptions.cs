@@ -339,7 +339,13 @@ namespace Microsoft.Azure.Cosmos
         /// There is no order of execution enforced when this mode is active.
         /// This mode affects only Stream based ingest operations.
         /// </remarks>
-        public bool HighThroughputModeEnabled { get; set; }
+#if PREVIEW
+        public
+#endif
+#if !PREVIEW
+        internal
+#endif
+        bool HighThroughputModeEnabled { get; set; }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.

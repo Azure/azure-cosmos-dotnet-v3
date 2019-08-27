@@ -334,7 +334,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="enabled">Whether <see cref="CosmosClientOptions.HighThroughputModeEnabled"/> is enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        public CosmosClientBuilder WithHighThroughputMode(bool enabled)
+#if PREVIEW
+        public
+#endif
+#if !PREVIEW
+        internal
+#endif
+        CosmosClientBuilder WithHighThroughputMode(bool enabled)
         {
             this.clientOptions.HighThroughputModeEnabled = enabled;
             return this;
