@@ -336,8 +336,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
 #if PREVIEW
         public
-#endif
-#if !PREVIEW
+#else
         internal
 #endif
         CosmosClientBuilder WithHighThroughputMode(bool enabled)

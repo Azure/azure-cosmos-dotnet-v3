@@ -341,8 +341,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
 #if PREVIEW
         public
-#endif
-#if !PREVIEW
+#else
         internal
 #endif
         bool HighThroughputModeEnabled { get; set; }
