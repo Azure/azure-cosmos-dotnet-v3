@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             return new ClientContextCore(
                 client: client,
-                clientOptions: null,
+                clientOptions: new CosmosClientOptions(),
                 userJsonSerializer: MockCosmosUtil.Serializer,
                 defaultJsonSerializer: MockCosmosUtil.Serializer,
                 sqlQuerySpecSerializer: MockCosmosUtil.Serializer,
