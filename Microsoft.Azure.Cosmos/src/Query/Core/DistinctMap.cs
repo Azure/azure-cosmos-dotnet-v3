@@ -7,11 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json.Linq;
-    using Routing;
 
     /// <summary>
     /// Base class for all types of DistinctMaps.
@@ -137,8 +132,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             /// <returns>The hash.</returns>
             public UInt192 GetHash(byte[] bytes, UInt192 seed)
             {
-                UInt128 hash128 = MurmurHash3.Hash128(bytes, bytes.Length, UInt128.Create(seed.GetLow(), seed.GetMid()));
-                ulong hash64 = MurmurHash3.Hash64(bytes, bytes.Length, seed.GetHigh());
+                Documents.UInt128 hash128 = Documents.Routing.MurmurHash3.Hash128(bytes, bytes.Length, Documents.UInt128.Create(seed.GetLow(), seed.GetMid()));
+                ulong hash64 = Documents.Routing.MurmurHash3.Hash64(bytes, bytes.Length, seed.GetHigh());
                 return UInt192.Create(hash128.GetLow(), hash128.GetHigh(), hash64);
             }
 
@@ -182,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         break;
 
                     case CosmosElementType.Number:
-                        CosmosNumber cosmosNumber = (cosmosElement as CosmosNumber);
+                        CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
                         double number;
                         if (cosmosNumber.IsFloatingPoint)
                         {
@@ -251,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             private UInt192 GetNumberHash(double number, UInt192 seed)
             {
                 UInt192 hash = this.GetHash(this.HashSeedValues.Number, seed);
-                hash = this.GetHash((UInt192)BitConverter.DoubleToInt64Bits(number), hash);
+                hash = this.GetHash(BitConverter.DoubleToInt64Bits(number), hash);
                 return hash;
             }
 
@@ -340,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                 {
                     UInt192 nameHash = this.GetHashToken(
-                        CosmosString.Create(kvp.Key), 
+                        CosmosString.Create(kvp.Key),
                         this.HashSeedValues.PropertyName);
                     UInt192 propertyHash = this.GetHashToken(kvp.Value, nameHash);
 

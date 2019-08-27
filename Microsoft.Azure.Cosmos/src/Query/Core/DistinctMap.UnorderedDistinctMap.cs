@@ -7,9 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Partial wrapper
@@ -118,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             /// HashSet for all strings of length less than or equal to 16 stored as a UInt128.
             /// This takes less space than a 24 byte hash and has full fidelity.
             /// </summary>
-            private readonly HashSet<UInt128> stringLength16 = new HashSet<UInt128>();
+            private readonly HashSet<Documents.UInt128> stringLength16 = new HashSet<Documents.UInt128>();
 
             /// <summary>
             /// HashSet for all strings seen of length less than or equal to 24 stored as a UInt192.
@@ -202,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     default:
                         throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElementType}");
                 }
-                
+
                 return added;
             }
 
@@ -265,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     }
                     else if (utf8Length <= UnorderdDistinctMap.UInt128Length)
                     {
-                        UInt128 uInt128Value = UInt128.FromByteArray(this.utf8Buffer, 0);
+                        Documents.UInt128 uInt128Value = Documents.UInt128.FromByteArray(this.utf8Buffer, 0);
                         added = this.stringLength16.Add(uInt128Value);
                     }
                     else
