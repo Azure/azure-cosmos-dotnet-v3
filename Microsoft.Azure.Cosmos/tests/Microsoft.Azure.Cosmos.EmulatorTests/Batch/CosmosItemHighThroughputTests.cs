@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(ExecuteAsync(this.container, CreateItem(i.ToString())));
+                tasks.Add(ExecuteCreateAsync(this.container, CreateItem(i.ToString())));
             }
 
             await Task.WhenAll(tasks);
@@ -64,9 +64,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private static Task<ResponseMessage> ExecuteAsync(Container container, MyDocument item)
+        [TestMethod]
+        public async Task UpsertItemStream_WithHighThroughput()
+        {
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 100; i++)
+            {
+                tasks.Add(ExecuteUpsertAsync(this.container, CreateItem(i.ToString())));
+            }
+
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ResponseMessage> task = tasks[i];
+                ResponseMessage result = await task;
+                Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+
+                MyDocument document = cosmosDefaultJsonSerializer.FromStream<MyDocument>(result.Content);
+                Assert.AreEqual(i.ToString(), document.id);
+
+                ItemResponse<MyDocument> storedDoc = await this.container.ReadItemAsync<MyDocument>(i.ToString(), new Cosmos.PartitionKey(i.ToString()));
+                Assert.IsNotNull(storedDoc.Resource);
+            }
+        }
+
+        private static Task<ResponseMessage> ExecuteCreateAsync(Container container, MyDocument item)
         {
             return container.CreateItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), new PartitionKey(item.Status));
+        }
+
+        private static Task<ResponseMessage> ExecuteUpsertAsync(Container container, MyDocument item)
+        {
+            return container.UpsertItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), new PartitionKey(item.Status));
         }
 
         private static MyDocument CreateItem(string id) => new MyDocument() { id = id, Status = id };

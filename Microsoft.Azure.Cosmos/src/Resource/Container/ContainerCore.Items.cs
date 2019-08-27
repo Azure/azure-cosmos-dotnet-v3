@@ -124,6 +124,17 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
+            {
+                return this.ProcessItemStreamWithExecutorAsync(
+                    partitionKey,
+                    null,
+                    streamPayload,
+                    OperationType.Upsert,
+                    requestOptions,
+                    cancellationToken);
+            }
+
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
