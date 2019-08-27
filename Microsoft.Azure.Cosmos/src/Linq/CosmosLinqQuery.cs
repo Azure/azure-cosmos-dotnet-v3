@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (!this.allowSynchronousQueryExecution)
             {
                 throw new NotSupportedException("To execute LINQ query please set " + nameof(this.allowSynchronousQueryExecution) + " true or" +
-                    " use GetItemsQueryIterator to execute asynchronously");
+                    " use GetItemQueryIterator to execute asynchronously");
             }
 
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
@@ -167,6 +167,18 @@ namespace Microsoft.Azure.Cosmos.Linq
         Task<DocumentFeedResponse<dynamic>> IDocumentQuery<T>.ExecuteNextAsync(CancellationToken token)
         {
             throw new NotImplementedException();
+        }
+
+        internal async Task<IList<T>> AggregateResultAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            List<T> result = new List<T>();
+            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
+            while (localFeedIterator.HasMoreResults)
+            {
+                FeedResponse<T> response = await localFeedIterator.ReadNextAsync();
+                result.AddRange(response);
+            }
+            return result;
         }
 
         private FeedIterator CreateStreamIterator(bool isContinuationExcpected)

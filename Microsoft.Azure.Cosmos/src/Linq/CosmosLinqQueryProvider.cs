@@ -5,8 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary> 
@@ -104,6 +107,25 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.serializationOptions);
             this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
             return cosmosLINQQuery.ToList().FirstOrDefault();
+        }
+
+        public async Task<TResult> ExecuteAggregateAsync<TResult>(
+            Expression expression,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Type cosmosQueryType = typeof(CosmosLinqQuery<bool>).GetGenericTypeDefinition().MakeGenericType(typeof(TResult));
+            CosmosLinqQuery<TResult> cosmosLINQQuery = (CosmosLinqQuery<TResult>)Activator.CreateInstance(
+                cosmosQueryType,
+                this.container,
+                this.responseFactory,
+                this.queryClient,
+                this.continuationToken,
+                this.cosmosQueryRequestOptions,
+                expression,
+                this.allowSynchronousQueryExecution,
+                this.serializationOptions);
+            IList<TResult> result = await cosmosLINQQuery.AggregateResultAsync();
+            return result.FirstOrDefault();
         }
     }
 }
