@@ -16,8 +16,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CosmosClientContext clientContext,
             BatchAsyncContainerExecutor batchAsyncContainerExecutor)
         {
+            RetryOptions retryOptions = clientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
             this.batchAsyncContainerExecutor = batchAsyncContainerExecutor;
-            this.retryPolicyInstance = clientContext.DocumentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy();
+            this.retryPolicyInstance = new ResourceThrottleRetryPolicy(
+                retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                retryOptions.MaxRetryWaitTimeInSeconds);
         }
 
         public async Task<ResponseMessage> SendAsync(

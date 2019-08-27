@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions());
             Mock<BatchAsyncContainerExecutor> mockedExecutor = new Mock<BatchAsyncContainerExecutor>();
             mockedExecutor
                     .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
@@ -45,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions());
             Mock<BatchAsyncContainerExecutor> mockedExecutor = new Mock<BatchAsyncContainerExecutor>();
             mockedExecutor
                     .SetupSequence(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))

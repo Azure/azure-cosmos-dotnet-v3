@@ -89,6 +89,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(operation));
             }
 
+            if (operation.Context != null)
+            {
+                // Retry handler would send another AddAsync on throttles
+                await this.RetryAsync(operation, cancellationToken);
+                return await operation.Context.Task;
+            }
+
             await this.ValidateOperationAsync(operation, itemRequestOptions, cancellationToken);
 
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
@@ -176,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
         }
 
-        private async Task ReBatchAsync(
+        private async Task RetryAsync(
             ItemBatchOperation operation,
             CancellationToken cancellationToken)
         {
@@ -248,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
                 return streamer;
             }
 
-            BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(this.maxServerRequestOperationCount, this.maxServerRequestBodyLength, this.dispatchTimerInSeconds, this.timerPool, this.cosmosClientContext.CosmosSerializer, this.ExecuteAsync, this.ReBatchAsync);
+            BatchAsyncStreamer newStreamer = new BatchAsyncStreamer(this.maxServerRequestOperationCount, this.maxServerRequestBodyLength, this.dispatchTimerInSeconds, this.timerPool, this.cosmosClientContext.CosmosSerializer, this.ExecuteAsync, this.RetryAsync);
             if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
             {
                 newStreamer.Dispose();
