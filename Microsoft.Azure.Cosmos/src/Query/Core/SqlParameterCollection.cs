@@ -2,13 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Runtime.Serialization;
-    using System.Text;
 
     /// <summary>
     /// Represents a collection of parameters associated with <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> for use in the Azure Cosmos DB service.
@@ -75,8 +72,8 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The element at the specified index.</value>
         public SqlParameter this[int index]
         {
-            get { return this.parameters[index]; }
-            set { this.parameters[index] = value; }
+            get => this.parameters[index];
+            set => this.parameters[index] = value;
         }
 
         /// <summary>
@@ -119,19 +116,13 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the number of elements contained in the Azure Cosmos DB collection.
         /// </summary>
         /// <value>The number of elements contained in the collection.</value>
-        public int Count
-        {
-            get { return this.parameters.Count; }
-        }
+        public int Count => this.parameters.Count;
 
         /// <summary>
         /// Gets a value indicating whether the Azure Cosmos DB collection is read-only.
         /// </summary>
         /// <value>true if the collection is read-only; otherwise, false.</value>
-        public bool IsReadOnly
-        {
-            get { return false; }
-        }
+        public bool IsReadOnly => false;
 
         /// <summary>
         /// /// Removes the first occurrence of a specific object from the Azure Cosmos DB collection.

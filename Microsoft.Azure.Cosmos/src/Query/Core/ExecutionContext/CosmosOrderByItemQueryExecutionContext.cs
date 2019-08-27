@@ -6,15 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Newtonsoft.Json;
     using ParallelQuery;
 
@@ -291,14 +288,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     requestContinuation,
                     sortOrders,
                     orderByExpressions);
-                Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = null;
 
                 RangeFilterInitializationInfo[] orderByInfos = this.GetPartitionKeyRangesInitializationInfo(
                     suppliedContinuationTokens,
                     partitionKeyRanges,
                     sortOrders,
                     orderByExpressions,
-                    out targetRangeToOrderByContinuationMap);
+                    out Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap);
 
                 Debug.Assert(targetRangeToOrderByContinuationMap != null, "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
 
@@ -329,8 +325,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         info.Filter,
                         async (itemProducerTree) =>
                         {
-                            OrderByContinuationToken continuationToken;
-                            if (targetRangeToOrderByContinuationMap.TryGetValue(itemProducerTree.Root.PartitionKeyRange.Id, out continuationToken))
+                            if (targetRangeToOrderByContinuationMap.TryGetValue(itemProducerTree.Root.PartitionKeyRange.Id, out OrderByContinuationToken continuationToken))
                             {
                                 await this.FilterAsync(
                                     itemProducerTree,
@@ -460,8 +455,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
                     if (cmp == 0)
                     {
-                        Documents.ResourceId rid;
-                        if (!resourceIds.TryGetValue(orderByResult.Rid, out rid))
+                        if (!resourceIds.TryGetValue(orderByResult.Rid, out Documents.ResourceId rid))
                         {
                             if (!Documents.ResourceId.TryParse(orderByResult.Rid, out rid))
                             {

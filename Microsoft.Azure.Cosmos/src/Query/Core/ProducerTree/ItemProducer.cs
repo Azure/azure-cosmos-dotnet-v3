@@ -5,14 +5,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
     /// The ItemProducer is the base unit of buffering and iterating through documents.
@@ -65,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <summary>
         /// Over the duration of the life time of a document producer the page size will change, since we have an adaptive page size.
         /// </summary>
-        private long pageSize;
+        private readonly long pageSize;
 
         /// <summary>
         /// The current continuation token that the user has read from the document producer tree.
@@ -111,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         public ItemProducer(
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
-            PartitionKeyRange partitionKeyRange,
+            Documents.PartitionKeyRange partitionKeyRange,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IEqualityComparer<CosmosElement> equalityComparer,
             long initialPageSize = 50,
@@ -169,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <summary>
         /// Gets the <see cref="PartitionKeyRange"/> for the partition that this document producer is fetching from.
         /// </summary>
-        public PartitionKeyRange PartitionKeyRange
+        public Documents.PartitionKeyRange PartitionKeyRange
         {
             get;
         }
@@ -305,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 QueryResponse feedResponse = await this.queryContext.ExecuteQueryAsync(
                     querySpecForInit: this.querySpecForInit,
                     continuationToken: this.BackendContinuationToken,
-                    partitionKeyRange: new PartitionKeyRangeIdentity(
+                    partitionKeyRange: new Documents.PartitionKeyRangeIdentity(
                             this.queryContext.ContainerResourceId,
                             this.PartitionKeyRange.Id),
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
@@ -320,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
                 this.fetchSchedulingMetrics.Stop();
                 this.hasStartedFetching = true;
-                
+
                 this.ActivityId = Guid.Parse(feedResponse.Headers.ActivityId);
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccessStatusCode)
@@ -337,10 +333,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
                 QueryMetrics queryMetrics = QueryMetrics.Zero;
 
-                if (feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics] != null)
+                if (feedResponse.Headers[Documents.HttpConstants.HttpHeaders.QueryMetrics] != null)
                 {
                     queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                        feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
+                        feedResponse.Headers[Documents.HttpConstants.HttpHeaders.QueryMetrics],
                         new ClientSideMetrics(
                             -1,
                             feedResponse.Headers.RequestCharge,

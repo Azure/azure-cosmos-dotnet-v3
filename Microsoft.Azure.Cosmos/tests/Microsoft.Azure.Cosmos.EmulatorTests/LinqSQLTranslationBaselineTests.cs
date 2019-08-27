@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     [TestClass]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>

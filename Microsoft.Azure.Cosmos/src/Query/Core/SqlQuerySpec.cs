@@ -2,14 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
-    using System.IO;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
-    using System.Text;
 
     /// <summary>
     /// Represents a SQL query in the Azure Cosmos DB service.
@@ -62,8 +58,8 @@ namespace Microsoft.Azure.Cosmos
         [DataMember(Name = "query")]
         public string QueryText
         {
-            get { return this.queryText; }
-            set { this.queryText = value; }
+            get => this.queryText;
+            set => this.queryText = value;
         }
 
         /// <summary>
@@ -73,10 +69,7 @@ namespace Microsoft.Azure.Cosmos
         [DataMember(Name = "parameters")]
         public SqlParameterCollection Parameters
         {
-            get
-            {
-                return this.parameters;
-            }
+            get => this.parameters;
             set
             {
                 if (value == null)

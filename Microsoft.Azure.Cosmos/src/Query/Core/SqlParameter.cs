@@ -2,14 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query.Core
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a parameter associated with <see cref="SqlQuerySpec"/> in the Azure Cosmos DB service.
@@ -61,8 +56,8 @@ namespace Microsoft.Azure.Cosmos
         [DataMember(Name = "name")]
         public string Name
         {
-            get { return this.name; }
-            set { this.name = value; }
+            get => this.name;
+            set => this.name = value;
         }
 
         /// <summary>
@@ -73,8 +68,8 @@ namespace Microsoft.Azure.Cosmos
         [DataMember(Name = "value")]
         public object Value
         {
-            get { return this.value; }
-            set { this.value = value; }
+            get => this.value;
+            set => this.value = value;
         }
     }
 }

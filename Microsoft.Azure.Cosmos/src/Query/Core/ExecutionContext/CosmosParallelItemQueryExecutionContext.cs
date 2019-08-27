@@ -6,15 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -168,12 +164,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         private async Task InitializeAsync(
             SqlQuerySpec sqlQuerySpec,
             string collectionRid,
-            List<PartitionKeyRange> partitionKeyRanges,
+            List<Documents.PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             string requestContinuation,
             CancellationToken token)
         {
-            IReadOnlyList<PartitionKeyRange> filteredPartitionKeyRanges;
+            IReadOnlyList<Documents.PartitionKeyRange> filteredPartitionKeyRanges;
             Dictionary<string, CompositeContinuationToken> targetIndicesForFullContinuation = null;
             if (string.IsNullOrEmpty(requestContinuation))
             {
@@ -239,9 +235,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <param name="partitionKeyRanges">The partition key ranges.</param>
         /// <param name="targetRangeToContinuationMap">The output dictionary of partition key ranges to continuation token.</param>
         /// <returns>The subset of partition to actually target.</returns>
-        private IReadOnlyList<PartitionKeyRange> GetPartitionKeyRangesForContinuation(
+        private IReadOnlyList<Documents.PartitionKeyRange> GetPartitionKeyRangesForContinuation(
             CompositeContinuationToken[] suppliedCompositeContinuationTokens,
-            List<PartitionKeyRange> partitionKeyRanges,
+            List<Documents.PartitionKeyRange> partitionKeyRanges,
             out Dictionary<string, CompositeContinuationToken> targetRangeToContinuationMap)
         {
             targetRangeToContinuationMap = new Dictionary<string, CompositeContinuationToken>();
@@ -251,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 out targetRangeToContinuationMap);
 
             // We know that all partitions to the left of the continuation token are fully drained so we can filter them out
-            return new PartialReadOnlyList<PartitionKeyRange>(
+            return new PartialReadOnlyList<Documents.PartitionKeyRange>(
                 partitionKeyRanges,
                 minIndex,
                 partitionKeyRanges.Count - minIndex);

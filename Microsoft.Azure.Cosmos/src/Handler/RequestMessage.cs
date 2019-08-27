@@ -6,14 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
-    using System.Net;
     using System.Net.Http;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -96,8 +91,8 @@ namespace Microsoft.Azure.Cosmos
         /// The partition key range handler is only needed for read feed on partitioned resources 
         /// where the partition key range needs to be computed. 
         /// </summary>
-        internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed && 
-            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && 
+        internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed &&
+            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) &&
             this.PartitionKeyRangeId == null && this.Headers.PartitionKey == null;
 
         /// <summary>

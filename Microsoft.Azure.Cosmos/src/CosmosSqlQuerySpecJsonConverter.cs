@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
     /// <summary>

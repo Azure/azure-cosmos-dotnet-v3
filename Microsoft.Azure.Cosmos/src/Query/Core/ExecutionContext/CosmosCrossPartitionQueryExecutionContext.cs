@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Collections.Generic;
     using ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using ParallelQuery;
@@ -66,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         private readonly long actualMaxBufferedItemCount;
 
-        private CosmosQueryContext queryContext;
+        private readonly CosmosQueryContext queryContext;
 
-        private QueryRequestOptions queryRequestOptions;
+        private readonly QueryRequestOptions queryRequestOptions;
 
         /// <summary>
         /// This stores all the query metrics which have been grouped by partition id.
