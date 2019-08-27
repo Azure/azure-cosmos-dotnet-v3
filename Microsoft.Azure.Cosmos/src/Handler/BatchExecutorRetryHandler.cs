@@ -9,18 +9,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal class BatchExecutorRetryHandler
     {
-        private readonly IDocumentClientRetryPolicy retryPolicyInstance;
+        private readonly RetryOptions retryOptions;
         private readonly BatchAsyncContainerExecutor batchAsyncContainerExecutor;
 
         public BatchExecutorRetryHandler(
             CosmosClientContext clientContext,
             BatchAsyncContainerExecutor batchAsyncContainerExecutor)
         {
-            RetryOptions retryOptions = clientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
+            this.retryOptions = clientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
             this.batchAsyncContainerExecutor = batchAsyncContainerExecutor;
-            this.retryPolicyInstance = new ResourceThrottleRetryPolicy(
-                retryOptions.MaxRetryAttemptsOnThrottledRequests,
-                retryOptions.MaxRetryWaitTimeInSeconds);
         }
 
         public async Task<ResponseMessage> SendAsync(
@@ -28,6 +25,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            IDocumentClientRetryPolicy retryPolicyInstance = new ResourceThrottleRetryPolicy(
+                this.retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                this.retryOptions.MaxRetryWaitTimeInSeconds);
+
             return await AbstractRetryHandler.ExecuteHttpRequestAsync(
                     callbackMethod: async () =>
                     {
@@ -36,11 +37,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     },
                     callShouldRetry: (cosmosResponseMessage, token) =>
                     {
-                        return this.retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
                     },
                     callShouldRetryException: (exception, token) =>
                     {
-                        return this.retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
+                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
                     },
                     cancellationToken: cancellationToken);
         }
