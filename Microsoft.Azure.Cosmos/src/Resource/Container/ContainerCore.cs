@@ -264,15 +264,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
         {
-            int maxOperations = Constants.MaxOperationsInDirectModeBatchRequest;
-            int maxBodySize = Constants.MaxDirectModeBatchRequestBodySizeInBytes;
-            if (this.ClientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway)
-            {
-                maxOperations = Constants.MaxOperationsInGatewayModeBatchRequest;
-                maxBodySize = Constants.MaxGatewayModeBatchRequestBodySizeInBytes;
-            }
-
-            return new BatchAsyncContainerExecutor(this, this.ClientContext, maxOperations, maxBodySize);
+            return new BatchAsyncContainerExecutor(
+                this,
+                this.ClientContext,
+                Constants.MaxOperationsInDirectModeBatchRequest,
+                Constants.MaxDirectModeBatchRequestBodySizeInBytes);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
