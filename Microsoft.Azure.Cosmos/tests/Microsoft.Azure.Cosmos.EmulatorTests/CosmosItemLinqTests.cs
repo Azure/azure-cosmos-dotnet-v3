@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Dynamic;
     using System.Threading.Tasks;
@@ -105,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     lastContinuationToken = responseMessage.Headers.ContinuationToken;
 
-                    System.Collections.ObjectModel.Collection<ToDoActivity> items = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    Collection<ToDoActivity> items = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in items)
                     {
                         if (itemIds.Contains(toDoActivity.id))
@@ -255,6 +257,92 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task QueryableExtentionFunctionsTest()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
+
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
+
+            int count = await linqQueryable.CountAsync();
+            Assert.AreEqual(10, count);
+
+            int intSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
+            Assert.AreEqual(420, intSum);
+
+            int? intNullableSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
+            Assert.AreEqual(420, intNullableSum);
+
+            float floatSum = await linqQueryable.Select(item => (float)item.taskNum).SumAsync();
+            Assert.AreEqual(420, intSum);
+
+            float? floatNullableSum = await linqQueryable.Select(item => (float?)item.taskNum).SumAsync();
+            Assert.AreEqual(420, intNullableSum);
+
+            double doubleSum = await linqQueryable.Select(item => (double)item.taskNum).SumAsync();
+            Assert.AreEqual(420, doubleSum);
+
+            double? doubleNullableSum = await linqQueryable.Select(item => (double?)item.taskNum).SumAsync();
+            Assert.AreEqual(420, doubleNullableSum);
+
+            long longSum = await linqQueryable.Select(item => (long)item.taskNum).SumAsync();
+            Assert.AreEqual(420, longSum);
+
+            long? longNullableSum = await linqQueryable.Select(item => (long?)item.taskNum).SumAsync();
+            Assert.AreEqual(420, longNullableSum);
+
+            decimal decimalSum = await linqQueryable.Select(item => (decimal)item.taskNum).SumAsync();
+            Assert.AreEqual(420, decimalSum);
+
+            decimal? decimalNullableSum = await linqQueryable.Select(item => (decimal?)item.taskNum).SumAsync();
+            Assert.AreEqual(420, decimalNullableSum);
+
+            double intToDoubleAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
+            Assert.AreEqual(42, intToDoubleAvg);
+
+            double? intToDoubleNulableAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
+            Assert.AreEqual(42, intToDoubleNulableAvg);
+
+            float floatAvg = await linqQueryable.Select(item => (float)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, floatAvg);
+
+            float? floatNullableAvg = await linqQueryable.Select(item => (float?)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, floatNullableAvg);
+
+            double doubleAvg = await linqQueryable.Select(item => (double)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, doubleAvg);
+
+            double? doubleNullableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, doubleNullableAvg);
+
+            double longToDoubleAvg = await linqQueryable.Select(item => (long)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, longToDoubleAvg);
+
+            double? longToNullableDoubleAvg = await linqQueryable.Select(item => (long?)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, longToNullableDoubleAvg);
+
+            decimal decimalAvg = await linqQueryable.Select(item => (decimal)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, decimalAvg);
+
+            decimal? decimalNullableAvg = await linqQueryable.Select(item => (decimal?)item.taskNum).AverageAsync();
+            Assert.AreEqual(42, decimalNullableAvg);
+
+            //Adding more items to test min and max function
+            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+            toDoActivity.taskNum = 20;
+            toDoActivity.id = "minTaskNum";
+            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.status));
+            toDoActivity.taskNum = 100;
+            toDoActivity.id = "maxTaskNum";
+            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.status));
+
+            int minTaskNum = await linqQueryable.Select(item => item.taskNum).MinAsync();
+            Assert.AreEqual(20, minTaskNum);
+
+            int maxTaskNum = await linqQueryable.Select(item => item.taskNum).MaxAsync();
+            Assert.AreEqual(100, maxTaskNum);
+        }
+
         [DataRow(false)]
         [DataRow(true)]
         public async Task ItemLINQWithCamelCaseSerializerOptions(bool isGatewayMode)
