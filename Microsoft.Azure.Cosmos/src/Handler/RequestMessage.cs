@@ -149,33 +149,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
-        {
-            if (this.IsMasterOperation())
-            {
-                return;
-            }
-
-#if DEBUG
-            try
-            {
-                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
-                ContainerProperties collectionFromCache =
-                    await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
-                if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
-                {
-                    Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
-                }
-            }
-            catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                // Ignore container non-existence
-            }
-#else
-            await Task.CompletedTask;
-#endif
-        }
-
         internal DocumentServiceRequest ToDocumentServiceRequest()
         {
             if (this.DocumentServiceRequest == null)
@@ -234,45 +207,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.OnBeforeSendRequestActions(serviceRequest);
             }
-        }
-
-        private bool AssertPartitioningPropertiesAndHeaders()
-        {
-            // Either PK/key-range-id is assumed
-            bool pkExists = !string.IsNullOrEmpty(this.Headers.PartitionKey);
-            bool epkExists = this.Properties.ContainsKey(WFConstants.BackendHeaders.EffectivePartitionKeyString);
-            if (pkExists && epkExists)
-            {
-                throw new ArgumentNullException(RMResources.PartitionKeyAndEffectivePartitionKeyBothSpecified);
-            }
-
-            bool isPointOperation = this.OperationType != OperationType.ReadFeed;
-            if (!pkExists && !epkExists && this.OperationType.IsPointOperation())
-            {
-                throw new ArgumentNullException(RMResources.MissingPartitionKeyValue);
-            }
-
-            bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
-            if (partitionKeyRangeIdExists)
-            {
-                // Assert operation type is not write
-                if (this.OperationType != OperationType.Query && this.OperationType != OperationType.ReadFeed && this.OperationType != OperationType.Batch)
-                {
-                    throw new ArgumentOutOfRangeException(RMResources.UnexpectedPartitionKeyRangeId);
-                }
-            }
-
-            if (pkExists && partitionKeyRangeIdExists)
-            {
-                throw new ArgumentOutOfRangeException(RMResources.PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified);
-            }
-
-            return true;
-        }
-
-        private bool IsMasterOperation()
-        {
-            return this.ResourceType != ResourceType.Document;
         }
 
         private void CheckDisposed()

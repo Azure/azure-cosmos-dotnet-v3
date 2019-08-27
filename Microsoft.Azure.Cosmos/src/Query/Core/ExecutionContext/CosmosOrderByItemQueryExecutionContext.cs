@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using ParallelQuery;
 
@@ -263,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             SqlQuerySpec sqlQuerySpec,
             string requestContinuation,
             string collectionRid,
-            List<PartitionKeyRange> partitionKeyRanges,
+            List<Documents.PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             SortOrder[] sortOrders,
             string[] orderByExpressions,
@@ -313,8 +312,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         continue;
                     }
 
-                    PartialReadOnlyList<PartitionKeyRange> partialRanges =
-                        new PartialReadOnlyList<PartitionKeyRange>(partitionKeyRanges, info.StartIndex, info.EndIndex - info.StartIndex + 1);
+                    PartialReadOnlyList<Documents.PartitionKeyRange> partialRanges =
+                        new PartialReadOnlyList<Documents.PartitionKeyRange>(partitionKeyRanges, info.StartIndex, info.EndIndex - info.StartIndex + 1);
 
                     SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
                         sqlQuerySpec.QueryText.Replace(FormatPlaceHolder, info.Filter),
@@ -424,14 +423,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             foreach (ItemProducerTree tree in producer)
             {
-                if (!ResourceId.TryParse(continuationToken.Rid, out ResourceId continuationRid))
+                if (!Documents.ResourceId.TryParse(continuationToken.Rid, out Documents.ResourceId continuationRid))
                 {
                     throw new CosmosException(
                         statusCode: HttpStatusCode.BadRequest,
                         message: $"Invalid Rid in the continuation token {continuationToken.CompositeContinuationToken.Token} for OrderBy~Context.");
                 }
 
-                Dictionary<string, ResourceId> resourceIds = new Dictionary<string, ResourceId>();
+                Dictionary<string, Documents.ResourceId> resourceIds = new Dictionary<string, Documents.ResourceId>();
                 int itemToSkip = continuationToken.SkipCount;
                 bool continuationRidVerified = false;
 
@@ -461,10 +460,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
                     if (cmp == 0)
                     {
-                        ResourceId rid;
+                        Documents.ResourceId rid;
                         if (!resourceIds.TryGetValue(orderByResult.Rid, out rid))
                         {
-                            if (!ResourceId.TryParse(orderByResult.Rid, out rid))
+                            if (!Documents.ResourceId.TryParse(orderByResult.Rid, out rid))
                             {
                                 throw new CosmosException(
                                     statusCode: HttpStatusCode.BadRequest,
@@ -530,7 +529,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <returns>The filters for every partition.</returns>
         private RangeFilterInitializationInfo[] GetPartitionKeyRangesInitializationInfo(
             OrderByContinuationToken[] suppliedContinuationTokens,
-            List<PartitionKeyRange> partitionKeyRanges,
+            List<Documents.PartitionKeyRange> partitionKeyRanges,
             SortOrder[] sortOrders,
             string[] orderByExpressions,
             out Dictionary<string, OrderByContinuationToken> targetRangeToContinuationTokenMap)
@@ -691,7 +690,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         string expression = expressionPrefix.ElementAt(index);
                         SortOrder sortOrder = sortOrderPrefix.ElementAt(index);
                         CosmosElement orderByItem = orderByItemsPrefix.ElementAt(index);
-                        bool lastItem = (index == prefixLength - 1);
+                        bool lastItem = index == prefixLength - 1;
 
                         // Append Expression
                         this.AppendToBuilders(builders, expression);

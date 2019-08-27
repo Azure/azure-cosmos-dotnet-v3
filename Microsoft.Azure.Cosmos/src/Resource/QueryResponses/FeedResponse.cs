@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using System.Net;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The user contract for the various feed responses that serialized the responses to a type.
@@ -31,10 +30,10 @@ namespace Microsoft.Azure.Cosmos
         public override string ETag => this.Headers?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Gets the continuation token to be used for continuing enumeration of the Azure Cosmos DB service.

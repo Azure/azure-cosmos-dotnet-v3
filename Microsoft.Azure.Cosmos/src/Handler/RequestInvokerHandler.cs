@@ -5,11 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -47,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
             await this.client.DocumentClient.EnsureValidClientAsync();
-            await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
+            await this.AssertPartitioningDetailsAsync(request, cancellationToken);
             this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
         }
@@ -223,6 +226,70 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             this.AccountConsistencyLevel));
                 }
             }
-        } 
+        }
+
+        private async Task AssertPartitioningDetailsAsync(RequestMessage requestMessage, CancellationToken cancellationToken)
+        {
+            // Is Master operation
+            if (requestMessage.ResourceType != ResourceType.Document)
+            {
+                return;
+            }
+
+#if DEBUG
+            try
+            {
+                CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
+                ContainerProperties collectionFromCache =
+                    await collectionCache.ResolveCollectionAsync(requestMessage.ToDocumentServiceRequest(), cancellationToken);
+                if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+                {
+                    Debug.Assert(this.AssertPartitioningPropertiesAndHeaders(requestMessage));
+                }
+            }
+            catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Ignore container non-existence
+            }
+#else
+            await Task.CompletedTask;
+#endif
+        }
+
+        private bool AssertPartitioningPropertiesAndHeaders(RequestMessage requestMessage)
+        {
+            // Either PK/key-range-id is assumed
+            bool pkExists = !string.IsNullOrEmpty(requestMessage.Headers.PartitionKey);
+            bool epkExists = requestMessage.Properties.ContainsKey(WFConstants.BackendHeaders.EffectivePartitionKeyString);
+            if (pkExists && epkExists)
+            {
+                throw new ArgumentNullException(RMResources.PartitionKeyAndEffectivePartitionKeyBothSpecified);
+            }
+
+            bool isPointOperation = requestMessage.OperationType != OperationType.ReadFeed;
+            if (!pkExists && !epkExists && requestMessage.OperationType.IsPointOperation())
+            {
+                throw new ArgumentNullException(RMResources.MissingPartitionKeyValue);
+            }
+
+            bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(requestMessage.Headers.PartitionKeyRangeId);
+            if (partitionKeyRangeIdExists)
+            {
+                // Assert operation type is not write
+                if (requestMessage.OperationType != OperationType.Query &&
+                    requestMessage.OperationType != OperationType.ReadFeed &&
+                    requestMessage.OperationType != OperationType.Batch)
+                {
+                    throw new ArgumentOutOfRangeException(RMResources.UnexpectedPartitionKeyRangeId);
+                }
+            }
+
+            if (pkExists && partitionKeyRangeIdExists)
+            {
+                throw new ArgumentOutOfRangeException(RMResources.PartitionKeyAndPartitionKeyRangeRangeIdBothSpecified);
+            }
+
+            return true;
+        }
     }
 }

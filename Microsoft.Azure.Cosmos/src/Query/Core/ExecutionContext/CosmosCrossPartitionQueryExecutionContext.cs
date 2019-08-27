@@ -14,8 +14,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Collections.Generic;
     using ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
     using ParallelQuery;
 
     /// <summary>
@@ -56,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <summary>
         /// Request Charge Tracker used to atomically add request charges (doubles).
         /// </summary>
-        private readonly RequestChargeTracker requestChargeTracker;
+        private readonly Documents.RequestChargeTracker requestChargeTracker;
 
         /// <summary>
         /// The actual max page size after all the optimizations have been made it in the create document query execution context layer.
@@ -139,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             this.fetchPrioirtyFunction = fetchPrioirtyFunction;
             this.comparableTaskScheduler = new ComparableTaskScheduler(initParams.QueryRequestOptions.MaxConcurrency.GetValueOrDefault(0));
             this.equalityComparer = equalityComparer;
-            this.requestChargeTracker = new RequestChargeTracker();
+            this.requestChargeTracker = new Documents.RequestChargeTracker();
             this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
             this.actualMaxPageSize = this.queryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
 
@@ -239,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics = this.GetQueryMetrics();
             if (groupedQueryMetrics != null && groupedQueryMetrics.Count != 0)
             {
-                responseHeaders[HttpConstants.HttpHeaders.QueryMetrics] = QueryMetrics
+                responseHeaders[Documents.HttpConstants.HttpHeaders.QueryMetrics] = QueryMetrics
                 .CreateFromIEnumerable(groupedQueryMetrics.Values)
                 .ToDelimitedString();
             }
@@ -418,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <returns>A task to await on.</returns>
         protected async Task InitializeAsync(
             string collectionRid,
-            IReadOnlyList<PartitionKeyRange> partitionKeyRanges,
+            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             SqlQuerySpec querySpecForInit,
             Dictionary<string, string> targetRangeToContinuationMap,
@@ -428,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             CancellationToken token)
         {
             List<ItemProducerTree> itemProducerTrees = new List<ItemProducerTree>();
-            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+            foreach (Documents.PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
                 string initialContinuationToken = (targetRangeToContinuationMap != null && targetRangeToContinuationMap.ContainsKey(partitionKeyRange.Id)) ? targetRangeToContinuationMap[partitionKeyRange.Id] : null;
                 ItemProducerTree itemProducerTree = new ItemProducerTree(
@@ -506,8 +504,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </Remarks>
         /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens</returns>
         protected int FindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
-            List<PartitionKeyRange> partitionKeyRanges,
-            IEnumerable<Tuple<TContinuationToken, Range<string>>> suppliedContinuationTokens,
+            List<Documents.PartitionKeyRange> partitionKeyRanges,
+            IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens,
             out Dictionary<string, TContinuationToken> targetRangeToContinuationTokenMap)
         {
             if (partitionKeyRanges == null)
@@ -520,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 throw new ArgumentException(nameof(partitionKeyRanges));
             }
 
-            foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+            foreach (Documents.PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
                 if (partitionKeyRange == null)
                 {
@@ -546,11 +544,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             targetRangeToContinuationTokenMap = new Dictionary<string, TContinuationToken>();
 
             // Find the minimum index.
-            Tuple<TContinuationToken, Range<string>> firstContinuationTokenAndRange = suppliedContinuationTokens
+            Tuple<TContinuationToken, Documents.Routing.Range<string>> firstContinuationTokenAndRange = suppliedContinuationTokens
                 .OrderBy((tuple) => tuple.Item2.Min)
                 .First();
             TContinuationToken firstContinuationToken = firstContinuationTokenAndRange.Item1;
-            PartitionKeyRange firstContinuationRange = new PartitionKeyRange
+            Documents.PartitionKeyRange firstContinuationRange = new Documents.PartitionKeyRange
             {
                 MinInclusive = firstContinuationTokenAndRange.Item2.Min,
                 MaxExclusive = firstContinuationTokenAndRange.Item2.Max
@@ -558,21 +556,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             int minIndex = partitionKeyRanges.BinarySearch(
                 firstContinuationRange,
-                Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
+                Comparer<Documents.PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
                 throw new CosmosException(
                     statusCode: HttpStatusCode.BadRequest,
-                    message: $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
+                    message: $"{Documents.RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
             }
 
-            foreach (Tuple<TContinuationToken, Range<string>> suppledContinuationToken in suppliedContinuationTokens)
+            foreach (Tuple<TContinuationToken, Documents.Routing.Range<string>> suppledContinuationToken in suppliedContinuationTokens)
             {
                 // find what ranges make up the supplied continuation token
                 TContinuationToken continuationToken = suppledContinuationToken.Item1;
-                Range<string> range = suppledContinuationToken.Item2;
+                Documents.Routing.Range<string> range = suppledContinuationToken.Item2;
 
-                IEnumerable<PartitionKeyRange> replacementRanges = partitionKeyRanges
+                IEnumerable<Documents.PartitionKeyRange> replacementRanges = partitionKeyRanges
                     .Where((partitionKeyRange) =>
                         string.CompareOrdinal(range.Min, partitionKeyRange.MinInclusive) <= 0 &&
                         string.CompareOrdinal(range.Max, partitionKeyRange.MaxExclusive) >= 0)
@@ -583,7 +581,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 {
                     throw new CosmosException(
                     statusCode: HttpStatusCode.BadRequest,
-                    message: $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
+                    message: $"{Documents.RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
                 }
 
                 // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
@@ -602,10 +600,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 {
                     throw new CosmosException(
                     statusCode: HttpStatusCode.BadRequest,
-                    message: $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
+                    message: $"{Documents.RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
                 }
 
-                foreach (PartitionKeyRange partitionKeyRange in replacementRanges)
+                foreach (Documents.PartitionKeyRange partitionKeyRange in replacementRanges)
                 {
                     targetRangeToContinuationTokenMap.Add(partitionKeyRange.Id, continuationToken);
                 }
@@ -735,7 +733,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             public CrossPartitionInitParams(
                 string collectionRid,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-                List<PartitionKeyRange> partitionKeyRanges,
+                List<Documents.PartitionKeyRange> partitionKeyRanges,
                 int initialPageSize,
                 string requestContinuation)
             {
@@ -754,7 +752,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     throw new ArgumentNullException($"{nameof(partitionKeyRanges)} can not be null.");
                 }
 
-                foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
+                foreach (Documents.PartitionKeyRange partitionKeyRange in partitionKeyRanges)
                 {
                     if (partitionKeyRange == null)
                     {
@@ -789,7 +787,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             /// <summary>
             /// Gets the partition key ranges to fan out to.
             /// </summary>
-            public List<PartitionKeyRange> PartitionKeyRanges { get; }
+            public List<Documents.PartitionKeyRange> PartitionKeyRanges { get; }
 
             /// <summary>
             /// Gets the initial page size for each document producer.
