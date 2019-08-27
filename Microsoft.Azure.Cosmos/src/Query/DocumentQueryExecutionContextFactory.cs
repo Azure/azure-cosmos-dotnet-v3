@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     partitionKeyDefinition: collection.PartitionKey,
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: isContinuationExpected,
-                    allowNonValueAggregateQuery: false,
+                    allowNonValueAggregateQuery: true,
                     hasLogicalPartitionKey: feedOptions.PartitionKey != null,
                     cancellationToken: token);
 
