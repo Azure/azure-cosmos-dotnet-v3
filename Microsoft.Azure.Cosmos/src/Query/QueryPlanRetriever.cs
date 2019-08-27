@@ -19,9 +19,11 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryFeatures.Aggregate
             | QueryFeatures.Distinct
             | QueryFeatures.MultipleOrderBy
+            | QueryFeatures.MultipleAggregates
             | QueryFeatures.OffsetAndLimit
             | QueryFeatures.OrderBy
-            | QueryFeatures.Top;
+            | QueryFeatures.Top
+            | QueryFeatures.NonValueAggregate;
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
 

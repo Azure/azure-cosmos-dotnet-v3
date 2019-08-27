@@ -453,28 +453,6 @@ namespace Microsoft.Azure.Cosmos.Query
             return targetRanges;
         }
 
-        public static Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
-            CosmosQueryClient queryClient,
-            SqlQuerySpec sqlQuerySpec,
-            PartitionKeyDefinition partitionKeyDefinition,
-            bool requireFormattableOrderByQuery,
-            bool isContinuationExpected,
-            bool allowNonValueAggregateQuery,
-            bool hasLogicalPartitionKey,
-            CancellationToken cancellationToken)
-        {
-            // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
-
-            return queryClient.GetPartitionedQueryExecutionInfoAsync(
-                sqlQuerySpec,
-                partitionKeyDefinition,
-                requireFormattableOrderByQuery,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                hasLogicalPartitionKey,
-                cancellationToken);
-        }
-
         private static bool TryGetEpkProperty(
             QueryRequestOptions queryRequestOptions,
             out string effectivePartitionKeyString)

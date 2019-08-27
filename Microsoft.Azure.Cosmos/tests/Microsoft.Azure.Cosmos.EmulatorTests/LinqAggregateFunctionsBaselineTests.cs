@@ -145,7 +145,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new() -> Skip -> Take)", b => getQueryFamily(b)
                 .Skip(1).Take(20)
-                .Select(f => new {
+                .Select(f => new
+                {
                     v0 = f.Children.Skip(1).Select(c => c.Grade).Max(),
                     v1 = f.Children.Skip(1).Take(3).Select(c => c.Grade).Max(),
                     v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Max(),
@@ -221,7 +222,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new(Skip -> Select -> Min, Skip -> Take -> Select -> Min, Take -> Skip -> Select -> Min) -> Skip -> Take)", b => getQueryFamily(b)
                 .Skip(1).Take(20)
-                .Select(f => new {
+                .Select(f => new
+                {
                     v0 = f.Children.Skip(1).Select(c => c.Grade).Min(),
                     v1 = f.Children.Skip(1).Take(3).Select(c => c.Grade).Min(),
                     v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Min(),
@@ -293,7 +295,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new() -> Skip -> Take)", b => getQueryFamily(b)
                 .Skip(1).Take(20)
-                .Select(f => new {
+                .Select(f => new
+                {
                     v0 = f.Children.Skip(1).Select(c => c.Grade).Sum(),
                     v1 = f.Children.Skip(1).Take(3).Select(c => c.Grade).Sum(),
                     v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Sum(),
@@ -369,7 +372,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new(Skip -> Select -> Count, Skip -> Take -> Select -> Count, Take -> Skip -> Select -> Count) -> Skip -> Take)", b => getQueryFamily(b)
                 .Skip(1).Take(20)
-                .Select(f => new {
+                .Select(f => new
+                {
                     v0 = f.Children.Skip(1).Select(c => c.Grade).Count(),
                     v1 = f.Children.Skip(1).Take(3).Select(c => c.Grade).Count(),
                     v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Count()
@@ -381,7 +385,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new() -> Skip -> Take)", b => getQueryFamily(b)
                 .Skip(1).Take(20)
-                .Select(f => new {
+                .Select(f => new
+                {
                     v0 = f.Children.Skip(1).Count(c => c.Grade > 50),
                     v1 = f.Children.Skip(1).Take(3).Count(c => c.Grade > 50),
                     v2 = f.Children.Take(3).Skip(1).Count(c => c.Grade > 50),
@@ -395,6 +400,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.ExecuteTestSuite(inputs);
         }
 
+
         [TestMethod]
         [Owner("khdang")]
         public void TestAny()
@@ -407,43 +413,53 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Any", b => getQuery(b)
-                .Any()));
+                .Any(),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Filter true flag -> Any", b => getQuery(b)
-                .Where(doc => doc.Flag).Any()));
+                .Where(doc => doc.Flag).Any(),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Filter false flag -> Any", b => getQuery(b)
-                .Where(doc => !doc.Flag).Any()));
+                .Where(doc => !doc.Flag).Any(),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Any", b => getQuery(b)
-                .Select(doc => doc.Number).Any()));
+                .Select(doc => doc.Number).Any(),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Select many -> Filter -> Select -> Any", b => getQuery(b)
-                .SelectMany(doc => doc.Multiples.Where(m => m % 3 == 0).Select(m => m)).Any()));
+                .SelectMany(doc => doc.Multiples.Where(m => m % 3 == 0).Select(m => m)).Any(),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Any w/ boolean filter", b => getQuery(b)
-                .Any(doc => doc.Flag)));
+                .Any(doc => doc.Flag),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Any w/ operator filter", b => getQuery(b)
-                .Any(doc => doc.Number < -7)));
+                .Any(doc => doc.Number < -7),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Any w/ operator filter", b => getQuery(b)
-                .Select(doc => doc.Number).Any(num => num < -13)));
+                .Select(doc => doc.Number).Any(num => num < -13),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Select(Select) -> Any(Sum)", b => getQuery(b)
-                .Select(doc => doc.Multiples).Any(array => array.Sum() > 5)));
+                .Select(doc => doc.Multiples).Any(array => array.Sum() > 5),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Select(Where) -> Any(Sum(map))", b => getQueryFamily(b)
-                .Select(f => f.Children.Where(c => c.Pets.Count() > 0)).Any(children => children.Sum(c => c.Grade) > 150)));
+                .Select(f => f.Children.Where(c => c.Pets.Count() > 0)).Any(children => children.Sum(c => c.Grade) > 150),
+                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Any", b => getQueryFamily(b)
@@ -532,7 +548,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 "Skip -> Take -> Select(new() -> Skip -> Take)", b => getQueryFamily(b)
                 .Skip(1).Take(20)
                 .Where(f => f.Children.Count() > 2)
-                .Select(f => new {
+                .Select(f => new
+                {
                     v0 = f.Children.Skip(1).Select(c => c.Grade).Average(),
                     v1 = f.Children.Skip(1).Take(3).Select(c => c.Grade).Average(),
                     v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Average(),

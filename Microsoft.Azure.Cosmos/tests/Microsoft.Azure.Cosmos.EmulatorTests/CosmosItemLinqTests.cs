@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestOptions: requestOptions).ToFeedIterator();
                 }
 
-                var responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken);
+                FeedResponse<ToDoActivity> responseMessage = await feedIterator.ReadNextAsync(this.cancellationToken);
                 lastContinuationToken = responseMessage.ContinuationToken;
 
                 foreach (ToDoActivity toDoActivity in responseMessage)
@@ -100,11 +101,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestOptions: requestOptions).ToStreamIterator();
                 }
 
-                using (var responseMessage = await streamIterator.ReadNextAsync(this.cancellationToken))
+                using (ResponseMessage responseMessage = await streamIterator.ReadNextAsync(this.cancellationToken))
                 {
                     lastContinuationToken = responseMessage.Headers.ContinuationToken;
 
-                    var items = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                    System.Collections.ObjectModel.Collection<ToDoActivity> items = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
                     foreach (ToDoActivity toDoActivity in items)
                     {
                         if (itemIds.Contains(toDoActivity.id))
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void LinqQueryToIteratorBlockTest(bool isStreamIterator)
         {
             //Checking for exception in case of ToFeedIterator() use on non cosmos linq IQueryable.
-            IQueryable<ToDoActivity> nonLinqQueryable = (new List<ToDoActivity> { ToDoActivity.CreateRandomToDoActivity() }).AsQueryable();
+            IQueryable<ToDoActivity> nonLinqQueryable = new List<ToDoActivity> { ToDoActivity.CreateRandomToDoActivity() }.AsQueryable();
             if (isStreamIterator)
             {
                 nonLinqQueryable.ToStreamIterator();
@@ -161,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
 
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
-            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.taskNum < 100);
             //V3 Asynchronous query execution with LINQ query generation sql text.
             FeedIterator<ToDoActivity> setIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
                 queriable.ToQueryDefinition(),
@@ -185,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //LINQ query execution without partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true);
-            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            queriable = linqQueryable.Where(item => item.taskNum < 100);
 
             Assert.AreEqual(2, queriable.Count());
             Assert.AreEqual(itemList[0].id, queriable.ToList()[0].id);
@@ -195,14 +196,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 allowSynchronousQueryExecution: true,
                 requestOptions: new QueryRequestOptions() { PartitionKey = new Cosmos.PartitionKey("test") });
-            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(0, queriable.Count());
 
             //LINQ query execution with correct partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 allowSynchronousQueryExecution: true,
                 requestOptions: new QueryRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual, PartitionKey = new Cosmos.PartitionKey(itemList[1].status) });
-            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(1, queriable.Count());
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
         }
@@ -217,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryRequestOptions.MaxConcurrency = 1;
             queryRequestOptions.MaxItemCount = 5;
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(requestOptions: queryRequestOptions);
-            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.taskNum < 100);
             FeedIterator<ToDoActivity> feedIterator = queriable.ToFeedIterator();
 
             int firstItemSet = 0;
@@ -234,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(continuationToken: continuationToken, requestOptions: queryRequestOptions);
-            queriable = linqQueryable.Where(item => (item.taskNum < 100));
+            queriable = linqQueryable.Where(item => item.taskNum < 100);
             feedIterator = queriable.ToFeedIterator();
 
             //Test continuationToken with LINQ query generation and asynchronous feedIterator execution.
@@ -249,8 +250,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Test continuationToken with blocking LINQ execution
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, continuationToken: continuationToken, requestOptions: queryRequestOptions);
-            int linqExecutionItemCount = linqQueryable.Where(item => (item.taskNum < 100)).Count();
+            int linqExecutionItemCount = linqQueryable.Where(item => item.taskNum < 100).Count();
             Assert.AreEqual(10 - firstItemSet, linqExecutionItemCount);
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ItemLINQWithCamelCaseSerializerOptions(bool isGatewayMode)
+        {
+            Action<CosmosClientBuilder> builder = action =>
+            {
+                action.WithSerializerOptions(new CosmosSerializationOptions()
+                {
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                }
+                    );
+                if (isGatewayMode)
+                {
+                    action.WithConnectionModeGateway();
+                }
+            };
+            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder);
+            Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
+            Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            //Testing query without camelCase CosmosSerializationOptions using this.Container, should not return any result
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            string queryText = queriable.ToQueryDefinition().QueryText;
+            Assert.AreEqual(queriable.Count(), 0);
+
+            //Testing query with camelCase CosmosSerializationOptions using containerFromCamelCaseClient, should return all the items
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            queryText = queriable.ToQueryDefinition().QueryText;
+            Assert.AreEqual(queriable.Count(), 2);
         }
     }
 }
