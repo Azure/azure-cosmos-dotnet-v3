@@ -18,5 +18,6 @@ namespace Microsoft.Azure.Cosmos
         OffsetAndLimit = 1 << 6,
         OrderBy = 1 << 7,
         Top = 1 << 8,
+        NonValueAggregate = 1 << 9,
     }
 }
