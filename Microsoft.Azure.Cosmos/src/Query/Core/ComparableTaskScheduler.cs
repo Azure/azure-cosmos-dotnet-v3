@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Documents;
 
     internal sealed class ComparableTaskScheduler : IDisposable

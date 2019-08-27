@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal sealed class TakeDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
@@ -201,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 LimitContinuationToken result;
                 if (!TryParse(value, out result))
                 {
-                    throw new BadRequestException($"Invalid LimitContinuationToken: {value}");
+                    throw new Documents.BadRequestException($"Invalid LimitContinuationToken: {value}");
                 }
                 else
                 {
@@ -294,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 TopContinuationToken result;
                 if (!TryParse(value, out result))
                 {
-                    throw new BadRequestException($"Invalid TopContinuationToken: {value}");
+                    throw new Documents.BadRequestException($"Invalid TopContinuationToken: {value}");
                 }
                 else
                 {

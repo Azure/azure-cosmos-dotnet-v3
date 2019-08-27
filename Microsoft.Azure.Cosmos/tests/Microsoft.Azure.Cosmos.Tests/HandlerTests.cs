@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             AggregateException ae = new AggregateException(message: "Test AE message", innerExceptions: exceptions);
 
-            ResponseMessage response = TransportHandler.AggregateExceptionConverter(ae, null);
+            ResponseMessage response = ae.AggregateExceptionConverter(null);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.IsTrue(response.ErrorMessage.StartsWith(errorMessage));

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ParallelQuery
     using System.Diagnostics;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// For cross partition order by queries we serve documents from the partition
@@ -79,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ParallelQuery
             {
                 return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
             }
-           
+
             OrderByQueryResult result1 = new OrderByQueryResult(producer1.Current);
             OrderByQueryResult result2 = new OrderByQueryResult(producer2.Current);
 
@@ -93,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ParallelQuery
 
             // If there is a tie, then break the tie by picking the one from the left most partition.
             return string.CompareOrdinal(producer1.PartitionKeyRange.MinInclusive, producer2.PartitionKeyRange.MinInclusive);
-           
+
         }
 
         /// <summary>
@@ -178,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ParallelQuery
                     throw new NotSupportedException(
                         string.Format(
                             CultureInfo.InvariantCulture,
-                            RMResources.UnsupportedCrossPartitionOrderByQueryOnMixedTypes,
+                            Documents.RMResources.UnsupportedCrossPartitionOrderByQueryOnMixedTypes,
                             itemType1,
                             itemType2,
                             items1[i]));

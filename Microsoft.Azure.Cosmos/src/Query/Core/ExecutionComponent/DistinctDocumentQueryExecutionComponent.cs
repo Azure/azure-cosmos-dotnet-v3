@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -82,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 distinctContinuationToken = DistinctContinuationToken.Parse(requestContinuation);
                 if (distinctQueryType != DistinctQueryType.Ordered && distinctContinuationToken.LastHash != null)
                 {
-                    throw new BadRequestException($"DistinctContinuationToken is malformed: {distinctContinuationToken}. DistinctContinuationToken can not have a 'lastHash', when the query type is not ordered (ex SELECT DISTINCT VALUE c.blah FROM c ORDER BY c.blah).");
+                    throw new Documents.BadRequestException($"DistinctContinuationToken is malformed: {distinctContinuationToken}. DistinctContinuationToken can not have a 'lastHash', when the query type is not ordered (ex SELECT DISTINCT VALUE c.blah FROM c ORDER BY c.blah).");
                 }
             }
 
@@ -128,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 updatedContinuationToken = null;
             }
 
-            string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken;
+            string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : Documents.RMResources.UnorderedDistinctQueryContinuationToken;
             return QueryResponse.CreateSuccess(
                 distinctResults,
                 distinctResults.Count,
@@ -143,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
         /// <returns>The JToken from the object.</returns>
         private static JToken GetJTokenFromObject(object document)
         {
-            QueryResult queryResult = document as QueryResult;
+            Documents.QueryResult queryResult = document as Documents.QueryResult;
             if (queryResult != null)
             {
                 // We wrap objects in QueryResults inorder to support other requests
@@ -211,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
                 DistinctContinuationToken result;
                 if (!TryParse(value, out result))
                 {
-                    throw new BadRequestException($"Invalid DistinctContinuationToken: {value}");
+                    throw new Documents.BadRequestException($"Invalid DistinctContinuationToken: {value}");
                 }
                 else
                 {

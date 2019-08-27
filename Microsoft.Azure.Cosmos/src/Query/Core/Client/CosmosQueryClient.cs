@@ -74,5 +74,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             List<Range<string>> providedRanges);
 
         internal abstract bool ByPassQueryParsing();
+
+        internal abstract Task ForceRefreshCollectionCacheAsync(
+            string collectionLink,
+            CancellationToken cancellationToken);
     }
 }

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Net.Sockets;
@@ -102,6 +103,25 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return httpResponse;
+        }
+
+        internal static ResponseMessage AggregateExceptionConverter(this AggregateException aggregateException, RequestMessage request)
+        {
+            AggregateException innerExceptions = aggregateException.Flatten();
+            DocumentClientException docClientException = (DocumentClientException)innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
+            if (docClientException != null)
+            {
+                return docClientException.ToCosmosResponseMessage(request);
+            }
+
+            Exception exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException);
+            CosmosException cosmosException = exception as CosmosException;
+            if (cosmosException != null)
+            {
+                return cosmosException.ToCosmosResponseMessage(request);
+            }
+
+            return null;
         }
 
         internal static void TraceException(Exception e)

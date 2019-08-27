@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Collections.Generic;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -214,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             OrderByContinuationToken result;
             if (!TryParse(value, out result))
             {
-                throw new BadRequestException($"Invalid OrderByContinuationToken: {value}");
+                throw new Documents.BadRequestException($"Invalid OrderByContinuationToken: {value}");
             }
             else
             {

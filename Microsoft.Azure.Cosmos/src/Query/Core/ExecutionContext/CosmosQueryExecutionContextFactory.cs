@@ -8,14 +8,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Diagnostics;
     using System.Globalization;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core.ParallelQuery;
-    using Microsoft.Azure.Cosmos.Routing;
 
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
@@ -127,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
             catch (AggregateException ae)
             {
-                ResponseMessage errorMessage = TransportHandler.AggregateExceptionConverter(ae, null);
+                ResponseMessage errorMessage = ae.AggregateExceptionConverter(null);
                 if (errorMessage != null)
                 {
                     return errorMessage;
@@ -169,7 +165,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     response.StatusCode == HttpStatusCode.Gone &&
                     response.Headers.SubStatusCode == Documents.SubStatusCodes.NameCacheIsStale)
                 {
-                    await this.ForceRefreshCollectionCacheAsync(cancellationToken);
+                    await this.cosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
+                        this.cosmosQueryContext.ResourceLink.OriginalString,
+                        cancellationToken);
                     this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
                     isFirstExecute = false;
                 }
@@ -180,22 +178,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
 
             return response;
-        }
-
-        private async Task ForceRefreshCollectionCacheAsync(CancellationToken cancellationToken)
-        {
-            this.cosmosQueryContext.QueryClient.ClearSessionTokenCache(this.cosmosQueryContext.ResourceLink.OriginalString);
-
-            CollectionCache collectionCache = await this.cosmosQueryContext.QueryClient.GetCollectionCacheAsync();
-            using (Documents.DocumentServiceRequest request = Documents.DocumentServiceRequest.Create(
-               Documents.OperationType.Query,
-               this.cosmosQueryContext.ResourceTypeEnum,
-               this.cosmosQueryContext.ResourceLink.OriginalString,
-               Documents.AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
-            {
-                request.ForceNameCacheRefresh = true;
-                await collectionCache.ResolveCollectionAsync(request, cancellationToken);
-            }
         }
 
         private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(

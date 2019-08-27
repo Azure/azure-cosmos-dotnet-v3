@@ -311,5 +311,21 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
         }
+
+        internal override async Task ForceRefreshCollectionCacheAsync(string collectionLink, CancellationToken cancellationToken)
+        {
+            this.ClearSessionTokenCache(collectionLink);
+
+            CollectionCache collectionCache = await this.GetCollectionCacheAsync();
+            using (Documents.DocumentServiceRequest request = Documents.DocumentServiceRequest.Create(
+               Documents.OperationType.Query,
+               Documents.ResourceType.Collection,
+               collectionLink,
+               Documents.AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
+            {
+                request.ForceNameCacheRefresh = true;
+                await collectionCache.ResolveCollectionAsync(request, cancellationToken);
+            }
+        }
     }
 }

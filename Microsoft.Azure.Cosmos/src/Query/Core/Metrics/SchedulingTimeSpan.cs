@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// This struct is the TimeSpan equivalent to Stopwatch for SchedulingStopwatch.cs.

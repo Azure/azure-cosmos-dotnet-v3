@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
                 // is removed this catch can be safely removed.
-                ResponseMessage errorMessage = AggregateExceptionConverter(ex, request);
+                ResponseMessage errorMessage = ex.AggregateExceptionConverter(request);
                 if (errorMessage != null)
                 {
                     return errorMessage;
@@ -89,25 +89,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
             }
-        }
-
-        internal static ResponseMessage AggregateExceptionConverter(AggregateException aggregateException, RequestMessage request)
-        {
-            AggregateException innerExceptions = aggregateException.Flatten();
-            DocumentClientException docClientException = (DocumentClientException)innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
-            if (docClientException != null)
-            {
-                return docClientException.ToCosmosResponseMessage(request);
-            }
-
-            Exception exception = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException);
-            CosmosException cosmosException = exception as CosmosException;
-            if (cosmosException != null)
-            {
-                return cosmosException.ToCosmosResponseMessage(request);
-            }
-
-            return null;
         }
 
         private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellationToken)

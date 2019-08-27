@@ -6,14 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Documents.RuntimeConstants;
-
     internal class CosmosQueryContext
     {
         public virtual CosmosQueryClient QueryClient { get; }
-        public virtual ResourceType ResourceTypeEnum { get; }
-        public virtual OperationType OperationTypeEnum { get; }
+        public virtual Documents.ResourceType ResourceTypeEnum { get; }
+        public virtual Documents.OperationType OperationTypeEnum { get; }
         public virtual Type ResourceType { get; }
         public virtual SqlQuerySpec SqlQuerySpec { get; internal set; }
         public virtual QueryRequestOptions QueryRequestOptions { get; }
@@ -29,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public CosmosQueryContext(
             CosmosQueryClient client,
-            ResourceType resourceTypeEnum,
-            OperationType operationType,
+            Documents.ResourceType resourceTypeEnum,
+            Documents.OperationType operationType,
             Type resourceType,
             SqlQuerySpec sqlQuerySpecFromUser,
             QueryRequestOptions queryRequestOptions,
@@ -81,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         internal virtual Task<QueryResponse> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
+            Documents.PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
             CancellationToken cancellationToken)
