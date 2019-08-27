@@ -3514,18 +3514,6 @@
           ],
           "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableScanInQuery()"
         },
-        "System.Nullable`1[System.Boolean] get_PopulateQueryMetrics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.Boolean] get_PopulateQueryMetrics()"
-        },
-        "System.Nullable`1[System.Boolean] PopulateQueryMetrics": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
         "System.Nullable`1[System.Int32] get_MaxBufferedItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3625,13 +3613,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_PartitionKey(System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey])"
-        },
-        "Void set_PopulateQueryMetrics(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_PopulateQueryMetrics(System.Nullable`1[System.Boolean])"
         },
         "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -4217,18 +4198,6 @@
               ],
               "MethodInfo": "System.Nullable`1[System.Boolean] get_EnableScanInQuery()"
             },
-            "System.Nullable`1[System.Boolean] get_PopulateQueryMetrics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "System.Nullable`1[System.Boolean] get_PopulateQueryMetrics()"
-            },
-            "System.Nullable`1[System.Boolean] PopulateQueryMetrics": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": null
-            },
             "System.Nullable`1[System.Int32] get_MaxBufferedItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
@@ -4328,13 +4297,6 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_PartitionKey(System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey])"
-            },
-            "Void set_PopulateQueryMetrics(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "Void set_PopulateQueryMetrics(System.Nullable`1[System.Boolean])"
             },
             "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
