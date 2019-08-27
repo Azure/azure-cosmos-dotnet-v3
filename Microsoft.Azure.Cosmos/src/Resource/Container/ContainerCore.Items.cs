@@ -174,6 +174,17 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
+            {
+                return this.ProcessItemStreamWithExecutorAsync(
+                    partitionKey,
+                    id,
+                    streamPayload,
+                    OperationType.Replace,
+                    requestOptions,
+                    cancellationToken);
+            }
+
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
@@ -218,6 +229,17 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
+            {
+                return this.ProcessItemStreamWithExecutorAsync(
+                    partitionKey,
+                    id,
+                    null,
+                    OperationType.Delete,
+                    requestOptions,
+                    cancellationToken);
+            }
+
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,

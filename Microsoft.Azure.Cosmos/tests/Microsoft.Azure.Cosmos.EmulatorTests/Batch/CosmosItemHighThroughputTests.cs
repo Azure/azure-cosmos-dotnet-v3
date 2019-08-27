@@ -89,6 +89,73 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task DeleteItemStream_WithHighThroughput()
+        {
+            List<MyDocument> createdDocuments = new List<MyDocument>();
+            // Create the items
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 100; i++)
+            {
+                MyDocument createdDocument = CreateItem(i.ToString());
+                createdDocuments.Add(createdDocument);
+                tasks.Add(ExecuteCreateAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(tasks);
+
+            List<Task<ResponseMessage>> deleteTasks = new List<Task<ResponseMessage>>();
+            // Delete the items
+            foreach (MyDocument createdDocument in createdDocuments)
+            {
+                deleteTasks.Add(ExecuteDeleteAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(deleteTasks);
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ResponseMessage> task = deleteTasks[i];
+                ResponseMessage result = await task;
+                Assert.AreEqual(HttpStatusCode.NoContent, result.StatusCode);
+
+                await Assert.ThrowsExceptionAsync<CosmosException>(() => this.container.ReadItemAsync<MyDocument>(i.ToString(), new Cosmos.PartitionKey(i.ToString())));
+            }
+        }
+
+        [TestMethod]
+        public async Task ReplaceItemStream_WithHighThroughput()
+        {
+            List<MyDocument> createdDocuments = new List<MyDocument>();
+            // Create the items
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 100; i++)
+            {
+                MyDocument createdDocument = CreateItem(i.ToString());
+                createdDocuments.Add(createdDocument);
+                tasks.Add(ExecuteCreateAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(tasks);
+
+            List<Task<ResponseMessage>> replaceTasks = new List<Task<ResponseMessage>>();
+            // Replace the items
+            foreach (MyDocument createdDocument in createdDocuments)
+            {
+                replaceTasks.Add(ExecuteReplaceAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(replaceTasks);
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ResponseMessage> task = replaceTasks[i];
+                ResponseMessage result = await task;
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+
+                ItemResponse<MyDocument> storedDoc = await this.container.ReadItemAsync<MyDocument>(i.ToString(), new Cosmos.PartitionKey(i.ToString()));
+                Assert.IsNotNull(storedDoc.Resource);
+            }
+        }
+
         private static Task<ResponseMessage> ExecuteCreateAsync(Container container, MyDocument item)
         {
             return container.CreateItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), new PartitionKey(item.Status));
@@ -97,6 +164,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static Task<ResponseMessage> ExecuteUpsertAsync(Container container, MyDocument item)
         {
             return container.UpsertItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), new PartitionKey(item.Status));
+        }
+
+        private static Task<ResponseMessage> ExecuteReplaceAsync(Container container, MyDocument item)
+        {
+            return container.ReplaceItemStreamAsync(cosmosDefaultJsonSerializer.ToStream(item), item.id, new PartitionKey(item.Status));
+        }
+
+        private static Task<ResponseMessage> ExecuteDeleteAsync(Container container, MyDocument item)
+        {
+            return container.DeleteItemStreamAsync(item.id, new PartitionKey(item.Status));
         }
 
         private static MyDocument CreateItem(string id) => new MyDocument() { id = id, Status = id };
