@@ -123,6 +123,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReadItemStream_WithHighThroughput()
+        {
+            List<MyDocument> createdDocuments = new List<MyDocument>();
+            // Create the items
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 100; i++)
+            {
+                MyDocument createdDocument = CreateItem(i.ToString());
+                createdDocuments.Add(createdDocument);
+                tasks.Add(ExecuteCreateAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(tasks);
+
+            List<Task<ResponseMessage>> readTasks = new List<Task<ResponseMessage>>();
+            // Delete the items
+            foreach (MyDocument createdDocument in createdDocuments)
+            {
+                readTasks.Add(ExecuteReadAsync(this.container, createdDocument));
+            }
+
+            await Task.WhenAll(readTasks);
+            for (int i = 0; i < 100; i++)
+            {
+                Task<ResponseMessage> task = readTasks[i];
+                ResponseMessage result = await task;
+                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            }
+        }
+
+        [TestMethod]
         public async Task ReplaceItemStream_WithHighThroughput()
         {
             List<MyDocument> createdDocuments = new List<MyDocument>();
@@ -174,6 +205,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static Task<ResponseMessage> ExecuteDeleteAsync(Container container, MyDocument item)
         {
             return container.DeleteItemStreamAsync(item.id, new PartitionKey(item.Status));
+        }
+
+        private static Task<ResponseMessage> ExecuteReadAsync(Container container, MyDocument item)
+        {
+            return container.ReadItemStreamAsync(item.id, new PartitionKey(item.Status));
         }
 
         private static MyDocument CreateItem(string id) => new MyDocument() { id = id, Status = id };
