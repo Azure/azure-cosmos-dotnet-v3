@@ -45,18 +45,35 @@ namespace Microsoft.Azure.Cosmos.Scenarios
 
         internal abstract JsonSerializationFormat SerializationFormat { get; }
 
+        /// <summary>
+        /// Test read path for Gremlin edge documents by:
+        /// - Creating a serialized edge document using eager CosmosElements.
+        /// - Navigating and verifying the structure and values of the serialized edge document using lazy CosmosElements.
+        /// </summary>
         [TestMethod]
         public virtual void SerializeAndDeserializeGremlinEdgeDocument()
         {
             this.SerializeAndDeserializeEdgeDocumentTest(this.SerializationFormat);
         }
 
+        /// <summary>
+        /// Test read path for Gremlin vertex documents by:
+        /// - Creating a serialized vertex document using eager CosmosElements.
+        /// - Navigating and verifying structure and values of the serialized vertex document using lazy CosmosElements.
+        /// </summary>
         [TestMethod]
         public virtual void SerializeAndDeserializeGremlinVertexDocument()
         {
             this.SerializeAndDeserializeVertexDocumentTest(this.SerializationFormat);
         }
 
+        /// <summary>
+        /// Test write path for Gremlin vertex documents by:
+        /// - Creating a serialized vertex document using eager CosmosElements.
+        /// - Navigating the serialized vertex document using lazy CosmosElements.
+        /// - Assembling a modified vertex document structure using a mix of lazy and eager CosmosElements.
+        /// - Serializing and verifying the contents of the modified vertex document.
+        /// </summary>
         [TestMethod]
         public virtual void DeserializeModifyAndSerializeVertexDocument()
         {
