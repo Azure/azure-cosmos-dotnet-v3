@@ -36,11 +36,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal override Action<IQueryable> OnExecuteScalarQueryCallback => this.documentClient.OnExecuteScalarQueryCallback;
 
-        internal override async Task<CollectionCache> GetCollectionCacheAsync()
-        {
-            return await this.documentClient.GetCollectionCacheAsync();
-        }
-
         internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             Uri containerLink,
             CancellationToken cancellationToken)
@@ -152,9 +147,12 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
+                CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
                 DocumentServiceResponse dsr = await this.documentClient.ExecuteQueryAsync(
                     request,
-                    new NonRetriableInvalidPartitionExceptionRetryPolicy(await this.GetCollectionCacheAsync(), this.documentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
+                    new NonRetriableInvalidPartitionExceptionRetryPolicy(
+                        collectionCache,
+                        this.documentClient.ResetSessionTokenRetryPolicy.GetRequestPolicy()),
                     cancellationToken);
 
                 responseMessage = dsr.ToCosmosResponseMessage(requestMessage);
@@ -215,7 +213,7 @@ namespace Microsoft.Azure.Cosmos
                 // Return NotFoundException this time. Next query will succeed.
                 // This can only happen if collection is deleted/created with same name and client was not restarted
                 // in between.
-                CollectionCache collectionCache = await this.GetCollectionCacheAsync();
+                CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
                 collectionCache.Refresh(resourceLink);
             }
 
@@ -306,7 +304,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ClearSessionTokenCache(collectionLink);
 
-            CollectionCache collectionCache = await this.GetCollectionCacheAsync();
+            CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
             using (Documents.DocumentServiceRequest request = Documents.DocumentServiceRequest.Create(
                Documents.OperationType.Query,
                Documents.ResourceType.Collection,

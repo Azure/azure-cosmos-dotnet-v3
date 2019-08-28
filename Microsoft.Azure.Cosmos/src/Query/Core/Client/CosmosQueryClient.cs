@@ -9,13 +9,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
 
     internal abstract class CosmosQueryClient
     {
         internal abstract Action<IQueryable> OnExecuteScalarQueryCallback { get; }
-
-        internal abstract Task<CollectionCache> GetCollectionCacheAsync();
 
         internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             Uri containerLink,
