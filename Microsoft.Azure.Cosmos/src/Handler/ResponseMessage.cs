@@ -154,10 +154,10 @@ namespace Microsoft.Azure.Cosmos
         {
             string resourceLink = this.RequestMessage?.RequestUri.OriginalString;
             if (PathsHelper.TryParsePathSegments(
-                resourceLink, 
-                out bool isFeed, 
-                out string resourceTypeString, 
-                out string resourceIdOrFullName, 
+                resourceLink,
+                out bool isFeed,
+                out string resourceTypeString,
+                out string resourceIdOrFullName,
                 out bool isNameBased))
             {
                 Debug.Assert(resourceIdOrFullName != null);

@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -115,8 +114,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateDocumentUri(string databaseId, string collectionId, string documentId)
         {
-            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}", 
-                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId), 
+            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}",
+                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId),
                             Paths.DocumentsPathSegment, Uri.EscapeUriString(documentId)), UriKind.Relative);
         }
@@ -135,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
         static public Uri CreatePermissionUri(string databaseId, string userId, string permissionId)
         {
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}",
-                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId), 
+                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.UsersPathSegment, Uri.EscapeUriString(userId),
                             Paths.PermissionsPathSegment, Uri.EscapeUriString(permissionId)), UriKind.Relative);
         }
@@ -153,8 +152,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateStoredProcedureUri(string databaseId, string collectionId, string storedProcedureId)
         {
-            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}", 
-                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId), 
+            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}",
+                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId),
                             Paths.StoredProceduresPathSegment, Uri.EscapeUriString(storedProcedureId)), UriKind.Relative);
         }
@@ -188,8 +187,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateTriggerUri(string databaseId, string collectionId, string triggerId)
         {
-            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}", 
-                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId), 
+            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}",
+                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId),
                             Paths.TriggersPathSegment, Uri.EscapeUriString(triggerId)), UriKind.Relative);
         }
@@ -207,8 +206,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateUserDefinedFunctionUri(string databaseId, string collectionId, string udfId)
         {
-            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}", 
-                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId), 
+            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}",
+                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId),
                             Paths.UserDefinedFunctionsPathSegment, Uri.EscapeUriString(udfId)), UriKind.Relative);
         }
@@ -226,8 +225,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateConflictUri(string databaseId, string collectionId, string conflictId)
         {
-            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}", 
-                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId), 
+            return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}",
+                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId),
                             Paths.ConflictsPathSegment, Uri.EscapeUriString(conflictId)), UriKind.Relative);
         }
@@ -247,8 +246,8 @@ namespace Microsoft.Azure.Cosmos
         static public Uri CreateAttachmentUri(string databaseId, string collectionId, string documentId, string attachmentId)
         {
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}/{6}/{7}",
-                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId), 
-                            Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId), 
+                            Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
+                            Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId),
                             Paths.DocumentsPathSegment, Uri.EscapeUriString(documentId),
                             Paths.AttachmentsPathSegment, Uri.EscapeUriString(attachmentId)), UriKind.Relative);
         }

@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
                 case "LineString":
                     result = new LineString();
                     break;
-                
+
                 case "MultiLineString":
                     result = new MultiLineString();
                     break;

@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
-
     internal abstract class SqlPathExpressionVisitor
     {
         public abstract void Visit(SqlIdentifierPathExpression sqlObject);

@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Json
             private const string FalseString = "false";
             private const string NullString = "null";
 
-            private static readonly Dictionary<Encoding, string> ByteOrderMarkDictionary = new Dictionary<Encoding, string> 
+            private static readonly Dictionary<Encoding, string> ByteOrderMarkDictionary = new Dictionary<Encoding, string>
             {
                 { Encoding.UTF8, "\xEF\xBB\xBF" },
                 { Encoding.Unicode, "\xFF\xFE" },
@@ -431,29 +431,29 @@ namespace Microsoft.Azure.Cosmos.Json
                         char escapeSequence = default(char);
                         switch (characterToEscape)
                         {
-                            case '\\': 
+                            case '\\':
                                 escapeSequence = '\\';
                                 break;
                             case '"':
                                 escapeSequence = '"';
                                 break;
-                            case '/': 
-                                escapeSequence = '/'; 
+                            case '/':
+                                escapeSequence = '/';
                                 break;
-                            case '\b': 
-                                escapeSequence = 'b'; 
+                            case '\b':
+                                escapeSequence = 'b';
                                 break;
-                            case '\f': 
-                                escapeSequence = 'f'; 
+                            case '\f':
+                                escapeSequence = 'f';
                                 break;
-                            case '\n': 
-                                escapeSequence = 'n'; 
+                            case '\n':
+                                escapeSequence = 'n';
                                 break;
-                            case '\r': 
-                                escapeSequence = 'r'; 
+                            case '\r':
+                                escapeSequence = 'r';
                                 break;
-                            case '\t': 
-                                escapeSequence = 't'; 
+                            case '\t':
+                                escapeSequence = 't';
                                 break;
                         }
 

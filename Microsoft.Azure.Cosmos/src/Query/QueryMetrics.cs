@@ -5,10 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
     using System.Text;
-    using System.Xml;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -68,18 +65,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="clientSideMetrics">Client Side Metrics</param>
         [JsonConstructor]
         internal QueryMetrics(
-            long retrievedDocumentCount, 
-            long retrievedDocumentSize, 
-            long outputDocumentCount, 
-            long outputDocumentSize, 
-            long indexHitDocumentCount, 
-            TimeSpan totalQueryExecutionTime, 
-            QueryPreparationTimes queryPreparationTimes, 
-            TimeSpan indexLookupTime, 
-            TimeSpan documentLoadTime, 
-            TimeSpan vmExecutionTime, 
-            RuntimeExecutionTimes runtimeExecutionTimes, 
-            TimeSpan documentWriteTime, 
+            long retrievedDocumentCount,
+            long retrievedDocumentSize,
+            long outputDocumentCount,
+            long outputDocumentSize,
+            long indexHitDocumentCount,
+            TimeSpan totalQueryExecutionTime,
+            QueryPreparationTimes queryPreparationTimes,
+            TimeSpan indexLookupTime,
+            TimeSpan documentLoadTime,
+            TimeSpan vmExecutionTime,
+            RuntimeExecutionTimes runtimeExecutionTimes,
+            TimeSpan documentWriteTime,
             ClientSideMetrics clientSideMetrics)
         {
             if (queryPreparationTimes == null)

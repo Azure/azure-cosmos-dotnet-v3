@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
-    using System.Linq;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
@@ -304,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnRateLimitedRequests"/>
         /// <seealso cref="CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests"/>
-        public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
+        public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests,
             int maxRetryAttemptsOnThrottledRequests)
         {
             this.clientOptions.MaxRetryWaitTimeOnRateLimitedRequests = maxRetryWaitTimeOnThrottledRequests;

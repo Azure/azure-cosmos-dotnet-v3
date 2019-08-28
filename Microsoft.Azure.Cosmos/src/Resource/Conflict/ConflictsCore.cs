@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ResponseMessage> DeleteAsync(
-            ConflictProperties conflict, 
+            ConflictProperties conflict,
             PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -124,8 +124,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(
-            ConflictProperties cosmosConflict, 
-            PartitionKey partitionKey, 
+            ConflictProperties cosmosConflict,
+            PartitionKey partitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (cosmosConflict == null)

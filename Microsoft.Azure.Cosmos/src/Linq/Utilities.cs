@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
     }
-     
+
     internal abstract class ExpressionSimplifier
     {
         private static ConcurrentDictionary<Type, ExpressionSimplifier> cached = new ConcurrentDictionary<Type, ExpressionSimplifier>();

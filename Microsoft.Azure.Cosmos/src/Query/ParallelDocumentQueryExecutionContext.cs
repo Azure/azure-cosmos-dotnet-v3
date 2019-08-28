@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;

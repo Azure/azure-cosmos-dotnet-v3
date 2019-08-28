@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local
@@ -114,10 +113,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 case ExpressionType.Call:
                     MethodCallExpression methodCallExpression = (MethodCallExpression)inputExpression;
-                    bool shouldConvertToScalarAnyCollection = ((context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(LinqMethods.Any));                   
+                    bool shouldConvertToScalarAnyCollection = ((context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(LinqMethods.Any));
                     collection = ExpressionToSql.VisitMethodCall(methodCallExpression, context);
                     if (shouldConvertToScalarAnyCollection) collection = ExpressionToSql.ConvertToScalarAnyCollection(context);
-                    
+
                     break;
 
                 case ExpressionType.Constant:
@@ -537,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         {
                             value = Enum.ToObject(memberType, Number64.ToLong(number64));
                         }
-                        
+
                     }
                     // DateTime
                     else if (memberType == typeof(DateTime))
@@ -1115,7 +1114,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             SqlScalarExpression body = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
             Type type = inputExpression.Type;
-            
+
             Collection collection = ExpressionToSql.ConvertToCollection(body);
             context.PushCollection(collection);
             ParameterExpression parameter = context.GenFreshParameter(type, parameterName);
@@ -1419,8 +1418,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlCollection subqueryCollection = ExpressionToSql.CreateSubquerySqlCollection(
                     query, context,
                     isMinMaxAvgMethod ? SqlObjectKind.ArrayScalarExpression : expressionObjKind.Value);
-                
-                Binding newBinding = new Binding(parameterExpression, subqueryCollection, 
+
+                Binding newBinding = new Binding(parameterExpression, subqueryCollection,
                     isInCollection: false, isInputParameter: context.IsInMainBranchSelect());
 
                 context.CurrentSubqueryBinding.NewBindings.Add(newBinding);
@@ -1552,8 +1551,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             // If there is Distinct, Take or OrderBy the lambda then it needs to be in a subquery.
             bool requireLocalExecution = false;
 
-            for (MethodCallExpression methodCall = lambda.Body as MethodCallExpression; 
-                methodCall != null; 
+            for (MethodCallExpression methodCall = lambda.Body as MethodCallExpression;
+                methodCall != null;
                 methodCall = methodCall.Arguments[0] as MethodCallExpression)
             {
                 string methodName = methodCall.Method.Name;

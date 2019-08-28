@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Dictionary<string, long> usageHeaders;
         private readonly Dictionary<string, long> quotaHeaders;
         private readonly bool useETagAsContinuation;
-        private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;        
+        private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;
         private INameValueCollection responseHeaders;
 
         /// <summary>

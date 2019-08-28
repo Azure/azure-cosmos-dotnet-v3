@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 expression,
                 feedOptions,
                 resourceLink,
-                collection, 
+                collection,
                 isContinuationExpected,
                 correlatedActivityId);
         }

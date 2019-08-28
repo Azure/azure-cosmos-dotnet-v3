@@ -5,9 +5,6 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Text;
 
     internal sealed class SqlInScalarExpression : SqlScalarExpression
     {
