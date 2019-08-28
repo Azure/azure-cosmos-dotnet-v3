@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private Task runAsync;
 
         public ChangeFeedEstimatorCore(
-            ChangesEstimationHandler initialEstimateDelegate, 
+            ChangesEstimationHandler initialEstimateDelegate,
             TimeSpan? estimatorPeriod)
         {
             if (initialEstimateDelegate == null) throw new ArgumentNullException(nameof(initialEstimateDelegate));

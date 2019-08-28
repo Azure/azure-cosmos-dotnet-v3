@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Documents.Collections;
 
     internal interface IMediaHandler

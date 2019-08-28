@@ -3,13 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// This class keeps track of scheduling metrics for a single process using a stopwatch interface.
@@ -60,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>the SchedulingMetricsResult.</returns>
         public SchedulingTimeSpan Elapsed
         {
-            get 
+            get
             {
                 return new SchedulingTimeSpan(
                     this.turnaroundTimeStopwatch.Elapsed,

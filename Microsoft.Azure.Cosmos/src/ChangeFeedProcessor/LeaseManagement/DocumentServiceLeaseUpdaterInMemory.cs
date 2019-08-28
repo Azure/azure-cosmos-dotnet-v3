@@ -24,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         public override Task<DocumentServiceLease> UpdateLeaseAsync(
-            DocumentServiceLease cachedLease, 
-            string itemId, 
-            Cosmos.PartitionKey partitionKey, 
+            DocumentServiceLease cachedLease,
+            string itemId,
+            Cosmos.PartitionKey partitionKey,
             Func<DocumentServiceLease, DocumentServiceLease> updateLease)
         {
             DocumentServiceLease lease = cachedLease;

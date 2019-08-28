@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
 
     internal sealed class SqlLiteralArrayCollection : SqlCollection
     {

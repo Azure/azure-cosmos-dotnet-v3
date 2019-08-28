@@ -55,13 +55,13 @@ namespace Microsoft.Azure.Cosmos
             SubStatusCodes subStatusCode,
             string errorMessage,
             IReadOnlyList<ItemBatchOperation> operations)
-            : this(statusCode, 
-                  subStatusCode, 
-                  errorMessage, 
-                  requestCharge: 0, 
+            : this(statusCode,
+                  subStatusCode,
+                  errorMessage,
+                  requestCharge: 0,
                   retryAfter: null,
                   activityId: Guid.Empty.ToString(),
-                  operations: operations, 
+                  operations: operations,
                   serializer: null)
         {
         }
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static async Task<BatchResponse> FromResponseMessageAsync(
-            ResponseMessage responseMessage, 
+            ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {

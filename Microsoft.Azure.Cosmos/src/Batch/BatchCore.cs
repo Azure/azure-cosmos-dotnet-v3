@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="container">Container that has items on which batch operations are to be performed.</param>
         /// <param name="partitionKey">The partition key for all items in the batch. <see cref="PartitionKey"/>.</param>
         internal BatchCore(
-            ContainerCore container, 
+            ContainerCore container,
             PartitionKey partitionKey)
         {
             this.container = container;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Batch CreateItem<T>(
-            T item, 
+            T item,
             BatchItemRequestOptions requestOptions = null)
         {
             if (item == null)
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Batch CreateItemStream(
-            Stream streamPayload, 
+            Stream streamPayload,
             BatchItemRequestOptions requestOptions = null)
         {
             if (streamPayload == null)
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Batch ReadItem(
-            string id, 
+            string id,
             BatchItemRequestOptions requestOptions = null)
         {
             if (id == null)
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Batch UpsertItem<T>(
-            T item, 
+            T item,
             BatchItemRequestOptions requestOptions = null)
         {
             if (item == null)
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Batch UpsertItemStream(
-            Stream streamPayload, 
+            Stream streamPayload,
             BatchItemRequestOptions requestOptions = null)
         {
             if (streamPayload == null)
@@ -124,8 +124,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Batch ReplaceItem<T>(
-            string id, 
-            T item, 
+            string id,
+            T item,
             BatchItemRequestOptions requestOptions = null)
         {
             if (id == null)
@@ -149,8 +149,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Batch ReplaceItemStream(
-            string id, 
-            Stream streamPayload, 
+            string id,
+            Stream streamPayload,
             BatchItemRequestOptions requestOptions = null)
         {
             if (id == null)
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Batch DeleteItem(
-            string id, 
+            string id,
             BatchItemRequestOptions requestOptions = null)
         {
             if (id == null)
@@ -226,8 +226,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item request. <see cref="BatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="Batch"/> instance with the operation added.</returns>
         public virtual Batch PatchItemStream(
-            string id, 
-            Stream patchStream, 
+            string id,
+            Stream patchStream,
             BatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(

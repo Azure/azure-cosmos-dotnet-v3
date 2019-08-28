@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Spatial
 {
-    using System;
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 

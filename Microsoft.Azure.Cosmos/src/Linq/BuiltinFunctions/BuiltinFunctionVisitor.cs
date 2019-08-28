@@ -5,16 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq.Expressions;
-    using System.Reflection;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     internal abstract class BuiltinFunctionVisitor
     {

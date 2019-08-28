@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos
 
                 return retrivedContainerResponse;
             }
-            
+
             this.ValidateContainerProperties(containerProperties);
             response = await this.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, cancellationToken);
             if (response.StatusCode != HttpStatusCode.Conflict)
@@ -317,8 +317,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<UserResponse> UpsertUserAsync(string id, 
-            RequestOptions requestOptions, 
+        public override Task<UserResponse> UpsertUserAsync(string id,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (string.IsNullOrEmpty(id))
@@ -399,8 +399,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition, 
-            string continuationToken = null, 
+        public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             FeedIterator userStreamIterator = this.GetUserQueryStreamIterator(
@@ -413,8 +413,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
         }
 
-        public FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition, 
-            string continuationToken = null, 
+        public FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             return new FeedIteratorCore(
@@ -426,8 +426,8 @@ namespace Microsoft.Azure.Cosmos
                requestOptions);
         }
 
-        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null, 
-            string continuationToken = null, 
+        public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;
@@ -442,8 +442,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
-        public FeedIterator GetUserQueryStreamIterator(string queryText = null, 
-            string continuationToken = null, 
+        public FeedIterator GetUserQueryStreamIterator(string queryText = null,
+            string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
             QueryDefinition queryDefinition = null;

@@ -6,13 +6,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Globalization;
-    using System.Linq;
     using System.Linq.Expressions;
-    using System.Reflection;
     using Microsoft.Azure.Cosmos.Sql;
-    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     internal static class MathBuiltinFunctions
     {

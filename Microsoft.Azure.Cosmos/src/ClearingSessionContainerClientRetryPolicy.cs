@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<ShouldRetryResult> ShouldRetryAsync(
-            Exception exception, 
+            Exception exception,
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(exception, cancellationToken);
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            ResponseMessage cosmosResponseMessage, 
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             // Only used for collection cache whcih doesn't participate in pipeline

@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Text;
 
     // This class represents a collection expression that is comprised of a collection definition and an 
     // optional alias.
@@ -49,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             visitor.Visit(this);
         }
-        
+
         public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
         {
             return visitor.Visit(this);

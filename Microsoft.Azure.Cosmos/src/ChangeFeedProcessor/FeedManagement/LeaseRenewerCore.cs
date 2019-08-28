@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             catch (LeaseLostException leaseLostException)
             {
                 Extensions.TraceException(leaseLostException);
-                DefaultTrace.TraceError("Lease with token {0}: lost lease on renew.", this.lease.CurrentLeaseToken);                
+                DefaultTrace.TraceError("Lease with token {0}: lost lease on renew.", this.lease.CurrentLeaseToken);
                 throw;
             }
             catch (Exception ex)

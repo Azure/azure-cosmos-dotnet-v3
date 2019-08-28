@@ -200,9 +200,9 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.idleTcpConnectionTimeout = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
-        }      
+        }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.openTcpConnectionTimeout = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
         }
 
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.maxRequestsPerTcpConnection = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
         }
 
@@ -253,12 +253,12 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is 65,535. Value must be greater than or equal to 16.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
-        {           
+        {
             get => this.maxTcpConnectionsPerEndpoint;
             set
             {
                 this.maxTcpConnectionsPerEndpoint = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
         }
 
@@ -597,7 +597,7 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(settingName))
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
-            }            
+            }
         }
 
         /// <summary>

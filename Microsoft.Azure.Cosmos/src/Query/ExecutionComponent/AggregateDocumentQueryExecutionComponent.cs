@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
 
@@ -145,17 +146,17 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
 
             return QueryResponse.CreateSuccess(
-               result: finalResult,
-               count: finalResult.Count,
-               responseLengthBytes: responseLengthBytes,
-               responseHeaders: new CosmosQueryResponseMessageHeaders(
-                   continauationToken: null,
-                   disallowContinuationTokenMessage: null,
-                   resourceType: resourceType,
-                   containerRid: containerRid)
-               {
-                   RequestCharge = requestCharge
-               });
+                result: finalResult,
+                count: finalResult.Count,
+                responseLengthBytes: responseLengthBytes,
+                responseHeaders: new CosmosQueryResponseMessageHeaders(
+                    continauationToken: null,
+                    disallowContinuationTokenMessage: null,
+                    resourceType: resourceType,
+                    containerRid: containerRid)
+                {
+                    RequestCharge = requestCharge
+                });
         }
 
         /// <summary>

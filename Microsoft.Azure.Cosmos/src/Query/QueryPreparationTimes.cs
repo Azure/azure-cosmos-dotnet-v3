@@ -5,10 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -36,9 +32,9 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="queryOptimizationTime">Query optimization time</param>
         [JsonConstructor]
         internal QueryPreparationTimes(
-            TimeSpan queryCompilationTime, 
-            TimeSpan logicalPlanBuildTime, 
-            TimeSpan physicalPlanBuildTime, 
+            TimeSpan queryCompilationTime,
+            TimeSpan logicalPlanBuildTime,
+            TimeSpan physicalPlanBuildTime,
             TimeSpan queryOptimizationTime)
         {
             this.queryCompilationTime = queryCompilationTime;

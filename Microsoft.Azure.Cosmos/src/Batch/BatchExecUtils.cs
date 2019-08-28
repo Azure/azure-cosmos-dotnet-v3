@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A Memory{byte} with length at most maximumLength.</returns>
         /// <remarks>Throws RequestEntityTooLargeException if the input stream has more bytes than maximumLength.</remarks>
         public static async Task<Memory<byte>> StreamToMemoryAsync(
-            Stream stream, 
-            int maximumLength, 
+            Stream stream,
+            int maximumLength,
             CancellationToken cancellationToken)
         {
             if (stream.CanSeek)
