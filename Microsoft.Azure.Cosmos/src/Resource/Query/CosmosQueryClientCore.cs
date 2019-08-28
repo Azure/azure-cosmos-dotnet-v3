@@ -54,11 +54,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        internal override async Task<IRoutingMapProvider> GetRoutingMapProviderAsync()
-        {
-            return await this.documentClient.GetPartitionKeyRangeCacheAsync();
-        }
-
         internal override async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
@@ -167,11 +162,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return partitionedQueryExecutionInfo;
-        }
-
-        internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
-        {
-            return this.documentClient.GetPartitionKeyRangeCacheAsync();
         }
 
         internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
@@ -316,6 +306,19 @@ namespace Microsoft.Azure.Cosmos
                 request.ForceNameCacheRefresh = true;
                 await collectionCache.ResolveCollectionAsync(request, cancellationToken);
             }
+        }
+
+        internal override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+            string collectionResourceId,
+            Range<string> range,
+            bool forceRefresh = false)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
+        {
+            return this.documentClient.GetPartitionKeyRangeCacheAsync();
         }
     }
 }

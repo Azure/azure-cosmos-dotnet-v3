@@ -42,10 +42,6 @@ namespace Microsoft.Azure.Cosmos.Tests
            MockPartitionResponse[] mockResponseForSinglePartition,
            CancellationToken cancellationTokenForMocks)
         {
-            // Setup the routing map in case there is a split and the ranges need to be updated
-            Mock<IRoutingMapProvider> mockRoutingMap = new Mock<IRoutingMapProvider>();
-            mockQueryClient.Setup(x => x.GetRoutingMapProviderAsync()).Returns(Task.FromResult(mockRoutingMap.Object));
-
             // Get the total item count
             int totalItemCount = 0;
             foreach (MockPartitionResponse response in mockResponseForSinglePartition)
@@ -61,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             GenerateAndMockResponseHelper(
                 mockQueryClient: mockQueryClient,
-                mockRoutingMap: mockRoutingMap,
                 allItemsOrdered: allItemsOrdered,
                 isOrderByQuery: isOrderByQuery,
                 sqlQuerySpec: sqlQuerySpec,
@@ -76,7 +71,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static IList<ToDoItem> GenerateAndMockResponseHelper(
              Mock<CosmosQueryClient> mockQueryClient,
-             Mock<IRoutingMapProvider> mockRoutingMap,
              IList<ToDoItem> allItemsOrdered,
              bool isOrderByQuery,
              SqlQuerySpec sqlQuerySpec,
@@ -153,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     QueryResponse querySplitResponse = QueryResponseMessageFactory.CreateSplitResponse(containerRid);
 
-                    mockRoutingMap.Setup(x =>
+                    mockQueryClient.Setup(x =>
                             x.TryGetOverlappingRangesAsync(
                                 containerRid,
                                 It.Is<Documents.Routing.Range<string>>(inputRange => inputRange.Equals(partitionKeyRange.ToRange())),
@@ -176,7 +170,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                     GenerateAndMockResponseHelper(
                        mockQueryClient: mockQueryClient,
-                       mockRoutingMap: mockRoutingMap,
                        allItemsOrdered: allItemsOrdered,
                        isOrderByQuery: isOrderByQuery,
                        sqlQuerySpec: sqlQuerySpec,

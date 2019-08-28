@@ -53,11 +53,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        internal override async Task<IRoutingMapProvider> GetRoutingMapProviderAsync()
-        {
-            return await this.documentClient.GetPartitionKeyRangeCacheAsync();
-        }
-
         internal override async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
@@ -179,11 +174,6 @@ namespace Microsoft.Azure.Cosmos
             throw new NotSupportedException("V2 Document Client does not currently support execute query plan request operations.");
         }
 
-        internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
-        {
-            return this.documentClient.GetPartitionKeyRangeCacheAsync();
-        }
-
         internal override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
@@ -215,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(providedRanges));
             }
 
-            IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
+            IRoutingMapProvider routingMapProvider = await this.documentClient.GetPartitionKeyRangeCacheAsync();
 
             List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
             if (ranges == null && PathsHelper.IsNameBased(resourceLink))
@@ -326,6 +316,14 @@ namespace Microsoft.Azure.Cosmos
                 request.ForceNameCacheRefresh = true;
                 await collectionCache.ResolveCollectionAsync(request, cancellationToken);
             }
+        }
+
+        internal override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+            string collectionResourceId,
+            Range<string> range,
+            bool forceRefresh = false)
+        {
+            throw new NotImplementedException();
         }
     }
 }

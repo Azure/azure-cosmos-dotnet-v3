@@ -690,8 +690,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <returns>The replacement ranges for the target range that got split.</returns>
         private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetReplacementRangesAsync(Documents.PartitionKeyRange targetRange, string collectionRid)
         {
-            IRoutingMapProvider routingMapProvider = await this.queryClient.GetRoutingMapProviderAsync();
-            IReadOnlyList<Documents.PartitionKeyRange> replacementRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+            IReadOnlyList<Documents.PartitionKeyRange> replacementRanges = await this.queryClient.TryGetOverlappingRangesAsync(
                 collectionRid,
                 targetRange.ToRange(),
                 true);
