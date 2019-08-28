@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
             {
-                return this.ProcessItemStreamWithExecutorAsync(
+                return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
                     null,
                     streamPayload,
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
             {
-                return this.ProcessItemStreamWithExecutorAsync(
+                return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
                     id,
                     null,
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
             {
-                return this.ProcessItemStreamWithExecutorAsync(
+                return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
                     null,
                     streamPayload,
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
             {
-                return this.ProcessItemStreamWithExecutorAsync(
+                return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
                     id,
                     streamPayload,
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.ClientContext.ClientOptions.HighThroughputModeEnabled)
             {
-                return this.ProcessItemStreamWithExecutorAsync(
+                return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
                     id,
                     null,
@@ -563,7 +563,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        internal virtual async Task<ResponseMessage> ProcessItemStreamWithExecutorAsync(
+        private async Task<ResponseMessage> ProcessItemStreamWithBatchExecutorAsync(
             PartitionKey partitionKey,
             string id,
             Stream streamPayload,
