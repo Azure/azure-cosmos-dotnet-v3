@@ -104,14 +104,11 @@ namespace Microsoft.Azure.Cosmos
                     cancellationToken);
             }
 
-            return this.ProcessItemStreamAsync(
-                partitionKey,
+            return this.ReadItemStreamInternalAsync(
                 id,
-                null,
-                OperationType.Read,
+                partitionKey,
                 requestOptions,
-                extractPartitionKeyIfNeeded: false,
-                cancellationToken: cancellationToken);
+                cancellationToken);
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -120,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.ReadItemStreamAsync(
+            Task<ResponseMessage> response = this.ReadItemStreamInternalAsync(
                 partitionKey: partitionKey,
                 id: id,
                 requestOptions: requestOptions,
@@ -251,13 +248,10 @@ namespace Microsoft.Azure.Cosmos
                     cancellationToken);
             }
 
-            return this.ProcessItemStreamAsync(
-                partitionKey,
+            return this.DeleteItemStreamInternalAsync(
                 id,
-                null,
-                OperationType.Delete,
+                partitionKey,
                 requestOptions,
-                extractPartitionKeyIfNeeded: false,
                 cancellationToken: cancellationToken);
         }
 
@@ -267,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.DeleteItemStreamAsync(
+            Task<ResponseMessage> response = this.DeleteItemStreamInternalAsync(
                partitionKey: partitionKey,
                id: id,
                requestOptions: requestOptions,
@@ -723,6 +717,38 @@ namespace Microsoft.Azure.Cosmos
         private Uri ContcatCachedUriWithId(string resourceId)
         {
             return new Uri(this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId), UriKind.Relative);
+        }
+
+        private Task<ResponseMessage> ReadItemStreamInternalAsync(
+                    string id,
+                    PartitionKey partitionKey,
+                    ItemRequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessItemStreamAsync(
+                partitionKey,
+                id,
+                null,
+                OperationType.Read,
+                requestOptions,
+                extractPartitionKeyIfNeeded: false,
+                cancellationToken: cancellationToken);
+        }
+
+        private Task<ResponseMessage> DeleteItemStreamInternalAsync(
+                    string id,
+                    PartitionKey partitionKey,
+                    ItemRequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ProcessItemStreamAsync(
+                partitionKey,
+                id,
+                null,
+                OperationType.Delete,
+                requestOptions,
+                extractPartitionKeyIfNeeded: false,
+                cancellationToken: cancellationToken);
         }
     }
 }
