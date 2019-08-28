@@ -1225,6 +1225,16 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
+        "Boolean DisableSSLVerification": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Boolean get_DisableSSLVerification()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean get_DisableSSLVerification()"
+        },
         "Int32 GatewayModeMaxConnectionLimit": {
           "Type": "Property",
           "Attributes": [],
@@ -1280,6 +1290,16 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.RequestHandler] get_CustomHandlers()"
+        },
+        "System.Net.IWebProxy get_WebProxy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Net.IWebProxy get_WebProxy()"
+        },
+        "System.Net.IWebProxy WebProxy": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
         },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
           "Type": "Property",
@@ -1420,6 +1440,11 @@
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
         },
+        "Void set_DisableSSLVerification(Boolean)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_DisableSSLVerification(Boolean)"
+        },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
           "Attributes": [],
@@ -1475,6 +1500,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_SerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializationOptions)"
+        },
+        "Void set_WebProxy(System.Net.IWebProxy)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_WebProxy(System.Net.IWebProxy)"
         }
       },
       "NestedTypes": {}
@@ -2288,10 +2318,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()"
         },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32])": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], Boolean, System.Net.IWebProxy)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32])"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], Boolean, System.Net.IWebProxy)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConsistencyLevel(Microsoft.Azure.Cosmos.ConsistencyLevel)": {
           "Type": "Method",
