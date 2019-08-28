@@ -40,13 +40,35 @@ namespace Microsoft.Azure.Cosmos
 
         internal override Action<IQueryable> OnExecuteScalarQueryCallback => this.documentClient.OnExecuteScalarQueryCallback;
 
-        internal override Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+        internal override async Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             Uri containerLink,
+            PartitionKey? partitionKey,
             CancellationToken cancellationToken)
         {
-            return this.clientContext.GetCachedContainerPropertiesAsync(
+            ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
                 containerLink.OriginalString, 
                 cancellationToken);
+
+            string effectivePartitionKeyString = null;
+            if (partitionKey != null)
+            {
+                // Dis-ambiguate the NonePK if used 
+                Documents.Routing.PartitionKeyInternal partitionKeyInternal = null;
+                if (partitionKey.Value.IsNone)
+                {
+                    partitionKeyInternal = containerProperties.GetNoneValue();
+                }
+                else
+                {
+                    partitionKeyInternal = partitionKey.Value.InternalKey;
+                }
+                effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
+            }
+
+            return new ContainerQueryProperties(
+                containerProperties.ResourceId,
+                effectivePartitionKeyString,
+                containerProperties.PartitionKey);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(

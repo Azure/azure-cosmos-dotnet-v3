@@ -14,8 +14,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     {
         internal abstract Action<IQueryable> OnExecuteScalarQueryCallback { get; }
 
-        internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+        internal abstract Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             Uri containerLink,
+            PartitionKey? partitionKey,
             CancellationToken cancellationToken);
 
         /// <summary>
