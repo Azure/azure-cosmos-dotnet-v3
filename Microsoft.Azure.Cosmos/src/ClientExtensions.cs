@@ -11,9 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
 
-#if !NETSTANDARD16
-#endif
-
     internal static class ClientExtensions
     {
         public static async Task<HttpResponseMessage> GetAsync(this HttpClient client,
