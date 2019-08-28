@@ -9,8 +9,31 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"errors":[{"severity":"Error","location":{"start":7,"end":14},"code":"SC2005","message":"'BADFUNC' is not a recognized built-in function name."}]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"errors":[{"severity":"Error","location":{"start":7,"end":14},"code":"SC2005","message":"'BADFUNC' is not a recognized built-in function name."}]}</Error>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -23,8 +46,50 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"errors":[{"severity":"Error","location":{"start":0,"end":113},"code":"SC3005","message":"The SQL query exceeded the maximum number of user-defined function calls. The allowed limit is 2."}]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates />
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>False</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -37,8 +102,31 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"errors":[{"severity":"Error","location":{"start":27,"end":54},"code":"SC2050","message":"The STARTSWITH function requires 2 argument(s)."}]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"errors":[{"severity":"Error","location":{"start":27,"end":54},"code":"SC2050","message":"The STARTSWITH function requires 2 argument(s)."}]}</Error>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -51,8 +139,31 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}</Error>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -65,8 +176,31 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"errors":[{"severity":"Error","location":{"start":13,"end":24},"code":"SC2101","message":"Cannot perform an aggregate function on an expression containing an aggregate or a subquery."}]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"errors":[{"severity":"Error","location":{"start":13,"end":24},"code":"SC2101","message":"Cannot perform an aggregate function on an expression containing an aggregate or a subquery."}]}</Error>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -79,8 +213,65 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"Errors":["Cross partition query only supports 'VALUE &lt;AggreateFunc&gt;' for aggregates."]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"Errors":["Cross partition query only supports 'VALUE &lt;AggreateFunc&gt;' for aggregates."]}</Error>
+          </Output>
+        </GroupedOutput>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates />
+                <GroupByAliasToAggregateType>
+                  <AliasToAggregateType>
+                    <Alias>$1</Alias>
+                    <AggregateOperator>Count</AggregateOperator>
+                  </AliasToAggregateType>
+                </GroupByAliasToAggregateType>
+                <HasSelectValue>False</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT {"$1": {"item": COUNT(r)}} AS payload
+FROM r]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -93,8 +284,31 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"Errors":["Cross partition query only supports 'VALUE &lt;AggreateFunc&gt;' for aggregates."]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}</Error>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -107,8 +321,31 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"Errors":["Cross partition query only supports 'VALUE &lt;AggreateFunc&gt;' for aggregates."]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}</Error>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -121,8 +358,31 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"Errors":["Cross partition query only supports 'VALUE &lt;AggreateFunc&gt;' for aggregates."]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}</Error>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
 </Results>

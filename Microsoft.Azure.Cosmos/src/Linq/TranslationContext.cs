@@ -57,6 +57,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
         }
 
+        public TranslationContext(CosmosSerializationOptions serializationOptions)
+            : this()
+        {
+            this.serializationOptions = serializationOptions;
+        }
+
+        public CosmosSerializationOptions serializationOptions;
+
         public Expression LookupSubstitution(ParameterExpression parameter)
         {
             return this.substitutions.Lookup(parameter);

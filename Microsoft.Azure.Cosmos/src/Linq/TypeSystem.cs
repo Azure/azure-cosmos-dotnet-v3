@@ -21,27 +21,40 @@ namespace Microsoft.Azure.Cosmos.Linq
             return GetElementType(type, new HashSet<Type>());
         }
 
-        public static string GetMemberName(this MemberInfo memberInfo)
+        public static string GetMemberName(this MemberInfo memberInfo, CosmosSerializationOptions cosmosSerializationOptions = null)
         {
+            string memberName = null;
             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
             // So we check for JsonPropertyAttribute first.
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
             if (jsonPropertyAttribute != null && !string.IsNullOrEmpty(jsonPropertyAttribute.PropertyName))
             {
-                return jsonPropertyAttribute.PropertyName;
+                memberName = jsonPropertyAttribute.PropertyName;
             }
-
-            DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
-            if (dataContractAttribute != null)
+            else
             {
-                DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
-                if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
+                DataContractAttribute dataContractAttribute = memberInfo.DeclaringType.GetCustomAttribute<DataContractAttribute>(true);
+                if (dataContractAttribute != null)
                 {
-                    return dataMemberAttribute.Name;
+                    DataMemberAttribute dataMemberAttribute = memberInfo.GetCustomAttribute<DataMemberAttribute>(true);
+                    if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
+                    {
+                        memberName = dataMemberAttribute.Name;
+                    }
                 }
             }
 
-            return memberInfo.Name;
+            if (memberName == null)
+            {
+                memberName = memberInfo.Name;
+            }
+
+            if (cosmosSerializationOptions != null)
+            {
+                memberName = cosmosSerializationOptions.GetStrWithPropertyNamingPolicy(memberName);
+            }
+
+            return memberName;
         }
 
         private static Type GetElementType(Type type, HashSet<Type> visitedSet)
@@ -130,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (type.IsGenericType() && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) return true;
 
             IEnumerable<Type> types = type.GetInterfaces().Where(interfaceType => interfaceType.IsGenericType() && interfaceType.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-            return (types.FirstOrDefault() != null);
+            return types.FirstOrDefault() != null;
         }
 
         public static bool IsExtensionMethod(this MethodInfo methodInfo)
