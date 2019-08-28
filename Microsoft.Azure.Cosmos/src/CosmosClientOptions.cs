@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
+    using System.Net;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -60,6 +61,8 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan? openTcpConnectionTimeout;
         private int? maxRequestsPerTcpConnection;
         private int? maxTcpConnectionsPerEndpoint;
+        private bool disableSSLVerification;
+        private IWebProxy webProxy;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -108,7 +111,7 @@ namespace Microsoft.Azure.Cosmos
         /// This setting is only applicable in Gateway mode.
         /// </remarks>
         /// <value>Default value is 50.</value>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, bool, IWebProxy)"/>
         public int GatewayModeMaxConnectionLimit
         {
             get => this.gatewayModeMaxConnectionLimit;
@@ -153,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect()"/>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, bool, IWebProxy)"/>
         public ConnectionMode ConnectionMode
         {
             get => this.connectionMode;
@@ -200,9 +203,9 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.idleTcpConnectionTimeout = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
-        }      
+        }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
@@ -219,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.openTcpConnectionTimeout = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
         }
 
@@ -241,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.maxRequestsPerTcpConnection = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
         }
 
@@ -253,12 +256,39 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is 65,535. Value must be greater than or equal to 16.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
-        {           
+        {
             get => this.maxTcpConnectionsPerEndpoint;
             set
             {
                 this.maxTcpConnectionsPerEndpoint = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
+            }
+        }
+
+        /// <summary>
+        /// (Gateway/Https) Disable SSL verification.
+        /// </summary>
+        /// <remarks>Mainly use for overriding the verification of Self-Signed SSL certificates when using the Azure Cosmos Emulator in non-Windows environments.</remarks>
+        public bool DisableSSLVerification
+        {
+            get => this.disableSSLVerification;
+            set
+            {
+                this.disableSSLVerification = value;
+                this.ValidateGatewayHttpsSettings();
+            }
+        }
+
+        /// <summary>
+        /// (Gateway/Https) Get or set the proxy information used for web requests.
+        /// </summary>
+        public IWebProxy WebProxy
+        {
+            get => this.webProxy;
+            set
+            {
+                this.webProxy = value;
+                this.ValidateGatewayHttpsSettings();
             }
         }
 
@@ -597,7 +627,28 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(settingName))
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
-            }            
+            }
+        }
+
+        private void ValidateGatewayHttpsSettings()
+        {
+            string settingName = string.Empty;
+            if (!(this.ConnectionMode == ConnectionMode.Gateway && this.ConnectionProtocol == Protocol.Https))
+            {
+                if (this.DisableSSLVerification)
+                {
+                    settingName = nameof(this.DisableSSLVerification);
+                }
+                else if (this.WebProxy != null)
+                {
+                    settingName = nameof(this.WebProxy);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(settingName))
+            {
+                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Https)}");
+            }
         }
 
         /// <summary>
