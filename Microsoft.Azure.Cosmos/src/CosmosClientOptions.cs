@@ -604,7 +604,7 @@ namespace Microsoft.Azure.Cosmos
         private void ValidateDirectTCPSettings()
         {
             string settingName = string.Empty;
-            if (!(this.ConnectionMode == ConnectionMode.Direct && this.ConnectionProtocol == Protocol.Tcp))
+            if (this.ConnectionMode != ConnectionMode.Direct)
             {
                 if (this.IdleTcpConnectionTimeout.HasValue)
                 {
@@ -626,14 +626,14 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.IsNullOrEmpty(settingName))
             {
-                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
+                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
             }
         }
 
         private void ValidateGatewayHttpsSettings()
         {
             string settingName = string.Empty;
-            if (!(this.ConnectionMode == ConnectionMode.Gateway && this.ConnectionProtocol == Protocol.Https))
+            if (this.ConnectionMode != ConnectionMode.Gateway)
             {
                 if (this.DisableSSLVerification)
                 {
@@ -647,7 +647,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.IsNullOrEmpty(settingName))
             {
-                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Https)}");
+                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
             }
         }
 
