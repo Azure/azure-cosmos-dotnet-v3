@@ -306,25 +306,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that in turn returns a DoucmentFeedResponse of results.</returns>
-        public async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
-        {
-            QueryResponse feedResponse = await this.ExecuteNextAsync(token);
-            return new DocumentFeedResponse<CosmosElement>(
-                result: feedResponse.CosmosElements,
-                count: feedResponse.Count,
-                responseHeaders: feedResponse.Headers.CosmosMessageHeaders,
-                useETagAsContinuation: false,
-                queryMetrics: null,
-                requestStats: feedResponse.RequestStatistics,
-                disallowContinuationTokenMessage: feedResponse.QueryHeaders.DisallowContinuationTokenMessage,
-                responseLengthBytes: feedResponse.ResponseLengthBytes);
-        }
-
-        /// <summary>
-        /// Gets the next page of results from this context.
-        /// </summary>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task to await on that in turn returns a DoucmentFeedResponse of results.</returns>
         public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
         {
             try
