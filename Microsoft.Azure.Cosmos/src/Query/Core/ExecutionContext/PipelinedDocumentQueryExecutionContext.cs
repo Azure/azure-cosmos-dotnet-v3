@@ -2,19 +2,16 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -76,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This bubbles down until you reach a component that has a DocumentProducer that fetches a document from the backend.
     /// </para>
     /// </summary>
-    internal sealed class PipelinedDocumentQueryExecutionContext : CosmosQueryExecutionContext, IDocumentQueryExecutionContext
+    internal sealed class PipelinedDocumentQueryExecutionContext : CosmosQueryExecutionContext
     {
         /// <summary>
         /// The root level component that all calls will be forwarded to.
@@ -137,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryContext constructorParams,
             string collectionRid,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<PartitionKeyRange> partitionKeyRanges,
+            List<Documents.PartitionKeyRange> partitionKeyRanges,
             int initialPageSize,
             string requestContinuation,
             CancellationToken cancellationToken)
