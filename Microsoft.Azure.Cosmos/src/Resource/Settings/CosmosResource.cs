@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     /// <summary> 
     ///  Represents an abstract resource type in the Azure Cosmos DB service.

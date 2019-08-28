@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
-
     internal abstract class SqlScalarExpressionVisitor
     {
         public abstract void Visit(SqlArrayCreateScalarExpression scalarExpression);

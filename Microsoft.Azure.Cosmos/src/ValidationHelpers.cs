@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Documents;
 
     internal static class ValidationHelpers
     {

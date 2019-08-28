@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Sql;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
@@ -456,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 throw new ArgumentNullException("collection");
             }
-            
+
             this.isOuter = false;
             this.inner = collection;
         }

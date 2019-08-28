@@ -354,9 +354,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
                 double literalValue = 0.0;
-                if (!sqlNumberLiteral.Value.IsNaN && 
-                    !sqlNumberLiteral.Value.IsInfinity && 
-                    (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) || 
+                if (!sqlNumberLiteral.Value.IsNaN &&
+                    !sqlNumberLiteral.Value.IsInfinity &&
+                    (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
                     !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
                 {
                     literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);

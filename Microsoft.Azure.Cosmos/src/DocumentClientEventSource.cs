@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class DocumentClientEventSource : EventSource, ICommunicationEventSource
     {
-        private static Lazy<DocumentClientEventSource> documentClientEventSourceInstance 
+        private static Lazy<DocumentClientEventSource> documentClientEventSourceInstance
             = new Lazy<DocumentClientEventSource>(() => new DocumentClientEventSource());
 
         public static DocumentClientEventSource Instance

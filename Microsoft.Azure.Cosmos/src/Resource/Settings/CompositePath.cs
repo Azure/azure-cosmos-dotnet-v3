@@ -3,9 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -34,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
     /// For example if you want to run a query like "SELECT * FROM c ORDER BY c.age, c.height",
     /// then you need to add "/age" and "/height" as composite paths to your composite index.
     /// </summary>
-    public sealed class CompositePath 
+    public sealed class CompositePath
     {
         /// <summary>
         /// Gets or sets the full path in a document used for composite indexing.

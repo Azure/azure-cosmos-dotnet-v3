@@ -132,11 +132,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 resultExpression = Expression.MakeUnary(inputExpression.NodeType, operand, inputExpression.Type, inputExpression.Method);
             }
-            else 
+            else
             {
                 resultExpression = inputExpression;
             }
-        
+
             if (IsConstant(operand))
             {
                 resultExpression = ExpressionSimplifier.EvaluateToExpression(resultExpression);
@@ -233,12 +233,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 object value = ExpressionSimplifier.Evaluate(test);
                 bool bValue = (bool)value;
 
-                if (bValue) 
+                if (bValue)
                 {
                     // ifTrue is already folded
                     resultExpression = ifTrue;
                 }
-                else 
+                else
                 {
                     resultExpression = ifFalse;
                 }

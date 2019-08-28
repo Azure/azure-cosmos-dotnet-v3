@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Singleton boxed value for null.
         /// </summary>
         private static readonly object Null = null;
-        
+
         /// <summary>
         /// Singleton boxed value for false.
         /// </summary>

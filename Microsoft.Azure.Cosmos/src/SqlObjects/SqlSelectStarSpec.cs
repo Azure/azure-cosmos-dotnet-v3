@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System.Text;
-
     internal sealed class SqlSelectStarSpec : SqlSelectSpec
     {
         public static readonly SqlSelectStarSpec Singleton = new SqlSelectStarSpec();
@@ -23,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             visitor.Visit(this);
         }
-        
+
         public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
         {
             return visitor.Visit(this);

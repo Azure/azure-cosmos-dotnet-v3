@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
 
                     throw;
                 }
-                
+
             }
             catch (Exception ex)
             {

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Globalization;
-    using System.Linq;
     using System.Linq.Expressions;
 
     internal static class DocumentQueryEvaluator
@@ -117,8 +116,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlQuerySpec GetSqlQuerySpec(object value)
         {
-            if (value == null) 
-            { 
+            if (value == null)
+            {
                 throw new DocumentQueryException(
                     string.Format(CultureInfo.CurrentUICulture,
                     ClientResources.BadQuery_InvalidExpression,
@@ -134,10 +133,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                 throw new DocumentQueryException(
-                    string.Format(CultureInfo.CurrentUICulture,
-                    ClientResources.BadQuery_InvalidExpression,
-                    value));
+                throw new DocumentQueryException(
+                   string.Format(CultureInfo.CurrentUICulture,
+                   ClientResources.BadQuery_InvalidExpression,
+                   value));
             }
         }
     }

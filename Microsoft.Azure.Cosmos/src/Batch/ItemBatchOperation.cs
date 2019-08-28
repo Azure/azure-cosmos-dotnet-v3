@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
                         return r;
                     }
                 }
-                 
+
                 if (options.IfMatchEtag != null)
                 {
                     r = writer.WriteString("ifMatch", options.IfMatchEtag);

@@ -4,10 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
-
     /// <summary>
     /// The LocationNames class contains the names of Azure regions that
     /// are currently supported by the Azure Cosmos DB service.

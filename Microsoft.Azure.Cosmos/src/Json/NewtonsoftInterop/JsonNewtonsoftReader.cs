@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Globalization;
     using Newtonsoft.Json;
 

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Linq;
     using System.Linq.Expressions;
-    using Microsoft.Azure.Cosmos.Linq;
 
     /// <summary> 
     /// This class serve as LINQ query provider implementing IQueryProvider.

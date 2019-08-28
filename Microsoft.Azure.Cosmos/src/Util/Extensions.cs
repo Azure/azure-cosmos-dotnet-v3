@@ -7,13 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Net;
-    using System.Net.Http;
     using System.Net.Sockets;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal static class Extensions

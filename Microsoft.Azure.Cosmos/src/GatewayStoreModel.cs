@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                 httpClient,
                 this.eventSource,
                 serializerSettings);
-            
+
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))

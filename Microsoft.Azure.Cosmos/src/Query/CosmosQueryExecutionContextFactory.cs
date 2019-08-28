@@ -8,14 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Diagnostics;
     using System.Globalization;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
