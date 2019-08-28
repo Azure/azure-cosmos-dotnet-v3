@@ -75,8 +75,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     {
                         Token = documentProducer.PreviousContinuationToken,
                         Range = documentProducer.PartitionKeyRange.ToRange()
-                    }),
-                    DefaultJsonSerializationSettings.Value) : null;
+                    })) : null;
             }
         }
 
@@ -186,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
                 try
                 {
-                    suppliedCompositeContinuationTokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>(requestContinuation, DefaultJsonSerializationSettings.Value);
+                    suppliedCompositeContinuationTokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>(requestContinuation);
                     foreach (CompositeContinuationToken suppliedCompositeContinuationToken in suppliedCompositeContinuationTokens)
                     {
                         if (suppliedCompositeContinuationToken.Range == null || suppliedCompositeContinuationToken.Range.IsEmpty)

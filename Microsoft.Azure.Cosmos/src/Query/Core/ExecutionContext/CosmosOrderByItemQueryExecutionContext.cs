@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             try
             {
-                OrderByContinuationToken[] suppliedOrderByContinuationTokens = JsonConvert.DeserializeObject<OrderByContinuationToken[]>(requestContinuation, DefaultJsonSerializationSettings.Value);
+                OrderByContinuationToken[] suppliedOrderByContinuationTokens = JsonConvert.DeserializeObject<OrderByContinuationToken[]>(requestContinuation);
 
                 if (suppliedOrderByContinuationTokens.Length == 0)
                 {
@@ -632,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 string expression = expressions.First();
                 SortOrder sortOrder = sortOrders.First();
                 CosmosElement orderByItem = orderByItems.First();
-                string orderByItemToString = JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value);
+                string orderByItemToString = JsonConvert.SerializeObject(orderByItem);
                 left.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<" : ">")} {orderByItemToString}");
                 target.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
                 right.Append($"{expression} {(sortOrder == SortOrder.Descending ? "<=" : ">=")} {orderByItemToString}");
@@ -706,7 +706,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         }
 
                         // Append SortOrder
-                        string orderByItemToString = JsonConvert.SerializeObject(orderByItem, DefaultJsonSerializationSettings.Value);
+                        string orderByItemToString = JsonConvert.SerializeObject(orderByItem);
                         this.AppendToBuilders(builders, " ");
                         this.AppendToBuilders(builders, orderByItemToString);
                         this.AppendToBuilders(builders, " ");
