@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json.NewtonsoftInterop;
     using Newtonsoft.Json;
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool CanConvert(Type objectType)
         {
-            return ConvertableTypes.Contains(objectType) || ConvertableTypes.Contains(objectType.BaseType) || objectType == typeof(CosmosElement);
+            return objectType == typeof(CosmosElement) || ConvertableTypes.Contains(objectType) || ConvertableTypes.Contains(objectType.GetTypeInfo().BaseType);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
