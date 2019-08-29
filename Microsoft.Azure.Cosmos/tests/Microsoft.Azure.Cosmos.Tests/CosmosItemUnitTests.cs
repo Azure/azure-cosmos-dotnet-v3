@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Create()
+        public async Task HighThroughputSendsToExecutor_CreateStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Upsert()
+        public async Task HighThroughputSendsToExecutor_UpsertStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Replace()
+        public async Task HighThroughputSendsToExecutor_ReplaceStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Read()
+        public async Task HighThroughputSendsToExecutor_ReadStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Delete()
+        public async Task HighThroughputSendsToExecutor_DeleteStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
@@ -319,6 +319,157 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task HighThroughputSendsToExecutor_Create()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
+            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
+            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
+                defaultJsonSerializer: clientOptions.PropertiesSerializer,
+                userJsonSerializer: new CosmosJsonDotNetSerializer()));
+            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+
+            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(
+                testItem,
+                partitionKey: partitionKey);
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task HighThroughputSendsToExecutor_Upsert()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
+            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
+            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
+                defaultJsonSerializer: clientOptions.PropertiesSerializer,
+                userJsonSerializer: new CosmosJsonDotNetSerializer()));
+            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+
+            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.UpsertItemAsync<dynamic>(
+                testItem,
+                partitionKey: partitionKey);
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task HighThroughputSendsToExecutor_Replace()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
+            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
+            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
+                defaultJsonSerializer: clientOptions.PropertiesSerializer,
+                userJsonSerializer: new CosmosJsonDotNetSerializer()));
+            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+
+            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.ReplaceItemAsync<dynamic>(
+                testItem,
+                testItem.id);
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task HighThroughputSendsToExecutor_Read()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
+            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
+            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
+                defaultJsonSerializer: clientOptions.PropertiesSerializer,
+                userJsonSerializer: new CosmosJsonDotNetSerializer()));
+            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+
+            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(
+                id: testItem.id,
+                partitionKey: partitionKey);
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task HighThroughputSendsToExecutor_Delete()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
+            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
+            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
+            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
+                defaultJsonSerializer: clientOptions.PropertiesSerializer,
+                userJsonSerializer: new CosmosJsonDotNetSerializer()));
+            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+
+            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.DeleteItemAsync<dynamic>(
+                partitionKey: partitionKey,
+                id: testItem.id);
+
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
         public async Task HighThroughputSendsToExecutor_RetriesOn429()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
@@ -338,7 +489,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
             {
-                ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
                 Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
                 using (ResponseMessage streamResponse = await container.CreateItemStreamAsync(
                     partitionKey: partitionKey,
