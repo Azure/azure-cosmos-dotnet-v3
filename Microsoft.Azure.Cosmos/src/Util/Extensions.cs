@@ -36,6 +36,11 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            if (response.RequestStats != null)
+            {
+                cosmosResponse.cosmosDiagnostics = new PointOperationStatistics(response.RequestStats);
+            }
+
             return cosmosResponse;
         }
 

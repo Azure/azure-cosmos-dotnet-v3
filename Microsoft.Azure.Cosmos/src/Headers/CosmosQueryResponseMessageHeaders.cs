@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Cosmos
                 RetryAfterLiteral = this.RetryAfterLiteral,
                 SubStatusCodeLiteral = this.SubStatusCodeLiteral,
                 ContentType = this.ContentType,
+                QueryMetricsText = QueryMetricsText
             };
         }
 
@@ -106,6 +107,7 @@ namespace Microsoft.Azure.Cosmos
                 RetryAfterLiteral = sourceHeaders.RetryAfterLiteral,
                 SubStatusCodeLiteral = sourceHeaders.SubStatusCodeLiteral,
                 ContentType = sourceHeaders.ContentType,
+                QueryMetricsText = sourceHeaders.QueryMetricsText
             };
         }
     }

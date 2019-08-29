@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             if (queryResponse != null)
             {
                 return QueryResponse<T>.CreateResponse<T>(
-                    responseMessage: queryResponse,
+                    cosmosQueryResponse: queryResponse,
                     jsonSerializer: this.cosmosSerializer);
             }
 
@@ -56,7 +56,8 @@ namespace Microsoft.Azure.Cosmos
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    item);
+                    item,
+                    cosmosResponseMessage.cosmosDiagnostics);
             });
         }
 

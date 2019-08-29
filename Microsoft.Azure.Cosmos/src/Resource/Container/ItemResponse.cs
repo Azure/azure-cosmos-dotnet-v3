@@ -27,11 +27,13 @@ namespace Microsoft.Azure.Cosmos
         internal ItemResponse(
             HttpStatusCode httpStatusCode,
             Headers headers,
-            T item)
+            T item,
+            CosmosDiagnostics cosmosDiagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = item;
+            this.cosmosDiagnostics = cosmosDiagnostics;
         }
 
         /// <inheritdoc/>
