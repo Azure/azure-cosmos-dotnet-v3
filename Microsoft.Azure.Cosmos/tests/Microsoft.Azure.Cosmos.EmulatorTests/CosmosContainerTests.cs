@@ -47,6 +47,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReIndexingTest()
+        {
+            ContainerProperties cp = new ContainerProperties()
+            {
+                Id = "ReIndexContainer",
+                PartitionKeyPath = "/pk",
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    Automatic = false,
+                }
+            };
+
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cp);
+            Container container = response;
+            ContainerProperties existingContainerProperties = response.Resource;
+
+            // Turn on indexing
+            existingContainerProperties.IndexingPolicy.Automatic = true;
+            existingContainerProperties.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Consistent;
+
+            await container.ReplaceContainerAsync(existingContainerProperties);
+
+            // Check progress
+            ContainerRequestOptions requestOptions = new ContainerRequestOptions();
+            requestOptions.PopulateQuotaInfo = true;
+
+            while(true)
+            {
+                ContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
+                string indexTransformationStatus = readResponse.Headers["x-ms-documentdb-collection-index-transformation-progress"];
+                Assert.IsNotNull(indexTransformationStatus);
+
+                if (int.Parse(indexTransformationStatus) == 100)
+                {
+                    break;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(20));
+            }
+        }
+
+        [TestMethod]
         public async Task ContainerContractTest()
         {
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(new Guid().ToString(), "/id");
