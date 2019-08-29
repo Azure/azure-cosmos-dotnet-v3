@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -208,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
-                
+
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
@@ -223,6 +222,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             this.AccountConsistencyLevel));
                 }
             }
-        } 
+        }
     }
 }

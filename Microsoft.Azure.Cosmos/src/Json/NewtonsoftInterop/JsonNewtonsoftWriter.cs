@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Text;
 
@@ -15,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Json.NewtonsoftInterop
         private readonly StringBuilder stringBuilder;
 
         private JsonNewtonsoftWriter(
-            Newtonsoft.Json.JsonWriter writer, 
+            Newtonsoft.Json.JsonWriter writer,
             StringBuilder stringBuilder)
             : base(true)
         {

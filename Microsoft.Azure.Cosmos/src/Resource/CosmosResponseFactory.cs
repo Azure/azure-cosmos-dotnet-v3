@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
-        {            
+        {
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
 

@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Runtime.Serialization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
 
     internal static class TypeSystem
     {
@@ -25,8 +24,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static string GetMemberName(this MemberInfo memberInfo, CosmosSerializationOptions cosmosSerializationOptions = null)
         {
             string memberName = null;
-             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
-             // So we check for JsonPropertyAttribute first.
+            // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
+            // So we check for JsonPropertyAttribute first.
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);
             if (jsonPropertyAttribute != null && !string.IsNullOrEmpty(jsonPropertyAttribute.PropertyName))
             {

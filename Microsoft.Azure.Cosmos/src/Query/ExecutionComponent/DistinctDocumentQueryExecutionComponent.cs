@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
-            string updatedContinuationToken; 
+            string updatedContinuationToken;
             if (!this.IsDone)
             {
                 updatedContinuationToken = new DistinctContinuationToken(

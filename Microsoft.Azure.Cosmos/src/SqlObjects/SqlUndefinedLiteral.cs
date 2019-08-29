@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System.Text;
-
     internal sealed class SqlUndefinedLiteral : SqlLiteral
     {
         public static readonly SqlUndefinedLiteral Singleton = new SqlUndefinedLiteral();

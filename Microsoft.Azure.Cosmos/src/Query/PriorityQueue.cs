@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Threading;
 
     /// <summary> 
     /// An implementation of <a href="https://en.wikipedia.org/wiki/Binary_heap">Binary Heap</a>

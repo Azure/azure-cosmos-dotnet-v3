@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos
     internal class CosmosQueryResponseMessageHeaders : Headers
     {
         public CosmosQueryResponseMessageHeaders(
-            string continauationToken, 
-            string disallowContinuationTokenMessage, 
+            string continauationToken,
+            string disallowContinuationTokenMessage,
             ResourceType resourceType,
             string containerRid)
         {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new CosmosQueryResponseMessageHeaders(
                 continauationToken,
-                disallowContinuationTokenMessage, 
+                disallowContinuationTokenMessage,
                 this.ResourceType,
                 this.ContainerRid)
             {
@@ -87,8 +87,8 @@ namespace Microsoft.Azure.Cosmos
             if (sourceHeaders == null)
             {
                 return new CosmosQueryResponseMessageHeaders(
-                    continauationToken: null, 
-                    disallowContinuationTokenMessage: null, 
+                    continauationToken: null,
+                    disallowContinuationTokenMessage: null,
                     resourceType: resourceType,
                     containerRid: containerRid);
             }

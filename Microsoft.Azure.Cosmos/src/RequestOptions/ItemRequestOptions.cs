@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.IndexingDirective != null && this.IndexingDirective.HasValue)
             {
                 request.Headers.Add(
-                    HttpConstants.HttpHeaders.IndexingDirective, 
+                    HttpConstants.HttpHeaders.IndexingDirective,
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }
 

@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             return new SkipDocumentQueryExecutionComponent(
-                await createSourceCallback(offsetContinuationToken.SourceToken), 
+                await createSourceCallback(offsetContinuationToken.SourceToken),
                 offsetContinuationToken.Offset);
         }
 

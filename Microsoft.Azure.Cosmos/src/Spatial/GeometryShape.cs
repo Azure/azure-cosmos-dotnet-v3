@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Spatial
 {
-    using System;
-
     /// <summary>
     /// Geometry type in the Azure Cosmos DB service.
     /// </summary>

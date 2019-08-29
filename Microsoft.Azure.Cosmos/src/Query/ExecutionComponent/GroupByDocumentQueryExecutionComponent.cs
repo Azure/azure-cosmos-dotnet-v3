@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Aggregation;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Query execution component that groups groupings across continuations and pages.

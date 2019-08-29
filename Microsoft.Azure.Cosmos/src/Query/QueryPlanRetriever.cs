@@ -5,13 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.IO;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     internal static class QueryPlanRetriever
     {

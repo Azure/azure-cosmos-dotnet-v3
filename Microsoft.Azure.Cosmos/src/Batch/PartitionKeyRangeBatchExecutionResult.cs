@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
 
     internal class PartitionKeyRangeBatchExecutionResult

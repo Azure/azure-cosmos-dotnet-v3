@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public override async Task<bool> AcquireInitializationLockAsync(TimeSpan lockTime)
         {
             string lockId = this.GetStoreLockName();
-            var containerDocument = new LockDocument(){ Id = lockId, TimeToLive = (int)lockTime.TotalSeconds };
+            var containerDocument = new LockDocument() { Id = lockId, TimeToLive = (int)lockTime.TotalSeconds };
             var document = await this.container.TryCreateItemAsync<LockDocument>(
                 this.requestOptionsFactory.GetPartitionKey(lockId),
                 containerDocument).ConfigureAwait(false);

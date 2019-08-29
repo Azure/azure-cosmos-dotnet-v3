@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System.Linq.Expressions;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Sql;
 
     /// <summary>

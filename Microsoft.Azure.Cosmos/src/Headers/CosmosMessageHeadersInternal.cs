@@ -271,9 +271,9 @@ namespace Microsoft.Azure.Cosmos
                     .Where(p => p.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).Any());
 
             return knownHeaderProperties.Select(
-                knownProperty => 
+                knownProperty =>
                 new KeyValuePair<string, PropertyInfo>(
-                    ((CosmosKnownHeaderAttribute)knownProperty.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).First()).HeaderName, 
+                    ((CosmosKnownHeaderAttribute)knownProperty.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).First()).HeaderName,
                     knownProperty)).ToArray();
         }
 

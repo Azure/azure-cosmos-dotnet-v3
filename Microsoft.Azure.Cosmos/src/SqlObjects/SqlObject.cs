@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System.Text;
-
     internal abstract class SqlObject
     {
         protected SqlObject(SqlObjectKind kind)

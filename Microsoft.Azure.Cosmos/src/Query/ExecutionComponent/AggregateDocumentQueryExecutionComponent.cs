@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
 

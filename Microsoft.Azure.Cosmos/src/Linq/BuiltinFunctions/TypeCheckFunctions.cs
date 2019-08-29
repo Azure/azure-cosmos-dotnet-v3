@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Sql;
-    using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     internal static class TypeCheckFunctions
     {
