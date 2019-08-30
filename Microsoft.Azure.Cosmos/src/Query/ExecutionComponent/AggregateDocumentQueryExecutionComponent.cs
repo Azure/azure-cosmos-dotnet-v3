@@ -150,13 +150,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 count: finalResult.Count,
                 responseLengthBytes: responseLengthBytes,
                 responseHeaders: new CosmosQueryResponseMessageHeaders(
-                    continauationToken: null,
-                    disallowContinuationTokenMessage: null,
-                    resourceType: resourceType,
+                    continauationToken: null, 
+                    disallowContinuationTokenMessage: null, 
+                    resourceType: resourceType, 
                     containerRid: containerRid)
                 {
                     RequestCharge = requestCharge
-                });
+                },
+                queryMetrics: this.GetQueryMetrics());
         }
 
         /// <summary>
