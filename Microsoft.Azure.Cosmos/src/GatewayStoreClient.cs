@@ -82,20 +82,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 if ((int)responseMessage.StatusCode < 400)
                 {
-                    MemoryStream bufferedStream = new MemoryStream();
-
-                    await responseMessage.Content.CopyToAsync(bufferedStream);
-
-                    bufferedStream.Position = 0;
-
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
-                    return new DocumentServiceResponse(bufferedStream, headers, responseMessage.StatusCode, serializerSettings);
+                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
+                    return new DocumentServiceResponse(contentStream, headers, responseMessage.StatusCode, serializerSettings);
                 }
                 else if (request != null 
                     && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
-                    return new DocumentServiceResponse(null, headers, responseMessage.StatusCode, serializerSettings);
+                    Stream contentStream = await GatewayStoreClient.BufferContentIfAvailableAsync(responseMessage);
+                    return new DocumentServiceResponse(contentStream, headers, responseMessage.StatusCode, serializerSettings);
                 }
                 else
                 {
@@ -224,6 +220,22 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
             return true;
+        }
+
+        private static async Task<Stream> BufferContentIfAvailableAsync(HttpResponseMessage responseMessage)
+        {
+            if (responseMessage.Content == null)
+            {
+                return null;
+            }
+
+            MemoryStream bufferedStream = new MemoryStream();
+
+            await responseMessage.Content.CopyToAsync(bufferedStream);
+
+            bufferedStream.Position = 0;
+
+            return bufferedStream;
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
