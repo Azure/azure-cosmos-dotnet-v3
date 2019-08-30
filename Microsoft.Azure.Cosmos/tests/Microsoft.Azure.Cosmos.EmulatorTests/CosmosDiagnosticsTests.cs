@@ -43,41 +43,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Checking point operation diagnostics on typed operations
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
-            Assert.IsNotNull(createResponse.cosmosDiagnostics);
+            Assert.IsNotNull(createResponse.diagnostics);
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(id: testItem.id, partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(readResponse.cosmosDiagnostics);
+            Assert.IsNotNull(readResponse.diagnostics);
 
             testItem.description = "NewDescription";
             ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(item: testItem, id: testItem.id, partitionKey: new PartitionKey(testItem.status));
             Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
-            Assert.IsNotNull(replaceResponse.cosmosDiagnostics);
+            Assert.IsNotNull(replaceResponse.diagnostics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
-            Assert.IsNotNull(deleteResponse.cosmosDiagnostics);
+            Assert.IsNotNull(deleteResponse.diagnostics);
 
             //Checking point operation diagnostics on stream operations
             ResponseMessage createStreamResponse =  await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
-            Assert.IsNotNull(createStreamResponse.cosmosDiagnostics);
+            Assert.IsNotNull(createStreamResponse.diagnostics);
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(readStreamResponse.cosmosDiagnostics);
+            Assert.IsNotNull(readStreamResponse.diagnostics);
 
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
                streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem),
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(replaceStreamResponse.cosmosDiagnostics);
+            Assert.IsNotNull(replaceStreamResponse.diagnostics);
 
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status));
-            Assert.IsNotNull(deleteStreamResponse.cosmosDiagnostics);
+            Assert.IsNotNull(deleteStreamResponse.diagnostics);
         }
 
         [TestMethod]
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(((QueryOperationStatistics)iter.cosmosDiagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
+                Assert.IsTrue(((QueryOperationStatistics)iter.diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
             }
 
             sql = new QueryDefinition("select * from ToDoActivity t ORDER BY t.cost");
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(((QueryOperationStatistics)iter.cosmosDiagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
+                Assert.IsTrue(((QueryOperationStatistics)iter.diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
             }
 
             sql = new QueryDefinition("select DISTINCT t.cost from ToDoActivity t");
@@ -122,8 +122,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsNotNull((QueryOperationStatistics)iter.cosmosDiagnostics);
-                Assert.AreEqual(1, ((QueryOperationStatistics)iter.cosmosDiagnostics).queryMetrics.Values.First().OutputDocumentCount);
+                Assert.IsNotNull((QueryOperationStatistics)iter.diagnostics);
+                Assert.AreEqual(1, ((QueryOperationStatistics)iter.diagnostics).queryMetrics.Values.First().OutputDocumentCount);
             }
 
             sql = new QueryDefinition("select * from ToDoActivity OFFSET 1 LIMIT 1");
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
-                Assert.IsTrue(((QueryOperationStatistics)iter.cosmosDiagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
+                Assert.IsTrue(((QueryOperationStatistics)iter.diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
             }
 
             //Checking query metrics on stream query
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (iterator.HasMoreResults)
             {
                 ResponseMessage responseMessage = await iterator.ReadNextAsync();
-                Assert.IsTrue(((QueryOperationStatistics)responseMessage.cosmosDiagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
+                Assert.IsTrue(((QueryOperationStatistics)responseMessage.diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
             }
         }
     }
