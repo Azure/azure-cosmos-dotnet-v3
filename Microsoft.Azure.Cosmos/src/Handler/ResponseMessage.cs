@@ -131,6 +131,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.IsSuccessStatusCode)
             {
+                this.EnsureErrorMessage();
                 string message = $"Response status code does not indicate success: {(int)this.StatusCode} Substatus: {(int)this.Headers.SubStatusCode} Reason: ({this.ErrorMessage}).";
 
                 throw new CosmosException(
@@ -195,6 +196,32 @@ namespace Microsoft.Azure.Cosmos
             if (this.disposed)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
+            }
+        }
+
+        private void EnsureErrorMessage()
+        {
+            if (this.Error != null
+                || !string.IsNullOrEmpty(this.ErrorMessage))
+            {
+                return;
+            }
+
+            if (this.content != null && this.content.CanRead)
+            {
+                Error error = Resource.LoadFrom<Error>(this.content);
+                if (error != null)
+                {
+                    // Error format is not consistent across modes
+                    if (!string.IsNullOrEmpty(error.Message))
+                    {
+                        this.ErrorMessage = error.Message;
+                    }
+                    else
+                    {
+                        this.ErrorMessage = error.ToString();
+                    }
+                }
             }
         }
     }
