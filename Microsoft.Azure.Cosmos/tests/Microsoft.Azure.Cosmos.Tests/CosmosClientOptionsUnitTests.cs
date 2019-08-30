@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxRequestsPerTcpConnection = 30;
             int maxTcpConnectionsPerEndpoint = 65535;
             IWebProxy webProxy = new TestWebProxy();
-            bool disableSSLVerification = true;
+            bool disableSSLCertificateVerification = true;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.SerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
-            Assert.IsFalse(clientOptions.DisableSSLVerification);
+            Assert.IsFalse(clientOptions.DisableSSLCertificateVerification);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
 
             cosmosClientBuilder.WithApplicationRegion(region)
-                .WithConnectionModeGateway(maxConnections, disableSSLVerification, webProxy)
+                .WithConnectionModeGateway(maxConnections, disableSSLCertificateVerification, webProxy)
                 .WithRequestTimeout(requestTimeout)
                 .WithApplicationName(userAgentSuffix)
                 .AddCustomHandlers(preProcessHandler)
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
-            Assert.AreEqual(disableSSLVerification, clientOptions.DisableSSLVerification);
+            Assert.AreEqual(disableSSLCertificateVerification, clientOptions.DisableSSLCertificateVerification);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.WebProxy = new TestWebProxy(); });
-            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.DisableSSLVerification = true; });
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.DisableSSLCertificateVerification = true; });
         }
 
         [TestMethod]
@@ -348,14 +348,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             string key = "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==";
 
             IWebProxy webProxy = new TestWebProxy();
-            bool disableSSLVerification = true;
+            bool disableSSLCertificateVerification = true;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
                 authKeyOrResourceToken: key);
             cosmosClientBuilder.WithConnectionModeGateway(
                 maxConnectionLimit: null,
-                disableSSLVerification: disableSSLVerification,
+                disableSSLCertificateVerification: disableSSLCertificateVerification,
                 webProxy: webProxy);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpClientHandler innerHandler = (HttpClientHandler)handler.InnerHandler;
 
             Assert.IsTrue(object.ReferenceEquals(webProxy, innerHandler.Proxy));
-            Assert.AreEqual(disableSSLVerification, innerHandler.ServerCertificateCustomValidationCallback != null);
+            Assert.AreEqual(disableSSLCertificateVerification, innerHandler.ServerCertificateCustomValidationCallback != null);
         }
 
         private class TestWebProxy : IWebProxy

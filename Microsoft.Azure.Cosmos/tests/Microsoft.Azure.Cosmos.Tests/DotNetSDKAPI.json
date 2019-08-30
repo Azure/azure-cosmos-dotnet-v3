@@ -1225,15 +1225,15 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
-        "Boolean DisableSSLVerification": {
+        "Boolean DisableSSLCertificateVerification": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Boolean get_DisableSSLVerification()": {
+        "Boolean get_DisableSSLCertificateVerification()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Boolean get_DisableSSLVerification()"
+          "MethodInfo": "Boolean get_DisableSSLCertificateVerification()"
         },
         "Int32 GatewayModeMaxConnectionLimit": {
           "Type": "Property",
@@ -1440,10 +1440,10 @@
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
         },
-        "Void set_DisableSSLVerification(Boolean)": {
+        "Void set_DisableSSLCertificateVerification(Boolean)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Void set_DisableSSLVerification(Boolean)"
+          "MethodInfo": "Void set_DisableSSLCertificateVerification(Boolean)"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",

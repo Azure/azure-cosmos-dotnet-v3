@@ -722,14 +722,14 @@ namespace Microsoft.Azure.Cosmos
 
         private HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
         {
-            if (clientOptions == null || (!clientOptions.DisableSSLVerification && clientOptions.WebProxy == null))
+            if (clientOptions == null || (!clientOptions.DisableSSLCertificateVerification && clientOptions.WebProxy == null))
             {
                 return null;
             }
 
             HttpClientHandler httpClientHandler = new HttpClientHandler();
 
-            if (clientOptions.DisableSSLVerification)
+            if (clientOptions.DisableSSLCertificateVerification)
             {
                 httpClientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
                 httpClientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;

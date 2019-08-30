@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.IO;
     using System.Net;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Documents;
@@ -252,6 +253,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "]" +
                 "}");
         }
+
+        [TestMethod]
+        public async Task VerifyNegativeWebProxySettings()
+        {
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
+                cosmosClientBuilder.WithConnectionModeGateway(webProxy: new TestWebProxy());
+            });
+            
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
+                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            });
+        }
     }
 
     internal static class StringHelper
@@ -259,6 +272,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static string EscapeForSQL(this string input)
         {
             return input.Replace("'", "\\'").Replace("\"", "\\\"");
+        }
+    }
+
+    internal class TestWebProxy : IWebProxy
+    {
+        public ICredentials Credentials { get; set; }
+
+        public Uri GetProxy(Uri destination)
+        {
+            return new Uri("http://www.cosmostestproxy.com");
+        }
+
+        public bool IsBypassed(Uri host)
+        {
+            return false;
         }
     }
 }
