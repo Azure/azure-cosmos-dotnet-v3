@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task HighThroughputSendsToExecutor_CreateStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { OptimizeForThroughput = true });
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task HighThroughputSendsToExecutor_UpsertStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { OptimizeForThroughput = true });
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task HighThroughputSendsToExecutor_ReplaceStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { OptimizeForThroughput = true });
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task HighThroughputSendsToExecutor_ReadStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { OptimizeForThroughput = true });
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task HighThroughputSendsToExecutor_DeleteStream()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { OptimizeForThroughput = true });
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Create()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { OptimizeForThroughput = true };
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Upsert()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { OptimizeForThroughput = true };
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Replace()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { OptimizeForThroughput = true };
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
@@ -411,7 +411,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Read()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { OptimizeForThroughput = true };
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
@@ -441,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Delete()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { HighThroughputModeEnabled = true };
+            CosmosClientOptions clientOptions = new CosmosClientOptions() { OptimizeForThroughput = true };
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task HighThroughputSendsToExecutor_RetriesOn429()
         {
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { HighThroughputModeEnabled = true });
+            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { OptimizeForThroughput = true });
             mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
             mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
             mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
