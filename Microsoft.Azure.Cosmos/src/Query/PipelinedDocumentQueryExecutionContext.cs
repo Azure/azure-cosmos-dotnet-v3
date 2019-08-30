@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query
     /// This class is responsible for constructing the pipelined described.
     /// Note that the pipeline will always have one of <see cref="CosmosOrderByItemQueryExecutionContext"/> or <see cref="CosmosParallelItemQueryExecutionContext"/>,
     /// which both derive from <see cref="CosmosCrossPartitionQueryExecutionContext"/> as these are top level execution contexts.
-    /// These top level execution contexts have <see cref="DocumentProducerTree"/> that are responsible for hitting the backend
+    /// These top level execution contexts have <see cref="ItemProducerTree"/> that are responsible for hitting the backend
     /// and will optionally feed into <see cref="AggregateDocumentQueryExecutionComponent"/> and <see cref="TakeDocumentQueryExecutionComponent"/>.
     /// How these components are picked is based on <see cref="PartitionedQueryExecutionInfo"/>,
     /// which is a serialized form of this class and serves as a blueprint for construction.
