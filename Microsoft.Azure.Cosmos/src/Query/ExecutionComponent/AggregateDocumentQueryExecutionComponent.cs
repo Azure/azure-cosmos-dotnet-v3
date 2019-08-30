@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.
         /// This means that if you have a long running query this function will take a very long time to return.
         /// </remarks>
-        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
         {
             // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
             // Note-2019-07-11-brchon: We can return empty pages until all the documents are drained,
@@ -104,19 +104,16 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             List<Uri> replicaUris = new List<Uri>();
             ClientSideRequestStatistics requestStatistics = new ClientSideRequestStatistics();
             PartitionedQueryMetrics partitionedQueryMetrics = new PartitionedQueryMetrics();
-            ResourceType resourceType = ResourceType.Document;
-            string containerRid = null;
+
             while (!this.IsDone)
             {
-                QueryResponse result = await base.DrainAsync(int.MaxValue, token);
-                if (!result.IsSuccessStatusCode)
+                QueryResponseCore result = await base.DrainAsync(int.MaxValue, token);
+                if (!result.IsSuccess)
                 {
                     return result;
                 }
 
-                containerRid = result.QueryHeaders.ContainerRid;
-                resourceType = result.QueryHeaders.ResourceType;
-                requestCharge += result.Headers.RequestCharge;
+                requestCharge += result.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
                 // DEVNOTE: Add when query metrics is supported
                 // partitionedQueryMetrics += new PartitionedQueryMetrics(results.QueryMetrics);
@@ -144,19 +141,16 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             // The replicaUris may have duplicates.
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
 
-            return QueryResponse.CreateSuccess(
+            return QueryResponseCore.CreateSuccess(
                 result: finalResult,
-                count: finalResult.Count,
-                responseLengthBytes: responseLengthBytes,
-                responseHeaders: new CosmosQueryResponseMessageHeaders(
-                    continauationToken: null, 
-                    disallowContinuationTokenMessage: null, 
-                    resourceType: resourceType, 
-                    containerRid: containerRid)
-                {
-                    RequestCharge = requestCharge
-                },
-                queryMetrics: this.GetQueryMetrics());
+                continuationToken: null,
+                activityId: null,
+                disallowContinuationTokenMessage: null,
+                requestCharge: requestCharge,
+                queryMetricsText: null,
+                queryMetrics: this.GetQueryMetrics(),
+                requestStatistics: requestStatistics,
+                responseLengthBytes: responseLengthBytes);
         }
 
         /// <summary>

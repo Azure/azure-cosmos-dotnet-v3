@@ -179,8 +179,22 @@ namespace Microsoft.Azure.Cosmos.Query
                     isFirstExecute = true;
                 }
 
-                response = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
-                response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationOptions;
+                QueryResponseCore result = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
+                response = QueryResponse.CreateSuccess(
+                    result: result.CosmosElements,
+                    count: result.CosmosElements.Count,
+                    responseLengthBytes: result.ResponseLengthBytes,
+                    queryMetrics: result.QueryMetrics,
+                    responseHeaders: new CosmosQueryResponseMessageHeaders(
+                        result.ContinuationToken,
+                        result.DisallowContinuationTokenMessage,
+                        this.cosmosQueryContext.ResourceTypeEnum,
+                        this.cosmosQueryContext.ContainerResourceId)
+                    {
+                        RequestCharge = result.RequestCharge,
+                        ActivityId = result.ActivityId
+                    });
+                response.CosmosSerializationOptions = this.cosmosQueryContext.QueryRequestOptions.CosmosSerializationFormatOptions;
 
                 if (response.IsSuccessStatusCode)
                 {

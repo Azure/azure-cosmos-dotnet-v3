@@ -6,23 +6,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Net;
     using System.Linq;
-    using System.Reflection;
+    using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Client.Core.Tests;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Query;
     using Moq;
-    using System.Threading;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using System.Collections.ObjectModel;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Routing;
 
     [TestClass]
     public class ItemProducerTreeUnitTests
@@ -48,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initContinuationToken: initialContinuationToken,
                     maxPageSize: maxPageSize,
                     mockResponseForSinglePartition: mockResponse,
-                    cancellationTokenForMocks: cancellationToken);
+                    cancellationTokenForMocks: this.cancellationToken);
 
                 CosmosQueryContext context = MockQueryFactory.CreateContext(
                     mockQueryClient.Object);
@@ -103,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     initContinuationToken: initialContinuationToken,
                     maxPageSize: maxPageSize,
                     mockResponseForSinglePartition: mockResponse,
-                    cancellationTokenForMocks: cancellationToken);
+                    cancellationTokenForMocks: this.cancellationToken);
 
                 CosmosQueryContext context = MockQueryFactory.CreateContext(
                     mockQueryClient.Object);
@@ -126,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 while ((await itemProducerTree.MoveNextAsync(this.cancellationToken)).successfullyMovedNext)
                 {
                     Assert.IsTrue(itemProducerTree.HasMoreResults);
-                    if(itemProducerTree.Current != null)
+                    if (itemProducerTree.Current != null)
                     {
                         string jsonValue = itemProducerTree.Current.ToString();
                         ToDoItem item = JsonConvert.DeserializeObject<ToDoItem>(jsonValue);
@@ -165,15 +158,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<IEqualityComparer<CosmosElement>> cosmosElementComparer = new Mock<IEqualityComparer<CosmosElement>>();
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-            IEnumerable<CosmosElement> cosmosElements = new List<CosmosElement>()
+            IReadOnlyList<CosmosElement> cosmosElements = new List<CosmosElement>()
             {
                 new Mock<CosmosElement>(CosmosElementType.Object).Object
-            };
-
-            CosmosQueryResponseMessageHeaders headers = new CosmosQueryResponseMessageHeaders("TestToken", null, ResourceType.Document, "ContainerRid")
-            {
-                ActivityId = "AA470D71-6DEF-4D61-9A08-272D8C9ABCFE",
-                RequestCharge = 42
             };
 
             mockQueryContext.Setup(x => x.ContainerResourceId).Returns("MockCollectionRid");
@@ -184,7 +171,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
                 cancellationTokenSource.Token)).Returns(
-                Task.FromResult(QueryResponse.CreateSuccess(cosmosElements, 1, 500, headers)));
+                Task.FromResult(QueryResponseCore.CreateSuccess(
+                    result: cosmosElements,
+                    requestCharge: 42,
+                    activityId: "AA470D71-6DEF-4D61-9A08-272D8C9ABCFE",
+                    queryMetrics: null,
+                    queryMetricsText: null,
+                    requestStatistics: null,
+                    responseLengthBytes: 500,
+                    disallowContinuationTokenMessage: null,
+                    continuationToken: "TestToken")));
 
             ItemProducerTree itemProducerTree = new ItemProducerTree(
                 queryContext: mockQueryContext.Object,
@@ -210,12 +206,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<bool>(),
                 It.IsAny<int>(),
                 cancellationTokenSource.Token)).Returns(
-                Task.FromResult(QueryResponse.CreateFailure(headers, HttpStatusCode.InternalServerError, null, "Error message", null)));
+                Task.FromResult(QueryResponseCore.CreateFailure(
+                    statusCode: HttpStatusCode.InternalServerError,
+                    errorMessage: "Error message",
+                    subStatusCodes: null,
+                    requestCharge: 10.2,
+                    activityId: Guid.NewGuid().ToString(),
+                    queryMetricsText: null,
+                    queryMetrics: null)));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
             // First item should be a success
-            var result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
+            (bool successfullyMovedNext, QueryResponseCore? failureResponse) result = await itemProducerTree.MoveNextAsync(cancellationTokenSource.Token);
             Assert.IsTrue(result.successfullyMovedNext);
             Assert.IsNull(result.failureResponse);
             Assert.IsTrue(itemProducerTree.HasMoreResults);

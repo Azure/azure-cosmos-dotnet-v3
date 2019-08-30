@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -62,8 +63,8 @@ namespace Microsoft.Azure.Cosmos.Query
     /// </para>    
     /// <para>
     /// This class is responsible for constructing the pipelined described.
-    /// Note that the pipeline will always have one of <see cref="OrderByDocumentQueryExecutionContext"/> or <see cref="ParallelDocumentQueryExecutionContext"/>,
-    /// which both derive from <see cref="CrossPartitionQueryExecutionContext"/> as these are top level execution contexts.
+    /// Note that the pipeline will always have one of <see cref="CosmosOrderByItemQueryExecutionContext"/> or <see cref="CosmosParallelItemQueryExecutionContext"/>,
+    /// which both derive from <see cref="CosmosCrossPartitionQueryExecutionContext"/> as these are top level execution contexts.
     /// These top level execution contexts have <see cref="DocumentProducerTree"/> that are responsible for hitting the backend
     /// and will optionally feed into <see cref="AggregateDocumentQueryExecutionComponent"/> and <see cref="TakeDocumentQueryExecutionComponent"/>.
     /// How these components are picked is based on <see cref="PartitionedQueryExecutionInfo"/>,
@@ -119,81 +120,6 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 return this.component.IsDone;
             }
-        }
-
-        /// <summary>
-        /// Creates a PipelinedDocumentQueryExecutionContext.
-        /// </summary>
-        /// <param name="constructorParams">The parameters for constructing the base class.</param>
-        /// <param name="collectionRid">The collection rid.</param>
-        /// <param name="partitionedQueryExecutionInfo">The partitioned query execution info.</param>
-        /// <param name="partitionKeyRanges">The partition key ranges.</param>
-        /// <param name="initialPageSize">The initial page size.</param>
-        /// <param name="requestContinuation">The request continuation.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on, which in turn returns a PipelinedDocumentQueryExecutionContext.</returns>
-        public static async Task<IDocumentQueryExecutionContext> CreateDocumentQueryExecutionContextAsync(
-            DocumentQueryExecutionContextBase.InitParams constructorParams,
-            string collectionRid,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<PartitionKeyRange> partitionKeyRanges,
-            int initialPageSize,
-            string requestContinuation,
-            CancellationToken cancellationToken)
-        {
-            DefaultTrace.TraceInformation(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    constructorParams.CorrelatedActivityId));
-
-            QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
-
-            int actualPageSize = initialPageSize;
-            if (queryInfo.HasGroupBy)
-            {
-                initialPageSize = int.MaxValue;
-                constructorParams.FeedOptions.MaxItemCount = int.MaxValue;
-            }
-
-            Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByComponentFunc = async (continuationToken) =>
-            {
-                CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-                    collectionRid,
-                    partitionedQueryExecutionInfo,
-                    partitionKeyRanges,
-                    initialPageSize,
-                    continuationToken);
-
-                return await OrderByDocumentQueryExecutionContext.CreateAsync(
-                    constructorParams,
-                    initParams,
-                    cancellationToken);
-            };
-
-            Func<string, Task<IDocumentQueryExecutionComponent>> createParallelComponentFunc = async (continuationToken) =>
-            {
-                CrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-                    collectionRid,
-                    partitionedQueryExecutionInfo,
-                    partitionKeyRanges,
-                    initialPageSize,
-                    continuationToken);
-
-                return await ParallelDocumentQueryExecutionContext.CreateAsync(
-                    constructorParams,
-                    initParams,
-                    cancellationToken);
-            };
-
-            return (IDocumentQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
-                partitionedQueryExecutionInfo.QueryInfo,
-                initialPageSize,
-                requestContinuation,
-                constructorParams.FeedOptions.EnableGroupBy,
-                createOrderByComponentFunc,
-                createParallelComponentFunc));
         }
 
         /// <summary>
@@ -262,13 +188,13 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             };
 
-            return (CosmosQueryExecutionContext)(await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
+            return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                partitionedQueryExecutionInfo.QueryInfo,
                initialPageSize,
                requestContinuation,
                constructorParams.QueryRequestOptions.EnableGroupBy,
                createOrderByComponentFunc,
-               createParallelComponentFunc));
+               createParallelComponentFunc);
         }
 
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
@@ -388,15 +314,15 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>A task to await on that in turn returns a DoucmentFeedResponse of results.</returns>
         public async Task<DocumentFeedResponse<CosmosElement>> ExecuteNextFeedResponseAsync(CancellationToken token)
         {
-            QueryResponse feedResponse = await this.ExecuteNextAsync(token);
+            QueryResponseCore feedResponse = await this.ExecuteNextAsync(token);
             return new DocumentFeedResponse<CosmosElement>(
                 result: feedResponse.CosmosElements,
-                count: feedResponse.Count,
-                responseHeaders: feedResponse.Headers.CosmosMessageHeaders,
+                count: feedResponse.CosmosElements.Count,
+                responseHeaders: new DictionaryNameValueCollection(),
                 useETagAsContinuation: false,
-                queryMetrics: null,
+                queryMetrics: feedResponse.QueryMetrics,
                 requestStats: feedResponse.RequestStatistics,
-                disallowContinuationTokenMessage: feedResponse.QueryHeaders.DisallowContinuationTokenMessage,
+                disallowContinuationTokenMessage: feedResponse.DisallowContinuationTokenMessage,
                 responseLengthBytes: feedResponse.ResponseLengthBytes);
         }
 
@@ -405,29 +331,17 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on that in turn returns a DoucmentFeedResponse of results.</returns>
-        public override async Task<QueryResponse> ExecuteNextAsync(CancellationToken token)
+        public override async Task<QueryResponseCore> ExecuteNextAsync(CancellationToken token)
         {
             try
             {
-                QueryResponse queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
-                if (!queryResponse.IsSuccessStatusCode)
+                QueryResponseCore queryResponse = await this.component.DrainAsync(this.actualPageSize, token);
+                if (!queryResponse.IsSuccess)
                 {
                     this.component.Stop();
-                    return queryResponse;
                 }
 
-                List<CosmosElement> dynamics = new List<CosmosElement>();
-                foreach (CosmosElement element in queryResponse.CosmosElements)
-                {
-                    dynamics.Add(element);
-                }
-
-                return QueryResponse.CreateSuccess(
-                    dynamics,
-                    queryResponse.Count,
-                    queryResponse.ResponseLengthBytes,
-                    queryResponse.QueryHeaders.CloneKnownProperties(),
-                    queryMetrics: queryResponse.queryMetrics);
+                return queryResponse;
             }
             catch (Exception)
             {

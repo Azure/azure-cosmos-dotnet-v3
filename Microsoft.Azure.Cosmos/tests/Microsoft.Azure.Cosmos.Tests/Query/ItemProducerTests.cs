@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<ToDoItem> itemsRead = new List<ToDoItem>();
             for (int i = 0; i < numItems; i++)
             {
-                (bool successfullyMovedNext, QueryResponse failureResponse) movedNext = await itemProducer.MoveNextAsync(this.cancellationToken);
+                (bool successfullyMovedNext, QueryResponseCore? failureResponse) movedNext = await itemProducer.MoveNextAsync(this.cancellationToken);
                 Assert.IsTrue(movedNext.successfullyMovedNext);
                 Assert.IsTrue(itemProducer.HasMoreResults);
                 itemsRead.Add(this.ConvertCosmosElement(itemProducer.Current));
