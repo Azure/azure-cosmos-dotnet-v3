@@ -230,11 +230,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             MemoryStream bufferedStream = new MemoryStream();
-
             await responseMessage.Content.CopyToAsync(bufferedStream);
-
             bufferedStream.Position = 0;
-
             return bufferedStream;
         }
 
