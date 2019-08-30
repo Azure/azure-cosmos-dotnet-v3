@@ -45,7 +45,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxRequestsPerTcpConnection = 30;
             int maxTcpConnectionsPerEndpoint = 65535;
             IWebProxy webProxy = new TestWebProxy();
-            bool disableSSLCertificateVerification = true;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -68,7 +67,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.SerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
-            Assert.IsFalse(clientOptions.DisableSSLCertificateVerification);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -82,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
 
             cosmosClientBuilder.WithApplicationRegion(region)
-                .WithConnectionModeGateway(maxConnections, disableSSLCertificateVerification, webProxy)
+                .WithConnectionModeGateway(maxConnections, webProxy)
                 .WithRequestTimeout(requestTimeout)
                 .WithApplicationName(userAgentSuffix)
                 .AddCustomHandlers(preProcessHandler)
@@ -107,7 +105,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
-            Assert.AreEqual(disableSSLCertificateVerification, clientOptions.DisableSSLCertificateVerification);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -338,7 +335,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.WebProxy = new TestWebProxy(); });
-            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.DisableSSLCertificateVerification = true; });
         }
 
         [TestMethod]
@@ -355,7 +351,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 authKeyOrResourceToken: key);
             cosmosClientBuilder.WithConnectionModeGateway(
                 maxConnectionLimit: null,
-                disableSSLCertificateVerification: disableSSLCertificateVerification,
                 webProxy: webProxy);
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();

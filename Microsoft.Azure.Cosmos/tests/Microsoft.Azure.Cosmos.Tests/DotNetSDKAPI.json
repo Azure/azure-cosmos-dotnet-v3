@@ -1225,16 +1225,6 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
-        "Boolean DisableSSLCertificateVerification": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
-        "Boolean get_DisableSSLCertificateVerification()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Boolean get_DisableSSLCertificateVerification()"
-        },
         "Int32 GatewayModeMaxConnectionLimit": {
           "Type": "Property",
           "Attributes": [],
@@ -1439,11 +1429,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])"
-        },
-        "Void set_DisableSSLCertificateVerification(Boolean)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_DisableSSLCertificateVerification(Boolean)"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
@@ -2318,10 +2303,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()"
         },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], Boolean, System.Net.IWebProxy)": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], System.Net.IWebProxy)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], Boolean, System.Net.IWebProxy)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable`1[System.Int32], System.Net.IWebProxy)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConsistencyLevel(Microsoft.Azure.Cosmos.ConsistencyLevel)": {
           "Type": "Method",

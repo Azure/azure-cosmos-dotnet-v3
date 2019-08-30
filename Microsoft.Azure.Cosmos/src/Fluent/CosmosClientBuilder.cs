@@ -237,7 +237,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the time to wait for response to come back from network peer. Default is 60 connections</param>
-        /// <param name="disableSSLCertificateVerification">Disable SSL verification. Mainly use for overriding the verification of Self-Signed SSL certificates when using the Azure Cosmos Emulator in non-Windows environments.</param>
         /// <param name="webProxy">Get or set the proxy information used for web requests.</param>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
@@ -246,7 +245,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
         /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
         public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null,
-            bool disableSSLCertificateVerification = false,
             IWebProxy webProxy = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
@@ -257,7 +255,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 this.clientOptions.GatewayModeMaxConnectionLimit = maxConnectionLimit.Value;
             }
 
-            this.clientOptions.DisableSSLCertificateVerification = disableSSLCertificateVerification;
             this.clientOptions.WebProxy = webProxy;
 
             return this;

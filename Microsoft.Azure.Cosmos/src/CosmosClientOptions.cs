@@ -61,7 +61,6 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan? openTcpConnectionTimeout;
         private int? maxRequestsPerTcpConnection;
         private int? maxTcpConnectionsPerEndpoint;
-        private bool disableSSLCertificateVerification;
         private IWebProxy webProxy;
 
         /// <summary>
@@ -111,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         /// This setting is only applicable in Gateway mode.
         /// </remarks>
         /// <value>Default value is 50.</value>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, bool, IWebProxy)"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
         public int GatewayModeMaxConnectionLimit
         {
             get => this.gatewayModeMaxConnectionLimit;
@@ -156,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect()"/>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, bool, IWebProxy)"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
         public ConnectionMode ConnectionMode
         {
             get => this.connectionMode;
@@ -262,20 +261,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.maxTcpConnectionsPerEndpoint = value;
                 this.ValidateDirectTCPSettings();
-            }
-        }
-
-        /// <summary>
-        /// (Gateway/Https) Disable SSL verification.
-        /// </summary>
-        /// <remarks>Mainly use for overriding the verification of Self-Signed SSL certificates when using the Azure Cosmos Emulator in non-Windows environments.</remarks>
-        public bool DisableSSLCertificateVerification
-        {
-            get => this.disableSSLCertificateVerification;
-            set
-            {
-                this.disableSSLCertificateVerification = value;
-                this.ValidateGatewayHttpsSettings();
             }
         }
 
@@ -635,11 +620,7 @@ namespace Microsoft.Azure.Cosmos
             string settingName = string.Empty;
             if (this.ConnectionMode != ConnectionMode.Gateway)
             {
-                if (this.DisableSSLCertificateVerification)
-                {
-                    settingName = nameof(this.DisableSSLCertificateVerification);
-                }
-                else if (this.WebProxy != null)
+                if (this.WebProxy != null)
                 {
                     settingName = nameof(this.WebProxy);
                 }

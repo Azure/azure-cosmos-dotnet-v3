@@ -1079,7 +1079,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 101, randomPartitionKey: true);
 
-            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
             CosmosSerializationFormatOptions options = new CosmosSerializationFormatOptions(
                 ContentSerializationFormat.CosmosBinary.ToString(),
                 (content) => JsonNavigator.Create(content),
