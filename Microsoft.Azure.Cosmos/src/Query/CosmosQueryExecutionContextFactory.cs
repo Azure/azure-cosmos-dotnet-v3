@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (response?.queryMetrics != null && response?.queryMetrics.Count > 0)
             {
-                response.diagnostics = new QueryOperationStatistics(response.queryMetrics);
+                response.Diagnostics = new QueryOperationStatistics(response.queryMetrics);
             }
 
             return response;

@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.cosmosElements = cosmosElements;
             this.QueryHeaders = responseMessageHeaders;
-            this.diagnostics = diagnostics;
+            this.Diagnostics = diagnostics;
             this.jsonSerializer = jsonSerializer;
             this.serializationOptions = serializationOptions;
             this.StatusCode = httpStatusCode;
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
                     httpStatusCode: cosmosQueryResponse.StatusCode,
                     cosmosElements: cosmosQueryResponse.CosmosElements,
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
-                    diagnostics: cosmosQueryResponse.diagnostics,
+                    diagnostics: cosmosQueryResponse.Diagnostics,
                     jsonSerializer: jsonSerializer,
                     serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
             }
