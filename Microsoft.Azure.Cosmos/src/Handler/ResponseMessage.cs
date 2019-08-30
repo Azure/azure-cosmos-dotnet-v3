@@ -207,19 +207,32 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            if (this.content != null && this.content.CanRead)
+            if (this.content != null
+                && this.content.CanRead)
             {
-                Error error = Resource.LoadFrom<Error>(this.content);
-                if (error != null)
+                try
                 {
-                    // Error format is not consistent across modes
-                    if (!string.IsNullOrEmpty(error.Message))
+                    Error error = Resource.LoadFrom<Error>(this.content);
+                    if (error != null)
                     {
-                        this.ErrorMessage = error.Message;
+                        // Error format is not consistent across modes
+                        if (!string.IsNullOrEmpty(error.Message))
+                        {
+                            this.ErrorMessage = error.Message;
+                        }
+                        else
+                        {
+                            this.ErrorMessage = error.ToString();
+                        }
                     }
-                    else
+                }
+                catch (Newtonsoft.Json.JsonReaderException)
+                {
+                    // Content is not Json
+                    this.content.Position = 0;
+                    using (StreamReader streamReader = new StreamReader(this.content))
                     {
-                        this.ErrorMessage = error.ToString();
+                        this.ErrorMessage = streamReader.ReadToEnd();
                     }
                 }
             }
