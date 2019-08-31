@@ -199,6 +199,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
+            if (response?.queryMetrics != null && response?.queryMetrics.Count > 0)
+            {
+                response.Diagnostics = new QueryOperationStatistics(response.queryMetrics);
+            }
+
             return response;
         }
 
@@ -307,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 rewrittenComosQueryContext = this.cosmosQueryContext;
             }
 
-            return await CreateSpecializedDocumentQueryExecutionContextAsync(
+            return await this.CreateSpecializedDocumentQueryExecutionContextAsync(
                 rewrittenComosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,

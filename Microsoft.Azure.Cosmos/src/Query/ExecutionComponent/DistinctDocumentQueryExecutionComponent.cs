@@ -133,7 +133,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 distinctResults,
                 distinctResults.Count,
                 cosmosQueryResponse.ResponseLengthBytes,
-                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage));
+                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage),
+                cosmosQueryResponse.queryMetrics);
         }
 
         /// <summary>

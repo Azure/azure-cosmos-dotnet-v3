@@ -426,7 +426,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     dynamics,
                     queryResponse.Count,
                     queryResponse.ResponseLengthBytes,
-                    queryResponse.QueryHeaders.CloneKnownProperties());
+                    queryResponse.QueryHeaders.CloneKnownProperties(),
+                    queryMetrics: queryResponse.queryMetrics);
             }
             catch (Exception)
             {
