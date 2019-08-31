@@ -152,13 +152,13 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             IEnumerable<CosmosElement> cosmosElements,
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
-            CosmosDiagnostics cosmosDiagnostics,
+            CosmosDiagnostics diagnostics,
             CosmosSerializer jsonSerializer,
             CosmosSerializationFormatOptions serializationOptions)
         {
             this.cosmosElements = cosmosElements;
             this.QueryHeaders = responseMessageHeaders;
-            this.cosmosDiagnostics = cosmosDiagnostics;
+            this.Diagnostics = diagnostics;
             this.jsonSerializer = jsonSerializer;
             this.serializationOptions = serializationOptions;
             this.StatusCode = httpStatusCode;
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
                     httpStatusCode: cosmosQueryResponse.StatusCode,
                     cosmosElements: cosmosQueryResponse.CosmosElements,
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
-                    cosmosDiagnostics: cosmosQueryResponse.cosmosDiagnostics,
+                    diagnostics: cosmosQueryResponse.Diagnostics,
                     jsonSerializer: jsonSerializer,
                     serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
             }

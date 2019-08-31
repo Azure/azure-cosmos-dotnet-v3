@@ -4594,17 +4594,17 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDiagnostics cosmosDiagnostics": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_cosmosDiagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_cosmosDiagnostics()"
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()": {
           "Type": "Method",
@@ -4661,12 +4661,12 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Void set_cosmosDiagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_cosmosDiagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)"
+          "MethodInfo": "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)"
         }
       },
       "NestedTypes": {}
@@ -4684,17 +4684,17 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDiagnostics cosmosDiagnostics": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_cosmosDiagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_cosmosDiagnostics()"
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -4789,12 +4789,12 @@
           "Attributes": [],
           "MethodInfo": "Void set_Content(System.IO.Stream)"
         },
-        "Void set_cosmosDiagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_cosmosDiagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)"
+          "MethodInfo": "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)"
         }
       },
       "NestedTypes": {}

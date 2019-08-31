@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (responseCore.QueryMetrics != null && responseCore.QueryMetrics.Count > 0)
                 {
-                    queryResponse.cosmosDiagnostics = new QueryOperationStatistics(responseCore.QueryMetrics);
+                    queryResponse.Diagnostics = new QueryOperationStatistics(responseCore.QueryMetrics);
                 }
 
                 queryResponse.CosmosSerializationOptions = cosmosQueryContext.QueryRequestOptions.CosmosSerializationFormatOptions;

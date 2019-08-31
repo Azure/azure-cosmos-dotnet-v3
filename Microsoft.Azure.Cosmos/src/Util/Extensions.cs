@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = response.RequestStats as CosmosClientSideRequestStatistics;
                 if (cosmosClientSideRequestStatistics != null)
                 {
-                    cosmosResponse.cosmosDiagnostics = new PointOperationStatistics(cosmosClientSideRequestStatistics);
+                    cosmosResponse.Diagnostics = new PointOperationStatistics(cosmosClientSideRequestStatistics);
                 }
             }
 
