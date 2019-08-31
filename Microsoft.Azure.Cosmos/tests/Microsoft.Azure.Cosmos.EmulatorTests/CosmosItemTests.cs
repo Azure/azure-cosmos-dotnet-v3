@@ -561,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Ignore conflicts since the object already exists
             }
 
-            foreach (var queryDefinition in queryDefinitions)
+            foreach (QueryDefinition queryDefinition in queryDefinitions)
             {
                 toStreamCount = 0;
                 fromStreamCount = 0;
@@ -1078,6 +1078,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemQueryStreamSerializationSetting()
         {
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 101, randomPartitionKey: true);
+
+            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
 
             CosmosSerializationFormatOptions options = new CosmosSerializationFormatOptions(
                 ContentSerializationFormat.CosmosBinary.ToString(),
