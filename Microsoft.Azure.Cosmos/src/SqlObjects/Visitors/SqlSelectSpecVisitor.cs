@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
-
     internal abstract class SqlSelectSpecVisitor
     {
         public abstract void Visit(SqlSelectListSpec selectSpec);

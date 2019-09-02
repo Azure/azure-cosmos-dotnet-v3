@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = httpStatusCode;
             this.CosmosHeaders = headers;
             this.Resource = item;
+            this.Diagnostics = diagnostics;
         }
 
         /// <inheritdoc/>

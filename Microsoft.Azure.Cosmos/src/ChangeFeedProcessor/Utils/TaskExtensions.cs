@@ -4,9 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 {
-    using System;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal static class TaskExtensions
     {

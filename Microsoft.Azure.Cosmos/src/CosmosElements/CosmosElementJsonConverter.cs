@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json.NewtonsoftInterop;

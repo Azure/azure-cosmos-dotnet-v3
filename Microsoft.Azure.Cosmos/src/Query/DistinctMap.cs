@@ -7,11 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json.Linq;
-    using Routing;
 
     /// <summary>
     /// Base class for all types of DistinctMaps.
@@ -340,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 foreach (KeyValuePair<string, CosmosElement> kvp in cosmosObject)
                 {
                     UInt192 nameHash = this.GetHashToken(
-                        CosmosString.Create(kvp.Key), 
+                        CosmosString.Create(kvp.Key),
                         this.HashSeedValues.PropertyName);
                     UInt192 propertyHash = this.GetHashToken(kvp.Value, nameHash);
 

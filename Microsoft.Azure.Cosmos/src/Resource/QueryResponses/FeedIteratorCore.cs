@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -76,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
                cosmosContainerCore: null,
                partitionKey: this.requestOptions?.PartitionKey,
                streamPayload: stream,
-               requestEnricher: request => 
+               requestEnricher: request =>
                {
                    QueryRequestOptions.FillContinuationToken(request, this.continuationToken);
                    if (this.querySpec != null)

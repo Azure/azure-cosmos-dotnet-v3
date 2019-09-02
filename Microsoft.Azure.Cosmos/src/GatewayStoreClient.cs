@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading;
@@ -60,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override async Task<StoreResponse> InvokeStoreAsync(Uri baseAddress, ResourceOperation resourceOperation, DocumentServiceRequest request)
         {
-            Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? 
+            Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ?
                 HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
                 HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
@@ -91,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
                     return new DocumentServiceResponse(bufferedStream, headers, responseMessage.StatusCode, serializerSettings);
                 }
-                else if (request != null 
+                else if (request != null
                     && request.IsValidStatusCodeForExceptionlessRetry((int)responseMessage.StatusCode))
                 {
                     INameValueCollection headers = GatewayStoreClient.ExtractResponseHeaders(responseMessage);
@@ -237,12 +236,12 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.Query ||
                 request.OperationType == OperationType.SqlQuery ||
                 request.OperationType == OperationType.Batch ||
-                request.OperationType == OperationType.ExecuteJavaScript || 
+                request.OperationType == OperationType.ExecuteJavaScript ||
                 request.OperationType == OperationType.QueryPlan)
             {
                 httpMethod = HttpMethod.Post;
             }
-            else if (request.OperationType == OperationType.Read 
+            else if (request.OperationType == OperationType.Read
                 || request.OperationType == OperationType.ReadFeed)
             {
                 httpMethod = HttpMethod.Get;

@@ -5,11 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.IO;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
-    using System.Text;
 
     /// <summary>
     /// Represents a SQL query in the Azure Cosmos DB service.

@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             return isInNewQuery ? this.Alias : this.fromParameters.GetInputParameter();
         }
-   
+
         /// <summary>
         /// Create a FROM clause from a set of FROM parameter bindings.
         /// </summary>
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (this.inputQuery != null)
             {
 #if SUPPORT_SUBQUERIES
-                
+
                 fromClause = this.CreateSubqueryFromClause();
 #else
                 throw new DocumentQueryException("SQL subqueries currently not supported");
@@ -249,10 +249,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 seenSelect = seenSelect || ((query.selectClause != null) && !(query.selectClause.HasDistinct));
-                seenAnyNonSelectOp |= 
-                    (query.whereClause != null) || 
-                    (query.orderByClause != null) || 
-                    (query.topSpec != null) || 
+                seenAnyNonSelectOp |=
+                    (query.whereClause != null) ||
+                    (query.orderByClause != null) ||
+                    (query.topSpec != null) ||
                     (query.offsetSpec != null) ||
                     (query.fromParameters.GetBindings().Any(b => b.ParameterDefinition != null)) ||
                     ((query.selectClause != null) && ((query.selectClause.HasDistinct) || (this.HasSelectAggregate())));
@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return result;
                 }
             }
-         
+
             throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.Kind);
         }
 
@@ -481,28 +481,28 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Max:
                 case LinqMethods.Sum:
                 case LinqMethods.Average:
-                    shouldPackage = (this.selectClause != null) || 
-                        (this.offsetSpec != null) || 
+                    shouldPackage = (this.selectClause != null) ||
+                        (this.offsetSpec != null) ||
                         (this.topSpec != null);
                     break;
 
                 case LinqMethods.Count:
                     // When Count has 2 arguments, it calls into AddWhereClause so it should be considered as a Where in that case.
                     // Otherwise, treat it as other aggregate functions (using Sum here for simplicity).
-                    shouldPackage = (argumentCount == 2 && this.ShouldBeOnNewQuery(LinqMethods.Where, 2)) || 
+                    shouldPackage = (argumentCount == 2 && this.ShouldBeOnNewQuery(LinqMethods.Where, 2)) ||
                         this.ShouldBeOnNewQuery(LinqMethods.Sum, 1);
                     break;
 
                 case LinqMethods.Where:
-                    // Where expression parameter needs to be substitued if necessary so
-                    // It is not needed in Select distinct because the Select distinct would have the necessary parameter name adjustment.
+                // Where expression parameter needs to be substitued if necessary so
+                // It is not needed in Select distinct because the Select distinct would have the necessary parameter name adjustment.
                 case LinqMethods.Any:
                 case LinqMethods.OrderBy:
                 case LinqMethods.OrderByDescending:
                 case LinqMethods.Distinct:
                     // New query is needed when there is already a Take or a non-distinct Select
                     shouldPackage = (this.topSpec != null) ||
-                        (this.offsetSpec != null) || 
+                        (this.offsetSpec != null) ||
                         (this.selectClause != null && !this.selectClause.HasDistinct);
                     break;
 
@@ -738,7 +738,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 builder.Append(this.inputQuery);
             }
-            
+
             if (this.whereClause != null)
             {
                 builder.Append("->");

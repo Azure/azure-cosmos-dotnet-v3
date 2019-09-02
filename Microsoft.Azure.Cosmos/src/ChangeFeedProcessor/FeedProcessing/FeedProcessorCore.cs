@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
@@ -28,9 +27,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public FeedProcessorCore(
             ChangeFeedObserver<T> observer,
-            FeedIterator resultSetIterator, 
-            ProcessorOptions options, 
-            PartitionCheckpointer checkpointer, 
+            FeedIterator resultSetIterator,
+            ProcessorOptions options,
+            PartitionCheckpointer checkpointer,
             CosmosSerializer cosmosJsonSerializer)
         {
             this.observer = observer;

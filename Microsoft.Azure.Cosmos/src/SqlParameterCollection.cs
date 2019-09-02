@@ -6,9 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Runtime.Serialization;
-    using System.Text;
 
     /// <summary>
     /// Represents a collection of parameters associated with <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> for use in the Azure Cosmos DB service.

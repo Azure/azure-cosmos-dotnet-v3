@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 {
                     this.AccountConsistencyLevel = await this.client.GetAccountConsistencyLevelAsync();
                 }
-                
+
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
@@ -224,6 +224,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             this.AccountConsistencyLevel));
                 }
             }
-        } 
+        }
     }
 }

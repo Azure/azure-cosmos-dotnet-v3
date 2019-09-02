@@ -88,8 +88,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         this.fetchExecutionRangeAccumulator.EndFetchRange(
                             partitionIdentifier,
-                            response.ActivityId, 
-                            response.Count, 
+                            response.ActivityId,
+                            response.Count,
                             this.retries);
                         response = new DocumentFeedResponse<CosmosElement>(
                             response,
@@ -99,14 +99,14 @@ namespace Microsoft.Azure.Cosmos.Query
                             new Dictionary<string, QueryMetrics>
                             {
                                 {
-                                    partitionIdentifier, 
+                                    partitionIdentifier,
                                     QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
                                         response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
                                         new ClientSideMetrics(
                                             this.retries,
                                             response.RequestCharge,
                                             this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
-                                            string.IsNullOrEmpty(response.ResponseContinuation) ? 
+                                            string.IsNullOrEmpty(response.ResponseContinuation) ?
                                             new List<Tuple<string, SchedulingTimeSpan>>()
                                                 {
                                                     new Tuple<string, SchedulingTimeSpan>(partitionIdentifier, this.fetchSchedulingMetrics.Elapsed)

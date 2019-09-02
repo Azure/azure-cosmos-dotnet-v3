@@ -5,14 +5,12 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
     /// The ItemProducer is the base unit of buffering and iterating through documents.

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             if (queryResponse != null)
             {
                 return QueryResponse<T>.CreateResponse<T>(
-                    responseMessage: queryResponse,
+                    cosmosQueryResponse: queryResponse,
                     jsonSerializer: this.cosmosSerializer);
             }
 
@@ -191,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
-        {            
+        {
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
 

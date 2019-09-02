@@ -4,8 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Text;
-    using Newtonsoft.Json;
 
     internal sealed class SqlObjectLiteral : SqlLiteral
     {

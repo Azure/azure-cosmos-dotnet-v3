@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         private void AddConflictResolution(ConflictResolutionPolicy conflictResolutionPolicy)
         {
-            if (conflictResolutionPolicy.Mode == ConflictResolutionMode.Custom 
+            if (conflictResolutionPolicy.Mode == ConflictResolutionMode.Custom
                 && !string.IsNullOrEmpty(conflictResolutionPolicy.ResolutionProcedure))
             {
                 this.clientContext.ValidateResource(conflictResolutionPolicy.ResolutionProcedure);

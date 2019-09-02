@@ -289,30 +289,15 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = createParallelQueryExecutionContext;
             }
 
-            if (queryInfo.HasGroupBy)
-            {
-                if (!allowGroupBy)
-                {
-                    throw new ArgumentException("Cross Partition GROUP BY is not supported.");
-                }
-
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
-                {
-                    return await GroupByDocumentQueryExecutionComponent.CreateAsync(
-                        continuationToken,
-                        createSourceCallback,
-                        queryInfo.GroupByAliasToAggregateType);
-                };
-            }
-
-            if (queryInfo.HasAggregates)
+            if (queryInfo.HasAggregates && !queryInfo.HasGroupBy)
             {
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await AggregateDocumentQueryExecutionComponent.CreateAsync(
                         queryInfo.Aggregates,
+                        queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.HasSelectValue,
                         continuationToken,
                         createSourceCallback);
                 };
@@ -327,6 +312,24 @@ namespace Microsoft.Azure.Cosmos.Query
                         continuationToken,
                         createSourceCallback,
                         queryInfo.DistinctType);
+                };
+            }
+
+            if (queryInfo.HasGroupBy)
+            {
+                if (!allowGroupBy)
+                {
+                    throw new ArgumentException("Cross Partition GROUP BY is not supported.");
+                }
+
+                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
+                createComponentFunc = async (continuationToken) =>
+                {
+                    return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                        continuationToken,
+                        createSourceCallback,
+                        queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.HasSelectValue);
                 };
             }
 
@@ -423,7 +426,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     dynamics,
                     queryResponse.Count,
                     queryResponse.ResponseLengthBytes,
-                    queryResponse.QueryHeaders.CloneKnownProperties());
+                    queryResponse.QueryHeaders.CloneKnownProperties(),
+                    queryMetrics: queryResponse.queryMetrics);
             }
             catch (Exception)
             {

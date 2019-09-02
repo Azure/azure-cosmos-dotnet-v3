@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
 
         public void Dispose()
         {
-            Trace.CorrelationManager.ActivityId = this.ambientActivityId;   
+            Trace.CorrelationManager.ActivityId = this.ambientActivityId;
         }
     }
 }

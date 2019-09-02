@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Specialized;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Collections;
 
     /// <summary>
     /// Captures the APIs for responses associated with media resource in the Azure Cosmos DB service.

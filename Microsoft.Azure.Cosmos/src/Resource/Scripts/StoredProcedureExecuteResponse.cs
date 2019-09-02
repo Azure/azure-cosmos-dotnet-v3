@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Create a <see cref="StoredProcedureExecuteResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        protected StoredProcedureExecuteResponse() 
+        protected StoredProcedureExecuteResponse()
             : base()
         {
         }

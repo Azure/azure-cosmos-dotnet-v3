@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     DocumentFeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(CancellationToken.None), null).Result;
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
                     DocumentFeedResponse<T> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<T>(
-                        feedResponse, 
+                        feedResponse,
                         this.resourceTypeEnum,
                         this.feedOptions.JsonSerializerSettings);
                     foreach (T item in typedFeedResponse)
@@ -337,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             DocumentFeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken);
             DocumentFeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<TResponse>(
-                response, 
+                response,
                 this.resourceTypeEnum,
                 this.feedOptions.JsonSerializerSettings);
 
