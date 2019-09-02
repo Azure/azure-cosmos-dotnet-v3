@@ -91,14 +91,14 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(ShouldRetryResult.NoRetry());
             }
 
-            return this.ShouldRetryInternalAsync(cosmosResponseMessage?.Headers.RetryAfter);
+            return this.ShouldRetryInternalAsync(cosmosResponseMessage?.CosmosHeaders.RetryAfter);
         }
 
         private Task<ShouldRetryResult> ShouldRetryInternalAsync(TimeSpan? retryAfter)
         {
             TimeSpan retryDelay = TimeSpan.Zero;
             if (this.currentAttemptCount < this.maxAttemptCount &&
-                (this.CheckIfRetryNeeded(retryAfter, out retryDelay)))
+                this.CheckIfRetryNeeded(retryAfter, out retryDelay))
             {
                 this.currentAttemptCount++;
                 DefaultTrace.TraceWarning(

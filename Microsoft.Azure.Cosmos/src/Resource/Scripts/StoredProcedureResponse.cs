@@ -26,16 +26,16 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </summary>
         internal StoredProcedureResponse(
            HttpStatusCode httpStatusCode,
-           Headers headers,
+           CosmosHeaders headers,
            StoredProcedureProperties storedProcedureProperties)
         {
             this.StatusCode = httpStatusCode;
-            this.Headers = headers;
+            this.CosmosHeaders = headers;
             this.Resource = storedProcedureProperties;
         }
 
         /// <inheritdoc/>
-        public override Headers Headers { get; }
+        internal override CosmosHeaders CosmosHeaders { get; }
 
         /// <inheritdoc/>
         public override StoredProcedureProperties Resource { get; }
@@ -44,19 +44,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
-        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
+        public override double RequestCharge => this.CosmosHeaders?.RequestCharge ?? 0;
 
         /// <inheritdoc/>
-        public override string ActivityId => this.Headers?.ActivityId;
+        public override string ActivityId => this.CosmosHeaders?.ActivityId;
 
         /// <inheritdoc/>
-        public override string ETag => this.Headers?.ETag;
+        public override string ETag => this.CosmosHeaders?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.CosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.CosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Gets the token for use with session consistency requests from the Azure Cosmos DB service.
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <value>
         /// The token for use with session consistency requests.
         /// </value>
-        public virtual string SessionToken => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
+        public virtual string SessionToken => this.CosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.SessionToken);
 
         /// <summary>
         /// Get <see cref="StoredProcedureProperties"/> implicitly from <see cref="StoredProcedureResponse"/>

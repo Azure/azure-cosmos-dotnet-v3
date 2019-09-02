@@ -31,19 +31,19 @@ namespace Microsoft.Azure.Cosmos
         internal override void PopulateRequestOptions(RequestMessage request)
         {
             // Check if no Continuation Token is present
-            if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
+            if (string.IsNullOrEmpty(request.CosmosHeaders.IfNoneMatch))
             {
                 if (this.StartTime == null)
                 {
-                    request.Headers.IfNoneMatch = ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue;
+                    request.CosmosHeaders.IfNoneMatch = ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue;
                 }
                 else if (this.StartTime != null)
                 {
-                    request.Headers.Add(HttpConstants.HttpHeaders.IfModifiedSince, this.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
+                    request.CosmosHeaders.Add(HttpConstants.HttpHeaders.IfModifiedSince, this.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
                 }
             }
 
-            request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
+            request.CosmosHeaders.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
 
             base.PopulateRequestOptions(request);
         }
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
                 // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-                request.Headers.IfNoneMatch = continuationToken;
+                request.CosmosHeaders.IfNoneMatch = continuationToken;
             }
         }
 

@@ -105,17 +105,17 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.PreTriggers != null && this.PreTriggers.Any())
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PreTriggerInclude, this.PreTriggers);
+                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PreTriggerInclude, this.PreTriggers);
             }
 
             if (this.PostTriggers != null && this.PostTriggers.Any())
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PostTriggerInclude, this.PostTriggers);
+                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PostTriggerInclude, this.PostTriggers);
             }
 
             if (this.IndexingDirective != null && this.IndexingDirective.HasValue)
             {
-                request.Headers.Add(
+                request.CosmosHeaders.Add(
                     HttpConstants.HttpHeaders.IndexingDirective, 
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }

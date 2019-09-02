@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual IEnumerable<CosmosElement> CosmosElements { get; }
 
-        internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.Headers;
+        internal virtual CosmosQueryResponseMessageHeaders QueryHeaders => (CosmosQueryResponseMessageHeaders)this.CosmosHeaders;
 
         /// <summary>
         /// Gets the response length in bytes
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool GetHasMoreResults()
         {
-            return !string.IsNullOrEmpty(this.Headers.ContinuationToken);
+            return !string.IsNullOrEmpty(this.CosmosHeaders.ContinuationToken);
         }
 
         internal static QueryResponse CreateSuccess(
@@ -154,11 +154,11 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = httpStatusCode;
         }
 
-        public override string ContinuationToken => this.Headers.ContinuationToken;
+        public override string ContinuationToken => this.CosmosHeaders.ContinuationToken;
 
-        public override double RequestCharge => this.Headers.RequestCharge;
+        public override double RequestCharge => this.CosmosHeaders.RequestCharge;
 
-        public override Headers Headers => this.QueryHeaders;
+        internal override CosmosHeaders CosmosHeaders => this.QueryHeaders;
 
         public override HttpStatusCode StatusCode { get; }
 

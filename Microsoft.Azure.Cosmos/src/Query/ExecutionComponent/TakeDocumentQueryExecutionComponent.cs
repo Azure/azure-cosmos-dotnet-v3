@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 if (!this.IsDone)
                 {
-                    string sourceContinuation = results.Headers.ContinuationToken;
+                    string sourceContinuation = results.CosmosHeaders.ContinuationToken;
                     TakeContinuationToken takeContinuationToken;
                     switch (this.takeEnum)
                     {

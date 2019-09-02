@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
-                    cosmosResponseMessage?.Headers.SubStatusCode);
+                    cosmosResponseMessage?.CosmosHeaders.SubStatusCode);
             if (shouldRetryResult != null)
             {
                 return shouldRetryResult;

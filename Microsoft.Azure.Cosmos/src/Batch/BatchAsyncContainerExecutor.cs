@@ -164,9 +164,9 @@ namespace Microsoft.Azure.Cosmos
 
         private static void AddHeadersToRequestMessage(RequestMessage requestMessage, string partitionKeyRangeId)
         {
-            requestMessage.Headers.PartitionKeyRangeId = partitionKeyRangeId;
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
+            requestMessage.CosmosHeaders.PartitionKeyRangeId = partitionKeyRangeId;
+            requestMessage.CosmosHeaders.Add(HttpConstants.HttpHeaders.ShouldBatchContinueOnError, bool.TrueString);
+            requestMessage.CosmosHeaders.Add(HttpConstants.HttpHeaders.IsBatchRequest, bool.TrueString);
         }
 
         private async Task ReBatchAsync(

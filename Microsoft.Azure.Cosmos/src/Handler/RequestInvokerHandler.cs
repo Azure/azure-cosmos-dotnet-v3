@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -99,14 +100,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(resourceUri));
             }
 
-            HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
+            RequestMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
 
             RequestMessage request = new RequestMessage(method, resourceUri)
             {
                 OperationType = operationType,
                 ResourceType = resourceType,
                 RequestOptions = requestOptions,
-                Content = streamPayload
+                Content = new CosmosStreamContent(streamPayload),
             };
 
             if (partitionKey != null)
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     try
                     {
                         PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
-                        request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                        request.CosmosHeaders.PartitionKey = partitionKeyInternal.ToJsonString();
                     }
                     catch (DocumentClientException dce)
                     {
@@ -133,20 +134,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 else
                 {
-                    request.Headers.PartitionKey = partitionKey.ToString();
+                    request.CosmosHeaders.PartitionKey = partitionKey.ToString();
                 }
             }
 
             if (operationType == OperationType.Upsert)
             {
-                request.Headers.IsUpsert = bool.TrueString;
+                request.CosmosHeaders.IsUpsert = bool.TrueString;
             }
 
             requestEnricher?.Invoke(request);
             return await this.SendAsync(request, cancellationToken);
         }
 
-        internal static HttpMethod GetHttpMethod(
+        internal static RequestMethod GetHttpMethod(
             OperationType operationType)
         {
             HttpMethod httpMethod = HttpMethod.Head;
@@ -158,20 +159,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.Batch ||
                 operationType == OperationType.ExecuteJavaScript)
             {
-                return HttpMethod.Post;
+                return RequestMethod.Post;
             }
             else if (operationType == OperationType.Read ||
                 operationType == OperationType.ReadFeed)
             {
-                return HttpMethod.Get;
+                return RequestMethod.Get;
             }
             else if (operationType == OperationType.Replace)
             {
-                return HttpMethod.Put;
+                return RequestMethod.Put;
             }
             else if (operationType == OperationType.Delete)
             {
-                return HttpMethod.Delete;
+                return RequestMethod.Delete;
             }
             else
             {
@@ -183,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             if (this.client.DocumentClient.UseMultipleWriteLocations)
             {
-                request.Headers.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
+                request.CosmosHeaders.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
             }
         }
 

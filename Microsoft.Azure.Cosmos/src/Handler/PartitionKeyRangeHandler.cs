@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = null;
-            string originalContinuation = request.Headers.ContinuationToken;
+            string originalContinuation = request.CosmosHeaders.ContinuationToken;
             try
             {
                 RntdbEnumerationDirection rntdbEnumerationDirection = RntdbEnumerationDirection.Forward;
@@ -124,12 +124,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    SetOriginalContinuationToken(request, response, originalContinuation);
+                    this.SetOriginalContinuationToken(request, response, originalContinuation);
                 }
                 else
                 {
                     if (!await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(
-                        response.Headers.CosmosMessageHeaders,
+                        response.CosmosHeaders.CosmosMessageHeaders,
                         providedPartitionKeyRanges: providedRanges,
                         routingMapProvider: routingMapProvider,
                         collectionRid: collectionFromCache.ResourceId,
@@ -147,18 +147,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
             catch (DocumentClientException ex)
             {
                 ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
-                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                this.SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
             catch (CosmosException ex)
             {
                 ResponseMessage errorResponse = ex.ToCosmosResponseMessage(request);
-                SetOriginalContinuationToken(request, errorResponse, originalContinuation);
+                this.SetOriginalContinuationToken(request, errorResponse, originalContinuation);
                 return errorResponse;
             }
             catch (AggregateException ex)
             {
-                SetOriginalContinuationToken(request, response, originalContinuation);
+                this.SetOriginalContinuationToken(request, response, originalContinuation);
 
                 // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
                 // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
@@ -176,10 +176,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private void SetOriginalContinuationToken(RequestMessage request, ResponseMessage response, string originalContinuation)
         {
-            request.Headers.ContinuationToken = originalContinuation;
+            request.CosmosHeaders.ContinuationToken = originalContinuation;
             if (response != null)
             {
-                response.Headers.ContinuationToken = originalContinuation;
+                response.CosmosHeaders.ContinuationToken = originalContinuation;
             }
         }
     }

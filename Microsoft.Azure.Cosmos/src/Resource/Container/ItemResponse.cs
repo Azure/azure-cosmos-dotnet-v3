@@ -26,16 +26,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal ItemResponse(
             HttpStatusCode httpStatusCode,
-            Headers headers,
+            CosmosHeaders headers,
             T item)
         {
             this.StatusCode = httpStatusCode;
-            this.Headers = headers;
+            this.CosmosHeaders = headers;
             this.Resource = item;
         }
 
         /// <inheritdoc/>
-        public override Headers Headers { get; }
+        internal override CosmosHeaders CosmosHeaders { get; }
 
         /// <inheritdoc/>
         public override T Resource { get; }
@@ -44,19 +44,19 @@ namespace Microsoft.Azure.Cosmos
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
-        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
+        public override double RequestCharge => this.CosmosHeaders?.RequestCharge ?? 0;
 
         /// <inheritdoc/>
-        public override string ActivityId => this.Headers?.ActivityId;
+        public override string ActivityId => this.CosmosHeaders?.ActivityId;
 
         /// <inheritdoc/>
-        public override string ETag => this.Headers?.ETag;
+        public override string ETag => this.CosmosHeaders?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.CosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.CosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
     }
 }

@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (string key in response.Headers)
                 {
-                    cosmosResponse.Headers.Add(key, response.Headers[key]);
+                    cosmosResponse.CosmosHeaders.Add(key, response.Headers[key]);
                 }
             }
 
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (string header in dce.Headers.AllKeys())
                 {
-                    cosmosResponse.Headers.Add(header, dce.Headers[header]);
+                    cosmosResponse.CosmosHeaders.Add(header, dce.Headers[header]);
                 }
             }
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
 
             for (int i = 0; i < response.ResponseHeaderNames.Length; i++)
             {
-                httpResponse.Headers.Add(response.ResponseHeaderNames[i], response.ResponseHeaderValues[i]);
+                httpResponse.CosmosHeaders.Add(response.ResponseHeaderNames[i], response.ResponseHeaderValues[i]);
             }
 
             return httpResponse;

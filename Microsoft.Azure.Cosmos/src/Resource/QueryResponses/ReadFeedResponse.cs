@@ -12,19 +12,19 @@ namespace Microsoft.Azure.Cosmos
         protected ReadFeedResponse(
             HttpStatusCode httpStatusCode,
             ICollection<T> resource,
-            Headers responseMessageHeaders)
+            CosmosHeaders responseMessageHeaders)
         {
             this.Count = resource.Count;
-            this.Headers = responseMessageHeaders;
+            this.CosmosHeaders = responseMessageHeaders;
             this.Resource = resource;
             this.StatusCode = httpStatusCode;
         }
 
         public override int Count { get; }
 
-        public override string ContinuationToken => this.Headers?.ContinuationToken;
+        public override string ContinuationToken => this.CosmosHeaders?.ContinuationToken;
 
-        public override Headers Headers { get; }
+        internal override CosmosHeaders CosmosHeaders { get; }
 
         public override IEnumerable<T> Resource { get; }
 
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     httpStatusCode: responseMessage.StatusCode,
                     resource: resources,
-                    responseMessageHeaders: responseMessage.Headers);
+                    responseMessageHeaders: responseMessage.CosmosHeaders);
 
                 return readFeedResponse;
             }

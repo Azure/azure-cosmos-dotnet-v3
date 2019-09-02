@@ -5,22 +5,25 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using global::Azure.Core.Http;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents a response from the Azure Cosmos DB service.
     /// </summary>
-    public class ResponseMessage : IDisposable
+    public class ResponseMessage : global::Azure.Response
     {
         /// <summary>
         /// Create a <see cref="ResponseMessage"/>
         /// </summary>
         public ResponseMessage()
         {
-            this.Headers = new Headers();
+            this.CosmosHeaders = new CosmosHeaders();
         }
 
         /// <summary>
@@ -42,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
-            this.Headers = new Headers();
+            this.CosmosHeaders = new CosmosHeaders();
         }
 
         /// <summary>
@@ -58,13 +61,13 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage requestMessage,
             string errorMessage,
             Error error,
-            Headers headers)
+            CosmosHeaders headers)
         {
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.ErrorMessage = errorMessage;
             this.Error = error;
-            this.Headers = headers;
+            this.CosmosHeaders = headers;
         }
 
         /// <summary>
@@ -93,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
         /// </summary>
-        public virtual Headers Headers { get; }
+        internal virtual CosmosHeaders CosmosHeaders { get; }
 
         /// <summary>
         /// Gets the Continuation Token in the current <see cref="ResponseMessage"/>.
@@ -101,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This is only used in feed operations like query and change feed
         /// </remarks>
-        public virtual string ContinuationToken => this.Headers?.ContinuationToken;
+        public virtual string ContinuationToken => this.CosmosHeaders?.ContinuationToken;
 
         /// <summary>
         /// Gets the original request message
@@ -122,6 +125,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual bool IsSuccessStatusCode => ((int)this.StatusCode >= 200) && ((int)this.StatusCode <= 299);
 
+        /// <inheritdoc />
+        public override int Status => (int)this.StatusCode;
+
+        /// <inheritdoc />
+        public override string ReasonPhrase => throw new NotImplementedException();
+
+        /// <inheritdoc />
+        public override Stream ContentStream { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        /// <inheritdoc />
+        public override string ClientRequestId { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
         /// <summary>
         /// Checks if the current <see cref="ResponseMessage"/> has a successful status code, otherwise, throws.
         /// </summary>
@@ -131,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.IsSuccessStatusCode)
             {
-                string message = $"Response status code does not indicate success: {(int)this.StatusCode} Substatus: {(int)this.Headers.SubStatusCode} Reason: ({this.ErrorMessage}).";
+                string message = $"Response status code does not indicate success: {(int)this.StatusCode} Substatus: {(int)this.CosmosHeaders.SubStatusCode} Reason: ({this.ErrorMessage}).";
 
                 throw new CosmosException(
                         this,
@@ -145,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Disposes the current <see cref="ResponseMessage"/>.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             this.Dispose(true);
         }
@@ -196,6 +211,39 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }
+        }
+
+        /// <inheritdoc />
+        protected override bool TryGetHeader(string name, out string value)
+        {
+            return this.CosmosHeaders.TryGetValue(name, out value);
+        }
+
+        /// <inheritdoc />
+        protected override bool TryGetHeaderValues(string name, out IEnumerable<string> values)
+        {
+            values = null;
+            string singleValue;
+            bool retValue = this.CosmosHeaders.TryGetValue(name, out singleValue);
+            if (retValue)
+            {
+                values = new List<string>() { singleValue };
+            }
+
+            return retValue;
+        }
+
+        /// <inheritdoc />
+        protected override bool ContainsHeader(string name)
+        {
+            string singleValue;
+            return this.CosmosHeaders.TryGetValue(name, out singleValue);
+        }
+
+        /// <inheritdoc />
+        protected override IEnumerable<HttpHeader> EnumerateHeaders()
+        {
+            throw new NotImplementedException();
         }
     }
 }

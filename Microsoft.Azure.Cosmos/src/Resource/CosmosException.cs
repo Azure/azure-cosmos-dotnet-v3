@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = statusCode;
             this.Error = error;
-            this.Headers = new Headers();
+            this.CosmosHeaders = new CosmosHeaders();
         }
 
         internal CosmosException(
@@ -34,17 +34,17 @@ namespace Microsoft.Azure.Cosmos
             if (cosmosResponseMessage != null)
             {
                 this.StatusCode = cosmosResponseMessage.StatusCode;
-                this.Headers = cosmosResponseMessage.Headers;
-                if (this.Headers == null)
+                this.CosmosHeaders = cosmosResponseMessage.CosmosHeaders;
+                if (this.CosmosHeaders == null)
                 {
-                    this.Headers = new Headers();
+                    this.CosmosHeaders = new CosmosHeaders();
                 }
 
-                this.ActivityId = this.Headers.ActivityId;
-                this.RequestCharge = this.Headers.RequestCharge;
-                this.RetryAfter = this.Headers.RetryAfter;
-                this.SubStatusCode = (int)this.Headers.SubStatusCode;
-                if (this.Headers.ContentLengthAsLong > 0)
+                this.ActivityId = this.CosmosHeaders.ActivityId;
+                this.RequestCharge = this.CosmosHeaders.RequestCharge;
+                this.RetryAfter = this.CosmosHeaders.RetryAfter;
+                this.SubStatusCode = (int)this.CosmosHeaders.SubStatusCode;
+                if (this.CosmosHeaders.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
                     {
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
-            this.Headers = new Headers();
+            this.CosmosHeaders = new CosmosHeaders();
         }
 
         /// <summary>
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the response headers
         /// </summary>
-        public virtual Headers Headers { get; }
+        internal virtual CosmosHeaders CosmosHeaders { get; }
 
         /// <summary>
         /// Gets the internal error object
@@ -135,13 +135,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A value indicating if the header was read.</returns>
         public virtual bool TryGetHeader(string headerName, out string value)
         {
-            if (this.Headers == null)
+            if (this.CosmosHeaders == null)
             {
                 value = null;
                 return false;
             }
 
-            return this.Headers.TryGetValue(headerName, out value);
+            return this.CosmosHeaders.TryGetValue(headerName, out value);
         }
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
         internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
         {
             return new ResponseMessage(
-                 headers: this.Headers,
+                 headers: this.CosmosHeaders,
                  requestMessage: request,
                  errorMessage: this.Message,
                  statusCode: this.StatusCode,

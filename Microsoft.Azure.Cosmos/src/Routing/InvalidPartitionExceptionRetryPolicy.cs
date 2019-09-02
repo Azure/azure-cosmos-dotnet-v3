@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(
                 httpResponseMessage.StatusCode,
-                httpResponseMessage.Headers.SubStatusCode,
+                httpResponseMessage.CosmosHeaders.SubStatusCode,
                 httpResponseMessage.GetResourceAddress());
 
             if (shouldRetryResult != null)

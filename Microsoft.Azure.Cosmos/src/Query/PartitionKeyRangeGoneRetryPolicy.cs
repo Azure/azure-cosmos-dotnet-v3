@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(cosmosResponseMessage?.StatusCode,
-                cosmosResponseMessage?.Headers.SubStatusCode,
+                cosmosResponseMessage?.CosmosHeaders.SubStatusCode,
                 cancellationToken);
             if (shouldRetryResult != null)
             {

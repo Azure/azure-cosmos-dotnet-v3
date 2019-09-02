@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
                 containerRid = result.QueryHeaders.ContainerRid;
                 resourceType = result.QueryHeaders.ResourceType;
-                requestCharge += result.Headers.RequestCharge;
+                requestCharge += result.CosmosHeaders.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
                 //partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
                 if (result.RequestStatistics != null)

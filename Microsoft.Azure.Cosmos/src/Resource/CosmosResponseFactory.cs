@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     item);
             });
         }
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                 ContainerProperties containerProperties = this.ToObjectInternal<ContainerProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     containerProperties,
                     container);
             });
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
                 UserProperties userProperties = this.ToObjectInternal<UserProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new UserResponse(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     userProperties,
                     user);
             });
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
                 PermissionProperties permissionProperties = this.ToObjectInternal<PermissionProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new PermissionResponse(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     permissionProperties,
                     permission);
             });
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
                 DatabaseProperties databaseProperties = this.ToObjectInternal<DatabaseProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     databaseProperties,
                     database);
             });
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
                 ThroughputProperties throughputProperties = this.ToObjectInternal<ThroughputProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new ThroughputResponse(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     throughputProperties);
             });
         }
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
                 T item = this.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
                 return new StoredProcedureExecuteResponse<T>(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     item);
             });
         }
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
                 StoredProcedureProperties cosmosStoredProcedure = this.ToObjectInternal<StoredProcedureProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new StoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     cosmosStoredProcedure);
             });
         }
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
                 TriggerProperties triggerProperties = this.ToObjectInternal<TriggerProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     triggerProperties);
             });
         }
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                 UserDefinedFunctionProperties settings = this.ToObjectInternal<UserDefinedFunctionProperties>(cosmosResponseMessage, this.propertiesSerializer);
                 return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage.CosmosHeaders,
                     settings);
             });
         }

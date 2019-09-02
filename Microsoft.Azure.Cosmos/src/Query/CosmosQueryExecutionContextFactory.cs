@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     break;
                 }
 
-                if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.Headers.SubStatusCode == SubStatusCodes.NameCacheIsStale)
+                if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.CosmosHeaders.SubStatusCode == SubStatusCodes.NameCacheIsStale)
                 {
                     await this.ForceRefreshCollectionCacheAsync(cancellationToken);
                     this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 rewrittenComosQueryContext = this.cosmosQueryContext;
             }
 
-            return await CreateSpecializedDocumentQueryExecutionContextAsync(
+            return await this.CreateSpecializedDocumentQueryExecutionContextAsync(
                 rewrittenComosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,

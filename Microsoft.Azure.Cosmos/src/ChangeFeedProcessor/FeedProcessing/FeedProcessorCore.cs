@@ -55,19 +55,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         ResponseMessage response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
                         if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
                         {
-                            DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
-                            this.HandleFailedRequest(response.StatusCode, (int)response.Headers.SubStatusCode, lastContinuation);
+                            DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.StatusCode, response.CosmosHeaders.SubStatusCode);
+                            this.HandleFailedRequest(response.StatusCode, (int)response.CosmosHeaders.SubStatusCode, lastContinuation);
 
-                            if (response.Headers.RetryAfter.HasValue)
+                            if (response.CosmosHeaders.RetryAfter.HasValue)
                             {
-                                delay = response.Headers.RetryAfter.Value;
+                                delay = response.CosmosHeaders.RetryAfter.Value;
                             }
 
                             // Out of the loop for a retry
                             break;
                         }
 
-                        lastContinuation = response.Headers.ContinuationToken;
+                        lastContinuation = response.CosmosHeaders.ContinuationToken;
                         if (this.resultSetIterator.HasMoreResults)
                         {
                             await this.DispatchChangesAsync(response, cancellationToken).ConfigureAwait(false);
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             Collection<T> asFeedResponse;
             try
             {
-                asFeedResponse = cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                asFeedResponse = this.cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
             }
             catch (Exception serializationException)
             {

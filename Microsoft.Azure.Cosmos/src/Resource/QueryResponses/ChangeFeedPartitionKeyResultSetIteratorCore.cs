@@ -69,9 +69,9 @@ namespace Microsoft.Azure.Cosmos
                 {
                     ResponseMessage response = task.Result;
                     // Change Feed uses ETAG
-                    this.continuationToken = response.Headers.ETag;
+                    this.continuationToken = response.CosmosHeaders.ETag;
                     this.hasMoreResultsInternal = response.StatusCode != HttpStatusCode.NotModified;
-                    response.Headers.ContinuationToken = this.continuationToken;
+                    response.CosmosHeaders.ContinuationToken = this.continuationToken;
                     return response;
                 }, cancellationToken);
         }

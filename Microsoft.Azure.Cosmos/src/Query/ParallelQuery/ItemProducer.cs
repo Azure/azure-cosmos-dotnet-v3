@@ -314,14 +314,14 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.fetchExecutionRangeAccumulator.EndFetchRange(
                     partitionIdentifier: this.PartitionKeyRange.Id,
-                    activityId: feedResponse.Headers.ActivityId,
+                    activityId: feedResponse.CosmosHeaders.ActivityId,
                     numberOfDocuments: feedResponse.Count,
                     retryCount: -1);
 
                 this.fetchSchedulingMetrics.Stop();
                 this.hasStartedFetching = true;
                 
-                this.ActivityId = Guid.Parse(feedResponse.Headers.ActivityId);
+                this.ActivityId = Guid.Parse(feedResponse.CosmosHeaders.ActivityId);
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccessStatusCode)
                 {
@@ -332,18 +332,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 // The backend continuation token is used for the children on splits 
                 // and should not be updated on exceptions
-                this.BackendContinuationToken = feedResponse.Headers.ContinuationToken;
+                this.BackendContinuationToken = feedResponse.CosmosHeaders.ContinuationToken;
 
                 Interlocked.Add(ref this.bufferedItemCount, feedResponse.Count);
                 QueryMetrics queryMetrics = QueryMetrics.Zero;
 
-                if (feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics] != null)
+                if (feedResponse.CosmosHeaders[HttpConstants.HttpHeaders.QueryMetrics] != null)
                 {
                     queryMetrics = QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(
-                        feedResponse.Headers[HttpConstants.HttpHeaders.QueryMetrics],
+                        feedResponse.CosmosHeaders[HttpConstants.HttpHeaders.QueryMetrics],
                         new ClientSideMetrics(
                             -1,
-                            feedResponse.Headers.RequestCharge,
+                            feedResponse.CosmosHeaders.RequestCharge,
                             this.fetchExecutionRangeAccumulator.GetExecutionRanges(),
                             new List<Tuple<string, SchedulingTimeSpan>>()));
                 }
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.produceAsyncCompleteCallback(
                     feedResponse.Count,
-                    feedResponse.Headers.RequestCharge,
+                    feedResponse.CosmosHeaders.RequestCharge,
                     queryMetrics,
                     feedResponse.ResponseLengthBytes,
                     token);
@@ -474,7 +474,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // Update the state.
             this.PreviousContinuationToken = this.currentContinuationToken;
-            this.currentContinuationToken = queryResponse.Headers.ContinuationToken;
+            this.currentContinuationToken = queryResponse.CosmosHeaders.ContinuationToken;
             this.CurrentPage = queryResponse.CosmosElements.GetEnumerator();
             this.IsAtBeginningOfPage = true;
             this.itemsLeftInCurrentPage = queryResponse.Count;

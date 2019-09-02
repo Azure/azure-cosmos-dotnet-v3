@@ -5,14 +5,16 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Http;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Documents;
 
@@ -22,9 +24,8 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// It is expected that direct property access is used for properties that will be read and used within the Azure Cosmos SDK pipeline, for example <see cref="RequestMessage.OperationType"/>.
     /// <see cref="RequestMessage.Properties"/> should be used for any other property that needs to be sent to the backend but will not be read nor used within the Azure Cosmos DB SDK pipeline.
-    /// <see cref="RequestMessage.Headers"/> should be used for HTTP headers that need to be passed down and sent to the backend.
     /// </remarks>
-    public class RequestMessage : IDisposable
+    public class RequestMessage : Request
     {
         /// <summary>
         /// Create a <see cref="RequestMessage"/>
@@ -38,16 +39,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="method">The http method</param>
         /// <param name="requestUri">The requested URI</param>
-        public RequestMessage(HttpMethod method, Uri requestUri)
+        public RequestMessage(RequestMethod method, Uri requestUri)
         {
             this.Method = method;
             this.RequestUri = requestUri;
         }
-
-        /// <summary>
-        /// Gets the <see cref="HttpMethod"/> for the current request.
-        /// </summary>
-        public virtual HttpMethod Method { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="Uri"/> for the current request.
@@ -57,20 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="RequestMessage"/> HTTP headers.
         /// </summary>
-        public virtual Headers Headers => this.headers.Value;
-
-        /// <summary>
-        /// Gets or sets the current <see cref="RequestMessage"/> payload.
-        /// </summary>
-        public virtual Stream Content
-        {
-            get => this.content;
-            set
-            {
-                this.CheckDisposed();
-                this.content = value;
-            }
-        }
+        internal virtual CosmosHeaders CosmosHeaders => this.headers.Value;
 
         internal RequestOptions RequestOptions { get; set; }
 
@@ -98,26 +81,29 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed && 
             (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && 
-            this.PartitionKeyRangeId == null && this.Headers.PartitionKey == null;
+            this.PartitionKeyRangeId == null && this.CosmosHeaders.PartitionKey == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
         /// These will not be automatically included into the wire.
         /// </summary>
-        public virtual Dictionary<string, object> Properties => this.properties.Value;
+        internal virtual Dictionary<string, object> Properties => this.properties.Value;
+
+        /// <summary>
+        /// TBD
+        /// </summary>
+        public override string ClientRequestId { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         private readonly Lazy<Dictionary<string, object>> properties = new Lazy<Dictionary<string, object>>(RequestMessage.CreateDictionary);
 
-        private readonly Lazy<Headers> headers = new Lazy<Headers>(RequestMessage.CreateHeaders);
+        private readonly Lazy<CosmosHeaders> headers = new Lazy<CosmosHeaders>(RequestMessage.CreateHeaders);
 
         private bool disposed;
-
-        private Stream content;
 
         /// <summary>
         /// Disposes the current <see cref="RequestMessage"/>.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             this.Dispose(true);
             GC.SuppressFinalize(this);
@@ -145,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (throughputValue.HasValue)
             {
-                this.Headers.OfferThroughput = throughputValue.Value.ToString(CultureInfo.InvariantCulture);
+                this.CosmosHeaders.OfferThroughput = throughputValue.Value.ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -187,14 +173,20 @@ namespace Microsoft.Azure.Cosmos
                         operationType: this.OperationType,
                         resourceIdOrFullName: null,
                         resourceType: this.ResourceType,
-                        body: this.Content,
-                        headers: this.Headers.CosmosMessageHeaders,
+                        body: this.Content.GetStream(),
+                        headers: this.CosmosHeaders.CosmosMessageHeaders,
                         isNameBased: false,
                         authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(
+                        this.OperationType,
+                        this.ResourceType,
+                        this.RequestUri?.ToString(),
+                        this.Content.GetStream(),
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        this.CosmosHeaders.CosmosMessageHeaders);
                 }
 
                 if (this.UseGatewayMode.HasValue)
@@ -223,9 +215,9 @@ namespace Microsoft.Azure.Cosmos
             return new Dictionary<string, object>();
         }
 
-        private static Headers CreateHeaders()
+        private static CosmosHeaders CreateHeaders()
         {
-            return new Headers();
+            return new CosmosHeaders();
         }
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
@@ -239,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
         private bool AssertPartitioningPropertiesAndHeaders()
         {
             // Either PK/key-range-id is assumed
-            bool pkExists = !string.IsNullOrEmpty(this.Headers.PartitionKey);
+            bool pkExists = !string.IsNullOrEmpty(this.CosmosHeaders.PartitionKey);
             bool epkExists = this.Properties.ContainsKey(WFConstants.BackendHeaders.EffectivePartitionKeyString);
             if (pkExists && epkExists)
             {
@@ -252,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(RMResources.MissingPartitionKeyValue);
             }
 
-            bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
+            bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.CosmosHeaders.PartitionKeyRangeId);
             if (partitionKeyRangeIdExists)
             {
                 // Assert operation type is not write
@@ -280,6 +272,154 @@ namespace Microsoft.Azure.Cosmos
             if (this.disposed)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void AddHeader(string name, string value)
+        {
+            this.CosmosHeaders.Add(name, value);
+        }
+
+        /// <inheritdoc />
+        protected override bool TryGetHeader(string name, out string value)
+        {
+            return this.CosmosHeaders.TryGetValue(name, out value);
+        }
+
+        /// <inheritdoc />
+        protected override bool TryGetHeaderValues(string name, out IEnumerable<string> values)
+        {
+            values = null;
+            string singleValue;
+            bool retValue = this.CosmosHeaders.TryGetValue(name, out singleValue);
+            if (retValue)
+            {
+                values = new List<string>() { singleValue };
+            }
+
+            return retValue;
+        }
+
+        /// <inheritdoc />
+        protected override bool ContainsHeader(string name)
+        {
+            string singleValue;
+            return this.CosmosHeaders.TryGetValue(name, out singleValue);
+        }
+
+        /// <inheritdoc />
+        protected override bool RemoveHeader(string name)
+        {
+            this.CosmosHeaders.Remove(name);
+            return true;
+        }
+
+        /// <inheritdoc />
+        protected override IEnumerable<HttpHeader> EnumerateHeaders()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    internal static class CoreExtensions
+    {
+        public static Stream GetStream(this HttpPipelineRequestContent content)
+        {
+            CosmosStreamContent cosmosContent = (CosmosStreamContent)content;
+            if (cosmosContent != null)
+            {
+                return cosmosContent.Detach();
+            }
+
+            // Return stream
+            throw new NotImplementedException();
+        }
+
+        ////public static CosmosMessageHeadersInternal GetHeaders(this Request request)
+        ////{
+        ////    RequestMessage requestMessage = (RequestMessage)request;
+        ////    if (requestMessage != null)
+        ////    {
+        ////        return requestMessage.Headers;
+        ////    }
+
+        ////    throw new NotImplementedException();
+        ////}
+    }
+
+    internal sealed class CosmosStreamContent : HttpPipelineRequestContent
+    {
+        private const int CopyToBufferSize = 81920;
+        private readonly long Origin;
+
+        private Stream stream;
+
+        public CosmosStreamContent(Stream stream)
+        {
+            if (!stream.CanSeek) throw new ArgumentException("stream must be seekable", nameof(stream));
+
+            this.Origin = stream.Position;
+            this.stream = stream;
+        }
+
+        public override void WriteTo(Stream stream, CancellationToken cancellationToken)
+        {
+            this.stream.Seek(this.Origin, SeekOrigin.Begin);
+
+            // this is not using CopyTo so that we can honor cancellations.
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(CopyToBufferSize);
+            try
+            {
+                while (true)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int read = this.stream.Read(buffer, 0, buffer.Length);
+                    if (read == 0)
+                    {
+                        break;
+                    }
+                    cancellationToken.ThrowIfCancellationRequested();
+                    stream.Write(buffer, 0, read);
+                }
+            }
+            finally
+            {
+                stream.Flush();
+                ArrayPool<byte>.Shared.Return(buffer, true);
+            }
+        }
+
+        public override bool TryComputeLength(out long length)
+        {
+            if (this.stream.CanSeek)
+            {
+                length = this.stream.Length - this.Origin;
+                return true;
+            }
+            length = 0;
+            return false;
+        }
+
+        public override async Task WriteToAsync(Stream stream, CancellationToken cancellation)
+        {
+            this.stream.Seek(this.Origin, SeekOrigin.Begin);
+            await this.stream.CopyToAsync(stream, CopyToBufferSize, cancellation).ConfigureAwait(false);
+        }
+
+        public Stream Detach()
+        {
+            Stream response = this.stream;
+            this.stream = null;
+
+            return response;
+        }
+
+        public override void Dispose()
+        {
+            if (this.stream == null)
+            {
+                this.stream.Dispose();
             }
         }
     }

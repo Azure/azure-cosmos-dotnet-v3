@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <seealso cref="ResponseMessage"/>
     /// <seealso cref="RequestMessage"/>
-    public class Headers : IEnumerable
+    internal class CosmosHeaders : IEnumerable
     {
-        private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<Headers>();
+        private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<CosmosHeaders>();
 
         private readonly Lazy<CosmosMessageHeadersInternal> messageHeaders;
 
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
             }
             set
             {
-                this.SubStatusCode = Headers.GetSubStatusCodes(value);
+                this.SubStatusCode = CosmosHeaders.GetSubStatusCodes(value);
                 this.subStatusCodeLiteral = value;
             }
         }
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
             }
             set
             {
-                this.RetryAfter = Headers.GetRetryAfter(value);
+                this.RetryAfter = CosmosHeaders.GetRetryAfter(value);
                 this.retryAfterInternal = value;
             }
         }
@@ -168,9 +168,9 @@ namespace Microsoft.Azure.Cosmos
         internal string PageSize { get; set; }
 
         /// <summary>
-        /// Creates a new instance of <see cref="Headers"/>.
+        /// Creates a new instance of <see cref="CosmosHeaders"/>.
         /// </summary>
-        public Headers()
+        public CosmosHeaders()
         {
             this.messageHeaders = new Lazy<CosmosMessageHeadersInternal>(this.CreateCosmosMessageHeaders);
         }
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enumerates all the HTTP headers names in the <see cref="Headers"/>.
+        /// Enumerates all the HTTP headers names in the <see cref="CosmosHeaders"/>.
         /// </summary>
         /// <returns>An enumator for all headers.</returns>
         public virtual IEnumerator<string> GetEnumerator()
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enumerates all the HTTP headers names in the <see cref="Headers"/>.
+        /// Enumerates all the HTTP headers names in the <see cref="CosmosHeaders"/>.
         /// </summary>
         /// <returns>An enumator for all headers.</returns>
         IEnumerator IEnumerable.GetEnumerator()
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Dictionary<string, CosmosCustomHeader> CreateKnownDictionary()
         {
-            return Headers.knownHeaderProperties.ToDictionary(
+            return CosmosHeaders.knownHeaderProperties.ToDictionary(
                     knownProperty => knownProperty.Key,
                     knownProperty => new CosmosCustomHeader(
                             () => (string)knownProperty.Value.GetValue(this),

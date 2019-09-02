@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             while (!firstNotModifiedKeyRangeId.Equals(nextKeyRangeId, StringComparison.InvariantCultureIgnoreCase));
 
             // Send to the user the composite state for all ranges
-            response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
+            response.CosmosHeaders.ContinuationToken = this.compositeContinuationToken.ToString();
             return response;
         }
 
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
                 || response.StatusCode == HttpStatusCode.NotModified)
             {
                 // Change Feed read uses Etag for continuation
-                currentRangeToken.Token = response.Headers.ETag;
+                currentRangeToken.Token = response.CosmosHeaders.ETag;
             }
 
             return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             bool partitionSplit = response.StatusCode == HttpStatusCode.Gone 
-                && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
+                && (response.CosmosHeaders.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.CosmosHeaders.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
                 // Forcing stale refresh of Partition Key Ranges Cache

@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
-                request.Headers.ContinuationToken = continuationToken;
+                request.CosmosHeaders.ContinuationToken = continuationToken;
             }
         }
 

@@ -229,9 +229,9 @@ namespace Microsoft.Azure.Cosmos
                             HttpStatusCode.InternalServerError,
                             SubStatusCodes.Unknown,
                             ClientResources.ServerResponseDeserializationFailure,
-                            responseMessage.Headers.RequestCharge,
-                            responseMessage.Headers.RetryAfter,
-                            responseMessage.Headers.ActivityId,
+                            responseMessage.CosmosHeaders.RequestCharge,
+                            responseMessage.CosmosHeaders.RetryAfter,
+                            responseMessage.CosmosHeaders.ActivityId,
                             serverRequest,
                             serializer);
                     }
@@ -240,11 +240,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     response = new BatchResponse(
                         responseMessage.StatusCode,
-                        responseMessage.Headers.SubStatusCode,
+                        responseMessage.CosmosHeaders.SubStatusCode,
                         responseMessage.ErrorMessage,
-                        responseMessage.Headers.RequestCharge,
-                        responseMessage.Headers.RetryAfter,
-                        responseMessage.Headers.ActivityId,
+                        responseMessage.CosmosHeaders.RequestCharge,
+                        responseMessage.CosmosHeaders.RetryAfter,
+                        responseMessage.CosmosHeaders.ActivityId,
                         serverRequest,
                         serializer);
                 }
@@ -259,9 +259,9 @@ namespace Microsoft.Azure.Cosmos
                             HttpStatusCode.InternalServerError,
                             SubStatusCodes.Unknown,
                             ClientResources.InvalidServerResponse,
-                            responseMessage.Headers.RequestCharge,
-                            responseMessage.Headers.RetryAfter,
-                            responseMessage.Headers.ActivityId,
+                            responseMessage.CosmosHeaders.RequestCharge,
+                            responseMessage.CosmosHeaders.RetryAfter,
+                            responseMessage.CosmosHeaders.ActivityId,
                             serverRequest,
                             serializer);
                     }
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos
 
                     if ((int)responseMessage.StatusCode == (int)StatusCodes.TooManyRequests)
                     {
-                        if (!responseMessage.Headers.TryGetValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfter) ||
+                        if (!responseMessage.CosmosHeaders.TryGetValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfter) ||
                             retryAfter == null ||
                             !int.TryParse(retryAfter, out retryAfterMilliseconds))
                         {
@@ -329,11 +329,11 @@ namespace Microsoft.Azure.Cosmos
 
             BatchResponse response = new BatchResponse(
                 responseMessage.StatusCode,
-                responseMessage.Headers.SubStatusCode,
+                responseMessage.CosmosHeaders.SubStatusCode,
                 responseMessage.ErrorMessage,
-                responseMessage.Headers.RequestCharge,
-                responseMessage.Headers.RetryAfter,
-                responseMessage.Headers.ActivityId,
+                responseMessage.CosmosHeaders.RequestCharge,
+                responseMessage.CosmosHeaders.RetryAfter,
+                responseMessage.CosmosHeaders.ActivityId,
                 serverRequest,
                 serializer);
 

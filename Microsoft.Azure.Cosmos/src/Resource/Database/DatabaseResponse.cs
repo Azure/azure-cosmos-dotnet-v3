@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal DatabaseResponse(
             HttpStatusCode httpStatusCode,
-            Headers headers,
+            CosmosHeaders headers,
             DatabaseProperties databaseProperties,
             Database database)
         {
             this.StatusCode = httpStatusCode;
-            this.Headers = headers;
+            this.CosmosHeaders = headers;
             this.Resource = databaseProperties;
             this.Database = database;
         }
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Database Database { get; }
 
         /// <inheritdoc/>
-        public override Headers Headers { get; }
+        internal override CosmosHeaders CosmosHeaders { get; }
 
         /// <inheritdoc/>
         public override DatabaseProperties Resource { get; }
@@ -52,19 +52,19 @@ namespace Microsoft.Azure.Cosmos
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
-        public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
+        public override double RequestCharge => this.CosmosHeaders?.RequestCharge ?? 0;
 
         /// <inheritdoc/>
-        public override string ActivityId => this.Headers?.ActivityId;
+        public override string ActivityId => this.CosmosHeaders?.ActivityId;
 
         /// <inheritdoc/>
-        public override string ETag => this.Headers?.ETag;
+        public override string ETag => this.CosmosHeaders?.ETag;
 
         /// <inheritdoc/>
-        internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
+        internal override string MaxResourceQuota => this.CosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
         /// <inheritdoc/>
-        internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal override string CurrentResourceQuotaUsage => this.CosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Get <see cref="Cosmos.Database"/> implicitly from <see cref="DatabaseResponse"/>

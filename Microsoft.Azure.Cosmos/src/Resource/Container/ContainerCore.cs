@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             this.Conflicts = new ConflictsCore(this.ClientContext, this);
             this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
-            this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
+            this.queryClient = new CosmosQueryClientCore(this.ClientContext, this);
         }
 
         public override string Id { get; }
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessResourceOperationStreamAsync(
+            return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
                 linkUri: this.LinkUri,

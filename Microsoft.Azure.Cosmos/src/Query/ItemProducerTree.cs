@@ -517,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>Whether or not the exception was due to a split.</returns>
         private static bool IsSplitException(QueryResponse ex)
         {
-            return ex.StatusCode == HttpStatusCode.Gone && ex.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone;
+            return ex.StatusCode == HttpStatusCode.Gone && ex.CosmosHeaders.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone;
         }
 
         /// <summary>
@@ -693,9 +693,8 @@ namespace Microsoft.Azure.Cosmos.Query
         private async Task<IReadOnlyList<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
         {
             IRoutingMapProvider routingMapProvider = await this.queryClient.GetRoutingMapProviderAsync();
-            IReadOnlyList<PartitionKeyRange> replacementRanges = (
-                await routingMapProvider
-                    .TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true));
+            IReadOnlyList<PartitionKeyRange> replacementRanges = await routingMapProvider
+                    .TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true);
             string replaceMinInclusive = replacementRanges.First().MinInclusive;
             string replaceMaxExclusive = replacementRanges.Last().MaxExclusive;
             if (!replaceMinInclusive.Equals(targetRange.MinInclusive, StringComparison.Ordinal) || !replaceMaxExclusive.Equals(targetRange.MaxExclusive, StringComparison.Ordinal))

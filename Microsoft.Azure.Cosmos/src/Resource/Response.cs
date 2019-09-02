@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
         /// </summary>
-        public abstract Headers Headers { get; }
+        internal abstract CosmosHeaders CosmosHeaders { get; }
 
         /// <summary>
         /// The content of the response.

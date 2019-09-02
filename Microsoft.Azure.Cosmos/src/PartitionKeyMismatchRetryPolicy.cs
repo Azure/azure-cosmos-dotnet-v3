@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             ShouldRetryResult shouldRetryResult = this.ShouldRetryInternal(cosmosResponseMessage?.StatusCode,
-                cosmosResponseMessage?.Headers.SubStatusCode,
+                cosmosResponseMessage?.CosmosHeaders.SubStatusCode,
                 cosmosResponseMessage?.GetResourceAddress());
             if (shouldRetryResult != null)
             {

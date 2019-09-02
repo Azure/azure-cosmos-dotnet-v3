@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.SqlQuerySpecSerializer.ToStream(querySpec);
+                stream = this.clientContext.SqlQuerySpecSerializer.ToStream(this.querySpec);
                 operation = OperationType.Query;
             }
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: stream,
                requestEnricher: request => 
                {
-                   QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                   QueryRequestOptions.FillContinuationToken(request, this.continuationToken);
                    if (this.querySpec != null)
                    {
                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
@@ -87,14 +87,14 @@ namespace Microsoft.Azure.Cosmos
                },
                cancellationToken: cancellationToken);
 
-            this.continuationToken = response.Headers.ContinuationToken;
+            this.continuationToken = response.CosmosHeaders.ContinuationToken;
             this.hasMoreResultsInternal = GetHasMoreResults(this.continuationToken, response.StatusCode);
             return response;
         }
 
         internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
         {
-            return httpResponseMessage.Headers.ContinuationToken;
+            return httpResponseMessage.CosmosHeaders.ContinuationToken;
         }
 
         internal static bool GetHasMoreResults(string continuationToken, HttpStatusCode statusCode)

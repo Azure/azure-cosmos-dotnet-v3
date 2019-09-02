@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
                     return QueryResponse.CreateFailure(
-                        CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType, containerResourceId),
+                        CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.CosmosHeaders, resourceType, containerResourceId),
                         cosmosResponseMessage.StatusCode,
                         cosmosResponseMessage.RequestMessage,
                         cosmosResponseMessage.ErrorMessage,
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
                 return QueryResponse.CreateSuccess(
                     result: cosmosArray,
                     count: itemCount,
-                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType, containerResourceId),
+                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.CosmosHeaders, resourceType, containerResourceId),
                     responseLengthBytes: responseLengthBytes);
             }
         }
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
                 // If the request already has the logical partition key,
                 // then we shouldn't add the physical partition key range id.
 
-                bool hasPartitionKey = request.Headers.PartitionKey != null;
+                bool hasPartitionKey = request.CosmosHeaders.PartitionKey != null;
                 if (!hasPartitionKey)
                 {
                     request
