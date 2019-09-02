@@ -27,7 +27,8 @@ namespace Microsoft.Azure.Cosmos
         internal ItemResponse(
             HttpStatusCode httpStatusCode,
             CosmosHeaders headers,
-            T item)
+            T item,
+            CosmosDiagnostics diagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.CosmosHeaders = headers;
