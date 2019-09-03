@@ -4,12 +4,16 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using Newtonsoft.Json.Serialization;
+
     /// <summary>
     /// This class provides a way to configure basic
     /// serializer settings.
     /// </summary>
     public sealed class CosmosSerializationOptions
     {
+        private CamelCaseNamingStrategy camelCaseNamingStrategy { get; }
+
         /// <summary>
         /// Create an instance of CosmosSerializationOptions
         /// with the default values for the Cosmos SDK
@@ -19,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
             this.IgnoreNullValues = false;
             this.Indented = false;
             this.PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default;
+            this.camelCaseNamingStrategy = new CamelCaseNamingStrategy();
         }
 
         /// <summary>
@@ -45,5 +50,15 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+
+        internal string GetStrWithPropertyNamingPolicy(string str)
+        {
+            if (this.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase)
+            {
+                return this.camelCaseNamingStrategy.GetPropertyName(str, false);
+            }
+
+            return str;
+        }
     }
 }

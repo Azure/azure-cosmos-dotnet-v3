@@ -5,23 +5,18 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
-    using Microsoft.Azure.Cosmos.Query.Aggregation;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
     /// Execution component that is able to aggregate local aggregates from multiple continuations and partitions.
-    /// At a high level aggregates queries only return a local aggregate meaning that the value that is returned is only valid for that one continuation (and one partition).
-    /// For example suppose you have the query "SELECT Count(1) from c" and you have a single partition collection, 
+    /// At a high level aggregates queries only return a "partial" aggregate.
+    /// "partial" means that the result is only valid for that one continuation (and one partition).
+    /// For example suppose you have the query "SELECT COUNT(1) FROM c" and you have a single partition collection, 
     /// then you will get one count for each continuation of the query.
     /// If you wanted the true result for this query, then you will have to take the sum of all continuations.
     /// The reason why we have multiple continuations is because for a long running query we have to break up the results into multiple continuations.
@@ -30,64 +25,66 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     internal sealed class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
         /// <summary>
-        /// aggregators[i] is the i'th aggregate in this query execution component.
+        /// This class does most of the work, since a query like:
+        /// 
+        /// SELECT VALUE AVG(c.age)
+        /// FROM c
+        /// 
+        /// is really just an aggregation on a single grouping (the whole collection).
         /// </summary>
-        private readonly IAggregator[] aggregators;
+        private readonly SingleGroupAggregator singleGroupAggregator;
+
+        /// <summary>
+        /// We need to keep track of whether the projection has the 'VALUE' keyword.
+        /// </summary>
+        private readonly bool isValueAggregateQuery;
 
         /// <summary>
         /// Initializes a new instance of the AggregateDocumentQueryExecutionComponent class.
         /// </summary>
         /// <param name="source">The source component that will supply the local aggregates from multiple continuations and partitions.</param>
-        /// <param name="aggregateOperators">The aggregate operators for this query.</param>
+        /// <param name="singleGroupAggregator">The single group aggregator that we will feed results into.</param>
+        /// <param name="isValueAggregateQuery">Whether or not the query has the 'VALUE' keyword.</param>
         /// <remarks>This constructor is private since there is some async initialization that needs to happen in CreateAsync().</remarks>
-        private AggregateDocumentQueryExecutionComponent(IDocumentQueryExecutionComponent source, AggregateOperator[] aggregateOperators)
+        private AggregateDocumentQueryExecutionComponent(
+            IDocumentQueryExecutionComponent source,
+            SingleGroupAggregator singleGroupAggregator,
+            bool isValueAggregateQuery)
             : base(source)
         {
-            this.aggregators = new IAggregator[aggregateOperators.Length];
-            for (int i = 0; i < aggregateOperators.Length; ++i)
+            if (singleGroupAggregator == null)
             {
-                switch (aggregateOperators[i])
-                {
-                    case AggregateOperator.Average:
-                        this.aggregators[i] = new AverageAggregator();
-                        break;
-                    case AggregateOperator.Count:
-                        this.aggregators[i] = new CountAggregator();
-                        break;
-                    case AggregateOperator.Max:
-                        this.aggregators[i] = new MinMaxAggregator(false);
-                        break;
-                    case AggregateOperator.Min:
-                        this.aggregators[i] = new MinMaxAggregator(true);
-                        break;
-                    case AggregateOperator.Sum:
-                        this.aggregators[i] = new SumAggregator();
-                        break;
-                    default:
-                        string errorMessage = "Unexpected value: " + aggregateOperators[i].ToString();
-                        Debug.Assert(false, errorMessage);
-                        throw new InvalidProgramException(errorMessage);
-                }
+                throw new ArgumentNullException(nameof(singleGroupAggregator));
             }
+
+            this.singleGroupAggregator = singleGroupAggregator;
+            this.isValueAggregateQuery = isValueAggregateQuery;
         }
 
         /// <summary>
         /// Creates a AggregateDocumentQueryExecutionComponent.
         /// </summary>
-        /// <param name="aggregateOperators">The aggregate operators for this query.</param>
+        /// <param name="aggregates">The aggregates.</param>
+        /// <param name="aliasToAggregateType">The alias to aggregate type.</param>
+        /// <param name="hasSelectValue">Whether or not the query has the 'VALUE' keyword.</param>
         /// <param name="requestContinuation">The continuation token to resume from.</param>
         /// <param name="createSourceCallback">The callback to create the source component that supplies the local aggregates.</param>
         /// <returns>The AggregateDocumentQueryExecutionComponent.</returns>
         public static async Task<AggregateDocumentQueryExecutionComponent> CreateAsync(
-            AggregateOperator[] aggregateOperators,
+            AggregateOperator[] aggregates,
+            IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
+            bool hasSelectValue,
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
         {
-            return new AggregateDocumentQueryExecutionComponent(await createSourceCallback(requestContinuation), aggregateOperators);
+            return new AggregateDocumentQueryExecutionComponent(
+                await createSourceCallback(requestContinuation),
+                SingleGroupAggregator.Create(aggregates, aliasToAggregateType, hasSelectValue),
+                aggregates != null && aggregates.Count() == 1);
         }
 
         /// <summary>
-        /// Drains at most 'maxElements' documents from the <see cref="AggregateDocumentQueryExecutionComponent"/> .
+        /// Drains at most 'maxElements' documents from the AggregateDocumentQueryExecutionComponent.
         /// </summary>
         /// <param name="maxElements">This value is ignored, since the aggregates are aggregated for you.</param>
         /// <param name="token">The cancellation token.</param>
@@ -98,9 +95,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </remarks>
         public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
         {
-            token.ThrowIfCancellationRequested();
-
             // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
+            // Note-2019-07-11-brchon: We can return empty pages until all the documents are drained,
+            // but then we will have to design a continuation token.
+
             double requestCharge = 0;
             long responseLengthBytes = 0;
             List<Uri> replicaUris = new List<Uri>();
@@ -121,38 +119,28 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 resourceType = result.QueryHeaders.ResourceType;
                 requestCharge += result.Headers.RequestCharge;
                 responseLengthBytes += result.ResponseLengthBytes;
-                //partitionedQueryMetrics += new PartitionedQueryMetrics(result.QueryMetrics);
+                // DEVNOTE: Add when query metrics is supported
+                // partitionedQueryMetrics += new PartitionedQueryMetrics(results.QueryMetrics);
                 if (result.RequestStatistics != null)
                 {
                     replicaUris.AddRange(result.RequestStatistics.ContactedReplicas);
                 }
 
-                foreach (CosmosElement item in result.CosmosElements)
+                foreach (CosmosElement element in result.CosmosElements)
                 {
-                    if (!(item is CosmosArray comosArray))
-                    {
-                        throw new InvalidOperationException("Expected an array of aggregate results from the execution context.");
-                    }
-
-                    List<AggregateItem> aggregateItems = new List<AggregateItem>();
-                    foreach (CosmosElement arrayItem in comosArray)
-                    {
-                        aggregateItems.Add(new AggregateItem(arrayItem));
-                    }
-
-                    Debug.Assert(
-                        aggregateItems.Count == this.aggregators.Length,
-                        $"Expected {this.aggregators.Length} values, but received {aggregateItems.Count}.");
-
-                    for (int i = 0; i < this.aggregators.Length; ++i)
-                    {
-                        this.aggregators[i].Aggregate(aggregateItems[i].Item);
-                    }
+                    RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
+                        this.isValueAggregateQuery,
+                        element);
+                    this.singleGroupAggregator.AddValues(rewrittenAggregateProjections.Payload);
                 }
             }
 
-            List<CosmosElement> finalResult = this.BindAggregateResults(
-                this.aggregators.Select(aggregator => aggregator.GetResult()));
+            List<CosmosElement> finalResult = new List<CosmosElement>();
+            CosmosElement aggregationResult = this.singleGroupAggregator.GetResult();
+            if (aggregationResult != null)
+            {
+                finalResult.Add(aggregationResult);
+            }
 
             // The replicaUris may have duplicates.
             requestStatistics.ContactedReplicas.AddRange(replicaUris);
@@ -168,37 +156,60 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     containerRid: containerRid)
                 {
                     RequestCharge = requestCharge
-                });
+                },
+                queryMetrics: this.GetQueryMetrics());
         }
 
         /// <summary>
-        /// Filters out all the aggregate results that are Undefined.
+        /// Struct for getting the payload out of the rewritten projection.
         /// </summary>
-        /// <param name="aggregateResults">The result for each aggregator.</param>
-        /// <returns>The aggregate results that are not Undefined.</returns>
-        private List<CosmosElement> BindAggregateResults(IEnumerable<CosmosElement> aggregateResults)
+        private struct RewrittenAggregateProjections
         {
-            // Note-2016-11-08-felixfan: Given what we support now, we should expect aggregateResults.Length == 1.
-            // Note-2018-03-07-brchon: This is because we only support aggregate queries like "SELECT VALUE max(c.blah) from c"
-            // and that is because it allows us to sum the local maxes and also avoids queries like "SELECT ABS(max(c.blah)) / 10 from c",
-            // which would require more static analysis to pull off.
-            string assertMessage = "Only support binding 1 aggregate function to projection.";
-            Debug.Assert(this.aggregators.Length == 1, assertMessage);
-            if (this.aggregators.Length != 1)
+            public RewrittenAggregateProjections(bool isValueAggregateQuery, CosmosElement raw)
             {
-                throw new NotSupportedException(assertMessage);
-            }
-
-            List<CosmosElement> result = new List<CosmosElement>();
-            foreach (CosmosElement aggregateResult in aggregateResults)
-            {
-                if (aggregateResult != null)
+                if (raw == null)
                 {
-                    result.Add(aggregateResult);
+                    throw new ArgumentNullException(nameof(raw));
+                }
+
+                if (isValueAggregateQuery)
+                {
+                    // SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
+                    CosmosArray aggregates = raw as CosmosArray;
+                    if (aggregates == null)
+                    {
+                        throw new ArgumentException($"{nameof(RewrittenAggregateProjections)} was not an array for a value aggregate query. Type is: {raw.Type}");
+                    }
+
+                    this.Payload = aggregates[0];
+                }
+                else
+                {
+                    CosmosObject cosmosObject = raw as CosmosObject;
+                    if (cosmosObject == null)
+                    {
+                        throw new ArgumentException($"{nameof(raw)} must not be an object.");
+                    }
+
+                    if (!cosmosObject.TryGetValue("payload", out CosmosElement cosmosPayload))
+                    {
+                        throw new InvalidOperationException($"Underlying object does not have an 'payload' field.");
+                    }
+
+                    // SELECT {"$1": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}} AS payload
+                    if (cosmosPayload == null)
+                    {
+                        throw new ArgumentException($"{nameof(RewrittenAggregateProjections)} does not have a 'payload' property.");
+                    }
+
+                    this.Payload = cosmosPayload;
                 }
             }
 
-            return result;
+            public CosmosElement Payload
+            {
+                get;
+            }
         }
     }
 }

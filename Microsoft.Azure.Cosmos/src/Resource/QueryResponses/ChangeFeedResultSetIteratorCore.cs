@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
         /// During Feed read, split can happen or Max Item count can go beyond the max response size
         /// </summary>
         internal async Task<bool> ShouldRetryFailureAsync(
-            ResponseMessage response, 
+            ResponseMessage response,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            bool partitionSplit = response.StatusCode == HttpStatusCode.Gone 
+            bool partitionSplit = response.StatusCode == HttpStatusCode.Gone
                 && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
                 cosmosContainerCore: this.container,
-                requestEnricher: request => 
+                requestEnricher: request =>
                 {
                     ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
                     ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);

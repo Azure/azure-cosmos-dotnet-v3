@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System.Text;
-
     internal sealed class SqlNullLiteral : SqlLiteral
     {
         public static readonly SqlNullLiteral Singleton = new SqlNullLiteral();
@@ -38,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             visitor.Visit(this);
         }
-        
+
         public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
         {
             return visitor.Visit(this);

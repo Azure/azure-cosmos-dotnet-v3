@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Handlers
 {
-    using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
 

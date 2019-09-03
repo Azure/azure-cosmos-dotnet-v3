@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
-
     internal abstract class SqlLiteralVisitor
     {
         public abstract void Visit(SqlBooleanLiteral literal);

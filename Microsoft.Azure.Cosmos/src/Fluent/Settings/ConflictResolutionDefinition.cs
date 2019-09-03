@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
-    using System.Collections.ObjectModel;
 
     /// <summary>
     /// <see cref="ConflictResolutionPolicy"/> fluent definition.

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal sealed class GatewayAccountReader 
+    internal sealed class GatewayAccountReader
     {
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IComputeHash authKeyHashFunction;
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
                                                  IComputeHash stringHMACSHA256Helper,
                                                  bool hasResourceToken,
                                                  string resourceToken,
-                                                 ConnectionPolicy connectionPolicy, 
+                                                 ConnectionPolicy connectionPolicy,
                                                  ApiType apiType,
                                                  HttpMessageHandler messageHandler = null)
         {

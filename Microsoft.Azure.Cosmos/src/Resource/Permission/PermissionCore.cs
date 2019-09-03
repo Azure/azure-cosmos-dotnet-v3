@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
         internal virtual CosmosClientContext ClientContext { get; }
 
         /// <inheritdoc/>
-        public override Task<PermissionResponse> DeleteAsync(RequestOptions requestOptions = null, 
+        public override Task<PermissionResponse> DeleteAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             Task<ResponseMessage> response = this.DeletePermissionStreamAsync(
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
         }
 
-        public Task<ResponseMessage> DeletePermissionStreamAsync(RequestOptions requestOptions = null, 
+        public Task<ResponseMessage> DeletePermissionStreamAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ResponseMessage> ReadPermissionStreamAsync(int? tokenExpiryInSeconds = null,
-            RequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessStreamAsync(
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override Task<PermissionResponse> ReplaceAsync(PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds = null,
-            RequestOptions requestOptions = null, 
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (permissionProperties == null)
@@ -118,8 +118,8 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreatePermissionResponseAsync(this, response);
         }
 
-        public Task<ResponseMessage> ReplacePermissionStreamAsync(PermissionProperties permissionProperties, 
-            RequestOptions requestOptions = null, 
+        public Task<ResponseMessage> ReplacePermissionStreamAsync(PermissionProperties permissionProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (permissionProperties == null)

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// Within the .NET SDK, you can deserialize the response into a corresponding TValue type.
     /// </remarks>
     internal class StoredProcedureResponse<TValue> : IStoredProcedureResponse<TValue>
-    {        
+    {
         private DocumentServiceResponse response;
         private TValue responseBody;
         private JsonSerializerSettings serializerSettings;
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the delimited string containing the usage of each resource type within the collection from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The delimited string containing the number of used units per resource type within the collection.</value>
-        public string CurrentResourceQuotaUsage 
+        public string CurrentResourceQuotaUsage
         {
             get
             {
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the clientside request statics for execution of stored procedure.
         /// </summary>
         /// <value>The clientside request statics for execution of stored procedure.</value>
-        internal ClientSideRequestStatistics RequestStatistics
+        internal IClientSideRequestStatistics RequestStatistics
         {
             get
             {

@@ -1006,7 +1006,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     return new ArraySegment<byte>(this.bufferedToken.GetBuffer(), 0, this.tokenLength);
                 }
             }
-#endregion
+            #endregion
         }
     }
 }

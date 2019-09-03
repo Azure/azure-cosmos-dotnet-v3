@@ -139,7 +139,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 takedDocuments,
                 takedDocuments.Count,
                 results.ResponseLengthBytes,
-                results.QueryHeaders.CloneKnownProperties(updatedContinuationToken, results.QueryHeaders.DisallowContinuationTokenMessage));
+                results.QueryHeaders.CloneKnownProperties(updatedContinuationToken, results.QueryHeaders.DisallowContinuationTokenMessage),
+                results.queryMetrics);
         }
 
         private enum TakeEnum

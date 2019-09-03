@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// <summary>
     /// Constructs <see cref="SqlScalarExpression"/> from a geometry <see cref="Expression"/>.
     /// </summary>
-    internal static class GeometrySqlExpressionFactory 
+    internal static class GeometrySqlExpressionFactory
     {
         /// <summary>
         /// Constructs <see cref="SqlScalarExpression"/> from a geometry <see cref="Expression"/>.

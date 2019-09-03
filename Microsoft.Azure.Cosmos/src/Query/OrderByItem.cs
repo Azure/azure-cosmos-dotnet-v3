@@ -76,9 +76,9 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <param name="serializer">The serialized</param>
             /// <returns>The deserialized JSON.</returns>
             public override object ReadJson(
-                JsonReader reader, 
-                Type objectType, 
-                object existingValue, 
+                JsonReader reader,
+                Type objectType,
+                object existingValue,
                 JsonSerializer serializer)
             {
                 JToken jToken = JToken.Load(reader);

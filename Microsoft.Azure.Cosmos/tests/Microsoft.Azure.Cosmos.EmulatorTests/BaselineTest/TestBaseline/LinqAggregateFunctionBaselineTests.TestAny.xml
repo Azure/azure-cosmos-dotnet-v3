@@ -3,6 +3,7 @@
     <Input>
       <Description><![CDATA[Any]]></Description>
       <Expression><![CDATA[query.Any(), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -12,12 +13,15 @@ FROM (
     FROM root
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Filter true flag -> Any]]></Description>
       <Expression><![CDATA[query.Where(doc => doc.Flag).Any(), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -28,12 +32,15 @@ FROM (
     WHERE root["Flag"]
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Filter false flag -> Any]]></Description>
       <Expression><![CDATA[query.Where(doc => Not(doc.Flag)).Any(), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -44,12 +51,15 @@ FROM (
     WHERE (NOT root["Flag"])
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select number -> Any]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.Number).Any(), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -59,12 +69,15 @@ FROM (
     FROM root
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select many -> Filter -> Select -> Any]]></Description>
       <Expression><![CDATA[query.SelectMany(doc => doc.Multiples.Where(m => ((m % 3) == 0)).Select(m => m)).Any(), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -76,12 +89,15 @@ FROM (
     WHERE ((m0 % 3) = 0)
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Any w/ boolean filter]]></Description>
       <Expression><![CDATA[query.Any(doc => doc.Flag), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -92,12 +108,15 @@ FROM (
     WHERE root["Flag"]
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Any w/ operator filter]]></Description>
       <Expression><![CDATA[query.Any(doc => (doc.Number < -7)), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -108,12 +127,15 @@ FROM (
     WHERE (root["Number"] < -7)
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select number -> Any w/ operator filter]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.Number).Any(num => (num < -13)), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -124,12 +146,15 @@ FROM (
     WHERE (root["Number"] < -13)
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select(Select) -> Any(Sum)]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.Multiples).Any(array => (array.Sum() > 5)), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -148,12 +173,15 @@ FROM (
     WHERE (v1 > 5)
 ) AS v2 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select(Where) -> Any(Sum(map))]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Pets.Count() > 0))).Any(children => (children.Sum(c => c.Grade) > 150)), Object)]]></Expression>
+      <ErrorMessage><![CDATA[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -180,6 +208,8 @@ FROM (
     WHERE (v1 > 150)
 ) AS v2 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
+      <Failed>True</Failed>
     </Output>
   </Result>
   <Result>
