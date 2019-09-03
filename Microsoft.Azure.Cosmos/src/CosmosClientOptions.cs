@@ -333,18 +333,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enables a high throughput mode in which point operations will be optimized to execute in batch requests.
+        /// Enables the optimization of point operation requests by batching them and resolving them as a single service call.
         /// </summary>
         /// <remarks>
-        /// There is no order of execution enforced when this mode is active.
-        /// This mode affects only point operations.
+        /// When enabled, point operations will be grouped based on their concurrency to optimize throughput.
         /// </remarks>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        bool OptimizeForThroughput { get; set; }
+        bool AllowBatchingRequests { get; set; }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.

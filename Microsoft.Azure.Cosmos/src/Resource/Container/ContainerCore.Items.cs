@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.OptimizeForThroughput)
+            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
             {
                 return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.OptimizeForThroughput)
+            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
             {
                 return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.OptimizeForThroughput)
+            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
             {
                 return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.OptimizeForThroughput)
+            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
             {
                 return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.OptimizeForThroughput)
+            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
             {
                 return this.ProcessItemStreamWithBatchExecutorAsync(
                     partitionKey,
@@ -508,7 +508,7 @@ namespace Microsoft.Azure.Cosmos
             while (true)
             {
                 ResponseMessage responseMessage;
-                if (this.ClientContext.ClientOptions.OptimizeForThroughput)
+                if (this.ClientContext.ClientOptions.AllowBatchingRequests)
                 {
                     responseMessage = await this.ProcessItemStreamWithBatchExecutorAsync(
                         partitionKey,

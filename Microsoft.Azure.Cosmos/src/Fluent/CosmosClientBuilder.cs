@@ -330,18 +330,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enables a high throughput mode in which ingest operations will be optimized to execute in batch requests.
+        /// Enables the optimization of point operation requests by batching them and resolving them as a single service call.
         /// </summary>
-        /// <param name="enabled">Whether <see cref="CosmosClientOptions.OptimizeForThroughput"/> is enabled.</param>
+        /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBatchingRequests"/> is enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="CosmosClientOptions.AllowBatchingRequests"/>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        CosmosClientBuilder WithOptimizeForThroughput(bool enabled)
+        CosmosClientBuilder WithBatchingRequests(bool enabled)
         {
-            this.clientOptions.OptimizeForThroughput = enabled;
+            this.clientOptions.AllowBatchingRequests = enabled;
             return this;
         }
 
