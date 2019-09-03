@@ -4,9 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Linq;
 
     internal sealed class SqlArrayCreateScalarExpression : SqlScalarExpression
     {

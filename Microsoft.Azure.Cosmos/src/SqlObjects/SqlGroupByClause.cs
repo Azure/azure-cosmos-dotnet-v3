@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             visitor.Visit(this);
         }
-        
+
         public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
         {
             return visitor.Visit(this);

@@ -5,10 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
     using System.Text;
-    using System.Xml;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -68,18 +65,18 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="clientSideMetrics">Client Side Metrics</param>
         [JsonConstructor]
         internal QueryMetrics(
-            long retrievedDocumentCount, 
-            long retrievedDocumentSize, 
-            long outputDocumentCount, 
-            long outputDocumentSize, 
-            long indexHitDocumentCount, 
-            TimeSpan totalQueryExecutionTime, 
-            QueryPreparationTimes queryPreparationTimes, 
-            TimeSpan indexLookupTime, 
-            TimeSpan documentLoadTime, 
-            TimeSpan vmExecutionTime, 
-            RuntimeExecutionTimes runtimeExecutionTimes, 
-            TimeSpan documentWriteTime, 
+            long retrievedDocumentCount,
+            long retrievedDocumentSize,
+            long outputDocumentCount,
+            long outputDocumentSize,
+            long indexHitDocumentCount,
+            TimeSpan totalQueryExecutionTime,
+            QueryPreparationTimes queryPreparationTimes,
+            TimeSpan indexLookupTime,
+            TimeSpan documentLoadTime,
+            TimeSpan vmExecutionTime,
+            RuntimeExecutionTimes runtimeExecutionTimes,
+            TimeSpan documentWriteTime,
             ClientSideMetrics clientSideMetrics)
         {
             if (queryPreparationTimes == null)
@@ -160,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the size of documents outputted in bytes during query in the Azure DocumentDB database service.
         /// </summary>
-        internal long OutputDocumentSize
+        public long OutputDocumentSize
         {
             get
             {
@@ -171,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the total query time in the Azure DocumentDB database service.
         /// </summary>
-        internal TimeSpan TotalQueryExecutionTime
+        public TimeSpan TotalQueryExecutionTime
         {
             get
             {
@@ -215,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the query index lookup time in the Azure DocumentDB database service.
         /// </summary>
-        internal TimeSpan IndexLookupTime
+        public TimeSpan IndexLookupTime
         {
             get
             {
@@ -226,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the document loading time during query in the Azure DocumentDB database service.
         /// </summary>
-        internal TimeSpan DocumentLoadTime
+        public TimeSpan DocumentLoadTime
         {
             get
             {
@@ -237,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the query runtime execution times during query in the Azure DocumentDB database service.
         /// </summary>
-        internal RuntimeExecutionTimes RuntimeExecutionTimes
+        public RuntimeExecutionTimes RuntimeExecutionTimes
         {
             get
             {
@@ -248,7 +245,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the output writing/serializing time during query in the Azure DocumentDB database service.
         /// </summary>
-        internal TimeSpan DocumentWriteTime
+        public TimeSpan DocumentWriteTime
         {
             get
             {
@@ -284,7 +281,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the Index Hit Document Count.
         /// </summary>
-        internal long IndexHitDocumentCount
+        public long IndexHitDocumentCount
         {
             get
             {
@@ -295,7 +292,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the VMExecution Time.
         /// </summary>
-        internal TimeSpan VMExecutionTime
+        public TimeSpan VMExecutionTime
         {
             get
             {
@@ -563,7 +560,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the query runtime execution times during query in the Azure DocumentDB database service.
         /// </summary>
-        internal RuntimeExecutionTimes RuntimeExecutionTimes
+        public RuntimeExecutionTimes RuntimeExecutionTimes
         {
             get
             {

@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
-
     internal abstract class SqlCollectionExpressionVisitor
     {
         public abstract void Visit(SqlAliasedCollectionExpression collectionExpression);

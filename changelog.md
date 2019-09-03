@@ -8,11 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/100) Configurable Tcp settings to CosmosClientOptions
+- [#615](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/615) Adding basic request diagnostics for V3
+- [#729](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/729) Adding aggregate(CountAsync/SumAsync etc.) extensions for LINQ query
 - [#622](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/622) Added CRUD and query operations for Users and Permissions which enables [ResourceToken](https://docs.microsoft.com/en-us/azure/cosmos-db/secure-access-to-data#resource-tokens) support
+- [#716](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/716) Adding camel case serialization on LINQ query generation
 
 ### Fixed
 
 - [#726](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/726) Query iterator HasMoreResults now returns false if an exception is hit
+- [#705](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/705) User agent suffix gets truncated
 - [#753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/753) Reason was not being propagated for Conflict exceptions
 
 ## [3.1.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.1) - 2019-08-12

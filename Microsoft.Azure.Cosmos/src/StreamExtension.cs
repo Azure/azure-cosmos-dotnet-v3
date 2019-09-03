@@ -4,10 +4,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using System.IO;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal static class StreamExtension
@@ -40,14 +38,14 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 numberOfBytesRead += bytesRead;
-                
+
                 if (numberOfBytesRead > maxSizeToCopy)
                 {
                     throw new RequestEntityTooLargeException(
                         RMResources.RequestTooLarge);
                 }
                 await destinationStream.WriteAsync(buffer, 0, bytesRead);
-            }            
-        }        
+            }
+        }
     }
 }

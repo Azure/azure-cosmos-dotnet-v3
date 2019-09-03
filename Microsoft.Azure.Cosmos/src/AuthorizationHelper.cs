@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class AuthorizationHelper
     {
         public const int MaxAuthorizationHeaderSize = 1024;
-        
+
         // This API is a helper method to create auth header based on client request.
         // Uri is split into resourceType/resourceId - 
         // For feed/post/put requests, resourceId = parentId,
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException("headers");
             }
-            
+
             string resourceType = string.Empty;
             string resourceIdValue = string.Empty;
             bool isNameBased = false;

@@ -299,7 +299,8 @@ namespace Microsoft.Azure.Cosmos
                 (CosmosQueryClientCore)this.queryClient,
                 continuationToken,
                 requestOptions,
-                allowSynchronousQueryExecution);
+                allowSynchronousQueryExecution,
+                this.ClientContext.ClientOptions.SerializerOptions);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(

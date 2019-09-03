@@ -7,75 +7,81 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <requireFormattableOrderByQuery_true_isContinuationExpected_true>
-          <QueryInfo>
-            <DistinctType>None</DistinctType>
-            <Top />
-            <OrderBy />
-            <OrderByExpressions />
-            <Aggregates />
-          </QueryInfo>
-          <QueryRanges>
-            <Range>
-              <Range>[[],"Infinity")</Range>
-            </Range>
-          </QueryRanges>
-          <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-        </requireFormattableOrderByQuery_true_isContinuationExpected_true>
-        <requireFormattableOrderByQuery_true_isContinuationExpected_false>
-          <QueryInfo>
-            <DistinctType>None</DistinctType>
-            <Top />
-            <OrderBy />
-            <OrderByExpressions />
-            <Aggregates>
-              <Aggregate>Average</Aggregate>
-            </Aggregates>
-          </QueryInfo>
-          <QueryRanges>
-            <Range>
-              <Range>[[],"Infinity")</Range>
-            </Range>
-          </QueryRanges>
-          <RewrittenQuery><![CDATA[SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
-FROM c]]></RewrittenQuery>
-        </requireFormattableOrderByQuery_true_isContinuationExpected_false>
-        <requireFormattableOrderByQuery_false_isContinuationExpected_true>
-          <QueryInfo>
-            <DistinctType>None</DistinctType>
-            <Top />
-            <OrderBy />
-            <OrderByExpressions />
-            <Aggregates />
-          </QueryInfo>
-          <QueryRanges>
-            <Range>
-              <Range>[[],"Infinity")</Range>
-            </Range>
-          </QueryRanges>
-          <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-        </requireFormattableOrderByQuery_false_isContinuationExpected_true>
-        <requireFormattableOrderByQuery_false_isContinuationExpected_false>
-          <QueryInfo>
-            <DistinctType>None</DistinctType>
-            <Top />
-            <OrderBy />
-            <OrderByExpressions />
-            <Aggregates>
-              <Aggregate>Average</Aggregate>
-            </Aggregates>
-          </QueryInfo>
-          <QueryRanges>
-            <Range>
-              <Range>[[],"Infinity")</Range>
-            </Range>
-          </QueryRanges>
-          <RewrittenQuery><![CDATA[SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
-FROM c]]></RewrittenQuery>
-        </requireFormattableOrderByQuery_false_isContinuationExpected_false>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Average</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates />
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -86,8 +92,91 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal />
-      <Error>Message: {"Errors":["Cross partition query only supports 'VALUE &lt;AggreateFunc&gt;' for aggregates."]}</Error>
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <Error>Message: {"Errors":["Cross partition query only supports 'VALUE &lt;AggreateFunc&gt;' for aggregates."]}</Error>
+          </Output>
+        </GroupedOutput>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates />
+                <GroupByAliasToAggregateType>
+                  <AliasToAggregateType>
+                    <Alias>$1</Alias>
+                    <AggregateOperator>Average</AggregateOperator>
+                  </AliasToAggregateType>
+                </GroupByAliasToAggregateType>
+                <HasSelectValue>False</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT {"$1": {"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}} AS payload
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates />
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>False</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -100,25 +189,55 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Average</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
-FROM c]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Average</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -131,25 +250,55 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Min</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": MIN(c.blah), "item2": {"min": MIN(c.blah), "count": COUNT(c.blah)}}]
-FROM c]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Min</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": MIN(c.blah), "item2": {"min": MIN(c.blah), "count": COUNT(c.blah)}}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -162,25 +311,55 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Max</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": MAX(c.blah), "item2": {"max": MAX(c.blah), "count": COUNT(c.blah)}}]
-FROM c]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Max</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": MAX(c.blah), "item2": {"max": MAX(c.blah), "count": COUNT(c.blah)}}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -193,25 +372,55 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Sum</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": SUM(c.blah)}]
-FROM c]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Sum</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": SUM(c.blah)}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -224,25 +433,55 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Count</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": COUNT(c.blah)}]
-FROM c]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Count</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": COUNT(c.blah)}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -255,25 +494,55 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Count</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": COUNT(1)}]
-FROM c]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Count</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": COUNT(1)}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -286,25 +555,55 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Min</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": MIN((c.blah + 1)), "item2": {"min": MIN((c.blah + 1)), "count": COUNT((c.blah + 1))}}]
-FROM c]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Min</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": MIN((c.blah + 1)), "item2": {"min": MIN((c.blah + 1)), "count": COUNT((c.blah + 1))}}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -317,25 +616,55 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Min</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": MIN(c.key), "item2": {"min": MIN(c.key), "count": COUNT(c.key)}}]
-FROM c]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Min</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": MIN(c.key), "item2": {"min": MIN(c.key), "count": COUNT(c.key)}}]
+FROM c]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -348,77 +677,82 @@ FROM c]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <requireFormattableOrderByQuery_true_isContinuationExpected_true>
-          <QueryInfo>
-            <DistinctType>None</DistinctType>
-            <Top />
-            <OrderBy />
-            <OrderByExpressions />
-            <Aggregates />
-          </QueryInfo>
-          <QueryRanges>
-            <Range>
-              <Range>[[1.0],[1.0]]</Range>
-            </Range>
-          </QueryRanges>
-          <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-        </requireFormattableOrderByQuery_true_isContinuationExpected_true>
-        <requireFormattableOrderByQuery_true_isContinuationExpected_false>
-          <QueryInfo>
-            <DistinctType>None</DistinctType>
-            <Top />
-            <OrderBy />
-            <OrderByExpressions />
-            <Aggregates>
-              <Aggregate>Min</Aggregate>
-            </Aggregates>
-          </QueryInfo>
-          <QueryRanges>
-            <Range>
-              <Range>[[1.0],[1.0]]</Range>
-            </Range>
-          </QueryRanges>
-          <RewrittenQuery><![CDATA[SELECT VALUE [{"item": MIN(c.blah), "item2": {"min": MIN(c.blah), "count": COUNT(c.blah)}}]
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Min</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[1.0],[1.0]]</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": MIN(c.blah), "item2": {"min": MIN(c.blah), "count": COUNT(c.blah)}}]
 FROM c
-WHERE (c.key = 1)]]></RewrittenQuery>
-        </requireFormattableOrderByQuery_true_isContinuationExpected_false>
-        <requireFormattableOrderByQuery_false_isContinuationExpected_true>
-          <QueryInfo>
-            <DistinctType>None</DistinctType>
-            <Top />
-            <OrderBy />
-            <OrderByExpressions />
-            <Aggregates />
-          </QueryInfo>
-          <QueryRanges>
-            <Range>
-              <Range>[[1.0],[1.0]]</Range>
-            </Range>
-          </QueryRanges>
-          <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-        </requireFormattableOrderByQuery_false_isContinuationExpected_true>
-        <requireFormattableOrderByQuery_false_isContinuationExpected_false>
-          <QueryInfo>
-            <DistinctType>None</DistinctType>
-            <Top />
-            <OrderBy />
-            <OrderByExpressions />
-            <Aggregates>
-              <Aggregate>Min</Aggregate>
-            </Aggregates>
-          </QueryInfo>
-          <QueryRanges>
-            <Range>
-              <Range>[[1.0],[1.0]]</Range>
-            </Range>
-          </QueryRanges>
-          <RewrittenQuery><![CDATA[SELECT VALUE [{"item": MIN(c.blah), "item2": {"min": MIN(c.blah), "count": COUNT(c.blah)}}]
-FROM c
-WHERE (c.key = 1)]]></RewrittenQuery>
-        </requireFormattableOrderByQuery_false_isContinuationExpected_false>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+WHERE (c.key = 1)]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates />
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[1.0],[1.0]]</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -431,26 +765,56 @@ WHERE (c.key = 1)]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Min</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": MIN(c.blah), "item2": {"min": MIN(c.blah), "count": COUNT(c.blah)}}]
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Min</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": MIN(c.blah), "item2": {"min": MIN(c.blah), "count": COUNT(c.blah)}}]
 FROM c
-WHERE (c.key > 1)]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+WHERE (c.key > 1)]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -463,28 +827,58 @@ WHERE (c.key > 1)]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Average</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT VALUE [{"item": {"sum": SUM((c.age + 1)), "count": COUNT((c.age + 1))}}]
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top />
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Average</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT VALUE [{"item": {"sum": SUM((c.age + 1)), "count": COUNT((c.age + 1))}}]
 FROM Root AS r
 JOIN c IN r.children
 WHERE (c.age > 1)
-ORDER BY c.name]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+ORDER BY c.name]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
   <Result>
@@ -497,25 +891,55 @@ ORDER BY c.name]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top>10</Top>
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates>
-            <Aggregate>Average</Aggregate>
-          </Aggregates>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT TOP 10 VALUE [{"item": {"sum": SUM((r.age + 1)), "count": COUNT((r.age + 1))}}]
-FROM Root AS r]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
-      <Error />
+      <GroupedOutputs>
+        <GroupedOutput>
+          <OptionsList>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: False</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: False	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: False	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: False	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+            <Options>AllowNonValueAggregateQuery: True	HasLogicalPartitionKey: True	IsContinuationExpected: True	RequireFormattableOrderByQuery: True</Options>
+          </OptionsList>
+          <Output>
+            <PartitionedQueryExecutionInfoInternal>
+              <QueryInfo>
+                <DistinctType>None</DistinctType>
+                <Top>10</Top>
+                <Offset />
+                <Limit />
+                <GroupByExpressions />
+                <OrderBy />
+                <OrderByExpressions />
+                <Aggregates>
+                  <AggregateOperator>Average</AggregateOperator>
+                </Aggregates>
+                <GroupByAliasToAggregateType />
+                <HasSelectValue>True</HasSelectValue>
+              </QueryInfo>
+              <QueryRanges>
+                <Range>
+                  <Range>[[],"Infinity")</Range>
+                </Range>
+              </QueryRanges>
+              <RewrittenQuery>
+                <![CDATA[SELECT TOP 10 VALUE [{"item": {"sum": SUM((r.age + 1)), "count": COUNT((r.age + 1))}}]
+FROM Root AS r]]>
+              </RewrittenQuery>
+            </PartitionedQueryExecutionInfoInternal>
+          </Output>
+        </GroupedOutput>
+      </GroupedOutputs>
     </Output>
   </Result>
 </Results>

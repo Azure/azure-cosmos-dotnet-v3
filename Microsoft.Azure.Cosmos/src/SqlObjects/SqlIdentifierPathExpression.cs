@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Text;
 
     internal sealed class SqlIdentifierPathExpression : SqlPathExpression
     {
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             visitor.Visit(this);
         }
-        
+
         public override TResult Accept<TResult>(SqlPathExpressionVisitor<TResult> visitor)
         {
             return visitor.Visit(this);

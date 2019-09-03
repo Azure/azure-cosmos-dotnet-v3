@@ -4,9 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// Provides status for a documention collection restore.
     /// </summary>

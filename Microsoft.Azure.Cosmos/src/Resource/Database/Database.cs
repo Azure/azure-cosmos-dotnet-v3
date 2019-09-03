@@ -577,8 +577,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserResponse> UpsertUserAsync(string id, 
-            RequestOptions requestOptions = null, 
+        public abstract Task<UserResponse> UpsertUserAsync(string id,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -693,8 +693,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
-                /// <returns>An iterator to go through the containers</returns>
-            /// <example>
+        /// <returns>An iterator to go through the containers</returns>
+        /// <example>
         /// 1. This create the stream feed iterator for containers with queryText as input.
         /// <code language="c#">
         /// <![CDATA[

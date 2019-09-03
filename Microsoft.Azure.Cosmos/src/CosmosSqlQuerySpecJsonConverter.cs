@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Text;
     using Newtonsoft.Json;
 
     /// <summary>

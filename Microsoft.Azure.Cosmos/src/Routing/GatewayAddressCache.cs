@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
@@ -353,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceCollectionRoutingMapRefresh, bool.TrueString);
             }
-                 
+
             addressQuery.Add(HttpConstants.QueryStrings.Filter, this.protocolFilter);
 
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);

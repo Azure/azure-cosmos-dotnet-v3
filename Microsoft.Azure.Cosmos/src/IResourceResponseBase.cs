@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Specialized;
     using System.IO;
     using System.Net;
-    using Microsoft.Azure.Cosmos.Collections;
 
     /// <summary>
     /// Represents the non-resource specific service response headers returned by any request in the Azure Cosmos DB service.

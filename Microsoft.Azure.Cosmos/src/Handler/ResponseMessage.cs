@@ -109,6 +109,11 @@ namespace Microsoft.Azure.Cosmos
         public virtual RequestMessage RequestMessage { get; internal set; }
 
         /// <summary>
+        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
+        /// </summary>
+        public CosmosDiagnostics Diagnostics { get; set; }
+
+        /// <summary>
         /// Gets the internal error object.
         /// </summary>
         internal virtual Error Error { get; set; }
@@ -155,10 +160,10 @@ namespace Microsoft.Azure.Cosmos
         {
             string resourceLink = this.RequestMessage?.RequestUri.OriginalString;
             if (PathsHelper.TryParsePathSegments(
-                resourceLink, 
-                out bool isFeed, 
-                out string resourceTypeString, 
-                out string resourceIdOrFullName, 
+                resourceLink,
+                out bool isFeed,
+                out string resourceTypeString,
+                out string resourceIdOrFullName,
                 out bool isNameBased))
             {
                 Debug.Assert(resourceIdOrFullName != null);

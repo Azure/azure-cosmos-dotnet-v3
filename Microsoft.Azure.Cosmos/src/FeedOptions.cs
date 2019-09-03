@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="FeedOptions"/> class for the Azure Cosmos DB service.
         /// </summary>
         public FeedOptions()
-        { 
+        {
         }
 
         internal FeedOptions(FeedOptions options)

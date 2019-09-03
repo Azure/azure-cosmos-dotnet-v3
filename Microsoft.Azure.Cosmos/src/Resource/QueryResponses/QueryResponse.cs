@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
+            IReadOnlyDictionary<string, QueryMetrics> queryMetrics,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             string errorMessage,
@@ -42,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosElements = result;
             this.Count = count;
             this.ResponseLengthBytes = responseLengthBytes;
+            this.queryMetrics = queryMetrics;
         }
 
         public int Count { get; }
@@ -72,6 +74,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal ClientSideRequestStatistics RequestStatistics { get; }
 
+        internal IReadOnlyDictionary<string, QueryMetrics> queryMetrics { get; set; }
+
         internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
 
         internal bool GetHasMoreResults()
@@ -83,7 +87,8 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<CosmosElement> result,
             int count,
             long responseLengthBytes,
-            CosmosQueryResponseMessageHeaders responseHeaders)
+            CosmosQueryResponseMessageHeaders responseHeaders,
+            IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
         {
             if (count < 0)
             {
@@ -100,6 +105,7 @@ namespace Microsoft.Azure.Cosmos
                count: count,
                responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
+               queryMetrics: queryMetrics,
                statusCode: HttpStatusCode.OK,
                errorMessage: null,
                error: null,
@@ -120,6 +126,7 @@ namespace Microsoft.Azure.Cosmos
                 count: 0,
                 responseLengthBytes: 0,
                 responseHeaders: responseHeaders,
+                queryMetrics: null,
                 statusCode: statusCode,
                 errorMessage: errorMessage,
                 error: error,
@@ -144,11 +151,13 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             IEnumerable<CosmosElement> cosmosElements,
             CosmosQueryResponseMessageHeaders responseMessageHeaders,
+            CosmosDiagnostics diagnostics,
             CosmosSerializer jsonSerializer,
             CosmosSerializationFormatOptions serializationOptions)
         {
             this.cosmosElements = cosmosElements;
             this.QueryHeaders = responseMessageHeaders;
+            this.Diagnostics = diagnostics;
             this.jsonSerializer = jsonSerializer;
             this.serializationOptions = serializationOptions;
             this.StatusCode = httpStatusCode;
@@ -190,21 +199,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static QueryResponse<TInput> CreateResponse<TInput>(
-            ResponseMessage responseMessage,
-            CosmosSerializer jsonSerializer)
-        {
-            QueryResponse queryResponse = responseMessage as QueryResponse;
-            if (queryResponse == null)
-            {
-                throw new ArgumentException($"{nameof(responseMessage)} must be of type query response.");
-            }
-
-            return QueryResponse<TInput>.CreateResponse<TInput>(
-                queryResponse,
-                jsonSerializer);
-        }
-
-        internal static QueryResponse<TInput> CreateResponse<TInput>(
             QueryResponse cosmosQueryResponse,
             CosmosSerializer jsonSerializer)
         {
@@ -216,10 +210,10 @@ namespace Microsoft.Azure.Cosmos
                     httpStatusCode: cosmosQueryResponse.StatusCode,
                     cosmosElements: cosmosQueryResponse.CosmosElements,
                     responseMessageHeaders: cosmosQueryResponse.QueryHeaders,
+                    diagnostics: cosmosQueryResponse.Diagnostics,
                     jsonSerializer: jsonSerializer,
                     serializationOptions: cosmosQueryResponse.CosmosSerializationOptions);
             }
-
             return queryResponse;
         }
     }

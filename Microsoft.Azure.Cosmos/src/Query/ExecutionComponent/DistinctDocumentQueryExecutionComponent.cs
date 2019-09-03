@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
-            string updatedContinuationToken; 
+            string updatedContinuationToken;
             if (!this.IsDone)
             {
                 updatedContinuationToken = new DistinctContinuationToken(
@@ -133,7 +133,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 distinctResults,
                 distinctResults.Count,
                 cosmosQueryResponse.ResponseLengthBytes,
-                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage));
+                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage),
+                cosmosQueryResponse.queryMetrics);
         }
 
         /// <summary>
