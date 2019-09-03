@@ -100,8 +100,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         internal static QueryResponseCore CreateFailure(
             HttpStatusCode statusCode,
-            string errorMessage,
             SubStatusCodes? subStatusCodes,
+            string errorMessage,
             double requestCharge,
             string activityId,
             string queryMetricsText,

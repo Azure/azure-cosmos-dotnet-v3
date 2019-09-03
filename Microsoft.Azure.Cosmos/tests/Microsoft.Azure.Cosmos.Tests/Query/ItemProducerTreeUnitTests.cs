@@ -208,8 +208,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cancellationTokenSource.Token)).Returns(
                 Task.FromResult(QueryResponseCore.CreateFailure(
                     statusCode: HttpStatusCode.InternalServerError,
-                    errorMessage: "Error message",
                     subStatusCodes: null,
+                    errorMessage: "Error message",
                     requestCharge: 10.2,
                     activityId: Guid.NewGuid().ToString(),
                     queryMetricsText: null,

@@ -147,8 +147,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
-                "Random error message",
                 SubStatusCodes.PartitionKeyMismatch,
+                "Random error message",
                 42.89,
                 "TestActivityId",
                 null,
