@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
 
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             // This catches exception thrown by the pipeline and converts it to QueryResponse
             ResponseMessage response;
