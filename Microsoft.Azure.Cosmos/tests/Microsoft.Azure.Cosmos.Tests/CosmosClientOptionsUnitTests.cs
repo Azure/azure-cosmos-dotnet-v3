@@ -344,7 +344,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             string key = "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==";
 
             IWebProxy webProxy = new TestWebProxy();
-            bool disableSSLCertificateVerification = true;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -358,7 +357,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpClientHandler innerHandler = (HttpClientHandler)handler.InnerHandler;
 
             Assert.IsTrue(object.ReferenceEquals(webProxy, innerHandler.Proxy));
-            Assert.AreEqual(disableSSLCertificateVerification, innerHandler.ServerCertificateCustomValidationCallback != null);
         }
 
         private class TestWebProxy : IWebProxy
