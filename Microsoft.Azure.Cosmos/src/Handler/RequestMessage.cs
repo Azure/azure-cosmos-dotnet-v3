@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
                         operationType: this.OperationType,
                         resourceIdOrFullName: null,
                         resourceType: this.ResourceType,
-                        body: this.Content.GetStream(),
+                        body: this.Content?.GetStream(),
                         headers: this.CosmosHeaders.CosmosMessageHeaders,
                         isNameBased: false,
                         authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos
                         this.OperationType,
                         this.ResourceType,
                         this.RequestUri?.ToString(),
-                        this.Content.GetStream(),
+                        this.Content?.GetStream(),
                         AuthorizationTokenType.PrimaryMasterKey,
                         this.CosmosHeaders.CosmosMessageHeaders);
                 }

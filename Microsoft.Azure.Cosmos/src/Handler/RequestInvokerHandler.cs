@@ -107,8 +107,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 OperationType = operationType,
                 ResourceType = resourceType,
                 RequestOptions = requestOptions,
-                Content = new CosmosStreamContent(streamPayload),
             };
+
+            if (streamPayload != null)
+            {
+                request.Content = new CosmosStreamContent(streamPayload);
+            }
 
             if (partitionKey != null)
             {

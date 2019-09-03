@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(new ServerStoreModel(null), null, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null);
             this.collectionCache.Setup
                     (m =>
                         m.ResolveCollectionAsync(
