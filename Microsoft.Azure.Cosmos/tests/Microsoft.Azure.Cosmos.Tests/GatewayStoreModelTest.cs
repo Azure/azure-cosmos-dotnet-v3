@@ -148,6 +148,58 @@ namespace Microsoft.Azure.Cosmos
 
         }
 
+        [TestMethod]
+        public async Task TestErrorResponsesProvideBody()
+        {
+            string testContent = "Content";
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            {
+                return new HttpResponseMessage(HttpStatusCode.Conflict) { Content = new StringContent(testContent) };
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                TimeSpan.FromSeconds(5),
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new UserAgentContainer(),
+                ApiType.None,
+                messageHandler);
+
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request =
+                DocumentServiceRequest.Create(
+                    Documents.OperationType.Query,
+                    Documents.ResourceType.Document,
+                    new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                    new MemoryStream(Encoding.UTF8.GetBytes("content1")),
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    null))
+                {
+                    request.UseStatusCodeForFailures = true;
+                    request.UseStatusCodeFor429 = true;
+
+                    DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+                    Assert.IsNotNull(response.ResponseBody);
+                    using (StreamReader reader = new StreamReader(response.ResponseBody))
+                    {
+                        Assert.AreEqual(testContent, await reader.ReadToEndAsync());
+                    }
+                }
+            }
+
+        }
+
         /// <summary>
         /// Tests that empty session token is sent for operations on Session Consistent resources like
         /// Databases, Collections, Users, Permissions, PartitionKeyRanges, DatabaseAccounts and Offers
