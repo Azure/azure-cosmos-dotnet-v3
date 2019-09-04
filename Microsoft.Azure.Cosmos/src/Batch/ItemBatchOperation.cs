@@ -67,6 +67,8 @@ namespace Microsoft.Azure.Cosmos
 
         public int OperationIndex { get; internal set; }
 
+        internal ItemBatchOperationStatistics Diagnostics { get; } = new ItemBatchOperationStatistics();
+
         internal string PartitionKeyJson { get; set; }
 
         internal Documents.PartitionKey ParsedPartitionKey { get; set; }

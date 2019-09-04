@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cancellationToken: cancellationToken);
 
                 BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
-                    new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
+                    new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = new PointOperationStatistics(new CosmosClientSideRequestStatistics()) },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent };
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent, Diagnostics = new PointOperationStatistics(new CosmosClientSideRequestStatistics()) };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
 
                 BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
@@ -238,13 +238,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task DispatchProcessInOrderAsync()
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
-            List<ItemBatchOperationContext> contexts = new List<ItemBatchOperationContext>(10);
+            List<ItemBatchOperation> operations = new List<ItemBatchOperation>(10);
             for (int i = 0; i < 10; i++)
             {
                 ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
                 ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
                 operation.AttachContext(context);
-                contexts.Add(context);
+                operations.Add(operation);
                 Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
             }
 
@@ -252,10 +252,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                ItemBatchOperationContext context = contexts[i];
-                Assert.AreEqual(TaskStatus.RanToCompletion, context.Task.Status);
-                BatchOperationResult result = await context.Task;
+                ItemBatchOperation operation = operations[i];
+                Assert.AreEqual(TaskStatus.RanToCompletion, operation.Context.Task.Status);
+                BatchOperationResult result = await operation.Context.Task;
                 Assert.AreEqual(i.ToString(), result.ETag);
+
+                Assert.IsNotNull(operation.Diagnostics);
+                Assert.IsTrue(!string.IsNullOrEmpty(operation.Diagnostics.ToString()));
             }
         }
 
@@ -361,6 +364,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            Assert.IsNotNull(operation1.Diagnostics);
+            Assert.IsNotNull(operation2.Diagnostics);
+            Assert.IsTrue(!string.IsNullOrEmpty(operation1.Diagnostics.ToString()));
+            Assert.IsTrue(!string.IsNullOrEmpty(operation2.Diagnostics.ToString()));
         }
 
         [TestMethod]

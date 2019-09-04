@@ -157,6 +157,7 @@ namespace Microsoft.Azure.Cosmos
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
                             BatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
+                            itemBatchOperation.Diagnostics.AppendPointOperation(batchResponse.Diagnostics);
                             if (!response.IsSuccessStatusCode)
                             {
                                 Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
