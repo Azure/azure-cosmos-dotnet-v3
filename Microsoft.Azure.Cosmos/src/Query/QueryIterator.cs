@@ -46,21 +46,42 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryExecutionContext.CosmosQueryContext;
-                QueryResponse queryResponse = QueryResponse.CreateSuccess(
-                    result: responseCore.CosmosElements,
-                    count: responseCore.CosmosElements.Count,
-                    responseLengthBytes: responseCore.ResponseLengthBytes,
-                    queryMetrics: responseCore.QueryMetrics,
-                    responseHeaders: new CosmosQueryResponseMessageHeaders(
-                        responseCore.ContinuationToken,
-                        responseCore.DisallowContinuationTokenMessage,
-                        cosmosQueryContext.ResourceTypeEnum,
-                        cosmosQueryContext.ContainerResourceId)
-                    {
-                        RequestCharge = responseCore.RequestCharge,
-                        ActivityId = responseCore.ActivityId
-                    });
-
+                QueryResponse queryResponse;
+                if (responseCore.IsSuccess)
+                {
+                    queryResponse = QueryResponse.CreateSuccess(
+                        result: responseCore.CosmosElements,
+                        count: responseCore.CosmosElements.Count,
+                        responseLengthBytes: responseCore.ResponseLengthBytes,
+                        queryMetrics: responseCore.QueryMetrics,
+                        responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            responseCore.ContinuationToken,
+                            responseCore.DisallowContinuationTokenMessage,
+                            cosmosQueryContext.ResourceTypeEnum,
+                            cosmosQueryContext.ContainerResourceId)
+                        {
+                            RequestCharge = responseCore.RequestCharge,
+                            ActivityId = responseCore.ActivityId
+                        });
+                }
+                else
+                {
+                    queryResponse = QueryResponse.CreateFailure(
+                        statusCode: responseCore.StatusCode,
+                        error: null,
+                        errorMessage: responseCore.ErrorMessage,
+                        requestMessage: null,
+                        responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            responseCore.ContinuationToken,
+                            responseCore.DisallowContinuationTokenMessage,
+                            cosmosQueryContext.ResourceTypeEnum,
+                            cosmosQueryContext.ContainerResourceId)
+                        {
+                            RequestCharge = responseCore.RequestCharge,
+                            ActivityId = responseCore.ActivityId
+                        });
+                }
+                
                 if (responseCore.QueryMetrics != null && responseCore.QueryMetrics.Count > 0)
                 {
                     queryResponse.Diagnostics = new QueryOperationStatistics(responseCore.QueryMetrics);

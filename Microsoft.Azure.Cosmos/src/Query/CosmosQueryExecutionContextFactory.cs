@@ -35,6 +35,11 @@ namespace Microsoft.Azure.Cosmos.Query
         private QueryResponseCore? responseMessageException;
 
         /// <summary>
+        /// Store any exception thrown
+        /// </summary>
+        private Exception exception;
+
+        /// <summary>
         /// Test flag for making the query use the opposite code path for query plan retrieval.
         /// If the SDK would have went to Gateway, then it will use ServiceInterop and visa versa.
         /// </summary>
@@ -112,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Query
             get
             {
                 // No more results if an exception is hit
-                if (this.responseMessageException != null)
+                if (this.responseMessageException != null || this.exception != null)
                 {
                     return true;
                 }
@@ -128,45 +133,59 @@ namespace Microsoft.Azure.Cosmos.Query
                 return this.responseMessageException.Value;
             }
 
-            bool isFirstExecute = false;
-            QueryResponseCore response;
-            while (true)
+            if (this.exception != null)
             {
-                // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
-                // execute context has incorrect values and should be recreated. This should only be done for the first 
-                // execution. If results have already been pulled an error should be returned to the user since it's 
-                // not possible to combine query results from multiple containers.
-                if (this.innerExecutionContext == null)
-                {
-                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
-                    isFirstExecute = true;
-                }
-
-                response = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
-
-                if (response.IsSuccess)
-                {
-                    break;
-                }
-
-                if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.SubStatusCode == SubStatusCodes.NameCacheIsStale)
-                {
-                    await this.ForceRefreshCollectionCacheAsync(cancellationToken);
-                    this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
-                    isFirstExecute = false;
-                }
-                else
-                {
-                    break;
-                }
+                throw this.exception;
             }
 
-            if (!response.IsSuccess)
+            try
             {
-                this.responseMessageException = response;
-            }
+                bool isFirstExecute = false;
+                QueryResponseCore response;
+                while (true)
+                {
+                    // The retry policy handles the scenario when the name cache is stale. If the cache is stale the entire 
+                    // execute context has incorrect values and should be recreated. This should only be done for the first 
+                    // execution. If results have already been pulled an error should be returned to the user since it's 
+                    // not possible to combine query results from multiple containers.
+                    if (this.innerExecutionContext == null)
+                    {
+                        this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                        isFirstExecute = true;
+                    }
 
-            return response;
+                    response = await this.innerExecutionContext.ExecuteNextAsync(cancellationToken);
+
+                    if (response.IsSuccess)
+                    {
+                        break;
+                    }
+
+                    if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.SubStatusCode == SubStatusCodes.NameCacheIsStale)
+                    {
+                        await this.ForceRefreshCollectionCacheAsync(cancellationToken);
+                        this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
+                        isFirstExecute = false;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (!response.IsSuccess)
+                {
+                    this.responseMessageException = response;
+                }
+
+                return response;
+            }
+            catch (Exception e)
+            {
+                this.exception = e;
+                this.Dispose();
+                throw;
+            }
         }
 
         private async Task ForceRefreshCollectionCacheAsync(CancellationToken cancellationToken)
