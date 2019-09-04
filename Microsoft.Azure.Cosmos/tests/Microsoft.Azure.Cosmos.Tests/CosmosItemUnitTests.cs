@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -354,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
                 cosmosClient,
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
                 cosmosClient,
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
                 cosmosClient,
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -450,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
                 cosmosClient,
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
                 cosmosClient,
-                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
                 null,
