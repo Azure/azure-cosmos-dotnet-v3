@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
         }
 
+        public abstract string ParameterKeyStr { get; set; }
+
         public abstract void Accept(SqlLiteralVisitor visitor);
 
         public abstract TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor);

@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Sql
             return visitor.Visit(this);
         }
 
+        public override string ParameterKeyStr { get; set; }
+
         public override TResult Accept<T, TResult>(SqlObjectVisitor<T, TResult> visitor, T input)
         {
             return visitor.Visit(this, input);

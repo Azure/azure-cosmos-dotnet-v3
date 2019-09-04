@@ -18,6 +18,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public string status { get; set; }
         public string CamelCase { get; set; }
 
+        public bool valid { get; set; }
+
+        public ToDoActivity[] children { get; set; }
+
         public override bool Equals(Object obj)
         {
             ToDoActivity input = obj as ToDoActivity;
@@ -81,7 +85,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 status = pk,
                 taskNum = 42,
                 cost = double.MaxValue,
-                CamelCase = "camelCase"
+                CamelCase = "camelCase",
+                children = new ToDoActivity[] { new ToDoActivity { id = "child", taskNum = 30 } },
+                valid = true
             };
         }
     }

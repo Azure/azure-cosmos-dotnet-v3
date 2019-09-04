@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Dynamic;
     using System.Threading.Tasks;
@@ -375,6 +374,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             queryText = queriable.ToQueryDefinition().QueryText;
             Assert.AreEqual(queriable.Count(), 2);
+        }
+
+        [TestMethod]
+        public async Task LinqParameterisedTest()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
+
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            QueryDefinition queryDefinition = queriable.ToQueryDefinition();
+            Assert.AreEqual(1, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual("@value0", queryDefinition.ToSqlQuerySpec().Parameters[0].Name);
+            Assert.AreEqual(10, queriable.ToList().Count);
+
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
+                .Where(item => item.description == "CreateRandomToDoActivity")
+                .Where(item => item.taskNum < 100);
+            queryDefinition = queriable.ToQueryDefinition();
+            Assert.AreEqual(100, Number64.ToLong((Number64)queryDefinition.ToSqlQuerySpec().Parameters[2].Value));
+            Assert.AreEqual(10, queriable.ToList().Count);
+
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
+               .Where(item => item.description == "CreateRandomToDoActivity")
+               .Where(item => item.taskNum < 100)
+               .Where(item => item.valid == false);
+            queryDefinition = queriable.ToQueryDefinition();
+            Assert.AreEqual(4, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual(false, queryDefinition.ToSqlQuerySpec().Parameters[3].Value);
+            Assert.AreEqual(0, queriable.ToList().Count);
+
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
+               .Where(item => item.description == "CreateRandomToDoActivity")
+               .Where(item => item.taskNum < 100)
+               .Where(item => item.valid == true);
+            Assert.AreEqual(10, queriable.ToList().Count);
+
+            queriable = linqQueryable
+                .Where(item => item.description == "CreateRandomToDoActivity")
+                .SelectMany(item => item.children)
+                .Where(child => child.id == "child")
+                .Where(child => child.taskNum == 30);
+            queryDefinition = queriable.ToQueryDefinition();
+            Assert.AreEqual(3, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual(10, queriable.ToList().Count);
         }
     }
 }

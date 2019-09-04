@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -21,10 +22,13 @@ namespace Microsoft.Azure.Cosmos.Sql
         private readonly bool prettyPrint;
         private int indentLevel;
 
-        public SqlObjectTextSerializer(bool prettyPrint)
+        private Dictionary<string, object> Parameters { get; }
+
+        public SqlObjectTextSerializer(bool prettyPrint, Dictionary<string, object> parameters = null)
         {
             this.writer = new StringWriter(CultureInfo.InvariantCulture);
             this.prettyPrint = prettyPrint;
+            this.Parameters = parameters;
         }
 
         public override void Visit(SqlAliasedCollectionExpression sqlAliasedCollectionExpression)
@@ -113,7 +117,14 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlBooleanLiteral sqlBooleanLiteral)
         {
-            this.writer.Write(sqlBooleanLiteral.Value ? "true" : "false");
+            if (string.IsNullOrEmpty(sqlBooleanLiteral.ParameterKeyStr))
+            {
+                this.writer.Write(sqlBooleanLiteral.ParameterKeyStr);
+            }
+            else
+            {
+                this.writer.Write(sqlBooleanLiteral.Value ? "true" : "false");
+            }
         }
 
         public override void Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
@@ -348,25 +359,32 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlNumberLiteral sqlNumberLiteral)
         {
-            // We have to use InvariantCulture due to number formatting.
-            // "1234.1234" is correct while "1234,1234" is incorrect.
-            if (sqlNumberLiteral.Value.IsDouble)
+            if (!string.IsNullOrEmpty(sqlNumberLiteral.ParameterKeyStr))
             {
-                string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
-                double literalValue = 0.0;
-                if (!sqlNumberLiteral.Value.IsNaN &&
-                    !sqlNumberLiteral.Value.IsInfinity &&
-                    (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
-                    !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
-                {
-                    literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
-                }
-
-                this.writer.Write(literalString);
+                this.writer.Write(sqlNumberLiteral.ParameterKeyStr);
             }
             else
             {
-                this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
+                // We have to use InvariantCulture due to number formatting.
+                // "1234.1234" is correct while "1234,1234" is incorrect.
+                if (sqlNumberLiteral.Value.IsDouble)
+                {
+                    string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
+                    double literalValue = 0.0;
+                    if (!sqlNumberLiteral.Value.IsNaN &&
+                        !sqlNumberLiteral.Value.IsInfinity &&
+                        (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
+                        !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
+                    {
+                        literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
+                    }
+
+                    this.writer.Write(literalString);
+                }
+                else
+                {
+                    this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
+                }
             }
         }
 
@@ -417,14 +435,22 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlObjectLiteral sqlObjectLiteral)
         {
-            if (sqlObjectLiteral.isValueSerialized)
+            if (!string.IsNullOrEmpty(sqlObjectLiteral.ParameterKeyStr))
             {
-                this.writer.Write(sqlObjectLiteral.Value);
+                this.writer.Write(sqlObjectLiteral.ParameterKeyStr);
             }
             else
             {
-                this.writer.Write(JsonConvert.SerializeObject(sqlObjectLiteral.Value));
+                if (sqlObjectLiteral.isValueSerialized)
+                {
+                    this.writer.Write(sqlObjectLiteral.Value);
+                }
+                else
+                {
+                    this.writer.Write(JsonConvert.SerializeObject(sqlObjectLiteral.Value));
+                }
             }
+
         }
 
         public override void Visit(SqlObjectProperty sqlObjectProperty)
@@ -609,9 +635,16 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlStringLiteral sqlStringLiteral)
         {
-            this.writer.Write("\"");
-            this.writer.Write(SqlObjectTextSerializer.GetEscapedString(sqlStringLiteral.Value));
-            this.writer.Write("\"");
+            if (!string.IsNullOrEmpty(sqlStringLiteral.ParameterKeyStr))
+            {
+                this.writer.Write(sqlStringLiteral.ParameterKeyStr);
+            }
+            else
+            {
+                this.writer.Write("\"");
+                this.writer.Write(SqlObjectTextSerializer.GetEscapedString(sqlStringLiteral.Value));
+                this.writer.Write("\"");
+            }
         }
 
         public override void Visit(SqlStringPathExpression sqlStringPathExpression)
@@ -707,7 +740,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             if (this.prettyPrint)
             {
-                for (int i = 0; i < indentLevel; i++)
+                for (int i = 0; i < this.indentLevel; i++)
                 {
                     this.writer.Write(Tab);
                 }

@@ -28,6 +28,8 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
+        public override string ParameterKeyStr { get; set; }
+
         public static SqlNumberLiteral Create(decimal number)
         {
             SqlNumberLiteral sqlNumberLiteral;

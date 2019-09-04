@@ -1,8 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Sql
 {
+    using System.Collections.Generic;
+
     internal abstract class SqlObject
     {
         protected SqlObject(SqlObjectKind kind)
@@ -26,6 +29,11 @@ namespace Microsoft.Azure.Cosmos.Sql
             return this.Serialize(prettyPrint: false);
         }
 
+        public string ToStringWithParameters(Dictionary<string, object> parameters)
+        {
+            return this.Serialize(prettyPrint: false, parameters);
+        }
+
         public override int GetHashCode()
         {
             return this.Accept(SqlObjectHasher.Singleton);
@@ -42,9 +50,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             return this.Accept(sqlObjectObfuscator);
         }
 
-        private string Serialize(bool prettyPrint)
+        private string Serialize(bool prettyPrint, Dictionary<string, object> parameters = null)
         {
-            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint);
+            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint, parameters);
             this.Accept(sqlObjectTextSerializer);
             return sqlObjectTextSerializer.ToString();
         }

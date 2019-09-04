@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Linq
 {
+    using System;
+    using System.Collections.Generic;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Sql;
 
@@ -44,8 +46,25 @@ namespace Microsoft.Azure.Cosmos.Linq
             CosmosSerializationOptions serializationOptions = null)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, serializationOptions);
-            return new SqlQuerySpec(query.ToString());
+            TranslationContext translationContext = null;
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, out translationContext);
+            SqlParameterCollection sqlParameters = new SqlParameterCollection();
+            string queryText = query.ToStringWithParameters(translationContext.parameters);
+            if (translationContext.parameters.Count > 0)
+            {
+                foreach (string key in translationContext.parameters.Keys)
+                {
+                    sqlParameters.Add(new SqlParameter(key, translationContext.parameters[key]));
+                }
+            }
+
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, sqlParameters);
+            return sqlQuerySpec;
+        }
+
+        private static Tuple<SqlQuery, Dictionary<object, object>> GenerateParameterizedQuery(SqlQuery query)
+        {
+            return null;
         }
     }
 }

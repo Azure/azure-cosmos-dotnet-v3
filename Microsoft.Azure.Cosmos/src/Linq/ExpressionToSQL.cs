@@ -79,16 +79,18 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Toplevel entry point.
         /// </summary>
         /// <param name="inputExpression">An Expression representing a Query on a IDocumentQuery object.</param>
+        /// <param name="translationContext">The translation context.</param>
         /// <param name="serializationOptions">Optional serializer options.</param>
         /// <returns>The corresponding SQL query.</returns>
         public static SqlQuery TranslateQuery(
             Expression inputExpression,
+            out TranslationContext translationContext,
             CosmosSerializationOptions serializationOptions = null)
         {
-            TranslationContext context = new TranslationContext(serializationOptions);
-            ExpressionToSql.Translate(inputExpression, context); // ignore result here
+            translationContext = new TranslationContext(serializationOptions);
+            ExpressionToSql.Translate(inputExpression, translationContext); // ignore result here
 
-            QueryUnderConstruction query = context.currentQuery;
+            QueryUnderConstruction query = translationContext.currentQuery;
             query = query.FlattenAsPossible();
             SqlQuery result = query.GetSqlQuery();
 
@@ -243,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case ExpressionType.Conditional:
                     return ExpressionToSql.VisitConditional((ConditionalExpression)inputExpression, context);
                 case ExpressionType.Constant:
-                    return ExpressionToSql.VisitConstant((ConstantExpression)inputExpression);
+                    return ExpressionToSql.VisitConstant((ConstantExpression)inputExpression, context);
                 case ExpressionType.Parameter:
                     return ExpressionToSql.VisitParameter((ParameterExpression)inputExpression, context);
                 case ExpressionType.MemberAccess:
@@ -299,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         object[] argumentsExpressions = (object[])((ConstantExpression)methodCallExpression.Arguments[1]).Value;
                         foreach (object argument in argumentsExpressions)
                         {
-                            arguments.Add(ExpressionToSql.VisitConstant(Expression.Constant(argument)));
+                            arguments.Add(ExpressionToSql.VisitConstant(Expression.Constant(argument), context));
                         }
                     }
                     else
@@ -640,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, inputExpression.NodeType));
         }
 
-        public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression)
+        public static SqlScalarExpression VisitConstant(ConstantExpression inputExpression, TranslationContext context)
         {
             if (inputExpression.Value == null)
             {
@@ -649,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (inputExpression.Type.IsNullable())
             {
-                return ExpressionToSql.VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)));
+                return ExpressionToSql.VisitConstant(Expression.Constant(inputExpression.Value, Nullable.GetUnderlyingType(inputExpression.Type)), context);
             }
 
             Type constantType = inputExpression.Value.GetType();
@@ -658,84 +660,112 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (constantType == typeof(bool))
                 {
                     SqlBooleanLiteral literal = SqlBooleanLiteral.Create((bool)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(byte))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((byte)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(sbyte))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((sbyte)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(char))
                 {
                     SqlStringLiteral literal = SqlStringLiteral.Create(inputExpression.Value.ToString());
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(decimal))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((decimal)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(double))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((double)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(float))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((float)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(int))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((int)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(uint))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((uint)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(long))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((long)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(ulong))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((decimal)(ulong)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(short))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((short)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(ushort))
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((ushort)inputExpression.Value);
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
                 if (constantType == typeof(Guid))
                 {
                     SqlStringLiteral literal = SqlStringLiteral.Create(inputExpression.Value.ToString());
+                    literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                     return SqlLiteralScalarExpression.Create(literal);
                 }
             }
@@ -743,6 +773,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (constantType == typeof(string))
             {
                 SqlStringLiteral literal = SqlStringLiteral.Create((string)inputExpression.Value);
+                literal.ParameterKeyStr = "@value" + context.parameters.Count;
+                context.parameters.Add(literal.ParameterKeyStr, literal.Value);
                 return SqlLiteralScalarExpression.Create(literal);
             }
 
@@ -755,14 +787,17 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 List<SqlScalarExpression> arrayItems = new List<SqlScalarExpression>();
 
-                foreach (object item in ((IEnumerable)(inputExpression.Value)))
+                foreach (object item in (IEnumerable)inputExpression.Value)
                 {
-                    arrayItems.Add(ExpressionToSql.VisitConstant(Expression.Constant(item)));
+                    arrayItems.Add(ExpressionToSql.VisitConstant(Expression.Constant(item), context));
                 }
 
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToArray());
             }
 
+            SqlObjectLiteral sqlObjectLiteral = SqlObjectLiteral.Create(inputExpression.Value, false);
+            sqlObjectLiteral.ParameterKeyStr = "@value" + context.parameters.Count;
+            context.parameters.Add(sqlObjectLiteral.ParameterKeyStr, sqlObjectLiteral.Value);
             return SqlLiteralScalarExpression.Create(SqlObjectLiteral.Create(inputExpression.Value, false));
         }
 
