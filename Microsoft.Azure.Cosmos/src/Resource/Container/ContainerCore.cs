@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
-            this.batchExecutorRetryHandler = new BatchExecutorRetryHandler(this.ClientContext, this.InitializeBatchExecutorForContainer());
+            this.BatchExecutor = this.InitializeBatchExecutorForContainer();
         }
 
         public override string Id { get; }
@@ -55,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
         internal virtual Uri LinkUri { get; }
 
         internal virtual CosmosClientContext ClientContext { get; }
+
+        internal virtual BatchAsyncContainerExecutor BatchExecutor { get; } 
 
         public override Conflicts Conflicts { get; }
 

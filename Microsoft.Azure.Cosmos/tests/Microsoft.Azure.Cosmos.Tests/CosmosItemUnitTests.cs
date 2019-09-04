@@ -168,14 +168,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_CreateStream()
         {
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { AllowBatchingRequests = true });
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -199,14 +205,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_UpsertStream()
         {
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { AllowBatchingRequests = true });
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -230,14 +242,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_ReplaceStream()
         {
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { AllowBatchingRequests = true });
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -262,14 +280,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_ReadStream()
         {
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { AllowBatchingRequests = true });
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -293,14 +317,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_DeleteStream()
         {
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { AllowBatchingRequests = true });
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -321,19 +351,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Create()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { AllowBatchingRequests = true };
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
-            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
-                defaultJsonSerializer: clientOptions.PropertiesSerializer,
-                userJsonSerializer: new CosmosJsonDotNetSerializer()));
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -351,19 +383,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Upsert()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { AllowBatchingRequests = true };
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
-            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
-                defaultJsonSerializer: clientOptions.PropertiesSerializer,
-                userJsonSerializer: new CosmosJsonDotNetSerializer()));
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -381,19 +415,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Replace()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { AllowBatchingRequests = true };
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
-            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
-                defaultJsonSerializer: clientOptions.PropertiesSerializer,
-                userJsonSerializer: new CosmosJsonDotNetSerializer()));
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -411,19 +447,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Read()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { AllowBatchingRequests = true };
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
-            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
-                defaultJsonSerializer: clientOptions.PropertiesSerializer,
-                userJsonSerializer: new CosmosJsonDotNetSerializer()));
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -441,19 +479,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_Delete()
         {
-            CosmosClientOptions clientOptions = new CosmosClientOptions() { AllowBatchingRequests = true };
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(clientOptions);
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
-            mockContext.Setup(x => x.ResponseFactory).Returns(new CosmosResponseFactory(
-                defaultJsonSerializer: clientOptions.PropertiesSerializer,
-                userJsonSerializer: new CosmosJsonDotNetSerializer()));
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {
@@ -472,14 +512,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HighThroughputSendsToExecutor_RetriesOn429()
         {
-            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
-            mockContext.Setup(x => x.ClientOptions).Returns(new CosmosClientOptions() { AllowBatchingRequests = true });
-            mockContext.Setup(x => x.DocumentClient).Returns(new MockDocumentClient());
-            mockContext.Setup(x => x.DocumentQueryClient).Returns(Mock.Of<IDocumentQueryClient>());
-            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test"));
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBatchingRequests = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                null,
+                new MockDocumentClient(),
+                Mock.Of<IDocumentQueryClient>()
+                );
 
-            DatabaseCore db = new DatabaseCore(mockContext.Object, "test");
-            ExecutorWithThrottlingContainerCore container = new ExecutorWithThrottlingContainerCore(mockContext.Object, db, "test");
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
 
             dynamic testItem = new
             {

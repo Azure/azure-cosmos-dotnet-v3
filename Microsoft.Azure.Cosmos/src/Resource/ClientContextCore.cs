@@ -102,6 +102,20 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
+            if (this.IsBatchingSupported(resourceType, operationType))
+            {
+                return this.ProcessResourceOperationWithBatchExecutorAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    cosmosContainerCore: cosmosContainerCore,
+                    partitionKey: partitionKey,
+                    streamPayload: streamPayload,
+                    requestEnricher: requestEnricher,
+                    cancellationToken: cancellationToken);
+            }
+
             return this.RequestHandler.SendAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -137,6 +151,41 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
                 cancellationToken: cancellationToken);
+        }
+
+        private async Task<ResponseMessage> ProcessResourceOperationWithBatchExecutorAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
+            BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
+            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, /* id */ null, streamPayload, batchItemRequestOptions);
+            BatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
+            return batchOperationResult.ToResponseMessage();
+        }
+
+        private bool IsBatchingSupported(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            if (!this.ClientOptions.AllowBatchingRequests)
+            {
+                return false;
+            }
+
+            return resourceType == ResourceType.Document
+                && (operationType == OperationType.Create
+                || operationType == OperationType.Upsert
+                || operationType == OperationType.Read
+                || operationType == OperationType.Delete
+                || operationType == OperationType.Replace);
         }
     }
 }

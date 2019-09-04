@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
@@ -36,26 +35,12 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosQueryClient queryClient;
 
-        private readonly BatchExecutorRetryHandler batchExecutorRetryHandler;
-
         public override Task<ResponseMessage> CreateItemStreamAsync(
                     Stream streamPayload,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
-            {
-                return this.ProcessItemStreamWithBatchExecutorAsync(
-                    partitionKey,
-                    null,
-                    streamPayload,
-                    OperationType.Create,
-                    requestOptions,
-                    extractPartitionKeyIfNeeded: false,
-                    cancellationToken: cancellationToken);
-            }
-
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
@@ -94,18 +79,6 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
-            {
-                return this.ProcessItemStreamWithBatchExecutorAsync(
-                    partitionKey,
-                    id,
-                    null,
-                    OperationType.Read,
-                    requestOptions,
-                    extractPartitionKeyIfNeeded: false,
-                    cancellationToken: cancellationToken);
-            }
-
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
@@ -137,18 +110,6 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
-            {
-                return this.ProcessItemStreamWithBatchExecutorAsync(
-                    partitionKey,
-                    null,
-                    streamPayload,
-                    OperationType.Upsert,
-                    requestOptions,
-                    extractPartitionKeyIfNeeded: false,
-                    cancellationToken: cancellationToken);
-            }
-
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
@@ -188,18 +149,6 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
-            {
-                return this.ProcessItemStreamWithBatchExecutorAsync(
-                    partitionKey,
-                    id,
-                    streamPayload,
-                    OperationType.Replace,
-                    requestOptions,
-                    extractPartitionKeyIfNeeded: false,
-                    cancellationToken: cancellationToken);
-            }
-
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
@@ -244,18 +193,6 @@ namespace Microsoft.Azure.Cosmos
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (this.ClientContext.ClientOptions.AllowBatchingRequests)
-            {
-                return this.ProcessItemStreamWithBatchExecutorAsync(
-                    partitionKey,
-                    id,
-                    null,
-                    OperationType.Delete,
-                    requestOptions,
-                    extractPartitionKeyIfNeeded: false,
-                    cancellationToken: cancellationToken);
-            }
-
             return this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
@@ -508,10 +445,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
             while (true)
             {
-                ResponseMessage responseMessage;
-                if (this.ClientContext.ClientOptions.AllowBatchingRequests)
-                {
-                    responseMessage = await this.ProcessItemStreamWithBatchExecutorAsync(
+                ResponseMessage responseMessage = await this.ProcessItemStreamAsync(
                         partitionKey,
                         itemId,
                         streamPayload,
@@ -519,19 +453,6 @@ namespace Microsoft.Azure.Cosmos
                         requestOptions,
                         extractPartitionKeyIfNeeded: true,
                         cancellationToken: cancellationToken);
-                }
-                else
-                {
-                    responseMessage = await this.ProcessItemStreamAsync(
-                        partitionKey,
-                        itemId,
-                        streamPayload,
-                        operationType,
-                        requestOptions,
-                        extractPartitionKeyIfNeeded: true,
-                        cancellationToken: cancellationToken);
-                    
-                }
 
                 if (responseMessage.IsSuccessStatusCode)
                 {
@@ -583,30 +504,6 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload,
                 null,
                 cancellationToken);
-        }
-
-        private async Task<ResponseMessage> ProcessItemStreamWithBatchExecutorAsync(
-            PartitionKey? partitionKey,
-            string id,
-            Stream streamPayload,
-            OperationType operationType,
-            ItemRequestOptions itemRequestOptions,
-            bool extractPartitionKeyIfNeeded,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            if (itemRequestOptions != null && itemRequestOptions.IsEffectivePartitionKeyRouting)
-            {
-                partitionKey = null;
-            }
-
-            if (extractPartitionKeyIfNeeded && partitionKey == null)
-            {
-                partitionKey = await this.GetPartitionKeyValueFromStreamAsync(streamPayload, cancellationToken);
-            }
-
-            BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
-            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, id, streamPayload, batchItemRequestOptions);
-            return await this.batchExecutorRetryHandler.SendAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
         }
 
         internal async Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
