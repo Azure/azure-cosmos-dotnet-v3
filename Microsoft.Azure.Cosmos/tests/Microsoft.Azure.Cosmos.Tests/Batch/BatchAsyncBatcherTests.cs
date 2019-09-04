@@ -257,8 +257,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 BatchOperationResult result = await operation.Context.Task;
                 Assert.AreEqual(i.ToString(), result.ETag);
 
-                Assert.IsNotNull(operation.Diagnostics);
-                Assert.IsTrue(!string.IsNullOrEmpty(operation.Diagnostics.ToString()));
+                Assert.IsNotNull(operation.Context.Diagnostics);
+                Assert.AreEqual(operation.Context.Diagnostics.ToString(), result.Diagnostics.ToString());
+                Assert.IsFalse(string.IsNullOrEmpty(operation.Context.Diagnostics.ToString()));
             }
         }
 
@@ -364,10 +365,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-            Assert.IsNotNull(operation1.Diagnostics);
-            Assert.IsNotNull(operation2.Diagnostics);
-            Assert.IsTrue(!string.IsNullOrEmpty(operation1.Diagnostics.ToString()));
-            Assert.IsTrue(!string.IsNullOrEmpty(operation2.Diagnostics.ToString()));
+            Assert.IsNotNull(operation1.Context.Diagnostics);
+            Assert.IsNotNull(operation2.Context.Diagnostics);
+            Assert.IsTrue(!string.IsNullOrEmpty(operation1.Context.Diagnostics.ToString()));
+            Assert.IsTrue(!string.IsNullOrEmpty(operation2.Context.Diagnostics.ToString()));
         }
 
         [TestMethod]

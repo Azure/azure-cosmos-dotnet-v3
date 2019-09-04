@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosClientSideRequestStatistics2.ContactedReplicas.Add(new Uri("https://two.com"));
             PointOperationStatistics pointOperation2 = new PointOperationStatistics(cosmosClientSideRequestStatistics2);
 
-            itemBatchOperationStatistics.AppendPointOperation(pointOperation1);
-            itemBatchOperationStatistics.AppendPointOperation(pointOperation2);
+            itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
+            itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);
 
             string toString = itemBatchOperationStatistics.ToString();
 

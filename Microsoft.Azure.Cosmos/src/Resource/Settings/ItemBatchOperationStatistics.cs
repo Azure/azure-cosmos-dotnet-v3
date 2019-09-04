@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly List<CosmosDiagnostics> cosmosDiagnostics = new List<CosmosDiagnostics>();
 
-        public void AppendPointOperation(CosmosDiagnostics pointOperationStatistic)
+        public void AppendDiagnostics(CosmosDiagnostics diagnostics)
         {
-            this.cosmosDiagnostics.Add(pointOperationStatistic);
+            this.cosmosDiagnostics.Add(diagnostics);
         }
 
         public override string ToString()
