@@ -1087,7 +1087,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-                CosmosSerializationOptions = options,
+                CosmosSerializationFormatOptions = options,
                 MaxConcurrency = 5,
                 MaxItemCount = 5,
             };
