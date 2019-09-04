@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Context for a particular Batch operation.
@@ -19,11 +21,33 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<BatchOperationResult> Task => this.taskCompletionSource.Task;
 
+        private readonly IDocumentClientRetryPolicy retryPolicy;
+
         private TaskCompletionSource<BatchOperationResult> taskCompletionSource = new TaskCompletionSource<BatchOperationResult>();
 
-        public ItemBatchOperationContext(string partitionKeyRangeId)
+        public ItemBatchOperationContext(
+            string partitionKeyRangeId,
+            IDocumentClientRetryPolicy retryPolicy = null)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId;
+            this.retryPolicy = retryPolicy;
+        }
+
+        /// <summary>
+        /// Based on the Retry Policy, if a failed response should retry.
+        /// </summary>
+        public Task<ShouldRetryResult> ShouldRetryAsync(
+            BatchOperationResult batchOperationResult,
+            CancellationToken cancellationToken)
+        {
+            if (this.retryPolicy == null
+                || batchOperationResult.IsSuccessStatusCode)
+            {
+                return System.Threading.Tasks.Task.FromResult(ShouldRetryResult.NoRetry());
+            }
+
+            ResponseMessage responseMessage = batchOperationResult.ToResponseMessage();
+            return this.retryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
         }
 
         public void Complete(

@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, BatchAsyncStreamer> streamersByPartitionKeyRange = new ConcurrentDictionary<string, BatchAsyncStreamer>();
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly TimerPool timerPool;
+        private readonly RetryOptions retryOptions;
 
         /// <summary>
         /// For unit testing.
@@ -77,6 +78,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
+            this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
         }
 
         public virtual async Task<BatchOperationResult> AddAsync(
@@ -93,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
 
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
-            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId);
+            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId, BatchAsyncContainerExecutor.GetRetryPolicy(this.retryOptions));
             operation.AttachContext(context);
             streamer.Add(operation);
             return await context.Task;
@@ -140,6 +142,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException(RMResources.RequestTooLarge);
             }
+        }
+
+        private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
+        {
+            return new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(
+                retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                retryOptions.MaxRetryWaitTimeInSeconds));
         }
 
         private static bool ValidateOperationEPK(

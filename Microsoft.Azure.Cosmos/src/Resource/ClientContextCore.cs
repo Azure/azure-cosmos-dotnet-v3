@@ -102,9 +102,9 @@ namespace Microsoft.Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            if (this.IsBatchingSupported(resourceType, operationType))
+            if (this.IsBulkOperationSupported(resourceType, operationType))
             {
-                return this.ProcessResourceOperationWithBatchExecutorAsync(
+                return this.ProcessResourceOperationAsBulkStreamAsync(
                     resourceUri: resourceUri,
                     resourceType: resourceType,
                     operationType: operationType,
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private async Task<ResponseMessage> ProcessResourceOperationWithBatchExecutorAsync(
+        private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
             return batchOperationResult.ToResponseMessage();
         }
 
-        private bool IsBatchingSupported(
+        private bool IsBulkOperationSupported(
             ResourceType resourceType,
             OperationType operationType)
         {

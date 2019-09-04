@@ -341,10 +341,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetrierGetsCalledOnSplit()
         {
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
-            operation1.AttachContext(new ItemBatchOperationContext(string.Empty));
-            operation2.AttachContext(new ItemBatchOperationContext(string.Empty));
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 

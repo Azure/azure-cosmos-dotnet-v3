@@ -6,13 +6,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosItemHighThroughputTests
+    public class CosmosItemBulkTests
     {
         private static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
 
@@ -29,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DatabaseResponse response = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             this.database = response.Database;
 
-            ContainerResponse containerResponse = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/Status", 50000);
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/Status", 10000);
             this.container = containerResponse;
         }
 
@@ -40,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task CreateItemStream_WithHighThroughput()
+        public async Task CreateItemStream_WithBulk()
         {
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
@@ -62,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task CreateItemAsync_WithHighThroughput()
+        public async Task CreateItemAsync_WithBulk()
         {
             List<Task<ItemResponse<MyDocument>>> tasks = new List<Task<ItemResponse<MyDocument>>>();
             for (int i = 0; i < 100; i++)
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task UpsertItemStream_WithHighThroughput()
+        public async Task UpsertItemStream_WithBulk()
         {
             List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
             for (int i = 0; i < 100; i++)
@@ -103,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task UpsertItem_WithHighThroughput()
+        public async Task UpsertItem_WithBulk()
         {
             List<Task<ItemResponse<MyDocument>>> tasks = new List<Task<ItemResponse<MyDocument>>>();
             for (int i = 0; i < 100; i++)
@@ -122,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task DeleteItemStream_WithHighThroughput()
+        public async Task DeleteItemStream_WithBulk()
         {
             List<MyDocument> createdDocuments = new List<MyDocument>();
             // Create the items
@@ -153,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task DeleteItem_WithHighThroughput()
+        public async Task DeleteItem_WithBulk()
         {
             List<MyDocument> createdDocuments = new List<MyDocument>();
             // Create the items
@@ -184,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReadItemStream_WithHighThroughput()
+        public async Task ReadItemStream_WithBulk()
         {
             List<MyDocument> createdDocuments = new List<MyDocument>();
             // Create the items
@@ -215,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReadItem_WithHighThroughput()
+        public async Task ReadItem_WithBulk()
         {
             List<MyDocument> createdDocuments = new List<MyDocument>();
             // Create the items
@@ -246,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReplaceItemStream_WithHighThroughput()
+        public async Task ReplaceItemStream_WithBulk()
         {
             List<MyDocument> createdDocuments = new List<MyDocument>();
             // Create the items
@@ -277,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReplaceItem_WithHighThroughput()
+        public async Task ReplaceItem_WithBulk()
         {
             List<MyDocument> createdDocuments = new List<MyDocument>();
             // Create the items

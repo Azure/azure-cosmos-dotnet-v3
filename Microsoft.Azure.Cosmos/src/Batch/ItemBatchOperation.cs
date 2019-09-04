@@ -304,9 +304,7 @@ namespace Microsoft.Azure.Cosmos
         /// <exception cref="InvalidOperationException">If the operation already had an attached context which is in progress.</exception>
         internal void AttachContext(ItemBatchOperationContext context)
         {
-            if (this.Context != null
-                && !this.Context.Task.IsCompleted
-                && !this.Context.Task.IsFaulted)
+            if (this.Context != null)
             {
                 throw new InvalidOperationException("Cannot modify the current context of an operation.");
             }

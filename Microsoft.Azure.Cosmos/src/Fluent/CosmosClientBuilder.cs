@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enables the optimization of point operation requests by batching them and resolving them as a single service call.
+        /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for throughput scenarios only.
         /// </summary>
         /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBatchingRequests"/> is enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>

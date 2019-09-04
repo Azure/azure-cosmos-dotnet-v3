@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_CreateStream()
+        public async Task AllowBatchingRequestsSendsToExecutor_CreateStream()
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_UpsertStream()
+        public async Task AllowBatchingRequestsSendsToExecutor_UpsertStream()
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_ReplaceStream()
+        public async Task AllowBatchingRequestsSendsToExecutor_ReplaceStream()
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_ReadStream()
+        public async Task AllowBatchingRequestsSendsToExecutor_ReadStream()
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_DeleteStream()
+        public async Task AllowBatchingRequestsSendsToExecutor_DeleteStream()
         {
             ClientContextCore clientContextCore = new ClientContextCore(
                 MockCosmosUtil.CreateMockCosmosClient(),
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Create()
+        public async Task AllowBatchingRequestsSendsToExecutor_Create()
         {
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Upsert()
+        public async Task AllowBatchingRequestsSendsToExecutor_Upsert()
         {
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
@@ -413,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Replace()
+        public async Task AllowBatchingRequestsSendsToExecutor_Replace()
         {
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
@@ -445,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Read()
+        public async Task AllowBatchingRequestsSendsToExecutor_Read()
         {
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task HighThroughputSendsToExecutor_Delete()
+        public async Task AllowBatchingRequestsSendsToExecutor_Delete()
         {
             CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             ClientContextCore clientContextCore = new ClientContextCore(
@@ -507,42 +507,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 id: testItem.id);
 
             container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [TestMethod]
-        public async Task HighThroughputSendsToExecutor_RetriesOn429()
-        {
-            ClientContextCore clientContextCore = new ClientContextCore(
-                MockCosmosUtil.CreateMockCosmosClient(),
-                new CosmosClientOptions() { AllowBatchingRequests = true },
-                new CosmosJsonDotNetSerializer(),
-                new CosmosJsonDotNetSerializer(),
-                null,
-                null,
-                null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
-                );
-
-            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
-            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
-
-            dynamic testItem = new
-            {
-                id = Guid.NewGuid().ToString(),
-                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
-            };
-
-            using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
-            {
-                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
-                using (ResponseMessage streamResponse = await container.CreateItemStreamAsync(
-                    partitionKey: partitionKey,
-                    streamPayload: itemStream))
-                {
-                    container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                }
-            }
         }
 
         [TestMethod]

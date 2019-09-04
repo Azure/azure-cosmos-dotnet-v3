@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -75,6 +76,52 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty));
             Assert.ThrowsException<InvalidOperationException>(() => operation.AttachContext(new ItemBatchOperationContext(string.Empty)));
+        }
+
+        [TestMethod]
+        public async Task ShouldRetry_NoPolicy()
+        {
+            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK);
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty));
+            ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
+            Assert.IsFalse(shouldRetryResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task ShouldRetry_WithPolicy_OnSuccess()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK);
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
+            Assert.IsFalse(shouldRetryResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task ShouldRetry_WithPolicy_On429()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+            BatchOperationResult result = new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task ShouldRetry_WithPolicy_OnSplit()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
     }
 }
