@@ -12,22 +12,22 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ItemBatchOperationStatistics : CosmosDiagnostics
     {
-        private readonly List<CosmosDiagnostics> pointOperationStatistics = new List<CosmosDiagnostics>();
+        private readonly List<CosmosDiagnostics> cosmosDiagnostics = new List<CosmosDiagnostics>();
 
         public void AppendPointOperation(CosmosDiagnostics pointOperationStatistic)
         {
-            this.pointOperationStatistics.Add(pointOperationStatistic);
+            this.cosmosDiagnostics.Add(pointOperationStatistic);
         }
 
         public override string ToString()
         {
-            if (this.pointOperationStatistics.Count == 0)
+            if (this.cosmosDiagnostics.Count == 0)
             {
                 return string.Empty;
             }
 
             StringBuilder statistics = new StringBuilder();
-            foreach (CosmosDiagnostics pointOperationStatistic in this.pointOperationStatistics)
+            foreach (CosmosDiagnostics pointOperationStatistic in this.cosmosDiagnostics)
             {
                 statistics.AppendLine(pointOperationStatistic.ToString());
             }
