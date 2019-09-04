@@ -439,20 +439,20 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             OperationType operationType,
-            ItemRequestOptions requestOptions,
+            RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
             PartitionKeyMismatchRetryPolicy requestRetryPolicy = null;
             while (true)
             {
                 ResponseMessage responseMessage = await this.ProcessItemStreamAsync(
-                        partitionKey,
-                        itemId,
-                        streamPayload,
-                        operationType,
-                        requestOptions,
-                        extractPartitionKeyIfNeeded: true,
-                        cancellationToken: cancellationToken);
+                    partitionKey,
+                    itemId,
+                    streamPayload,
+                    operationType,
+                    requestOptions,
+                    extractPartitionKeyIfNeeded: true,
+                    cancellationToken: cancellationToken);
 
                 if (responseMessage.IsSuccessStatusCode)
                 {
