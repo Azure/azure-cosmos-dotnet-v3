@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Text;
 
+    /// <summary>
+    /// A batch operation might extend multiple requests due to retries.
+    /// </summary>
     internal class ItemBatchOperationStatistics : CosmosDiagnostics
     {
         private readonly List<PointOperationStatistics> pointOperationStatistics = new List<PointOperationStatistics>();
