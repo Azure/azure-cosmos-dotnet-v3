@@ -73,7 +73,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
     )
 ) AS v0 
 ]]></SqlQuery>
@@ -111,7 +111,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 80)
+    WHERE (c0["Grade"] > @value0)
 ) AS v0 
 ]]></SqlQuery>
     </Output>
@@ -146,9 +146,9 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
 ) AS v0 
-WHERE (v0 > 0) 
+WHERE (v0 > @value1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -166,7 +166,7 @@ JOIN (
     FROM root 
     JOIN c0 IN root["Children"]
 ) AS v0 
-WHERE (v0 > 100) 
+WHERE (v0 > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -224,7 +224,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 90)
+    WHERE (c0["Grade"] > @value0)
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
@@ -321,7 +321,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 50)
+    WHERE (c0["Grade"] > @value0)
 ) AS v0 
 ]]></SqlQuery>
     </Output>
@@ -341,7 +341,7 @@ JOIN (
         SELECT TOP 3 VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 50) 
+        WHERE (c0["Grade"] > @value0) 
         ORDER BY ARRAY_LENGTH(c0["Pets"]) ASC
     )
 ) AS v1 
@@ -363,7 +363,7 @@ JOIN (
         SELECT TOP 3 VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 50)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v1 
 ]]></SqlQuery>
@@ -384,7 +384,7 @@ JOIN (
         SELECT TOP 3 VALUE c0["Pets"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 50)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v1 
 ]]></SqlQuery>
@@ -404,7 +404,7 @@ JOIN (
         SELECT DISTINCT VALUE c0["Gender"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE ((c0["Grade"] > 50) AND (ARRAY_LENGTH(c0["Pets"]) > 0))
+        WHERE ((c0["Grade"] > @value0) AND (ARRAY_LENGTH(c0["Pets"]) > @value1))
     )
 ) AS v1 
 ]]></SqlQuery>
@@ -469,7 +469,7 @@ JOIN (
     FROM root 
     JOIN c0 IN root["Children"]
 ) AS v0 
-WHERE (v0 > 0) 
+WHERE (v0 > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -486,9 +486,9 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
 ) AS v0 
-WHERE (v0 > 0) 
+WHERE (v0 > @value1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -505,9 +505,9 @@ JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
 ) AS v0 
-WHERE (v0 < 200) 
+WHERE (v0 < @value1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -527,12 +527,12 @@ JOIN (
         SELECT TOP 1 VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0) 
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0) 
         ORDER BY c0["Grade"] ASC
     ) AS r0 
-    WHERE (r0["Grade"] > 80)
+    WHERE (r0["Grade"] > @value2)
 ) AS v1 
-WHERE (v1 > 0) 
+WHERE (v1 > @value3) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -551,7 +551,7 @@ JOIN (
         SELECT VALUE ARRAY_LENGTH(c0["Pets"]) 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 1)
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
     )
 ) AS v0 
 ORDER BY v0 ASC 
@@ -572,7 +572,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
@@ -633,9 +633,9 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] < 20)
+    WHERE (c0["Grade"] < @value0)
 ) AS v0 
-WHERE ((- v0) = 0) 
+WHERE ((- v0) = @value1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -646,13 +646,13 @@ WHERE ((- v0) = 0)
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (5 + v0) 
+SELECT VALUE (@value0 + v0) 
 FROM root 
 JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > @value1)
 ) AS v0 
 ]]></SqlQuery>
     </Output>
@@ -664,13 +664,13 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (5 + v0) 
+SELECT VALUE (@value0 + v0) 
 FROM root 
 JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > @value1)
 ) AS v0 
 ]]></SqlQuery>
     </Output>
@@ -688,9 +688,9 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
 ) AS v0 
-WHERE ((v0 % 2) = 1) 
+WHERE ((v0 % @value1) = @value2) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -741,7 +741,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 97)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v0 
 JOIN (
@@ -826,7 +826,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
     )
 ) AS v0 
 ]]></SqlQuery>
@@ -846,7 +846,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v0 
 ]]></SqlQuery>
@@ -866,7 +866,7 @@ JOIN (
         SELECT VALUE c0["GivenName"] 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
     )
 ) AS v0 
 ]]></SqlQuery>
@@ -887,10 +887,10 @@ FROM (
         SELECT VALUE COUNT(1) 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 0)
+        WHERE (c0["Grade"] > @value0)
     ) AS v0
 ) AS r0 
-WHERE (r0["ChildrenCount"] > 0) 
+WHERE (r0["ChildrenCount"] > @value1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -908,7 +908,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v0 
 JOIN (
@@ -916,7 +916,7 @@ JOIN (
         SELECT VALUE c1 
         FROM root 
         JOIN c1 IN root["Children"] 
-        WHERE (c1["Grade"] < 10)
+        WHERE (c1["Grade"] < @value1)
     )
 ) AS v1 
 ]]></SqlQuery>
@@ -966,7 +966,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c1 IN root["Children"] 
-    WHERE (c1["Grade"] > 50)
+    WHERE (c1["Grade"] > @value0)
 ) AS v1 
 ]]></SqlQuery>
     </Output>
@@ -978,23 +978,23 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE v1[1] 
+SELECT VALUE v1[@value3] 
 FROM root 
 JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 20)
+    WHERE (c0["Grade"] > @value0)
 ) AS v0 
 JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE c1 
         FROM root 
         JOIN c1 IN root["Children"] 
-        WHERE (c1["Grade"] > 20)
+        WHERE (c1["Grade"] > @value2)
     )
 ) AS v1 
-WHERE (v0 >= 2) 
+WHERE (v0 >= @value1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1006,23 +1006,23 @@ WHERE (v0 >= 2)
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE v1[(ARRAY_LENGTH(root["Children"]) % 2)] 
+SELECT VALUE v1[(ARRAY_LENGTH(root["Children"]) % @value3)] 
 FROM root 
 JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (c0["Grade"] > 20)
+    WHERE (c0["Grade"] > @value0)
 ) AS v0 
 JOIN (
     SELECT VALUE ARRAY(
         SELECT VALUE c1 
         FROM root 
         JOIN c1 IN root["Children"] 
-        WHERE (c1["Grade"] > 20)
+        WHERE (c1["Grade"] > @value2)
     )
 ) AS v1 
-WHERE (v0 >= 2) 
+WHERE (v0 >= @value1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1033,7 +1033,7 @@ WHERE (v0 >= 2)
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE FLOOR(((1 * v0) / (v1 + 1))) 
+SELECT VALUE FLOOR(((@value0 * v0) / (v1 + @value1))) 
 FROM root 
 JOIN (
     SELECT VALUE SUM(c0["Grade"]) 
@@ -1071,7 +1071,7 @@ JOIN (
             SELECT VALUE p0 
             FROM c1 
             JOIN p0 IN c1["Pets"] 
-            WHERE ((LENGTH(p0["GivenName"]) = 0) OR (SUBSTRING(p0["GivenName"], 0, 1) = "A"))
+            WHERE ((LENGTH(p0["GivenName"]) = @value0) OR (SUBSTRING(p0["GivenName"], @value1, @value2) = @value3))
         )
     ) AS v1 
     WHERE v1
@@ -1093,7 +1093,7 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+    WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
 ) AS v0 
 ORDER BY LOG(v0) ASC 
 ]]></SqlQuery>
@@ -1118,7 +1118,7 @@ FROM (
         )
     ) AS v0
 ) AS r0 
-WHERE (ARRAY_LENGTH(r0) > 0) 
+WHERE (ARRAY_LENGTH(r0) > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1139,11 +1139,11 @@ FROM (
             SELECT VALUE c0 
             FROM root 
             JOIN c0 IN root["Children"] 
-            WHERE (c0["Grade"] > 90)
+            WHERE (c0["Grade"] > @value0)
         )
     ) AS v0
 ) AS r0 
-WHERE ((r0["FamilyId"] > "ABC") AND (ARRAY_LENGTH(r0["SmartChildren"]) > 0)) 
+WHERE ((r0["FamilyId"] > @value1) AND (ARRAY_LENGTH(r0["SmartChildren"]) > @value2)) 
 ORDER BY r0["ChildrenCount"] ASC 
 ]]></SqlQuery>
     </Output>
@@ -1158,7 +1158,7 @@ ORDER BY r0["ChildrenCount"] ASC
       <SqlQuery><![CDATA[
 SELECT VALUE v6 
 FROM (
-    SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenPetFirstChars": v1, "FirstChild": ((ARRAY_LENGTH(root["Children"]) > 0) ? v4 : null)} 
+    SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenPetFirstChars": v1, "FirstChild": ((ARRAY_LENGTH(root["Children"]) > @value2) ? v4 : null)} 
     FROM root 
     JOIN (
         SELECT VALUE ARRAY(
@@ -1167,7 +1167,7 @@ FROM (
             JOIN c0 IN root["Children"] 
             JOIN (
                 SELECT VALUE ARRAY(
-                    SELECT VALUE SUBSTRING(p0["GivenName"], 0, 1) 
+                    SELECT VALUE SUBSTRING(p0["GivenName"], @value0, @value1) 
                     FROM c0 
                     JOIN p0 IN c0["Pets"]
                 )
@@ -1212,7 +1212,7 @@ SELECT VALUE {"FamilyId": root["FamilyId"], "ChildrenProfile": v2}
 FROM root 
 JOIN (
     SELECT VALUE ARRAY(
-        SELECT VALUE {"Fullname": ((c0["GivenName"] || " ") || c0["FamilyName"]), "PetNames": v0, "ParentNames": v1} 
+        SELECT VALUE {"Fullname": ((c0["GivenName"] || @value0) || c0["FamilyName"]), "PetNames": v0, "ParentNames": v1} 
         FROM root 
         JOIN c0 IN root["Children"] 
         JOIN (
@@ -1251,7 +1251,7 @@ JOIN (
     FROM r0 
     JOIN c IN r0
 ) AS v0 
-WHERE (v0 > 100) 
+WHERE (v0 > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1316,7 +1316,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v0 
 JOIN (
@@ -1343,14 +1343,14 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 90)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v0 
 JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN c1 IN root["Children"] 
-    WHERE (ARRAY_LENGTH(c1["Things"]) > 3)
+    WHERE (ARRAY_LENGTH(c1["Things"]) > @value1)
 ) AS v1 
 JOIN (
     SELECT VALUE SUM(ARRAY_LENGTH(c2["Pets"])) 
@@ -1425,14 +1425,14 @@ SELECT VALUE v1
 FROM root 
 JOIN (
     SELECT VALUE ARRAY(
-        SELECT VALUE {"HasSiblingWithSameStartingChar": (v0 > 1)} 
+        SELECT VALUE {"HasSiblingWithSameStartingChar": (v0 > @value6)} 
         FROM root 
         JOIN c0 IN root["Children"] 
         JOIN (
             SELECT VALUE COUNT(1) 
             FROM c0 
             JOIN child0 IN root["Children"] 
-            WHERE (SUBSTRING((child0["GivenName"] || " "), 0, 1) = SUBSTRING((c0["GivenName"] || " "), 0, 1))
+            WHERE (SUBSTRING((child0["GivenName"] || @value3), @value1, @value2) = SUBSTRING((c0["GivenName"] || @value3), @value4, @value5))
         ) AS v0
     )
 ) AS v1 
@@ -1447,7 +1447,7 @@ JOIN (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((ARRAY_LENGTH(root["Children"]) = 1) ? v2[0] : v3[1]) 
+SELECT VALUE ((ARRAY_LENGTH(root["Children"]) = @value1) ? v2[@value3] : v3[@value4]) 
 FROM root 
 JOIN (
     SELECT VALUE ARRAY(
@@ -1464,7 +1464,7 @@ JOIN (
         ORDER BY c0["Grade"] ASC
     )
 ) AS v3 
-WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+WHERE (ARRAY_LENGTH(root["Children"]) > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1479,22 +1479,22 @@ SELECT VALUE v2
 FROM root 
 JOIN (
     SELECT VALUE ARRAY(
-        SELECT VALUE {"HasSiblingWithSameStartingChar": (v1 > 1)} 
+        SELECT VALUE {"HasSiblingWithSameStartingChar": (v1 > @value11)} 
         FROM root 
         JOIN c0 IN root["Children"] 
         JOIN (
             SELECT VALUE COUNT(1) 
             FROM c0 
             JOIN p0 IN c0["Pets"] 
-            WHERE ((LENGTH(p0["GivenName"]) > 10) AND (SUBSTRING(p0["GivenName"], 0, 1) = "A"))
+            WHERE ((LENGTH(p0["GivenName"]) > @value0) AND (SUBSTRING(p0["GivenName"], @value1, @value2) = @value3))
         ) AS v0 
         JOIN (
             SELECT VALUE COUNT(1) 
             FROM c0 
             JOIN child0 IN root["Children"] 
-            WHERE (SUBSTRING((child0["GivenName"] || " "), 0, 1) = SUBSTRING((c0["GivenName"] || " "), 0, 1))
+            WHERE (SUBSTRING((child0["GivenName"] || @value8), @value6, @value7) = SUBSTRING((c0["GivenName"] || @value8), @value9, @value10))
         ) AS v1 
-        WHERE (v0 > 0)
+        WHERE (v0 > @value4)
     )
 ) AS v2 
 ]]></SqlQuery>
@@ -1535,7 +1535,7 @@ JOIN (
         SELECT VALUE p0 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (LENGTH(p0["GivenName"]) > 10)
+        WHERE (LENGTH(p0["GivenName"]) > @value0)
     )
 ) AS v0 
 WHERE v0 
@@ -1555,9 +1555,9 @@ JOIN (
     SELECT VALUE COUNT(1) 
     FROM root 
     JOIN p0 IN root["Parents"] 
-    WHERE (LENGTH(p0["FamilyName"]) > 10)
+    WHERE (LENGTH(p0["FamilyName"]) > @value0)
 ) AS v0 
-WHERE (v0 > 1) 
+WHERE (v0 > @value1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1578,11 +1578,11 @@ JOIN (
         SELECT VALUE COUNT(1) 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (LENGTH(p0["GivenName"]) > 15)
+        WHERE (LENGTH(p0["GivenName"]) > @value0)
     ) AS v0 
-    WHERE (v0 > 0)
+    WHERE (v0 > @value1)
 ) AS v1 
-WHERE (v1 > 0) 
+WHERE (v1 > @value2) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1610,7 +1610,7 @@ JOIN (
                 )
             ) AS v0
         ) AS r0 
-        WHERE (ARRAY_LENGTH(r0) > 3)
+        WHERE (ARRAY_LENGTH(r0) > @value0)
     )
 ) AS v1 
 WHERE v1 
@@ -1674,7 +1674,7 @@ JOIN (
         SELECT VALUE p0 
         FROM c0 
         JOIN p0 IN c0["Pets"] 
-        WHERE (LENGTH(p0["GivenName"]) > 20)
+        WHERE (LENGTH(p0["GivenName"]) > @value1)
     )
 ) AS v0 
 JOIN (
@@ -1684,7 +1684,7 @@ JOIN (
         JOIN p1 IN c0["Pets"]
     )
 ) AS v1 
-WHERE ((c0["Grade"] > 80) AND v0) 
+WHERE ((c0["Grade"] > @value0) AND v0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1718,7 +1718,7 @@ JOIN (
                 )
             ) AS v1
         ) AS r2 
-        WHERE (ARRAY_LENGTH(r2) > 3)
+        WHERE (ARRAY_LENGTH(r2) > @value0)
     )
 ) AS v2 
 WHERE v2 
@@ -1741,7 +1741,7 @@ JOIN (
         JOIN c0 IN root["Children"]
     )
 ) AS v0 
-WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
+WHERE (ARRAY_LENGTH(root["Children"]) > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1829,7 +1829,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 80)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v0 
 ]]></SqlQuery>
@@ -1849,7 +1849,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (c0["Grade"] > 80)
+        WHERE (c0["Grade"] > @value0)
     )
 ) AS v0 
 ]]></SqlQuery>
@@ -1869,7 +1869,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
     )
 ) AS v0 
 JOIN (
@@ -1877,7 +1877,7 @@ JOIN (
         SELECT VALUE c1 
         FROM root 
         JOIN c1 IN root["Children"] 
-        WHERE (c1["Grade"] > 80)
+        WHERE (c1["Grade"] > @value1)
     )
 ) AS v1 
 ]]></SqlQuery>
@@ -1902,7 +1902,7 @@ JOIN (
                 SELECT VALUE p0 
                 FROM c0 
                 JOIN p0 IN c0["Pets"] 
-                WHERE (LENGTH(p0["GivenName"]) > 10)
+                WHERE (LENGTH(p0["GivenName"]) > @value0)
             )
         ) AS v0 
         WHERE v0
@@ -1925,7 +1925,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
     )
 ) AS v0 
 WHERE v0 
@@ -1946,10 +1946,10 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value1)
     )
 ) AS v0 
-WHERE (CONTAINS(root["FamilyId"], "a") AND v0) 
+WHERE (CONTAINS(root["FamilyId"], @value0) AND v0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -1968,7 +1968,7 @@ JOIN (
         SELECT VALUE c0 
         FROM root 
         JOIN c0 IN root["Children"] 
-        WHERE (ARRAY_LENGTH(c0["Pets"]) > 3)
+        WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
     )
 ) AS v0 
 ORDER BY v0 ASC 
@@ -2026,7 +2026,7 @@ JOIN (
     SELECT TOP 2 VALUE c0 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (LENGTH(c0["FamilyName"]) > 10)
+    WHERE (LENGTH(c0["FamilyName"]) > @value0)
 ) AS v1 
 ]]></SqlQuery>
     </Output>
@@ -2045,7 +2045,7 @@ JOIN (
     SELECT TOP 2 VALUE c0["Grade"] 
     FROM root 
     JOIN c0 IN root["Children"] 
-    WHERE (LENGTH(c0["FamilyName"]) > 10)
+    WHERE (LENGTH(c0["FamilyName"]) > @value0)
 ) AS v1 
 ]]></SqlQuery>
     </Output>

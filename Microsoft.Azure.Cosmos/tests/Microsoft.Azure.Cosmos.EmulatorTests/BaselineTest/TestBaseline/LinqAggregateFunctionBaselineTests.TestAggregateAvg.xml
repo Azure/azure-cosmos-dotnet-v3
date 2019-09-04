@@ -66,7 +66,7 @@ FROM root ]]></SqlQuery>
 SELECT VALUE AVG(m0) 
 FROM root 
 JOIN m0 IN root["Multiples"] 
-WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+WHERE ((m0 % @value0) = @value1) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -85,7 +85,7 @@ FROM (
             SELECT VALUE c0 
             FROM root 
             JOIN c0 IN root["Children"] 
-            WHERE (c0["Grade"] > 80)
+            WHERE (c0["Grade"] > @value0)
         )
     ) AS v0
 ) AS r0 
@@ -180,7 +180,7 @@ FROM (
       <SqlQuery><![CDATA[
 SELECT VALUE AVG(r9) 
 FROM (
-    SELECT VALUE (((((r8["v0"] + r8["v1"]) + r8["v2"]) + r8["v3"]) + r8["v4"]) / 5) 
+    SELECT VALUE (((((r8["v0"] + r8["v1"]) + r8["v2"]) + r8["v3"]) + r8["v4"]) / @value14) 
     FROM (
         SELECT VALUE {"v0": v5[0], "v1": v10[0], "v2": v15[0], "v3": v19[0], "v4": v22[0]} 
         FROM (
@@ -243,13 +243,13 @@ FROM (
                     SELECT VALUE c0["Grade"] 
                     FROM r0 
                     JOIN c0 IN r0["Children"] 
-                    WHERE (c0["Grade"] > 20) 
+                    WHERE (c0["Grade"] > @value10) 
                     ORDER BY c0["Grade"] ASC 
                     OFFSET 1 LIMIT 2147483647
                 ) AS r7
             )
         ) AS v22 
-        WHERE (ARRAY_LENGTH(r0["Children"]) > 2) 
+        WHERE (ARRAY_LENGTH(r0["Children"]) > @value2) 
         OFFSET 1 LIMIT 10
     ) AS r8
 ) AS r9 

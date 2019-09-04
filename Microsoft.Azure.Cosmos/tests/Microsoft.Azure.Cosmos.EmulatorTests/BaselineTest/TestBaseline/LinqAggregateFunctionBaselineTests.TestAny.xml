@@ -86,7 +86,7 @@ FROM (
     SELECT VALUE m0 
     FROM root 
     JOIN m0 IN root["Multiples"] 
-    WHERE ((m0 % 3) = 0)
+    WHERE ((m0 % @value0) = @value1)
 ) AS v0 
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
@@ -124,7 +124,7 @@ SELECT VALUE (COUNT(v0) > 0)
 FROM (
     SELECT VALUE root 
     FROM root 
-    WHERE (root["Number"] < -7)
+    WHERE (root["Number"] < @value0)
 ) AS v0 
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
@@ -143,7 +143,7 @@ SELECT VALUE (COUNT(v0) > 0)
 FROM (
     SELECT VALUE root["Number"] 
     FROM root 
-    WHERE (root["Number"] < -13)
+    WHERE (root["Number"] < @value0)
 ) AS v0 
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
@@ -170,7 +170,7 @@ FROM (
         FROM r0 
         JOIN v0 IN r0
     ) AS v1 
-    WHERE (v1 > 5)
+    WHERE (v1 > @value0)
 ) AS v2 
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
@@ -196,7 +196,7 @@ FROM (
                 SELECT VALUE c0 
                 FROM root 
                 JOIN c0 IN root["Children"] 
-                WHERE (ARRAY_LENGTH(c0["Pets"]) > 0)
+                WHERE (ARRAY_LENGTH(c0["Pets"]) > @value0)
             )
         ) AS v0
     ) AS r0 
@@ -205,7 +205,7 @@ FROM (
         FROM r0 
         JOIN c IN r0
     ) AS v1 
-    WHERE (v1 > 150)
+    WHERE (v1 > @value1)
 ) AS v2 
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Expecting error message containing [[Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.]]. Actual: Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Compositions of aggregates and other expressions are not allowed."]}).]]></ErrorMessage>
@@ -302,7 +302,7 @@ FROM (
                 SELECT VALUE c0["Grade"] 
                 FROM root 
                 JOIN c0 IN root["Children"] 
-                WHERE (c0["Grade"] > 80) 
+                WHERE (c0["Grade"] > @value9) 
                 ORDER BY c0["Grade"] ASC 
                 OFFSET 4 LIMIT 2147483647
             )
@@ -314,7 +314,7 @@ FROM (
                     SELECT VALUE c1 
                     FROM root 
                     JOIN c1 IN root["Children"] 
-                    WHERE (c1["Grade"] > 80) 
+                    WHERE (c1["Grade"] > @value11) 
                     ORDER BY c1["Grade"] ASC 
                     OFFSET 4 LIMIT 2147483647
                 ) AS r2 
@@ -322,7 +322,7 @@ FROM (
                     SELECT VALUE p0 
                     FROM r2 
                     JOIN p0 IN r2["Pets"] 
-                    WHERE (p0["GivenName"] > "A") 
+                    WHERE (p0["GivenName"] > @value13) 
                     OFFSET 1 LIMIT 2
                 ) AS v21
             )

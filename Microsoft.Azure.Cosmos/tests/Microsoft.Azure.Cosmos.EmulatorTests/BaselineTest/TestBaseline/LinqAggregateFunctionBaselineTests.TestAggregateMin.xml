@@ -88,7 +88,7 @@ FROM root ]]></SqlQuery>
 SELECT VALUE MIN(m0) 
 FROM root 
 JOIN m0 IN root["Multiples"] 
-WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+WHERE ((m0 % @value0) = @value1) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -233,7 +233,7 @@ FROM (
                     SELECT VALUE c0["Grade"] 
                     FROM root 
                     JOIN c0 IN root["Children"] 
-                    WHERE (c0["Grade"] > 20) 
+                    WHERE (c0["Grade"] > @value9) 
                     ORDER BY c0["Grade"] ASC 
                     OFFSET 1 LIMIT 2147483647
                 ) AS r6

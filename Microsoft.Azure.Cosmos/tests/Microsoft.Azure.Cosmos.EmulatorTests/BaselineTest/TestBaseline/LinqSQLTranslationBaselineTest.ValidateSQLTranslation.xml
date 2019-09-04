@@ -6,7 +6,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE 5 
+SELECT VALUE @value0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -28,7 +28,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (((root["x"] % 10) + 2) + (root["x"] % 5)) 
+SELECT VALUE (((root["x"] % @value0) + @value1) + (root["x"] % @value2)) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -39,7 +39,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["x"] + 2) 
+SELECT VALUE (root["x"] + @value0) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -50,7 +50,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE [root["x"], (root["x"] + 1)] 
+SELECT VALUE [root["x"], (root["x"] + @value0)] 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -85,7 +85,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["x"] > 2) ]]></SqlQuery>
+WHERE (root["x"] > @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -97,7 +97,7 @@ WHERE (root["x"] > 2) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["x"] > 3) ]]></SqlQuery>
+WHERE (root["x"] > @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -107,9 +107,9 @@ WHERE (root["x"] > 3) ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["x"] + 2) 
+SELECT VALUE (root["x"] + @value1) 
 FROM root 
-WHERE (root["x"] > 2) ]]></SqlQuery>
+WHERE (root["x"] > @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -119,9 +119,9 @@ WHERE (root["x"] > 2) ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["x"] + 2) 
+SELECT VALUE (root["x"] + @value0) 
 FROM root 
-WHERE ((root["x"] + 2) > 2) ]]></SqlQuery>
+WHERE ((root["x"] + @value0) > @value1) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -133,7 +133,7 @@ WHERE ((root["x"] + 2) > 2) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
+WHERE ((root["x"] > @value0) AND (root["x"] < @value1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -145,7 +145,7 @@ WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["x"] + root["x"]) 
 FROM root 
-WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
+WHERE ((root["x"] > @value0) AND (root["x"] < @value1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -155,7 +155,7 @@ WHERE ((root["x"] > 2) AND (root["x"] < 4)) ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["x"] + 3) 
+SELECT VALUE (root["x"] + @value0) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -167,9 +167,9 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE [1, 2, 3][root["x"]] 
+SELECT VALUE [@value2, @value3, @value4][root["x"]] 
 FROM root 
-WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
+WHERE ((root["x"] >= @value0) AND (root["x"] < @value1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -190,7 +190,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"s": {"x": root["x"], "y": root["x"]}, "x": 2} 
+SELECT VALUE {"s": {"x": root["x"], "y": root["x"]}, "x": @value0} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -201,7 +201,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"dbl": 1, "str": "", "b": false, "dblArray": [1, 2], "inside": {"x": root["x"], "y": root["x"]}} 
+SELECT VALUE {"dbl": @value0, "str": @value1, "b": false, "dblArray": [@value3, @value4], "inside": {"x": root["x"], "y": root["x"]}} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -224,9 +224,9 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE [1, 2, 3][root["x"]] 
+SELECT VALUE [@value2, @value3, @value4][root["x"]] 
 FROM root 
-WHERE ((root["x"] >= 0) AND (root["x"] < 3)) ]]></SqlQuery>
+WHERE ((root["x"] >= @value0) AND (root["x"] < @value1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>

@@ -5,8 +5,8 @@
       <Expression><![CDATA[+15]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[15]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[15]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -15,8 +15,8 @@
       <Expression><![CDATA[--15]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[15]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[15]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -45,8 +45,8 @@
       <Expression><![CDATA[~(0)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[-1]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[-1]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -55,8 +55,8 @@
       <Expression><![CDATA[~(273)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[-274]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[-274]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -65,8 +65,8 @@
       <Expression><![CDATA[~(1048575)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[-1048576]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[-1048576]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -75,8 +75,8 @@
       <Expression><![CDATA[~(34952)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[-34953]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[-34953]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -85,8 +85,8 @@
       <Expression><![CDATA[~(570425378)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[-570425379]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[-570425379]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -95,8 +95,8 @@
       <Expression><![CDATA[Increment(1.5)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[2.5]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[2.5]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -105,8 +105,8 @@
       <Expression><![CDATA[Decrement(1.5)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[0.5]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[0.5]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -115,8 +115,8 @@
       <Expression><![CDATA[-2]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[-2]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[-2]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -125,8 +125,8 @@
       <Expression><![CDATA[Not(2)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[-3]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[-3]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
 </Results>

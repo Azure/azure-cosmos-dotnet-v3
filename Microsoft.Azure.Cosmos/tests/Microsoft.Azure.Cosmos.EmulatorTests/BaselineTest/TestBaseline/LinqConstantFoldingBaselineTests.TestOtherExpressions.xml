@@ -15,8 +15,8 @@
       <Expression><![CDATA[new [] {1}]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[[1]]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[[1]]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[[@value0]]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[[@value0]]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -25,8 +25,8 @@
       <Expression><![CDATA[new [] {1, 2}]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[[1, 2]]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[[1, 2]]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[[@value0, @value1]]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[[@value0, @value1]]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -35,8 +35,8 @@
       <Expression><![CDATA[new [] {1, "two"}]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[[1, "two"]]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[[1, "two"]]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[[@value0, @value1]]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[[@value0, @value1]]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -45,8 +45,8 @@
       <Expression><![CDATA[new [] {3, 4}[1]]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[4]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[4]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -55,8 +55,8 @@
       <Expression><![CDATA[1]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[1]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[1]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -75,8 +75,8 @@
       <Expression><![CDATA[1]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[1]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[1]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
     </Output>
   </Result>
 </Results>

@@ -55,7 +55,7 @@ FROM root ]]></SqlQuery>
 SELECT VALUE COUNT(1) 
 FROM root 
 JOIN m0 IN root["Multiples"] 
-WHERE ((m0 % 3) = 0) ]]></SqlQuery>
+WHERE ((m0 % @value0) = @value1) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -79,7 +79,7 @@ WHERE root["Flag"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE (root["Number"] < -7) ]]></SqlQuery>
+WHERE (root["Number"] < @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -91,7 +91,7 @@ WHERE (root["Number"] < -7) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE (root["Number"] < -13) ]]></SqlQuery>
+WHERE (root["Number"] < @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -240,7 +240,7 @@ FROM (
                 JOIN v2 IN root["Children"] 
                 OFFSET 1 LIMIT 2147483647
             ) AS r0 
-            WHERE (r0["Grade"] > 50)
+            WHERE (r0["Grade"] > @value3)
         ) AS v4 
         JOIN (
             SELECT VALUE COUNT(1) 
@@ -250,7 +250,7 @@ FROM (
                 JOIN v5 IN root["Children"] 
                 OFFSET 1 LIMIT 3
             ) AS r1 
-            WHERE (r1["Grade"] > 50)
+            WHERE (r1["Grade"] > @value6)
         ) AS v8 
         JOIN (
             SELECT VALUE COUNT(1) 
@@ -263,7 +263,7 @@ FROM (
                 ) AS r2 
                 OFFSET 1 LIMIT 2147483647
             ) AS r3 
-            WHERE (r3["Grade"] > 50)
+            WHERE (r3["Grade"] > @value9)
         ) AS v12 
         JOIN (
             SELECT VALUE COUNT(1) 
@@ -281,7 +281,7 @@ FROM (
                 SELECT VALUE c0["Grade"] 
                 FROM root 
                 JOIN c0 IN root["Children"] 
-                WHERE (c0["Grade"] > 20) 
+                WHERE (c0["Grade"] > @value12) 
                 ORDER BY c0["Grade"] ASC 
                 OFFSET 1 LIMIT 2147483647
             ) AS r6

@@ -218,7 +218,7 @@ FROM (
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["Int"] 
 FROM root 
-WHERE (root["Int"] > 10) ]]></SqlQuery>
+WHERE (root["Int"] > @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -230,7 +230,7 @@ WHERE (root["Int"] > 10) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT DISTINCT VALUE root["Int"] 
 FROM root 
-WHERE (root["Int"] > 10) ]]></SqlQuery>
+WHERE (root["Int"] > @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -256,7 +256,7 @@ SELECT DISTINCT VALUE pet0
 FROM root 
 JOIN child0 IN root["Children"] 
 JOIN pet0 IN child0["Pets"] 
-WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+WHERE (pet0["GivenName"] = @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -273,7 +273,7 @@ JOIN (
     SELECT DISTINCT VALUE pet0 
     FROM child0 
     JOIN pet0 IN child0["Pets"] 
-    WHERE (pet0["GivenName"] = "Fluffy")
+    WHERE (pet0["GivenName"] = @value0)
 ) AS v1 
 ]]></SqlQuery>
     </Output>
@@ -289,7 +289,7 @@ SELECT DISTINCT VALUE LENGTH(pet0["GivenName"])
 FROM root 
 JOIN child0 IN root["Children"] 
 JOIN pet0 IN child0["Pets"] 
-WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+WHERE (pet0["GivenName"] = @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -306,7 +306,7 @@ JOIN (
     FROM root 
     JOIN child0 IN root["Children"] 
     JOIN pet0 IN child0["Pets"] 
-    WHERE (pet0["GivenName"] = "Fluffy")
+    WHERE (pet0["GivenName"] = @value0)
 ) AS v1 
 ]]></SqlQuery>
     </Output>
@@ -322,7 +322,7 @@ SELECT DISTINCT VALUE {"family": root["FamilyId"], "child": child0["GivenName"],
 FROM root 
 JOIN child0 IN root["Children"] 
 JOIN pet0 IN child0["Pets"] 
-WHERE (pet0["GivenName"] = "Fluffy") ]]></SqlQuery>
+WHERE (pet0["GivenName"] = @value0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -339,7 +339,7 @@ JOIN (
     SELECT DISTINCT VALUE {"family": root["FamilyId"], "child": child0["GivenName"], "pet": pet0["GivenName"]} 
     FROM child0 
     JOIN pet0 IN child0["Pets"] 
-    WHERE (pet0["GivenName"] = "Fluffy")
+    WHERE (pet0["GivenName"] = @value0)
 ) AS v1 
 ]]></SqlQuery>
     </Output>
@@ -375,7 +375,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -393,7 +393,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -412,7 +412,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
     </Output>
@@ -432,7 +432,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+WHERE ((LENGTH(v2["FamilyName"]) > @value0) AND (LENGTH(v2["FamilyName"]) < @value1)) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
     </Output>
@@ -452,7 +452,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+WHERE ((LENGTH(v2["FamilyName"]) > @value0) AND (LENGTH(v2["FamilyName"]) < @value1)) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
     </Output>
@@ -474,7 +474,7 @@ FROM (
         FROM root 
         JOIN v0 IN root["Parents"]
     ) AS v2 
-    WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+    WHERE ((LENGTH(v2["FamilyName"]) > @value0) AND (LENGTH(v2["FamilyName"]) < @value1)) 
     ORDER BY v2 ASC
 ) AS r0 
 ]]></SqlQuery>
@@ -495,7 +495,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
     </Output>
@@ -517,7 +517,7 @@ FROM (
         FROM root 
         JOIN v0 IN root["Parents"]
     ) AS v2 
-    WHERE (LENGTH(v2["FamilyName"]) > 10) 
+    WHERE (LENGTH(v2["FamilyName"]) > @value0) 
     ORDER BY v2 ASC
 ) AS r0 
 ]]></SqlQuery>
@@ -537,7 +537,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -558,7 +558,7 @@ FROM (
         FROM root 
         JOIN v0 IN root["Parents"]
     ) AS v2 
-    WHERE (LENGTH(v2["FamilyName"]) > 10)
+    WHERE (LENGTH(v2["FamilyName"]) > @value0)
 ) AS r0 
 ]]></SqlQuery>
     </Output>
@@ -578,7 +578,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
     </Output>
@@ -598,7 +598,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
     </Output>
@@ -618,7 +618,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ORDER BY v2["GivenName"]["Length"] ASC 
 ]]></SqlQuery>
     </Output>
@@ -638,7 +638,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ORDER BY v2["GivenName"]["Length"] ASC 
 ]]></SqlQuery>
     </Output>
@@ -658,7 +658,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
     </Output>
@@ -678,7 +678,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE (LENGTH(v2["FamilyName"]) > 10) 
+WHERE (LENGTH(v2["FamilyName"]) > @value0) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
     </Output>
@@ -697,7 +697,7 @@ JOIN (
     FROM root 
     JOIN v0 IN root["Parents"]
 ) AS v2 
-WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
+WHERE ((LENGTH(v2["FamilyName"]) > @value0) AND (LENGTH(v2["FamilyName"]) < @value1)) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -824,7 +824,7 @@ JOIN (
     FROM root 
     JOIN p0 IN root["Parents"]
 ) AS v1 
-WHERE (LENGTH(v1) > 10) 
+WHERE (LENGTH(v1) > @value0) 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
     </Output>
@@ -889,7 +889,7 @@ JOIN (
     FROM root 
     JOIN p0 IN root["Parents"]
 ) AS v1 
-WHERE (LENGTH(v1) > 10) 
+WHERE (LENGTH(v1) > @value0) 
 ]]></SqlQuery>
     </Output>
   </Result>
