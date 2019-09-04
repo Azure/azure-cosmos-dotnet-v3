@@ -306,9 +306,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders[HttpConstants.HttpHeaders.ForceQueryScan] = bool.TrueString;
             }
 
-            if (this.feedOptions.CosmosSerializationOptions != null)
+            if (this.feedOptions.CosmosSerializationFormatOptions != null)
             {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationOptions.ContentSerializationFormat;
+                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationFormatOptions.ContentSerializationFormat;
             }
             else if (this.feedOptions.ContentSerializationFormat.HasValue)
             {
@@ -662,9 +662,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
             // Use the users custom navigator first. If it returns null back try the
             // internal navigator.
-            if (this.feedOptions.CosmosSerializationOptions != null)
+            if (this.feedOptions.CosmosSerializationFormatOptions != null)
             {
-                jsonNavigator = this.feedOptions.CosmosSerializationOptions.CreateCustomNavigatorCallback(content);
+                jsonNavigator = this.feedOptions.CosmosSerializationFormatOptions.CreateCustomNavigatorCallback(content);
                 if (jsonNavigator == null)
                 {
                     throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");

@@ -98,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="maxElements">The maximum number of items to drain.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A page of distinct results.</returns>
-        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             List<CosmosElement> distinctResults = new List<CosmosElement>();
-            QueryResponse cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
-            if (!cosmosQueryResponse.IsSuccessStatusCode)
+            QueryResponseCore cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
+            if (!cosmosQueryResponse.IsSuccess)
             {
                 return cosmosQueryResponse;
             }
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 updatedContinuationToken = new DistinctContinuationToken(
                     this.lastHash,
-                    cosmosQueryResponse.Headers.ContinuationToken).ToString();
+                    cosmosQueryResponse.ContinuationToken).ToString();
             }
             else
             {
@@ -129,12 +129,16 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken;
-            return QueryResponse.CreateSuccess(
-                distinctResults,
-                distinctResults.Count,
-                cosmosQueryResponse.ResponseLengthBytes,
-                cosmosQueryResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, disallowContinuationTokenMessage),
-                cosmosQueryResponse.queryMetrics);
+            return QueryResponseCore.CreateSuccess(
+                result: distinctResults,
+                continuationToken: updatedContinuationToken,
+                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
+                activityId: cosmosQueryResponse.ActivityId,
+                requestCharge: cosmosQueryResponse.RequestCharge,
+                queryMetricsText: cosmosQueryResponse.QueryMetricsText,
+                queryMetrics: cosmosQueryResponse.QueryMetrics,
+                requestStatistics: cosmosQueryResponse.RequestStatistics,
+                responseLengthBytes: cosmosQueryResponse.ResponseLengthBytes);
         }
 
         /// <summary>

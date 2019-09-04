@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// If a failure is hit store it and return it on the next drain call.
         /// This allows returning the results computed before the failure.
         /// </summary>
-        public QueryResponse FailureResponse
+        public QueryResponseCore? FailureResponse
         {
             get;
             protected set;
@@ -215,31 +215,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the number of documents we can still buffer.
         /// </summary>
         private long FreeItemSpace => this.actualMaxBufferedItemCount - Interlocked.Read(ref this.totalBufferedItems);
-
-        /// <summary>
-        /// Gets the response headers for the context.
-        /// </summary>
-        /// <returns>The response headers for the context.</returns>
-        public CosmosQueryResponseMessageHeaders GetResponseHeaders()
-        {
-            string continuation = this.ContinuationToken;
-            if (continuation == "[]")
-            {
-                throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
-            }
-
-            CosmosQueryResponseMessageHeaders responseHeaders = new CosmosQueryResponseMessageHeaders(
-                continauationToken: continuation,
-                disallowContinuationTokenMessage: null,
-                resourceType: this.queryContext.ResourceTypeEnum,
-                containerRid: this.queryContext.ContainerResourceId);
-
-            this.SetQueryMetrics();
-
-            responseHeaders.RequestCharge = this.requestChargeTracker.GetAndResetCharge();
-
-            return responseHeaders;
-        }
 
         /// <summary>
         /// Gets the query metrics that are set in SetQueryMetrics
@@ -346,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>True if it move next failed. It can fail from an error or hitting the end of the tree</returns>
         protected async Task<bool> MoveNextHelperAsync(ItemProducerTree itemProducerTree, CancellationToken cancellationToken)
         {
-            (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
+            (bool successfullyMovedNext, QueryResponseCore? failureResponse) moveNextResponse = await itemProducerTree.MoveNextAsync(cancellationToken);
             if (moveNextResponse.failureResponse != null)
             {
                 this.FailureResponse = moveNextResponse.failureResponse;
@@ -361,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of documents to drain.</param>
         /// <param name="cancellationToken">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -369,22 +344,34 @@ namespace Microsoft.Azure.Cosmos.Query
             if (this.FailureResponse != null)
             {
                 this.Stop();
-                return this.FailureResponse;
+                return this.FailureResponse.Value;
             }
 
             // Drain the results. If there is no results and a failure then return the failure.
-            IList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellationToken);
+            IReadOnlyList<CosmosElement> results = await this.InternalDrainAsync(maxElements, cancellationToken);
             if ((results == null || results.Count == 0) && this.FailureResponse != null)
             {
                 this.Stop();
-                return this.FailureResponse;
+                return this.FailureResponse.Value;
             }
 
-            return QueryResponse.CreateSuccess(
+            string continuation = this.ContinuationToken;
+            if (continuation == "[]")
+            {
+                throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
+            }
+
+            this.SetQueryMetrics();
+
+            return QueryResponseCore.CreateSuccess(
                 result: results,
-                count: results.Count,
-                responseHeaders: this.GetResponseHeaders(),
+                requestCharge: this.requestChargeTracker.GetAndResetCharge(),
+                activityId: null,
+                queryMetricsText: null,
+                disallowContinuationTokenMessage: null,
+                continuationToken: continuation,
                 queryMetrics: this.GetQueryMetrics(),
+                requestStatistics: null,
                 responseLengthBytes: this.GetAndResetResponseLengthBytes());
         }
 
@@ -394,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of documents to drain.</param>
         /// <param name="token">The cancellation token to cancel tasks.</param>
         /// <returns>A task that when awaited on returns a feed response.</returns>
-        public abstract Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken token);
+        public abstract Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken token);
 
         /// <summary>
         /// Initializes cross partition query execution context by initializing the necessary document producers.
@@ -453,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!deferFirstPage)
                 {
-                    (bool successfullyMovedNext, QueryResponse failureResponse) response = await itemProducerTree.MoveNextIfNotSplitAsync(token);
+                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) response = await itemProducerTree.MoveNextIfNotSplitAsync(token);
                     if (response.failureResponse != null)
                     {
                         // Set the failure so on drain it can be returned.
