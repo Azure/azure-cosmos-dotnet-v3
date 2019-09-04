@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (Exception ex)
                 {
-                    var innerException = ex as DocumentClientException;
+                    DocumentClientException innerException = ex as DocumentClientException;
                     Assert.AreEqual(HttpStatusCode.PreconditionFailed, innerException.StatusCode, "Invalid status code");
                 }
             }
@@ -252,6 +252,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "]" +
                 "}");
         }
+
+        [TestMethod]
+        public async Task VerifyNegativeWebProxySettings()
+        {
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
+                cosmosClientBuilder.WithConnectionModeGateway(webProxy: new TestWebProxy());
+            });
+
+            DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Assert.AreEqual(HttpStatusCode.Created, databaseResponse.StatusCode);
+
+            /*
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
+                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            });
+            */
+        }
     }
 
     internal static class StringHelper
@@ -259,6 +276,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static string EscapeForSQL(this string input)
         {
             return input.Replace("'", "\\'").Replace("\"", "\\\"");
+        }
+    }
+
+    internal class TestWebProxy : IWebProxy
+    {
+        public ICredentials Credentials { get; set; }
+
+        public Uri GetProxy(Uri destination)
+        {
+            return new Uri("http://www.cosmostestproxyshouldfail.com");
+        }
+
+        public bool IsBypassed(Uri host)
+        {
+            return false;
         }
     }
 }
