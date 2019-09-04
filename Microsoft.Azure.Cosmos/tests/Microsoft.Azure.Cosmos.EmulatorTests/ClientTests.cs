@@ -260,10 +260,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
                 cosmosClientBuilder.WithConnectionModeGateway(webProxy: new TestWebProxy());
             });
-            
+
+            DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Console.WriteLine(databaseResponse.StatusCode);
+
+            /*
             await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             });
+            */
         }
     }
 
