@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ItemBatchOperationStatistics : CosmosDiagnostics
     {
-        private readonly List<PointOperationStatistics> pointOperationStatistics = new List<PointOperationStatistics>();
+        private readonly List<CosmosDiagnostics> pointOperationStatistics = new List<CosmosDiagnostics>();
 
-        public void AppendPointOperation(PointOperationStatistics pointOperationStatistic)
+        public void AppendPointOperation(CosmosDiagnostics pointOperationStatistic)
         {
             this.pointOperationStatistics.Add(pointOperationStatistic);
         }
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             StringBuilder statistics = new StringBuilder();
-            foreach (PointOperationStatistics pointOperationStatistic in this.pointOperationStatistics)
+            foreach (CosmosDiagnostics pointOperationStatistic in this.pointOperationStatistics)
             {
                 statistics.AppendLine(pointOperationStatistic.ToString());
             }
