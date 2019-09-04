@@ -36,9 +36,10 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             TimeSpan? retryAfter,
             string activityId,
+            CosmosDiagnostics cosmosDiagnostics,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
-            : this(statusCode, subStatusCode, errorMessage, requestCharge, retryAfter, activityId, serverRequest.Operations, serializer)
+            : this(statusCode, subStatusCode, errorMessage, requestCharge, retryAfter, activityId, cosmosDiagnostics, serverRequest.Operations, serializer)
         {
         }
 
@@ -61,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
                   requestCharge: 0,
                   retryAfter: null,
                   activityId: Guid.Empty.ToString(),
+                  cosmosDiagnostics: null,
                   operations: operations,
                   serializer: null)
         {
@@ -80,6 +82,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             TimeSpan? retryAfter,
             string activityId,
+            CosmosDiagnostics cosmosDiagnostics,
             IReadOnlyList<ItemBatchOperation> operations,
             CosmosSerializer serializer)
         {
@@ -91,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.RetryAfter = retryAfter;
             this.ActivityId = activityId;
+            this.Diagnostics = cosmosDiagnostics;
         }
 
         /// <summary>
@@ -139,6 +143,11 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the number of operation results.
         /// </summary>
         public virtual int Count => this.results?.Count ?? 0;
+
+        /// <summary>
+        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
+        /// </summary>
+        public virtual CosmosDiagnostics Diagnostics { get; set; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
@@ -232,6 +241,7 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage.Headers.RequestCharge,
                             responseMessage.Headers.RetryAfter,
                             responseMessage.Headers.ActivityId,
+                            responseMessage.Diagnostics,
                             serverRequest,
                             serializer);
                     }
@@ -245,6 +255,7 @@ namespace Microsoft.Azure.Cosmos
                         responseMessage.Headers.RequestCharge,
                         responseMessage.Headers.RetryAfter,
                         responseMessage.Headers.ActivityId,
+                        responseMessage.Diagnostics,
                         serverRequest,
                         serializer);
                 }
@@ -262,6 +273,7 @@ namespace Microsoft.Azure.Cosmos
                             responseMessage.Headers.RequestCharge,
                             responseMessage.Headers.RetryAfter,
                             responseMessage.Headers.ActivityId,
+                            responseMessage.Diagnostics,
                             serverRequest,
                             serializer);
                     }
@@ -334,6 +346,7 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage.Headers.RequestCharge,
                 responseMessage.Headers.RetryAfter,
                 responseMessage.Headers.ActivityId,
+                responseMessage.Diagnostics,
                 serverRequest,
                 serializer);
 
