@@ -61,10 +61,5 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, sqlParameters);
             return sqlQuerySpec;
         }
-
-        private static Tuple<SqlQuery, Dictionary<object, object>> GenerateParameterizedQuery(SqlQuery query)
-        {
-            return null;
-        }
     }
 }
