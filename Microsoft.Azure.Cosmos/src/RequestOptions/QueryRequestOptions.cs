@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Globalization;
     using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
     /// The Cosmos query request options
@@ -199,6 +198,8 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationOptions.ContentSerializationFormat);
             }
 
+            request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
+
             base.PopulateRequestOptions(request);
         }
 
@@ -221,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties,
-                IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting
+                IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting,
             };
 
             return queryRequestOptions;

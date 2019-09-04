@@ -7,9 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Partial wrapper
@@ -202,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     default:
                         throw new ArgumentException($"Unexpected {nameof(CosmosElementType)}: {cosmosElementType}");
                 }
-                
+
                 return added;
             }
 

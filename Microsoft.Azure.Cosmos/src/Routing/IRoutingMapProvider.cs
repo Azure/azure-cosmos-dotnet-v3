@@ -4,10 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Routing
 {
-    using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 

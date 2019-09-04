@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryContext
     {

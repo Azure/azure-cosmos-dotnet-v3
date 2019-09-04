@@ -35,8 +35,8 @@ namespace Microsoft.Azure.Cosmos
         private bool isBuilt;
 
         internal ChangeFeedProcessorBuilder(
-            string processorName, 
-            ContainerCore container, 
+            string processorName,
+            ContainerCore container,
             ChangeFeedProcessor changeFeedProcessor,
             Action<DocumentServiceLeaseStoreManager,
                 ContainerCore,
@@ -72,8 +72,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="renewInterval">Renew interval for all leases currently held by a particular processor instance.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithLeaseConfiguration(
-            TimeSpan? acquireInterval = null, 
-            TimeSpan? expirationInterval = null, 
+            TimeSpan? acquireInterval = null,
+            TimeSpan? expirationInterval = null,
             TimeSpan? renewInterval = null)
         {
             this.changeFeedLeaseOptions.LeaseRenewInterval = renewInterval ?? ChangeFeedLeaseOptions.DefaultRenewInterval;

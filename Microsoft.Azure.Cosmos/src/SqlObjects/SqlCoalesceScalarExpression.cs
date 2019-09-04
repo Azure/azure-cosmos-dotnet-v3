@@ -4,8 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Globalization;
-    using System.Text;
 
     internal sealed class SqlCoalesceScalarExpression : SqlScalarExpression
     {

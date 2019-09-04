@@ -172,13 +172,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             string userAgentSuffix = "testSuffix";
             cosmosClientOptions.ApplicationName = userAgentSuffix;
-
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.EndsWith(userAgentSuffix));
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.Suffix.Contains(expectedValue));
+            Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+            Assert.AreEqual(userAgentSuffix, cosmosClientOptions.UserAgentContainer.Suffix);
+            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.UserAgent.StartsWith(expectedValue));
+            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
 
             ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
-            Assert.IsTrue(connectionPolicy.UserAgentSuffix.EndsWith(userAgentSuffix));
-            Assert.IsTrue(connectionPolicy.UserAgentSuffix.Contains(expectedValue));
+            Assert.AreEqual(userAgentSuffix, connectionPolicy.UserAgentSuffix);
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
         }
 
         [TestMethod]

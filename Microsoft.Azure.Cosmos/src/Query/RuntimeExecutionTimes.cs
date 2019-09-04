@@ -5,12 +5,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using Newtonsoft.Json;
-    
+
     /// <summary>
     /// Query runtime execution times in the Azure Cosmos DB service.
     /// </summary>

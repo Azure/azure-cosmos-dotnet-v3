@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.ComponentModel;
     using System.Runtime.InteropServices;
     using System.Security;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal static class Base64Helper
@@ -27,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="bytesLength">Number of bytes in the decoded binary currentCharacter</param>
         public static void SecureStringToNativeBytes(SecureString secureString, int secureStringLength, out IntPtr bytes, out uint bytesLength)
         {
-            IntPtr nativeBytes = IntPtr.Zero; 
+            IntPtr nativeBytes = IntPtr.Zero;
             try
             {
                 nativeBytes = Marshal.AllocCoTaskMem(secureStringLength);
@@ -66,9 +64,9 @@ namespace Microsoft.Azure.Cosmos
 
                 int currentReadOffset = 0;
                 int currentWriteOffset = 0;
-                
+
                 byte currentCharacter = 0;
-                while (currentReadOffset < allocationSize && 
+                while (currentReadOffset < allocationSize &&
                     (currentCharacter = Marshal.ReadByte(unmanagedString, currentReadOffset)) != '\0')
                 {
                     uint currentValue = 0;

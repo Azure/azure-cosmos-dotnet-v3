@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Dictionary<string, long> usageHeaders;
         private readonly Dictionary<string, long> quotaHeaders;
         private readonly bool useETagAsContinuation;
-        private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;        
+        private readonly IReadOnlyDictionary<string, QueryMetrics> queryMetrics;
         private INameValueCollection responseHeaders;
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection responseHeaders,
             bool useETagAsContinuation = false,
             IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null,
-            ClientSideRequestStatistics requestStats = null,
+            IClientSideRequestStatistics requestStats = null,
             string disallowContinuationTokenMessage = null,
             long responseLengthBytes = 0)
             : this(result)
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             IEnumerable<T> result,
             int count,
             INameValueCollection responseHeaders,
-            ClientSideRequestStatistics requestStats,
+            IClientSideRequestStatistics requestStats,
             long responseLengthBytes)
             : this(result, count, responseHeaders, false, null, requestStats, responseLengthBytes: responseLengthBytes)
         {
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This value is currently used for tracking replica Uris.
         /// </remarks>
-        internal ClientSideRequestStatistics RequestStatistics { get; private set; }
+        internal IClientSideRequestStatistics RequestStatistics { get; private set; }
 
         /// <summary>
         /// Gets the response length in bytes

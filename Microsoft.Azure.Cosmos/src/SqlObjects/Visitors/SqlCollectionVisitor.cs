@@ -3,9 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System;
-    using System.Globalization;
-
     internal abstract class SqlCollectionVisitor
     {
         public abstract void Visit(SqlInputPathCollection collection);

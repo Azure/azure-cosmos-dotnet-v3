@@ -50,10 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
-        private readonly string currentEnvironmentInformation;
-
         private int gatewayModeMaxConnectionLimit;
-        private string applicationName;
         private CosmosSerializationOptions serializerOptions;
         private CosmosSerializer serializer;
 
@@ -69,10 +66,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientOptions()
         {
-            this.UserAgentContainer = new UserAgentContainer();
-            EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            this.currentEnvironmentInformation = environmentInformation.ToString();
-            this.UserAgentContainer.Suffix = this.currentEnvironmentInformation;
+            this.UserAgentContainer = new Cosmos.UserAgentContainer();
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
@@ -89,12 +83,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string ApplicationName
         {
-            get => this.applicationName;
-            set
-            {
-                this.UserAgentContainer.Suffix = this.currentEnvironmentInformation + EnvironmentInformation.Delimiter + value;
-                this.applicationName = value;
-            }
+            get => this.UserAgentContainer.Suffix;
+            set => this.UserAgentContainer.Suffix = value;
         }
 
         /// <summary>
@@ -210,9 +200,9 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.idleTcpConnectionTimeout = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
-        }      
+        }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
@@ -229,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.openTcpConnectionTimeout = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
         }
 
@@ -251,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.maxRequestsPerTcpConnection = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
         }
 
@@ -263,12 +253,12 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is 65,535. Value must be greater than or equal to 16.
         /// </value>
         public int? MaxTcpConnectionsPerEndpoint
-        {           
+        {
             get => this.maxTcpConnectionsPerEndpoint;
             set
             {
                 this.maxTcpConnectionsPerEndpoint = value;
-                this.ValidateDirectTCPSettings();                
+                this.ValidateDirectTCPSettings();
             }
         }
 
@@ -620,7 +610,7 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(settingName))
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
-            }            
+            }
         }
 
         /// <summary>

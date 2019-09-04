@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Specialized;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the attachment content stream in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The attachment content stream.</value>
-        public Stream Media 
+        public Stream Media
         {
             get;
             internal set;
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the HTTP slug header value in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The HTTP slug header value.</value>
-        public string Slug 
+        public string Slug
         {
             get;
             internal set;
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the HTTP ContentType header value in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The HTTP ContentType header value.</value>
-        public string ContentType 
+        public string ContentType
         {
             get;
             internal set;
@@ -66,8 +65,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the HTTP ContentLength header value in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The HTTP ContentLength header value.</value>
-        public long ContentLength 
-        { 
+        public long ContentLength
+        {
             get;
             internal set;
         }

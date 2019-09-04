@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
                         streamPayload: serverRequestPayload,
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         cancellationToken: cancellationToken).ConfigureAwait(false);
-                    
+
                     BatchResponse serverResponse = await BatchResponse.FromResponseMessageAsync(responseMessage, serverRequest, this.cosmosClientContext.CosmosSerializer).ConfigureAwait(false);
 
                     return new PartitionKeyRangeBatchExecutionResult(serverRequest.PartitionKeyRangeId, serverRequest.Operations, serverResponse);
