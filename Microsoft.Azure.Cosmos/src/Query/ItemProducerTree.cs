@@ -11,9 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Collections.Generic;
+    using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Routing;
 
     /// <summary>
@@ -42,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Callback to create child document producer trees once a split happens.
         /// </summary>
-        private readonly Func<PartitionKeyRange, string, ItemProducerTree> createItemProducerTreeCallback;
+        private readonly Func<Documents.PartitionKeyRange, string, ItemProducerTree> createItemProducerTreeCallback;
 
         /// <summary>
         /// Whether or not to defer fetching the first page from all the partitions.
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public ItemProducerTree(
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
-            PartitionKeyRange partitionKeyRange,
+            Documents.PartitionKeyRange partitionKeyRange,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
             IComparer<ItemProducerTree> itemProducerTreeComparer,
             IEqualityComparer<CosmosElement> equalityComparer,
@@ -158,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the partition key range from the current document producer tree.
         /// </summary>
-        public PartitionKeyRange PartitionKeyRange
+        public Documents.PartitionKeyRange PartitionKeyRange
         {
             get
             {
@@ -484,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="collectionRid">The collection to drain from.</param>
         /// <param name="initialPageSize">The initial page size.</param>
         /// <returns>A function that given a partition key range and continuation token will create a document producer.</returns>
-        private static Func<PartitionKeyRange, string, ItemProducerTree> CreateItemProducerTreeCallback(
+        private static Func<Documents.PartitionKeyRange, string, ItemProducerTree> CreateItemProducerTreeCallback(
             CosmosQueryContext queryContext,
             SqlQuerySpec querySpecForInit,
             ProduceAsyncCompleteDelegate produceAsyncCompleteCallback,
@@ -517,7 +516,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>Whether or not the exception was due to a split.</returns>
         private static bool IsSplitException(QueryResponse ex)
         {
-            return ex.StatusCode == HttpStatusCode.Gone && ex.Headers.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone;
+            return ex.StatusCode == HttpStatusCode.Gone && ex.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone;
         }
 
         /// <summary>
@@ -651,8 +650,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     // Repair the execution context: Get the replacement document producers and add them to the tree.
-                    IReadOnlyList<PartitionKeyRange> replacementRanges = await this.GetReplacementRangesAsync(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
-                    foreach (PartitionKeyRange replacementRange in replacementRanges)
+                    IReadOnlyList<Documents.PartitionKeyRange> replacementRanges = await this.GetReplacementRangesAsync(splitItemProducerTree.PartitionKeyRange, this.collectionRid);
+                    foreach (Documents.PartitionKeyRange replacementRange in replacementRanges)
                     {
                         ItemProducerTree replacementItemProducerTree = this.createItemProducerTreeCallback(replacementRange, splitItemProducerTree.Root.BackendContinuationToken);
 
@@ -690,17 +689,18 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="targetRange">The target range that got split.</param>
         /// <param name="collectionRid">The collection rid.</param>
         /// <returns>The replacement ranges for the target range that got split.</returns>
-        private async Task<IReadOnlyList<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
+        private async Task<IReadOnlyList<Documents.PartitionKeyRange>> GetReplacementRangesAsync(Documents.PartitionKeyRange targetRange, string collectionRid)
         {
-            IRoutingMapProvider routingMapProvider = await this.queryClient.GetRoutingMapProviderAsync();
-            IReadOnlyList<PartitionKeyRange> replacementRanges = (
-                await routingMapProvider
-                    .TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true));
+            IReadOnlyList<Documents.PartitionKeyRange> replacementRanges = await this.queryClient.TryGetOverlappingRangesAsync(
+                collectionRid,
+                targetRange.ToRange(),
+                true);
+
             string replaceMinInclusive = replacementRanges.First().MinInclusive;
             string replaceMaxExclusive = replacementRanges.Last().MaxExclusive;
             if (!replaceMinInclusive.Equals(targetRange.MinInclusive, StringComparison.Ordinal) || !replaceMaxExclusive.Equals(targetRange.MaxExclusive, StringComparison.Ordinal))
             {
-                throw new InternalServerErrorException(string.Format(
+                throw new Documents.InternalServerErrorException(string.Format(
                     CultureInfo.InvariantCulture,
                     "Target range and Replacement range has mismatched min/max. Target range: [{0}, {1}). Replacement range: [{2}, {3}).",
                     targetRange.MinInclusive,

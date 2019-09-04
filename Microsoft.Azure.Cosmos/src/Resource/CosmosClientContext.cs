@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Globalization;
     using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -24,8 +26,6 @@ namespace Microsoft.Azure.Cosmos
         internal abstract CosmosClient Client { get; }
 
         internal abstract DocumentClient DocumentClient { get; }
-
-        internal abstract IDocumentQueryClient DocumentQueryClient { get; }
 
         internal abstract CosmosSerializer CosmosSerializer { get; }
 
@@ -52,6 +52,10 @@ namespace Microsoft.Azure.Cosmos
             string id);
 
         internal abstract void ValidateResource(string id);
+
+        internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+            string containerUri,
+            CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
