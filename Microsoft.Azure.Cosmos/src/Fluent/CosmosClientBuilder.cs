@@ -337,17 +337,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for throughput scenarios only.
         /// </summary>
-        /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBatchingRequests"/> is enabled.</param>
+        /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBatchRequests"/> is enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        /// <seealso cref="CosmosClientOptions.AllowBatchingRequests"/>
+        /// <seealso cref="CosmosClientOptions.AllowBatchRequests"/>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        CosmosClientBuilder WithBatchingRequests(bool enabled)
+        CosmosClientBuilder WithBatchRequests(bool enabled)
         {
-            this.clientOptions.AllowBatchingRequests = enabled;
+            this.clientOptions.AllowBatchRequests = enabled;
             return this;
         }
 

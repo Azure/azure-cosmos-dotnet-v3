@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions();
-            clientOptions.AllowBatchingRequests = true;
+            clientOptions.AllowBatchRequests = true;
             CosmosClient client = TestCommon.CreateCosmosClient(clientOptions);
 
             DatabaseResponse response = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());

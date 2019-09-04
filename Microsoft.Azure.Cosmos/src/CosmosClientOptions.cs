@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        bool AllowBatchingRequests { get; set; }
+        bool AllowBatchRequests { get; set; }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
