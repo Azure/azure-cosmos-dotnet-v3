@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         newContinuationToken = Guid.NewGuid().ToString();
                     }
 
-                    QueryResponse queryResponse = QueryResponseMessageFactory.CreateQueryResponse(
+                    QueryResponseCore queryResponse = QueryResponseMessageFactory.CreateQueryResponse(
                         currentPageItems,
                         isOrderByQuery,
                         newContinuationToken,
@@ -129,7 +129,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                           It.IsAny<Uri>(),
                           ResourceType.Document,
                           OperationType.Query,
-                          containerRid,
                           It.IsAny<QueryRequestOptions>(),
                           It.Is<SqlQuerySpec>(specInput => MockItemProducerFactory.IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                           previousContinuationToken,
@@ -144,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 if (partitionAndMessages.HasSplit)
                 {
-                    QueryResponse querySplitResponse = QueryResponseMessageFactory.CreateSplitResponse(containerRid);
+                    QueryResponseCore querySplitResponse = QueryResponseMessageFactory.CreateSplitResponse(containerRid);
 
                     mockQueryClient.Setup(x =>
                             x.TryGetOverlappingRangesAsync(
@@ -157,7 +156,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                          It.IsAny<Uri>(),
                          ResourceType.Document,
                          OperationType.Query,
-                         containerRid,
                          It.IsAny<QueryRequestOptions>(),
                          It.Is<SqlQuerySpec>(specInput => MockItemProducerFactory.IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                          previousContinuationToken,

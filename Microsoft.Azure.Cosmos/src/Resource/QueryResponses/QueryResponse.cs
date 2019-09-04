@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
     /// <summary>

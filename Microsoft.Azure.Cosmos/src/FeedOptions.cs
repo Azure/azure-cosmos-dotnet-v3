@@ -405,7 +405,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the custom serialization options for query
         /// </summary>
-        internal CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
+        internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         internal IDictionary<string, object> Properties { get; set; }
     }

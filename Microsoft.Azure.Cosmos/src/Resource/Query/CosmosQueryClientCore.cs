@@ -107,11 +107,10 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey);
         }
 
-        internal override async Task<QueryResponse> ExecuteItemQueryAsync(
+        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            string containerResourceId,
             QueryRequestOptions requestOptions,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
@@ -148,7 +147,6 @@ namespace Microsoft.Azure.Cosmos
             return this.GetCosmosElementResponse(
                 requestOptions,
                 resourceType,
-                containerResourceId,
                 message);
         }
 
@@ -244,22 +242,23 @@ namespace Microsoft.Azure.Cosmos
             sessionContainer.ClearTokenByCollectionFullname(collectionFullName);
         }
 
-        private QueryResponse GetCosmosElementResponse(
+        private QueryResponseCore GetCosmosElementResponse(
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
-            string containerResourceId,
             ResponseMessage cosmosResponseMessage)
         {
             using (cosmosResponseMessage)
             {
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
-                    return QueryResponse.CreateFailure(
-                        CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType, containerResourceId),
-                        cosmosResponseMessage.StatusCode,
-                        cosmosResponseMessage.RequestMessage,
-                        cosmosResponseMessage.ErrorMessage,
-                        cosmosResponseMessage.Error);
+                    return QueryResponseCore.CreateFailure(
+                        statusCode: cosmosResponseMessage.StatusCode,
+                        subStatusCodes: cosmosResponseMessage.Headers.SubStatusCode,
+                        errorMessage: cosmosResponseMessage.ErrorMessage,
+                        requestCharge: cosmosResponseMessage.Headers.RequestCharge,
+                        activityId: cosmosResponseMessage.Headers.ActivityId,
+                        queryMetricsText: cosmosResponseMessage.Headers.QueryMetricsText,
+                        queryMetrics: null);
                 }
 
                 MemoryStream memoryStream = cosmosResponseMessage.Content as MemoryStream;
@@ -273,14 +272,19 @@ namespace Microsoft.Azure.Cosmos
                 CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
                     memoryStream,
                     resourceType,
-                    requestOptions.CosmosSerializationOptions);
+                    requestOptions.CosmosSerializationFormatOptions);
 
                 int itemCount = cosmosArray.Count;
-                return QueryResponse.CreateSuccess(
+                return QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
-                    count: itemCount,
-                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(cosmosResponseMessage.Headers, resourceType, containerResourceId),
-                    responseLengthBytes: responseLengthBytes);
+                    requestCharge: cosmosResponseMessage.Headers.RequestCharge,
+                    activityId: cosmosResponseMessage.Headers.ActivityId,
+                    queryMetricsText: cosmosResponseMessage.Headers.QueryMetricsText,
+                    queryMetrics: null,
+                    requestStatistics: null,
+                    responseLengthBytes: cosmosResponseMessage.Headers.ContentLengthAsLong,
+                    disallowContinuationTokenMessage: null,
+                    continuationToken: cosmosResponseMessage.Headers.ContinuationToken);
             }
         }
 
