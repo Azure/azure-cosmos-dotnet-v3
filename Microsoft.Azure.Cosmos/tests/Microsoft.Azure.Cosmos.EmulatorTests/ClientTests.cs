@@ -281,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public Uri GetProxy(Uri destination)
         {
-            return new Uri("http://www.cosmostestproxy.com");
+            return new Uri("http://www.cosmostestproxyshouldfail.com");
         }
 
         public bool IsBypassed(Uri host)
