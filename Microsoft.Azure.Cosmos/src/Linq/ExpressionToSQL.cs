@@ -798,7 +798,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlObjectLiteral sqlObjectLiteral = SqlObjectLiteral.Create(inputExpression.Value, false);
             sqlObjectLiteral.ParameterKeyStr = "@value" + context.parameters.Count;
             context.parameters.Add(new SqlParameter(sqlObjectLiteral.ParameterKeyStr, sqlObjectLiteral.Value));
-            return SqlLiteralScalarExpression.Create(SqlObjectLiteral.Create(inputExpression.Value, false));
+            return SqlLiteralScalarExpression.Create(sqlObjectLiteral);
         }
 
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)
