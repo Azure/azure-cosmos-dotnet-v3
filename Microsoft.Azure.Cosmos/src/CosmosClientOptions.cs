@@ -161,6 +161,15 @@ namespace Microsoft.Azure.Cosmos
             get => this.connectionMode;
             set
             {
+                if (value == ConnectionMode.Gateway)
+                {
+                    this.ConnectionProtocol = Protocol.Https;
+                }
+                else if (value == ConnectionMode.Direct)
+                {
+                    this.connectionProtocol = Protocol.Tcp;
+                }
+
                 this.ValidateDirectTCPSettings();
                 this.connectionMode = value;
             }
