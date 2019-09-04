@@ -728,11 +728,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             HttpClientHandler httpClientHandler = new HttpClientHandler();
-
-            if (clientOptions.WebProxy != null)
-            {
-                httpClientHandler.Proxy = clientOptions.WebProxy;
-            }
+            httpClientHandler.Proxy = clientOptions.WebProxy;
 
             return httpClientHandler;
         }

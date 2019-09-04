@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Documents;
@@ -112,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (Exception ex)
                 {
-                    var innerException = ex as DocumentClientException;
+                    DocumentClientException innerException = ex as DocumentClientException;
                     Assert.AreEqual(HttpStatusCode.PreconditionFailed, innerException.StatusCode, "Invalid status code");
                 }
             }
@@ -262,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             });
 
             DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            Console.WriteLine(databaseResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Created, databaseResponse.StatusCode);
 
             /*
             await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {

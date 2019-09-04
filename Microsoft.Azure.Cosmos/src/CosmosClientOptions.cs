@@ -273,7 +273,10 @@ namespace Microsoft.Azure.Cosmos
             set
             {
                 this.webProxy = value;
-                this.ValidateGatewayHttpsSettings();
+                if (this.ConnectionMode != ConnectionMode.Gateway)
+                {
+                    throw new ArgumentException($"{nameof(this.WebProxy)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
+                }
             }
         }
 
@@ -612,23 +615,6 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(settingName))
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
-            }
-        }
-
-        private void ValidateGatewayHttpsSettings()
-        {
-            string settingName = string.Empty;
-            if (this.ConnectionMode != ConnectionMode.Gateway)
-            {
-                if (this.WebProxy != null)
-                {
-                    settingName = nameof(this.WebProxy);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(settingName))
-            {
-                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
             }
         }
 
