@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         private Stack<SubqueryBinding> subqueryBindingStack;
 
         /// <summary>
-        /// The dictionary for paramterised query.
+        /// The SqlParameterCollection for parametrized query.
         /// </summary>
-        internal Dictionary<string, object> parameters;
+        internal SqlParameterCollection parameters;
 
         public TranslationContext()
         {
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.collectionStack = new List<Collection>();
             this.currentQuery = new QueryUnderConstruction(this.GetGenFreshParameterFunc());
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
-            this.parameters = new Dictionary<string, object>();
+            this.parameters = new SqlParameterCollection();
         }
 
         public TranslationContext(CosmosSerializationOptions serializationOptions)

@@ -29,11 +29,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             return this.Serialize(prettyPrint: false);
         }
 
-        public string ToStringWithParameters(Dictionary<string, object> parameters)
-        {
-            return this.Serialize(prettyPrint: false, parameters);
-        }
-
         public override int GetHashCode()
         {
             return this.Accept(SqlObjectHasher.Singleton);
@@ -50,9 +45,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             return this.Accept(sqlObjectObfuscator);
         }
 
-        private string Serialize(bool prettyPrint, Dictionary<string, object> parameters = null)
+        private string Serialize(bool prettyPrint)
         {
-            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint, parameters);
+            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint);
             this.Accept(sqlObjectTextSerializer);
             return sqlObjectTextSerializer.ToString();
         }

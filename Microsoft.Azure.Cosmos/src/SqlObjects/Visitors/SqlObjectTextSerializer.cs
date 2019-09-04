@@ -22,13 +22,10 @@ namespace Microsoft.Azure.Cosmos.Sql
         private readonly bool prettyPrint;
         private int indentLevel;
 
-        private Dictionary<string, object> Parameters { get; }
-
-        public SqlObjectTextSerializer(bool prettyPrint, Dictionary<string, object> parameters = null)
+        public SqlObjectTextSerializer(bool prettyPrint)
         {
             this.writer = new StringWriter(CultureInfo.InvariantCulture);
             this.prettyPrint = prettyPrint;
-            this.Parameters = parameters;
         }
 
         public override void Visit(SqlAliasedCollectionExpression sqlAliasedCollectionExpression)

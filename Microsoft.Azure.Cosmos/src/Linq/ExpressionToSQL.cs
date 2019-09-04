@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 case ExpressionType.Call:
                     MethodCallExpression methodCallExpression = (MethodCallExpression)inputExpression;
-                    bool shouldConvertToScalarAnyCollection = ((context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(LinqMethods.Any));
+                    bool shouldConvertToScalarAnyCollection = (context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(LinqMethods.Any);
                     collection = ExpressionToSql.VisitMethodCall(methodCallExpression, context);
                     if (shouldConvertToScalarAnyCollection) collection = ExpressionToSql.ConvertToScalarAnyCollection(context);
 
@@ -661,7 +661,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlBooleanLiteral literal = SqlBooleanLiteral.Create((bool)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((byte)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((sbyte)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -685,7 +685,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlStringLiteral literal = SqlStringLiteral.Create(inputExpression.Value.ToString());
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -693,7 +693,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((decimal)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -701,7 +701,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((double)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((float)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -717,7 +717,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((int)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -725,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((uint)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -733,7 +733,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((long)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -741,7 +741,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((decimal)(ulong)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -749,7 +749,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((short)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -757,7 +757,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlNumberLiteral literal = SqlNumberLiteral.Create((ushort)inputExpression.Value);
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
 
@@ -765,7 +765,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     SqlStringLiteral literal = SqlStringLiteral.Create(inputExpression.Value.ToString());
                     literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                    context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                    context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                     return SqlLiteralScalarExpression.Create(literal);
                 }
             }
@@ -774,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 SqlStringLiteral literal = SqlStringLiteral.Create((string)inputExpression.Value);
                 literal.ParameterKeyStr = "@value" + context.parameters.Count;
-                context.parameters.Add(literal.ParameterKeyStr, literal.Value);
+                context.parameters.Add(new SqlParameter(literal.ParameterKeyStr, literal.Value));
                 return SqlLiteralScalarExpression.Create(literal);
             }
 
@@ -797,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             SqlObjectLiteral sqlObjectLiteral = SqlObjectLiteral.Create(inputExpression.Value, false);
             sqlObjectLiteral.ParameterKeyStr = "@value" + context.parameters.Count;
-            context.parameters.Add(sqlObjectLiteral.ParameterKeyStr, sqlObjectLiteral.Value);
+            context.parameters.Add(new SqlParameter(sqlObjectLiteral.ParameterKeyStr, sqlObjectLiteral.Value));
             return SqlLiteralScalarExpression.Create(SqlObjectLiteral.Create(inputExpression.Value, false));
         }
 

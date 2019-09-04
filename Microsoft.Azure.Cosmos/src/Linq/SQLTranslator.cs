@@ -48,17 +48,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
             TranslationContext translationContext = null;
             SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, out translationContext);
-            SqlParameterCollection sqlParameters = new SqlParameterCollection();
-            string queryText = query.ToStringWithParameters(translationContext.parameters);
-            if (translationContext.parameters.Count > 0)
-            {
-                foreach (string key in translationContext.parameters.Keys)
-                {
-                    sqlParameters.Add(new SqlParameter(key, translationContext.parameters[key]));
-                }
-            }
-
-            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, sqlParameters);
+            string queryText = query.ToString();
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, translationContext.parameters);
             return sqlQuerySpec;
         }
     }
