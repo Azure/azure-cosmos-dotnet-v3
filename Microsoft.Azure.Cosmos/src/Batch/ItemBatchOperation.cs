@@ -299,9 +299,8 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Attached a context to the current operation to track resolution.
-        /// If the current context is completed, a new context can be attached, for the case of retries.
         /// </summary>
-        /// <exception cref="InvalidOperationException">If the operation already had an attached context which is in progress.</exception>
+        /// <exception cref="InvalidOperationException">If the operation already had an attached context.</exception>
         internal void AttachContext(ItemBatchOperationContext context)
         {
             if (this.Context != null)
