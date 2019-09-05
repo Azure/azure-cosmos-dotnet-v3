@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 index = diagnosticsString.IndexOf(Environment.NewLine, index + 1);
             }
 
-            Assert.AreEqual(2, diagnosticsLines);
+            Assert.IsTrue(diagnosticsLines > 2);
         }
 
         [TestMethod]
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 index = diagnosticsString.IndexOf(Environment.NewLine, index + 1);
             }
 
-            Assert.AreEqual(2, diagnosticsLines);
+            Assert.IsTrue(diagnosticsLines > 2);
         }
 
         [TestMethod]

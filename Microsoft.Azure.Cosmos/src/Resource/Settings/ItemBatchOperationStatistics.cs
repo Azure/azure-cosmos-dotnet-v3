@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Text;
 
@@ -12,11 +13,19 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ItemBatchOperationStatistics : CosmosDiagnostics
     {
+        private readonly DateTime created = DateTime.UtcNow;
         private readonly List<CosmosDiagnostics> cosmosDiagnostics = new List<CosmosDiagnostics>();
+        private DateTime completed;
 
         public void AppendDiagnostics(CosmosDiagnostics diagnostics)
         {
             this.cosmosDiagnostics.Add(diagnostics);
+        }
+
+        public void Complete(BatchOperationResult result)
+        {
+            this.completed = DateTime.UtcNow;
+            result.Diagnostics = this;
         }
 
         public override string ToString()
@@ -26,7 +35,12 @@ namespace Microsoft.Azure.Cosmos
                 return string.Empty;
             }
 
-            StringBuilder statistics = new StringBuilder();
+            StringBuilder statistics = new StringBuilder($"Bulk operation started at {this.created}. ");
+            if (this.completed != null)
+            {
+                statistics.Append($"Completed at {this.completed}. ");
+            }
+
             foreach (CosmosDiagnostics pointOperationStatistic in this.cosmosDiagnostics)
             {
                 statistics.AppendLine(pointOperationStatistic.ToString());

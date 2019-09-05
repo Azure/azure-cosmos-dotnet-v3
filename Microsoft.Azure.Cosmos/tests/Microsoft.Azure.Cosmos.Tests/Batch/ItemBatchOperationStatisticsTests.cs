@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Net;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -37,6 +38,28 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsTrue(toString.Contains(pointOperation1.ToString()));
             Assert.IsTrue(toString.Contains(pointOperation2.ToString()));
+        }
+
+        [TestMethod]
+        public void Complete_AttachesDiagnostics()
+        {
+            ItemBatchOperationStatistics itemBatchOperationStatistics = new ItemBatchOperationStatistics();
+
+            CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics1 = new CosmosClientSideRequestStatistics();
+            cosmosClientSideRequestStatistics1.ContactedReplicas.Add(new Uri("https://one.com"));
+            PointOperationStatistics pointOperation1 = new PointOperationStatistics(cosmosClientSideRequestStatistics1);
+
+            CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics2 = new CosmosClientSideRequestStatistics();
+            cosmosClientSideRequestStatistics2.ContactedReplicas.Add(new Uri("https://two.com"));
+            PointOperationStatistics pointOperation2 = new PointOperationStatistics(cosmosClientSideRequestStatistics2);
+
+            itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
+            itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);
+
+            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK);
+            itemBatchOperationStatistics.Complete(result);
+
+            Assert.AreEqual(itemBatchOperationStatistics, result.Diagnostics);
         }
     }
 }
