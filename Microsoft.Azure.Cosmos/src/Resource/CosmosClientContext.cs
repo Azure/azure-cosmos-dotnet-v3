@@ -68,6 +68,22 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
             PartitionKey? partitionKey,
+            string itemId,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
+        /// in a resource can be unit tested.
+        /// </summary>
+        internal abstract Task<ResponseMessage> ProcessResourceOperationStreamAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken);

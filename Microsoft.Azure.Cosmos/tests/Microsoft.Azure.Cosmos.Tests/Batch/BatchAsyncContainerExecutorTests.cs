@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
             Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<Uri>(),
@@ -75,11 +76,66 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task RetryOn429()
+        {
+            ItemBatchOperation itemBatchOperation = CreateItem("test");
+
+            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
+            mockedContext
+                .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerCore>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(this.Generate429ResponseAsync(itemBatchOperation))
+                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
+
+            mockedContext.Setup(c => c.CosmosSerializer).Returns(new CosmosJsonDotNetSerializer());
+
+            Uri link = new Uri($"/dbs/db/colls/colls", UriKind.Relative);
+            Mock<ContainerCore> mockContainer = new Mock<ContainerCore>();
+            mockContainer.Setup(x => x.LinkUri).Returns(link);
+            mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                    {
+                        Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
+                    },
+                string.Empty);
+            mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
+            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, Constants.MaxDirectModeBatchRequestBodySizeInBytes, 1);
+            BatchOperationResult result = await executor.AddAsync(itemBatchOperation);
+
+            Mock.Get(mockContainer.Object)
+                .Verify(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+            Mock.Get(mockedContext.Object)
+                .Verify(c => c.ProcessResourceOperationStreamAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerCore>(),
+                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CancellationToken>()), Times.Exactly(2));
+            Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+        }
+
+        [TestMethod]
         public async Task DoesNotRecalculatePartitionKeyRangeOnNoSplits()
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
             Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
+            mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
                     It.IsAny<Uri>(),
@@ -151,6 +207,32 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent };
             responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
+            return responseMessage;
+        }
+
+        private async Task<ResponseMessage> Generate429ResponseAsync(ItemBatchOperation itemBatchOperation)
+        {
+            List<BatchOperationResult> results = new List<BatchOperationResult>();
+            ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
+            results.Add(
+                new BatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests)
+                {
+                    ETag = itemBatchOperation.Id
+                });
+
+            arrayOperations[0] = itemBatchOperation;
+
+            MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+            SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                partitionKey: null,
+                operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                maxBodyLength: 100,
+                maxOperationCount: 1,
+                serializer: new CosmosJsonDotNetSerializer(),
+            cancellationToken: CancellationToken.None);
+
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests) { Content = responseContent };
             return responseMessage;
         }
 

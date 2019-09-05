@@ -497,6 +497,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 this,
                 partitionKey,
+                itemId,
                 streamPayload,
                 null,
                 cancellationToken);

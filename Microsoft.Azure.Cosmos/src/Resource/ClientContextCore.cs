@@ -95,6 +95,45 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
             PartitionKey? partitionKey,
+            string itemId,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            if (this.IsBulkOperationSupported(resourceType, operationType))
+            {
+                return this.ProcessResourceOperationAsBulkStreamAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    cosmosContainerCore: cosmosContainerCore,
+                    partitionKey: partitionKey,
+                    itemId: itemId,
+                    streamPayload: streamPayload,
+                    requestEnricher: requestEnricher,
+                    cancellationToken: cancellationToken);
+            }
+
+            return this.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: cosmosContainerCore,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken);
+        }
+
+        internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
@@ -152,6 +191,42 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message, ex.Error);
             }
+        }
+
+        private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
+            string itemId,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
+            BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
+            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, itemId, streamPayload, batchItemRequestOptions);
+            BatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
+            return batchOperationResult.ToResponseMessage();
+        }
+
+        private bool IsBulkOperationSupported(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            if (!this.ClientOptions.AllowBulkExecution)
+            {
+                return false;
+            }
+
+            return resourceType == ResourceType.Document
+                && (operationType == OperationType.Create
+                || operationType == OperationType.Upsert
+                || operationType == OperationType.Read
+                || operationType == OperationType.Delete
+                || operationType == OperationType.Replace);
         }
     }
 }
