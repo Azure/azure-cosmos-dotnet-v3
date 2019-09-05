@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
 
         public BatchAsyncBatcher CurrentBatcher { get; set; }
 
-        public Task<BatchOperationResult> Task => this.taskCompletionSource.Task;
+        public Task<BatchOperationResult> OperationTask => this.taskCompletionSource.Task;
 
         public ItemBatchOperationStatistics Diagnostics { get; } = new ItemBatchOperationStatistics();
 
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.retryPolicy == null
                 || batchOperationResult.IsSuccessStatusCode)
             {
-                return System.Threading.Tasks.Task.FromResult(ShouldRetryResult.NoRetry());
+                return Task.FromResult(ShouldRetryResult.NoRetry());
             }
 
             ResponseMessage responseMessage = batchOperationResult.ToResponseMessage();
