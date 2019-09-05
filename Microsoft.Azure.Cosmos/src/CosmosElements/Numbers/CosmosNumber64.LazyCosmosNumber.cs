@@ -13,9 +13,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             private readonly long MaxSafeInteger = (long)Math.Pow(2, 53 - 1);
             private readonly IJsonNavigator jsonNavigator;
             private readonly IJsonNavigatorNode jsonNavigatorNode;
-
-            // TODO: replace this with Number64 when the time comes.
-            private readonly Lazy<double> lazyNumber;
+            private readonly Lazy<Number64> lazyNumber;
 
             public LazyCosmosNumber64(
                 IJsonNavigator jsonNavigator,
@@ -39,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 this.jsonNavigator = jsonNavigator;
                 this.jsonNavigatorNode = jsonNavigatorNode;
-                this.lazyNumber = new Lazy<double>(() =>
+                this.lazyNumber = new Lazy<Number64>(() =>
                 {
                     return this.jsonNavigator.GetNumberValue(this.jsonNavigatorNode);
                 });
@@ -49,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 get
                 {
-                    return !this.IsInteger;
+                    return this.lazyNumber.Value.IsDouble;
                 }
             }
 
@@ -57,18 +55,38 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 get
                 {
-                    return this.lazyNumber.Value % 1 == 0 && this.lazyNumber.Value <= MaxSafeInteger;
+                    return this.lazyNumber.Value.IsInteger;
                 }
             }
 
             public override double? AsFloatingPoint()
             {
-                return this.lazyNumber.Value;
+                double? value;
+                if (this.IsFloatingPoint)
+                {
+                    value = Number64.ToDouble(this.lazyNumber.Value);
+                }
+                else
+                {
+                    value = null;
+                }
+
+                return value;
             }
 
             public override long? AsInteger()
             {
-                return (long)this.lazyNumber.Value;
+                long? value;
+                if (this.IsFloatingPoint)
+                {
+                    value = Number64.ToLong(this.lazyNumber.Value);
+                }
+                else
+                {
+                    value = null;
+                }
+
+                return value;
             }
 
             public override void WriteTo(IJsonWriter jsonWriter)
@@ -78,15 +96,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
-                if (this.IsFloatingPoint)
-                {
-                    jsonWriter.WriteNumberValue(this.AsFloatingPoint().Value);
-                }
-                else
-                {
-                    jsonWriter.WriteIntValue(this.AsInteger().Value);
-                }
+                jsonWriter.WriteNumberValue(this.lazyNumber.Value);
             }
         }
-    } 
+    }
 }

@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Json
+namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
     using System.IO;
@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Wrapper class that implements Newtonsoft's JsonWriter,
     /// but calls into a CosmosDB JsonWriter for the implementation.
     /// </summary>
-    internal sealed class JsonCosmosDBWriter : Newtonsoft.Json.JsonWriter
+    internal sealed class CosmosDBToNewtonsoftWriter : Newtonsoft.Json.JsonWriter
     {
         /// <summary>
         /// A CosmosDB JSON writer used for the actual implementation.
@@ -19,10 +19,10 @@ namespace Microsoft.Azure.Cosmos.Json
         private readonly IJsonWriter jsonWriter;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="JsonCosmosDBWriter"/> class.
+        /// Initializes a new instance of the <see cref="CosmosDBToNewtonsoftWriter"/> class.
         /// </summary>
         /// <param name="jsonSerializationFormat">The SerializationFormat to use.</param>
-        public JsonCosmosDBWriter(JsonSerializationFormat jsonSerializationFormat)
+        public CosmosDBToNewtonsoftWriter(JsonSerializationFormat jsonSerializationFormat)
         {
             this.jsonWriter = JsonWriter.Create(jsonSerializationFormat);
         }
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public override void WriteValue(long value)
         {
             base.WriteValue(value);
-            this.jsonWriter.WriteIntValue(value);
+            this.jsonWriter.WriteNumberValue(value);
         }
 
         /// <summary>

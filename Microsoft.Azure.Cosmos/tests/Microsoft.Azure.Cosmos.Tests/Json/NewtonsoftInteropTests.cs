@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Json.Interop;
 
     [TestClass]
     public class NewtonsoftInteropTests
@@ -234,16 +235,16 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
         private static string NewtonsoftFormat(string json)
         {
-            JsonNewtonsoftReader newtonsoftReader = new JsonNewtonsoftNewtonsoftTextReader(json);
-            JsonNewtonsoftWriter newtonsoftWriter = new JsonNewtonsoftNewtonsoftTextWriter();
-            newtonsoftWriter.WriteAll(newtonsoftReader);
-            return Encoding.UTF8.GetString(newtonsoftWriter.GetResult());
+            NewtonsoftToCosmosDBReader newtonsoftToCosmosDBReader = NewtonsoftToCosmosDBReader.CreateFromString(json);
+            NewtonsoftToCosmosDBWriter newtonsoftToCosmosDBWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
+            newtonsoftToCosmosDBWriter.WriteAll(newtonsoftToCosmosDBReader);
+            return Encoding.UTF8.GetString(newtonsoftToCosmosDBWriter.GetResult());
         }
 
         private static void VerifyReader<T>(byte[] payload, T expectedDeserializedValue)
         {
             MemoryStream memoryStream = new MemoryStream(payload);
-            using (JsonCosmosDBReader reader = new JsonCosmosDBReader(memoryStream))
+            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(memoryStream))
             {
                 JsonSerializer serializer = new JsonSerializer();
                 T actualDeserializedValue = serializer.Deserialize<T>(reader);
@@ -269,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
         private static void VerifyWriter<T>(JsonSerializationFormat jsonSerializationFormat, T expectedDeserializedValue)
         {
-            using (JsonCosmosDBWriter writer = new JsonCosmosDBWriter(jsonSerializationFormat))
+            using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(jsonSerializationFormat))
             {
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Serialize(writer, expectedDeserializedValue);

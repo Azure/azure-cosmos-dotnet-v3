@@ -6,10 +6,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Json.NewtonsoftInterop;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -79,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            JsonNewtonsoftWriter writerInterop = JsonNewtonsoftWriter.Create(writer);
+            NewtonsoftToCosmosDBWriter writerInterop = NewtonsoftToCosmosDBWriter.CreateFromWriter(writer);
             CosmosElement cosmosElement = value as CosmosElement;
             cosmosElement.WriteTo(writerInterop);
         }

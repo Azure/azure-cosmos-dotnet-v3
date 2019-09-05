@@ -200,6 +200,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int8);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int8);
                 this.binaryWriter.Write(value);
+                this.bufferedContexts.Peek().Count++;
             }
 
             public override void WriteInt16Value(short value)
@@ -207,6 +208,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int16);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int16);
                 this.binaryWriter.Write(value);
+                this.bufferedContexts.Peek().Count++;
             }
 
             public override void WriteInt32Value(int value)
@@ -214,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int32);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int32);
                 this.binaryWriter.Write(value);
+                this.bufferedContexts.Peek().Count++;
             }
 
             public override void WriteInt64Value(long value)
@@ -221,6 +224,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int64);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int64);
                 this.binaryWriter.Write(value);
+                this.bufferedContexts.Peek().Count++;
             }
 
             public override void WriteFloat32Value(float value)
@@ -228,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Float32);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Float32);
                 this.binaryWriter.Write(value);
+                this.bufferedContexts.Peek().Count++;
             }
 
             public override void WriteFloat64Value(double value)
@@ -235,6 +240,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Float64);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Float64);
                 this.binaryWriter.Write(value);
+                this.bufferedContexts.Peek().Count++;
             }
 
             public override void WriteUInt32Value(uint value)
@@ -242,6 +248,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.UInt32);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.UInt32);
                 this.binaryWriter.Write(value);
+                this.bufferedContexts.Peek().Count++;
             }
 
             public override void WriteGuidValue(Guid value)
@@ -249,6 +256,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(JsonTokenType.Guid);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Guid);
                 this.binaryWriter.Write(value.ToByteArray());
+                this.bufferedContexts.Peek().Count++;
             }
 
             public override void WriteBinaryValue(IReadOnlyList<byte> value)
@@ -275,6 +283,10 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     throw new ArgumentOutOfRangeException("Binary length was too large.");
                 }
+
+                this.binaryWriter.Write(value.ToArray());
+
+                this.bufferedContexts.Peek().Count++;
             }
 
             /// <summary>
@@ -325,6 +337,15 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonTokenType.False:
                     case JsonTokenType.Null:
                     case JsonTokenType.FieldName:
+                    case JsonTokenType.Int8:
+                    case JsonTokenType.Int16:
+                    case JsonTokenType.Int32:
+                    case JsonTokenType.UInt32:
+                    case JsonTokenType.Int64:
+                    case JsonTokenType.Float32:
+                    case JsonTokenType.Float64:
+                    case JsonTokenType.Guid:
+                    case JsonTokenType.Binary:
                         break;
                     default:
                         throw new ArgumentException($"{nameof(JsonBinaryWriter)}.{nameof(WriteRawJsonToken)} can not write a {nameof(JsonTokenType)}: {jsonTokenType}");
