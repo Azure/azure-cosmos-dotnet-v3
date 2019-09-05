@@ -239,6 +239,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(2, getTaskResult2);
         }
 
+        [TestMethod]
+        [Timeout(200)]
+        public async Task TestAsyncDeadlock()
+        {
+            AsyncCache<int, int> cache = new AsyncCache<int, int>();
+
+            await Task.Factory.StartNew(() => cache.Set(0, 42), CancellationToken.None, TaskCreationOptions.None, new SingleTaskScheduler());
+        }
+
         private int GenerateIntFuncThatThrows()
         {
             throw new InvalidOperationException();
