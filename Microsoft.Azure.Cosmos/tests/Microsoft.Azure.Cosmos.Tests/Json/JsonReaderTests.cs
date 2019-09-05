@@ -13,9 +13,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
+    using System.Web;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    
+
     /// <summary>
     /// Tests for JsonReader.
     /// </summary>
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public void TrueTest()
         {
             string input = "true";
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Boolean(true)
             };
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public void FalseTest()
         {
             string input = "false";
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Boolean(false)
             };
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 JsonBinaryEncoding.TypeMarker.Null
             };
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Null()
             };
@@ -114,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 0x39, 0x05,
             };
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Number(1337)
             };
@@ -136,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 0x00, 0x00, 0x00, 0x00, 0x00, 0xE4, 0x94, 0x40,
             };
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Number(1337.0)
             };
@@ -158,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 0x00, 0x00, 0x00, 0x00, 0x00, 0xE4, 0x94, 0xC0,
             };
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Number(-1337.0)
             };
@@ -173,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             string input = "+1337.0";
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
             };
 
@@ -186,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             string input = "01";
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
             };
 
@@ -198,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // But 0 should still pass
             string zeroString = "0";
 
-            JsonToken[] zeroToken = 
+            JsonToken[] zeroToken =
             {
                 JsonToken.Number(0)
             };
@@ -219,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 0x93, 0x09, 0x9F, 0x5D, 0x09, 0xE2, 0xDF, 0x44
             };
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Number(6.02252e23)
             };
@@ -244,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 0x39, 0x98, 0xF7, 0x7F, 0xA8, 0x10, 0x4C, 0x3F
             };
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Number(numberValue)
             };
@@ -300,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x40,
             };
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Number(number)
             };
@@ -469,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             string input = ".001";
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
             };
 
@@ -483,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             string input = "1e";
             string input2 = "1E";
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
             };
 
@@ -498,7 +499,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             string input = "6.02252e+23";
             string input2 = "6.02252E+23";
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Number(6.02252e+23)
             };
@@ -514,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             string input = "6.02252e-23";
             string input2 = "6.02252E-23";
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.Number(6.02252e-23)
             };
@@ -529,7 +530,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public void EmptyStringTest()
         {
             string input = "\"\"";
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.String(string.Empty)
             };
@@ -572,7 +573,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100
             };
 
-            JsonToken[] expectedTokens = 
+            JsonToken[] expectedTokens =
             {
                 JsonToken.String("Hello World")
             };
@@ -596,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             foreach (string systemString in systemStrings)
             {
                 string input = "\"" + systemString + "\"";
-                byte[] binaryInput = 
+                byte[] binaryInput =
                 {
                     BinaryFormat,
                     (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + systemStringId++),
@@ -1992,22 +1993,22 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             byte[] utf8ByteArray = Encoding.UTF8.GetBytes(input);
             // Test readers created with the array API
             this.VerifyReader(
-                () => JsonReader.Create(utf8ByteArray), 
-                expectedTokens, 
-                expectedException, 
+                () => JsonReader.Create(utf8ByteArray),
+                expectedTokens,
+                expectedException,
                 Encoding.UTF8);
 
             // Test readers create from the stream API (without buffering).
             this.VerifyReader(
-                () => JsonReader.Create(new MemoryStream(utf8ByteArray)), 
-                expectedTokens, 
-                expectedException, 
+                () => JsonReader.Create(new MemoryStream(utf8ByteArray)),
+                expectedTokens,
+                expectedException,
                 Encoding.UTF8);
 
             //// TODO: have a test where you are reading from a file and over the network.
 
             // Test readers created with the encoding API
-            Encoding[] encodings = 
+            Encoding[] encodings =
             {
                 Encoding.UTF8,
                 Encoding.Unicode,
@@ -2019,9 +2020,9 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 byte[] encodedBytes = encoding.GetBytes(input);
 
                 this.VerifyReader(
-                    () => JsonReader.CreateTextReaderWithEncoding(new MemoryStream(encodedBytes), encoding), 
-                    expectedTokens, 
-                    expectedException, 
+                    () => JsonReader.CreateTextReaderWithEncoding(new MemoryStream(encodedBytes), encoding),
+                    expectedTokens,
+                    expectedException,
                     encoding);
             }
         }
@@ -2094,7 +2095,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                                 this.VerifyNull(jsonReader, encoding);
                                 break;
                             case JsonTokenType.FieldName:
-                                this.VerifyString(jsonReader, ((JsonFieldNameToken)expectedToken).Value, encoding);
+                                this.VerifyFieldName(jsonReader, ((JsonFieldNameToken)expectedToken).Value, encoding);
                                 break;
                             case JsonTokenType.NotStarted:
                             default:
@@ -2148,24 +2149,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
             Assert.AreEqual(JsonTokenType.String, jsonTokenType);
 
-            string actualString= jsonReader.GetStringValue();
+            this.VerifyStringOrFieldNameHelper(jsonReader, expectedString, encoding);
+        }
+
+        private void VerifyFieldName(IJsonReader jsonReader, string expectedString, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.FieldName, jsonTokenType);
+
+            this.VerifyStringOrFieldNameHelper(jsonReader, expectedString, encoding);
+        }
+
+        private void VerifyStringOrFieldNameHelper(IJsonReader jsonReader, string expectedString, Encoding encoding)
+        {
+            string actualString = jsonReader.GetStringValue();
             Assert.AreEqual(expectedString, actualString);
-
-            // Additionally check if the text is correct
-            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
-            {
-                IReadOnlyList<byte> actualByteArray = jsonReader.GetBufferedRawJsonToken();
-
-                const string DoubleQuote = "\"";
-                List<byte> expectedByteArray = new List<byte>();
-                expectedByteArray.AddRange(encoding.GetBytes(DoubleQuote));
-                expectedByteArray.AddRange(encoding.GetBytes(Regex.Escape(expectedString)));
-                expectedByteArray.AddRange(encoding.GetBytes(DoubleQuote));
-
-                Assert.IsTrue(
-                    expectedByteArray.SequenceEqual(actualByteArray),
-                    $"Validation for {expectedString} failed.");
-            }
         }
 
         private void VerifyNumber(IJsonReader jsonReader, Number64 expectedNumberValue, Encoding encoding)
