@@ -22,10 +22,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(expectedPkRangeId);
             operation.AttachContext(batchAsyncOperationContext);
 
-            Assert.IsNotNull(batchAsyncOperationContext.Task);
+            Assert.IsNotNull(batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(batchAsyncOperationContext, operation.Context);
             Assert.AreEqual(expectedPkRangeId, batchAsyncOperationContext.PartitionKeyRangeId);
-            Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.Task.Status);
+            Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.OperationTask.Status);
         }
 
         [TestMethod]
@@ -35,9 +35,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
             operation.AttachContext(batchAsyncOperationContext);
 
-            Assert.IsNotNull(batchAsyncOperationContext.Task);
+            Assert.IsNotNull(batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(batchAsyncOperationContext, operation.Context);
-            Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.Task.Status);
+            Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.OperationTask.Status);
         }
 
         [TestMethod]
@@ -51,8 +51,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             batchAsyncOperationContext.Complete(null, expected);
 
-            Assert.AreEqual(expected, await batchAsyncOperationContext.Task);
-            Assert.AreEqual(TaskStatus.RanToCompletion, batchAsyncOperationContext.Task.Status);
+            Assert.AreEqual(expected, await batchAsyncOperationContext.OperationTask);
+            Assert.AreEqual(TaskStatus.RanToCompletion, batchAsyncOperationContext.OperationTask.Status);
         }
 
         [TestMethod]
@@ -65,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             batchAsyncOperationContext.Fail(null, failure);
 
-            Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => batchAsyncOperationContext.Task);
+            Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(failure, capturedException);
-            Assert.AreEqual(TaskStatus.Faulted, batchAsyncOperationContext.Task.Status);
+            Assert.AreEqual(TaskStatus.Faulted, batchAsyncOperationContext.OperationTask.Status);
         }
 
         [TestMethod]

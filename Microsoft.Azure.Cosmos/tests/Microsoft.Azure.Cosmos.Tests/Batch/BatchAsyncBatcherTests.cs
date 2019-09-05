@@ -228,10 +228,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             batchAsyncBatcher.TryAdd(operation2);
             await batchAsyncBatcher.DispatchAsync();
 
-            Assert.AreEqual(TaskStatus.Faulted, context1.Task.Status);
-            Assert.AreEqual(TaskStatus.Faulted, context2.Task.Status);
-            Assert.AreEqual(expectedException, context1.Task.Exception.InnerException);
-            Assert.AreEqual(expectedException, context2.Task.Exception.InnerException);
+            Assert.AreEqual(TaskStatus.Faulted, context1.OperationTask.Status);
+            Assert.AreEqual(TaskStatus.Faulted, context2.OperationTask.Status);
+            Assert.AreEqual(expectedException, context1.OperationTask.Exception.InnerException);
+            Assert.AreEqual(expectedException, context2.OperationTask.Exception.InnerException);
         }
 
         [TestMethod]
@@ -253,8 +253,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             for (int i = 0; i < 10; i++)
             {
                 ItemBatchOperationContext context = contexts[i];
-                Assert.AreEqual(TaskStatus.RanToCompletion, context.Task.Status);
-                BatchOperationResult result = await context.Task;
+                Assert.AreEqual(TaskStatus.RanToCompletion, context.OperationTask.Status);
+                BatchOperationResult result = await context.OperationTask;
                 Assert.AreEqual(i.ToString(), result.ETag);
             }
         }
@@ -283,15 +283,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // Some tasks should not be resolved
                 if(i == 0 || i == 9)
                 {
-                    Assert.IsTrue(operation.Context.Task.Status == TaskStatus.WaitingForActivation);
+                    Assert.IsTrue(operation.Context.OperationTask.Status == TaskStatus.WaitingForActivation);
                 }
                 else
                 {
-                    Assert.IsTrue(operation.Context.Task.Status == TaskStatus.RanToCompletion);
+                    Assert.IsTrue(operation.Context.OperationTask.Status == TaskStatus.RanToCompletion);
                 }
-                if (operation.Context.Task.Status == TaskStatus.RanToCompletion)
+                if (operation.Context.OperationTask.Status == TaskStatus.RanToCompletion)
                 {
-                    BatchOperationResult result = await operation.Context.Task;
+                    BatchOperationResult result = await operation.Context.OperationTask;
                     Assert.AreEqual(i.ToString(), result.ETag);
                 }
                 else
@@ -306,8 +306,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             for (int i = 0; i < 10; i++)
             {
                 ItemBatchOperation operation = operations[i];
-                Assert.AreEqual(TaskStatus.RanToCompletion, operation.Context.Task.Status);
-                BatchOperationResult result = await operation.Context.Task;
+                Assert.AreEqual(TaskStatus.RanToCompletion, operation.Context.OperationTask.Status);
+                BatchOperationResult result = await operation.Context.OperationTask;
                 Assert.AreEqual(i.ToString(), result.ETag);
             }
         }

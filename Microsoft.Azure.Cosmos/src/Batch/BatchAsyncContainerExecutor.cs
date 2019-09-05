@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
             ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId, BatchAsyncContainerExecutor.GetRetryPolicy(this.retryOptions));
             operation.AttachContext(context);
             streamer.Add(operation);
-            return await context.Task;
+            return await context.OperationTask;
         }
 
         public void Dispose()
