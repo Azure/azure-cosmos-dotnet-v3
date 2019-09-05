@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType)
         {
-            if (!this.ClientOptions.AllowBatchRequests)
+            if (!this.ClientOptions.AllowBulkExecution)
             {
                 return false;
             }
