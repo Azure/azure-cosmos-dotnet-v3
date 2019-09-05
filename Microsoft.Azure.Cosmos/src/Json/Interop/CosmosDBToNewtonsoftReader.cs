@@ -87,13 +87,15 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
                     break;
 
                 case JsonTokenType.Number:
-                    value = this.jsonReader.GetNumberValue();
-                    if ((double)value % 1 == 0)
+                    Number64 number64Value = this.jsonReader.GetNumberValue();
+                    if (number64Value.IsInteger)
                     {
+                        value = Number64.ToLong(number64Value);
                         newtonsoftToken = JsonToken.Integer;
                     }
                     else
                     {
+                        value = Number64.ToDouble(number64Value);
                         newtonsoftToken = JsonToken.Float;
                     }
                     break;
