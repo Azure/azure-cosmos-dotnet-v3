@@ -128,8 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 sqlQuerySpecSerializer: MockCosmosUtil.Serializer,
                 cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
-                documentClient: new MockDocumentClient(),
-                documentQueryClient: new Mock<Query.IDocumentQueryClient>().Object);
+                documentClient: new MockDocumentClient());
         }
     }
 }
