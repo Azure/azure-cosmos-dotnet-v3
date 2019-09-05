@@ -173,11 +173,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -210,11 +209,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -247,11 +245,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -285,11 +282,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -322,11 +318,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new CosmosClientOptions() { AllowBatchRequests = true },
                 new CosmosJsonDotNetSerializer(),
                 new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
                 null,
                 null,
-                null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -360,8 +355,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -392,8 +386,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -424,8 +417,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -456,8 +448,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
@@ -488,8 +479,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 cosmosClient.ResponseFactory,
                 null,
-                new MockDocumentClient(),
-                Mock.Of<IDocumentQueryClient>()
+                new MockDocumentClient()
                 );
 
             DatabaseCore db = new DatabaseCore(clientContextCore, "test");
