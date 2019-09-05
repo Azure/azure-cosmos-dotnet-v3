@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             /// </returns>
             public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
-                if (reader.TokenType != Newtonsoft.Json.JsonToken.Integer)
+                if (reader.TokenType != Newtonsoft.Json.JsonToken.Integer && reader.TokenType != Newtonsoft.Json.JsonToken.Float)
                 {
                     throw new Exception(RMResources.DateTimeConverterInvalidReaderValue);
                 }
