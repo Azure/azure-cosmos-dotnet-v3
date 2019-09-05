@@ -7,11 +7,12 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
     internal abstract class JsonToken
     {
-        protected JsonToken (JsonTokenType jsonTokenType)
+        protected JsonToken(JsonTokenType jsonTokenType)
         {
             this.JsonTokenType = jsonTokenType;
         }
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
         public static JsonToken Boolean(bool value)
         {
-            return value ? (JsonToken) new JsonTrueToken() : (JsonToken) new JsonFalseToken();
+            return value ? (JsonToken)new JsonTrueToken() : (JsonToken)new JsonFalseToken();
         }
 
         public static JsonToken Null()
@@ -118,6 +119,16 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             : base(JsonTokenType.BeginArray)
         {
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is JsonStartArrayToken;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonEndArrayToken : JsonToken
@@ -125,6 +136,16 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public JsonEndArrayToken()
             : base(JsonTokenType.EndArray)
         {
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is JsonEndArrayToken;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
         }
     }
 
@@ -134,6 +155,16 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             : base(JsonTokenType.BeginObject)
         {
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is JsonStartObjectToken;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonEndObjectToken : JsonToken
@@ -141,6 +172,16 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public JsonEndObjectToken()
             : base(JsonTokenType.EndObject)
         {
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is JsonEndObjectToken;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
         }
     }
 
@@ -156,6 +197,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             get;
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonStringToken jsonStringToken)
+            {
+                return this.Value == jsonStringToken.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonNumberToken : JsonToken
@@ -170,6 +226,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             get;
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonNumberToken other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonTrueToken : JsonToken
@@ -177,6 +248,16 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public JsonTrueToken()
             : base(JsonTokenType.True)
         {
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is JsonTrueToken;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
         }
     }
 
@@ -186,6 +267,16 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             : base(JsonTokenType.False)
         {
         }
+
+        public override bool Equals(object obj)
+        {
+            return obj is JsonFalseToken;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonNullToken : JsonToken
@@ -193,6 +284,16 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         public JsonNullToken()
             : base(JsonTokenType.Null)
         {
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is JsonNullToken;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
         }
     }
 
@@ -205,6 +306,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public string Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonFieldNameToken other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonInt8Token : JsonToken
@@ -216,6 +332,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public sbyte Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonInt8Token other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonInt16Token : JsonToken
@@ -227,6 +358,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public short Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonInt16Token other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonInt32Token : JsonToken
@@ -238,6 +384,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public int Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonInt32Token other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonInt64Token : JsonToken
@@ -249,6 +410,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public long Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonInt64Token other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonUInt32Token : JsonToken
@@ -260,6 +436,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public uint Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonUInt32Token other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonFloat32Token : JsonToken
@@ -271,6 +462,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public float Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonFloat32Token other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonFloat64Token : JsonToken
@@ -282,6 +488,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public double Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonFloat64Token other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonGuidToken : JsonToken
@@ -293,6 +514,21 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public Guid Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonGuidToken other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 
     internal sealed class JsonBinaryToken : JsonToken
@@ -304,5 +540,20 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         }
 
         public IReadOnlyList<byte> Value { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonBinaryToken other)
+            {
+                return this.Value.SequenceEqual(other.Value);
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
     }
 }
