@@ -11,11 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
@@ -47,8 +44,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public CosmosQueryExecutionContextFactory(
             CosmosQueryClient client,
-            ResourceType resourceTypeEnum,
-            OperationType operationType,
+            Documents.ResourceType resourceTypeEnum,
+            Documents.OperationType operationType,
             Type resourceType,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
@@ -161,9 +158,11 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
                     }
 
-                    if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.SubStatusCode == SubStatusCodes.NameCacheIsStale)
+                    if (isFirstExecute && response.StatusCode == HttpStatusCode.Gone && response.SubStatusCode == Documents.SubStatusCodes.NameCacheIsStale)
                     {
-                        await this.ForceRefreshCollectionCacheAsync(cancellationToken);
+                        await this.CosmosQueryContext.QueryClient.ForceRefreshCollectionCacheAsync(
+                            this.CosmosQueryContext.ResourceLink.OriginalString,
+                            cancellationToken);
                         this.innerExecutionContext = await this.CreateItemQueryExecutionContextAsync(cancellationToken);
                         isFirstExecute = false;
                     }
@@ -188,30 +187,18 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private async Task ForceRefreshCollectionCacheAsync(CancellationToken cancellationToken)
-        {
-            this.CosmosQueryContext.QueryClient.ClearSessionTokenCache(this.CosmosQueryContext.ResourceLink.OriginalString);
-
-            CollectionCache collectionCache = await this.CosmosQueryContext.QueryClient.GetCollectionCacheAsync();
-            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-               OperationType.Query,
-               this.CosmosQueryContext.ResourceTypeEnum,
-               this.CosmosQueryContext.ResourceLink.OriginalString,
-               AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
-            {
-                request.ForceNameCacheRefresh = true;
-                await collectionCache.ResolveCollectionAsync(request, cancellationToken);
-            }
-        }
-
         private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             CosmosQueryClient cosmosQueryClient = this.CosmosQueryContext.QueryClient;
-            ContainerProperties containerProperties = await cosmosQueryClient.GetCachedContainerPropertiesAsync(cancellationToken);
-            this.CosmosQueryContext.ContainerResourceId = containerProperties.ResourceId;
+            ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
+                this.CosmosQueryContext.ResourceLink,
+                this.CosmosQueryContext.QueryRequestOptions.PartitionKey,
+                cancellationToken);
+
+            this.CosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             if (this.CosmosQueryContext.QueryClient.ByPassQueryParsing() && TestFlag)
@@ -229,12 +216,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 //todo:elasticcollections this may rely on information from collection cache which is outdated
                 //if collection is deleted/created with same name.
                 //need to make it not rely on information from collection cache.
-                PartitionKeyDefinition partitionKeyDefinition;
+                Documents.PartitionKeyDefinition partitionKeyDefinition;
                 object partitionKeyDefinitionObject;
                 if (this.CosmosQueryContext.QueryRequestOptions?.Properties != null
                     && this.CosmosQueryContext.QueryRequestOptions.Properties.TryGetValue(InternalPartitionKeyDefinitionProperty, out partitionKeyDefinitionObject))
                 {
-                    if (partitionKeyDefinitionObject is PartitionKeyDefinition definition)
+                    if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
                     {
                         partitionKeyDefinition = definition;
                     }
@@ -247,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
                 else
                 {
-                    partitionKeyDefinition = containerProperties.PartitionKey;
+                    partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
                 }
 
                 partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
@@ -258,11 +245,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     cancellationToken);
             }
 
-            List<PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRangesAsync(
+            List<Documents.PartitionKeyRange> targetRanges = await GetTargetPartitionKeyRangesAsync(
                    this.CosmosQueryContext.QueryClient,
                    this.CosmosQueryContext.ResourceLink.OriginalString,
                    partitionedQueryExecutionInfo,
-                   containerProperties,
+                   containerQueryProperties,
                    this.CosmosQueryContext.QueryRequestOptions);
 
             CosmosQueryContext rewrittenComosQueryContext;
@@ -293,19 +280,21 @@ namespace Microsoft.Azure.Cosmos.Query
                 rewrittenComosQueryContext = this.CosmosQueryContext;
             }
 
-            return await this.CreateSpecializedDocumentQueryExecutionContextAsync(
+            return await CosmosQueryExecutionContextFactory.CreateSpecializedDocumentQueryExecutionContextAsync(
                 rewrittenComosQueryContext,
                 partitionedQueryExecutionInfo,
                 targetRanges,
-                containerProperties.ResourceId,
+                containerQueryProperties.ResourceId,
+                this.InitialUserContinuationToken,
                 cancellationToken);
         }
 
-        public async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
+        public static async Task<CosmosQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
             CosmosQueryContext cosmosQueryContext,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<PartitionKeyRange> targetRanges,
+            List<Documents.PartitionKeyRange> targetRanges,
             string collectionRid,
+            string continuationToken,
             CancellationToken cancellationToken)
         {
             if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo?.RewrittenQuery))
@@ -320,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (initialPageSize < -1 || initialPageSize == 0)
             {
-                throw new BadRequestException(string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
+                throw new Documents.BadRequestException(string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
             }
 
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
@@ -377,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo,
                 targetRanges,
                 (int)initialPageSize,
-                this.InitialUserContinuationToken,
+                continuationToken,
                 cancellationToken);
         }
 
@@ -388,48 +377,59 @@ namespace Microsoft.Azure.Cosmos.Query
         /// 3. Check the effective partition key
         /// 4. Get the range from the PartitionedQueryExecutionInfo
         /// </summary>
-        internal static async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
+        internal static async Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             CosmosQueryClient queryClient,
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            ContainerProperties collection,
+            ContainerQueryProperties containerQueryProperties,
             QueryRequestOptions queryRequestOptions)
         {
-            List<PartitionKeyRange> targetRanges;
-            if (queryRequestOptions.PartitionKey != null)
+            List<Documents.PartitionKeyRange> targetRanges;
+            if (containerQueryProperties.EffectivePartitionKeyString != null)
             {
-                // Dis-ambiguate the NonePK if used 
-                PartitionKeyInternal partitionKeyInternal = null;
-                if (queryRequestOptions.PartitionKey.Value.IsNone)
-                {
-                    partitionKeyInternal = collection.GetNoneValue();
-                }
-                else
-                {
-                    partitionKeyInternal = queryRequestOptions.PartitionKey.Value.InternalKey;
-                }
-
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
-                    collection.ResourceId,
-                    partitionKeyInternal.GetEffectivePartitionKeyString(collection.PartitionKey));
+                    containerQueryProperties.ResourceId,
+                    containerQueryProperties.EffectivePartitionKeyString);
             }
             else if (TryGetEpkProperty(queryRequestOptions, out string effectivePartitionKeyString))
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                     resourceLink,
-                    collection.ResourceId,
+                    containerQueryProperties.ResourceId,
                     effectivePartitionKeyString);
             }
             else
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
-                    collection.ResourceId,
+                    containerQueryProperties.ResourceId,
                     partitionedQueryExecutionInfo.QueryRanges);
             }
 
             return targetRanges;
+        }
+
+        public static Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+            CosmosQueryClient queryClient,
+            SqlQuerySpec sqlQuerySpec,
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            bool requireFormattableOrderByQuery,
+            bool isContinuationExpected,
+            bool allowNonValueAggregateQuery,
+            bool hasLogicalPartitionKey,
+            CancellationToken cancellationToken)
+        {
+            // $ISSUE-felixfan-2016-07-13: We should probably get PartitionedQueryExecutionInfo from Gateway in GatewayMode
+
+            return queryClient.GetPartitionedQueryExecutionInfoAsync(
+                sqlQuerySpec,
+                partitionKeyDefinition,
+                requireFormattableOrderByQuery,
+                isContinuationExpected,
+                allowNonValueAggregateQuery,
+                hasLogicalPartitionKey,
+                cancellationToken);
         }
 
         private static bool TryGetEpkProperty(
@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (queryRequestOptions?.Properties != null
                 && queryRequestOptions.Properties.TryGetValue(
-                   WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                   Documents.WFConstants.BackendHeaders.EffectivePartitionKeyString,
                    out object effectivePartitionKeyStringObject))
             {
                 effectivePartitionKeyString = effectivePartitionKeyStringObject as string;

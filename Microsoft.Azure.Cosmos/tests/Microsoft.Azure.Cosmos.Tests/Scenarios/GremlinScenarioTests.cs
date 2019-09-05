@@ -4,20 +4,20 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Azure.Cosmos.CosmosElements;
-using Microsoft.Azure.Cosmos.Json;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 namespace Microsoft.Azure.Cosmos.Scenarios
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
     /// <summary>
     /// Tests for CosmosDB Gremlin use case scenarios of CosmosElement and JsonNavigator interfaces.
     /// </summary>
     [TestClass]
-    public class GremlinScenarioTests
+    public abstract class GremlinScenarioTests
     {
         /// <summary>
         /// Gremlin keywords for use in creating scenario Json document structure.
@@ -43,45 +43,44 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             internal const string KW_VERTEX_LABEL = "label";
         }
 
+        internal abstract JsonSerializationFormat SerializationFormat { get; }
+
+        /// <summary>
+        /// Test read path for Gremlin edge documents by:
+        /// - Creating a serialized edge document using eager CosmosElements.
+        /// - Navigating and verifying the structure and values of the serialized edge document using lazy CosmosElements.
+        /// </summary>
         [TestMethod]
-        public void SerializeAndDeserializeGremlinEdgeDocumentAsText()
+        public virtual void SerializeAndDeserializeGremlinEdgeDocument()
         {
-            this.SerializeAndDeserializeEdgeDocumentTest(JsonSerializationFormat.Text);
+            this.SerializeAndDeserializeEdgeDocumentTest(this.SerializationFormat);
         }
 
+        /// <summary>
+        /// Test read path for Gremlin vertex documents by:
+        /// - Creating a serialized vertex document using eager CosmosElements.
+        /// - Navigating and verifying structure and values of the serialized vertex document using lazy CosmosElements.
+        /// </summary>
         [TestMethod]
-        public void SerializeAndDeserializeGremlinEdgeDocumentAsBinary()
+        public virtual void SerializeAndDeserializeGremlinVertexDocument()
         {
-            this.SerializeAndDeserializeEdgeDocumentTest(JsonSerializationFormat.Binary);
+            this.SerializeAndDeserializeVertexDocumentTest(this.SerializationFormat);
         }
 
+        /// <summary>
+        /// Test write path for Gremlin vertex documents by:
+        /// - Creating a serialized vertex document using eager CosmosElements.
+        /// - Navigating the serialized vertex document using lazy CosmosElements.
+        /// - Assembling a modified vertex document structure using a mix of lazy and eager CosmosElements.
+        /// - Serializing and verifying the contents of the modified vertex document.
+        /// </summary>
         [TestMethod]
-        public void SerializeAndDeserializeGremlinEdgeDocumentAsHybridRow()
+        public virtual void DeserializeModifyAndSerializeVertexDocument()
         {
-            Assert.ThrowsException<ArgumentException>(
-                () => this.SerializeAndDeserializeEdgeDocumentTest(JsonSerializationFormat.HybridRow));
+            this.DeserializeModifyAndSerializeVertexDocumentTest(this.SerializationFormat);
         }
 
-        [TestMethod]
-        public void SerializeAndDeserializeGremlinVertexDocumentAsText()
-        {
-            this.SerializeAndDeserializeVertexDocumentTest(JsonSerializationFormat.Text);
-        }
-
-        [TestMethod]
-        public void SerializeAndDeserializeGremlinVertexDocumentAsBinary()
-        {
-            this.SerializeAndDeserializeVertexDocumentTest(JsonSerializationFormat.Binary);
-        }
-
-        [TestMethod]
-        public void SerializeAndDeserializeGremlinVertexDocumentAsHybridRow()
-        {
-            Assert.ThrowsException<ArgumentException>(
-                () => this.SerializeAndDeserializeVertexDocumentTest(JsonSerializationFormat.HybridRow));
-        }
-
-        private void SerializeAndDeserializeEdgeDocumentTest(JsonSerializationFormat jsonSerializationFormat)
+        internal void SerializeAndDeserializeEdgeDocumentTest(JsonSerializationFormat jsonSerializationFormat)
         {
             // Constants to use for vertex document property key/values
             const string idName = "id";
@@ -208,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.AreEqual(stringValue, stringValueLazyString.Value);
         }
 
-        private void SerializeAndDeserializeVertexDocumentTest(JsonSerializationFormat jsonSerializationFormat)
+        internal void SerializeAndDeserializeVertexDocumentTest(JsonSerializationFormat jsonSerializationFormat)
         {
             // Constants to use for vertex document property key/values
             const string idName = "id";
@@ -388,6 +387,176 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.AreEqual(CosmosNumberType.Number64, stringValue0MetaValue1LazyNumber.NumberType);
             Assert.IsTrue(stringValue0MetaValue1LazyNumber.IsInteger);
             Assert.AreEqual((long)metaProperty1Value, stringValue0MetaValue1LazyNumber.AsInteger().Value);
+        }
+
+        internal void DeserializeModifyAndSerializeVertexDocumentTest(JsonSerializationFormat jsonSerializationFormat)
+        {
+            // Constants to use for vertex document property key/values
+            const string idName = "id";
+            const string idValue = "v_0";
+            const string pkName = "myPartitionKey";
+            const string pkValue = "pk_0";
+            const string labelName = "label";
+            const string labelValue = "l_0";
+            const string property1Name = "p_0";
+            const string property1Value1Id = "3648bdcc-5113-43f8-86dd-c19fe793a2f8";
+            const string property1Value1 = "p_0_v_0";
+            const string property1Value2Id = "7546f541-a003-4e69-a25c-608372ed1321";
+            const long property1Value2 = 1234;
+            const string property2Name = "p_1";
+            const string property2Value1Id = "b119c62a-82a2-48b2-b293-9963fa99fbe2";
+            const double property2Value1 = 34.56;
+            const string property3Name = "p_2";
+            const string property3Value1Id = "98d27280-70ee-4edd-8461-7633a328539a";
+            const bool property3Value1 = true;
+            const string property4Name = "p_3";
+            const string property4Value1Id = "f9bfcc22-221a-4c92-b5b9-be53cdedb092";
+            const string property4Value1 = "p_3_v_0";
+
+            // Compose the initial vertex document using eager CosmosElements
+            Dictionary<string, CosmosElement> initialVertexDocumentProperties = new Dictionary<string, CosmosElement>()
+            {
+                { idName, CosmosString.Create(idValue) },
+                { pkName, CosmosString.Create(pkValue) },
+                { labelName, CosmosString.Create(labelValue) },
+                {
+                    property1Name,
+                    CosmosArray.Create(
+                        new CosmosElement[]
+                        {
+                            this.CreateVertexPropertySingleComplexValue(CosmosString.Create(property1Value1Id), CosmosString.Create(property1Value1)),
+                        }
+                    )
+                },
+                {
+                    property2Name,
+                    CosmosArray.Create(
+                        new CosmosElement[]
+                        {
+                            this.CreateVertexPropertySingleComplexValue(CosmosString.Create(property2Value1Id), CosmosNumber64.Create(property2Value1)),
+                        }
+                    )
+                },
+                {
+                    property3Name,
+                    CosmosArray.Create(
+                        new CosmosElement[]
+                        {
+                            this.CreateVertexPropertySingleComplexValue(CosmosString.Create(property3Value1Id), CosmosBoolean.Create(property3Value1)),
+                        }
+                    )
+                },
+            };
+
+            CosmosObject initialVertexEagerObject = CosmosObject.Create(initialVertexDocumentProperties);
+
+            // Serialize the initial vertex object into a document using the specified serialization format
+            IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            initialVertexEagerObject.WriteTo(jsonWriter);
+            byte[] initialJsonWriterResult = jsonWriter.GetResult();
+            Assert.IsTrue(initialJsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
+
+            // Navigate into the serialized vertex document using lazy CosmosElements
+            CosmosElement rootLazyElement = CosmosElement.Create(initialJsonWriterResult);
+
+            // Root vertex document object
+            CosmosObject vertexLazyObject = rootLazyElement as CosmosObject;
+            Assert.IsNotNull(vertexLazyObject, $"Vertex document root is not {nameof(CosmosObject)}.");
+            Assert.AreEqual(initialVertexDocumentProperties.Count, vertexLazyObject.Count);
+
+            CosmosString idLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, idName);
+            CosmosString pkLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, pkName);
+            CosmosString labelLazyString = this.GetAndAssertObjectProperty<CosmosString>(vertexLazyObject, labelName);
+            CosmosArray property2Array = this.GetAndAssertObjectProperty<CosmosArray>(vertexLazyObject, property2Name);
+
+            // Compose a new vertex document using a combination of lazy and eager CosmosElements
+            Dictionary<string, CosmosElement> modifiedVertexDocumentProperties = new Dictionary<string, CosmosElement>()
+            {
+                { idName, idLazyString },
+                { pkName, pkLazyString },
+                { labelName, labelLazyString },
+
+                // Property 1 is modified with a new value
+                {
+                    property1Name,
+                    CosmosArray.Create(
+                        new CosmosElement[]
+                        {
+                            this.CreateVertexPropertySingleComplexValue(CosmosString.Create(property1Value2Id), CosmosNumber64.Create(property1Value2)),
+                        }
+                    )
+                },
+
+                // Property 2 is unmodified
+                { property2Name, property2Array },
+
+                // Property 3 is deleted
+
+                // Property 4 is newly added
+                {
+                    property4Name,
+                    CosmosArray.Create(
+                        new CosmosElement[]
+                        {
+                            this.CreateVertexPropertySingleComplexValue(CosmosString.Create(property4Value1Id), CosmosString.Create(property4Value1)),
+                        }
+                    )
+                },
+            };
+
+            CosmosObject modifiedVertexEagerObject = CosmosObject.Create(modifiedVertexDocumentProperties);
+
+            // Serialize the modified vertex object into a document using the specified serialization format
+            jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            modifiedVertexEagerObject.WriteTo(jsonWriter);
+            byte[] modifiedJsonWriterResult = jsonWriter.GetResult();
+            Assert.IsTrue(modifiedJsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
+
+            // Compose an expected vertex document using eager CosmosElements
+            Dictionary<string, CosmosElement> expectedVertexDocumentProperties = new Dictionary<string, CosmosElement>()
+            {
+                { idName, CosmosString.Create(idValue) },
+                { pkName, CosmosString.Create(pkValue) },
+                { labelName, CosmosString.Create(labelValue) },
+                {
+                    property1Name,
+                    CosmosArray.Create(
+                        new CosmosElement[]
+                        {
+                            this.CreateVertexPropertySingleComplexValue(CosmosString.Create(property1Value2Id), CosmosNumber64.Create(property1Value2)),
+                        }
+                    )
+                },
+                {
+                    property2Name,
+                    CosmosArray.Create(
+                        new CosmosElement[]
+                        {
+                            this.CreateVertexPropertySingleComplexValue(CosmosString.Create(property2Value1Id), CosmosNumber64.Create(property2Value1)),
+                        }
+                    )
+                },
+                {
+                    property4Name,
+                    CosmosArray.Create(
+                        new CosmosElement[]
+                        {
+                            this.CreateVertexPropertySingleComplexValue(CosmosString.Create(property4Value1Id), CosmosString.Create(property4Value1)),
+                        }
+                    )
+                },
+            };
+
+            CosmosObject expectedVertexEagerObject = CosmosObject.Create(expectedVertexDocumentProperties);
+
+            // Serialize the initial vertex object into a document using the specified serialization format
+            jsonWriter = JsonWriter.Create(jsonSerializationFormat);
+            expectedVertexEagerObject.WriteTo(jsonWriter);
+            byte[] expectedJsonWriterResult = jsonWriter.GetResult();
+            Assert.IsTrue(expectedJsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
+
+            // Verify that the modified serialized document matches the expected serialized document
+            Assert.IsTrue(modifiedJsonWriterResult.SequenceEqual(expectedJsonWriterResult));
         }
 
         private CosmosElement CreateVertexPropertySingleComplexValue(
