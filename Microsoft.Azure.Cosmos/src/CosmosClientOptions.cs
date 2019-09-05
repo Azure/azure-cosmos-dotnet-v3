@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// fallback geo-replicated regions for high availability. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
         /// 
-        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
+        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string, bool)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master"/>
         /// </remarks>
         public string ApplicationRegion { get; set; }
@@ -341,6 +341,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// When limiting to only the specified region, availability is reduced to that of a single region account.
+        /// </summary>
+        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        internal bool LimitToApplicationRegionOnly { get; set; }
+
+        /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
         /// The default serializer is always used for all system owned types like DatabaseProperties.
         /// The default serializer is used for user types if no UserJsonSerializer is specified
@@ -496,6 +503,10 @@ namespace Microsoft.Azure.Cosmos
             if (this.ApplicationRegion != null)
             {
                 connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
+                if (this.LimitToApplicationRegionOnly)
+                {
+                    connectionPolicy.EnableEndpointDiscovery = false;
+                }
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
