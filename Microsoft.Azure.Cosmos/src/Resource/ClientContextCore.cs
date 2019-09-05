@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     internal class ClientContextCore : CosmosClientContext
@@ -23,8 +24,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer sqlQuerySpecSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
-            DocumentClient documentClient,
-            IDocumentQueryClient documentQueryClient)
+            DocumentClient documentClient)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseFactory = cosmosResponseFactory;
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
-            this.DocumentQueryClient = documentQueryClient;
         }
 
         /// <summary>
@@ -43,8 +42,6 @@ namespace Microsoft.Azure.Cosmos
         internal override CosmosClient Client { get; }
 
         internal override DocumentClient DocumentClient { get; }
-
-        internal override IDocumentQueryClient DocumentQueryClient { get; }
 
         internal override CosmosSerializer CosmosSerializer { get; }
 
@@ -98,6 +95,45 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
             PartitionKey? partitionKey,
+            string itemId,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            if (this.IsBulkOperationSupported(resourceType, operationType))
+            {
+                return this.ProcessResourceOperationAsBulkStreamAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    cosmosContainerCore: cosmosContainerCore,
+                    partitionKey: partitionKey,
+                    itemId: itemId,
+                    streamPayload: streamPayload,
+                    requestEnricher: requestEnricher,
+                    cancellationToken: cancellationToken);
+            }
+
+            return this.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: cosmosContainerCore,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken);
+        }
+
+        internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
@@ -137,6 +173,60 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
                 cancellationToken: cancellationToken);
+        }
+
+        internal override async Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+            string containerUri,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();
+            try
+            {
+                return await collectionCache.ResolveByNameAsync(
+                    HttpConstants.Versions.CurrentVersion,
+                    containerUri,
+                    cancellationToken);
+            }
+            catch (DocumentClientException ex)
+            {
+                throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message, ex.Error);
+            }
+        }
+
+        private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
+            string itemId,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
+        {
+            ItemRequestOptions itemRequestOptions = requestOptions as ItemRequestOptions;
+            BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
+            ItemBatchOperation itemBatchOperation = new ItemBatchOperation(operationType, /* index */ 0, partitionKey, itemId, streamPayload, batchItemRequestOptions);
+            BatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(itemBatchOperation, itemRequestOptions, cancellationToken);
+            return batchOperationResult.ToResponseMessage();
+        }
+
+        private bool IsBulkOperationSupported(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            if (!this.ClientOptions.AllowBulkExecution)
+            {
+                return false;
+            }
+
+            return resourceType == ResourceType.Document
+                && (operationType == OperationType.Create
+                || operationType == OperationType.Upsert
+                || operationType == OperationType.Read
+                || operationType == OperationType.Delete
+                || operationType == OperationType.Replace);
         }
     }
 }

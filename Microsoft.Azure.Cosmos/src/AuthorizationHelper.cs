@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException("headers");
             }
-            
+
             string resourceType = string.Empty;
             string resourceIdValue = string.Empty;
             bool isNameBased = false;

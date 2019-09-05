@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     newContinuationToken = Guid.NewGuid().ToString();
                 }
 
-                (QueryResponse response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
+                (QueryResponseCore response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
                     itemIdPrefix: $"page{i}-pk{partitionKeyRange.Id}-",
                     continuationToken: newContinuationToken,
                     collectionRid: collectionRid,
@@ -227,7 +227,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<Uri>(),
                         ResourceType.Document,
                         OperationType.Query,
-                        collectionRid,
                         It.IsAny<QueryRequestOptions>(),
                         It.Is<SqlQuerySpec>(specInput => IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                         previousContinuationToken,
@@ -272,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     newContinuationToken = Guid.NewGuid().ToString();
                 }
 
-                (QueryResponse response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
+                (QueryResponseCore response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
                     itemIdPrefix: $"page{i}-pk{partitionKeyRange.Id}-",
                     continuationToken: newContinuationToken,
                     collectionRid: collectionRid,

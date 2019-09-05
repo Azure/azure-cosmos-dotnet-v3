@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, IList<Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
+        public MockDocumentClient(Uri serviceEndpoint, IList<Documents.Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, permissionFeed, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
@@ -220,8 +220,8 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 });
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
-            
-            var sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
+
+            SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
         }
     }

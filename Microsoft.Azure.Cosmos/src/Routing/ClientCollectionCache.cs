@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;

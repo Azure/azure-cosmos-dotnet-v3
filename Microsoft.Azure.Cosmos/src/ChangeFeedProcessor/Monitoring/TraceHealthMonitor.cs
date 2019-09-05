@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
 {
-    using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 

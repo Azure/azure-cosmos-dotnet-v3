@@ -200,37 +200,37 @@ namespace Microsoft.Azure.Cosmos.Query
                     break;
                 case CosmosElementType.Number:
                     {
-                    CosmosNumber number = (CosmosNumber)cosmosElement;
-                    switch (number.NumberType)
-                    {
-                        case CosmosNumberType.Number64:
-                            order = 2;
-                            break;
-                        case CosmosNumberType.Float32:
-                            order = 6;
-                            break;
-                        case CosmosNumberType.Float64:
-                            order = 7;
-                            break;
-                        case CosmosNumberType.Int16:
-                            order = 8;
-                            break;
-                        case CosmosNumberType.Int32:
-                            order = 9;
-                            break;
-                        case CosmosNumberType.Int64:
-                            order = 10;
-                            break;
-                        case CosmosNumberType.Int8:
-                            order = 11;
-                            break;
-                        case CosmosNumberType.UInt32:
-                            order = 12;
-                            break;
-                        default:
-                            throw new InvalidEnumArgumentException("Unknown number type", (int)number.NumberType, typeof(CosmosNumberType));
+                        CosmosNumber number = (CosmosNumber)cosmosElement;
+                        switch (number.NumberType)
+                        {
+                            case CosmosNumberType.Number64:
+                                order = 2;
+                                break;
+                            case CosmosNumberType.Float32:
+                                order = 6;
+                                break;
+                            case CosmosNumberType.Float64:
+                                order = 7;
+                                break;
+                            case CosmosNumberType.Int16:
+                                order = 8;
+                                break;
+                            case CosmosNumberType.Int32:
+                                order = 9;
+                                break;
+                            case CosmosNumberType.Int64:
+                                order = 10;
+                                break;
+                            case CosmosNumberType.Int8:
+                                order = 11;
+                                break;
+                            case CosmosNumberType.UInt32:
+                                order = 12;
+                                break;
+                            default:
+                                throw new InvalidEnumArgumentException("Unknown number type", (int)number.NumberType, typeof(CosmosNumberType));
+                        }
                     }
-                }
 
                     break;
                 case CosmosElementType.String:

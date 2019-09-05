@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
         }
 
         public static async Task<ItemResponse<T>> TryCreateItemAsync<T>(
-            this Container container, 
-            object partitionKey, 
+            this Container container,
+            object partitionKey,
             T item)
         {
             var response = await container.CreateItemAsync<T>(item).ConfigureAwait(false);

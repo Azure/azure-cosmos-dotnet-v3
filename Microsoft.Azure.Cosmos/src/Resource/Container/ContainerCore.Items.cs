@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -298,7 +299,8 @@ namespace Microsoft.Azure.Cosmos
                 (CosmosQueryClientCore)this.queryClient,
                 continuationToken,
                 requestOptions,
-                allowSynchronousQueryExecution);
+                allowSynchronousQueryExecution,
+                this.ClientContext.ClientOptions.SerializerOptions);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -354,6 +356,22 @@ namespace Microsoft.Azure.Cosmos
         }
 #endif
 
+        internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            string containerRid = await this.GetRIDAsync(cancellationToken);
+            IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(
+                        containerRid,
+                        new Documents.Routing.Range<string>(
+                            Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: false),
+                        true);
+
+            return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
+        }
+
         internal FeedIterator GetStandByFeedIterator(
             string continuationToken = null,
             int? maxItemCount = null,
@@ -399,18 +417,14 @@ namespace Microsoft.Azure.Cosmos
                     options: requestOptions);
             }
 
-            return new CosmosQueryExecutionContextFactory(
+            return new QueryIterator(
                 client: this.queryClient,
-                resourceTypeEnum: ResourceType.Document,
-                operationType: OperationType.Query,
-                resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
-                allowNonValueAggregateQuery: true,
-                correlatedActivityId: Guid.NewGuid());
+                allowNonValueAggregateQuery: true);
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.
@@ -483,6 +497,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 this,
                 partitionKey,
+                itemId,
                 streamPayload,
                 null,
                 cancellationToken);

@@ -65,8 +65,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
-            string collectionResourceId, 
-            string partitionKeyRangeId, 
+            string collectionResourceId,
+            string partitionKeyRangeId,
             bool forceRefresh = false)
         {
             ResourceId collectionRidParsed;

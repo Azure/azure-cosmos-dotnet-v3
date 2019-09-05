@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Partial wrapper

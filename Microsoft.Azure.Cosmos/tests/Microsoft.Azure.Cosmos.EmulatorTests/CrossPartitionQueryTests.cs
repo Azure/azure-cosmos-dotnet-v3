@@ -1338,15 +1338,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MaxBufferedItemCount = 7000,
             };
 
-            string aggregateWithoutValue = "SELECT COUNT(1) FROM c";
             string compositeAggregate = "SELECT COUNT(1) + 5 FROM c";
-            string multipleAggregates = "SELECT COUNT(1) + SUM(c) FROM c";
 
             string[] unsupportedQueries = new string[]
             {
-                aggregateWithoutValue,
                 compositeAggregate,
-                multipleAggregates
             };
 
             foreach (string unsupportedQuery in unsupportedQueries)
@@ -1363,7 +1359,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (Exception e)
                 {
-                    Assert.IsTrue(e.Message.Contains("Query contains 1 or more unsupported features. Upgrade your SDK to a version that does support the requested features:"),
+                    Assert.IsTrue(e.Message.Contains("Compositions of aggregates and other expressions are not allowed."),
                         e.Message);
                 }
             }
@@ -1446,8 +1442,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             object[] values = aggregateTestArgs.Values;
             string partitionKey = aggregateTestArgs.PartitionKey;
 
-            double samePartitionSum = ((numberOfDocumentSamePartitionKey * (numberOfDocumentSamePartitionKey + 1)) / 2);
-            double differentPartitionSum = ((numberOfDocumentsDifferentPartitionKey * (numberOfDocumentsDifferentPartitionKey + 1)) / 2);
+            double samePartitionSum = numberOfDocumentSamePartitionKey * (numberOfDocumentSamePartitionKey + 1) / 2;
+            double differentPartitionSum = numberOfDocumentsDifferentPartitionKey * (numberOfDocumentsDifferentPartitionKey + 1) / 2;
             double partitionSum = samePartitionSum + differentPartitionSum;
             AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
             {
@@ -1530,12 +1526,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             if (expected is long)
                             {
-                                expected = (double)((long)expected);
+                                expected = (double)(long)expected;
                             }
 
                             if (actual is long)
                             {
-                                actual = (double)((long)actual);
+                                actual = (double)(long)actual;
                             }
 
                             Assert.AreEqual(expected, actual, message);
@@ -1890,6 +1886,329 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string normalizedOutput = r.Replace(File.ReadAllText(outputPath), ">");
 
             Assert.AreEqual(normalizedBaseline, normalizedOutput);
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public async Task TestNonValueAggregates()
+        {
+            string[] documents = new string[]
+            {
+                @"{""first"":""Good"",""last"":""Trevino"",""age"":23,""height"":61,""income"":59848}",
+                @"{""first"":""Charles"",""last"":""Decker"",""age"":31,""height"":64,""income"":55970}",
+                @"{""first"":""Holden"",""last"":""Cotton"",""age"":30,""height"":66,""income"":57075}",
+                @"{""first"":""Carlene"",""last"":""Cabrera"",""age"":26,""height"":72,""income"":98018}",
+                @"{""first"":""Gates"",""last"":""Spence"",""age"":38,""height"":53,""income"":12338}",
+                @"{""first"":""Camacho"",""last"":""Singleton"",""age"":40,""height"":52,""income"":76973}",
+                @"{""first"":""Rachel"",""last"":""Tucker"",""age"":27,""height"":68,""income"":28116}",
+                @"{""first"":""Kristi"",""last"":""Robertson"",""age"":32,""height"":53,""income"":61687}",
+                @"{""first"":""Poole"",""last"":""Petty"",""age"":22,""height"":75,""income"":53381}",
+                @"{""first"":""Lacey"",""last"":""Carlson"",""age"":38,""height"":78,""income"":63989}",
+                @"{""first"":""Rosario"",""last"":""Mendez"",""age"":21,""height"":64,""income"":20300}",
+                @"{""first"":""Estrada"",""last"":""Collins"",""age"":28,""height"":74,""income"":6926}",
+                @"{""first"":""Ursula"",""last"":""Burton"",""age"":26,""height"":66,""income"":32870}",
+                @"{""first"":""Rochelle"",""last"":""Sanders"",""age"":24,""height"":56,""income"":47564}",
+                @"{""first"":""Darcy"",""last"":""Herring"",""age"":27,""height"":52,""income"":67436}",
+                @"{""first"":""Carole"",""last"":""Booth"",""age"":34,""height"":60,""income"":50177}",
+                @"{""first"":""Cruz"",""last"":""Russell"",""age"":25,""height"":52,""income"":95072}",
+                @"{""first"":""Wilma"",""last"":""Robbins"",""age"":36,""height"":50,""income"":53008}",
+                @"{""first"":""Mcdaniel"",""last"":""Barlow"",""age"":21,""height"":78,""income"":85441}",
+                @"{""first"":""Leann"",""last"":""Blackwell"",""age"":40,""height"":79,""income"":900}",
+                @"{""first"":""Hoffman"",""last"":""Hoffman"",""age"":31,""height"":76,""income"":1208}",
+                @"{""first"":""Pittman"",""last"":""Shepherd"",""age"":35,""height"":61,""income"":26887}",
+                @"{""first"":""Wright"",""last"":""Rojas"",""age"":35,""height"":73,""income"":76487}",
+                @"{""first"":""Lynne"",""last"":""Waters"",""age"":27,""height"":60,""income"":22926}",
+                @"{""first"":""Corina"",""last"":""Shelton"",""age"":29,""height"":78,""income"":67379}",
+                @"{""first"":""Alvarez"",""last"":""Barr"",""age"":29,""height"":59,""income"":34698}",
+                @"{""first"":""Melinda"",""last"":""Mccoy"",""age"":24,""height"":63,""income"":69811}",
+                @"{""first"":""Chelsea"",""last"":""Bolton"",""age"":20,""height"":63,""income"":47698}",
+                @"{""first"":""English"",""last"":""Ingram"",""age"":28,""height"":50,""income"":94977}",
+                @"{""first"":""Vance"",""last"":""Thomas"",""age"":30,""height"":49,""income"":67638}",
+                @"{""first"":""Howell"",""last"":""Joyner"",""age"":34,""height"":78,""income"":65547}",
+                @"{""first"":""Ofelia"",""last"":""Chapman"",""age"":23,""height"":82,""income"":85049}",
+                @"{""first"":""Downs"",""last"":""Adams"",""age"":28,""height"":76,""income"":19373}",
+                @"{""first"":""Terrie"",""last"":""Bryant"",""age"":32,""height"":55,""income"":79024}",
+                @"{""first"":""Jeanie"",""last"":""Carson"",""age"":26,""height"":52,""income"":68293}",
+                @"{""first"":""Hazel"",""last"":""Bean"",""age"":40,""height"":70,""income"":46028}",
+                @"{""first"":""Dominique"",""last"":""Norman"",""age"":25,""height"":50,""income"":59445}",
+                @"{""first"":""Lyons"",""last"":""Patterson"",""age"":36,""height"":64,""income"":71748}",
+                @"{""first"":""Catalina"",""last"":""Cantrell"",""age"":30,""height"":78,""income"":16999}",
+                @"{""first"":""Craft"",""last"":""Head"",""age"":30,""height"":49,""income"":10542}",
+                @"{""first"":""Suzanne"",""last"":""Gilliam"",""age"":36,""height"":77,""income"":7511}",
+                @"{""first"":""Pamela"",""last"":""Merritt"",""age"":30,""height"":81,""income"":80653}",
+                @"{""first"":""Haynes"",""last"":""Ayala"",""age"":38,""height"":65,""income"":85832}",
+                @"{""first"":""Teri"",""last"":""Martin"",""age"":40,""height"":83,""income"":27839}",
+                @"{""first"":""Susanne"",""last"":""Short"",""age"":25,""height"":57,""income"":48957}",
+                @"{""first"":""Rosalie"",""last"":""Camacho"",""age"":24,""height"":83,""income"":30313}",
+                @"{""first"":""Walls"",""last"":""Bray"",""age"":28,""height"":74,""income"":21616}",
+                @"{""first"":""Norris"",""last"":""Bates"",""age"":23,""height"":59,""income"":13631}",
+                @"{""first"":""Wendy"",""last"":""King"",""age"":38,""height"":48,""income"":19845}",
+                @"{""first"":""Deena"",""last"":""Ramsey"",""age"":20,""height"":66,""income"":49665}",
+                @"{""first"":""Richmond"",""last"":""Meadows"",""age"":36,""height"":59,""income"":43244}",
+                @"{""first"":""Burks"",""last"":""Whitley"",""age"":25,""height"":55,""income"":39974}",
+                @"{""first"":""Gilliam"",""last"":""George"",""age"":37,""height"":82,""income"":47114}",
+                @"{""first"":""Marcy"",""last"":""Harding"",""age"":33,""height"":80,""income"":20316}",
+                @"{""first"":""Curtis"",""last"":""Gomez"",""age"":31,""height"":50,""income"":69085}",
+                @"{""first"":""Lopez"",""last"":""Burt"",""age"":34,""height"":79,""income"":37577}",
+                @"{""first"":""Nell"",""last"":""Nixon"",""age"":37,""height"":58,""income"":67999}",
+                @"{""first"":""Sonja"",""last"":""Lamb"",""age"":37,""height"":53,""income"":92553}",
+                @"{""first"":""Owens"",""last"":""Fischer"",""age"":40,""height"":48,""income"":75199}",
+                @"{""first"":""Ortega"",""last"":""Padilla"",""age"":28,""height"":55,""income"":29126}",
+                @"{""first"":""Stacie"",""last"":""Velez"",""age"":20,""height"":56,""income"":45292}",
+                @"{""first"":""Brennan"",""last"":""Craig"",""age"":38,""height"":65,""income"":37445}"
+            };
+
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition,
+                documents,
+                this.TestNonValueAggregates);
+        }
+
+        private async Task TestNonValueAggregates(
+            Container container,
+            IEnumerable<Document> documents)
+        {
+            IEnumerable<JToken> documentsAsJTokens = documents.Select(document => JToken.FromObject(document));
+
+            // ------------------------------------------
+            // Positive
+            // ------------------------------------------
+
+            List<Tuple<string, JToken>> queryAndExpectedAggregation = new List<Tuple<string, JToken>>()
+            {
+                // ------------------------------------------
+                // Simple Aggregates without a value
+                // ------------------------------------------
+
+                new Tuple<string, JToken>(
+                    "SELECT SUM(c.age) FROM c",
+                    new JObject
+                    {
+                        {
+                            "$1",
+                            documentsAsJTokens.Sum(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT COUNT(c.age) FROM c",
+                    new JObject
+                    {
+                        {
+                            "$1",
+                            documentsAsJTokens.Where(document => document["age"] != null).Count()
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT MIN(c.age) FROM c",
+                    new JObject
+                    {
+                        {
+                            "$1",
+                            documentsAsJTokens.Min(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT MAX(c.age) FROM c",
+                    new JObject
+                    {
+                        {
+                            "$1",
+                            documentsAsJTokens.Max(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT AVG(c.age) FROM c",
+                    new JObject
+                    {
+                        {
+                            "$1",
+                            documentsAsJTokens.Average(document => document["age"].Value<double>())
+                        }
+                    }),
+                
+                // ------------------------------------------
+                // Simple aggregates with alias
+                // ------------------------------------------
+
+                new Tuple<string, JToken>(
+                    "SELECT SUM(c.age) as sum_age FROM c",
+                    new JObject
+                    {
+                        {
+                            "sum_age",
+                            documentsAsJTokens.Sum(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT COUNT(c.age) as count_age FROM c",
+                    new JObject
+                    {
+                        {
+                            "count_age",
+                            documentsAsJTokens.Where(document => document["age"] != null).Count()
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT MIN(c.age) as min_age FROM c",
+                    new JObject
+                    {
+                        {
+                            "min_age",
+                            documentsAsJTokens.Min(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT MAX(c.age) as max_age FROM c",
+                    new JObject
+                    {
+                        {
+                            "max_age",
+                            documentsAsJTokens.Max(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT AVG(c.age) as avg_age FROM c",
+                    new JObject
+                    {
+                        {
+                            "avg_age",
+                            documentsAsJTokens.Average(document => document["age"].Value<double>())
+                        }
+                    }),
+                
+                // ------------------------------------------
+                // Multiple Aggregates without alias
+                // ------------------------------------------
+
+                new Tuple<string, JToken>(
+                    "SELECT MIN(c.age), MAX(c.age) FROM c",
+                    new JObject
+                    {
+                        {
+                            "$1",
+                            documentsAsJTokens.Min(document => document["age"].Value<double>())
+                        },
+                        {
+                            "$2",
+                            documentsAsJTokens.Max(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                // ------------------------------------------
+                // Multiple Aggregates with alias
+                // ------------------------------------------
+
+                new Tuple<string, JToken>(
+                    "SELECT MIN(c.age) as min_age, MAX(c.age) as max_age FROM c",
+                    new JObject
+                    {
+                        {
+                            "min_age",
+                            documentsAsJTokens.Min(document => document["age"].Value<double>())
+                        },
+                        {
+                            "max_age",
+                            documentsAsJTokens.Max(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                // ------------------------------------------
+                // Multiple Aggregates with and without alias
+                // ------------------------------------------
+
+                new Tuple<string, JToken>(
+                    "SELECT MIN(c.age), MAX(c.age) as max_age FROM c",
+                    new JObject
+                    {
+                        {
+                            "$1",
+                            documentsAsJTokens.Min(document => document["age"].Value<double>())
+                        },
+                        {
+                            "max_age",
+                            documentsAsJTokens.Max(document => document["age"].Value<double>())
+                        }
+                    }),
+
+                new Tuple<string, JToken>(
+                    "SELECT MIN(c.age) as min_age, MAX(c.age) FROM c",
+                    new JObject
+                    {
+                        {
+                            "min_age",
+                            documentsAsJTokens.Min(document => document["age"].Value<double>())
+                        },
+                        {
+                            "$1",
+                            documentsAsJTokens.Max(document => document["age"].Value<double>())
+                        }
+                    }),
+            };
+
+            // Test query correctness.
+            foreach ((string query, JToken expectedAggregation) in queryAndExpectedAggregation)
+            {
+                foreach (int maxItemCount in new int[] { 1, 5, 10 })
+                {
+                    List<JToken> actual = await QueryWithoutContinuationTokens<JToken>(
+                        container: container,
+                        query: query,
+                        maxConcurrency: 100,
+                        maxItemCount: maxItemCount,
+                        queryRequestOptions: new QueryRequestOptions()
+                        {
+                            MaxBufferedItemCount = 100,
+                        });
+
+                    Assert.AreEqual(1, actual.Count());
+
+                    Assert.IsTrue(
+                       JsonTokenEqualityComparer.Value.Equals(actual.First(), expectedAggregation),
+                       $"Results did not match for query: {query} with maxItemCount: {maxItemCount}" +
+                       $"Actual: {JsonConvert.SerializeObject(actual.First())}" +
+                       $"Expected: {JsonConvert.SerializeObject(expectedAggregation)}");
+                }
+            }
+
+            // ------------------------------------------
+            // Negative
+            // ------------------------------------------
+
+            List<string> notSupportedQueries = new List<string>()
+            {
+                "SELECT MIN(c.age) + MAX(c.age) FROM c",
+                "SELECT MIN(c.age) / 2 FROM c",
+            };
+
+            foreach (string query in notSupportedQueries)
+            {
+                try
+                {
+                    List<JToken> actual = await QueryWithoutContinuationTokens<JToken>(
+                        container: container,
+                        query: query,
+                        maxConcurrency: 100,
+                        queryRequestOptions: new QueryRequestOptions()
+                        {
+                            MaxBufferedItemCount = 100,
+                        });
+
+                    Assert.Fail("Expected Query To Fail");
+                }
+                catch (Exception)
+                {
+                    // Do Nothing
+                }
+            }
         }
 
         [TestMethod]
@@ -2982,7 +3301,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 documents.Add(JsonConvert.SerializeObject(person));
             }
 
-            await CreateIngestQueryDelete(
+            await this.CreateIngestQueryDelete(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
@@ -3856,6 +4175,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         documentsAsJTokens
                             .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
                             .Select(grouping => grouping.Key)),
+
+                // ------------------------------------------
+                // Corner Cases
+                // ------------------------------------------
+
+                new Tuple<string, IEnumerable<JToken>>(
+                    "SELECT AVG(\"asdf\") as avg_asdf FROM c GROUP BY c.age",
+                        documentsAsJTokens
+                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
+                            .Select(grouping => new JObject())),
+
+                new Tuple<string, IEnumerable<JToken>>(
+                    @"SELECT 
+                        c.age, 
+                        AVG(c.doesNotExist) as undefined_avg,
+                        MIN(c.doesNotExist) as undefined_min,
+                        MAX(c.doesNotExist) as undefined_max,
+                        COUNT(c.doesNotExist) as undefined_count,
+                        SUM(c.doesNotExist) as undefined_sum
+                    FROM c 
+                    GROUP BY c.age",
+                        documentsAsJTokens
+                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
+                            .Select(grouping => new JObject(
+                                new JProperty("age", grouping.Key),
+                                // sum and count default the counter at 0
+                                new JProperty("undefined_sum", 0),
+                                new JProperty("undefined_count", 0)))),
+
+                new Tuple<string, IEnumerable<JToken>>(
+                    @"SELECT 
+                        c.age, 
+                        c.doesNotExist
+                    FROM c 
+                    GROUP BY c.age, c.doesNotExist",
+                        documentsAsJTokens
+                            .GroupBy(document => new JObject(
+                                new JProperty("age", document["age"]),
+                                new JProperty("doesNotExist", document["doesNotExist"])),
+                                JsonTokenEqualityComparer.Value)
+                            .Select(grouping => new JObject(
+                                new JProperty("age", grouping.Key["age"])))),
             };
 
             // Test query correctness.
@@ -3875,12 +4236,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxItemCount = maxItemCount,
                             MaxBufferedItemCount = 100,
                         });
+
                     HashSet<JToken> actualSet = new HashSet<JToken>(actual, JsonTokenEqualityComparer.Value);
-                    Assert.AreEqual(actualSet.Count, actual.Count);
 
                     List<JToken> expected = expectedResults.ToList();
                     HashSet<JToken> expectedSet = new HashSet<JToken>(expected, JsonTokenEqualityComparer.Value);
-                    Assert.AreEqual(expectedSet.Count, expected.Count);
 
                     Assert.IsTrue(
                        actualSet.SetEquals(expectedSet),

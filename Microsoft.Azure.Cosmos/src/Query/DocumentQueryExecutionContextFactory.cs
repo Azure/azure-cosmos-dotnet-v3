@@ -12,11 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Factory class for creating the appropriate DocumentQueryExecutionContext for the provided type of query.
@@ -105,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     partitionKeyDefinition: collection.PartitionKey,
                     requireFormattableOrderByQuery: true,
                     isContinuationExpected: isContinuationExpected,
-                    allowNonValueAggregateQuery: false,
+                    allowNonValueAggregateQuery: true,
                     hasLogicalPartitionKey: feedOptions.PartitionKey != null,
                     cancellationToken: token);
 
@@ -122,84 +119,12 @@ namespace Microsoft.Azure.Cosmos.Query
                         collection,
                         feedOptions);
 
-                    return await CreateSpecializedDocumentQueryExecutionContextAsync(
-                        constructorParams,
-                        partitionedQueryExecutionInfo,
-                        targetRanges,
-                        collection.ResourceId,
-                        isContinuationExpected,
-                        token);
+                    // Devnote this will get replace by the new v3 to v2 logic
+                    throw new NotSupportedException("v2 query excution context is currently not supported.");
                 }
             }
 
             return queryExecutionContext;
-        }
-
-        public static async Task<IDocumentQueryExecutionContext> CreateSpecializedDocumentQueryExecutionContextAsync(
-            DocumentQueryExecutionContextBase.InitParams constructorParams,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<PartitionKeyRange> targetRanges,
-            string collectionRid,
-            bool isContinuationExpected,
-            CancellationToken cancellationToken)
-        {
-            // Figure out the optimal page size.
-            long initialPageSize = constructorParams.FeedOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalPageSize);
-
-            if (initialPageSize < -1 || initialPageSize == 0)
-            {
-                throw new BadRequestException(string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
-            }
-
-            QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
-
-            bool getLazyFeedResponse = queryInfo.HasTop;
-
-            // We need to compute the optimal initial page size for order-by queries
-            if (queryInfo.HasOrderBy)
-            {
-                int top;
-                if (queryInfo.HasTop && (top = partitionedQueryExecutionInfo.QueryInfo.Top.Value) > 0)
-                {
-                    // All partitions should initially fetch about 1/nth of the top value.
-                    long pageSizeWithTop = (long)Math.Min(
-                        Math.Ceiling(top / (double)targetRanges.Count) * PageSizeFactorForTop,
-                        top);
-
-                    if (initialPageSize > 0)
-                    {
-                        initialPageSize = Math.Min(pageSizeWithTop, initialPageSize);
-                    }
-                    else
-                    {
-                        initialPageSize = pageSizeWithTop;
-                    }
-                }
-                else if (isContinuationExpected)
-                {
-                    if (initialPageSize < 0)
-                    {
-                        // Max of what the user is willing to buffer and the default (note this is broken if MaxBufferedItemCount = -1)
-                        initialPageSize = Math.Max(constructorParams.FeedOptions.MaxBufferedItemCount, ParallelQueryConfig.GetConfig().DefaultMaximumBufferSize);
-                    }
-
-                    initialPageSize = (long)Math.Min(
-                        Math.Ceiling(initialPageSize / (double)targetRanges.Count) * PageSizeFactorForTop,
-                        initialPageSize);
-                }
-            }
-
-            Debug.Assert(initialPageSize > 0 && initialPageSize <= int.MaxValue,
-                string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
-
-            return await PipelinedDocumentQueryExecutionContext.CreateDocumentQueryExecutionContextAsync(
-                constructorParams,
-                collectionRid,
-                partitionedQueryExecutionInfo,
-                targetRanges,
-                (int)initialPageSize,
-                constructorParams.FeedOptions.RequestContinuationToken,
-                cancellationToken);
         }
 
         /// <summary>

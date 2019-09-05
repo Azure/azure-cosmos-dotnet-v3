@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryContext
     {
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CorrelatedActivityId = correlatedActivityId;
         }
 
-        internal virtual Task<QueryResponse> ExecuteQueryAsync(
+        internal virtual Task<QueryResponseCore> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -92,7 +91,6 @@ namespace Microsoft.Azure.Cosmos.Query
                            resourceUri: this.ResourceLink,
                            resourceType: this.ResourceTypeEnum,
                            operationType: this.OperationTypeEnum,
-                           containerResourceId: this.ContainerResourceId,
                            requestOptions: requestOptions,
                            sqlQuerySpec: querySpecForInit,
                            continuationToken: continuationToken,

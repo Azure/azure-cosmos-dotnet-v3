@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System.Collections.Generic;
+    using System.Linq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -108,7 +109,17 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             get
             {
-                return this.Aggregates != null && this.Aggregates.Length > 0;
+                bool aggregatesListNonEmpty = (this.Aggregates != null) && (this.Aggregates.Length > 0);
+                if (aggregatesListNonEmpty)
+                {
+                    return true;
+                }
+
+                bool aggregateAliasMappingNonEmpty = (this.GroupByAliasToAggregateType != null)
+                    && this.GroupByAliasToAggregateType
+                        .Values
+                        .Any(aggregateOperator => aggregateOperator.HasValue);
+                return aggregateAliasMappingNonEmpty;
             }
         }
 

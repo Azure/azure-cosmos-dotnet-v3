@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Test
             Assert.AreEqual(true, task.IsCompleted);
             Assert.AreEqual(false, delayedTask.IsCompleted);
             Assert.AreEqual(0, scheduler.CurrentRunningTaskCount);
-            await Task.Delay(200);
+            await Task.Delay(60);
             Assert.AreEqual(true, delayedTask.IsCompleted);
         }
 

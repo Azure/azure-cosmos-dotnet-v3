@@ -9,6 +9,7 @@
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
+    [TestCategory("Windows")]
     [TestClass]
     public class ContractEnforcement
     {
@@ -79,7 +80,7 @@
             IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName);
             foreach (Type subclassType in subclassTypes)
             {
-                root.Subclasses[subclassType.Name] = (ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types));
+                root.Subclasses[subclassType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types);
             }
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
@@ -110,7 +111,7 @@
 
             foreach (Type nestedType in root.Type.GetNestedTypes().OrderBy(o => o.FullName))
             {
-                root.NestedTypes[nestedType.Name] = (ContractEnforcement.BuildTypeTree(new TypeTree(nestedType), types));
+                root.NestedTypes[nestedType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(nestedType), types);
             }
 
             return root;

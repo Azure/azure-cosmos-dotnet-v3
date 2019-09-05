@@ -24,8 +24,8 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan cumulativeRetryDelay;
 
         public ResourceThrottleRetryPolicy(
-            int maxAttemptCount, 
-            int maxWaitTimeInSeconds = DefaultMaxWaitTimeInSeconds, 
+            int maxAttemptCount,
+            int maxWaitTimeInSeconds = DefaultMaxWaitTimeInSeconds,
             uint backoffDelayFactor = 1)
         {
             if (maxWaitTimeInSeconds > int.MaxValue / 1000)
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"></param>
         /// <returns>True indicates caller should retry, False otherwise</returns>
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            Exception exception, 
+            Exception exception,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="retryDelay">retryDelay</param>
         /// <returns>True if the exception is retriable; False otherwise</returns>
         private bool CheckIfRetryNeeded(
-            TimeSpan? retryAfter, 
+            TimeSpan? retryAfter,
             out TimeSpan retryDelay)
         {
             retryDelay = TimeSpan.Zero;
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
 
             return false;
         }
-        
+
         private bool IsValidThrottleStatusCode(HttpStatusCode? statusCode)
         {
             return statusCode.HasValue && (int)statusCode.Value == (int)StatusCodes.TooManyRequests;

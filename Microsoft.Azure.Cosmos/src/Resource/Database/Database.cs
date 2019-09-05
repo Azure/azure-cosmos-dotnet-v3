@@ -243,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId"];
+        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId");
         /// DatabaseResponse response = await db.GetContainer("testcontainer");
         /// ]]>
         /// </code>
@@ -498,6 +498,90 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
+        /// Returns a reference to a user object.
+        /// </summary>
+        /// <param name="id">The cosmos user id.</param>
+        /// <returns>Cosmos user reference</returns>
+        /// <remarks>
+        /// Returns a User reference. Reference doesn't guarantees existence.
+        /// Please ensure user already exists or is created through a create operation.
+        /// </remarks>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId");
+        /// User user = await db.GetUser("userId");
+        /// UserResponse response = await user.ReadAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract User GetUser(string id);
+
+        /// <summary>
+        /// Creates a user as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="id">The cosmos user id</param>
+        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new user.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>409</term><description>Conflict - This means a <see cref="UserProperties"/> with an id matching the id you supplied already existed.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// UserResponse response = await this.cosmosDatabase.CreateUserAsync(Guid.NewGuid().ToString());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<UserResponse> CreateUserAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// Upserts a user as an asynchronous operation in the Azure Cosmos service.
+        /// </summary>
+        /// <param name="id">The cosmos user id.</param>
+        /// <param name="requestOptions">(Optional) The options for the user request <see cref="RequestOptions"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="UserResponse"/> which wraps a <see cref="UserProperties"/> containing the read resource record.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="id"/> is not set.</exception>
+        /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a user are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>400</term><description>BadRequest - This means something was wrong with the request supplied. It is likely that an id was not supplied for the new user.</description>
+        ///     </item>
+        /// </list>
+        /// </exception>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// UserResponse response = await this.cosmosDatabase.UpsertUserAsync(Guid.NewGuid().ToString());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<UserResponse> UpsertUserAsync(string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
         /// This method creates a query for containers under an database using a SQL statement. It returns a FeedIterator.
         /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
         /// </summary>
@@ -609,8 +693,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="QueryRequestOptions"/></param>
-                /// <returns>An iterator to go through the containers</returns>
-            /// <example>
+        /// <returns>An iterator to go through the containers</returns>
+        /// <example>
         /// 1. This create the stream feed iterator for containers with queryText as input.
         /// <code language="c#">
         /// <![CDATA[
@@ -639,6 +723,76 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract FeedIterator GetContainerQueryStreamIterator(
             string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for users under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryText">The cosmos SQL query text.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the users</returns>
+        /// <example>
+        /// 1. This create the type feed iterator for users with queryText as input,
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.id like '%testId%'";
+        /// FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<UserProperties>(queryText);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<UserProperties> iterator = await feedIterator.ReadNextAsync(this.cancellationToken);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <example>
+        /// 2. This create the type feed iterator for users without queryText, retrieving all users.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<ContainerProperties>();
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<UserProperties> iterator =
+        ///     await feedIterator.ReadNextAsync(this.cancellationToken);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator<T> GetUserQueryIterator<T>(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
+        /// This method creates a query for users under an database using a SQL statement. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        /// </summary>
+        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) The options for the user query request <see cref="QueryRequestOptions"/></param>
+        /// <returns>An iterator to go through the users</returns>
+        /// <example>
+        /// This create the type feed iterator for users with queryDefinition as input.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string queryText = "SELECT * FROM c where c.id like @testId";
+        /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
+        /// queryDefinition.WithParameter("@testId", "testUserId");
+        /// FeedIterator<UserProperties> resultSet = this.cosmosDatabase.GetUserQueryIterator<UserProperties>(queryDefinition);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     foreach (UserProperties properties in await feedIterator.ReadNextAsync())
+        ///     {
+        ///         Console.WriteLine(properties.Id);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract FeedIterator<T> GetUserQueryIterator<T>(
+            QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 

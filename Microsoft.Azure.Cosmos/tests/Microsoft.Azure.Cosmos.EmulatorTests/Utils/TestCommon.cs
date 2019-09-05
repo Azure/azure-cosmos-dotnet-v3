@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
 
-            return new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, accountKey: accountInfo.authKey);
+            return new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
         }
 
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
@@ -77,9 +77,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return cosmosClientBuilder.Build();
         }
 
-        internal static CosmosClient CreateCosmosClient(CosmosClientOptions clientOptions)
+        internal static CosmosClient CreateCosmosClient(CosmosClientOptions clientOptions, string resourceToken = null)
         {
-            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string authKey = resourceToken ?? ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
             return new CosmosClient(endpoint, authKey, clientOptions);
@@ -669,8 +669,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 for (int j = 0; j < 100; j++)
                 {
-                    sb.Append("{\"id\":\"documentId" + (100 * i + j));
-                    sb.Append("\",\"partitionKey\":" + (100 * i + j));
+                    sb.Append("{\"id\":\"documentId" + ((100 * i) + j));
+                    sb.Append("\",\"partitionKey\":" + ((100 * i) + j));
                     for (int k = 1; k < 20; k++)
                     {
                         sb.Append(",\"field_" + k + "\":" + random.Next(100000));

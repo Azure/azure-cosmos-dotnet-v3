@@ -114,7 +114,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             Mock<Database> mockContainers = new Mock<Database>();
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
+#pragma warning disable CS0612 // Type or member is obsolete
                     It.Is<ContainerProperties>((settings) => settings.TimeToLivePropertyPath.Equals(path)),
+#pragma warning restore CS0612 // Type or member is obsolete
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
@@ -134,7 +136,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .CreateAsync();
 
             mockContainers.Verify(c => c.CreateContainerAsync(
+#pragma warning disable CS0612 // Type or member is obsolete
                     It.Is<ContainerProperties>((settings) => settings.TimeToLivePropertyPath.Equals(path)),
+#pragma warning restore CS0612 // Type or member is obsolete
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()), Times.Once);
@@ -287,8 +291,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: new MockDocumentClient(),
-                documentQueryClient: null);
+                documentClient: new MockDocumentClient());
         }
     }
 }

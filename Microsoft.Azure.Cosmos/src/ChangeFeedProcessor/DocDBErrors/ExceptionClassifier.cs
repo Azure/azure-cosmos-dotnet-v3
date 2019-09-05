@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors
     internal static class ExceptionClassifier
     {
         public static DocDbError ClassifyStatusCodes(
-            HttpStatusCode statusCode, 
+            HttpStatusCode statusCode,
             int subStatusCode)
         {
             if (statusCode == HttpStatusCode.Gone && (subStatusCode == (int)SubStatusCodes.PartitionKeyRangeGone || subStatusCode == (int)SubStatusCodes.CompletingSplit))

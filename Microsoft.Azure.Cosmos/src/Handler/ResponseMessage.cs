@@ -109,6 +109,11 @@ namespace Microsoft.Azure.Cosmos
         public virtual RequestMessage RequestMessage { get; internal set; }
 
         /// <summary>
+        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
+        /// </summary>
+        public CosmosDiagnostics Diagnostics { get; set; }
+
+        /// <summary>
         /// Gets the internal error object.
         /// </summary>
         internal virtual Error Error { get; set; }
@@ -131,6 +136,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.IsSuccessStatusCode)
             {
+                this.EnsureErrorMessage();
                 string message = $"Response status code does not indicate success: {(int)this.StatusCode} Substatus: {(int)this.Headers.SubStatusCode} Reason: ({this.ErrorMessage}).";
 
                 throw new CosmosException(
@@ -154,10 +160,10 @@ namespace Microsoft.Azure.Cosmos
         {
             string resourceLink = this.RequestMessage?.RequestUri.OriginalString;
             if (PathsHelper.TryParsePathSegments(
-                resourceLink, 
-                out bool isFeed, 
-                out string resourceTypeString, 
-                out string resourceIdOrFullName, 
+                resourceLink,
+                out bool isFeed,
+                out string resourceTypeString,
+                out string resourceIdOrFullName,
                 out bool isNameBased))
             {
                 Debug.Assert(resourceIdOrFullName != null);
@@ -195,6 +201,45 @@ namespace Microsoft.Azure.Cosmos
             if (this.disposed)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
+            }
+        }
+
+        private void EnsureErrorMessage()
+        {
+            if (this.Error != null
+                || !string.IsNullOrEmpty(this.ErrorMessage))
+            {
+                return;
+            }
+
+            if (this.content != null
+                && this.content.CanRead)
+            {
+                try
+                {
+                    Error error = Resource.LoadFrom<Error>(this.content);
+                    if (error != null)
+                    {
+                        // Error format is not consistent across modes
+                        if (!string.IsNullOrEmpty(error.Message))
+                        {
+                            this.ErrorMessage = error.Message;
+                        }
+                        else
+                        {
+                            this.ErrorMessage = error.ToString();
+                        }
+                    }
+                }
+                catch (Newtonsoft.Json.JsonReaderException)
+                {
+                    // Content is not Json
+                    this.content.Position = 0;
+                    using (StreamReader streamReader = new StreamReader(this.content))
+                    {
+                        this.ErrorMessage = streamReader.ReadToEnd();
+                    }
+                }
             }
         }
     }

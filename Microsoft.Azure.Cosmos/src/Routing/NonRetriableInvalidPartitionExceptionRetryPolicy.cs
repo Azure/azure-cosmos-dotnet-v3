@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            ResponseMessage cosmosResponseMessage, 
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             // Its used by query/feed and are not yet needed.

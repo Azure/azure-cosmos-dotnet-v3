@@ -1948,7 +1948,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         //Query metrics are not on by default anymore, but turned on hin Feed options. This to be quarantined until a recent FI from master to direct and sdk is completed
-        [TestCategory("Quarantine")]
+        [Ignore] // Need to use v3 pipeline
         [TestMethod]
         public void TestQueryMetricsHeaders()
         {
@@ -2117,6 +2117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreNotEqual(TimeSpan.Zero, queryMetrics.IndexLookupTime);
         }
 
+        [Ignore] // Need to use v3 pipeline
         [TestMethod]
         public void TestMaxDegreeOfParallelism()
         {
@@ -2137,6 +2138,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 inputOutputMaxDops);
         }
 
+        [Ignore] // Need to use v3 pipeline
         [TestMethod]
         public void TestMaxBufferedItemCount()
         {
@@ -2157,6 +2159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 inputOutputMaxBufferedItemCounts);
         }
 
+        [Ignore] // Need to use v3 pipeline
         [TestMethod]
         public void TestMaxItemCount()
         {

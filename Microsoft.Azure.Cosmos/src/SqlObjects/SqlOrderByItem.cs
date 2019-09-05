@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Text;
 
     internal sealed class SqlOrderByItem : SqlObject
     {
@@ -41,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             visitor.Visit(this);
         }
-        
+
         public override TResult Accept<TResult>(SqlObjectVisitor<TResult> visitor)
         {
             return visitor.Visit(this);

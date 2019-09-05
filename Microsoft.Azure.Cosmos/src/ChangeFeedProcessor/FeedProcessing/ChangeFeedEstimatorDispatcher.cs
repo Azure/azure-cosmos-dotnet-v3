@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly ChangesEstimationHandler dispatchEstimation;
 
         public ChangeFeedEstimatorDispatcher(
-            ChangesEstimationHandler dispatchEstimation, 
+            ChangesEstimationHandler dispatchEstimation,
             TimeSpan? estimationPeriod = null)
         {
             this.dispatchEstimation = dispatchEstimation;
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         public TimeSpan? DispatchPeriod { get; private set; }
 
         public async Task DispatchEstimationAsync(
-            long estimation, 
+            long estimation,
             CancellationToken cancellationToken)
         {
             try

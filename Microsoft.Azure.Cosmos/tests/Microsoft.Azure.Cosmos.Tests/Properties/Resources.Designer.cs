@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
     using System.Diagnostics;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Documents;
 
 
     /// <summary>
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PartitionRoutingHelper_ExtractPartitionKeyRangeFromHeaders {
             get {
-                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PartitionRoutingHelper.ExtractPartitionKeyRangeFromHeaders.json");
+                string fileContent = File.ReadAllText(Resources.GetNormalizedFile(@"Routing\resources\BaselineTest.PartitionRoutingHelper.ExtractPartitionKeyRangeFromHeaders.json"));
                 return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PartitionRoutingHelper_GetPartitionRoutingInfo {
             get {
-                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PartitionRoutingHelper.GetPartitionRoutingInfo.json");
+                string fileContent = File.ReadAllText(Resources.GetNormalizedFile(@"Routing\resources\BaselineTest.PartitionRoutingHelper.GetPartitionRoutingInfo.json"));
                 return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PartitionSchemes {
             get {
-                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PartitionSchemes.json");
+                string fileContent = File.ReadAllText(Resources.GetNormalizedFile(@"Routing\resources\BaselineTest.PartitionSchemes.json"));
                 return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
@@ -118,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PathParser {
             get {
-                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PathParser.json");
+                string fileContent = File.ReadAllText(Resources.GetNormalizedFile(@"Routing\resources\BaselineTest.PathParser.json"));
                 return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Properties {
         /// </summary>
         internal static byte[] BaselineTest_PathParser_Extra {
             get {
-                string fileContent = File.ReadAllText(@"Routing\resources\BaselineTest.PathParser.Extra.json");
+                string fileContent = File.ReadAllText(Resources.GetNormalizedFile(@"Routing\resources\BaselineTest.PathParser.Extra.json"));
                 return Encoding.UTF8.GetBytes((string)fileContent);
             }
         }
@@ -161,6 +162,16 @@ namespace Microsoft.Azure.Cosmos.Properties {
                 object obj = ResourceManager.GetObject("BaselineTest_QueryPartitionProvider_Error", resourceCulture);
                 return ((byte[])(obj));
             }
+        }
+
+        private static string GetNormalizedFile(string filewithPath)
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
+            {
+                return filewithPath.Replace("\\", "/");
+            }
+
+            return filewithPath;
         }
     }
 }

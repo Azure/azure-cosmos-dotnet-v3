@@ -8,14 +8,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Net.Http;
     using System.Threading.Tasks;
     using Linq;
     using Microsoft.Azure.Cosmos.Utils;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("Emulator")]
@@ -30,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private const string VSTSContainerHostEnvironmentName = "COSMOSDBEMULATOR_ENDPOINT";
 
-        private DocumentClient client;
+        private CosmosClient client;
 
         static SmokeTests()
         {
@@ -45,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void AssembliesExist()
         {
-            Assert.IsTrue(ServiceInteropWrapper.AssembliesExist.Value);
+            Assert.IsTrue(Documents.ServiceInteropWrapper.AssembliesExist.Value);
         }
 
         /// <summary>
@@ -54,116 +52,114 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Ignore]
         [TestMethod]
         public void ByPassQueryParsing()
-        {            
-            if(IntPtr.Size == 8)
+        {
+            if (IntPtr.Size == 8)
             {
-                Assert.IsFalse(CustomTypeExtensions.ByPassQueryParsing());
+                Assert.IsFalse(Documents.CustomTypeExtensions.ByPassQueryParsing());
             }
             else
             {
-                Assert.IsTrue(CustomTypeExtensions.ByPassQueryParsing());
+                Assert.IsTrue(Documents.CustomTypeExtensions.ByPassQueryParsing());
             }
         }
 
         [TestMethod]
         public async Task DocumentInsertsTest_GatewayHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Protocol.Https);
+            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Documents.Client.Protocol.Https);
             await this.DocumentInsertsTest();
         }
 
         [TestMethod]
         public async Task DocumentInsertsTest_DirectHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Https);
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
             await this.DocumentInsertsTest();
         }
 
         [TestMethod]
         public async Task DocumentInsertsTest_DirectTcp()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Tcp);
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Tcp);
             await this.DocumentInsertsTest();
         }
 
         private async Task DocumentInsertsTest()
-        {   
-            await this.client.CreateDatabaseIfNotExistsAsync(new Database() { Id = DatabaseName });
-            this.CreatePartitionedCollectionIfNotExists(DatabaseName, PartitionedCollectionName);
+        {
+            Database database = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
+            Container container = await this.CreatePartitionedCollectionIfNotExists(database, PartitionedCollectionName);
 
             Uri documentCollectionUri = UriFactory.CreateDocumentCollectionUri(DatabaseName, PartitionedCollectionName);
 
             for (int i = 0; i < 2; i++)
             {
                 string id = i.ToString();
-                await this.client.CreateDocumentAsync(documentCollectionUri, new Person() { Id = id, FirstName = "James", LastName = "Smith" });
+                await container.CreateItemAsync(new Person() { Id = id, FirstName = "James", LastName = "Smith" });
             }
 
-            var query =
-                this.client.CreateDocumentQuery<Document>(documentCollectionUri, "SELECT * FROM coll",
-                    new FeedOptions() { EnableCrossPartitionQuery = true })
-                    .AsEnumerable();
+            IOrderedQueryable<dynamic> query =
+                container.GetItemLinqQueryable<dynamic>(allowSynchronousQueryExecution: true);
 
             Assert.AreEqual(query.ToList().Count, 2);
 
-            await this.CleanupDocumentCollection(documentCollectionUri);
+            await this.CleanupDocumentCollection(container);
         }
 
         [TestMethod]
         public async Task QueryWithPaginationTest_GatewayHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Protocol.Https);
+            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Documents.Client.Protocol.Https);
             await this.QueryWithPagination();
         }
 
         [TestMethod]
         public async Task QueryWithPaginationTest_DirectHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Https);
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
             await this.QueryWithPagination();
         }
 
         [TestMethod]
         public async Task QueryWithPaginationTest_DirectTcp()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Tcp);
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Tcp);
             await this.QueryWithPagination();
         }
 
         private async Task QueryWithPagination()
         {
-            await this.client.CreateDatabaseIfNotExistsAsync(new Database() { Id = DatabaseName });
-            this.CreatePartitionedCollectionIfNotExists(DatabaseName, PartitionedCollectionName);
+            Database database = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
+            Container container = await this.CreatePartitionedCollectionIfNotExists(database, PartitionedCollectionName);
 
             Uri documentCollectionUri = UriFactory.CreateDocumentCollectionUri(DatabaseName, PartitionedCollectionName);
 
-            await this.client.UpsertDocumentAsync(documentCollectionUri, new Person() { Id = "1", FirstName = "David", LastName = "Smith"});
-            await this.client.UpsertDocumentAsync(documentCollectionUri, new Person() { Id = "2", FirstName = "Robert", LastName = "Johnson" });
-            await this.client.UpsertDocumentAsync(documentCollectionUri, new Person() { Id = "3", FirstName = "William", LastName = "Smith" });
-            
-            FeedOptions options = new FeedOptions { MaxItemCount = 1, EnableCrossPartitionQuery = true };
-            
-            var smithFamily =
-                this.client.CreateDocumentQuery<Person>(documentCollectionUri, options)
+            await container.UpsertItemAsync<Person>(new Person() { Id = "1", FirstName = "David", LastName = "Smith" });
+            await container.UpsertItemAsync<Person>(new Person() { Id = "2", FirstName = "Robert", LastName = "Johnson" });
+            await container.UpsertItemAsync<Person>(new Person() { Id = "3", FirstName = "William", LastName = "Smith" });
+
+            QueryRequestOptions options = new QueryRequestOptions { MaxItemCount = 1 };
+
+            List<Person> smithFamily =
+                container.GetItemLinqQueryable<Person>(true, null, options)
                     .Where(d => d.LastName == "Smith")
                     .ToList();
 
             Assert.AreEqual(2, smithFamily.Count);
 
-            var persons =
-                this.client.CreateDocumentQuery<Person>(documentCollectionUri, options)
+            List<Person> persons =
+                container.GetItemLinqQueryable<Person>(true, null, options)
                     .ToList();
 
             Assert.AreEqual(3, persons.Count);
 
-            var query = this.client.CreateDocumentQuery<Person>(documentCollectionUri, options);
-            var documentQuery = query.AsDocumentQuery();
+            IOrderedQueryable<Person> query = container.GetItemLinqQueryable<Person>(true, null, options);
+            FeedIterator<Person> documentQuery = query.ToFeedIterator<Person>();
 
             List<Person> personsList = new List<Person>();
 
             while (documentQuery.HasMoreResults)
             {
-                var feedResponse = await documentQuery.ExecuteNextAsync<Person>();
+                FeedResponse<Person> feedResponse = await documentQuery.ReadNextAsync();
                 int maxItemCount = options.MaxItemCount ?? default(int);
                 Assert.IsTrue(feedResponse.Count >= 0 && feedResponse.Count <= maxItemCount);
 
@@ -172,195 +168,179 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(3, personsList.Count);
 
-            await this.CleanupDocumentCollection(documentCollectionUri);
+            await this.CleanupDocumentCollection(container);
         }
 
         [TestMethod]
         public async Task CrossPartitionQueries_GatewayHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Protocol.Https);
+            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Documents.Client.Protocol.Https);
             await this.CrossPartitionQueries();
         }
 
         [TestMethod]
         public async Task CrossPartitionQueries_DirectHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Https);
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
             await this.CrossPartitionQueries();
         }
 
         [TestMethod]
         public async Task CrossPartitionQueries_DirectTcp()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Tcp);
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Tcp);
             await this.CrossPartitionQueries();
         }
 
         private async Task CrossPartitionQueries()
         {
-            await this.client.CreateDatabaseIfNotExistsAsync(new Database() { Id = DatabaseName });
-            this.CreatePartitionedCollectionIfNotExists(DatabaseName, PartitionedCollectionName);
+            Database db = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
+            Container container = await this.CreatePartitionedCollectionIfNotExists(db, PartitionedCollectionName);
 
             Uri documentCollectionUri = UriFactory.CreateDocumentCollectionUri(DatabaseName, PartitionedCollectionName);
 
             for (int i = 0; i < 2; i++)
             {
                 string id = i.ToString();
-                await this.client.CreateDocumentAsync(documentCollectionUri, new Person() { Id = id + Guid.NewGuid().ToString(), FirstName = "James", LastName = "Smith" });
+                await container.CreateItemAsync<Person>(new Person() { Id = id + Guid.NewGuid().ToString(), FirstName = "James", LastName = "Smith" });
             }
 
-            var query =
-                this.client.CreateDocumentQuery<Document>(documentCollectionUri, "SELECT TOP 10 * FROM coll",
-                    new FeedOptions() { EnableCrossPartitionQuery = true })
-                    .AsEnumerable();
-
-            List<Document> list = query.ToList();
-
-            await this.CleanupDocumentCollection(documentCollectionUri);
+            FeedIterator<dynamic> query =
+                container.GetItemQueryIterator<dynamic>("SELECT TOP 10 * FROM coll");
+            List<dynamic> list = new List<dynamic>();
+            while (query.HasMoreResults)
+            {
+                list.AddRange(await query.ReadNextAsync());
+            }
+            
+            await this.CleanupDocumentCollection(container);
         }
 
         [TestMethod]
-        public void CreateDatabaseIfNotExists_GatewayHttps()
+        public async Task CreateDatabaseIfNotExists_GatewayHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Protocol.Https);
-            this.CreateDatabaseIfNotExists();
+            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Documents.Client.Protocol.Https);
+            await this.CreateDatabaseIfNotExists(this.client);
         }
 
         [TestMethod]
-        public void CreateDatabaseIfNotExists_DirectHttps()
+        public async Task CreateDatabaseIfNotExists_DirectHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Https);
-            this.CreateDatabaseIfNotExists();
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
+            await this.CreateDatabaseIfNotExists(this.client);
         }
 
         [TestMethod]
-        public void CreateDatabaseIfNotExists_DirectTcp()
+        public async Task CreateDatabaseIfNotExists_DirectTcp()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Tcp);
-            this.CreateDatabaseIfNotExists();
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Tcp);
+            await this.CreateDatabaseIfNotExists(this.client);
         }
 
-        private void CreateDatabaseIfNotExists()
+        private async Task CreateDatabaseIfNotExists(CosmosClient client)
         {
             string databaseId = Guid.NewGuid().ToString();
-            Database db = new Database { Id = databaseId };
 
             // Create the database with this unique id
-            Database createdDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
+            Database createdDatabase = await client.CreateDatabaseIfNotExistsAsync(databaseId);
 
             // CreateDatabaseIfNotExistsAsync should create the new database
             Assert.AreEqual(databaseId, createdDatabase.Id);
 
             string databaseId2 = Guid.NewGuid().ToString();
-            db = new Database { Id = databaseId2 };
 
             // Pre-create the database with this unique id
-            createdDatabase = this.client.CreateDatabaseAsync(db).Result;
+            Database createdDatabase2 = await client.CreateDatabaseAsync(databaseId2);
 
-            Database readDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
+            Database readDatabase = await client.CreateDatabaseIfNotExistsAsync(databaseId2);
 
             // CreateDatabaseIfNotExistsAsync should return the same database
-            Assert.AreEqual(createdDatabase.SelfLink, readDatabase.SelfLink);
+            Assert.AreEqual(createdDatabase2.Id, readDatabase.Id);
 
             // cleanup created databases
-            this.client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(databaseId)).Wait();
-            this.client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(databaseId2)).Wait();
+            await createdDatabase.DeleteAsync();
+            await readDatabase.DeleteAsync();
         }
 
         [TestMethod]
-        public void CreateDocumentCollectionIfNotExists_GatewayHttps()
+        public async Task CreateDocumentCollectionIfNotExists_GatewayHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Protocol.Https);
-            this.CreateDocumentCollectionIfNotExists();
+            this.client = this.GetDocumentClient(ConnectionMode.Gateway, Documents.Client.Protocol.Https);
+            await this.CreateDocumentCollectionIfNotExists();
         }
 
         [TestMethod]
-        public void CreateDocumentCollectionIfNotExists_DirectHttps()
+        public async Task CreateDocumentCollectionIfNotExists_DirectHttps()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Https);
-            this.CreateDocumentCollectionIfNotExists();
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Https);
+            await this.CreateDocumentCollectionIfNotExists();
         }
 
         [TestMethod]
-        public void CreateDocumentCollectionIfNotExists_DirectTcp()
+        public async Task CreateDocumentCollectionIfNotExists_DirectTcp()
         {
-            this.client = this.GetDocumentClient(ConnectionMode.Direct, Protocol.Tcp);
-            this.CreateDocumentCollectionIfNotExists();
+            this.client = this.GetDocumentClient(ConnectionMode.Direct, Documents.Client.Protocol.Tcp);
+            await this.CreateDocumentCollectionIfNotExists();
         }
-            
-        private void CreateDocumentCollectionIfNotExists()
+
+        private async Task CreateDocumentCollectionIfNotExists()
         {
             string databaseId = Guid.NewGuid().ToString();
-            Database db = new Database { Id = databaseId };
 
             // Create the database with this unique id
-            Database createdDatabase = this.client.CreateDatabaseIfNotExistsAsync(db).Result;
+            Database createdDatabase = await this.client.CreateDatabaseIfNotExistsAsync(databaseId);
 
             string collectionId = Guid.NewGuid().ToString();
-            DocumentCollection collection = new DocumentCollection
-                {
-                    Id = collectionId,
-                    PartitionKey = new PartitionKeyDefinition()
-                    {
-                        Paths = new Collection<string>() { "/id" }
-                    },
-                };
+            ContainerProperties collection = new ContainerProperties(collectionId, "/id");
 
-            DocumentCollection createdCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(createdDatabase.Id), collection).Result;
+            ContainerProperties createdCollection = await createdDatabase.CreateContainerIfNotExistsAsync(collection);
 
             // CreateDocumentCollectionIfNotExistsAsync should create the new collection
             Assert.AreEqual(collectionId, createdCollection.Id);
 
             string collectionId2 = Guid.NewGuid().ToString();
-            collection = new DocumentCollection
-            {
-                Id = collectionId2,
-                PartitionKey = new PartitionKeyDefinition()
-                {
-                    Paths = new Collection<string>() { "/id" }
-                },
-            };
+            collection = new ContainerProperties(collectionId2, "/id");
 
             // Pre-create the collection with this unique id
-            createdCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(createdDatabase.SelfLink, collection).Result;
+            createdCollection = await createdDatabase.CreateContainerIfNotExistsAsync(collection);
 
-            DocumentCollection readCollection = this.client.CreateDocumentCollectionIfNotExistsAsync(createdDatabase.SelfLink, collection).Result;
+            ContainerProperties readCollection = await createdDatabase.CreateContainerIfNotExistsAsync(collection);
 
             // CreateDocumentCollectionIfNotExistsAsync should return the same collection
-            Assert.AreEqual(createdCollection.SelfLink, readCollection.SelfLink);
+            Assert.AreEqual(createdCollection.Id, readCollection.Id);
 
             // cleanup created database
-            this.client.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(databaseId)).Wait();
+            await createdDatabase.DeleteAsync();
         }
 
-        private DocumentClient GetDocumentClient(ConnectionMode connectionMode, Protocol protocol)
+        private CosmosClient GetDocumentClient(ConnectionMode connectionMode, Documents.Client.Protocol protocol)
         {
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy() { ConnectionMode = connectionMode, ConnectionProtocol = protocol };
+            CosmosClientOptions connectionPolicy = new CosmosClientOptions() { ConnectionMode = connectionMode, ConnectionProtocol = protocol };
 
-            return new DocumentClient(new Uri(Host), MasterKey, (HttpMessageHandler)null, connectionPolicy);
+            return new CosmosClient(Host, MasterKey, connectionPolicy);
         }
 
-        private void CreatePartitionedCollectionIfNotExists(string databaseName, string collectionName)
+        private async Task<Container> CreatePartitionedCollectionIfNotExists(Database database, string collectionName)
         {
-            DocumentCollection coll = new DocumentCollection { Id = collectionName };
-            coll.PartitionKey.Paths.Add("/id");
-            this.client.CreateDocumentCollectionIfNotExistsAsync(UriFactory.CreateDatabaseUri(databaseName), coll, new RequestOptions() { OfferThroughput = 10200 }).Wait();
+            return await database.CreateContainerIfNotExistsAsync(collectionName, partitionKeyPath: "/id", throughput: 10200);
         }
 
-        private async Task CleanupDocumentCollection(Uri documentCollectionUri)
+        private async Task CleanupDocumentCollection(Container container)
         {
-            var query =
-                this.client.CreateDocumentQuery(documentCollectionUri,
-                    new FeedOptions {EnableCrossPartitionQuery = true})
-                    .AsEnumerable();
+            FeedIterator<JObject> query = container.GetItemQueryIterator<JObject>();
 
-            foreach (Document doc in query)
+            while (query.HasMoreResults)
             {
-                await this.client.DeleteDocumentAsync(doc.SelfLink, new RequestOptions {PartitionKey = new PartitionKey(doc.Id)});
+                FeedResponse<JObject> items = await query.ReadNextAsync();
+                foreach (JObject doc in items)
+                {
+                    string id = doc["id"].ToString();
+                    await container.DeleteItemAsync<JObject>(id, new PartitionKey(id));
+                }
             }
         }
     }
-   
+
     internal sealed class Person
     {
         [JsonProperty(PropertyName = "id")]

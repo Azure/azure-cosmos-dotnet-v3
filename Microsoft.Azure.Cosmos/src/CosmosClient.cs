@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
-    /// The CosmosClient is created with the AccountEndpoint, AccountKey and configured to use "East US 2" region.
+    /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
     /// <code language="c#">
     /// <![CDATA[
     /// using Microsoft.Azure.Cosmos;
@@ -167,10 +168,10 @@ namespace Microsoft.Azure.Cosmos
         /// performance guide at <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips"/>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
-        /// <param name="accountKey">The cosmos account key to use to create the client.</param>
+        /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
         /// <param name="clientOptions">(Optional) client options</param>
         /// <example>
-        /// The CosmosClient is created with the AccountEndpoint, AccountKey and configured to use "East US 2" region.
+        /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
         /// <code language="c#">
         /// <![CDATA[
         /// using Microsoft.Azure.Cosmos;
@@ -195,7 +196,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public CosmosClient(
             string accountEndpoint,
-            string accountKey,
+            string authKeyOrResourceToken,
             CosmosClientOptions clientOptions = null)
         {
             if (accountEndpoint == null)
@@ -203,9 +204,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (accountKey == null)
+            if (authKeyOrResourceToken == null)
             {
-                throw new ArgumentNullException(nameof(accountKey));
+                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
 
             if (clientOptions == null)
@@ -214,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Endpoint = new Uri(accountEndpoint);
-            this.AccountKey = accountKey;
+            this.AccountKey = authKeyOrResourceToken;
             CosmosClientOptions clientOptionsClone = clientOptions.Clone();
 
             DocumentClient documentClient = new DocumentClient(
@@ -226,7 +227,8 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
                 enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
                 storeClientFactory: clientOptionsClone.StoreClientFactory,
-                desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel());
+                desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
+                handler: this.CreateHttpClientHandler(clientOptions));
 
             this.Init(
                 clientOptionsClone,
@@ -238,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal CosmosClient(
             string accountEndpoint,
-            string accountKey,
+            string authKeyOrResourceToken,
             CosmosClientOptions cosmosClientOptions,
             DocumentClient documentClient)
         {
@@ -247,9 +249,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (accountKey == null)
+            if (authKeyOrResourceToken == null)
             {
-                throw new ArgumentNullException(nameof(accountKey));
+                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
 
             if (cosmosClientOptions == null)
@@ -263,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Endpoint = new Uri(accountEndpoint);
-            this.AccountKey = accountKey;
+            this.AccountKey = authKeyOrResourceToken;
 
             this.Init(cosmosClientOptions, documentClient);
         }
@@ -283,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Uri Endpoint { get; }
 
         /// <summary>
-        /// Gets the AuthKey used by the client from the Azure Cosmos DB service.
+        /// Gets the AuthKey or resource token used by the client from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The AuthKey used by the client.
@@ -629,8 +631,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpecSerializer: sqlQuerySpecSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
-                documentClient: this.DocumentClient,
-                documentQueryClient: new DocumentQueryClient(this.DocumentClient));
+                documentClient: this.DocumentClient);
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
@@ -716,6 +717,19 @@ namespace Microsoft.Azure.Cosmos
                 },
                 responseCreator: response => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DatabaseProperties>(response),
                 cancellationToken: cancellationToken);
+        }
+
+        private HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
+        {
+            if (clientOptions == null || (clientOptions.WebProxy == null))
+            {
+                return null;
+            }
+
+            HttpClientHandler httpClientHandler = new HttpClientHandler();
+            httpClientHandler.Proxy = clientOptions.WebProxy;
+
+            return httpClientHandler;
         }
 
         /// <summary>

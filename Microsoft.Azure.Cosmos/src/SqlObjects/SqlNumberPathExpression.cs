@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System.Text;
-
     internal sealed class SqlNumberPathExpression : SqlPathExpression
     {
         private SqlNumberPathExpression(SqlPathExpression parentPath, SqlNumberLiteral value)

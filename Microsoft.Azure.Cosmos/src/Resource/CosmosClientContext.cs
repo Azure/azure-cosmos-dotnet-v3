@@ -27,8 +27,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract DocumentClient DocumentClient { get; }
 
-        internal abstract IDocumentQueryClient DocumentQueryClient { get; }
-
         internal abstract CosmosSerializer CosmosSerializer { get; }
 
         internal abstract CosmosSerializer PropertiesSerializer { get; }
@@ -54,6 +52,26 @@ namespace Microsoft.Azure.Cosmos
             string id);
 
         internal abstract void ValidateResource(string id);
+
+        internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
+            string containerUri,
+            CancellationToken cancellationToken = default(CancellationToken));
+
+        /// <summary>
+        /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
+        /// in a resource can be unit tested.
+        /// </summary>
+        internal abstract Task<ResponseMessage> ProcessResourceOperationStreamAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
+            string itemId,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken);
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 

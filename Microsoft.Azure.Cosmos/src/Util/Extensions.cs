@@ -7,12 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Net;
-    using System.Net.Http;
     using System.Net.Sockets;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     internal static class Extensions
@@ -34,6 +33,15 @@ namespace Microsoft.Azure.Cosmos
                 foreach (string key in response.Headers)
                 {
                     cosmosResponse.Headers.Add(key, response.Headers[key]);
+                }
+            }
+
+            if (response.RequestStats != null)
+            {
+                CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = response.RequestStats as CosmosClientSideRequestStatistics;
+                if (cosmosClientSideRequestStatistics != null)
+                {
+                    cosmosResponse.Diagnostics = new PointOperationStatistics(cosmosClientSideRequestStatistics);
                 }
             }
 
@@ -117,6 +125,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 Extensions.TraceExceptionInternal(e);
             }
+        }
+
+        public static async Task<IDisposable> UsingWaitAsync(
+            this SemaphoreSlim semaphoreSlim,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return new UsableSemaphoreWrapper(semaphoreSlim);
         }
 
         private static void TraceExceptionInternal(Exception e)

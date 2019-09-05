@@ -55,13 +55,13 @@ namespace Microsoft.Azure.Cosmos
             SubStatusCodes subStatusCode,
             string errorMessage,
             IReadOnlyList<ItemBatchOperation> operations)
-            : this(statusCode, 
-                  subStatusCode, 
-                  errorMessage, 
-                  requestCharge: 0, 
+            : this(statusCode,
+                  subStatusCode,
+                  errorMessage,
+                  requestCharge: 0,
                   retryAfter: null,
                   activityId: Guid.Empty.ToString(),
-                  operations: operations, 
+                  operations: operations,
                   serializer: null)
         {
         }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        public virtual double RequestCharge { get; }
+        public virtual double RequestCharge { get; internal set; }
 
         /// <summary>
         /// Gets the amount of time to wait before retrying this or any other request within Cosmos container or collection due to throttling.
@@ -115,13 +115,13 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the completion status code of the batch request.
         /// </summary>
         /// <value>The request completion status code.</value>
-        public virtual HttpStatusCode StatusCode { get; }
+        public virtual HttpStatusCode StatusCode { get; internal set; }
 
         /// <summary>
         /// Gets the reason for failure of the batch request.
         /// </summary>
         /// <value>The reason for failure, if any.</value>
-        public virtual string ErrorMessage { get; }
+        public virtual string ErrorMessage { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether the batch was processed.
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static async Task<BatchResponse> FromResponseMessageAsync(
-            ResponseMessage responseMessage, 
+            ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializer serializer)
         {
