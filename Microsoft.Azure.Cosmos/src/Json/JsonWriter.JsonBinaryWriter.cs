@@ -172,6 +172,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     this.WriteDoubleInternal(Number64.ToDouble(value));
                 }
+
+                this.bufferedContexts.Peek().Count++;
             }
 
             /// <summary>

@@ -310,8 +310,7 @@
         [Owner("brchon")]
         public void LargeNumbersTest()
         {
-            string expectedString = @"
-            [1,-1,10,-10,1.49974603574112E+16,1.4997460357411E+16,1499746035741101,1499746035741109,-1.49974603574112E+16,-1.4997460357411E+16,-1499746035741101,-1499746035741109,1499746035741128,1499752659822592,1499752939110661,1499753827614475,1499970126403840,1499970590815128,1499970842400644,1499971371510025,1499972760675685,1499972969962006,1499973086735836,1499973302072392,1499976826748983]";
+            string expectedString = @"[1,-1,10,-10,14997460357411200,14997460357411000,1499746035741101,1499746035741109,-14997460357411200,-14997460357411000,-1499746035741101,-1499746035741109,1499746035741128,1499752659822592,1499752939110661,1499753827614475,1499970126403840,1499970590815128,1499970842400644,1499971371510025,1499972760675685,1499972969962006,1499973086735836,1499973302072392,1499976826748983]";
             JsonToken[] tokensToWrite =
             {
                 JsonToken.ArrayStart(),
@@ -733,7 +732,8 @@
 
             List<byte[]> elements = new List<byte[]>();
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin });
-            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin });
+            elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberDouble });
+            elements.Add(BitConverter.GetBytes(0.0));
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberInt16, 0xFF, 0xFF });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberDouble, 0x9A, 0x99, 0x99, 0x99, 0x99, 0x99, 0xF1, 0xBF });
             elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 1 });
