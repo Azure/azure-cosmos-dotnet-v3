@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             }
         }
 
-        public override JsonSerializationFormat SerializationFormat => throw new NotImplementedException();
+        public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
         public override byte[] GetResult()
         {
