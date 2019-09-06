@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics { get; set; }
+        public virtual CosmosDiagnostics Diagnostics { get; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
