@@ -341,6 +341,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool AllowBulkExecution { get; set; }
+
+        /// <summary>
         /// When limiting to only the specified region, availability is reduced to that of a single region account.
         /// </summary>
         /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>

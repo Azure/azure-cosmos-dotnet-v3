@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents;
@@ -56,10 +55,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestCosmosQueryPartitionKeyDefinition()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
-            queryRequestOptions.Properties = new Dictionary<string, object>()
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                Properties = new Dictionary<string, object>()
             {
                 {"x-ms-query-partitionkey-definition", partitionKeyDefinition }
+            }
             };
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(@"select * from t where t.something = 42 ");
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CancellationToken cancellationtoken = cancellationTokenSource.Token;
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
-            client.Setup(x => x.GetCachedContainerPropertiesAsync(cancellationtoken)).Returns(Task.FromResult(new ContainerProperties("mockContainer", "/pk")));
+            client.Setup(x => x.GetCachedContainerQueryPropertiesAsync(It.IsAny<Uri>(), It.IsAny<Cosmos.PartitionKey?>(), cancellationtoken)).Returns(Task.FromResult(new ContainerQueryProperties("mockContainer", null, partitionKeyDefinition)));
             client.Setup(x => x.ByPassQueryParsing()).Returns(false);
             client.Setup(x => x.GetPartitionedQueryExecutionInfoAsync(
                 sqlQuerySpec,
@@ -111,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
-                operators.ToArray(),
+               operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
                 {
                     { "test", AggregateOperator.Count }

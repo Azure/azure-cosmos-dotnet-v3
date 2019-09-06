@@ -176,6 +176,16 @@ namespace Microsoft.Azure.Cosmos
 
             return Result.Success;
         }
+
+        internal ResponseMessage ToResponseMessage()
+        {
+            ResponseMessage responseMessage = new ResponseMessage(this.StatusCode);
+            responseMessage.Headers.SubStatusCode = this.SubStatusCode;
+            responseMessage.Headers.ETag = this.ETag;
+            responseMessage.Headers.RetryAfter = this.RetryAfter;
+            responseMessage.Content = this.ResourceStream;
+            return responseMessage;
+        }
     }
 
     /// <summary>
