@@ -452,7 +452,6 @@ namespace Microsoft.Azure.Cosmos.Sql
                     this.writer.Write(JsonConvert.SerializeObject(sqlObjectLiteral.Value));
                 }
             }
-
         }
 
         public override void Visit(SqlObjectProperty sqlObjectProperty)

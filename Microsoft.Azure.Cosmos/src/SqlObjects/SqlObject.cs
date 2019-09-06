@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public string ToParameterizedString(Dictionary<object, string> literalParamKey)
         {
-            return this.Serialize(prettyPrint: false, literalParamKey);
+            return this.Serialize(prettyPrint: false, literalParamKey: literalParamKey);
         }
 
         private string Serialize(bool prettyPrint, Dictionary<object, string> literalParamKey = null)
