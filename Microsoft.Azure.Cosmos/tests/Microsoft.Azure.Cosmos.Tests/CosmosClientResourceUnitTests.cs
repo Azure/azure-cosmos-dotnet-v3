@@ -114,5 +114,47 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));
         }
 
+        [TestMethod]
+        public void InitializeBatchExecutorForContainer_Null_WhenAllowBulk_False()
+        {
+            string databaseId = "db1234";
+            string crId = "cr42";
+
+            CosmosClientContext context = new ClientContextCore(
+                client: null,
+                clientOptions: new CosmosClientOptions(),
+                userJsonSerializer: null,
+                defaultJsonSerializer: null,
+                sqlQuerySpecSerializer: null,
+                cosmosResponseFactory: null,
+                requestHandler: null,
+                documentClient: null);
+
+            DatabaseCore db = new DatabaseCore(context, databaseId);
+            ContainerCore container = new ContainerCore(context, db, crId);
+            Assert.IsNull(container.BatchExecutor);
+        }
+
+        [TestMethod]
+        public void InitializeBatchExecutorForContainer_NotNull_WhenAllowBulk_True()
+        {
+            string databaseId = "db1234";
+            string crId = "cr42";
+
+            CosmosClientContext context = new ClientContextCore(
+                client: null,
+                clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
+                userJsonSerializer: null,
+                defaultJsonSerializer: null,
+                sqlQuerySpecSerializer: null,
+                cosmosResponseFactory: null,
+                requestHandler: null,
+                documentClient: null);
+
+            DatabaseCore db = new DatabaseCore(context, databaseId);
+            ContainerCore container = new ContainerCore(context, db, crId);
+            Assert.IsNotNull(container.BatchExecutor);
+        }
+
     }
 }
