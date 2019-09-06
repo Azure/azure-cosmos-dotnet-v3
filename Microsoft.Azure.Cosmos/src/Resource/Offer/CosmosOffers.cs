@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -29,6 +28,10 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
+            if (offerV2 == null)
+            {
+                return null;
+            }
 
             return await this.GetThroughputResponseAsync(
                 streamPayload: null,
@@ -73,11 +76,6 @@ namespace Microsoft.Azure.Cosmos
                  queryDefinition);
             OfferV2 offerV2 = await this.SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
 
-            if (offerV2 == null)
-            {
-                throw new CosmosException(HttpStatusCode.NotFound, "Throughput is not configured");
-            }
-
             return offerV2;
         }
 
@@ -87,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            FeedIterator databaseStreamIterator = GetOfferQueryStreamIterator(
+            FeedIterator databaseStreamIterator = this.GetOfferQueryStreamIterator(
                queryDefinition,
                continuationToken,
                requestOptions,
@@ -95,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
         }
 
         internal virtual FeedIterator GetOfferQueryStreamIterator(
@@ -105,12 +103,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return new FeedIteratorCore(
-               this.ClientContext,
-               this.OfferRootUri,
-               ResourceType.Offer,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               clientContext: this.ClientContext,
+               resourceLink: this.OfferRootUri,
+               resourceType: ResourceType.Offer,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions,
+               usePropertySerializer: true);
         }
 
         private CosmosOfferResult GetThroughputIfExists(Offer offer)
