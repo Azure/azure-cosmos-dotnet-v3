@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -21,10 +22,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(expectedPkRangeId);
             operation.AttachContext(batchAsyncOperationContext);
 
-            Assert.IsNotNull(batchAsyncOperationContext.Task);
+            Assert.IsNotNull(batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(batchAsyncOperationContext, operation.Context);
             Assert.AreEqual(expectedPkRangeId, batchAsyncOperationContext.PartitionKeyRangeId);
-            Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.Task.Status);
+            Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.OperationTask.Status);
         }
 
         [TestMethod]
@@ -34,9 +35,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
             operation.AttachContext(batchAsyncOperationContext);
 
-            Assert.IsNotNull(batchAsyncOperationContext.Task);
+            Assert.IsNotNull(batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(batchAsyncOperationContext, operation.Context);
-            Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.Task.Status);
+            Assert.AreEqual(TaskStatus.WaitingForActivation, batchAsyncOperationContext.OperationTask.Status);
         }
 
         [TestMethod]
@@ -50,8 +51,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             batchAsyncOperationContext.Complete(null, expected);
 
-            Assert.AreEqual(expected, await batchAsyncOperationContext.Task);
-            Assert.AreEqual(TaskStatus.RanToCompletion, batchAsyncOperationContext.Task.Status);
+            Assert.AreEqual(expected, await batchAsyncOperationContext.OperationTask);
+            Assert.AreEqual(TaskStatus.RanToCompletion, batchAsyncOperationContext.OperationTask.Status);
         }
 
         [TestMethod]
@@ -64,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             batchAsyncOperationContext.Fail(null, failure);
 
-            Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => batchAsyncOperationContext.Task);
+            Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => batchAsyncOperationContext.OperationTask);
             Assert.AreEqual(failure, capturedException);
-            Assert.AreEqual(TaskStatus.Faulted, batchAsyncOperationContext.Task.Status);
+            Assert.AreEqual(TaskStatus.Faulted, batchAsyncOperationContext.OperationTask.Status);
         }
 
         [TestMethod]
@@ -75,6 +76,52 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
             operation.AttachContext(new ItemBatchOperationContext(string.Empty));
             Assert.ThrowsException<InvalidOperationException>(() => operation.AttachContext(new ItemBatchOperationContext(string.Empty)));
+        }
+
+        [TestMethod]
+        public async Task ShouldRetry_NoPolicy()
+        {
+            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK);
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty));
+            ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
+            Assert.IsFalse(shouldRetryResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task ShouldRetry_WithPolicy_OnSuccess()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK);
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
+            Assert.IsFalse(shouldRetryResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task ShouldRetry_WithPolicy_On429()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+            BatchOperationResult result = new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
+        }
+
+        [TestMethod]
+        public async Task ShouldRetry_WithPolicy_OnSplit()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(1));
+            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0);
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default(CancellationToken));
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
     }
 }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -44,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
+            this.BatchExecutor = this.InitializeBatchExecutorForContainer();
         }
 
         public override string Id { get; }
@@ -53,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
         internal virtual Uri LinkUri { get; }
 
         internal virtual CosmosClientContext ClientContext { get; }
+
+        internal virtual BatchAsyncContainerExecutor BatchExecutor { get; } 
 
         public override Conflicts Conflicts { get; }
 
@@ -258,6 +262,15 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken);
                 })
                 .Unwrap();
+        }
+
+        internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
+        {
+            return new BatchAsyncContainerExecutor(
+                this,
+                this.ClientContext,
+                Constants.MaxOperationsInDirectModeBatchRequest,
+                Constants.MaxDirectModeBatchRequestBodySizeInBytes);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(

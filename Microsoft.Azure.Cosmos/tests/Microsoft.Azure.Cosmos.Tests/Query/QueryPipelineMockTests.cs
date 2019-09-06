@@ -82,8 +82,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 while (!executionContext.IsDone)
                 {
-                    QueryResponse queryResponse = await executionContext.DrainAsync(maxPageSize, this.cancellationToken);
-                    string responseContinuationToken = queryResponse.QueryHeaders.InternalContinuationToken;
+                    QueryResponseCore queryResponse = await executionContext.DrainAsync(maxPageSize, this.cancellationToken);
+                    string responseContinuationToken = queryResponse.ContinuationToken;
                     foreach (CosmosElement element in queryResponse.CosmosElements)
                     {
                         string jsonValue = element.ToString();
@@ -198,8 +198,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 List<ToDoItem> itemsRead = new List<ToDoItem>();
                 while (!executionContext.IsDone)
                 {
-                    QueryResponse queryResponse = await executionContext.DrainAsync(maxPageSize, this.cancellationToken);
-                    string responseContinuationToken = queryResponse.QueryHeaders.InternalContinuationToken;
+                    QueryResponseCore queryResponse = await executionContext.DrainAsync(
+                        maxPageSize,
+                        this.cancellationToken);
+
+                    string responseContinuationToken = queryResponse.ContinuationToken;
                     foreach (CosmosElement element in queryResponse.CosmosElements)
                     {
                         string jsonValue = element.ToString();

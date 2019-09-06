@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Data.Common;
     using System.Linq;
+    using System.Net;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan? openTcpConnectionTimeout;
         private int? maxRequestsPerTcpConnection;
         private int? maxTcpConnectionsPerEndpoint;
+        private IWebProxy webProxy;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -108,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         /// This setting is only applicable in Gateway mode.
         /// </remarks>
         /// <value>Default value is 50.</value>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
         public int GatewayModeMaxConnectionLimit
         {
             get => this.gatewayModeMaxConnectionLimit;
@@ -153,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect()"/>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?)"/>
+        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
         public ConnectionMode ConnectionMode
         {
             get => this.connectionMode;
@@ -263,6 +265,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// (Gateway/Https) Get or set the proxy information used for web requests.
+        /// </summary>
+        public IWebProxy WebProxy
+        {
+            get => this.webProxy;
+            set
+            {
+                this.webProxy = value;
+                if (this.ConnectionMode != ConnectionMode.Gateway)
+                {
+                    throw new ArgumentException($"{nameof(this.WebProxy)} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Gateway)}");
+                }
+            }
+        }
+
+        /// <summary>
         /// Get to set optional serializer options.
         /// </summary>
         /// <example>
@@ -321,6 +339,16 @@ namespace Microsoft.Azure.Cosmos
                 this.serializer = value;
             }
         }
+
+        /// <summary>
+        /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool AllowBulkExecution { get; set; }
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
@@ -574,7 +602,7 @@ namespace Microsoft.Azure.Cosmos
         private void ValidateDirectTCPSettings()
         {
             string settingName = string.Empty;
-            if (!(this.ConnectionMode == ConnectionMode.Direct && this.ConnectionProtocol == Protocol.Tcp))
+            if (this.ConnectionMode != ConnectionMode.Direct)
             {
                 if (this.IdleTcpConnectionTimeout.HasValue)
                 {
@@ -596,7 +624,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.IsNullOrEmpty(settingName))
             {
-                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)} and {nameof(this.ConnectionProtocol)} to be set to {nameof(Protocol.Tcp)}");
+                throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
             }
         }
 

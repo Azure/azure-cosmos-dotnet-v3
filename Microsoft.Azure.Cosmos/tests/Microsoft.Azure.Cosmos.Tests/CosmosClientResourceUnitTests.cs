@@ -6,12 +6,9 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Net.Http;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
 
     [TestClass]
     public class CosmosClientResourceUnitTests
@@ -24,14 +21,13 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             CosmosClientContext context = new ClientContextCore(
                 client: null,
-                clientOptions: null,
+                clientOptions: new CosmosClientOptions(),
                 userJsonSerializer: null,
                 defaultJsonSerializer: null,
                 sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: null,
                 requestHandler: null,
-                documentClient: null,
-                documentQueryClient: new Mock<IDocumentQueryClient>().Object);
+                documentClient: null);
 
             DatabaseCore db = new DatabaseCore(context, databaseId);
             Assert.AreEqual(db.LinkUri.OriginalString, "dbs/" + databaseId);
@@ -102,9 +98,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         [TestMethod]
         public void ValidateSetItemRequestOptions()
         {
-            ItemRequestOptions options = new ItemRequestOptions();
-            options.PreTriggers = new List<string>() { "preTrigger" };
-            options.PostTriggers = new List<string>() { "postTrigger" };
+            ItemRequestOptions options = new ItemRequestOptions
+            {
+                PreTriggers = new List<string>() { "preTrigger" },
+                PostTriggers = new List<string>() { "postTrigger" }
+            };
 
             RequestMessage httpRequest = new RequestMessage(
                 HttpMethod.Post,

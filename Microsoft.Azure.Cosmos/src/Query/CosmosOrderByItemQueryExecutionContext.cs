@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="maxElements">The maximum number of elements.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task that when awaited on return a page of documents.</returns>
-        public override async Task<IList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
+        public override async Task<IReadOnlyList<CosmosElement>> InternalDrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             //// In order to maintain the continuation token for the user we must drain with a few constraints
             //// 1) We always drain from the partition, which has the highest priority item first
@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         }
                     }
 
-                    (bool successfullyMovedNext, QueryResponse failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
+                    (bool successfullyMovedNext, QueryResponseCore? failureResponse) moveNextResponse = await tree.MoveNextAsync(cancellationToken);
                     if (!moveNextResponse.successfullyMovedNext)
                     {
                         if (moveNextResponse.failureResponse != null)
@@ -689,7 +689,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         string expression = expressionPrefix.ElementAt(index);
                         SortOrder sortOrder = sortOrderPrefix.ElementAt(index);
                         CosmosElement orderByItem = orderByItemsPrefix.ElementAt(index);
-                        bool lastItem = (index == prefixLength - 1);
+                        bool lastItem = index == prefixLength - 1;
 
                         // Append Expression
                         this.AppendToBuilders(builders, expression);
