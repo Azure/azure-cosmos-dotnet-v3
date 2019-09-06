@@ -27,6 +27,15 @@ namespace Microsoft.Azure.Cosmos.Json
             return double.Parse(stringDouble, CultureInfo.InvariantCulture);
         }
 
+        public static long GetIntegerValue(ArraySegment<byte> bufferedToken)
+        {
+            byte[] rawBufferedTokenArray = bufferedToken.Array;
+            int offset = bufferedToken.Offset;
+            int count = bufferedToken.Count;
+            string stringInteger = Encoding.UTF8.GetString(rawBufferedTokenArray, offset, count);
+            return long.Parse(stringInteger, CultureInfo.InvariantCulture);
+        }
+
         /// <summary>
         /// Gets the string value from the specified token.
         /// </summary>

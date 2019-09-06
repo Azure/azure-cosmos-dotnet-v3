@@ -21,6 +21,15 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         private sealed class JsonTextReader : JsonReader
         {
+            private const char Int8TokenPrefix = 'I';
+            private const char Int16TokenPrefix = 'H';
+            private const char Int32TokenPrefix = 'L';
+            private const char UnsignedTokenPrefix = 'U';
+            private const char FloatTokenPrefix = 'S';
+            private const char DoubleTokenPrefix = 'D';
+            private const char GuidTokenPrefix = 'G';
+            private const char BinaryTokenPrefix = 'B';
+
             /// <summary>
             /// Set of all escape characters in JSON.
             /// </summary>
@@ -137,12 +146,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// <summary>
                 /// Corresponds to a JSON number.
                 /// </summary>
-                IntegerNumber = JsonTokenType.Number,
-
-                /// <summary>
-                /// Corresponds to a JSON number that is also a float.
-                /// </summary>
-                FloatNumber = JsonTokenType.Number | FloatFlag,
+                Number = JsonTokenType.Number,
+                Int8 = JsonTokenType.Int8,
+                Int16 = JsonTokenType.Int16,
+                Int32 = JsonTokenType.Int32,
+                UInt32 = JsonTokenType.UInt32,
+                Int64 = JsonTokenType.Int64,
+                Float32 = JsonTokenType.Float32,
+                Float64 = JsonTokenType.Float64,
 
                 /// <summary>
                 /// Corresponds to the JSON 'true' value.
@@ -168,6 +179,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// Corresponds to the an escaped JSON fieldname in a JSON object.
                 /// </summary>
                 EscapedFieldName = JsonTokenType.FieldName | EscapedFlag,
+
+                Guid = JsonTokenType.Guid,
+                Binary = JsonTokenType.Binary,
             }
 
             #region IJsonTextBuffer
@@ -195,10 +209,56 @@ namespace Microsoft.Azure.Cosmos.Json
                 Number64 GetNumberValue();
 
                 /// <summary>
+                /// Gets the Int8 value of the token that was just read from the buffer.
+                /// </summary>
+                /// <returns>The Int8 value of the token that was just read from the buffer.</returns>
+                sbyte GetInt8Value();
+
+                /// <summary>
+                /// Gets the Int16 value of the token that was just read from the buffer.
+                /// </summary>
+                /// <returns>The Int16 value of the token that was just read from the buffer.</returns>
+                short GetInt16Value();
+
+                /// <summary>
+                /// Gets the Int32 value of the token that was just read from the buffer.
+                /// </summary>
+                /// <returns>The Int32 value of the token that was just read from the buffer.</returns>
+                int GetInt32Value();
+
+                /// <summary>
+                /// Gets the Int64 value of the token that was just read from the buffer.
+                /// </summary>
+                /// <returns>The Int64 value of the token that was just read from the buffer.</returns>
+                long GetInt64Value();
+
+                /// <summary>
+                /// Gets the UInt32 value of the token that was just read from the buffer.
+                /// </summary>
+                /// <returns>The UInt32 value of the token that was just read from the buffer.</returns>
+                uint GetUInt32Value();
+
+                /// <summary>
+                /// Gets the float value of the token that was just read from the buffer.
+                /// </summary>
+                /// <returns>The float value of the token that was just read from the buffer.</returns>
+                float GetFloat32Value();
+
+                /// <summary>
+                /// Gets the float value of the token that was just read from the buffer.
+                /// </summary>
+                /// <returns>The float value of the token that was just read from the buffer.</returns>
+                double GetFloat64Value();
+
+                /// <summary>
                 /// Gets the string value of the token that was just read from the buffer.
                 /// </summary>
                 /// <returns>The string value of the token that was just read from the buffer.</returns>
                 string GetStringValue();
+
+                IReadOnlyList<byte> GetBinaryValue();
+
+                Guid GetGuidValue();
 
                 /// <summary>
                 /// Lets the buffer know that a token is about to be read.
@@ -221,6 +281,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// </summary>
                 /// <returns>The character that was just peeked at.</returns>
                 char PeekCharacter();
+
+                char PeekCharacter(int index);
 
                 /// <summary>
                 /// Gets the buffered raw json token from the buffer.
@@ -337,6 +399,52 @@ namespace Microsoft.Azure.Cosmos.Json
                         this.ProcessNameSeparator();
                         break;
 
+                    case JsonTextReader.Int8TokenPrefix:
+                        this.ProcessInt8();
+                        break;
+
+                    case JsonTextReader.Int16TokenPrefix:
+                        this.ProcessInt16();
+                        break;
+
+                    case JsonTextReader.Int32TokenPrefix:
+                        if (this.jsonTextBuffer.PeekCharacter(1) == JsonTextReader.Int32TokenPrefix)
+                        {
+                            this.ProcessInt64();
+                        }
+                        else
+                        {
+                            this.ProcessInt32();
+                        }
+                        break;
+
+                    case JsonTextReader.UnsignedTokenPrefix:
+                        if (this.jsonTextBuffer.PeekCharacter(1) == JsonTextReader.Int32TokenPrefix)
+                        {
+                            this.ProcessUInt32();
+                        }
+                        else
+                        {
+                            throw new JsonUnexpectedTokenException();
+                        }
+                        break;
+
+                    case JsonTextReader.FloatTokenPrefix:
+                        this.ProcessFloat32();
+                        break;
+
+                    case JsonTextReader.DoubleTokenPrefix:
+                        this.ProcessFloat64();
+                        break;
+
+                    case JsonTextReader.GuidTokenPrefix:
+                        this.ProcessGuid();
+                        break;
+
+                    case JsonTextReader.BinaryTokenPrefix:
+                        this.ProcessBinary();
+                        break;
+
                     default:
                         // We found a start token character which doesn't match any JSON token type
                         throw new JsonUnexpectedTokenException();
@@ -366,37 +474,37 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override sbyte GetInt8Value()
             {
-                return (sbyte)Number64.ToLong(this.GetNumberValue());
+                return this.jsonTextBuffer.GetInt8Value();
             }
 
             public override short GetInt16Value()
             {
-                return (short)Number64.ToLong(this.GetNumberValue());
+                return this.jsonTextBuffer.GetInt16Value();
             }
 
             public override int GetInt32Value()
             {
-                return (int)Number64.ToLong(this.GetNumberValue());
+                return this.jsonTextBuffer.GetInt32Value();
             }
 
             public override long GetInt64Value()
             {
-                return (long)Number64.ToLong(this.GetNumberValue());
+                return this.jsonTextBuffer.GetInt64Value();
             }
 
             public override uint GetUInt32Value()
             {
-                return (uint)Number64.ToLong(this.GetNumberValue());
+                return this.jsonTextBuffer.GetUInt32Value();
             }
 
             public override float GetFloat32Value()
             {
-                return (float)Number64.ToLong(this.GetNumberValue());
+                return this.jsonTextBuffer.GetFloat32Value();
             }
 
             public override double GetFloat64Value()
             {
-                return (double)Number64.ToLong(this.GetNumberValue());
+                return this.jsonTextBuffer.GetFloat64Value();
             }
 
             public override Guid GetGuidValue()
@@ -481,6 +589,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessNumber()
             {
+                this.ProcessNumberValueToken();
+                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Number;
+                this.RegisterToken();
+            }
+
+            private void ProcessNumberValueToken()
+            {
                 ////https://tools.ietf.org/html/rfc7159#section-6
                 ////number = [ minus ] int [ frac ] [ exp ]
                 ////decimal-point = %x2E       ; .
@@ -493,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 ////plus = %x2B                ; +
                 ////zero = %x30                ; 
 
-                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.IntegerNumber;
+                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Number;
 
                 // Check for optional sign.
                 if (this.jsonTextBuffer.PeekCharacter() == '-')
@@ -528,7 +643,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Check for optional '.'
                 if (this.jsonTextBuffer.PeekCharacter() == '.')
                 {
-                    this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.FloatNumber;
+                    this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Number;
 
                     this.jsonTextBuffer.ReadCharacter();
 
@@ -548,7 +663,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Check for optional e/E.
                 if (this.jsonTextBuffer.PeekCharacter() == 'e' || this.jsonTextBuffer.PeekCharacter() == 'E')
                 {
-                    this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.FloatNumber;
+                    this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Number;
                     this.jsonTextBuffer.ReadCharacter();
 
                     // Check for optional +/- after e/E.
@@ -576,7 +691,160 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     throw new JsonInvalidNumberException();
                 }
+            }
 
+            private void ProcessInt8()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int8TokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.ProcessIntegerToken(JsonTextTokenType.Int8);
+            }
+
+            private void ProcessInt16()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int16TokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.ProcessIntegerToken(JsonTextTokenType.Int16);
+            }
+
+            private void ProcessInt32()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int32TokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.ProcessIntegerToken(JsonTextTokenType.Int32);
+            }
+
+            private void ProcessUInt32()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.UnsignedTokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int32TokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                // First character must be a digit.
+                if (!char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
+                {
+                    throw new JsonInvalidNumberException();
+                }
+
+                this.ProcessIntegerToken(JsonTextTokenType.UInt32);
+            }
+
+            private void ProcessInt64()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int32TokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int32TokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.ProcessIntegerToken(JsonTextTokenType.Int64);
+            }
+
+            private void ProcessIntegerToken(JsonTextTokenType jsonTextTokenType)
+            {
+                // Check for optional sign.
+                if (this.jsonTextBuffer.PeekCharacter() == '-')
+                {
+                    this.jsonTextBuffer.ReadCharacter();
+                }
+
+                // There MUST best at least one digit
+                if (!char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
+                {
+                    throw new JsonInvalidNumberException();
+                }
+
+                // Read all digits 
+                while (char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
+                {
+                    this.jsonTextBuffer.ReadCharacter();
+                }
+
+                this.jsonTextBuffer.CurrentTokenType = jsonTextTokenType;
+                this.RegisterToken();
+            }
+
+            private void ProcessFloat32()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.FloatTokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.ProcessNumberValueToken();
+                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Float32;
+                this.RegisterToken();
+            }
+
+            private void ProcessFloat64()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.DoubleTokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.ProcessNumberValueToken();
+                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Float32;
+                this.RegisterToken();
+            }
+
+            private void ProcessGuid()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.GuidTokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                int length = 0;
+                while (char.IsLetterOrDigit(this.jsonTextBuffer.PeekCharacter()) || this.jsonTextBuffer.PeekCharacter() == '-')
+                {
+                    this.jsonTextBuffer.ReadCharacter();
+                    length++;
+                }
+
+                const int GuidLength = 36;
+                if (length != GuidLength)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Guid;
+                this.RegisterToken();
+            }
+
+            private void ProcessBinary()
+            {
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.BinaryTokenPrefix)
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                char current = this.jsonTextBuffer.PeekCharacter();
+                while (char.IsLetterOrDigit(current) || current == '+' || current == '/' || current == '=')
+                {
+                    this.jsonTextBuffer.ReadCharacter();
+                }
+
+                this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Binary;
                 this.RegisterToken();
             }
 
@@ -814,6 +1082,90 @@ namespace Microsoft.Azure.Cosmos.Json
                     return JsonTextUtil.GetNumberValue((ArraySegment<byte>)this.GetBufferedRawJsonToken());
                 }
 
+                public sbyte GetInt8Value()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
+                    if (value > sbyte.MaxValue || value < sbyte.MinValue)
+                    {
+                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(sbyte).FullName}");
+                    }
+
+                    return (sbyte)value;
+                }
+
+                public short GetInt16Value()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
+                    if (value > short.MaxValue || value < short.MinValue)
+                    {
+                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(short).FullName}");
+                    }
+
+                    return (short)value;
+                }
+
+                public int GetInt32Value()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
+                    if (value > int.MaxValue || value < int.MinValue)
+                    {
+                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(int).FullName}");
+                    }
+
+                    return (int)value;
+                }
+
+                public long GetInt64Value()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
+                    if (value > long.MaxValue || value < long.MinValue)
+                    {
+                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(long).FullName}");
+                    }
+
+                    return (long)value;
+                }
+
+                public uint GetUInt32Value()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 2, rawToken.Count - 2));
+                    if (value > uint.MaxValue || value < uint.MinValue)
+                    {
+                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(uint).FullName}");
+                    }
+
+                    return (uint)value;
+                }
+
+                public float GetFloat32Value()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
+                    if (value > float.MaxValue || value < float.MinValue)
+                    {
+                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(float).FullName}");
+                    }
+
+                    return (float)value;
+                }
+
+                public double GetFloat64Value()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    long value = JsonTextUtil.GetIntegerValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
+                    if (value > double.MaxValue || value < double.MinValue)
+                    {
+                        throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(double).FullName}");
+                    }
+
+                    return (double)value;
+                }
+
                 /// <summary>
                 /// Gets the string value of the token that was just read from the buffer.
                 /// </summary>
@@ -832,6 +1184,29 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     return JsonTextUtil.UnescapeJson(this.Encoding.GetChars(stringToken.Array, stringToken.Offset, stringToken.Count));
+                }
+
+                public IReadOnlyList<byte> GetBinaryValue()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    ArraySegment<byte> offsetToken = new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1);
+                    byte[] bytes = offsetToken.Array;
+                    int offset = offsetToken.Offset;
+                    int count = offsetToken.Count;
+
+                    string encodedString = this.Encoding.GetString(bytes);
+                    return System.Convert.FromBase64String(encodedString);
+                }
+
+                public Guid GetGuidValue()
+                {
+                    ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
+                    ArraySegment<byte> offsetToken = new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1);
+                    byte[] bytes = offsetToken.Array;
+                    int offset = offsetToken.Offset;
+                    int count = offsetToken.Count;
+                    string stringGuid = this.Encoding.GetString(bytes, offset, count);
+                    return Guid.Parse(stringGuid);
                 }
 
                 /// <summary>
@@ -871,7 +1246,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 /// <returns>The character that was just peeked at.</returns>
                 public char PeekCharacter()
                 {
-                    return this.IsEof ? (char)0 : (char)this.buffer[this.bytesRead];
+                    return this.PeekCharacter(0);
+                }
+
+                public char PeekCharacter(int offset)
+                {
+                    return this.IsEof ? (char)0 : (char)this.buffer[this.bytesRead + offset];
                 }
 
                 /// <summary>
@@ -925,7 +1305,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     get
                     {
-                        return this.streamReader.Peek() == -1;
+                        return this.streamReader.EndOfStream;
                     }
                 }
 
@@ -963,6 +1343,69 @@ namespace Microsoft.Azure.Cosmos.Json
                     return double.Parse(stringDouble, CultureInfo.InvariantCulture);
                 }
 
+                public sbyte GetInt8Value()
+                {
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        this.GetBytesPerChar(), 
+                        this.tokenLength - this.GetBytesPerChar());
+                    return sbyte.Parse(stringified, CultureInfo.InvariantCulture);
+                }
+
+                public short GetInt16Value()
+                {
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        this.GetBytesPerChar(),
+                        this.tokenLength - this.GetBytesPerChar());
+                    return short.Parse(stringified, CultureInfo.InvariantCulture);
+                }
+
+                public int GetInt32Value()
+                {
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        this.GetBytesPerChar(),
+                        this.tokenLength - this.GetBytesPerChar());
+                    return int.Parse(stringified, CultureInfo.InvariantCulture);
+                }
+
+                public long GetInt64Value()
+                {
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        this.GetBytesPerChar(),
+                        this.tokenLength - this.GetBytesPerChar());
+                    return long.Parse(stringified, CultureInfo.InvariantCulture);
+                }
+
+                public uint GetUInt32Value()
+                {
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        2 * this.GetBytesPerChar(),
+                        this.tokenLength - (2 * this.GetBytesPerChar()));
+                    return uint.Parse(stringified, CultureInfo.InvariantCulture);
+                }
+
+                public float GetFloat32Value()
+                {
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        this.GetBytesPerChar(),
+                        this.tokenLength - this.GetBytesPerChar());
+                    return float.Parse(stringified, CultureInfo.InvariantCulture);
+                }
+
+                public double GetFloat64Value()
+                {
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        this.GetBytesPerChar(),
+                        this.tokenLength - this.GetBytesPerChar());
+                    return double.Parse(stringified, CultureInfo.InvariantCulture);
+                }
+
                 /// <summary>
                 /// Gets the string value of the token that was just read from the buffer.
                 /// </summary>
@@ -995,6 +1438,18 @@ namespace Microsoft.Azure.Cosmos.Json
 
                     char[] escapedString = this.encoding.GetChars(this.bufferedToken.GetBuffer(), quoteSizeInBytes, this.tokenLength - (2 * quoteSizeInBytes));
                     return JsonTextUtil.UnescapeJson(escapedString);
+                }
+
+                public IReadOnlyList<byte> GetBinaryValue()
+                {
+                    string stringified = this.encoding.GetString(this.bufferedToken.GetBuffer());
+                    return Convert.FromBase64String(stringified);
+                }
+
+                public Guid GetGuidValue()
+                {
+                    string stringified = this.encoding.GetString(this.bufferedToken.GetBuffer(), 1, this.tokenLength);
+                    return Guid.Parse(stringified);
                 }
 
                 /// <summary>
@@ -1040,6 +1495,23 @@ namespace Microsoft.Azure.Cosmos.Json
                     return this.IsEof ? (char)0 : (char)this.streamReader.Peek();
                 }
 
+                public char PeekCharacter(int index)
+                {
+                    char returnValue;
+                    if (this.IsEof)
+                    {
+                        returnValue = (char)0;
+                    }
+                    else
+                    {
+                        this.streamReader.BaseStream.Position += index;
+                        returnValue = (char)this.streamReader.Peek();
+                        this.streamReader.BaseStream.Position -= index;
+                    }
+
+                    return returnValue;
+                }
+
                 /// <summary>
                 /// Gets the buffered raw json token from the buffer.
                 /// </summary>
@@ -1048,8 +1520,28 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     return new ArraySegment<byte>(this.bufferedToken.GetBuffer(), 0, this.tokenLength);
                 }
+
+                private int GetBytesPerChar()
+                {
+                    int bytesPerChar;
+                    if (this.encoding == Encoding.UTF8)
+                    {
+                        bytesPerChar = 1;
+                    }
+                    else if (this.encoding == Encoding.Unicode)
+                    {
+                        bytesPerChar = 2;
+                    }
+                    else
+                    {
+                        // UTF-32
+                        bytesPerChar = 4;
+                    }
+
+                    return bytesPerChar;
+                }
             }
-#endregion
+            #endregion
         }
     }
 }

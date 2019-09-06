@@ -126,6 +126,209 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
         [TestMethod]
         [Owner("brchon")]
+        public void Int8Test()
+        {
+            sbyte[] values = new sbyte[] { sbyte.MinValue, sbyte.MinValue + 1, -1, 0, 1, sbyte.MaxValue, sbyte.MaxValue - 1 };
+            foreach(sbyte value in values)
+            {
+                string input = $"I{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int8,
+                        (byte)value
+                    };
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Int8(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int16Test()
+        {
+            short[] values = new short[] { short.MinValue, short.MinValue + 1, -1, 0, 1, short.MaxValue, short.MaxValue - 1 };
+            foreach (short value in values)
+            {
+                string input = $"H{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int16,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Int16(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int32Test()
+        {
+            int[] values = new int[] { int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue, int.MaxValue - 1 };
+            foreach (int value in values)
+            {
+                string input = $"L{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int32,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Int32(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int64Test()
+        {
+            long[] values = new long[] { long.MinValue, long.MinValue + 1, -1, 0, 1, long.MaxValue, long.MaxValue - 1 };
+            foreach (long value in values)
+            {
+                string input = $"LL{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int64,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Int64(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void UInt32Test()
+        {
+            uint[] values = new uint[] { uint.MinValue, uint.MinValue + 1, 0, 1, uint.MaxValue, uint.MaxValue - 1 };
+            foreach (uint value in values)
+            {
+                string input = $"UL{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.UInt32,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.UInt32(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Float32Test()
+        {
+            float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
+            foreach (float value in values)
+            {
+                string input = $"S{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Float32,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Float32(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Float64Test()
+        {
+            double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
+            foreach (double value in values)
+            {
+                string input = $"D{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Float64,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Float64(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
         public void DoubleTest()
         {
             string input = "1337.0";
@@ -2070,36 +2273,74 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                             case JsonTokenType.BeginArray:
                                 this.VerifyBeginArray(jsonReader, encoding);
                                 break;
+
                             case JsonTokenType.EndArray:
                                 this.VerifyEndArray(jsonReader, encoding);
                                 break;
+
                             case JsonTokenType.BeginObject:
                                 this.VerifyBeginObject(jsonReader, encoding);
                                 break;
+
                             case JsonTokenType.EndObject:
                                 this.VerifyEndObject(jsonReader, encoding);
                                 break;
+
                             case JsonTokenType.String:
                                 this.VerifyString(jsonReader, ((JsonStringToken)expectedToken).Value, encoding);
                                 break;
+
                             case JsonTokenType.Number:
                                 this.VerifyNumber(jsonReader, ((JsonNumberToken)expectedToken).Value, encoding);
                                 break;
+
                             case JsonTokenType.True:
                                 this.VerifyTrue(jsonReader, encoding);
                                 break;
+
                             case JsonTokenType.False:
                                 this.VerifyFalse(jsonReader, encoding);
                                 break;
+
                             case JsonTokenType.Null:
                                 this.VerifyNull(jsonReader, encoding);
                                 break;
+
                             case JsonTokenType.FieldName:
                                 this.VerifyFieldName(jsonReader, ((JsonFieldNameToken)expectedToken).Value, encoding);
                                 break;
+
+                            case JsonTokenType.Int8:
+                                this.VerifyInt8(jsonReader, ((JsonInt8Token)expectedToken).Value, encoding);
+                                break;
+
+                            case JsonTokenType.Int16:
+                                this.VerifyInt16(jsonReader, ((JsonInt16Token)expectedToken).Value, encoding);
+                                break;
+
+                            case JsonTokenType.Int32:
+                                this.VerifyInt32(jsonReader, ((JsonInt32Token)expectedToken).Value, encoding);
+                                break;
+
+                            case JsonTokenType.Int64:
+                                this.VerifyInt64(jsonReader, ((JsonInt8Token)expectedToken).Value, encoding);
+                                break;
+
+                            case JsonTokenType.UInt32:
+                                this.VerifyUInt32(jsonReader, ((JsonUInt32Token)expectedToken).Value, encoding);
+                                break;
+
+                            case JsonTokenType.Float32:
+                                this.VerifyFloat32(jsonReader, ((JsonFloat32Token)expectedToken).Value, encoding);
+                                break;
+
+                            case JsonTokenType.Float64:
+                                this.VerifyFloat64(jsonReader, ((JsonFloat64Token)expectedToken).Value, encoding);
+                                break;
+
                             case JsonTokenType.NotStarted:
                             default:
-                                Assert.Fail(string.Format("Got an unexpected JsonTokenType: {0} as an expected token type", expectedToken.JsonTokenType));
+                                Assert.Fail($"Got an unexpected JsonTokenType: {expectedToken.JsonTokenType} as an expected token type");
                                 break;
                         }
                     }
@@ -2182,6 +2423,125 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
                 double valueFromString = double.Parse(stringRawJsonToken, CultureInfo.InvariantCulture);
                 Assert.AreEqual(expectedNumberValue, valueFromString);
+            }
+        }
+
+        private void VerifyInt8(IJsonReader jsonReader, sbyte expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Int8, jsonTokenType);
+
+            sbyte actual = jsonReader.GetInt8Value();
+            Assert.AreEqual(expected, actual);
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"I{expected}", stringRawJsonToken);
+            }
+        }
+
+        private void VerifyInt16(IJsonReader jsonReader, short expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Int16, jsonTokenType);
+
+            short actual = jsonReader.GetInt16Value();
+            Assert.AreEqual(expected, actual);
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"H{expected}", stringRawJsonToken);
+            }
+        }
+
+        private void VerifyInt32(IJsonReader jsonReader, int expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Int32, jsonTokenType);
+
+            int actual = jsonReader.GetInt32Value();
+            Assert.AreEqual(expected, actual);
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"L{expected}", stringRawJsonToken);
+            }
+        }
+
+        private void VerifyInt64(IJsonReader jsonReader, long expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Int64, jsonTokenType);
+
+            long actual = jsonReader.GetInt64Value();
+            Assert.AreEqual(expected, actual);
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"LL{expected}", stringRawJsonToken);
+            }
+        }
+
+        private void VerifyUInt32(IJsonReader jsonReader, uint expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Int8, jsonTokenType);
+
+            uint actual = jsonReader.GetUInt32Value();
+            Assert.AreEqual(expected, actual);
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"UL{expected}", stringRawJsonToken);
+            }
+        }
+
+        private void VerifyFloat32(IJsonReader jsonReader, float expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Float32, jsonTokenType);
+
+            float actual = jsonReader.GetFloat32Value();
+            Assert.AreEqual(expected, actual);
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"S{expected}", stringRawJsonToken);
+            }
+        }
+
+        private void VerifyFloat64(IJsonReader jsonReader, double expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Float64, jsonTokenType);
+
+            double actual = jsonReader.GetFloat64Value();
+            Assert.AreEqual(expected, actual);
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"D{expected}", stringRawJsonToken);
             }
         }
 
