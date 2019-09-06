@@ -35,48 +35,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TestCustomJsonSerializerWithOffers()
-        {
-            int toStreamCount = 0;
-            int fromStreamCount = 0;
-
-            CosmosSerializerHelper mockJsonSerializer = new CosmosSerializerHelper(
-                null,
-                (x) => fromStreamCount++,
-                (x) => toStreamCount++);
-
-            //Create a new cosmos client with the mocked cosmos json serializer
-            CosmosClient client = TestCommon.CreateCosmosClient(
-                (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer));
-            Database databaseNoOffer = client.GetDatabase(this.database.Id);
-            int? dbThroughPut = await databaseNoOffer.ReadThroughputAsync();
-            
-            Assert.AreEqual(0, toStreamCount);
-            Assert.AreEqual(0, fromStreamCount);
-            Assert.IsNull(dbThroughPut);
-
-            Container containerWithOffer = databaseNoOffer.GetContainer(this.container.Id);
-            int? containerThroughPut = await containerWithOffer.ReadThroughputAsync();
-
-            Assert.AreEqual(0, toStreamCount);
-            Assert.AreEqual(0, fromStreamCount);
-            Assert.IsNotNull(containerThroughPut);
-            Assert.IsTrue(containerThroughPut > 100);
-
-            await containerWithOffer.ReplaceThroughputAsync(containerThroughPut.Value+100);
-
-            Assert.AreEqual(0, toStreamCount);
-            Assert.AreEqual(0, fromStreamCount);
-
-            int? updatedContainerThroughPut = await containerWithOffer.ReadThroughputAsync();
-
-            Assert.AreEqual(0, toStreamCount);
-            Assert.AreEqual(0, fromStreamCount);
-            Assert.IsNotNull(containerThroughPut);
-            Assert.AreEqual(containerThroughPut+100, updatedContainerThroughPut);
-        }
-
-        [TestMethod]
         public async Task TestCustomJsonSerializer()
         {
             int toStreamCount = 0;

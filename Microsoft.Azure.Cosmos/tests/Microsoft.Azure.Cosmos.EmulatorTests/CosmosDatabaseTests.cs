@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(createResponse.Database.Id, readResponse.Database.Id);
             Assert.AreEqual(createResponse.Resource.Id, readResponse.Resource.Id);
             Assert.AreNotEqual(createResponse.ActivityId, readResponse.ActivityId);
-            ValidateHeaders(readResponse);
+            this.ValidateHeaders(readResponse);
             await createResponse.Database.DeleteAsync(cancellationToken: this.cancellationToken);
         }
 
@@ -208,15 +208,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
             Cosmos.Database cosmosDatabase = createResponse;
-            try
-            {
-                int? readThroughput = await ((DatabaseCore)cosmosDatabase).ReadThroughputAsync();
-                Assert.Fail("Should through not found exception as throughput is not configured");
-            }
-            catch (CosmosException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
-            }
+            int? readThroughput = await cosmosDatabase.ReadThroughputAsync();
+            Assert.IsNull(readThroughput);
 
             await cosmosDatabase.DeleteAsync();
         }
@@ -243,7 +236,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 readThroughput = await ((ContainerCore)container).ReadThroughputAsync();
                 Assert.Fail("Should through not found exception as throughput is not configured");
-            } catch (CosmosException exception)
+            }
+            catch (CosmosException exception)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
             }
@@ -255,9 +249,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadReplaceThroughputResponseTests()
         {
+            int toStreamCount = 0;
+            int fromStreamCount = 0;
+
+            CosmosSerializerHelper mockJsonSerializer = new CosmosSerializerHelper(
+                null,
+                (x) => fromStreamCount++,
+                (x) => toStreamCount++);
+
+            //Create a new cosmos client with the mocked cosmos json serializer
+            CosmosClient client = TestCommon.CreateCosmosClient(
+                (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer));
+
             string databaseId = Guid.NewGuid().ToString();
             int throughput = 10000;
-            DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false, throughput: throughput);
+            DatabaseResponse createResponse = await client.CreateDatabaseAsync(databaseId, throughput, null);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
             Cosmos.Database cosmosDatabase = createResponse;
@@ -288,9 +294,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
 
             Container container = containerResponse;
+            readThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
+            Assert.IsNotNull(readThroughputResponse);
+            Assert.AreEqual(readThroughputResponse.StatusCode, HttpStatusCode.NotFound);
+            Assert.IsNull(readThroughputResponse.Resource);
+
+            await container.DeleteContainerAsync();
+
+            Container containerNoTroughput = await cosmosDatabase.CreateContainerAsync(
+                Guid.NewGuid().ToString(),
+                partitionPath,
+                throughput: null);
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+            int? noThroughput = await containerNoTroughput.ReadThroughputAsync();
+            Assert.IsNull(noThroughput);
+
             try
             {
-                readThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
+                await containerNoTroughput.ReplaceThroughputAsync(600);
                 Assert.Fail("Should through not found exception as throughput is not configured");
             }
             catch (CosmosException exception)
@@ -298,7 +321,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
             }
 
-            await container.DeleteContainerAsync();
+            Assert.AreEqual(0, toStreamCount, "Custom serializer to stream should not be used for offer operations");
+            Assert.AreEqual(0, fromStreamCount, "Custom serializer from stream should not be used for offer operations");
             await cosmosDatabase.DeleteAsync();
         }
 
@@ -361,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 deleteList.Add(createResponse.Database);
                 DatabaseResponse createResponse3 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(thirdDb);
                 deleteList.Add(createResponse3.Database);
-                 
+
                 FeedIterator<DatabaseProperties> feedIterator =
                     this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
                         new QueryDefinition("select c.id From c where c.id = @id ")
@@ -414,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(databaseId, response.Resource.Id);
             Assert.AreEqual(databaseId, response.Database.Id);
-            ValidateHeaders(response);
+            this.ValidateHeaders(response);
 
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK || (response.StatusCode == HttpStatusCode.Created && !databaseExists));
 

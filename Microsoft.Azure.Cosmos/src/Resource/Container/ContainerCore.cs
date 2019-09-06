@@ -124,6 +124,7 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
             return await cosmosOffers.ReplaceThroughputAsync(
+                resourceName: this.Id,
                 targetRID: rid,
                 throughput: throughput,
                 requestOptions: requestOptions,

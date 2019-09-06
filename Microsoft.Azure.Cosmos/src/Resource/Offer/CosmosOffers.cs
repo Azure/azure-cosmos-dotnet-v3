@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
             OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
             if (offerV2 == null)
             {
-                return null;
+                return new ThroughputResponse(HttpStatusCode.NotFound, null, null);
             }
 
             return await this.GetThroughputResponseAsync(
@@ -43,12 +44,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal async Task<ThroughputResponse> ReplaceThroughputAsync(
+            string resourceName,
             string targetRID,
             int throughput,
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             OfferV2 offerV2 = await this.GetOfferV2Async(targetRID, cancellationToken);
+            if (offerV2 == null)
+            {
+                throw new CosmosException(HttpStatusCode.NotFound, $"Throughput is not configured for resource:{resourceName}");
+            }
+
             OfferV2 newOffer = new OfferV2(offerV2, throughput);
 
             return await this.GetThroughputResponseAsync(
