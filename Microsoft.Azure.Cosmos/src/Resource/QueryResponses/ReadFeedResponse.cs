@@ -11,12 +11,14 @@ namespace Microsoft.Azure.Cosmos
         protected ReadFeedResponse(
             HttpStatusCode httpStatusCode,
             ICollection<T> resource,
-            Headers responseMessageHeaders)
+            Headers responseMessageHeaders,
+            CosmosDiagnostics diagnostics)
         {
             this.Count = resource.Count;
             this.Headers = responseMessageHeaders;
             this.Resource = resource;
             this.StatusCode = httpStatusCode;
+            this.Diagnostics = diagnostics;
         }
 
         public override int Count { get; }
@@ -28,6 +30,8 @@ namespace Microsoft.Azure.Cosmos
         public override IEnumerable<T> Resource { get; }
 
         public override HttpStatusCode StatusCode { get; }
+
+        public override CosmosDiagnostics Diagnostics { get; }
 
         public override IEnumerator<T> GetEnumerator()
         {
@@ -50,7 +54,8 @@ namespace Microsoft.Azure.Cosmos
                 ReadFeedResponse<TInput> readFeedResponse = new ReadFeedResponse<TInput>(
                     httpStatusCode: responseMessage.StatusCode,
                     resource: resources,
-                    responseMessageHeaders: responseMessage.Headers);
+                    responseMessageHeaders: responseMessage.Headers,
+                    diagnostics: responseMessage.Diagnostics);
 
                 return readFeedResponse;
             }

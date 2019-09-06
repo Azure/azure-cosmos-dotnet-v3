@@ -152,9 +152,9 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestErrorResponsesProvideBody()
         {
             string testContent = "Content";
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
             {
-                return new HttpResponseMessage(HttpStatusCode.Conflict) { Content = new StringContent(testContent) };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict) { Content = new StringContent(testContent) });
             };
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();

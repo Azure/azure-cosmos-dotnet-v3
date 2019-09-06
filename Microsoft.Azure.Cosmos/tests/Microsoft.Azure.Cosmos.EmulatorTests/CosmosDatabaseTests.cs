@@ -71,9 +71,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DatabaseResponse response = await this.CreateDatabaseHelper();
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            Assert.IsNotNull(response.Diagnostics);
+            string diagnostics = response.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
 
             response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+            Assert.IsNotNull(response.Diagnostics);
+            diagnostics = response.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
         }
 
         [TestMethod]
@@ -186,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(createResponse.Database.Id, readResponse.Database.Id);
             Assert.AreEqual(createResponse.Resource.Id, readResponse.Resource.Id);
             Assert.AreNotEqual(createResponse.ActivityId, readResponse.ActivityId);
-            ValidateHeaders(readResponse);
+            this.ValidateHeaders(readResponse);
             await createResponse.Database.DeleteAsync(cancellationToken: this.cancellationToken);
         }
 
@@ -198,6 +206,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             createResponse = await this.CreateDatabaseHelper(createResponse.Resource.Id, databaseExists: true);
             Assert.AreEqual(HttpStatusCode.OK, createResponse.StatusCode);
+            Assert.IsNotNull(createResponse.Diagnostics);
+            string diagnostics = createResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("requestStartTime"));
         }
 
         [TestMethod]
@@ -243,7 +255,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 readThroughput = await ((ContainerCore)container).ReadThroughputAsync();
                 Assert.Fail("Should through not found exception as throughput is not configured");
-            } catch (CosmosException exception)
+            }
+            catch (CosmosException exception)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
             }
@@ -361,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 deleteList.Add(createResponse.Database);
                 DatabaseResponse createResponse3 = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(thirdDb);
                 deleteList.Add(createResponse3.Database);
-                 
+
                 FeedIterator<DatabaseProperties> feedIterator =
                     this.cosmosClient.GetDatabaseQueryIterator<DatabaseProperties>(
                         new QueryDefinition("select c.id From c where c.id = @id ")
@@ -414,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(databaseId, response.Resource.Id);
             Assert.AreEqual(databaseId, response.Database.Id);
-            ValidateHeaders(response);
+            this.ValidateHeaders(response);
 
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK || (response.StatusCode == HttpStatusCode.Created && !databaseExists));
 
