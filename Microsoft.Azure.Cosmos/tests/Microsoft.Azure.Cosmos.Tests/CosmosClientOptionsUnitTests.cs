@@ -359,6 +359,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(object.ReferenceEquals(webProxy, innerHandler.Proxy));
         }
 
+        [TestMethod]
+        public void VerifyCorrectProtocolIsSet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway };
+            Assert.AreEqual(Protocol.Https, cosmosClientOptions.ConnectionProtocol);
+
+            cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct };
+            Assert.AreEqual(Protocol.Tcp, cosmosClientOptions.ConnectionProtocol);
+        }
+
         private class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }
