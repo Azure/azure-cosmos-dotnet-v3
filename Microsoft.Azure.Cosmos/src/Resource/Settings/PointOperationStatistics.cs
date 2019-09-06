@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
                     this.supplementalResponseStatisticsList.RemoveRange(0, countToRemove);
                 }
             }
-            return JsonConvert.SerializeObject(this, SerializerSettings);
+            return JsonConvert.SerializeObject(this, PointOperationStatistics.SerializerSettings);
         }
     }
 }
