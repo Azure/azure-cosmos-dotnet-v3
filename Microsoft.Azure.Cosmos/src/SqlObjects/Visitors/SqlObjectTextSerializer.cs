@@ -116,6 +116,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlBooleanLiteral sqlBooleanLiteral)
         {
+            //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
+            //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
             string literalStr = null;
             if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlBooleanLiteral.Value, out literalStr))
             {
@@ -359,6 +361,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlNumberLiteral sqlNumberLiteral)
         {
+            //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
+            //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
             string literalStr = null;
             if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlNumberLiteral.Value, out literalStr))
             {
@@ -436,6 +440,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlObjectLiteral sqlObjectLiteral)
         {
+            //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
+            //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
             string literalStr = null;
             if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlObjectLiteral.Value, out literalStr))
             {
@@ -636,6 +642,8 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlStringLiteral sqlStringLiteral)
         {
+            //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
+            //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
             string literalStr = null;
             if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlStringLiteral.Value, out literalStr))
             {
