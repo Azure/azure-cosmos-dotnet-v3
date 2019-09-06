@@ -284,5 +284,15 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Germany West Central region in the Azure Cosmos DB service.
         /// </summary>
         public const string GermanyWestCentral = "Germany West Central";
+
+        /// <summary>
+        /// Name of the Azure Norway East region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string NorwayEast = "Norway East";
+
+        /// <summary>
+        /// Name of the Azure Norway West region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string NorwayWest = "Norway West";
     }
 }
