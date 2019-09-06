@@ -147,8 +147,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
-        public override string ParameterKeyStr { get; set; }
-
         public static SqlStringLiteral Create(string value)
         {
             SqlStringLiteral sqlStringLiteral;

@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             QueryDefinition queryDefinition = queriable.ToQueryDefinition();
             Assert.AreEqual(1, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.AreEqual("@value0", queryDefinition.ToSqlQuerySpec().Parameters[0].Name);
+            Assert.AreEqual("@param0", queryDefinition.ToSqlQuerySpec().Parameters[0].Name);
             Assert.AreEqual(10, queriable.ToList().Count);
 
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
@@ -399,6 +399,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
                .Where(item => item.description == "CreateRandomToDoActivity")
                .Where(item => item.taskNum < 100)
+                .Where(item => item.taskNum <= 100)
                .Where(item => item.valid == false);
             queryDefinition = queriable.ToQueryDefinition();
             Assert.AreEqual(4, queryDefinition.ToSqlQuerySpec().Parameters.Count);
@@ -414,10 +415,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queriable = linqQueryable
                 .Where(item => item.description == "CreateRandomToDoActivity")
                 .SelectMany(item => item.children)
-                .Where(child => child.id == "child")
+                .Where(child => child.id == "child1")
                 .Where(child => child.taskNum == 30);
             queryDefinition = queriable.ToQueryDefinition();
             Assert.AreEqual(3, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual(10, queriable.ToList().Count);
+
+            queriable = linqQueryable.Where(item => item.children == new ToDoActivity[]
+            {
+                new ToDoActivity{ id = "child1", taskNum = 30},
+                new ToDoActivity{ id = "child2", taskNum = 40}
+            });
             Assert.AreEqual(10, queriable.ToList().Count);
         }
     }

@@ -66,7 +66,7 @@ FROM root ]]></SqlQuery>
 SELECT VALUE SUM(m0) 
 FROM root 
 JOIN m0 IN root["Multiples"] 
-WHERE ((m0 % @value0) = @value1) ]]></SqlQuery>
+WHERE ((m0 % @param0) = @param1) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -86,7 +86,7 @@ JOIN (
     FROM r0 
     JOIN v0 IN r0
 ) AS v1 
-WHERE (v1 > @value0) 
+WHERE (v1 > @param0) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -223,7 +223,7 @@ FROM (
                 SELECT VALUE c0["Grade"] 
                 FROM root 
                 JOIN c0 IN root["Children"] 
-                WHERE (c0["Grade"] > @value9) 
+                WHERE (c0["Grade"] > @param1) 
                 ORDER BY c0["Grade"] ASC 
                 OFFSET 1 LIMIT 2147483647
             ) AS r6

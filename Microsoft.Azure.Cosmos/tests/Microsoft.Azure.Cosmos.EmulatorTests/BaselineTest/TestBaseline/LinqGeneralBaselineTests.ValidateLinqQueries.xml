@@ -6,9 +6,9 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["Parents"][@value1]["FamilyName"] 
+SELECT VALUE root["Parents"][@param0]["FamilyName"] 
 FROM root 
-WHERE (ARRAY_LENGTH(root["Parents"]) > @value0) ]]></SqlQuery>
+WHERE (ARRAY_LENGTH(root["Parents"]) > @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,9 +18,9 @@ WHERE (ARRAY_LENGTH(root["Parents"]) > @value0) ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["Children"][@value1]["Grade"] + @value2) 
+SELECT VALUE (root["Children"][@param0]["Grade"] + @param1) 
 FROM root 
-WHERE (ARRAY_LENGTH(root["Children"]) > @value0) ]]></SqlQuery>
+WHERE (ARRAY_LENGTH(root["Children"]) > @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (ARRAY_LENGTH(root["Children"]) > @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (((ARRAY_LENGTH(root["Children"]) > @value0) AND (ARRAY_LENGTH(root["Children"][@value1]["Pets"]) > @value2)) AND (root["Children"][@value3]["Pets"][@value4]["GivenName"] = @value5)) ]]></SqlQuery>
+WHERE (((ARRAY_LENGTH(root["Children"]) > @param0) AND (ARRAY_LENGTH(root["Children"][@param0]["Pets"]) > @param0)) AND (root["Children"][@param0]["Pets"][@param0]["GivenName"] = @param1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ WHERE (((ARRAY_LENGTH(root["Children"]) > @value0) AND (ARRAY_LENGTH(root["Child
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((ARRAY_LENGTH(root["Children"]) > @value0) AND (root["Children"][@value1]["Things"][@value2] = @value3)) ]]></SqlQuery>
+WHERE ((ARRAY_LENGTH(root["Children"]) > @param0) AND (root["Children"][@param0]["Things"][@param1] = @param2)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -54,9 +54,9 @@ WHERE ((ARRAY_LENGTH(root["Children"]) > @value0) AND (root["Children"][@value1]
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["Children"][@value5]["Pets"][@value6] 
+SELECT VALUE root["Children"][@param0]["Pets"][@param0] 
 FROM root 
-WHERE (((ARRAY_LENGTH(root["Children"]) > @value0) AND (ARRAY_LENGTH(root["Children"][@value1]["Pets"]) > @value2)) AND (root["Children"][@value3]["Gender"] = @value4)) ]]></SqlQuery>
+WHERE (((ARRAY_LENGTH(root["Children"]) > @param0) AND (ARRAY_LENGTH(root["Children"][@param0]["Pets"]) > @param0)) AND (root["Children"][@param0]["Gender"] = @param1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -66,9 +66,9 @@ WHERE (((ARRAY_LENGTH(root["Children"]) > @value0) AND (ARRAY_LENGTH(root["Child
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["Children"][@value5]["Pets"][@value6] 
+SELECT VALUE root["Children"][@param0]["Pets"][@param1] 
 FROM root 
-WHERE (((ARRAY_LENGTH(root["Children"]) > @value0) AND (ARRAY_LENGTH(root["Children"][@value1]["Pets"]) > @value2)) AND (root["Children"][@value3]["Gender"] = @value4)) ]]></SqlQuery>
+WHERE (((ARRAY_LENGTH(root["Children"]) > @param0) AND (ARRAY_LENGTH(root["Children"][@param0]["Pets"]) > @param1)) AND (root["Children"][@param0]["Gender"] = @param2)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -140,7 +140,7 @@ WHERE (null = root["FamilyId"]) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["IsRegistered"] = false) ]]></SqlQuery>
+WHERE (root["IsRegistered"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -152,7 +152,7 @@ WHERE (root["IsRegistered"] = false) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["FamilyId"] = @value0) ]]></SqlQuery>
+WHERE (root["FamilyId"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -188,7 +188,7 @@ WHERE (root["NullableInt"] = null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableInt"] = @value0) ]]></SqlQuery>
+WHERE (root["NullableInt"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -200,7 +200,7 @@ WHERE (root["NullableInt"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableInt"] = @value0) ]]></SqlQuery>
+WHERE (root["NullableInt"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -212,7 +212,7 @@ WHERE (root["NullableInt"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableInt"] = @value0) ]]></SqlQuery>
+WHERE (root["NullableInt"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -224,7 +224,7 @@ WHERE (root["NullableInt"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Int"] = @value0) ]]></SqlQuery>
+WHERE (root["Int"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -236,7 +236,7 @@ WHERE (root["Int"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Int"] = @value0) ]]></SqlQuery>
+WHERE (root["Int"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -272,7 +272,7 @@ WHERE (root["Int"] < null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = @value0) ]]></SqlQuery>
+WHERE (root["id"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -284,7 +284,7 @@ WHERE (root["id"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = @value0) ]]></SqlQuery>
+WHERE (root["id"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -296,7 +296,7 @@ WHERE (root["id"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["ArrayField"] = [@value0, @value1, @value2]) ]]></SqlQuery>
+WHERE (root["ArrayField"] = [@param0, @param1, @param2]) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -320,7 +320,7 @@ WHERE (root["ArrayField"] = null) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["ListField"] = [@value0, @value1, @value2]) ]]></SqlQuery>
+WHERE (root["ListField"] = [@param0, @param1, @param2]) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -333,7 +333,7 @@ WHERE (root["ListField"] = [@value0, @value1, @value2]) ]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 JOIN c0 IN root["GreatFamily"]["Family"]["Children"] 
-WHERE (c0["GivenName"] = @value0) ]]></SqlQuery>
+WHERE (c0["GivenName"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -345,7 +345,7 @@ WHERE (c0["GivenName"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = @value0) ]]></SqlQuery>
+WHERE (root["id"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -357,7 +357,7 @@ WHERE (root["id"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["json"] = @value0) ]]></SqlQuery>
+WHERE (root["json"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -369,7 +369,7 @@ WHERE (root["json"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["id"] = @value0) ]]></SqlQuery>
+WHERE (root["id"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
 </Results>

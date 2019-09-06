@@ -21,11 +21,13 @@ namespace Microsoft.Azure.Cosmos.Sql
         private readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
+        private Dictionary<object, string> literalToParamStr;
 
-        public SqlObjectTextSerializer(bool prettyPrint)
+        public SqlObjectTextSerializer(bool prettyPrint, Dictionary<object, string> literalToParamStr = null)
         {
             this.writer = new StringWriter(CultureInfo.InvariantCulture);
             this.prettyPrint = prettyPrint;
+            this.literalToParamStr = literalToParamStr;
         }
 
         public override void Visit(SqlAliasedCollectionExpression sqlAliasedCollectionExpression)
@@ -114,9 +116,10 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlBooleanLiteral sqlBooleanLiteral)
         {
-            if (string.IsNullOrEmpty(sqlBooleanLiteral.ParameterKeyStr))
+            string literalStr = null;
+            if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlBooleanLiteral.Value, out literalStr))
             {
-                this.writer.Write(sqlBooleanLiteral.ParameterKeyStr);
+                this.writer.Write(literalStr);
             }
             else
             {
@@ -356,9 +359,10 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlNumberLiteral sqlNumberLiteral)
         {
-            if (!string.IsNullOrEmpty(sqlNumberLiteral.ParameterKeyStr))
+            string literalStr = null;
+            if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlNumberLiteral.Value, out literalStr))
             {
-                this.writer.Write(sqlNumberLiteral.ParameterKeyStr);
+                this.writer.Write(literalStr);
             }
             else
             {
@@ -432,9 +436,10 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlObjectLiteral sqlObjectLiteral)
         {
-            if (!string.IsNullOrEmpty(sqlObjectLiteral.ParameterKeyStr))
+            string literalStr = null;
+            if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlObjectLiteral.Value, out literalStr))
             {
-                this.writer.Write(sqlObjectLiteral.ParameterKeyStr);
+                this.writer.Write(literalStr);
             }
             else
             {
@@ -632,9 +637,10 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlStringLiteral sqlStringLiteral)
         {
-            if (!string.IsNullOrEmpty(sqlStringLiteral.ParameterKeyStr))
+            string literalStr = null;
+            if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlStringLiteral.Value, out literalStr))
             {
-                this.writer.Write(sqlStringLiteral.ParameterKeyStr);
+                this.writer.Write(literalStr);
             }
             else
             {

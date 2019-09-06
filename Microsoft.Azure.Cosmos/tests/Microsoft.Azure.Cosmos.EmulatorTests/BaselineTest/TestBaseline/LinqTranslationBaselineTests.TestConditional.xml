@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE ((root["NumericField"] < @value0) ? true : false) ]]></SqlQuery>
+WHERE ((root["NumericField"] < @param0) ? @param1 : @param2) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE ((root["NumericField"] < @value0) ? true : false) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["NumericField"] = (ARRAY_CONTAINS(root["ArrayField"], @value0) ? @value1 : @value2)) ]]></SqlQuery>
+WHERE (root["NumericField"] = (ARRAY_CONTAINS(root["ArrayField"], @param0) ? @param0 : @param1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (root["NumericField"] = (ARRAY_CONTAINS(root["ArrayField"], @value0) ? @va
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["NumericField"] = ((root["StringField"] = @value0) ? @value1 : (ARRAY_CONTAINS(root["ArrayField"], @value2) ? @value3 : @value4))) ]]></SqlQuery>
+WHERE (root["NumericField"] = ((root["StringField"] = @param0) ? @param1 : (ARRAY_CONTAINS(root["ArrayField"], @param1) ? @param2 : @param3))) ]]></SqlQuery>
     </Output>
   </Result>
 </Results>

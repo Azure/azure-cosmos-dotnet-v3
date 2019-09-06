@@ -30,7 +30,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 2 VALUE root 
 FROM root 
-WHERE (root["NumericField"] > @value0) ]]></SqlQuery>
+WHERE (root["NumericField"] > @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -42,7 +42,7 @@ WHERE (root["NumericField"] > @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 7 VALUE root["NumericField"] 
 FROM root 
-WHERE (root["NumericField"] > @value0) ]]></SqlQuery>
+WHERE (root["NumericField"] > @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -54,7 +54,7 @@ WHERE (root["NumericField"] > @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 8 VALUE root["NumericField"] 
 FROM root 
-WHERE (root["NumericField"] > @value0) ]]></SqlQuery>
+WHERE (root["NumericField"] > @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -66,7 +66,7 @@ WHERE (root["NumericField"] > @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT TOP 9 VALUE root["NumericField"] 
 FROM root 
-WHERE (root["NumericField"] > @value0) 
+WHERE (root["NumericField"] > @param0) 
 ORDER BY root["NumericField"] ASC ]]></SqlQuery>
     </Output>
   </Result>
@@ -83,7 +83,7 @@ FROM (
     SELECT TOP 3 VALUE root 
     FROM root
 ) AS r0 
-WHERE (r0["NumericField"] > @value1) 
+WHERE (r0["NumericField"] > @param1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -100,7 +100,7 @@ FROM (
     SELECT TOP 4 VALUE root 
     FROM root
 ) AS r0 
-WHERE (r0["NumericField"] > @value1) 
+WHERE (r0["NumericField"] > @param1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -117,7 +117,7 @@ FROM (
     SELECT TOP 5 VALUE root["NumericField"] 
     FROM root
 ) AS r0 
-WHERE (r0 > @value1) 
+WHERE (r0 > @param1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -134,7 +134,7 @@ FROM (
     SELECT TOP 6 VALUE root["NumericField"] 
     FROM root
 ) AS r0 
-WHERE (r0 > @value1) 
+WHERE (r0 > @param1) 
 ]]></SqlQuery>
     </Output>
   </Result>
@@ -151,7 +151,7 @@ FROM (
     SELECT TOP 10 VALUE root 
     FROM root
 ) AS r0 
-WHERE (r0["NumericField"] > @value1) 
+WHERE (r0["NumericField"] > @param1) 
 ORDER BY r0["NumericField"] DESC 
 ]]></SqlQuery>
     </Output>
@@ -202,7 +202,7 @@ FROM (
     SELECT TOP 10 VALUE root 
     FROM root
 ) AS r0 
-WHERE (r0["NumericField"] > @value1) 
+WHERE (r0["NumericField"] > @param1) 
 ]]></SqlQuery>
     </Output>
   </Result>

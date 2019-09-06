@@ -1,8 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.Sql
 {
+    using System.Collections.Generic;
+
     internal abstract class SqlObject
     {
         protected SqlObject(SqlObjectKind kind)
@@ -42,9 +45,14 @@ namespace Microsoft.Azure.Cosmos.Sql
             return this.Accept(sqlObjectObfuscator);
         }
 
-        private string Serialize(bool prettyPrint)
+        public string ToParameterizedString(Dictionary<object, string> literalParamKey)
         {
-            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint);
+            return this.Serialize(prettyPrint: false, literalParamKey);
+        }
+
+        private string Serialize(bool prettyPrint, Dictionary<object, string> literalParamKey = null)
+        {
+            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint, literalParamKey);
             this.Accept(sqlObjectTextSerializer);
             return sqlObjectTextSerializer.ToString();
         }

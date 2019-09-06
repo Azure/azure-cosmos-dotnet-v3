@@ -32,7 +32,7 @@ ORDER BY root["FamilyId"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-WHERE ((root["Int"] = @value0) AND (root["NullableInt"] != null)) 
+WHERE ((root["Int"] = @param0) AND (root["NullableInt"] != null)) 
 ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
     </Output>
   </Result>
@@ -45,7 +45,7 @@ ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-WHERE ((root["Int"] = @value0) AND (root["NullableInt"] != null)) 
+WHERE ((root["Int"] = @param0) AND (root["NullableInt"] != null)) 
 ORDER BY root["IsRegistered"] ASC ]]></SqlQuery>
     </Output>
   </Result>
@@ -154,7 +154,7 @@ ORDER BY root["FamilyId"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-WHERE ((root["Int"] = @value0) AND (root["NullableInt"] != null)) 
+WHERE ((root["Int"] = @param0) AND (root["NullableInt"] != null)) 
 ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
     </Output>
   </Result>
@@ -167,7 +167,7 @@ ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
 FROM root 
-WHERE ((root["Int"] = @value0) AND (root["NullableInt"] != null)) 
+WHERE ((root["Int"] = @param0) AND (root["NullableInt"] != null)) 
 ORDER BY root["IsRegistered"] DESC ]]></SqlQuery>
     </Output>
   </Result>

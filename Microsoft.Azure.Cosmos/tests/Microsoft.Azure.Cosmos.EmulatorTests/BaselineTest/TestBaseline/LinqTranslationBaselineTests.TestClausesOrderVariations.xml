@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root["NumericField"] 
 FROM root 
-WHERE (root["StringField"] = @value0) ]]></SqlQuery>
+WHERE (root["StringField"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["StringField"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["NumericField"] 
 FROM root 
-WHERE (root["NumericField"] = @value0) ]]></SqlQuery>
+WHERE (root["NumericField"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (root["NumericField"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Point"] 
 FROM root 
-WHERE (((((root["Point"]["coordinates"]["Latitude"] = @value0) AND (root["Point"]["coordinates"]["Longitude"] = @value1)) AND (root["Point"]["coordinates"]["Altitude"] = @value2)) AND (root["Point"]["coordinates"]["Coordinates"][@value3] = @value4)) AND (root["Point"]["coordinates"]["Coordinates"][@value5] = @value6)) ]]></SqlQuery>
+WHERE (((((root["Point"]["coordinates"]["Latitude"] = @param0) AND (root["Point"]["coordinates"]["Longitude"] = @param1)) AND (root["Point"]["coordinates"]["Altitude"] = @param2)) AND (root["Point"]["coordinates"]["Coordinates"][@param3] = @param0)) AND (root["Point"]["coordinates"]["Coordinates"][@param4] = @param1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ WHERE (((((root["Point"]["coordinates"]["Latitude"] = @value0) AND (root["Point"
       <SqlQuery><![CDATA[
 SELECT VALUE root["Point"] 
 FROM root 
-WHERE (((((root["Point"]["coordinates"]["Latitude"] = @value0) AND (root["Point"]["coordinates"]["Longitude"] = @value1)) AND (root["Point"]["coordinates"]["Altitude"] = @value2)) AND (root["Point"]["coordinates"]["Coordinates"][@value3] = @value4)) AND (root["Point"]["coordinates"]["Coordinates"][@value5] = @value6)) ]]></SqlQuery>
+WHERE (((((root["Point"]["coordinates"]["Latitude"] = @param0) AND (root["Point"]["coordinates"]["Longitude"] = @param1)) AND (root["Point"]["coordinates"]["Altitude"] = @param2)) AND (root["Point"]["coordinates"]["Coordinates"][@param3] = @param0)) AND (root["Point"]["coordinates"]["Coordinates"][@param4] = @param1)) ]]></SqlQuery>
     </Output>
   </Result>
 </Results>

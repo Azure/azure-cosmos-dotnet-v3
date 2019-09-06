@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["title"] = @value0) ]]></SqlQuery>
+WHERE (root["title"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["title"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Author"]["id"] = @value0) ]]></SqlQuery>
+WHERE (root["Author"]["id"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (root["Author"]["id"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Author"] 
 FROM root 
-WHERE (root["Languages"][@value0]["Name"] = @value1) ]]></SqlQuery>
+WHERE (root["Languages"][@param0]["Name"] = @param1) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -45,7 +45,7 @@ WHERE (root["Languages"][@value0]["Name"] = @value1) ]]></SqlQuery>
 SELECT VALUE book0["Copyright"] 
 FROM root 
 JOIN book0 IN root["Languages"] 
-WHERE (book0["Name"] = @value0) ]]></SqlQuery>
+WHERE (book0["Name"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -57,7 +57,7 @@ WHERE (book0["Name"] = @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Author"] 
 FROM root 
-WHERE (root["Price"] < @value0) ]]></SqlQuery>
+WHERE (root["Price"] < @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -69,7 +69,7 @@ WHERE (root["Price"] < @value0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((root["title"] = @value0) OR (root["Author"]["id"] = @value1)) ]]></SqlQuery>
+WHERE ((root["title"] = @param0) OR (root["Author"]["id"] = @param1)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -94,7 +94,7 @@ JOIN book0 IN root["Editions"] ]]></SqlQuery>
 SELECT VALUE root["Author"] 
 FROM root 
 JOIN lng0 IN root["Languages"] 
-WHERE (lng0["Name"] = @value0) ]]></SqlQuery>
+WHERE (lng0["Name"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -107,7 +107,7 @@ WHERE (lng0["Name"] = @value0) ]]></SqlQuery>
 SELECT VALUE root["Author"] 
 FROM root 
 JOIN edition0 IN root["Editions"] 
-WHERE (edition0["Year"] = @value0) ]]></SqlQuery>
+WHERE (edition0["Year"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
 </Results>

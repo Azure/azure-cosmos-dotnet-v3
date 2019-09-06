@@ -86,7 +86,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 taskNum = 42,
                 cost = double.MaxValue,
                 CamelCase = "camelCase",
-                children = new ToDoActivity[] { new ToDoActivity { id = "child", taskNum = 30 } },
+                children = new ToDoActivity[]
+                { new ToDoActivity { id = "child1", taskNum = 30 },
+                  new ToDoActivity { id = "child2", taskNum = 40}
+                },
                 valid = true
             };
         }

@@ -68,7 +68,7 @@ WHERE (root["NullableEnum2"] = "Two") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["EnumNumber"] = @value0) ]]></SqlQuery>
+WHERE (root["EnumNumber"] = @param0) ]]></SqlQuery>
     </Output>
   </Result>
 </Results>

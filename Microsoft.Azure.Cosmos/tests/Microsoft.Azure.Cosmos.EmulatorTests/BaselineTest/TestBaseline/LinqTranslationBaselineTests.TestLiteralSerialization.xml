@@ -6,7 +6,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":1} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -17,7 +17,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":0} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -28,7 +28,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":255} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -39,7 +39,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":2} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -50,7 +50,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-128} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -61,7 +61,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":127} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -72,7 +72,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":3} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -83,7 +83,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":0} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -94,7 +94,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":65535} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -105,7 +105,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":4} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -116,7 +116,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":0} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -127,7 +127,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":4294967295} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -138,7 +138,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":5} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -149,7 +149,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":0} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -160,7 +160,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":18446744073709551615} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -171,7 +171,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":6} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -182,7 +182,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-32768} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -193,7 +193,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":32767} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -204,7 +204,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":7} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -215,7 +215,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-2147483648} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -226,7 +226,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":2147483647} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -237,7 +237,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":8} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -248,7 +248,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-9223372036854775808} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -259,7 +259,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":9223372036854775807} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -270,7 +270,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":9} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -281,7 +281,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-79228162514264337593543950335.0} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -292,7 +292,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":79228162514264337593543950335.0} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -303,7 +303,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":10} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -314,7 +314,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-1.7976931348623157E+308} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -325,7 +325,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":1.7976931348623157E+308} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -336,7 +336,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":11} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -347,7 +347,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-3.40282347E+38} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -358,7 +358,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":3.40282347E+38} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -369,7 +369,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":true} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -380,7 +380,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":false} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -391,7 +391,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":""} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -402,7 +402,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":"str1"} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -413,7 +413,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":"long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890"} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -424,7 +424,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":"unicode 㐀㐁㨀㨁䶴䶵"} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -435,7 +435,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":null} 
+SELECT VALUE @param0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>

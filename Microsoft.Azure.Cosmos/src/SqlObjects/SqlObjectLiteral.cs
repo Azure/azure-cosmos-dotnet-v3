@@ -27,8 +27,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.isValueSerialized = isValueSerialized;
         }
 
-        public override string ParameterKeyStr { get; set; }
-
         public static SqlObjectLiteral Create(object value, bool isValueSerialized)
         {
             return new SqlObjectLiteral(value, isValueSerialized);

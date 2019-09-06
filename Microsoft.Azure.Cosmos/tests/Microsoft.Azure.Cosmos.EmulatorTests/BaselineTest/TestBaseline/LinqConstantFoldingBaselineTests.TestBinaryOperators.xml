@@ -285,8 +285,8 @@
       <Expression><![CDATA[(12 + 34)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[46]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[46]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -295,8 +295,8 @@
       <Expression><![CDATA[(45 - 34)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[11]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[11]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -305,8 +305,8 @@
       <Expression><![CDATA[(10 * 20)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[200]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[200]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -315,8 +315,8 @@
       <Expression><![CDATA[(10 / 2)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[5]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[5]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -325,8 +325,8 @@
       <Expression><![CDATA[(101 % 3)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[2]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[2]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -335,8 +335,8 @@
       <Expression><![CDATA[(1 & 2)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[0]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[0]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -345,8 +345,8 @@
       <Expression><![CDATA[(3 | 4)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[7]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[7]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -355,8 +355,8 @@
       <Expression><![CDATA[(5 ^ 6)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[3]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[3]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -365,8 +365,8 @@
       <Expression><![CDATA[(1 << 2)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[4]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[4]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -375,8 +375,8 @@
       <Expression><![CDATA[(100 >> 1)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[50]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[50]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -385,8 +385,8 @@
       <Expression><![CDATA[(2 + 6)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[@value0]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[@value0]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[8]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[8]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>
@@ -395,8 +395,8 @@
       <Expression><![CDATA[(x + 2)]]></Expression>
     </Input>
     <Output>
-      <TranslationOutput><![CDATA[(x + @value0)]]></TranslationOutput>
-      <TranslationOldOutput><![CDATA[(x + @value0)]]></TranslationOldOutput>
+      <TranslationOutput><![CDATA[(x + 2)]]></TranslationOutput>
+      <TranslationOldOutput><![CDATA[(x + 2)]]></TranslationOldOutput>
     </Output>
   </Result>
   <Result>

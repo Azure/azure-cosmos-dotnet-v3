@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             get;
         }
 
-        public override string ParameterKeyStr { get; set; }
-
         public static SqlBooleanLiteral Create(bool value)
         {
             return value ? True : False;
