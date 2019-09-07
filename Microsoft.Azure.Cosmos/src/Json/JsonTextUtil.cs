@@ -27,6 +27,15 @@ namespace Microsoft.Azure.Cosmos.Json
             return double.Parse(stringDouble, CultureInfo.InvariantCulture);
         }
 
+        public static float GetFloatValue(ArraySegment<byte> bufferedToken)
+        {
+            byte[] rawBufferedTokenArray = bufferedToken.Array;
+            int offset = bufferedToken.Offset;
+            int count = bufferedToken.Count;
+            string stringFloat = Encoding.UTF8.GetString(rawBufferedTokenArray, offset, count);
+            return float.Parse(stringFloat, CultureInfo.InvariantCulture);
+        }
+
         public static long GetIntegerValue(ArraySegment<byte> bufferedToken)
         {
             byte[] rawBufferedTokenArray = bufferedToken.Array;

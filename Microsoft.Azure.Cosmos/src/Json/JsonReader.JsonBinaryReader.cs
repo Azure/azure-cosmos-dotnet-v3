@@ -757,7 +757,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessUInt32()
             {
-                this.ProcessJsonToken(JsonTokenType.Int8, this.ProcessUInt32Callback);
+                this.ProcessJsonToken(JsonTokenType.UInt32, this.ProcessUInt32Callback);
             }
 
             private void ProcessFloat32()

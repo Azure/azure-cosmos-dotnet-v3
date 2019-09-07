@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
             foreach (float value in values)
             {
-                string input = $"S{value}";
+                string input = $"S{value.ToString("G9", CultureInfo.InvariantCulture)}";
                 byte[] binaryInput;
                 unchecked
                 {
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
             foreach (double value in values)
             {
-                string input = $"D{value}";
+                string input = $"D{value.ToString("G17", CultureInfo.InvariantCulture)}";
                 byte[] binaryInput;
                 unchecked
                 {
@@ -2323,7 +2323,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                                 break;
 
                             case JsonTokenType.Int64:
-                                this.VerifyInt64(jsonReader, ((JsonInt8Token)expectedToken).Value, encoding);
+                                this.VerifyInt64(jsonReader, ((JsonInt64Token)expectedToken).Value, encoding);
                                 break;
 
                             case JsonTokenType.UInt32:
@@ -2497,7 +2497,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         private void VerifyUInt32(IJsonReader jsonReader, uint expected, Encoding encoding)
         {
             JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
-            Assert.AreEqual(JsonTokenType.Int8, jsonTokenType);
+            Assert.AreEqual(JsonTokenType.UInt32, jsonTokenType);
 
             uint actual = jsonReader.GetUInt32Value();
             Assert.AreEqual(expected, actual);
@@ -2517,14 +2517,14 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             Assert.AreEqual(JsonTokenType.Float32, jsonTokenType);
 
             float actual = jsonReader.GetFloat32Value();
-            Assert.AreEqual(expected, actual);
+            Assert.AreEqual(expected, actual, double.Epsilon);
 
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
                 IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
-                Assert.AreEqual($"S{expected}", stringRawJsonToken);
+                Assert.AreEqual($"S{expected.ToString("G9", CultureInfo.InvariantCulture)}", stringRawJsonToken);
             }
         }
 
@@ -2541,7 +2541,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             {
                 IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
-                Assert.AreEqual($"D{expected}", stringRawJsonToken);
+                Assert.AreEqual($"D{expected.ToString("G17", CultureInfo.InvariantCulture)}", stringRawJsonToken);
             }
         }
 
