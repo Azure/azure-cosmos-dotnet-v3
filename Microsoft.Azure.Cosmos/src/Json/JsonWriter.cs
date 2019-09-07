@@ -71,8 +71,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="skipValidation">Whether or not to skip validation</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
-            JsonSerializationFormat jsonSerializationFormat, 
-            JsonStringDictionary jsonStringDictionary = null, 
+            JsonSerializationFormat jsonSerializationFormat,
+            JsonStringDictionary jsonStringDictionary = null,
             bool skipValidation = false)
         {
             switch (jsonSerializationFormat)
@@ -280,6 +280,20 @@ namespace Microsoft.Azure.Cosmos.Json
                                     }
                                     break;
 
+                                case JsonTokenType.Float32:
+                                    {
+                                        float value = jsonReader.GetFloat32Value();
+                                        this.WriteFloat32Value(value);
+                                    }
+                                    break;
+
+                                case JsonTokenType.Float64:
+                                    {
+                                        double value = jsonReader.GetFloat64Value();
+                                        this.WriteFloat64Value(value);
+                                    }
+                                    break;
+
                                 case JsonTokenType.Guid:
                                     {
                                         Guid value = jsonReader.GetGuidValue();
@@ -420,76 +434,76 @@ namespace Microsoft.Azure.Cosmos.Json
                         break;
 
                     case JsonNodeType.Int8:
-                    {
-                        sbyte number = jsonNavigator.GetInt8Value(jsonNavigatorNode);
-                        this.WriteInt8Value(number);
-                        break;
-                    }
+                        {
+                            sbyte number = jsonNavigator.GetInt8Value(jsonNavigatorNode);
+                            this.WriteInt8Value(number);
+                            break;
+                        }
 
                     case JsonNodeType.Int16:
-                    {
-                        short number = jsonNavigator.GetInt16Value(jsonNavigatorNode);
-                        this.WriteInt16Value(number);
-                        break;
-                    }
+                        {
+                            short number = jsonNavigator.GetInt16Value(jsonNavigatorNode);
+                            this.WriteInt16Value(number);
+                            break;
+                        }
 
                     case JsonNodeType.Int32:
-                    {
-                        int number = jsonNavigator.GetInt32Value(jsonNavigatorNode);
-                        this.WriteInt32Value(number);
-                        break;
-                    }
+                        {
+                            int number = jsonNavigator.GetInt32Value(jsonNavigatorNode);
+                            this.WriteInt32Value(number);
+                            break;
+                        }
 
                     case JsonNodeType.Int64:
-                    {
-                        long number = jsonNavigator.GetInt64Value(jsonNavigatorNode);
-                        this.WriteInt64Value(number);
-                        break;
-                    }
+                        {
+                            long number = jsonNavigator.GetInt64Value(jsonNavigatorNode);
+                            this.WriteInt64Value(number);
+                            break;
+                        }
 
                     case JsonNodeType.UInt32:
-                    {
-                        uint number = jsonNavigator.GetUInt32Value(jsonNavigatorNode);
-                        this.WriteUInt32Value(number);
-                        break;
-                    }
+                        {
+                            uint number = jsonNavigator.GetUInt32Value(jsonNavigatorNode);
+                            this.WriteUInt32Value(number);
+                            break;
+                        }
 
                     case JsonNodeType.Float32:
-                    {
-                        float number = jsonNavigator.GetFloat32Value(jsonNavigatorNode);
-                        this.WriteFloat32Value(number);
-                        break;
-                    }
+                        {
+                            float number = jsonNavigator.GetFloat32Value(jsonNavigatorNode);
+                            this.WriteFloat32Value(number);
+                            break;
+                        }
 
                     case JsonNodeType.Float64:
-                    {
-                        double number = jsonNavigator.GetFloat64Value(jsonNavigatorNode);
-                        this.WriteFloat64Value(number);
-                        break;
-                    }
+                        {
+                            double number = jsonNavigator.GetFloat64Value(jsonNavigatorNode);
+                            this.WriteFloat64Value(number);
+                            break;
+                        }
 
                     case JsonNodeType.Guid:
-                    {
-                        Guid number = jsonNavigator.GetGuidValue(jsonNavigatorNode);
-                        this.WriteGuidValue(number);
-                        break;
-                    }
+                        {
+                            Guid number = jsonNavigator.GetGuidValue(jsonNavigatorNode);
+                            this.WriteGuidValue(number);
+                            break;
+                        }
 
                     case JsonNodeType.Binary:
-                    {
-                        IReadOnlyList<byte> bufferedBinaryValue;
-                        if (jsonNavigator.TryGetBufferedBinaryValue(jsonNavigatorNode, out bufferedBinaryValue))
                         {
-                            this.WriteRawJsonToken(JsonTokenType.Binary, bufferedBinaryValue);
-                        }
-                        else
-                        {
-                            IReadOnlyList<byte> value = jsonNavigator.GetBinaryValue(jsonNavigatorNode);
-                            this.WriteBinaryValue(value);
-                        }
+                            IReadOnlyList<byte> bufferedBinaryValue;
+                            if (jsonNavigator.TryGetBufferedBinaryValue(jsonNavigatorNode, out bufferedBinaryValue))
+                            {
+                                this.WriteRawJsonToken(JsonTokenType.Binary, bufferedBinaryValue);
+                            }
+                            else
+                            {
+                                IReadOnlyList<byte> value = jsonNavigator.GetBinaryValue(jsonNavigatorNode);
+                                this.WriteBinaryValue(value);
+                            }
 
-                        break;
-                    }
+                            break;
+                        }
 
                     case JsonNodeType.Array:
                         this.WriteArrayStart();

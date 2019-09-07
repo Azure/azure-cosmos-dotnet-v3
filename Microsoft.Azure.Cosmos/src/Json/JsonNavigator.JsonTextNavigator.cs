@@ -132,47 +132,137 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)
             {
-                return (sbyte)Number64.ToLong((this.GetNumberValue(numberNode)));
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(numberNode is Int8Node int8Node))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(Int8Node)} node.");
+                }
+
+                return int8Node.Value;
             }
 
             public override short GetInt16Value(IJsonNavigatorNode numberNode)
             {
-                return (short)Number64.ToLong((this.GetNumberValue(numberNode)));
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(numberNode is Int16Node int16Node))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(Int16Node)} node.");
+                }
+
+                return int16Node.Value;
             }
 
             public override int GetInt32Value(IJsonNavigatorNode numberNode)
             {
-                return (int)Number64.ToLong((this.GetNumberValue(numberNode)));
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(numberNode is Int32Node int32Node))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(Int32Node)} node.");
+                }
+
+                return int32Node.Value;
             }
 
             public override long GetInt64Value(IJsonNavigatorNode numberNode)
             {
-                return (long)Number64.ToLong((this.GetNumberValue(numberNode)));
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(numberNode is Int64Node int64Node))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(Int64Node)} node.");
+                }
+
+                return int64Node.Value;
             }
 
             public override float GetFloat32Value(IJsonNavigatorNode numberNode)
             {
-                return (float)Number64.ToLong((this.GetNumberValue(numberNode)));
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(numberNode is Float32Node float32Node))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(float32Node)} node.");
+                }
+
+                return float32Node.Value;
             }
 
             public override double GetFloat64Value(IJsonNavigatorNode numberNode)
             {
-                return (double)Number64.ToLong((this.GetNumberValue(numberNode)));
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(numberNode is Float64Node float64Node))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(float64Node)} node.");
+                }
+
+                return float64Node.Value;
             }
 
             public override uint GetUInt32Value(IJsonNavigatorNode numberNode)
             {
-                return (uint)Number64.ToLong((this.GetNumberValue(numberNode)));
+                if (numberNode == null)
+                {
+                    throw new ArgumentNullException(nameof(numberNode));
+                }
+
+                if (!(numberNode is UInt32Node uInt32Node))
+                {
+                    throw new ArgumentException($"{nameof(numberNode)} must actually be a {nameof(uInt32Node)} node.");
+                }
+
+                return uInt32Node.Value;
             }
 
-            public override Guid GetGuidValue(IJsonNavigatorNode guidNode)
+            public override Guid GetGuidValue(IJsonNavigatorNode node)
             {
-                throw new NotImplementedException();
+                if (node == null)
+                {
+                    throw new ArgumentNullException(nameof(node));
+                }
+
+                if (!(node is GuidNode guidNode))
+                {
+                    throw new ArgumentException($"{nameof(node)} must actually be a {nameof(GuidNode)} node.");
+                }
+
+                return guidNode.Value;
             }
 
-            public override IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
+            public override IReadOnlyList<byte> GetBinaryValue(IJsonNavigatorNode node)
             {
-                throw new NotImplementedException();
+                if (node == null)
+                {
+                    throw new ArgumentNullException(nameof(node));
+                }
+
+                if (!(node is BinaryNode binaryNode))
+                {
+                    throw new ArgumentException($"{nameof(node)} must actually be a {nameof(BinaryNode)} node.");
+                }
+
+                return binaryNode.Value;
             }
 
             public override bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue)
@@ -446,6 +536,68 @@ namespace Microsoft.Azure.Cosmos.Json
                     return numberNode;
                 }
 
+                private static IntegerNode ParseIntegerNode(IJsonReader jsonTextReader, JsonTokenType jsonTokenType)
+                {
+                    ArraySegment<byte> bytes = (ArraySegment<byte>)jsonTextReader.GetBufferedRawJsonToken();
+
+                    IntegerNode integerNode;
+
+                    switch (jsonTokenType)
+                    {
+                        case JsonTokenType.Int8:
+                            integerNode = Int8Node.Create(bytes);
+                            break;
+
+                        case JsonTokenType.Int16:
+                            integerNode = Int16Node.Create(bytes);
+                            break;
+
+                        case JsonTokenType.Int32:
+                            integerNode = Int32Node.Create(bytes);
+                            break;
+
+                        case JsonTokenType.Int64:
+                            integerNode = Int64Node.Create(bytes);
+                            break;
+
+                        case JsonTokenType.UInt32:
+                            integerNode = UInt32Node.Create(bytes);
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {jsonTokenType}");
+                    }
+
+                    // consume the integer from the reader
+                    jsonTextReader.Read();
+
+                    return integerNode;
+                }
+
+                private static FloatNode ParseFloatNode(IJsonReader jsonTextReader, JsonTokenType jsonTokenType)
+                {
+                    ArraySegment<byte> bytes = (ArraySegment<byte>)jsonTextReader.GetBufferedRawJsonToken();
+
+                    FloatNode floatNode;
+                    switch (jsonTokenType)
+                    {
+                        case JsonTokenType.Float32:
+                            floatNode = Float32Node.Create(bytes);
+                            break;
+
+                        case JsonTokenType.Float64:
+                            floatNode = Float64Node.Create(bytes);
+                            break;
+                        default:
+                            throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {jsonTokenType}");
+                    }
+
+                    // consume the float from the reader
+                    jsonTextReader.Read();
+
+                    return floatNode;
+                }
+
                 /// <summary>
                 /// Parses out a JSON true AST node with a jsonTextReader.
                 /// </summary>
@@ -524,22 +676,32 @@ namespace Microsoft.Azure.Cosmos.Json
                         case JsonTokenType.BeginArray:
                             node = JsonTextParser.ParseArrayNode(jsonTextReader);
                             break;
+
                         case JsonTokenType.BeginObject:
                             node = JsonTextParser.ParseObjectNode(jsonTextReader);
                             break;
+
                         case JsonTokenType.String:
                             node = JsonTextParser.ParseStringNode(jsonTextReader);
                             break;
+
                         case JsonTokenType.Number:
+                            node = JsonTextParser.ParseNumberNode(jsonTextReader);
+                            break;
+
                         case JsonTokenType.Float32:
                         case JsonTokenType.Float64:
+                            node = JsonTextParser.ParseFloatNode(jsonTextReader, jsonTextReader.CurrentTokenType);
+                            break;
+
                         case JsonTokenType.Int8:
                         case JsonTokenType.Int16:
                         case JsonTokenType.Int32:
                         case JsonTokenType.Int64:
                         case JsonTokenType.UInt32:
-                            node = JsonTextParser.ParseNumberNode(jsonTextReader);
+                            node = JsonTextParser.ParseIntegerNode(jsonTextReader, jsonTextReader.CurrentTokenType);
                             break;
+
                         case JsonTokenType.True:
                             node = JsonTextParser.ParseTrueNode(jsonTextReader);
                             break;
@@ -638,19 +800,14 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private abstract class JsonTextNode : IJsonNavigatorNode
             {
-                private readonly JsonNodeType jsonNodeType;
-
                 protected JsonTextNode(JsonNodeType jsonNodeType)
                 {
-                    this.jsonNodeType = jsonNodeType;
+                    this.JsonNodeType = jsonNodeType;
                 }
 
                 public JsonNodeType JsonNodeType
                 {
-                    get
-                    {
-                        return this.jsonNodeType;
-                    }
+                    get;
                 }
             }
 
@@ -683,21 +840,21 @@ namespace Microsoft.Azure.Cosmos.Json
                     new NumberNode(28), new NumberNode(29), new NumberNode(30), new NumberNode(31),
                 };
 
-                private readonly Lazy<double> value;
+                private readonly Lazy<Number64> value;
 
                 private NumberNode(ArraySegment<byte> bufferedToken)
                     : base(JsonNodeType.Number)
                 {
-                    this.value = new Lazy<double>(() => JsonTextUtil.GetNumberValue(bufferedToken));
+                    this.value = new Lazy<Number64>(() => JsonTextUtil.GetNumberValue(bufferedToken));
                 }
 
-                private NumberNode(double value)
+                private NumberNode(Number64 value)
                     : base(JsonNodeType.Number)
                 {
-                    this.value = new Lazy<double>(() => value);
+                    this.value = new Lazy<Number64>(() => value);
                 }
 
-                public double Value
+                public Number64 Value
                 {
                     get
                     {
@@ -818,15 +975,285 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
+            private abstract class IntegerNode : JsonTextNode
+            {
+                protected IntegerNode(JsonNodeType jsonNodeType)
+                    : base(jsonNodeType)
+                {
+                }
+            }
+
+            private sealed class Int8Node : IntegerNode
+            {
+                private readonly Lazy<sbyte> lazyValue;
+
+                private Int8Node(ArraySegment<byte> bufferedToken)
+                    : base(JsonNodeType.Int8)
+                {
+                    this.lazyValue = new Lazy<sbyte>(() =>
+                    {
+                        ArraySegment<byte> offsetToken = new ArraySegment<byte>(
+                            bufferedToken.Array,
+                            bufferedToken.Offset + 1,
+                            bufferedToken.Count - 1);
+                        long value = JsonTextUtil.GetIntegerValue(offsetToken);
+
+                        if (value > sbyte.MaxValue || value < sbyte.MinValue)
+                        {
+                            throw new JsonNotNumberTokenException();
+                        }
+
+                        return (sbyte)value;
+                    });
+                }
+
+                public sbyte Value
+                {
+                    get
+                    {
+                        return this.lazyValue.Value;
+                    }
+                }
+
+                public static Int8Node Create(ArraySegment<byte> bufferedToken)
+                {
+                    return new Int8Node(bufferedToken);
+                }
+            }
+
+            private sealed class Int16Node : IntegerNode
+            {
+                private readonly Lazy<short> lazyValue;
+
+                private Int16Node(ArraySegment<byte> bufferedToken)
+                    : base(JsonNodeType.Int16)
+                {
+                    this.lazyValue = new Lazy<short>(() =>
+                    {
+                        ArraySegment<byte> offsetToken = new ArraySegment<byte>(
+                            bufferedToken.Array,
+                            bufferedToken.Offset + 1,
+                            bufferedToken.Count - 1);
+                        long value = JsonTextUtil.GetIntegerValue(offsetToken);
+
+                        if (value > short.MaxValue || value < short.MinValue)
+                        {
+                            throw new JsonNotNumberTokenException();
+                        }
+
+                        return (short)value;
+                    });
+                }
+
+                public short Value
+                {
+                    get
+                    {
+                        return this.lazyValue.Value;
+                    }
+                }
+
+                public static Int16Node Create(ArraySegment<byte> bufferedToken)
+                {
+                    return new Int16Node(bufferedToken);
+                }
+            }
+
+            private sealed class Int32Node : IntegerNode
+            {
+                private readonly Lazy<int> lazyValue;
+
+                private Int32Node(ArraySegment<byte> bufferedToken)
+                    : base(JsonNodeType.Int32)
+                {
+                    this.lazyValue = new Lazy<int>(() =>
+                    {
+                        ArraySegment<byte> offsetToken = new ArraySegment<byte>(
+                            bufferedToken.Array,
+                            bufferedToken.Offset + 1,
+                            bufferedToken.Count - 1);
+                        long value = JsonTextUtil.GetIntegerValue(offsetToken);
+
+                        if (value > int.MaxValue || value < int.MinValue)
+                        {
+                            throw new JsonNotNumberTokenException();
+                        }
+
+                        return (int)value;
+                    });
+                }
+
+                public int Value
+                {
+                    get
+                    {
+                        return this.lazyValue.Value;
+                    }
+                }
+
+                public static Int32Node Create(ArraySegment<byte> bufferedToken)
+                {
+                    return new Int32Node(bufferedToken);
+                }
+            }
+
+            private sealed class Int64Node : IntegerNode
+            {
+                private readonly Lazy<long> lazyValue;
+
+                private Int64Node(ArraySegment<byte> bufferedToken)
+                    : base(JsonNodeType.Int64)
+                {
+                    this.lazyValue = new Lazy<long>(() =>
+                    {
+                        ArraySegment<byte> offsetToken = new ArraySegment<byte>(
+                            bufferedToken.Array,
+                            bufferedToken.Offset + 2,
+                            bufferedToken.Count - 2);
+                        long value = JsonTextUtil.GetIntegerValue(offsetToken);
+
+                        if (value > long.MaxValue || value < long.MinValue)
+                        {
+                            throw new JsonNotNumberTokenException();
+                        }
+
+                        return (long)value;
+                    });
+                }
+
+                public long Value
+                {
+                    get
+                    {
+                        return this.lazyValue.Value;
+                    }
+                }
+
+                public static Int64Node Create(ArraySegment<byte> bufferedToken)
+                {
+                    return new Int64Node(bufferedToken);
+                }
+            }
+
+            private sealed class UInt32Node : IntegerNode
+            {
+                private readonly Lazy<uint> lazyValue;
+
+                private UInt32Node(ArraySegment<byte> bufferedToken)
+                    : base(JsonNodeType.UInt32)
+                {
+                    this.lazyValue = new Lazy<uint>(() =>
+                    {
+                        ArraySegment<byte> offsetToken = new ArraySegment<byte>(
+                            bufferedToken.Array,
+                            bufferedToken.Offset + 2,
+                            bufferedToken.Count - 2);
+                        long value = JsonTextUtil.GetIntegerValue(offsetToken);
+
+                        if (value > uint.MaxValue || value < uint.MinValue)
+                        {
+                            throw new JsonNotNumberTokenException();
+                        }
+
+                        return (uint)value;
+                    });
+                }
+
+                public uint Value
+                {
+                    get
+                    {
+                        return this.lazyValue.Value;
+                    }
+                }
+
+                public static UInt32Node Create(ArraySegment<byte> bufferedToken)
+                {
+                    return new UInt32Node(bufferedToken);
+                }
+            }
+
+            private abstract class FloatNode : JsonTextNode
+            {
+                protected FloatNode(JsonNodeType jsonNodeType)
+                    : base(jsonNodeType)
+                {
+                }
+            }
+
+            private sealed class Float32Node : FloatNode
+            {
+                private readonly Lazy<float> lazyValue;
+
+                private Float32Node(ArraySegment<byte> bufferedToken)
+                    : base(JsonNodeType.Float32)
+                {
+                    this.lazyValue = new Lazy<float>(() =>
+                    {
+                        ArraySegment<byte> offsetToken = new ArraySegment<byte>(
+                            bufferedToken.Array,
+                            bufferedToken.Offset + 1,
+                            bufferedToken.Count - 1);
+                        float value = JsonTextUtil.GetFloatValue(offsetToken);
+                        return value;
+                    });
+                }
+
+                public float Value
+                {
+                    get
+                    {
+                        return this.lazyValue.Value;
+                    }
+                }
+
+                public static Float32Node Create(ArraySegment<byte> bufferedToken)
+                {
+                    return new Float32Node(bufferedToken);
+                }
+            }
+
+            private sealed class Float64Node : FloatNode
+            {
+                private readonly Lazy<double> lazyValue;
+
+                private Float64Node(ArraySegment<byte> bufferedToken)
+                    : base(JsonNodeType.Float64)
+                {
+                    this.lazyValue = new Lazy<double>(() =>
+                    {
+                        ArraySegment<byte> offsetToken = new ArraySegment<byte>(
+                            bufferedToken.Array,
+                            bufferedToken.Offset + 1,
+                            bufferedToken.Count - 1);
+                        double value = JsonTextUtil.GetNumberValue(offsetToken);
+                        return value;
+                    });
+                }
+
+                public double Value
+                {
+                    get
+                    {
+                        return this.lazyValue.Value;
+                    }
+                }
+
+                public static Float64Node Create(ArraySegment<byte> bufferedToken)
+                {
+                    return new Float64Node(bufferedToken);
+                }
+            }
+
             private sealed class GuidNode : JsonTextNode
             {
-                private readonly Guid value;
-
                 private GuidNode(Guid value)
                     : base(JsonNodeType.Guid)
                 {
-                    this.value = value;
+                    this.Value = value;
                 }
+
+                public Guid Value { get; }
 
                 public static GuidNode Create(Guid value)
                 {
@@ -836,13 +1263,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private sealed class BinaryNode : JsonTextNode
             {
-                private readonly IReadOnlyList<byte> value;
-
                 private BinaryNode(IReadOnlyList<byte> value)
                     : base(JsonNodeType.Binary)
                 {
-                    this.value = value;
+                    this.Value = value;
                 }
+
+                public IReadOnlyList<byte> Value { get; }
 
                 public static BinaryNode Create(IReadOnlyList<byte> value)
                 {
