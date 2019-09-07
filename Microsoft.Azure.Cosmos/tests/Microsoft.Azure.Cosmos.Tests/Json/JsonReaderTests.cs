@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using System.Linq;
     using System.Reflection;
     using System.Text;
-    using System.Text.RegularExpressions;
-    using System.Web;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -122,209 +120,6 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
-        }
-
-        [TestMethod]
-        [Owner("brchon")]
-        public void Int8Test()
-        {
-            sbyte[] values = new sbyte[] { sbyte.MinValue, sbyte.MinValue + 1, -1, 0, 1, sbyte.MaxValue, sbyte.MaxValue - 1 };
-            foreach(sbyte value in values)
-            {
-                string input = $"I{value}";
-                byte[] binaryInput;
-                unchecked
-                {
-                    binaryInput = new byte[]
-                    {
-                        BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Int8,
-                        (byte)value
-                    };
-                }
-
-                JsonToken[] expectedTokens =
-                {
-                    JsonToken.Int8(value)
-                };
-
-                this.VerifyReader(input, expectedTokens);
-                this.VerifyReader(binaryInput, expectedTokens);
-            }
-        }
-
-        [TestMethod]
-        [Owner("brchon")]
-        public void Int16Test()
-        {
-            short[] values = new short[] { short.MinValue, short.MinValue + 1, -1, 0, 1, short.MaxValue, short.MaxValue - 1 };
-            foreach (short value in values)
-            {
-                string input = $"H{value}";
-                byte[] binaryInput;
-                unchecked
-                {
-                    binaryInput = new byte[]
-                    {
-                        BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Int16,
-                    };
-                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
-                }
-
-                JsonToken[] expectedTokens =
-                {
-                    JsonToken.Int16(value)
-                };
-
-                this.VerifyReader(input, expectedTokens);
-                this.VerifyReader(binaryInput, expectedTokens);
-            }
-        }
-
-        [TestMethod]
-        [Owner("brchon")]
-        public void Int32Test()
-        {
-            int[] values = new int[] { int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue, int.MaxValue - 1 };
-            foreach (int value in values)
-            {
-                string input = $"L{value}";
-                byte[] binaryInput;
-                unchecked
-                {
-                    binaryInput = new byte[]
-                    {
-                        BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Int32,
-                    };
-                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
-                }
-
-                JsonToken[] expectedTokens =
-                {
-                    JsonToken.Int32(value)
-                };
-
-                this.VerifyReader(input, expectedTokens);
-                this.VerifyReader(binaryInput, expectedTokens);
-            }
-        }
-
-        [TestMethod]
-        [Owner("brchon")]
-        public void Int64Test()
-        {
-            long[] values = new long[] { long.MinValue, long.MinValue + 1, -1, 0, 1, long.MaxValue, long.MaxValue - 1 };
-            foreach (long value in values)
-            {
-                string input = $"LL{value}";
-                byte[] binaryInput;
-                unchecked
-                {
-                    binaryInput = new byte[]
-                    {
-                        BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Int64,
-                    };
-                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
-                }
-
-                JsonToken[] expectedTokens =
-                {
-                    JsonToken.Int64(value)
-                };
-
-                this.VerifyReader(input, expectedTokens);
-                this.VerifyReader(binaryInput, expectedTokens);
-            }
-        }
-
-        [TestMethod]
-        [Owner("brchon")]
-        public void UInt32Test()
-        {
-            uint[] values = new uint[] { uint.MinValue, uint.MinValue + 1, 0, 1, uint.MaxValue, uint.MaxValue - 1 };
-            foreach (uint value in values)
-            {
-                string input = $"UL{value}";
-                byte[] binaryInput;
-                unchecked
-                {
-                    binaryInput = new byte[]
-                    {
-                        BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.UInt32,
-                    };
-                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
-                }
-
-                JsonToken[] expectedTokens =
-                {
-                    JsonToken.UInt32(value)
-                };
-
-                this.VerifyReader(input, expectedTokens);
-                this.VerifyReader(binaryInput, expectedTokens);
-            }
-        }
-
-        [TestMethod]
-        [Owner("brchon")]
-        public void Float32Test()
-        {
-            float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
-            foreach (float value in values)
-            {
-                string input = $"S{value.ToString("G9", CultureInfo.InvariantCulture)}";
-                byte[] binaryInput;
-                unchecked
-                {
-                    binaryInput = new byte[]
-                    {
-                        BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Float32,
-                    };
-                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
-                }
-
-                JsonToken[] expectedTokens =
-                {
-                    JsonToken.Float32(value)
-                };
-
-                this.VerifyReader(input, expectedTokens);
-                this.VerifyReader(binaryInput, expectedTokens);
-            }
-        }
-
-        [TestMethod]
-        [Owner("brchon")]
-        public void Float64Test()
-        {
-            double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
-            foreach (double value in values)
-            {
-                string input = $"D{value.ToString("G17", CultureInfo.InvariantCulture)}";
-                byte[] binaryInput;
-                unchecked
-                {
-                    binaryInput = new byte[]
-                    {
-                        BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Float64,
-                    };
-                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
-                }
-
-                JsonToken[] expectedTokens =
-                {
-                    JsonToken.Float64(value)
-                };
-
-                this.VerifyReader(input, expectedTokens);
-                this.VerifyReader(binaryInput, expectedTokens);
-            }
         }
 
         [TestMethod]
@@ -2182,7 +1977,292 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Binary does not test this.
         }
         #endregion
+        #region ExtendedTypes
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int8Test()
+        {
+            sbyte[] values = new sbyte[] { sbyte.MinValue, sbyte.MinValue + 1, -1, 0, 1, sbyte.MaxValue, sbyte.MaxValue - 1 };
+            foreach (sbyte value in values)
+            {
+                string input = $"I{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int8,
+                        (byte)value
+                    };
+                }
 
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Int8(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int16Test()
+        {
+            short[] values = new short[] { short.MinValue, short.MinValue + 1, -1, 0, 1, short.MaxValue, short.MaxValue - 1 };
+            foreach (short value in values)
+            {
+                string input = $"H{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int16,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Int16(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int32Test()
+        {
+            int[] values = new int[] { int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue, int.MaxValue - 1 };
+            foreach (int value in values)
+            {
+                string input = $"L{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int32,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Int32(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int64Test()
+        {
+            long[] values = new long[] { long.MinValue, long.MinValue + 1, -1, 0, 1, long.MaxValue, long.MaxValue - 1 };
+            foreach (long value in values)
+            {
+                string input = $"LL{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int64,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Int64(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void UInt32Test()
+        {
+            uint[] values = new uint[] { uint.MinValue, uint.MinValue + 1, 0, 1, uint.MaxValue, uint.MaxValue - 1 };
+            foreach (uint value in values)
+            {
+                string input = $"UL{value}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.UInt32,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.UInt32(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Float32Test()
+        {
+            float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
+            foreach (float value in values)
+            {
+                string input = $"S{value.ToString("G9", CultureInfo.InvariantCulture)}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Float32,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Float32(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Float64Test()
+        {
+            double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
+            foreach (double value in values)
+            {
+                string input = $"D{value.ToString("G17", CultureInfo.InvariantCulture)}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Float64,
+                    };
+                    binaryInput = binaryInput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Float64(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void GuidTest()
+        {
+            Guid[] values = new Guid[] { Guid.Empty, Guid.NewGuid() };
+            foreach (Guid value in values)
+            {
+                string input = $"G{value.ToString()}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Guid,
+                    };
+                    binaryInput = binaryInput.Concat(value.ToByteArray()).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Guid(value)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void BinaryTest()
+        {
+            {
+                // Empty Binary
+                string input = $"B";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Binary1ByteLength,
+                        0,
+                    };
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Binary(new List<byte>())
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+
+            {
+                // Binary 1 Byte Length
+                IReadOnlyList<byte> binary = Enumerable.Range(0, 25).Select(x => (byte)x).ToList();
+                string input = $"B{Convert.ToBase64String(binary.ToArray())}";
+                byte[] binaryInput;
+                unchecked
+                {
+                    binaryInput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Binary1ByteLength,
+                        (byte)binary.Count(),
+                    };
+                    binaryInput = binaryInput.Concat(binary).ToArray();
+                }
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.Binary(binary)
+                };
+
+                this.VerifyReader(input, expectedTokens);
+                this.VerifyReader(binaryInput, expectedTokens);
+            }
+        }
+        #endregion
         private void VerifyReader(string input, JsonToken[] expectedTokens)
         {
             this.VerifyReader(input, expectedTokens, null);
@@ -2336,6 +2416,14 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
                             case JsonTokenType.Float64:
                                 this.VerifyFloat64(jsonReader, ((JsonFloat64Token)expectedToken).Value, encoding);
+                                break;
+
+                            case JsonTokenType.Guid:
+                                this.VerifyGuid(jsonReader, ((JsonGuidToken)expectedToken).Value, encoding);
+                                break;
+
+                            case JsonTokenType.Binary:
+                                this.VerifyBinary(jsonReader, ((JsonBinaryToken)expectedToken).Value, encoding);
                                 break;
 
                             case JsonTokenType.NotStarted:
@@ -2542,6 +2630,40 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"D{expected.ToString("G17", CultureInfo.InvariantCulture)}", stringRawJsonToken);
+            }
+        }
+
+        private void VerifyGuid(IJsonReader jsonReader, Guid expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Guid, jsonTokenType);
+
+            Guid actual = jsonReader.GetGuidValue();
+            Assert.AreEqual(expected, actual);
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"G{expected.ToString()}", stringRawJsonToken);
+            }
+        }
+
+        private void VerifyBinary(IJsonReader jsonReader, IReadOnlyList<byte> expected, Encoding encoding)
+        {
+            JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
+            Assert.AreEqual(JsonTokenType.Binary, jsonTokenType);
+
+            IReadOnlyList<byte> actual = jsonReader.GetBinaryValue();
+            Assert.IsTrue(expected.SequenceEqual(actual));
+
+            // Additionally check if the text is correct
+            if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
+            {
+                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
+                Assert.AreEqual($"B{Convert.ToBase64String(expected.ToArray())}", stringRawJsonToken);
             }
         }
 

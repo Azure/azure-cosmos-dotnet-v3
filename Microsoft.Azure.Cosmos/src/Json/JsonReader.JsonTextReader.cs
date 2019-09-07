@@ -493,14 +493,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override Guid GetGuidValue()
             {
-                return Guid.Parse(
-                    this.jsonTextBuffer.Encoding.GetString(
-                        this.jsonTextBuffer.GetBufferedRawJsonToken().ToArray()));
+                return this.jsonTextBuffer.GetGuidValue();
             }
 
             public override IReadOnlyList<byte> GetBinaryValue()
             {
-                return this.jsonTextBuffer.GetBufferedRawJsonToken();
+                return this.jsonTextBuffer.GetBinaryValue();
             }
 
             /// <summary>
@@ -823,6 +821,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 while (char.IsLetterOrDigit(current) || current == '+' || current == '/' || current == '=')
                 {
                     this.jsonTextBuffer.ReadCharacter();
+                    current = this.jsonTextBuffer.PeekCharacter();
                 }
 
                 this.jsonTextBuffer.CurrentTokenType = JsonTextTokenType.Binary;
@@ -1170,12 +1169,15 @@ namespace Microsoft.Azure.Cosmos.Json
                 public IReadOnlyList<byte> GetBinaryValue()
                 {
                     ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    ArraySegment<byte> offsetToken = new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1);
+                    ArraySegment<byte> offsetToken = new ArraySegment<byte>(
+                        rawToken.Array, 
+                        rawToken.Offset + 1, 
+                        rawToken.Count - 1);
                     byte[] bytes = offsetToken.Array;
                     int offset = offsetToken.Offset;
                     int count = offsetToken.Count;
 
-                    string encodedString = this.Encoding.GetString(bytes);
+                    string encodedString = this.Encoding.GetString(bytes, offset, count);
                     return System.Convert.FromBase64String(encodedString);
                 }
 
@@ -1418,13 +1420,19 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public IReadOnlyList<byte> GetBinaryValue()
                 {
-                    string stringified = this.encoding.GetString(this.bufferedToken.GetBuffer());
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        this.GetBytesPerChar(),
+                        this.tokenLength - this.GetBytesPerChar());
                     return Convert.FromBase64String(stringified);
                 }
 
                 public Guid GetGuidValue()
                 {
-                    string stringified = this.encoding.GetString(this.bufferedToken.GetBuffer(), 1, this.tokenLength);
+                    string stringified = this.encoding.GetString(
+                        this.bufferedToken.GetBuffer(),
+                        this.GetBytesPerChar(),
+                        this.tokenLength - this.GetBytesPerChar());
                     return Guid.Parse(stringified);
                 }
 

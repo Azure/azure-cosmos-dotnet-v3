@@ -696,13 +696,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 long length;
                 switch (typeMarker)
                 {
-                    case JsonBinaryEncoding.TypeMarker.String1ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Binary1ByteLength:
                         length = this.jsonBinaryBuffer.ReadByte();
                         break;
-                    case JsonBinaryEncoding.TypeMarker.String2ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
                         length = this.jsonBinaryBuffer.ReadUInt16();
                         break;
-                    case JsonBinaryEncoding.TypeMarker.String4ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
                         length = this.jsonBinaryBuffer.ReadUInt32();
                         break;
                     default:
