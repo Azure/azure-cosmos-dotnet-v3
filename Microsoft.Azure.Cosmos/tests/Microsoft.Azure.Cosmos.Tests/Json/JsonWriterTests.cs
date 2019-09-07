@@ -283,6 +283,12 @@
         public void NumberPrecisionTest()
         {
             string expectedString = "[2.7620553993338772e+018,2.7620553993338778e+018]";
+            // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
+            expectedString = Newtonsoft.Json.Linq.JToken
+                .Parse(expectedString)
+                .ToString(Newtonsoft.Json.Formatting.None)
+                .Replace("/", @"\/");
+
             List<byte> binaryOutputBuilder = new List<byte>();
             binaryOutputBuilder.Add(BinaryFormat);
             binaryOutputBuilder.Add(JsonBinaryEncoding.TypeMarker.Array1ByteLength);
@@ -345,6 +351,7 @@
             this.VerifyWriter(tokensToWrite, expectedString);
         }
         #endregion
+        #region String
         [TestMethod]
         [Owner("brchon")]
         public void EmptyStringTest()
@@ -366,7 +373,6 @@
             this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
-        #region String
         [TestMethod]
         [Owner("brchon")]
         public void StringTest()
@@ -403,6 +409,12 @@
             foreach (string systemString in systemStrings)
             {
                 string expectedString = "\"" + systemString + "\"";
+                // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
+                expectedString = Newtonsoft.Json.Linq.JToken
+                    .Parse(expectedString)
+                    .ToString(Newtonsoft.Json.Formatting.None)
+                    .Replace("/", @"\/");
+
                 byte[] binaryOutput =
                 {
                     BinaryFormat,
@@ -492,7 +504,7 @@
         [Owner("brchon")]
         public void EmptyArrayTest()
         {
-            string expectedString = "[  ]  ";
+            string expectedString = "[]";
             byte[] binaryOutput =
             {
                 BinaryFormat,
@@ -513,7 +525,7 @@
         [Owner("brchon")]
         public void SingleItemArrayTest()
         {
-            string expectedString = "[ true ]  ";
+            string expectedString = "[true]";
             byte[] binaryOutput =
             {
                 BinaryFormat,
@@ -536,7 +548,7 @@
         [Owner("brchon")]
         public void IntArrayTest()
         {
-            string expectedString = "[ -2, -1, 0, 1, 2]  ";
+            string expectedString = "[-2,-1,0,1,2]";
             List<byte[]> binaryOutputBuilder = new List<byte[]>();
             binaryOutputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength });
 
@@ -571,7 +583,7 @@
         [Owner("brchon")]
         public void NumberArrayTest()
         {
-            string expectedString = "[15,  22, 0.1, -0.073, 7.70001E+91 ]  ";
+            string expectedString = "[15,22,0.1,-0.073,7.70001E+91]";
             List<byte[]> binaryOutputBuilder = new List<byte[]>();
             binaryOutputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength });
 
@@ -606,7 +618,7 @@
         [Owner("brchon")]
         public void BooleanArrayTest()
         {
-            string expectedString = "[ true, false]  ";
+            string expectedString = "[true,false]";
             byte[] binaryOutput =
             {
                 BinaryFormat,
@@ -633,7 +645,7 @@
         [Owner("brchon")]
         public void StringArrayTest()
         {
-            string expectedString = @"[""Hello"", ""World"", ""Bye""]";
+            string expectedString = @"[""Hello"",""World"",""Bye""]";
 
             List<byte[]> binaryOutputBuilder = new List<byte[]>();
             binaryOutputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength });
@@ -668,7 +680,7 @@
         [Owner("brchon")]
         public void NullArrayTest()
         {
-            string expectedString = "[ null, null, null]  ";
+            string expectedString = "[null,null,null]";
             byte[] binaryOutput =
             {
                 BinaryFormat,
@@ -697,7 +709,7 @@
         [Owner("brchon")]
         public void ObjectArrayTest()
         {
-            string expectedString = "[{}, {}]  ";
+            string expectedString = "[{},{}]";
             byte[] binaryOutput =
             {
                 BinaryFormat,
@@ -726,7 +738,7 @@
         [Owner("brchon")]
         public void AllPrimitiveArrayTest()
         {
-            string expectedString = "[0, 0, -1, -1.1, 1, 2, \"hello\", null, true, false]  ";
+            string expectedString = "[0,0,-1,-1.1,1,2,\"hello\",null,true,false]";
             List<byte[]> binaryOutputBuilder = new List<byte[]>();
             binaryOutputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength });
 
@@ -772,7 +784,7 @@
         [Owner("brchon")]
         public void NestedArrayTest()
         {
-            string expectedString = "[[], []]  ";
+            string expectedString = "[[],[]]";
             byte[] binaryOutput =
             {
                 BinaryFormat,
@@ -810,6 +822,12 @@
                 1.1111111101111111E+139,
                 1.1111111101111111E+279
             ]";
+            // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
+            expectedString = Newtonsoft.Json.Linq.JToken
+                .Parse(expectedString)
+                .ToString(Newtonsoft.Json.Formatting.None)
+                .Replace("/", @"\/");
+
             List<byte[]> binaryOutputBuilder = new List<byte[]>();
             binaryOutputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength });
 
@@ -917,7 +935,7 @@
         {
             // You don't have to escape a regular unicode character
             string expectedString = @"""€""";
-            byte[] binaryInput =
+            byte[] expectedBinaryOutput =
             {
                 BinaryFormat,
                 JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + 3,
@@ -931,7 +949,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryInput);
+            this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
         }
 
         [TestMethod]
@@ -940,7 +958,7 @@
         {
             // You don't have to escape a regular unicode character
             string expectedString = @"""💩""";
-            byte[] binaryInput =
+            byte[] expectedBinaryOutput =
             {
                 BinaryFormat,
                 JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + 4,
@@ -954,7 +972,7 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
-            this.VerifyWriter(tokensToWrite, binaryInput);
+            this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
         }
 
         [TestMethod]
@@ -1009,6 +1027,11 @@
         public void SimpleObjectTest()
         {
             string expectedString = "{\"GlossDiv\":10,\"title\": \"example glossary\" }";
+            // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
+            expectedString = Newtonsoft.Json.Linq.JToken
+                .Parse(expectedString)
+                .ToString(Newtonsoft.Json.Formatting.None)
+                .Replace("/", @"\/");
 
             byte[] binaryOutput;
             {
@@ -1080,6 +1103,12 @@
                 },
                 ""text"": ""tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby""
             }";
+
+            // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
+            expectedString = Newtonsoft.Json.Linq.JToken
+                .Parse(expectedString)
+                .ToString(Newtonsoft.Json.Formatting.None)
+                .Replace("/", @"\/");
 
             byte[] binaryOutput;
             {
@@ -1316,6 +1345,292 @@
             // Binary does not test this.
         }
         #endregion
+        #region ExtendedTypes
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int8Test()
+        {
+            sbyte[] values = new sbyte[] { sbyte.MinValue, sbyte.MinValue + 1, -1, 0, 1, sbyte.MaxValue, sbyte.MaxValue - 1 };
+            foreach (sbyte value in values)
+            {
+                string expectedStringOutput = $"I{value}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int8,
+                        (byte)value
+                    };
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Int8(value)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int16Test()
+        {
+            short[] values = new short[] { short.MinValue, short.MinValue + 1, -1, 0, 1, short.MaxValue, short.MaxValue - 1 };
+            foreach (short value in values)
+            {
+                string expectedStringOutput = $"H{value}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int16,
+                    };
+                    expectedBinaryOutput = expectedBinaryOutput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Int16(value)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int32Test()
+        {
+            int[] values = new int[] { int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue, int.MaxValue - 1 };
+            foreach (int value in values)
+            {
+                string expectedStringOutput = $"L{value}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int32,
+                    };
+                    expectedBinaryOutput = expectedBinaryOutput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Int32(value)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Int64Test()
+        {
+            long[] values = new long[] { long.MinValue, long.MinValue + 1, -1, 0, 1, long.MaxValue, long.MaxValue - 1 };
+            foreach (long value in values)
+            {
+                string expectedStringOutput = $"LL{value}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Int64,
+                    };
+                    expectedBinaryOutput = expectedBinaryOutput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Int64(value)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void UInt32Test()
+        {
+            uint[] values = new uint[] { uint.MinValue, uint.MinValue + 1, 0, 1, uint.MaxValue, uint.MaxValue - 1 };
+            foreach (uint value in values)
+            {
+                string expectedStringOutput = $"UL{value}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.UInt32,
+                    };
+                    expectedBinaryOutput = expectedBinaryOutput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.UInt32(value)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Float32Test()
+        {
+            float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
+            foreach (float value in values)
+            {
+                string expectedStringOutput = $"S{value.ToString("G9", CultureInfo.InvariantCulture)}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Float32,
+                    };
+                    expectedBinaryOutput = expectedBinaryOutput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Float32(value)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void Float64Test()
+        {
+            double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
+            foreach (double value in values)
+            {
+                string expectedStringOutput = $"D{value.ToString("G17", CultureInfo.InvariantCulture)}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Float64,
+                    };
+                    expectedBinaryOutput = expectedBinaryOutput.Concat(BitConverter.GetBytes(value)).ToArray();
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Float64(value)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void GuidTest()
+        {
+            Guid[] values = new Guid[] { Guid.Empty, Guid.NewGuid() };
+            foreach (Guid value in values)
+            {
+                string expectedStringOutput = $"G{value.ToString()}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Guid,
+                    };
+                    expectedBinaryOutput = expectedBinaryOutput.Concat(value.ToByteArray()).ToArray();
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Guid(value)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+
+        [TestMethod]
+        [Owner("brchon")]
+        public void BinaryTest()
+        {
+            {
+                // Empty Binary
+                string expectedStringOutput = $"B";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Binary1ByteLength,
+                        0,
+                    };
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Binary(new List<byte>())
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+
+            {
+                // Binary 1 Byte Length
+                IReadOnlyList<byte> binary = Enumerable.Range(0, 25).Select(x => (byte)x).ToList();
+                string expectedStringOutput = $"B{Convert.ToBase64String(binary.ToArray())}";
+                byte[] expectedBinaryOutput;
+                unchecked
+                {
+                    expectedBinaryOutput = new byte[]
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.Binary1ByteLength,
+                        (byte)binary.Count(),
+                    };
+                    expectedBinaryOutput = expectedBinaryOutput.Concat(binary).ToArray();
+                }
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Binary(binary)
+                };
+
+                this.VerifyWriter(tokensToWrite, expectedStringOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            }
+        }
+        #endregion
 
         private void VerifyWriter(JsonToken[] tokensToWrite, string expectedString)
         {
@@ -1356,13 +1671,21 @@
                         IJsonWriter jsonWriterWithEncoding = JsonWriter.Create(encoding);
                         if (expectedString != null)
                         {
-                            // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
-                            string expectedStringNoWhiteSpace = Newtonsoft.Json.Linq.JToken.Parse(expectedString).ToString(Newtonsoft.Json.Formatting.None).Replace("/", @"\/");
-                            this.VerifyWriter(jsonWriterWithEncoding, tokensToWrite, encoding.GetBytes(expectedStringNoWhiteSpace), JsonSerializationFormat.Text, expectedException);
+                            this.VerifyWriter(
+                                jsonWriterWithEncoding, 
+                                tokensToWrite, 
+                                encoding.GetBytes(expectedString), 
+                                JsonSerializationFormat.Text, 
+                                expectedException);
                         }
                         else
                         {
-                            this.VerifyWriter(jsonWriterWithEncoding, tokensToWrite, null, JsonSerializationFormat.Text, expectedException);
+                            this.VerifyWriter(
+                                jsonWriterWithEncoding, 
+                                tokensToWrite, 
+                                null, 
+                                JsonSerializationFormat.Text, 
+                                expectedException);
                         }
                     }
 
@@ -1371,15 +1694,19 @@
                     byte[] expectedOutput;
                     if (expectedString != null)
                     {
-                        string expectedStringNoWhiteSpace = Newtonsoft.Json.Linq.JToken.Parse(expectedString).ToString(Newtonsoft.Json.Formatting.None).Replace("/", @"\/");
-                        expectedOutput = Encoding.UTF8.GetBytes(expectedStringNoWhiteSpace);
+                        expectedOutput = Encoding.UTF8.GetBytes(expectedString);
                     }
                     else
                     {
                         expectedOutput = null;
                     }
 
-                    this.VerifyWriter(jsonWriter, tokensToWrite, expectedOutput, JsonSerializationFormat.Text, expectedException);
+                    this.VerifyWriter(
+                        jsonWriter, 
+                        tokensToWrite, 
+                        expectedOutput, 
+                        JsonSerializationFormat.Text, 
+                        expectedException);
                 }
             }
             finally
@@ -1414,36 +1741,91 @@
                         case JsonTokenType.BeginArray:
                             jsonWriter.WriteArrayStart();
                             break;
+
                         case JsonTokenType.EndArray:
                             jsonWriter.WriteArrayEnd();
                             break;
+
                         case JsonTokenType.BeginObject:
                             jsonWriter.WriteObjectStart();
                             break;
+
                         case JsonTokenType.EndObject:
                             jsonWriter.WriteObjectEnd();
                             break;
+
                         case JsonTokenType.String:
                             string stringValue = (token as JsonStringToken).Value;
                             jsonWriter.WriteStringValue(stringValue);
                             break;
+
                         case JsonTokenType.Number:
                             Number64 numberValue = (token as JsonNumberToken).Value;
                             jsonWriter.WriteNumberValue(numberValue);
                             break;
+
                         case JsonTokenType.True:
                             jsonWriter.WriteBoolValue(true);
                             break;
+
                         case JsonTokenType.False:
                             jsonWriter.WriteBoolValue(false);
                             break;
+
                         case JsonTokenType.Null:
                             jsonWriter.WriteNullValue();
                             break;
+
                         case JsonTokenType.FieldName:
                             string fieldNameValue = (token as JsonFieldNameToken).Value;
                             jsonWriter.WriteFieldName(fieldNameValue);
                             break;
+
+                        case JsonTokenType.Int8:
+                            sbyte int8Value = (token as JsonInt8Token).Value;
+                            jsonWriter.WriteInt8Value(int8Value);
+                            break;
+
+                        case JsonTokenType.Int16:
+                            short int16Value = (token as JsonInt16Token).Value;
+                            jsonWriter.WriteInt16Value(int16Value);
+                            break;
+
+                        case JsonTokenType.Int32:
+                            int int32Value = (token as JsonInt32Token).Value;
+                            jsonWriter.WriteInt32Value(int32Value);
+                            break;
+
+                        case JsonTokenType.Int64:
+                            long int64Value = (token as JsonInt64Token).Value;
+                            jsonWriter.WriteInt64Value(int64Value);
+                            break;
+
+                        case JsonTokenType.UInt32:
+                            uint uint32Value = (token as JsonUInt32Token).Value;
+                            jsonWriter.WriteUInt32Value(uint32Value);
+                            break;
+
+                        case JsonTokenType.Float32:
+                            float float32Value = (token as JsonFloat32Token).Value;
+                            jsonWriter.WriteFloat32Value(float32Value);
+                            break;
+
+                        case JsonTokenType.Float64:
+                            double float64Value = (token as JsonFloat64Token).Value;
+                            jsonWriter.WriteFloat64Value(float64Value);
+                            break;
+
+                        case JsonTokenType.Guid:
+                            Guid guidValue = (token as JsonGuidToken).Value;
+                            jsonWriter.WriteGuidValue(guidValue);
+                            break;
+
+                        case JsonTokenType.Binary:
+                            IReadOnlyList<byte> binaryValue = (token as JsonBinaryToken).Value;
+                            jsonWriter.WriteBinaryValue(binaryValue);
+                            break;
+
                         case JsonTokenType.NotStarted:
                         default:
                             Assert.Fail(string.Format("Got an unexpected JsonTokenType: {0} as an expected token type", token.JsonTokenType));
@@ -1453,7 +1835,7 @@
             }
             catch (Exception exception)
             {
-                Assert.IsNotNull(expectedException, "Got an exception when none was expected");
+                Assert.IsNotNull(expectedException, $"Got an exception when none was expected: {exception}");
                 Assert.AreEqual(expectedException.GetType(), exception.GetType());
             }
 

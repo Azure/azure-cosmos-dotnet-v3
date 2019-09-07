@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Text;
 
     /// <summary>
@@ -219,50 +220,74 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override void WriteInt8Value(sbyte value)
             {
-                this.WriteNumberValue(value);
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int8);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("I");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteInt16Value(short value)
             {
-                this.WriteNumberValue(value);
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int16);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("H");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteInt32Value(int value)
             {
-                this.WriteNumberValue(value);
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int32);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("L");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteInt64Value(long value)
             {
-                this.WriteNumberValue(value);
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int64);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("LL");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteFloat32Value(float value)
             {
-                this.WriteNumberValue(value);
+                this.JsonObjectState.RegisterToken(JsonTokenType.Float32);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("S");
+                this.streamWriter.Write(value.ToString("G9", CultureInfo.InvariantCulture));
             }
 
             public override void WriteFloat64Value(double value)
             {
-                this.WriteNumberValue(value);
+                this.JsonObjectState.RegisterToken(JsonTokenType.Float64);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("D");
+                this.streamWriter.Write(value.ToString("G17", CultureInfo.InvariantCulture));
             }
 
             public override void WriteUInt32Value(uint value)
             {
-                this.WriteNumberValue(value);
+                this.JsonObjectState.RegisterToken(JsonTokenType.UInt32);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("UL");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteGuidValue(Guid value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Guid);
                 this.PrefixMemberSeparator();
-
+                this.streamWriter.Write("G");
                 this.streamWriter.Write(value.ToString());
             }
 
             public override void WriteBinaryValue(IReadOnlyList<byte> value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Binary);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("B");
+                this.streamWriter.Write(Convert.ToBase64String(value.ToArray()));
             }
 
             /// <summary>
