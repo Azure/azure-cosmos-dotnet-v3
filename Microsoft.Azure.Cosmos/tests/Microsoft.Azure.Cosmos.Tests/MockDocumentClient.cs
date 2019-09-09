@@ -130,8 +130,10 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType,
+            out string payload) /* unused, use token based upon what is passed in constructor */
         {
+            payload = null;
             return null;
         }
 

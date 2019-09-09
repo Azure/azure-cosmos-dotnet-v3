@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
 
     /// <summary>
     /// This class provides extension methods for cosmos LINQ code.
@@ -171,14 +172,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to determine the maximum of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The maximum value in the sequence.</returns>
-        public static Task<TSource> MaxAsync<TSource>(
+        public static Task<Response<TSource>> MaxAsync<TSource>(
             this IQueryable<TSource> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Max());
+                 return ResponseHelperAsync(source.Max());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<TSource>(
@@ -195,14 +196,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to determine the minimum of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The minimum value in the sequence.</returns>
-        public static Task<TSource> MinAsync<TSource>(
+        public static Task<Response<TSource>> MinAsync<TSource>(
             this IQueryable<TSource> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Min());
+                 return ResponseHelperAsync(source.Min());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<TSource>(
@@ -218,14 +219,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<decimal> AverageAsync(
+        public static Task<Response<decimal>> AverageAsync(
             this IQueryable<decimal> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal>(
@@ -241,14 +242,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<decimal?> AverageAsync(
+        public static Task<Response<decimal?>> AverageAsync(
             this IQueryable<decimal?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal?>(
@@ -264,14 +265,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<double> AverageAsync(
+        public static Task<Response<double>> AverageAsync(
             this IQueryable<double> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
@@ -287,14 +288,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<double?> AverageAsync(
+        public static Task<Response<double?>> AverageAsync(
             this IQueryable<double?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
@@ -310,14 +311,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<float> AverageAsync(
+        public static Task<Response<float>> AverageAsync(
             this IQueryable<float> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<float>(
@@ -333,14 +334,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<float?> AverageAsync(
+        public static Task<Response<float?>> AverageAsync(
             this IQueryable<float?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<float?>(
@@ -356,14 +357,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<double> AverageAsync(
+        public static Task<Response<double>> AverageAsync(
             this IQueryable<int> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
@@ -379,14 +380,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<double?> AverageAsync(
+        public static Task<Response<double?>> AverageAsync(
             this IQueryable<int?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
@@ -402,14 +403,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<double> AverageAsync(
+        public static Task<Response<double>> AverageAsync(
             this IQueryable<long> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
@@ -425,14 +426,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<double?> AverageAsync(
+        public static Task<Response<double?>> AverageAsync(
             this IQueryable<long?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Average());
+                 return ResponseHelperAsync(source.Average());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
@@ -448,14 +449,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<decimal> SumAsync(
+        public static Task<Response<decimal>> SumAsync(
             this IQueryable<decimal> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal>(
@@ -471,14 +472,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<decimal?> SumAsync(
+        public static Task<Response<decimal?>> SumAsync(
             this IQueryable<decimal?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal?>(
@@ -494,14 +495,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<double> SumAsync(
+        public static Task<Response<double>> SumAsync(
             this IQueryable<double> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
@@ -517,14 +518,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<double?> SumAsync(
+        public static Task<Response<double?>> SumAsync(
             this IQueryable<double?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
@@ -540,14 +541,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<float> SumAsync(
+        public static Task<Response<float>> SumAsync(
             this IQueryable<float> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<float>(
@@ -563,14 +564,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<float?> SumAsync(
+        public static Task<Response<float?>> SumAsync(
             this IQueryable<float?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<float?>(
@@ -586,14 +587,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<int> SumAsync(
+        public static Task<Response<int>> SumAsync(
             this IQueryable<int> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<int>(
@@ -609,14 +610,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<int?> SumAsync(
+        public static Task<Response<int?>> SumAsync(
             this IQueryable<int?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return ((CosmosLinqQueryProvider)source.Provider).ExecuteAggregateAsync<int?>(
@@ -632,14 +633,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<long> SumAsync(
+        public static Task<Response<long>> SumAsync(
             this IQueryable<long> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                 return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<long>(
@@ -655,14 +656,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">A sequence of values to calculate the average of.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The average value in the sequence.</returns>
-        public static Task<long?> SumAsync(
+        public static Task<Response<long?>> SumAsync(
             this IQueryable<long?> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Sum());
+                return ResponseHelperAsync(source.Sum());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<long?>(
@@ -679,14 +680,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="source">The sequence that contains the elements to be counted.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The number of elements in the input sequence.</returns>
-        public static Task<int> CountAsync<TSource>(
+        public static Task<Response<int>> CountAsync<TSource>(
             this IQueryable<TSource> source,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
             if (cosmosLinqQueryProvider == null)
             {
-                return Task.FromResult(source.Count());
+                return ResponseHelperAsync(source.Count());
             }
 
             return cosmosLinqQueryProvider.ExecuteAggregateAsync<int>(
@@ -694,6 +695,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                     GetMethodInfoOf<IQueryable<TSource>, int>(Queryable.Count),
                     source.Expression),
                 cancellationToken);
+        }
+
+        private static Task<Response<T>> ResponseHelperAsync<T>(T value)
+        {
+            return Task.FromResult<Response<T>>(
+                       new ItemResponse<T>(
+                           System.Net.HttpStatusCode.OK,
+                           new Headers(),
+                           value,
+                           new CosmosDiagnosticsAggregate()));
         }
 
         private static MethodInfo GetMethodInfoOf<T1, T2>(Func<T1, T2> func)
