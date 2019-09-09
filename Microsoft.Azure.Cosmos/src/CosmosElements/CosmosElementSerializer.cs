@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
 
-            IJsonNavigatorNode cosmosElementsNode;
+            CosmosArray documents;
             if (jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),
                 "stringDictionary",
@@ -114,7 +114,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
 
                 IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary.ToArray(), jsonStringDictionary);
-                cosmosElementsNode = navigatorWithStringDictionary.GetRootNode();
+
+                if (!(CosmosElement.Dispatch(
+                    navigatorWithStringDictionary,
+                    navigatorWithStringDictionary.GetRootNode()) is CosmosArray cosmosArray))
+                {
+                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+                }
+
+                documents = cosmosArray;
             }
             else
             {
@@ -127,17 +135,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
                 }
 
-                cosmosElementsNode = objectProperty.ValueNode;
+                if (!(CosmosElement.Dispatch(
+                    jsonNavigator,
+                    objectProperty.ValueNode) is CosmosArray cosmosArray))
+                {
+                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+                }
+
+                documents = cosmosArray;
             }
 
-            if (!(CosmosElement.Dispatch(
-                jsonNavigator,
-                cosmosElementsNode) is CosmosArray cosmosArray))
-            {
-                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-            }
-
-            return cosmosArray;
+            return documents;
         }
 
         /// <summary>
