@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void Complete_AttachesDiagnostics()
+        public void Complete_AddsCompleteTime()
         {
             ItemBatchOperationStatistics itemBatchOperationStatistics = new ItemBatchOperationStatistics();
 
@@ -55,11 +55,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             itemBatchOperationStatistics.AppendDiagnostics(pointOperation1);
             itemBatchOperationStatistics.AppendDiagnostics(pointOperation2);
+            itemBatchOperationStatistics.Complete();
 
-            BatchOperationResult result = new BatchOperationResult(HttpStatusCode.OK);
-            itemBatchOperationStatistics.Complete(result);
-
-            Assert.AreEqual(itemBatchOperationStatistics, result.Diagnostics);
+            Assert.IsTrue(itemBatchOperationStatistics.ToString().Contains("Completed at"));
         }
     }
 }

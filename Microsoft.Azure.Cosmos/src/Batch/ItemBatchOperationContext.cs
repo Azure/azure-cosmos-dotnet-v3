@@ -58,7 +58,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.AssertBatcher(completer))
             {
-                this.Diagnostics.Complete(result);
+                this.Diagnostics.Complete();
+                result.Diagnostics = this.Diagnostics;
                 this.taskCompletionSource.SetResult(result);
             }
 

@@ -22,10 +22,9 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosDiagnostics.Add(diagnostics);
         }
 
-        public void Complete(BatchOperationResult result)
+        public void Complete()
         {
             this.completed = DateTime.UtcNow;
-            result.Diagnostics = this;
         }
 
         public override string ToString()
