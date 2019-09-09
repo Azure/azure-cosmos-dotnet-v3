@@ -6263,6 +6263,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("request");
             }
 
+            request.Headers[HttpConstants.HttpHeaders.IsUpsert] = bool.TrueString;
             return this.ProcessRequestAsync(HttpConstants.HttpMethods.Post, request, retryPolicy, cancellationToken);
         }
         #endregion
