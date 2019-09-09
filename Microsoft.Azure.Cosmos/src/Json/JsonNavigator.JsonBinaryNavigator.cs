@@ -307,7 +307,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override bool TryGetBufferedBinaryValue(IJsonNavigatorNode binaryNode, out IReadOnlyList<byte> bufferedBinaryValue)
             {
-                throw new NotImplementedException();
+                bufferedBinaryValue = default(IReadOnlyList<byte>);
+                return false;
             }
 
             /// <summary>

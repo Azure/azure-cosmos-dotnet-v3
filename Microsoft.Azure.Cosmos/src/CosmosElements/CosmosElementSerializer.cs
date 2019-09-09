@@ -72,18 +72,67 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
 
-            if (!jsonNavigator.TryGetObjectProperty(
+            IJsonNavigatorNode cosmosElementsNode;
+            if (jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),
-                resourceName,
-                out ObjectProperty objectProperty))
+                "stringDictionary",
+                out ObjectProperty stringDictionaryProperty))
             {
-                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+                // Payload is string dictionary encode so we have to decode using the string dictionary.
+                IJsonNavigatorNode stringDictionaryNode = stringDictionaryProperty.ValueNode;
+                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(jsonNavigator.GetArrayItemCount(stringDictionaryNode));
+                int index = 0;
+                foreach (IJsonNavigatorNode item in jsonNavigator.GetArrayItems(stringDictionaryNode))
+                {
+                    string stringDictionaryElement = jsonNavigator.GetStringValue(item);
+                    if (!jsonStringDictionary.TryAddString(stringDictionaryElement, out int insertedIndex))
+                    {
+                        throw new InvalidOperationException($"Failed to insert {stringDictionaryElement} into {nameof(JsonStringDictionary)} at index: {index}");
+                    }
+
+                    if (insertedIndex != index)
+                    {
+                        throw new InvalidOperationException($"Inserted {stringDictionaryElement} into index {insertedIndex} instead of {index}");
+                    }
+
+                    index++;
+                }
+
+                if (!jsonNavigator.TryGetObjectProperty(
+                    jsonNavigator.GetRootNode(),
+                    resourceName,
+                    out ObjectProperty resourceProperty))
+                {
+                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+                }
+
+                IJsonNavigatorNode resources = resourceProperty.ValueNode;
+
+                if (!jsonNavigator.TryGetBufferedBinaryValue(resources, out IReadOnlyList<byte> resourceBinary))
+                {
+                    resourceBinary = jsonNavigator.GetBinaryValue(resources);
+                }
+
+                IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary.ToArray(), jsonStringDictionary);
+                cosmosElementsNode = navigatorWithStringDictionary.GetRootNode();
+            }
+            else
+            {
+                // Payload is not string dictionary encoded so we can just do for the documents as is.
+                if (!jsonNavigator.TryGetObjectProperty(
+                    jsonNavigator.GetRootNode(),
+                    resourceName,
+                    out ObjectProperty objectProperty))
+                {
+                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
+                }
+
+                cosmosElementsNode = objectProperty.ValueNode;
             }
 
-            IJsonNavigatorNode cosmosElements = objectProperty.ValueNode;
             if (!(CosmosElement.Dispatch(
                 jsonNavigator,
-                cosmosElements) is CosmosArray cosmosArray))
+                cosmosElementsNode) is CosmosArray cosmosArray))
             {
                 throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
             }
