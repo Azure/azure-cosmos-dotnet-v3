@@ -357,13 +357,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);
 
+            string payload;
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
             string token = this.tokenProvider.GetUserAuthorizationToken(
                 resourceAddress,
                 resourceTypeToSign,
                 HttpConstants.HttpMethods.Get,
                 headers,
-                AuthorizationTokenType.PrimaryMasterKey);
+                AuthorizationTokenType.PrimaryMasterKey,
+                out payload);
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);
 
@@ -412,12 +414,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             string token = null;
             try
             {
+                string payload;
                 token = this.tokenProvider.GetUserAuthorizationToken(
                     collectionRid,
                     resourceTypeToSign,
                     HttpConstants.HttpMethods.Get,
                     headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    out payload);
             }
             catch (UnauthorizedException)
             {
@@ -426,13 +430,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (token == null && request.IsNameBased)
             {
                 // User doesn't have rid based resource token. Maybe he has name based.
+                string payload;
                 string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
                 token = this.tokenProvider.GetUserAuthorizationToken(
                         collectionAltLink,
                         resourceTypeToSign,
                         HttpConstants.HttpMethods.Get,
                         headers,
-                        AuthorizationTokenType.PrimaryMasterKey);
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        out payload);
             }
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);
