@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#716](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/716) Added camel case serialization on LINQ query generation
 - [#729](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/729) Added aggregate(CountAsync/SumAsync etc.) extensions for LINQ query
 - [#743](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/743) Added WebProxy to CosmosClientOptions
-- [#767](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/767) Added support for custom synchronization of clients
+- [#767](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/767) Ability to limit to configured application region only
 
 ### Fixed
 
