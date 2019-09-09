@@ -3120,166 +3120,166 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T])"
         },
-        "System.Threading.Tasks.Task`1[System.Decimal] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Decimal] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Decimal] SumAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] SumAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Decimal] SumAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] SumAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Double] SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Double] SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Int32] CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Int32] SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Int64] SumAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int64]] SumAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int64] SumAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int64]] SumAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Decimal]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Decimal]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Decimal]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Decimal]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Decimal]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Decimal]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Int32]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Int32]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int64]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Int64]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int64]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Int64]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Single]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Single]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Single]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Single]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Single]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Single]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Single]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Single]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Single] AverageAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] AverageAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Single] AverageAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] AverageAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Single] SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Single] SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[TSource] MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[TSource] MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[TSource] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[TSource] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
         }
       },
       "NestedTypes": {}
@@ -3997,6 +3997,16 @@
           "MethodInfo": null
         },
         "System.String NorthEurope": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorwayEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorwayWest": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="BatchAsyncStreamer"/>
     internal class BatchAsyncContainerExecutor : IDisposable
     {
-        private const int DefaultDispatchTimer = 10;
+        private const int DefaultDispatchTimerInSeconds = 1;
         private const int MinimumDispatchTimerInSeconds = 1;
 
         private readonly ContainerCore cosmosContainer;
@@ -36,13 +36,21 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConcurrentDictionary<string, BatchAsyncStreamer> streamersByPartitionKeyRange = new ConcurrentDictionary<string, BatchAsyncStreamer>();
         private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly TimerPool timerPool;
+        private readonly RetryOptions retryOptions;
+
+        /// <summary>
+        /// For unit testing.
+        /// </summary>
+        internal BatchAsyncContainerExecutor()
+        {
+        }
 
         public BatchAsyncContainerExecutor(
             ContainerCore cosmosContainer,
             CosmosClientContext cosmosClientContext,
             int maxServerRequestOperationCount,
             int maxServerRequestBodyLength,
-            int dispatchTimerInSeconds = BatchAsyncContainerExecutor.DefaultDispatchTimer)
+            int dispatchTimerInSeconds = BatchAsyncContainerExecutor.DefaultDispatchTimerInSeconds)
         {
             if (cosmosContainer == null)
             {
@@ -70,9 +78,10 @@ namespace Microsoft.Azure.Cosmos
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
             this.dispatchTimerInSeconds = dispatchTimerInSeconds;
             this.timerPool = new TimerPool(BatchAsyncContainerExecutor.MinimumDispatchTimerInSeconds);
+            this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
         }
 
-        public async Task<BatchOperationResult> AddAsync(
+        public virtual async Task<BatchOperationResult> AddAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -86,10 +95,10 @@ namespace Microsoft.Azure.Cosmos
 
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
-            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId);
+            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId, BatchAsyncContainerExecutor.GetRetryPolicy(this.retryOptions));
             operation.AttachContext(context);
             streamer.Add(operation);
-            return await context.Task;
+            return await context.OperationTask;
         }
 
         public void Dispose()
@@ -107,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             this.timerPool.Dispose();
         }
 
-        internal async Task ValidateOperationAsync(
+        internal virtual async Task ValidateOperationAsync(
             ItemBatchOperation operation,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -133,6 +142,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException(RMResources.RequestTooLarge);
             }
+        }
+
+        private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
+        {
+            return new BulkPartitionKeyRangeGoneRetryPolicy(
+                new ResourceThrottleRetryPolicy(
+                retryOptions.MaxRetryAttemptsOnThrottledRequests,
+                retryOptions.MaxRetryWaitTimeInSeconds));
         }
 
         private static bool ValidateOperationEPK(
