@@ -102,13 +102,18 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.IsBulkOperationSupported(resourceType, operationType))
             {
+                if (!partitionKey.HasValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(partitionKey));
+                }
+
                 return this.ProcessResourceOperationAsBulkStreamAsync(
                     resourceUri: resourceUri,
                     resourceType: resourceType,
                     operationType: operationType,
                     requestOptions: requestOptions,
                     cosmosContainerCore: cosmosContainerCore,
-                    partitionKey: partitionKey,
+                    partitionKey: partitionKey.Value,
                     itemId: itemId,
                     streamPayload: streamPayload,
                     requestEnricher: requestEnricher,
@@ -199,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
-            PartitionKey? partitionKey,
+            PartitionKey partitionKey,
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
