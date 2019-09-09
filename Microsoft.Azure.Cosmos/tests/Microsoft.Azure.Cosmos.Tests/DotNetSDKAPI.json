@@ -3953,6 +3953,16 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "System.String NorwayEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorwayWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "System.String SouthAfricaNorth": {
           "Type": "Field",
           "Attributes": [],
