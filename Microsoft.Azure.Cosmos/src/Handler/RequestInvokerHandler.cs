@@ -45,7 +45,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
-            await this.client.DocumentClient.EnsureValidClientAsync();
+            (bool clientIsValid, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
+            if (!clientIsValid)
+            {
+                return errorResponse;
+            }
+
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
             this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
@@ -175,6 +180,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
             else
             {
                 throw new NotImplementedException();
+            }
+        }
+
+        private async Task<(bool, ResponseMessage)> EnsureValidClientAsync(RequestMessage request)
+        {
+            try
+            {
+                await this.client.DocumentClient.EnsureValidClientAsync();
+                return (true, null);
+            }
+            catch (DocumentClientException dce)
+            {
+                return (false, dce.ToCosmosResponseMessage(request));
             }
         }
 
