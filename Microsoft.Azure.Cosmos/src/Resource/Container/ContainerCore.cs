@@ -119,6 +119,15 @@ namespace Microsoft.Azure.Cosmos
             return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
         }
 
+        internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
+        }
+
         public async override Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
@@ -128,6 +137,21 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
             return await cosmosOffers.ReplaceThroughputAsync(
+                targetRID: rid,
+                throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+            int throughput,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputIfExistsAsync(
                 targetRID: rid,
                 throughput: throughput,
                 requestOptions: requestOptions,

@@ -67,14 +67,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
 
-                string payload;
                 string authorizationToken = this.tokenProvider.GetUserAuthorizationToken(
                     request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
                     HttpConstants.HttpMethods.Get,
                     request.Headers,
                     AuthorizationTokenType.PrimaryMasterKey,
-                    out payload);
+                    payload: out _);
 
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 
