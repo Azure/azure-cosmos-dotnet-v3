@@ -73,7 +73,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler
-            string payload;
             string authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
