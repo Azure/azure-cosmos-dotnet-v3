@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
             Assert.IsTrue(policy.EnableEndpointDiscovery);
 
-            cosmosClientBuilder.WithApplicationRegion(region, true)
+            cosmosClientBuilder.WithApplicationRegion(region, false)
                 .WithConnectionModeGateway(maxConnections, webProxy)
                 .WithRequestTimeout(requestTimeout)
                 .WithApplicationName(userAgentSuffix)
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
-            Assert.IsTrue(clientOptions.LimitToApplicationRegionOnly);
+            Assert.IsFalse(clientOptions.UseAnyAccountRegion);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();

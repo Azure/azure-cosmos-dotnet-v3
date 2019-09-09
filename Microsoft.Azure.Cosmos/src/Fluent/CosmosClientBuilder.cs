@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Set the preferred geo-replicated region to be used in the Azure Cosmos DB service. 
         /// </summary>
         /// <param name="applicationRegion">Azure region where application is running. <see cref="Regions"/> lists valid Cosmos DB regions.</param>
-        /// <param name="limitToApplicationRegionOnly">When limiting to only the specified region, availability is reduced to that of a single region account, see https://docs.microsoft.com/azure/cosmos-db/high-availability. </param>
+        /// <param name="useAnyAccountRegion">When the value of this property is true, the SDK will automatically discover the current write and read regions to ensure requests are sent to the correct region based on the region specified in the ApplicationRegion property. When setting the value to false, availability is reduced to that of a single region account to the region specified in ApplicationRegion, see https://docs.microsoft.com/azure/cosmos-db/high-availability. </param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/> with a of preferred region.
         /// <code language="c#">
@@ -142,10 +142,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
         public CosmosClientBuilder WithApplicationRegion(
             string applicationRegion,
-            bool limitToApplicationRegionOnly = false)
+            bool useAnyAccountRegion = true)
         {
             this.clientOptions.ApplicationRegion = applicationRegion;
-            this.clientOptions.LimitToApplicationRegionOnly = limitToApplicationRegionOnly;
+            this.clientOptions.UseAnyAccountRegion = useAnyAccountRegion;
             return this;
         }
 

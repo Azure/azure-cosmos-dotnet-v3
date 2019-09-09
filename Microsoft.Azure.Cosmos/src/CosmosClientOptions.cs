@@ -351,11 +351,16 @@ namespace Microsoft.Azure.Cosmos
         bool AllowBulkExecution { get; set; }
 
         /// <summary>
-        /// When limiting to only the specified region, availability is reduced to that of a single region account.
+        /// Gets or sets the flag to enable endpoint discovery for geo-replicated database accounts in the Azure Cosmos DB service.
         /// </summary>
+        /// <value>
+        /// Default value is true.
+        /// </value>
+        /// <remarks>
+        /// When the value of this property is true, the SDK will automatically discover the current write and read regions to ensure requests are sent to the correct region based on the region specified in the ApplicationRegion property. When setting the value to false, availability is reduced to that of a single region account to the region specified in ApplicationRegion.</remarks>
         /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
-        internal bool LimitToApplicationRegionOnly { get; set; }
+        internal bool UseAnyAccountRegion { get; set; } = true;
 
         /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
@@ -513,10 +518,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.ApplicationRegion != null)
             {
                 connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
-                if (this.LimitToApplicationRegionOnly)
-                {
-                    connectionPolicy.EnableEndpointDiscovery = false;
-                }
+                connectionPolicy.EnableEndpointDiscovery = this.UseAnyAccountRegion;
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
