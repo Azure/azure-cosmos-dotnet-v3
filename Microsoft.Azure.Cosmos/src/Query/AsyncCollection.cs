@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary> 

@@ -122,13 +122,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             return new ClientContextCore(
                 client: client,
-                clientOptions: null,
+                clientOptions: new CosmosClientOptions(),
                 userJsonSerializer: MockCosmosUtil.Serializer,
                 defaultJsonSerializer: MockCosmosUtil.Serializer,
+                sqlQuerySpecSerializer: MockCosmosUtil.Serializer,
                 cosmosResponseFactory: responseFactory,
                 requestHandler: client.RequestHandler,
-                documentClient: new MockDocumentClient(),
-                documentQueryClient: new Mock<Query.IDocumentQueryClient>().Object);
+                documentClient: new MockDocumentClient());
         }
     }
 }

@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
@@ -166,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
 
         public INameValueCollection Clone()
         {
-            return new StringKeyValueCollection(this);
+            return new DictionaryNameValueCollection(this);
         }
 
         public void Add(INameValueCollection collection)
@@ -272,9 +271,9 @@ namespace Microsoft.Azure.Cosmos
                     .Where(p => p.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).Any());
 
             return knownHeaderProperties.Select(
-                knownProperty => 
+                knownProperty =>
                 new KeyValuePair<string, PropertyInfo>(
-                    ((CosmosKnownHeaderAttribute)knownProperty.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).First()).HeaderName, 
+                    ((CosmosKnownHeaderAttribute)knownProperty.GetCustomAttributes(typeof(CosmosKnownHeaderAttribute), false).First()).HeaderName,
                     knownProperty)).ToArray();
         }
 

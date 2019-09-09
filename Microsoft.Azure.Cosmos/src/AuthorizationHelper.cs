@@ -46,18 +46,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentNullException("headers");
             }
-            
+
             string resourceType = string.Empty;
             string resourceIdValue = string.Empty;
             bool isNameBased = false;
 
             AuthorizationHelper.GetResourceTypeAndIdOrFullName(uri, out isNameBased, out resourceType, out resourceIdValue, clientVersion);
 
+            string payload;
             return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
                          resourceIdValue,
                          resourceType,
                          headers,
-                         stringHMACSHA256Helper);
+                         stringHMACSHA256Helper,
+                         out payload);
         }
 
         // This is a helper for both system and master keys
@@ -67,6 +69,26 @@ namespace Microsoft.Azure.Cosmos
             string resourceType,
             INameValueCollection headers,
             string key,
+            bool bUseUtcNowForMissingXDate = false)
+        {
+            string payload;
+            return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
+                resourceId,
+                resourceType,
+                headers,
+                key,
+                out payload,
+                bUseUtcNowForMissingXDate);
+        }
+
+        // This is a helper for both system and master keys
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "HTTP Headers are ASCII")]
+        public static string GenerateKeyAuthorizationSignature(string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            string key,
+            out string payload,
             bool bUseUtcNowForMissingXDate = false)
         {
             // resourceId can be null for feed-read of /dbs
@@ -103,13 +125,13 @@ namespace Microsoft.Azure.Cosmos
                 string resourceTypeInput = resourceType ?? string.Empty;
 
                 string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
-                string payLoad = GenerateMessagePayload(verbInput,
+                payload = GenerateMessagePayload(verbInput,
                      authResourceId,
                      resourceTypeInput,
                      headers,
                      bUseUtcNowForMissingXDate);
 
-                byte[] hashPayLoad = hmacSha256.ComputeHash(Encoding.UTF8.GetBytes(payLoad));
+                byte[] hashPayLoad = hmacSha256.ComputeHash(Encoding.UTF8.GetBytes(payload));
                 string authorizationToken = Convert.ToBase64String(hashPayLoad);
 
                 return HttpUtility.UrlEncode(String.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
@@ -118,7 +140,6 @@ namespace Microsoft.Azure.Cosmos
                             authorizationToken));
             }
         }
-
         // This is a helper for both system and master keys
         [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "HTTP Headers are ASCII")]
         public static string GenerateKeyAuthorizationSignature(string verb,
@@ -126,6 +147,24 @@ namespace Microsoft.Azure.Cosmos
             string resourceType,
             INameValueCollection headers,
             IComputeHash stringHMACSHA256Helper)
+        {
+            string payload;
+            return AuthorizationHelper.GenerateKeyAuthorizationSignature(verb,
+                resourceId,
+                resourceType,
+                headers,
+                stringHMACSHA256Helper,
+                out payload);
+        }
+
+        // This is a helper for both system and master keys
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", Justification = "HTTP Headers are ASCII")]
+        public static string GenerateKeyAuthorizationSignature(string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            IComputeHash stringHMACSHA256Helper,
+            out string payload)
         {
             // resourceId can be null for feed-read of /dbs
 
@@ -158,12 +197,12 @@ namespace Microsoft.Azure.Cosmos
             string resourceTypeInput = resourceType ?? string.Empty;
 
             string authResourceId = AuthorizationHelper.GetAuthorizationResourceIdOrFullName(resourceTypeInput, resourceIdInput);
-            string payLoad = GenerateMessagePayload(verbInput,
+            payload = GenerateMessagePayload(verbInput,
                  authResourceId,
                  resourceTypeInput,
                  headers);
 
-            byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(Encoding.UTF8.GetBytes(payLoad));
+            byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(Encoding.UTF8.GetBytes(payload));
             string authorizationToken = Convert.ToBase64String(hashPayLoad);
 
             return HttpUtility.UrlEncode(String.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,

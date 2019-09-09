@@ -7,12 +7,17 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation
     /// </summary>
-    internal abstract partial class JsonReader : IJsonReader
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonReader : IJsonReader
     {
         /// <summary>
         /// JsonReader that can read from a json serialized in binary <see cref="JsonBinaryEncoding"/>.

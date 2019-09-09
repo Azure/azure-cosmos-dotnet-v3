@@ -4,9 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
 {
-    using System;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// A monitor which logs the errors only.
@@ -18,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
         {
             if (record.Severity == HealthSeverity.Error)
             {
-                DefaultTrace.TraceException(record.Exception);
+                Extensions.TraceException(record.Exception);
                 DefaultTrace.TraceError($"Unhealthiness detected in the operation {record.Operation} for {record.Lease}. ");
             }
 

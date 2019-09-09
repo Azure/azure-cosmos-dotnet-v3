@@ -47,7 +47,7 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                //Read the Cosmos endpointUrl and authorisationKeys from configuration
+                //Read the Cosmos endpointUrl and authorizationKey from configuration
                 //These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
                 //NB > Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
                 using (CosmosClient client = new CosmosClient(endpoint, authKey))
@@ -107,6 +107,7 @@
                 int count = 0;
                 foreach (Family item in await setIterator.ReadNextAsync())
                 {
+                    count++;
                     Assert("Should only return 1 result at a time.", count <= 1);
                     families.Add(item);
                 }

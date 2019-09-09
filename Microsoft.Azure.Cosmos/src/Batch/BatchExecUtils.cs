@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -29,8 +28,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A Memory{byte} with length at most maximumLength.</returns>
         /// <remarks>Throws RequestEntityTooLargeException if the input stream has more bytes than maximumLength.</remarks>
         public static async Task<Memory<byte>> StreamToMemoryAsync(
-            Stream stream, 
-            int maximumLength, 
+            Stream stream,
+            int maximumLength,
             CancellationToken cancellationToken)
         {
             if (stream.CanSeek)
@@ -143,6 +142,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException(errorMessage);
             }
+        }
+
+        public static string GetPartitionKeyRangeId(PartitionKey partitionKey, PartitionKeyDefinition partitionKeyDefinition, Routing.CollectionRoutingMap collectionRoutingMap)
+        {
+            string effectivePartitionKey = partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+            return collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKey).Id;
         }
     }
 }

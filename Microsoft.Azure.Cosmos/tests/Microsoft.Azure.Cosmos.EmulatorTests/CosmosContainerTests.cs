@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient cosmosClient = null;
         private Cosmos.Database cosmosDatabase = null;
-        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - (new DateTime(1970, 1, 1))).TotalSeconds;
+        private static long ToEpoch(DateTime dateTime) => (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
 
         [TestInitialize]
         public async Task TestInit()
@@ -47,31 +47,65 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReIndexingTest()
+        {
+            ContainerProperties cp = new ContainerProperties()
+            {
+                Id = "ReIndexContainer",
+                PartitionKeyPath = "/pk",
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    Automatic = false,
+                }
+            };
+
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cp);
+            Container container = response;
+            ContainerProperties existingContainerProperties = response.Resource;
+
+            // Turn on indexing
+            existingContainerProperties.IndexingPolicy.Automatic = true;
+            existingContainerProperties.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Consistent;
+
+            await container.ReplaceContainerAsync(existingContainerProperties);
+
+            // Check progress
+            ContainerRequestOptions requestOptions = new ContainerRequestOptions();
+            requestOptions.PopulateQuotaInfo = true;
+
+            while(true)
+            {
+                ContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
+                string indexTransformationStatus = readResponse.Headers["x-ms-documentdb-collection-index-transformation-progress"];
+                Assert.IsNotNull(indexTransformationStatus);
+
+                if (int.Parse(indexTransformationStatus) == 100)
+                {
+                    break;
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(20));
+            }
+        }
+
+        [TestMethod]
         public async Task ContainerContractTest()
         {
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(new Guid().ToString(), "/id");
-            Assert.IsNotNull(response);
-            Assert.IsTrue(response.RequestCharge > 0);
-            Assert.IsNotNull(response.Headers);
-            Assert.IsNotNull(response.Headers.ActivityId);
+            this.ValidateCreateContainerResponseContract(response);
+        }
 
-            ContainerProperties containerSettings = response.Resource;
-            Assert.IsNotNull(containerSettings.Id);
-            Assert.IsNotNull(containerSettings.ResourceId);
-            Assert.IsNotNull(containerSettings.ETag);
-            Assert.IsTrue(containerSettings.LastModified.HasValue);
+        [TestMethod]
+        public async Task ContainerBuilderContractTest()
+        {
+            ContainerResponse response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateAsync();
+            this.ValidateCreateContainerResponseContract(response);
 
-            Assert.IsNotNull(containerSettings.PartitionKeyPath);
-            Assert.IsNotNull(containerSettings.PartitionKeyPathTokens);
-            Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens.Length);
-            Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0]);
+            response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateIfNotExistsAsync();
+            this.ValidateCreateContainerResponseContract(response);
 
-            ContainerCore containerCore = response.Container as ContainerCore;
-            Assert.IsNotNull(containerCore);
-            Assert.IsNotNull(containerCore.LinkUri);
-            Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));
-
-            Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
+            response = await this.cosmosDatabase.DefineContainer(response.Container.Id, "/id").CreateIfNotExistsAsync();
+            this.ValidateCreateContainerResponseContract(response);
         }
 
         [Ignore]
@@ -147,6 +181,83 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task CreateContainerIfNotExistsAsyncTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath1 = "/users";
+
+            ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath1);
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath1, containerResponse.Resource.PartitionKey.Paths.First());
+
+            //Creating container with same partition key path
+            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath1, containerResponse.Resource.PartitionKey.Paths.First());
+
+            //Creating container with different partition key path
+            string partitionKeyPath2 = "/users2";
+            try
+            {
+                settings = new ContainerProperties(containerName, partitionKeyPath2);
+                containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+                Assert.Fail("Should through ArgumentException on partition key path");
+            }
+            catch(ArgumentException ex)
+            {
+                Assert.AreEqual(nameof(settings.PartitionKey), ex.ParamName);
+                Assert.IsTrue(ex.Message.Contains(string.Format(
+                    ClientResources.PartitionKeyPathConflict,
+                    partitionKeyPath2,
+                    containerName,
+                    partitionKeyPath1)));
+            }
+
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+
+
+            //Creating existing container with partition key having value for SystemKey
+            //https://github.com/Azure/azure-cosmos-dotnet-v3/issues/623
+            string v2ContainerName = "V2Container";
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            partitionKeyDefinition.Paths.Add("/test");
+            partitionKeyDefinition.IsSystemKey = false;
+            ContainerProperties containerPropertiesWithSystemKey = new ContainerProperties()
+            {
+                Id = v2ContainerName,
+                PartitionKey = partitionKeyDefinition,
+            };
+            await this.cosmosDatabase.CreateContainerAsync(containerPropertiesWithSystemKey);
+
+            ContainerProperties containerProperties = new ContainerProperties(v2ContainerName, "/test");
+            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(v2ContainerName, containerResponse.Resource.Id);
+            Assert.AreEqual("/test", containerResponse.Resource.PartitionKey.Paths.First());
+
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+
+            containerPropertiesWithSystemKey.PartitionKey.IsSystemKey = true;
+            await this.cosmosDatabase.CreateContainerAsync(containerPropertiesWithSystemKey);
+
+            containerProperties = new ContainerProperties(v2ContainerName, "/test");
+            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(v2ContainerName, containerResponse.Resource.Id);
+            Assert.AreEqual("/test", containerResponse.Resource.PartitionKey.Paths.First());
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
@@ -520,6 +631,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// This test verifies that we are able to set the ttl property path correctly using SDK.
         /// Also this test will successfully read active item based on its TimeToLivePropertyPath value.
         /// </summary>
+        [Obsolete]
         [TestMethod]
         public async Task TimeToLivePropertyPath()
         {
@@ -576,6 +688,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
+        {
+            Assert.IsNotNull(containerResponse);
+            Assert.IsTrue(containerResponse.RequestCharge > 0);
+            Assert.IsNotNull(containerResponse.Headers);
+            Assert.IsNotNull(containerResponse.Headers.ActivityId);
+
+            ContainerProperties containerSettings = containerResponse.Resource;
+            Assert.IsNotNull(containerSettings.Id);
+            Assert.IsNotNull(containerSettings.ResourceId);
+            Assert.IsNotNull(containerSettings.ETag);
+            Assert.IsTrue(containerSettings.LastModified.HasValue);
+
+            Assert.IsNotNull(containerSettings.PartitionKeyPath);
+            Assert.IsNotNull(containerSettings.PartitionKeyPathTokens);
+            Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens.Length);
+            Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0]);
+
+            ContainerCore containerCore = containerResponse.Container as ContainerCore;
+            Assert.IsNotNull(containerCore);
+            Assert.IsNotNull(containerCore.LinkUri);
+            Assert.IsFalse(containerCore.LinkUri.ToString().StartsWith("/"));
+
+            Assert.IsTrue(containerSettings.LastModified.Value > new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), containerSettings.LastModified.Value.ToString());
         }
     }
 }

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Creates an instance for unit-testing
         /// </summary>
-        public ContainerBuilder()
+        protected ContainerBuilder()
         {
         }
 
@@ -75,6 +75,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Creates a container if it does not exist with the current fluent definition.
+        /// </summary>
+        /// <param name="throughput">Desired throughput for the container expressed in Request Units per second.</param>
+        /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
+        public async Task<ContainerResponse> CreateIfNotExistsAsync(int? throughput = null)
+        {
+            ContainerProperties containerProperties = this.Build();
+
+            return await this.database.CreateContainerIfNotExistsAsync(containerProperties, throughput);
+        }
+
+        /// <summary>
         /// Applies the current Fluent definition and creates a container configuration.
         /// </summary>
         /// <returns>Builds the current Fluent configuration into an instance of <see cref="ContainerProperties"/>.</returns>
@@ -107,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         private void AddConflictResolution(ConflictResolutionPolicy conflictResolutionPolicy)
         {
-            if (conflictResolutionPolicy.Mode == ConflictResolutionMode.Custom 
+            if (conflictResolutionPolicy.Mode == ConflictResolutionMode.Custom
                 && !string.IsNullOrEmpty(conflictResolutionPolicy.ResolutionProcedure))
             {
                 this.clientContext.ValidateResource(conflictResolutionPolicy.ResolutionProcedure);

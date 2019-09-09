@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -93,11 +93,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            QueryResponse results = await base.DrainAsync(maxElements, token);
-            if (!results.IsSuccessStatusCode)
+            QueryResponseCore results = await base.DrainAsync(maxElements, token);
+            if (!results.IsSuccess)
             {
                 return results;
             }
@@ -107,11 +107,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.takeCount -= takedDocuments.Count;
             string updatedContinuationToken = null;
 
-            if (results.QueryHeaders.DisallowContinuationTokenMessage == null)
+            if (results.DisallowContinuationTokenMessage == null)
             {
                 if (!this.IsDone)
                 {
-                    string sourceContinuation = results.Headers.ContinuationToken;
+                    string sourceContinuation = results.ContinuationToken;
                     TakeContinuationToken takeContinuationToken;
                     switch (this.takeEnum)
                     {
@@ -135,11 +135,16 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
-            return QueryResponse.CreateSuccess(
-                takedDocuments,
-                takedDocuments.Count,
-                results.ResponseLengthBytes,
-                results.QueryHeaders.CloneKnownProperties(updatedContinuationToken, results.QueryHeaders.DisallowContinuationTokenMessage));
+            return QueryResponseCore.CreateSuccess(
+                    result: takedDocuments,
+                    continuationToken: updatedContinuationToken,
+                    disallowContinuationTokenMessage: results.DisallowContinuationTokenMessage,
+                    activityId: results.ActivityId,
+                    requestCharge: results.RequestCharge,
+                    queryMetricsText: results.QueryMetricsText,
+                    queryMetrics: results.QueryMetrics,
+                    requestStatistics: results.RequestStatistics,
+                    responseLengthBytes: results.ResponseLengthBytes);
         }
 
         private enum TakeEnum

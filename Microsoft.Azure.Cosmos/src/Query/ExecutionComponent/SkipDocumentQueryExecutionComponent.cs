@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             return new SkipDocumentQueryExecutionComponent(
-                await createSourceCallback(offsetContinuationToken.SourceToken), 
+                await createSourceCallback(offsetContinuationToken.SourceToken),
                 offsetContinuationToken.Offset);
         }
 
@@ -58,11 +58,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
         }
 
-        public override async Task<QueryResponse> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            QueryResponse sourcePage = await base.DrainAsync(maxElements, token);
-            if (!sourcePage.IsSuccessStatusCode)
+            QueryResponseCore sourcePage = await base.DrainAsync(maxElements, token);
+            if (!sourcePage.IsSuccess)
             {
                 return sourcePage;
             }
@@ -70,24 +70,29 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             // skip the documents but keep all the other headers
             List<CosmosElement> documentsAfterSkip = sourcePage.CosmosElements.Skip(this.skipCount).ToList();
 
-            int numberOfDocumentsSkipped = sourcePage.Count - documentsAfterSkip.Count;
+            int numberOfDocumentsSkipped = sourcePage.CosmosElements.Count - documentsAfterSkip.Count;
             this.skipCount -= numberOfDocumentsSkipped;
             string updatedContinuationToken = null;
 
-            if (sourcePage.QueryHeaders.DisallowContinuationTokenMessage == null)
+            if (sourcePage.DisallowContinuationTokenMessage == null)
             {
                 if (!this.IsDone)
                 {
                     updatedContinuationToken = new OffsetContinuationToken(
                         this.skipCount,
-                        sourcePage.Headers.ContinuationToken).ToString();
+                        sourcePage.ContinuationToken).ToString();
                 }
             }
 
-            return QueryResponse.CreateSuccess(
+            return QueryResponseCore.CreateSuccess(
                     result: documentsAfterSkip,
-                    count: documentsAfterSkip.Count(),
-                    responseHeaders: sourcePage.QueryHeaders.CloneKnownProperties(updatedContinuationToken, sourcePage.QueryHeaders.DisallowContinuationTokenMessage),
+                    continuationToken: updatedContinuationToken,
+                    disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    activityId: sourcePage.ActivityId,
+                    requestCharge: sourcePage.RequestCharge,
+                    queryMetricsText: sourcePage.QueryMetricsText,
+                    queryMetrics: sourcePage.QueryMetrics,
+                    requestStatistics: sourcePage.RequestStatistics,
                     responseLengthBytes: sourcePage.ResponseLengthBytes);
         }
 

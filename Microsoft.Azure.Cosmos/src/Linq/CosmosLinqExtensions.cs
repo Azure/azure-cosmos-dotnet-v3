@@ -5,7 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
+    using System.Linq.Expressions;
+    using System.Reflection;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// This class provides extension methods for cosmos LINQ code.
@@ -73,23 +78,23 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// This method generate query text from LINQ query.
+        /// This method generate query definition from LINQ query.
         /// </summary>
         /// <typeparam name="T">the type of object to query.</typeparam>
         /// <param name="query">the IQueryable{T} to be converted.</param>
-        /// <returns>An IDocumentQuery{T} that can evaluate the query.</returns>
+        /// <returns>The queryDefinition which can be used in query execution.</returns>
         /// <example>
-        /// This example shows how to generate query text from LINQ.
+        /// This example shows how to generate query definition from LINQ.
         ///
         /// <code language="c#">
         /// <![CDATA[
         /// IQueryable<T> queryable = container.GetItemsQueryIterator<T>(allowSynchronousQueryExecution = true)
         ///                      .Where(t => b.id.contains("test"));
-        /// String sqlQueryText = queryable.ToSqlQueryText();
+        /// QueryDefinition queryDefinition = queryable.ToQueryDefinition();
         /// ]]>
         /// </code>
         /// </example>
-        internal static string ToSqlQueryText<T>(this IQueryable<T> query)
+        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query)
         {
             CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
 
@@ -98,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToSqlQueryText is only supported on cosmos LINQ query operations");
             }
 
-            return linqQuery.ToSqlQueryText();
+            return linqQuery.ToQueryDefinition();
         }
 
         /// <summary>
@@ -128,6 +133,573 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             return linqQuery.ToFeedIterator();
+        }
+
+        /// <summary>
+        /// This extension method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
+        /// This will create the fresh new FeedIterator when called.
+        /// </summary>
+        /// <typeparam name="T">the type of object to query.</typeparam>
+        /// <param name="query">the IQueryable{T} to be converted.</param>
+        /// <returns>An iterator to go through the items.</returns>
+        /// <example>
+        /// This example shows how to get FeedIterator from LINQ.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
+        /// FeedIterator setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator()
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static FeedIterator ToStreamIterator<T>(this IQueryable<T> query)
+        {
+            CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
+
+            if (linqQuery == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToStreamFeedIterator is only supported on cosmos LINQ query operations");
+            }
+
+            return linqQuery.ToStreamIterator();
+        }
+
+        /// <summary>
+        /// Returns the maximum value in a generic <see cref="IQueryable{TSource}" />.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of source.</typeparam>
+        /// <param name="source">A sequence of values to determine the maximum of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The maximum value in the sequence.</returns>
+        public static Task<TSource> MaxAsync<TSource>(
+            this IQueryable<TSource> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Max());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<TSource>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<TSource>, TSource>(Queryable.Max),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns the minimum value in a generic <see cref="IQueryable{TSource}" />.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of source.</typeparam>
+        /// <param name="source">A sequence of values to determine the minimum of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The minimum value in the sequence.</returns>
+        public static Task<TSource> MinAsync<TSource>(
+            this IQueryable<TSource> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Min());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<TSource>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<TSource>, TSource>(Queryable.Min),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Decimal" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<decimal> AverageAsync(
+            this IQueryable<decimal> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<decimal>, decimal>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Nullable{Decimal}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<decimal?> AverageAsync(
+            this IQueryable<decimal?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<decimal?>, decimal?>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Double" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<double> AverageAsync(
+            this IQueryable<double> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<double>, double>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Nullable{Double}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<double?> AverageAsync(
+            this IQueryable<double?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<double?>, double?>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Single" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<float> AverageAsync(
+            this IQueryable<float> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<float>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<float>, float>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Nullable{Single}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<float?> AverageAsync(
+            this IQueryable<float?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<float?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<float?>, float?>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Int32" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<double> AverageAsync(
+            this IQueryable<int> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<int>, double>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Nullable{Int32}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<double?> AverageAsync(
+            this IQueryable<int?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<int?>, double?>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Int64" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<double> AverageAsync(
+            this IQueryable<long> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<long>, double>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the average of a sequence of <see cref="Nullable{Int64}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<double?> AverageAsync(
+            this IQueryable<long?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Average());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<long?>, double?>(Queryable.Average),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Decimal" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<decimal> SumAsync(
+            this IQueryable<decimal> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<decimal>, decimal>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Nullable{Decimal}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<decimal?> SumAsync(
+            this IQueryable<decimal?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<decimal?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<decimal?>, decimal?>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Double" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<double> SumAsync(
+            this IQueryable<double> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<double>, double>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Nullable{Double}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<double?> SumAsync(
+            this IQueryable<double?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<double?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<double?>, double?>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Single" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<float> SumAsync(
+            this IQueryable<float> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<float>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<float>, float>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Nullable{Single}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<float?> SumAsync(
+            this IQueryable<float?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<float?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<float?>, float?>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Int32" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<int> SumAsync(
+            this IQueryable<int> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<int>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<int>, int>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Nullable{Int32}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<int?> SumAsync(
+            this IQueryable<int?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return ((CosmosLinqQueryProvider)source.Provider).ExecuteAggregateAsync<int?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<int?>, int?>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Int64" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<long> SumAsync(
+            this IQueryable<long> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<long>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<long>, long>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Computes the sum of a sequence of <see cref="Nullable{Int64}" /> values.
+        /// </summary>
+        /// <param name="source">A sequence of values to calculate the average of.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The average value in the sequence.</returns>
+        public static Task<long?> SumAsync(
+            this IQueryable<long?> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Sum());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<long?>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<long?>, long?>(Queryable.Sum),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Returns the number of elements in a sequence.
+        /// </summary>
+        /// <typeparam name="TSource">The type of the elements of source.</typeparam>
+        /// <param name="source">The sequence that contains the elements to be counted.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The number of elements in the input sequence.</returns>
+        public static Task<int> CountAsync<TSource>(
+            this IQueryable<TSource> source,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            CosmosLinqQueryProvider cosmosLinqQueryProvider = source.Provider as CosmosLinqQueryProvider;
+            if (cosmosLinqQueryProvider == null)
+            {
+                return Task.FromResult(source.Count());
+            }
+
+            return cosmosLinqQueryProvider.ExecuteAggregateAsync<int>(
+                Expression.Call(
+                    GetMethodInfoOf<IQueryable<TSource>, int>(Queryable.Count),
+                    source.Expression),
+                cancellationToken);
+        }
+
+        private static MethodInfo GetMethodInfoOf<T1, T2>(Func<T1, T2> func)
+        {
+            Debug.Assert(func != null);
+            return func.GetMethodInfo();
         }
     }
 }

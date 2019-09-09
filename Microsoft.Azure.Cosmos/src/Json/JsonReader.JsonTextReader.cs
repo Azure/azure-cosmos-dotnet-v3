@@ -14,7 +14,12 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonReader partial.
     /// </summary>
-    internal abstract partial class JsonReader : IJsonReader
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonReader : IJsonReader
     {
         /// <summary>
         /// JsonReader that knows how to read text

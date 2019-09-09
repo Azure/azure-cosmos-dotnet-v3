@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
+    using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -91,9 +92,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal bool IsPropertiesInitialized => this.properties.IsValueCreated;
 
-        internal bool IsPartitionedFeedOperation => this.OperationType == OperationType.ReadFeed && 
-            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) && 
-            this.PartitionKeyRangeId == null;
+        /// <summary>
+        /// The partition key range handler is only needed for read feed on partitioned resources 
+        /// where the partition key range needs to be computed. 
+        /// </summary>
+        internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed &&
+            (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) &&
+            this.PartitionKeyRangeId == null && this.Headers.PartitionKey == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -152,12 +157,19 @@ namespace Microsoft.Azure.Cosmos
             }
 
 #if DEBUG
-            CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
-            ContainerProperties collectionFromCache =
-                await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
-            if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+            try
             {
-                Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
+                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
+                ContainerProperties collectionFromCache =
+                    await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
+                if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
+                {
+                    Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
+                }
+            }
+            catch (DocumentClientException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Ignore container non-existence
             }
 #else
             await Task.CompletedTask;
@@ -244,7 +256,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionKeyRangeIdExists)
             {
                 // Assert operation type is not write
-                if (this.OperationType != OperationType.Query && this.OperationType != OperationType.ReadFeed)
+                if (this.OperationType != OperationType.Query && this.OperationType != OperationType.ReadFeed && this.OperationType != OperationType.Batch)
                 {
                     throw new ArgumentOutOfRangeException(RMResources.UnexpectedPartitionKeyRangeId);
                 }

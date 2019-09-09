@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Documents;
 
     internal sealed class FeedEstimatorCore : FeedEstimator
     {
@@ -40,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                     if (cancellationToken.IsCancellationRequested)
                         throw;
 
-                    DefaultTrace.TraceException(new Exception("exception within estimator", canceledException));
+                    Extensions.TraceException(new Exception("exception within estimator", canceledException));
 
                     // ignore as it is caused by client
                 }

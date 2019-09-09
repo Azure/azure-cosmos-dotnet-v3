@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
@@ -27,9 +27,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public FeedProcessorCore(
             ChangeFeedObserver<T> observer,
-            FeedIterator resultSetIterator, 
-            ProcessorOptions options, 
-            PartitionCheckpointer checkpointer, 
+            FeedIterator resultSetIterator,
+            ProcessorOptions options,
+            PartitionCheckpointer checkpointer,
             CosmosSerializer cosmosJsonSerializer)
         {
             this.observer = observer;
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                         throw;
                     }
 
-                    DefaultTrace.TraceException(canceledException);
+                    Extensions.TraceException(canceledException);
                     DefaultTrace.TraceWarning("exception: lease token '{0}'", this.options.LeaseToken);
 
                     // ignore as it is caused by Cosmos DB client when StopAsync is called
@@ -116,12 +116,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             Collection<T> asFeedResponse;
             try
             {
-                asFeedResponse = cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                asFeedResponse = this.cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
             }
             catch (Exception serializationException)
             {
                 // Error using custom serializer to parse stream
                 throw new ObserverException(serializationException);
+            }
+
+            // When StartFromBeginning is used, the first request returns OK but no content
+            if (asFeedResponse.Count == 0)
+            {
+                return Task.CompletedTask;
             }
 
             List<T> asReadOnlyList = new List<T>(asFeedResponse.Count);

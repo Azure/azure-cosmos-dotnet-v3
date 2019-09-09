@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
@@ -15,9 +14,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Collections;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -336,10 +334,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool forceRefresh,
             bool useMasterCollectionResolver)
         {
-            INameValueCollection addressQuery = new StringKeyValueCollection(StringComparer.Ordinal);
+            INameValueCollection addressQuery = new DictionaryNameValueCollection(StringComparer.Ordinal);
             addressQuery.Add(HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl));
 
-            INameValueCollection headers = new StringKeyValueCollection(StringComparer.Ordinal);
+            INameValueCollection headers = new DictionaryNameValueCollection(StringComparer.Ordinal);
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -354,18 +352,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceCollectionRoutingMapRefresh, bool.TrueString);
             }
-                 
+
             addressQuery.Add(HttpConstants.QueryStrings.Filter, this.protocolFilter);
 
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);
 
+            string payload;
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
             string token = this.tokenProvider.GetUserAuthorizationToken(
                 resourceAddress,
                 resourceTypeToSign,
                 HttpConstants.HttpMethods.Get,
                 headers,
-                AuthorizationTokenType.PrimaryMasterKey);
+                AuthorizationTokenType.PrimaryMasterKey,
+                out payload);
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);
 
@@ -391,10 +391,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string entryUrl = PathsHelper.GeneratePath(ResourceType.Document, collectionRid, true);
 
-            INameValueCollection addressQuery = new StringKeyValueCollection();
+            INameValueCollection addressQuery = new DictionaryNameValueCollection();
             addressQuery.Add(HttpConstants.QueryStrings.Url, HttpUtility.UrlEncode(entryUrl));
 
-            INameValueCollection headers = new StringKeyValueCollection();
+            INameValueCollection headers = new DictionaryNameValueCollection();
             if (forceRefresh)
             {
                 headers.Set(HttpConstants.HttpHeaders.ForceRefresh, bool.TrueString);
@@ -414,12 +414,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             string token = null;
             try
             {
+                string payload;
                 token = this.tokenProvider.GetUserAuthorizationToken(
                     collectionRid,
                     resourceTypeToSign,
                     HttpConstants.HttpMethods.Get,
                     headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    out payload);
             }
             catch (UnauthorizedException)
             {
@@ -428,13 +430,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (token == null && request.IsNameBased)
             {
                 // User doesn't have rid based resource token. Maybe he has name based.
+                string payload;
                 string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
                 token = this.tokenProvider.GetUserAuthorizationToken(
                         collectionAltLink,
                         resourceTypeToSign,
                         HttpConstants.HttpMethods.Get,
                         headers,
-                        AuthorizationTokenType.PrimaryMasterKey);
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        out payload);
             }
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);

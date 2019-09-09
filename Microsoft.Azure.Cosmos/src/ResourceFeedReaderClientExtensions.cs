@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -76,10 +75,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="usersLink">The link for users</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{User}"/> instance.</returns>
-        public static ResourceFeedReader<User> CreateUserFeedReader(this DocumentClient client, string usersLink,
+        public static ResourceFeedReader<Documents.User> CreateUserFeedReader(this DocumentClient client, string usersLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<User>(client, ResourceType.User, options, usersLink);
+            return new ResourceFeedReader<Documents.User>(client, ResourceType.User, options, usersLink);
         }
 
         /// <summary>
@@ -102,10 +101,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="permissionsLink"></param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{Permission}"/> instance.</returns>
-        public static ResourceFeedReader<Permission> CreatePermissionFeedReader(this DocumentClient client, string permissionsLink,
+        public static ResourceFeedReader<Documents.Permission> CreatePermissionFeedReader(this DocumentClient client, string permissionsLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<Permission>(client, ResourceType.Permission, options, permissionsLink);
+            return new ResourceFeedReader<Documents.Permission>(client, ResourceType.Permission, options, permissionsLink);
         }
 
         /// <summary>

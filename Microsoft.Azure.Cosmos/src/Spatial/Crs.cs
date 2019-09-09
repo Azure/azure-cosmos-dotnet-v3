@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Spatial
 {
-    using System;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
     using Newtonsoft.Json;

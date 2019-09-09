@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Handler which selects the piepline for the requested resource operation
@@ -18,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly RequestHandler pointOperationHandler;
 
         public RouterHandler(
-            RequestHandler documentFeedHandler, 
+            RequestHandler documentFeedHandler,
             RequestHandler pointOperationHandler)
         {
             if (documentFeedHandler == null)
@@ -36,11 +35,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         public override Task<ResponseMessage> SendAsync(
-            RequestMessage request, 
+            RequestMessage request,
             CancellationToken cancellationToken)
         {
             RequestHandler targetHandler = null;
-            if (request.IsPartitionedFeedOperation)
+            if (request.IsPartitionKeyRangeHandlerRequired)
             {
                 targetHandler = documentFeedHandler;
             }

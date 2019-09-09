@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
+    [TestCategory("Functional")]
     public class JsonRoundTripsTests
     {
         [TestInitialize]

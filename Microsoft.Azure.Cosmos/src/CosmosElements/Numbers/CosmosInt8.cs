@@ -6,7 +6,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using Microsoft.Azure.Cosmos.Json;
 
-    internal abstract partial class CosmosInt8 : CosmosNumber
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+    abstract partial class CosmosInt8 : CosmosNumber
     {
         protected CosmosInt8()
             : base(CosmosNumberType.Int8)
@@ -51,4 +59,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         protected abstract sbyte GetValue();
     }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore SA1600 // Elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
 }

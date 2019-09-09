@@ -11,10 +11,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosItemUnitTests
@@ -164,6 +166,340 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_CreateStream()
+        {
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
+            {
+                ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+                using (ResponseMessage streamResponse = await container.CreateItemStreamAsync(
+                    partitionKey: partitionKey,
+                    streamPayload: itemStream))
+                {
+                    container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_UpsertStream()
+        {
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
+            {
+                ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+                using (ResponseMessage streamResponse = await container.UpsertItemStreamAsync(
+                    partitionKey: partitionKey,
+                    streamPayload: itemStream))
+                {
+                    container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_ReplaceStream()
+        {
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
+            {
+                ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+                using (ResponseMessage streamResponse = await container.ReplaceItemStreamAsync(
+                    partitionKey: partitionKey,
+                    id: testItem.id,
+                    streamPayload: itemStream))
+                {
+                    container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_ReadStream()
+        {
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            using (Stream itemStream = MockCosmosUtil.Serializer.ToStream<dynamic>(testItem))
+            {
+                ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+                Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+                using (ResponseMessage streamResponse = await container.ReadItemStreamAsync(
+                    partitionKey: partitionKey,
+                    id: testItem.id))
+                {
+                    container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_DeleteStream()
+        {
+            ClientContextCore clientContextCore = new ClientContextCore(
+                MockCosmosUtil.CreateMockCosmosClient(),
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            using (ResponseMessage streamResponse = await container.DeleteItemStreamAsync(
+                partitionKey: partitionKey,
+                id: testItem.id))
+            {
+                container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            }
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_Create()
+        {
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(
+                testItem,
+                partitionKey: partitionKey);
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_Upsert()
+        {
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.UpsertItemAsync<dynamic>(
+                testItem,
+                partitionKey: partitionKey);
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_Replace()
+        {
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.ReplaceItemAsync<dynamic>(
+                testItem,
+                testItem.id);
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_Read()
+        {
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(
+                id: testItem.id,
+                partitionKey: partitionKey);
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task AllowBatchingRequestsSendsToExecutor_Delete()
+        {
+            CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            ClientContextCore clientContextCore = new ClientContextCore(
+                cosmosClient,
+                new CosmosClientOptions() { AllowBulkExecution = true },
+                new CosmosJsonDotNetSerializer(),
+                new CosmosJsonDotNetSerializer(),
+                null,
+                cosmosClient.ResponseFactory,
+                null,
+                new MockDocumentClient()
+                );
+
+            DatabaseCore db = new DatabaseCore(clientContextCore, "test");
+            ExecutorContainerCore container = new ExecutorContainerCore(clientContextCore, db, "test");
+
+            dynamic testItem = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+
+            Cosmos.PartitionKey partitionKey = new Cosmos.PartitionKey(testItem.pk);
+            ItemResponse<dynamic> response = await container.DeleteItemAsync<dynamic>(
+                partitionKey: partitionKey,
+                id: testItem.id);
+
+            container.MockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
             Mock<ContainerCore> containerMock = new Mock<ContainerCore>();
@@ -243,7 +579,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
                 Assert.IsNotNull(request.Headers.PartitionKey);
-                Assert.AreEqual(Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.Headers.PartitionKey.ToString());
+                JToken.Parse(Documents.Routing.PartitionKeyInternal.Undefined.ToString());
+                Assert.IsTrue(new JTokenEqualityComparer().Equals(
+                        JToken.Parse(Documents.Routing.PartitionKeyInternal.Undefined.ToString()),
+                        JToken.Parse(request.Headers.PartitionKey.ToString())),
+                        "Arguments {0} {1} ", Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.Headers.PartitionKey.ToString());
 
                 return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });
@@ -394,6 +734,39 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(10, testHandlerHitCount, "A stream operation did not make it to the handler");
+        }
+
+        private class ExecutorContainerCore : ContainerCore
+        {
+            public readonly Mock<BatchAsyncContainerExecutor> MockedExecutor = new Mock<BatchAsyncContainerExecutor>();
+            public ExecutorContainerCore(
+                CosmosClientContext clientContext,
+                DatabaseCore database,
+                string containerId) : base (clientContext, database, containerId)
+            {
+                this.MockedExecutor
+                    .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new BatchOperationResult(HttpStatusCode.OK));
+            }
+
+            internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;
+        }
+
+        private class ExecutorWithThrottlingContainerCore : ContainerCore
+        {
+            public readonly Mock<BatchAsyncContainerExecutor> MockedExecutor = new Mock<BatchAsyncContainerExecutor>();
+            public ExecutorWithThrottlingContainerCore(
+                CosmosClientContext clientContext,
+                DatabaseCore database,
+                string containerId) : base(clientContext, database, containerId)
+            {
+                this.MockedExecutor
+                    .SetupSequence(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new BatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests))
+                    .ReturnsAsync(new BatchOperationResult(HttpStatusCode.OK));
+            }
+
+            internal override BatchAsyncContainerExecutor InitializeBatchExecutorForContainer() => this.MockedExecutor.Object;
         }
     }
 }

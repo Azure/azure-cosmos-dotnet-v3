@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuationToken = null,
             int maxPageSize = 50,
             ItemProducer.ProduceAsyncCompleteDelegate completeDelegate = null,
-            TimeSpan? responseDelay = null,
+            Action executeCallback = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (responseMessagesPageSize == null)
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 continuationToken,
                 maxPageSize,
                 DefaultCollectionRid,
-                responseDelay,
+                executeCallback,
                 cancellationToken);
 
             ItemProducer itemProducer = new ItemProducer(
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string collectionRid = null,
             IComparer<ItemProducerTree> itemProducerTreeComparer = null,
             ItemProducerTree.ProduceAsyncCompleteDelegate completeDelegate = null,
-            TimeSpan? responseDelay = null,
+            Action executeCallback = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (responseMessagesPageSize == null)
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 continuationToken,
                 maxPageSize,
                 collectionRid,
-                responseDelay,
+                executeCallback,
                 cancellationToken);
 
             ItemProducerTree itemProducerTree = new ItemProducerTree(
@@ -198,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuationToken,
             int maxPageSize,
             string collectionRid,
-            TimeSpan? responseDelay,
+            Action executeCallback,
             CancellationToken cancellationToken)
         {
             // Setup a list of query responses. It generates a new continuation token for each response. This allows the mock to return the messages in the correct order.
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     newContinuationToken = Guid.NewGuid().ToString();
                 }
 
-                (QueryResponse response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
+                (QueryResponseCore response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
                     itemIdPrefix: $"page{i}-pk{partitionKeyRange.Id}-",
                     continuationToken: newContinuationToken,
                     collectionRid: collectionRid,
@@ -227,7 +227,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<Uri>(),
                         ResourceType.Document,
                         OperationType.Query,
-                        collectionRid,
                         It.IsAny<QueryRequestOptions>(),
                         It.Is<SqlQuerySpec>(specInput => IsSqlQuerySpecEqual(sqlQuerySpec, specInput)),
                         previousContinuationToken,
@@ -235,13 +234,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<bool>(),
                         maxPageSize,
                         cancellationToken))
-                        .Callback(() =>
-                        {
-                            if (responseDelay.HasValue)
-                            {
-                                Thread.Sleep(responseDelay.Value);
-                            }
-                        })
+                        .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
 
 
@@ -262,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string continuationToken,
             int maxPageSize,
             string collectionRid,
-            TimeSpan? responseDelay,
+            Action executeCallback,
             CancellationToken cancellationToken)
         {
             // Setup a list of query responses. It generates a new continuation token for each response. This allows the mock to return the messages in the correct order.
@@ -278,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     newContinuationToken = Guid.NewGuid().ToString();
                 }
 
-                (QueryResponse response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
+                (QueryResponseCore response, IList<ToDoItem> items) queryResponse = QueryResponseMessageFactory.Create(
                     itemIdPrefix: $"page{i}-pk{partitionKeyRange.Id}-",
                     continuationToken: newContinuationToken,
                     collectionRid: collectionRid,
@@ -294,13 +287,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         It.IsAny<bool>(),
                         maxPageSize,
                         cancellationToken))
-                        .Callback(() =>
-                        {
-                            if (responseDelay.HasValue)
-                            {
-                                Thread.Sleep(responseDelay.Value);
-                            }
-                        })
+                        .Callback(() =>executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
                 previousContinuationToken = newContinuationToken;
             }

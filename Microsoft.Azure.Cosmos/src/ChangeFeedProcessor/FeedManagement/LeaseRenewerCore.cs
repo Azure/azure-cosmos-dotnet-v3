@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class LeaseRenewerCore : LeaseRenewer
     {
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceException(ex);
+                Extensions.TraceException(ex);
                 DefaultTrace.TraceCritical("Lease with token {0}: renew lease loop failed", this.lease.CurrentLeaseToken);
                 throw;
             }
@@ -60,13 +60,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
             catch (LeaseLostException leaseLostException)
             {
-                DefaultTrace.TraceException(leaseLostException);
-                DefaultTrace.TraceError("Lease with token {0}: lost lease on renew.", this.lease.CurrentLeaseToken);                
+                Extensions.TraceException(leaseLostException);
+                DefaultTrace.TraceError("Lease with token {0}: lost lease on renew.", this.lease.CurrentLeaseToken);
                 throw;
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceException(ex);
+                Extensions.TraceException(ex);
                 DefaultTrace.TraceError("Lease with token {0}: failed to renew lease.", this.lease.CurrentLeaseToken);
             }
         }

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
 
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             if (queryResponse != null)
             {
                 return QueryResponse<T>.CreateResponse<T>(
-                    responseMessage: queryResponse,
+                    cosmosQueryResponse: queryResponse,
                     jsonSerializer: this.cosmosSerializer);
             }
 
@@ -57,7 +56,8 @@ namespace Microsoft.Azure.Cosmos
                 return new ItemResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    item);
+                    item,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -73,6 +73,36 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     containerProperties,
                     container);
+            });
+        }
+
+        internal Task<UserResponse> CreateUserResponseAsync(
+            User user,
+            Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                UserProperties userProperties = this.ToObjectInternal<UserProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new UserResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    userProperties,
+                    user);
+            });
+        }
+
+        internal Task<PermissionResponse> CreatePermissionResponseAsync(
+            Permission permission,
+            Task<ResponseMessage> cosmosResponseMessageTask)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                PermissionProperties permissionProperties = this.ToObjectInternal<PermissionProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                return new PermissionResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    permissionProperties,
+                    permission);
             });
         }
 
@@ -161,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal T ToObjectInternal<T>(ResponseMessage cosmosResponseMessage, CosmosSerializer jsonSerializer)
-        {            
+        {
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
 

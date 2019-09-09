@@ -5,11 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Runtime.Serialization;
-    using System.Text;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a SQL query in the Azure Cosmos DB service.

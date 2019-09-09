@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             this.Init();
         }
 
-        public MockDocumentClient(Uri serviceEndpoint, IList<Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
+        public MockDocumentClient(Uri serviceEndpoint, IList<Documents.Permission> permissionFeed, ConnectionPolicy connectionPolicy = null, Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : base(serviceEndpoint, permissionFeed, connectionPolicy, desiredConsistencyLevel)
         {
             this.Init();
@@ -130,9 +130,16 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
             string resourceType,
             string requestVerb,
             INameValueCollection headers,
-            AuthorizationTokenType tokenType) /* unused, use token based upon what is passed in constructor */
+            AuthorizationTokenType tokenType,
+            out string payload) /* unused, use token based upon what is passed in constructor */
         {
+            payload = null;
             return null;
+        }
+
+        internal virtual IReadOnlyList<PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
+        {
+            return (IReadOnlyList<PartitionKeyRange>) new List<Documents.PartitionKeyRange>() {new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } };
         }
 
         private void Init()
@@ -209,11 +216,14 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                             It.IsAny<Documents.Routing.Range<string>>(),
                             It.IsAny<bool>()
                         )
-                ).Returns(Task.FromResult<IReadOnlyList<PartitionKeyRange>>(new List<PartitionKeyRange>() { new PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } }));
+                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) =>
+                {
+                    return Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh));
+                });
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
-            
-            var sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
+
+            SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
         }
     }

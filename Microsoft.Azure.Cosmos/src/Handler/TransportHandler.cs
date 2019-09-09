@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
@@ -74,10 +73,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler
+            string payload;
             string authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
-                request.Method.ToString(), serviceRequest.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                request.Method.ToString(),
+                serviceRequest.Headers,
+                AuthorizationTokenType.PrimaryMasterKey,
+                out payload);
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);

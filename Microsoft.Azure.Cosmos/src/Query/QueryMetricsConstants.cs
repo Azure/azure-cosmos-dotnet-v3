@@ -3,12 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-
     internal static class QueryMetricsConstants
     {
         // QueryMetrics
@@ -19,13 +13,13 @@ namespace Microsoft.Azure.Cosmos
         public const string IndexHitRatio = "indexUtilizationRatio";
         public const string IndexHitDocumentCount = "indexHitDocumentCount";
         public const string TotalQueryExecutionTimeInMs = "totalExecutionTimeInMs";
-        
+
         // QueryPreparationTimes
         public const string QueryCompileTimeInMs = "queryCompileTimeInMs";
         public const string LogicalPlanBuildTimeInMs = "queryLogicalPlanBuildTimeInMs";
         public const string PhysicalPlanBuildTimeInMs = "queryPhysicalPlanBuildTimeInMs";
         public const string QueryOptimizationTimeInMs = "queryOptimizationTimeInMs";
-        
+
         // QueryTimes
         public const string IndexLookupTimeInMs = "indexLookupTimeInMs";
         public const string DocumentLoadTimeInMs = "documentLoadTimeInMs";

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal sealed class DocumentQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
-        public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(Enumerable.Empty<dynamic>(), 0, new StringKeyValueCollection());
+        public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(Enumerable.Empty<dynamic>(), 0, new DictionaryNameValueCollection());
 
         private readonly IDocumentQueryClient client;
         private readonly ResourceType resourceTypeEnum;
@@ -262,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     DocumentFeedResponse<CosmosElement> feedResponse = TaskHelper.InlineIfPossible(() => localQueryExecutionContext.ExecuteNextFeedResponseAsync(CancellationToken.None), null).Result;
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
                     DocumentFeedResponse<T> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<T>(
-                        feedResponse, 
+                        feedResponse,
                         this.resourceTypeEnum,
                         this.feedOptions.JsonSerializerSettings);
                     foreach (T item in typedFeedResponse)
@@ -336,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             DocumentFeedResponse<CosmosElement> response = await this.queryExecutionContext.ExecuteNextFeedResponseAsync(cancellationToken);
             DocumentFeedResponse<TResponse> typedFeedResponse = FeedResponseBinder.ConvertCosmosElementFeed<TResponse>(
-                response, 
+                response,
                 this.resourceTypeEnum,
                 this.feedOptions.JsonSerializerSettings);
 

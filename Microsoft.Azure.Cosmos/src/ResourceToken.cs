@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
-
     /// <summary>
     /// Resource token to be used to access resources.
     /// </summary>

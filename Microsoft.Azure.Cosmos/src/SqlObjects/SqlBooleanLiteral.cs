@@ -3,8 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Sql
 {
-    using System.Text;
-
     internal sealed class SqlBooleanLiteral : SqlLiteral
     {
         public static readonly SqlBooleanLiteral True = new SqlBooleanLiteral(true);
@@ -12,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         private SqlBooleanLiteral(bool value)
             : base(SqlObjectKind.BooleanLiteral)
-        { 
+        {
             this.Value = value;
         }
 

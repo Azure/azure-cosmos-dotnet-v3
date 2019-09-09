@@ -15,12 +15,17 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Base abstract class for JSON writers.
     /// The writer defines methods that allow for writing a JSON encoded value to a buffer.
     /// </summary>
-    internal abstract partial class JsonWriter : IJsonWriter
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonWriter : IJsonWriter
     {
         /// <summary>
         /// The <see cref="JsonObjectState"/>
         /// </summary>
-        protected readonly JsonObjectState JsonObjectState;
+        internal readonly JsonObjectState JsonObjectState;
 
         /// <summary>
         /// Whether to skip validation.

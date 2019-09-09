@@ -1,16 +1,15 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Microsoft.Azure.Cosmos.Tests
+﻿namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
+
+    [TestCategory("Windows")]
     [TestClass]
     public class ContractEnforcement
     {
@@ -20,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ContractChanges()
         {
-            Assert.IsTrue(
-                ContractEnforcement.CheckBreakingChanges("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
+            Assert.IsFalse(
+                ContractEnforcement.DoesContractContainBreakingChanges("Microsoft.Azure.Cosmos.Client", BaselinePath, BreakingChangesPath),
                 $@"Public API has changed. If this is expected, then refresh {BaselinePath} with {Environment.NewLine} Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/testbaseline.cmd /update after this test is run locally. To see the differences run testbaselines.cmd /diff"
             );
         }
@@ -71,7 +70,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 !x.AttributeType.Name.Contains("NonVersionableAttribute") &&
                 !x.AttributeType.Name.Contains("ReliabilityContractAttribute") &&
                 !x.AttributeType.Name.Contains("NonVersionableAttribute") &&
-                !x.AttributeType.Name.Contains("DebuggerStepThroughAttribute")
+                !x.AttributeType.Name.Contains("DebuggerStepThroughAttribute") &&
+                !x.AttributeType.Name.Contains("IsReadOnlyAttribute")
             );
         }
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IEnumerable<Type> subclassTypes = types.Where((type) => type.IsSubclassOf(root.Type)).OrderBy(o => o.FullName);
             foreach (Type subclassType in subclassTypes)
             {
-                root.Subclasses[subclassType.Name] = (ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types));
+                root.Subclasses[subclassType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(subclassType), types);
             }
 
             IEnumerable<KeyValuePair<string, MemberInfo>> memberInfos =
@@ -111,13 +111,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (Type nestedType in root.Type.GetNestedTypes().OrderBy(o => o.FullName))
             {
-                root.NestedTypes[nestedType.Name] = (ContractEnforcement.BuildTypeTree(new TypeTree(nestedType), types));
+                root.NestedTypes[nestedType.Name] = ContractEnforcement.BuildTypeTree(new TypeTree(nestedType), types);
             }
 
             return root;
         }
 
-        private static bool CheckBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
+        private static bool DoesContractContainBreakingChanges(string dllName, string baselinePath, string breakingChangesPath)
         {
             TypeTree locally = new TypeTree(typeof(object));
             ContractEnforcement.BuildTypeTree(locally, ContractEnforcement.GetAssemblyLocally(dllName).GetExportedTypes());
@@ -128,7 +128,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             File.WriteAllText($"{breakingChangesPath}", localJson);
             string baselineJson = JsonConvert.SerializeObject(baseline, Formatting.Indented);
 
-            return baselineJson == localJson;
+            System.Diagnostics.Trace.TraceWarning($"String length Expected: {baselineJson.Length};Actual:{localJson.Length}");
+            if (string.Equals(localJson, baselineJson, StringComparison.InvariantCulture))
+            {
+                return false;
+            }
+            else
+            {
+                System.Diagnostics.Trace.TraceWarning($"Expected: {baselineJson}");
+                System.Diagnostics.Trace.TraceWarning($"Actual: {localJson}");
+                return true;
+            }
         }
     }
 }

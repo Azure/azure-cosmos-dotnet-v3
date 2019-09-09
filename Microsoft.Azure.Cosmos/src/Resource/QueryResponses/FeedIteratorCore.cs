@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -64,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.CosmosSerializer.ToStream(this.querySpec);
+                stream = this.clientContext.SqlQuerySpecSerializer.ToStream(querySpec);
                 operation = OperationType.Query;
             }
 
@@ -76,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
                cosmosContainerCore: null,
                partitionKey: this.requestOptions?.PartitionKey,
                streamPayload: stream,
-               requestEnricher: request => 
+               requestEnricher: request =>
                {
                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
                    if (this.querySpec != null)

@@ -26,9 +26,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int? originalMaxItemCount;
         private string containerRid;
         private string continuationToken;
-        private string partitionKeyRangeId;
         private int? maxItemCount;
-        private bool hasMoreResultsInternal;
 
         internal ChangeFeedResultSetIteratorCore(
             CosmosClientContext clientContext,
@@ -45,7 +43,6 @@ namespace Microsoft.Azure.Cosmos
             this.maxItemCount = maxItemCount;
             this.originalMaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
-            this.hasMoreResultsInternal = true;
         }
 
         /// <summary>
@@ -53,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         protected readonly ChangeFeedRequestOptions changeFeedOptions;
 
-        public override bool HasMoreResults => this.hasMoreResultsInternal;
+        public override bool HasMoreResults => true;
 
         /// <summary>
         /// Get the next set of results from the cosmos service
@@ -61,6 +58,39 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string firstNotModifiedKeyRangeId = null;
+            string currentKeyRangeId;
+            string nextKeyRangeId;
+            ResponseMessage response;
+            do
+            {
+                (currentKeyRangeId, response) = await this.ReadNextInternalAsync(cancellationToken);
+                if (response.StatusCode != HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+
+                // HttpStatusCode.NotModified
+                if (string.IsNullOrEmpty(firstNotModifiedKeyRangeId))
+                {
+                    // First NotModified Response
+                    firstNotModifiedKeyRangeId = currentKeyRangeId;
+                }
+
+                // Current Range is done, push it to the end
+                this.compositeContinuationToken.MoveToNextToken();
+                (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+            }
+            // We need to keep checking across all ranges until one of them returns OK or we circle back to the start
+            while (!firstNotModifiedKeyRangeId.Equals(nextKeyRangeId, StringComparison.InvariantCultureIgnoreCase));
+
+            // Send to the user the composite state for all ranges
+            response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
+            return response;
+        }
+
+        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -72,45 +102,29 @@ namespace Microsoft.Azure.Cosmos
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-            this.partitionKeyRangeId = rangeId;
+            string partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
-
-            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                (CompositeContinuationToken currentRangeTokenForRetry, string rangeIdForRetry) = await this.compositeContinuationToken.GetCurrentTokenAsync();
-                currentRangeToken = currentRangeTokenForRetry;
-                this.partitionKeyRangeId = rangeIdForRetry;
-                this.continuationToken = currentRangeToken.Token;
-                response = await this.NextResultSetDelegateAsync(this.continuationToken, this.partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+                return await this.ReadNextInternalAsync(cancellationToken);
             }
 
-            // Change Feed read uses Etag for continuation
-            string responseContinuationToken = response.Headers.ETag;
-            bool hasMoreResults = response.StatusCode != HttpStatusCode.NotModified;
-            if (!hasMoreResults)
+            if (response.IsSuccessStatusCode
+                || response.StatusCode == HttpStatusCode.NotModified)
             {
-                currentRangeToken.Token = responseContinuationToken;
-                // Current Range is done, push it to the end
-                this.compositeContinuationToken.MoveToNextToken();
-            }
-            else if (response.IsSuccessStatusCode)
-            {
-                currentRangeToken.Token = responseContinuationToken;
+                // Change Feed read uses Etag for continuation
+                currentRangeToken.Token = response.Headers.ETag;
             }
 
-            // Send to the user the composite state for all ranges
-            response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
-            return response;
+            return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
         }
 
         /// <summary>
         /// During Feed read, split can happen or Max Item count can go beyond the max response size
         /// </summary>
         internal async Task<bool> ShouldRetryFailureAsync(
-            ResponseMessage response, 
+            ResponseMessage response,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
@@ -123,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            bool partitionSplit = response.StatusCode == HttpStatusCode.Gone 
+            bool partitionSplit = response.StatusCode == HttpStatusCode.Gone
                 && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
@@ -165,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.ReadFeed,
                 requestOptions: options,
                 cosmosContainerCore: this.container,
-                requestEnricher: request => 
+                requestEnricher: request =>
                 {
                     ChangeFeedRequestOptions.FillContinuationToken(request, continuationToken);
                     ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);

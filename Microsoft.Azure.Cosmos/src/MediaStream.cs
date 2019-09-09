@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
         private Stream contentStream;
         private bool isDisposed;
 
-        public MediaStream(HttpResponseMessage responseMessage, Stream contentStream) 
+        public MediaStream(HttpResponseMessage responseMessage, Stream contentStream)
         {
             this.responseMessage = responseMessage;
             this.contentStream = contentStream;
@@ -25,15 +25,15 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool CanRead
         {
-            get 
-            { 
-                return this.contentStream.CanRead; 
+            get
+            {
+                return this.contentStream.CanRead;
             }
         }
 
         public override bool CanSeek
         {
-            get 
+            get
             {
                 return this.contentStream.CanSeek;
             }
@@ -49,15 +49,15 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool CanWrite
         {
-            get 
-            { 
+            get
+            {
                 return this.contentStream.CanWrite;
             }
         }
 
         public override long Length
         {
-            get 
+            get
             {
                 return this.contentStream.Length;
             }

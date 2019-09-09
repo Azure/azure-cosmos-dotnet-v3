@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.PartitionKeyPath = partitionKeyPath;
 
-            ValidateRequiredProperties();
+            this.ValidateRequiredProperties();
         }
 
         /// <summary>
@@ -262,6 +262,9 @@ namespace Microsoft.Azure.Cosmos
         /// for a item is decided based on the value of this property in item.
         /// By default, TimeToLivePropertyPath is set to null meaning the time to live is based on the _ts property in item.
         /// </value>
+#if !INTERNAL
+        [Obsolete]
+#endif
         [JsonProperty(PropertyName = Constants.Properties.TimeToLivePropertyPath, NullValueHandling = NullValueHandling.Ignore)]
         public string TimeToLivePropertyPath { get; set; }
 
@@ -371,7 +374,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.PartitionKey = partitionKeyDefinition;
 
-            ValidateRequiredProperties();
+            this.ValidateRequiredProperties();
         }
 
         /// <summary>
@@ -380,7 +383,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// <see cref="PartitionKeyDefinition"/> object.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKey)]
+        [JsonProperty(PropertyName = Constants.Properties.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>

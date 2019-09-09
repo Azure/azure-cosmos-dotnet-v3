@@ -12,7 +12,12 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.
     /// </summary>
-    internal abstract partial class JsonWriter : IJsonWriter
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+    abstract partial class JsonWriter : IJsonWriter
     {
         /// <summary>
         /// Concrete implementation of <see cref="JsonWriter"/> that knows how to serialize to binary encoding.

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
 
-        private ClientSideRequestStatistics sharedStatistics;
+        private IClientSideRequestStatistics sharedStatistics;
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.sessionTokenRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
 
-            this.sharedStatistics = new ClientSideRequestStatistics();
+            this.sharedStatistics = new CosmosClientSideRequestStatistics();
         }
 
         /// <summary> 

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
 
         public SecureString Key
         {
-            get 
+            get
             {
                 if (this.secureString != null) return this.secureString;
                 this.secureString = SecureStringUtility.ConvertToSecureString(base64EncodedKey);

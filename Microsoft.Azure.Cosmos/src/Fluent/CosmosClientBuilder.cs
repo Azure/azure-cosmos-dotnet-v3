@@ -5,7 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
-    using System.Linq;
+    using System.Net;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -22,14 +23,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Initialize a new CosmosConfiguration class that holds all the properties the CosmosClient requires.
         /// </summary>
         /// <param name="accountEndpoint">The Uri to the Cosmos Account. Example: https://{Cosmos Account Name}.documents.azure.com:443/ </param>
-        /// <param name="accountKey">The key to the account.</param>
+        /// <param name="authKeyOrResourceToken">The key to the account or resource token.</param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/>
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey");
+        ///     authKeyOrResourceToken: "SuperSecretKey");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
         /// </code>
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey")
+        ///     authKeyOrResourceToken: "SuperSecretKey")
         /// .WithConsistencyLevel(ConsistencyLevel.Strong)
         /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
@@ -49,27 +50,27 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </example>
         public CosmosClientBuilder(
             string accountEndpoint,
-            string accountKey)
+            string authKeyOrResourceToken)
         {
             if (accountEndpoint == null)
             {
                 throw new ArgumentNullException(nameof(CosmosClientBuilder.accountEndpoint));
             }
 
-            if (accountKey == null)
+            if (authKeyOrResourceToken == null)
             {
-                throw new ArgumentNullException(nameof(accountKey));
+                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
             }
 
             this.accountEndpoint = accountEndpoint;
-            this.accountKey = accountKey;
+            this.accountKey = authKeyOrResourceToken;
         }
 
         /// <summary>
         /// Extracts the account endpoint and key from the connection string.
         /// </summary>
         /// <example>"AccountEndpoint=https://mytestcosmosaccount.documents.azure.com:443/;AccountKey={SecretAccountKey};"</example>
-        /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey.</param>
+        /// <param name="connectionString">The connection string must contain AccountEndpoint and AccountKey or ResourceToken.</param>
         public CosmosClientBuilder(string connectionString)
         {
             if (connectionString == null)
@@ -130,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <![CDATA[
         /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
         ///     accountEndpoint: "https://testcosmos.documents.azure.com:443/",
-        ///     accountKey: "SuperSecretKey")
+        ///     authKeyOrResourceToken: "SuperSecretKey")
         /// .WithApplicationRegion("East US 2");
         /// CosmosClient client = cosmosClientBuilder.Build();
         /// ]]>
@@ -169,6 +170,54 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Direct;
             this.clientOptions.ConnectionProtocol = Protocol.Tcp;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the connection mode to Direct. This is used by the client when connecting to the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="idleTcpConnectionTimeout">
+        /// Controls the amount of idle time after which unused connections are closed.
+        /// By default, idle connections are kept open indefinitely. Value must be greater than or equal to 10 minutes. Recommended values are between 20 minutes and 24 hours.
+        /// Mainly useful for sparse infrequent access to a large database account.
+        /// </param>
+        /// <param name="openTcpConnectionTimeout">
+        /// Controls the amount of time allowed for trying to establish a connection.
+        /// The default timeout is 5 seconds. Recommended values are greater than or equal to 5 seconds.
+        /// When the time elapses, the attempt is cancelled and an error is returned. Longer timeouts will delay retries and failures.
+        /// </param>
+        /// <param name="maxRequestsPerTcpConnection">
+        /// Controls the number of requests allowed simultaneously over a single TCP connection. When more requests are in flight simultaneously, the direct/TCP client will open additional connections.
+        /// The default settings allow 30 simultaneous requests per connection.
+        /// Do not set this value lower than 4 requests per connection or higher than 50-100 requests per connection.       
+        /// The former can lead to a large number of connections to be created. 
+        /// The latter can lead to head of line blocking, high latency and timeouts.
+        /// Applications with a very high degree of parallelism per connection, with large requests or responses, or with very tight latency requirements might get better performance with 8-16 requests per connection.
+        /// </param>
+        /// <param name="maxTcpConnectionsPerEndpoint">
+        /// Controls the maximum number of TCP connections that may be opened to each Cosmos DB back-end.
+        /// Together with MaxRequestsPerTcpConnection, this setting limits the number of requests that are simultaneously sent to a single Cosmos DB back-end(MaxRequestsPerTcpConnection x MaxTcpConnectionPerEndpoint).
+        /// The default value is 65,535. Value must be greater than or equal to 16.
+        /// </param>
+        /// <remarks>
+        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// </remarks>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
+        internal CosmosClientBuilder WithConnectionModeDirect(TimeSpan? idleTcpConnectionTimeout = null,
+            TimeSpan? openTcpConnectionTimeout = null,
+            int? maxRequestsPerTcpConnection = null,
+            int? maxTcpConnectionsPerEndpoint = null)
+        {
+            this.clientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout;
+            this.clientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout;
+            this.clientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection;
+            this.clientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint;
+
+            this.clientOptions.ConnectionMode = ConnectionMode.Direct;
+            this.clientOptions.ConnectionProtocol = Protocol.Tcp;
+
             return this;
         }
 
@@ -188,20 +237,25 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the time to wait for response to come back from network peer. Default is 60 connections</param>
+        /// <param name="webProxy">Get or set the proxy information used for web requests.</param>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
         /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
-        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
+        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null,
+            IWebProxy webProxy = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
             this.clientOptions.ConnectionProtocol = Protocol.Https;
+
             if (maxConnectionLimit.HasValue)
             {
                 this.clientOptions.GatewayModeMaxConnectionLimit = maxConnectionLimit.Value;
             }
+
+            this.clientOptions.WebProxy = webProxy;
 
             return this;
         }
@@ -246,11 +300,24 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnRateLimitedRequests"/>
         /// <seealso cref="CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests"/>
-        public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests, 
+        public CosmosClientBuilder WithThrottlingRetryOptions(TimeSpan maxRetryWaitTimeOnThrottledRequests,
             int maxRetryAttemptsOnThrottledRequests)
         {
             this.clientOptions.MaxRetryWaitTimeOnRateLimitedRequests = maxRetryWaitTimeOnThrottledRequests;
             this.clientOptions.MaxRetryAttemptsOnRateLimitedRequests = maxRetryAttemptsOnThrottledRequests;
+            return this;
+        }
+
+        /// <summary>
+        /// Set a custom serializer option. 
+        /// </summary>
+        /// <param name="cosmosSerializerOptions">The custom class that implements <see cref="CosmosSerializer"/> </param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="CosmosSerializer"/>
+        /// <seealso cref="CosmosClientOptions.SerializerOptions"/>
+        public CosmosClientBuilder WithSerializerOptions(CosmosSerializationOptions cosmosSerializerOptions)
+        {
+            this.clientOptions.SerializerOptions = cosmosSerializerOptions;
             return this;
         }
 
@@ -261,10 +328,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosSerializer"/>
         /// <seealso cref="CosmosClientOptions.Serializer"/>
-        public CosmosClientBuilder WithCustomSerializer(
-            CosmosSerializer cosmosJsonSerializer)
+        public CosmosClientBuilder WithCustomSerializer(CosmosSerializer cosmosJsonSerializer)
         {
             this.clientOptions.Serializer = cosmosJsonSerializer;
+            return this;
+        }
+
+        /// <summary>
+        /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
+        /// </summary>
+        /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBulkExecution"/> is enabled.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="CosmosClientOptions.AllowBulkExecution"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithBulkexecution(bool enabled)
+        {
+            this.clientOptions.AllowBulkExecution = enabled;
             return this;
         }
 

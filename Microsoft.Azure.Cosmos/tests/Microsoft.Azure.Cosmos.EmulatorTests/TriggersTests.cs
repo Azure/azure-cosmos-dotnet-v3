@@ -6,10 +6,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public sealed class TriggersTests : BaseCosmosClientHelper
@@ -75,6 +77,95 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             reqeustCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.NoContent, replaceResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ValidatePreTriggerTest()
+        {
+            string triggerId = "SetJobNumber";
+
+            // Prevent failures if previous test did not clean up correctly 
+            try
+            {
+                await this.scripts.DeleteTriggerAsync(triggerId);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                //swallow
+            }
+
+            TriggerProperties trigger = new TriggerProperties
+            {
+                Id = triggerId,
+                TriggerType = TriggerType.Pre,
+                TriggerOperation = TriggerOperation.Create,
+                Body = @"function setJobNumber() {
+                    var context = getContext();
+                    var request = context.getRequest();      
+                    var containerManager = context.getCollection();
+                    var containerLink = containerManager.getSelfLink()
+
+                    var documentToCreate = request.getBody();
+
+                    var jobNumberQuery = ""SELECT VALUE MAX(r.jobNumber) from root r WHERE r.investigationKey = '"" + documentToCreate['investigationKey'] + ""'"";
+                    containerManager.queryDocuments(containerLink,
+                        jobNumberQuery,
+                        function(err, countValue) {
+                            if (err) throw new Error(err.message);
+                            documentToCreate['jobNumber'] = (countValue.length > 0 ? countValue[0] : 0) + 1;
+                        });
+
+                    // update the document that will be created
+                    request.setBody(documentToCreate);
+                    }",
+            };
+
+            TriggerProperties cosmosTrigger = await this.scripts.CreateTriggerAsync(trigger);
+
+            Job value = new Job() { Id = Guid.NewGuid(), InvestigationKey = "investigation~1" };
+
+            // this should create the document successfully with jobnumber of 1
+            Job createdItem = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+            {
+                PreTriggers = new List<string> { triggerId }
+            });
+
+            Assert.AreEqual(value.Id, createdItem.Id);
+            Assert.AreEqual(value.InvestigationKey, createdItem.InvestigationKey);
+            Assert.AreEqual(1, createdItem.JobNumber);
+
+            List<Job> result = this.container.GetItemLinqQueryable<Job>(allowSynchronousQueryExecution: true).Where(x => x.InvestigationKey == "investigation~1").ToList();
+            Assert.IsNotNull(result);
+            Assert.AreEqual(1, result.Count);
+            Job jobFromLinq = result.First();
+
+            Assert.AreEqual(value.Id, jobFromLinq.Id);
+            Assert.AreEqual(value.InvestigationKey, jobFromLinq.InvestigationKey);
+            Assert.AreEqual(1, jobFromLinq.JobNumber);
+
+            value.Id = Guid.NewGuid();
+
+            // this should create the document successfully with jobnumber of 2
+            Job createdItem2 = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions:  new ItemRequestOptions
+            {
+                PreTriggers = new List<string> { "SetJobNumber" }
+            });
+
+            Assert.AreEqual(value.Id, createdItem2.Id);
+            Assert.AreEqual(value.InvestigationKey, createdItem2.InvestigationKey);
+            Assert.AreEqual(2, createdItem2.JobNumber);
+
+            result = this.container.GetItemLinqQueryable<Job>(allowSynchronousQueryExecution: true).Where(x => x.InvestigationKey == "investigation~1").ToList();
+            Assert.IsNotNull(result);
+            Assert.AreEqual(2, result.Count);
+            jobFromLinq = result.First(x => x.JobNumber == 2);
+
+            Assert.AreEqual(value.Id, jobFromLinq.Id);
+            Assert.AreEqual(value.InvestigationKey, jobFromLinq.InvestigationKey);
+            Assert.AreEqual(2, jobFromLinq.JobNumber);
+
+            // Delete existing user defined functions.
+            await this.scripts.DeleteTriggerAsync(triggerId);
         }
 
         [TestMethod]
@@ -175,6 +266,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cosmosResponse.CurrentResourceQuotaUsage);
         }
 
+        private class Job
+        {
+            [JsonProperty(PropertyName = "id")]
+            public Guid Id { get; set; }
+            [JsonProperty(PropertyName = "investigationKey")]
+            public string InvestigationKey { get; set; }
+            [JsonProperty(PropertyName = "jobNumber")]
+            public int JobNumber { get; set; }
+        }
+
         private async Task<TriggerResponse> CreateRandomTrigger()
         {
             string id = Guid.NewGuid().ToString();
@@ -198,14 +299,4 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return createResponse;
         }
     }
-
-    public class ToDoActivity
-    {
-        public string id { get; set; }
-        public int taskNum { get; set; }
-        public double cost { get; set; }
-        public string description { get; set; }
-        public string status { get; set; }
-    }
-
 }

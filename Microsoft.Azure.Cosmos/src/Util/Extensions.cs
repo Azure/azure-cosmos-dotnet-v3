@@ -7,10 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Net;
-    using System.Net.Http;
+    using System.Net.Sockets;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal static class Extensions
@@ -32,6 +33,15 @@ namespace Microsoft.Azure.Cosmos
                 foreach (string key in response.Headers)
                 {
                     cosmosResponse.Headers.Add(key, response.Headers[key]);
+                }
+            }
+
+            if (response.RequestStats != null)
+            {
+                CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = response.RequestStats as CosmosClientSideRequestStatistics;
+                if (cosmosClientSideRequestStatistics != null)
+                {
+                    cosmosResponse.Diagnostics = new PointOperationStatistics(cosmosClientSideRequestStatistics);
                 }
             }
 
@@ -99,6 +109,61 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return httpResponse;
+        }
+
+        internal static void TraceException(Exception e)
+        {
+            AggregateException aggregateException = e as AggregateException;
+            if (aggregateException != null)
+            {
+                foreach (Exception exception in aggregateException.InnerExceptions)
+                {
+                    Extensions.TraceExceptionInternal(exception);
+                }
+            }
+            else
+            {
+                Extensions.TraceExceptionInternal(e);
+            }
+        }
+
+        public static async Task<IDisposable> UsingWaitAsync(
+            this SemaphoreSlim semaphoreSlim,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return new UsableSemaphoreWrapper(semaphoreSlim);
+        }
+
+        private static void TraceExceptionInternal(Exception e)
+        {
+            while (e != null)
+            {
+                Uri requestUri = null;
+
+                SocketException socketException = e as SocketException;
+                if (socketException != null)
+                {
+                    DefaultTrace.TraceWarning(
+                        "Exception {0}: RequesteUri: {1}, SocketErrorCode: {2}, {3}, {4}",
+                        e.GetType(),
+                        requestUri,
+                        socketException.SocketErrorCode,
+                        e.Message,
+                        e.StackTrace);
+                }
+                else
+                {
+                    DefaultTrace.TraceWarning(
+                        "Exception {0}: RequestUri: {1}, {2}, {3}",
+                        e.GetType(),
+                        requestUri,
+                        e.Message,
+                        e.StackTrace);
+                }
+
+                e = e.InnerException;
+            }
         }
     }
 }

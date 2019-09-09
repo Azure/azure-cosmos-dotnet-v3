@@ -81,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         public async Task TestWithFixedLeaseContainer()
         {
-            await CosmosItemTests.CreateNonPartitionedContainer(
-                    this.database.Id,
+            await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
+                    this.database,
                     "fixedLeases");
 
             Container fixedLeasesContainer = this.cosmosClient.GetContainer(this.database.Id, "fixedLeases");
@@ -187,6 +187,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await this.Container.CreateItemAsync(JsonConvert.DeserializeObject<dynamic>(content), new PartitionKey(partitionKey));
 
             await scripts.ExecuteStoredProcedureAsync<object>(sprocId, new PartitionKey(partitionKey), new dynamic[] { 3 });
+
+            await processor.StartAsync();
+            // Letting processor initialize and pickup changes
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            Assert.AreEqual("doc0.doc1.doc2.doc3.doc4.", accumulator);
+        }
+
+        [TestMethod]
+        public async Task TestWithStartTime_Beginning()
+        {
+            int partitionKey = 0;
+
+            foreach (int id in Enumerable.Range(0, 5))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = partitionKey });
+            }
+
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                {
+                    Assert.IsTrue(docs.Count > 0);
+                    processedDocCount += docs.Count;
+                    foreach (dynamic doc in docs)
+                    {
+                        accumulator += doc.id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 5)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .WithInstanceName("random")
+                .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
             // Letting processor initialize and pickup changes

@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
             {
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
 
                 Logger.LogLine("Listing Databases");
                 Uri uri = new Uri(baseUri, "dbs");
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 retrieved = retrievedTask.Result.ToResourceAsync<Database>().Result;
 
                 Logger.LogLine("Reading Database with same etag");
-                var ifNoneMatchHdr = new StringKeyValueCollection();
+                var ifNoneMatchHdr = new DictionaryNameValueCollection();
                 ifNoneMatchHdr.Add("If-None-Match", retrieved.ETag);
                 retrievedTask = client.GetAsync(new Uri(baseUri, retrieved.SelfLink), ifNoneMatchHdr);
                 retrievedTask.Wait();
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     Uri getUri = new Uri(baseUri, @"dbs/ZzJwAA==");
-                    client.AddMasterAuthorizationHeader("get", "ZzJwAA==", "dbs", new StringKeyValueCollection(), masterKey);
+                    client.AddMasterAuthorizationHeader("get", "ZzJwAA==", "dbs", new DictionaryNameValueCollection(), masterKey);
                     retrievedTask = await client.GetAsync(getUri);
                     retrieved = await retrievedTask.ToResourceAsync<Database>();
                     Assert.Fail("FAIL - Exception exception trying to retrieve ZzJwAA==");
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Logger.LogLine("Updating Database");
                     using (var dbContent = database.AsHttpContent())
                     {
-                        client.AddMasterAuthorizationHeader("put", "ZzJwAA==", "dbs", new StringKeyValueCollection(), masterKey);
+                        client.AddMasterAuthorizationHeader("put", "ZzJwAA==", "dbs", new DictionaryNameValueCollection(), masterKey);
                         retrievedTask = await client.PutAsync(new Uri(baseUri, @"dbs/ZzJwAA=="), dbContent);
                     }
                     retrieved = await retrievedTask.ToResourceAsync<Database>();
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     Logger.LogLine("Deleting Database");
-                    client.AddMasterAuthorizationHeader("delete", "ZzJwAA==", "dbs", new StringKeyValueCollection(), masterKey);
+                    client.AddMasterAuthorizationHeader("delete", "ZzJwAA==", "dbs", new DictionaryNameValueCollection(), masterKey);
                     retrievedTask = await client.DeleteAsync(new Uri(baseUri, @"dbs/ZzJwAA=="));
                     retrieved = await retrievedTask.ToResourceAsync<Database>();
                     Assert.Fail("FAIL - Exception exception trying to delete ZzJwAA");
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Logger.LogLine("Creating Database with longer name");
                     database.Id = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-                    INameValueCollection headers = new StringKeyValueCollection();
+                    INameValueCollection headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
                     retrievedTask = await client.PostAsync(new Uri(baseUri, "dbs"), database.AsHttpContent());
                     retrieved = await retrievedTask.ToResourceAsync<Database>();
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     Logger.LogLine("Creating Database with empty content");
-                    INameValueCollection headers = new StringKeyValueCollection();
+                    INameValueCollection headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
                     using (MemoryStream emptyContentStream = new MemoryStream())
                     {
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     Logger.LogLine("Creating Database with empty content");
-                    INameValueCollection headers = new StringKeyValueCollection();
+                    INameValueCollection headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
                     //byte[] contentBuffer = Encoding.UTF8.GetBytes(@"{""name"":""NAME"", ""content"":Name: NAME}");
                     byte[] contentBuffer = Encoding.UTF8.GetBytes(@"{""name"":""NAME"",{""a"":""b""}}");
@@ -348,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Database database1 = new Database { Id = databaseName1, };
 
                     Logger.LogLine("Creating Database #1");
-                    headers = new StringKeyValueCollection();
+                    headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
                     var retrievedTask = await client.PostAsync(new Uri(this.baseUri, "dbs"), database1.AsHttpContent());
                     Database retrievedDatabase1 = await retrievedTask.ToResourceAsync<Database>();
@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Database database2 = new Database { Id = databaseName2, };
 
                     Logger.LogLine("Creating Database #2");
-                    headers = new StringKeyValueCollection();
+                    headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
                     retrievedTask = await client.PostAsync(new Uri(this.baseUri, "dbs"), database2.AsHttpContent());
                     Database retrievedDatabase2 = await retrievedTask.ToResourceAsync<Database>();
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Uri uri;
 
                     Logger.LogLine("Creating collection #1");
-                    headers = new StringKeyValueCollection();
+                    headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader(
                         "post",
                         retrievedDatabase1.ResourceId,
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         collection2 = new DocumentCollection { Id = collectionName2, PartitionKey = partitionKey };
 
                         Logger.LogLine("Creating collection #2");
-                        headers = new StringKeyValueCollection();
+                        headers = new DictionaryNameValueCollection();
                         client.AddMasterAuthorizationHeader(
                             "post",
                             retrievedDatabase2.ResourceId,
@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Logger.LogLine("Creating document #1");
 
                         String document1 = "{\"id\":\"user1\",\"_rid\":100}";
-                        headers = new StringKeyValueCollection();
+                        headers = new DictionaryNameValueCollection();
                         client.AddMasterAuthorizationHeader(
                             "post",
                             retrievedCollection1.ResourceId,
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Logger.LogLine("Creating document #2");
 
                     String document2 = "{\"id\":\"user2\",\"_rid\":200, \"a\":1}";
-                    headers = new StringKeyValueCollection();
+                    headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader(
                         "post",
                         retrievedCollection2.ResourceId,
@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     String document3 = "{\"id\":\"user3\",\"_rid\":200, \"a\":4}";
-                    headers = new StringKeyValueCollection();
+                    headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader(
                         "post",
                         retrievedCollection2.ResourceId,
@@ -557,7 +557,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.Version, HttpConstants.Versions.v2015_12_16);
 
                     Logger.LogLine("Reading document #1");
-                    headers = new StringKeyValueCollection();
+                    headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader(
                         "get",
                         retrievedDocument1.ResourceId,
@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     Logger.LogLine("Reading document #2");
-                    headers = new StringKeyValueCollection();
+                    headers = new DictionaryNameValueCollection();
                     client.AddMasterAuthorizationHeader(
                         "get",
                         retrievedDocument2.ResourceId,
@@ -633,7 +633,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // use add a proper version header to the request
             using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
             {
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
 
                 Logger.LogLine("Making request with valid API version");
                 client.AddMasterAuthorizationHeader("get", "", "dbs", headers, this.masterKey);
@@ -648,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 using (HttpClient client = CreateHttpClient(version))
                 {
-                    INameValueCollection headers = new StringKeyValueCollection();
+                    INameValueCollection headers = new DictionaryNameValueCollection();
                     bool expectedException = false;
 
                     Logger.LogLine("Making request with invalid API version: " + version);
@@ -755,7 +755,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             using (HttpClient client = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
             {
-                INameValueCollection headers = new StringKeyValueCollection();
+                INameValueCollection headers = new DictionaryNameValueCollection();
                 client.AddMasterAuthorizationHeader("put", collection.ResourceId, "colls", headers, this.masterKey);
                 Uri uri = new Uri(this.baseUri, collection.SelfLink);
                 HttpContent httpContent = new StringContent(newCollectionContent);
@@ -766,7 +766,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ValidateContentTypeForAcceptTypes(HttpClient client, Document retrievedDocument, string acceptTypes)
         {
             Logger.LogLine("Reading document for Accept Types '{0}'", acceptTypes);
-            INameValueCollection headers = new StringKeyValueCollection();
+            INameValueCollection headers = new DictionaryNameValueCollection();
 
             client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.Accept);
 
@@ -803,7 +803,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             Logger.LogLine("Creating Database");
-            headers = new StringKeyValueCollection();
+            headers = new DictionaryNameValueCollection();
             client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
             var retrievedTask = await client.PostAsync(new Uri(this.baseUri, "dbs"), database.AsHttpContent());
             Database retrievedDatabase = await retrievedTask.ToResourceAsync<Database>();
@@ -820,7 +820,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Uri uri;
 
             Logger.LogLine("Creating collection");
-            headers = new StringKeyValueCollection();
+            headers = new DictionaryNameValueCollection();
             client.AddMasterAuthorizationHeader("post", retrievedDatabase.ResourceId, "colls", headers, this.masterKey);
             uri = new Uri(this.baseUri, retrievedDatabase.SelfLink + "colls");
             DocumentCollection retrievedCollection = null;
@@ -835,7 +835,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Logger.LogLine("Creating document");
 
             String document = "{\"id\":\"user1\",\"_rid\":100}";
-            headers = new StringKeyValueCollection();
+            headers = new DictionaryNameValueCollection();
             client.AddMasterAuthorizationHeader("post", retrievedCollection.ResourceId, "docs", headers, this.masterKey);
 
             using (MemoryStream documentStream = new MemoryStream())
@@ -882,7 +882,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 };
 
                 Logger.LogLine("Creating Database");
-                headers = new StringKeyValueCollection();
+                headers = new DictionaryNameValueCollection();
                 client.AddMasterAuthorizationHeader("post", "", "dbs", headers, this.masterKey);
                 var response = await client.PostAsync(new Uri(this.baseUri, new Uri("dbs", UriKind.Relative)), database.AsHttpContent());
                 Database retrievedDatabase = await response.ToResourceAsync<Database>();
@@ -890,7 +890,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Uri uri;
 
                 Logger.LogLine("Creating collection");
-                headers = new StringKeyValueCollection();
+                headers = new DictionaryNameValueCollection();
                 client.AddMasterAuthorizationHeader("post", retrievedDatabase.ResourceId, "colls", headers, this.masterKey);
                 headers[HttpConstants.HttpHeaders.OfferThroughput] = Convert.ToString(6000, CultureInfo.InvariantCulture);
                 uri = new Uri(this.baseUri, new Uri(retrievedDatabase.SelfLink + "colls", UriKind.Relative));
@@ -938,7 +938,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     using (HttpClient httpClient = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
                     {
-                        var headers = new StringKeyValueCollection();
+                        var headers = new DictionaryNameValueCollection();
                         httpClient.AddMasterAuthorizationHeader("post", collection.ResourceId, "docs", headers, this.masterKey);
                         httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                         httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
@@ -1012,6 +1012,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Aggregates = new AggregateOperator[] { AggregateOperator.Average },
                         RewrittenQuery = string.Format(CultureInfo.InvariantCulture, "SELECT VALUE [{{\"item\": {{\"sum\": SUM(r), \"count\": COUNT(r)}}}}]\nFROM r\nWHERE (r.key = {0})", 1),
                         HasSelectValue = true,
+                        GroupByExpressions = new string[] { },
+                        GroupByAliasToAggregateType = new Dictionary<string, AggregateOperator?>(),
                     },
                     QueryRanges = new List<Range<string>>()
                     {
@@ -1029,6 +1031,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Aggregates = new AggregateOperator[] { AggregateOperator.Average },
                         RewrittenQuery = string.Format(CultureInfo.InvariantCulture, "SELECT VALUE [{{\"item\": {{\"sum\": SUM(r), \"count\": COUNT(r)}}}}]\nFROM r\nWHERE (r.key = {0})", 1),
                         HasSelectValue = true,
+                        GroupByExpressions = new string[] { },
+                        GroupByAliasToAggregateType = new Dictionary<string, AggregateOperator?>(),
                     },
                     QueryRanges = new List<Range<string>>()
                     {
@@ -1071,7 +1075,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             {
                                 using (HttpClient httpClient = CreateHttpClient(version))
                                 {
-                                    var headers = new StringKeyValueCollection();
+                                    var headers = new DictionaryNameValueCollection();
                                     resourceId = string.Format("dbs/{0}/colls/{1}", database.Id, currentCollection.Id);
                                     httpClient.AddMasterAuthorizationHeader("post", resourceId, "docs", headers, this.masterKey);
                                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
@@ -1216,7 +1220,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         OrderBy = new SortOrder[] { },
                         OrderByExpressions = new string[] { },
                         Aggregates = new AggregateOperator[] { },
-                        RewrittenQuery = string.Empty
+                        RewrittenQuery = string.Empty,
                     },
                     QueryRanges = queryRanges,
                 };
@@ -1305,7 +1309,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             using (HttpClient httpClient = CreateHttpClient(version.Item1))
                             {
-                                var headers = new StringKeyValueCollection();
+                                var headers = new DictionaryNameValueCollection();
                                 httpClient.AddMasterAuthorizationHeader("post", collection.ResourceId, "docs", headers, this.masterKey);
                                 httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                                 httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
@@ -1392,7 +1396,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 using (HttpClient httpClient = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
                 {
-                    var headers = new StringKeyValueCollection();
+                    var headers = new DictionaryNameValueCollection();
                     httpClient.AddMasterAuthorizationHeader("post", collection.ResourceId, "docs", headers, this.masterKey);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
@@ -1447,7 +1451,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 using (HttpClient httpClient = CreateHttpClient(HttpConstants.Versions.CurrentVersion))
                 {
-                    var headers = new StringKeyValueCollection();
+                    var headers = new DictionaryNameValueCollection();
                     httpClient.AddMasterAuthorizationHeader("post", collection.ResourceId, "docs", headers, this.masterKey);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);

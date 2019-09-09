@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -64,16 +63,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                    ResourceType.Collection,
                    collectionLink,
                    AuthorizationTokenType.PrimaryMasterKey,
-                   new StringKeyValueCollection()))
+                   new DictionaryNameValueCollection()))
             {
                 request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
 
+                string payload;
                 string authorizationToken = this.tokenProvider.GetUserAuthorizationToken(
                     request.ResourceAddress,
                     PathsHelper.GetResourcePath(request.ResourceType),
                     HttpConstants.HttpMethods.Get,
                     request.Headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    out payload);
 
                 request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 

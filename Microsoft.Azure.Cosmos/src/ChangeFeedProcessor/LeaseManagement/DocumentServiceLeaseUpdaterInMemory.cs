@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Collections.Concurrent;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseUpdater"/> that uses In-Memory
@@ -24,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         }
 
         public override Task<DocumentServiceLease> UpdateLeaseAsync(
-            DocumentServiceLease cachedLease, 
-            string itemId, 
-            Cosmos.PartitionKey partitionKey, 
+            DocumentServiceLease cachedLease,
+            string itemId,
+            Cosmos.PartitionKey partitionKey,
             Func<DocumentServiceLease, DocumentServiceLease> updateLease)
         {
             DocumentServiceLease lease = cachedLease;

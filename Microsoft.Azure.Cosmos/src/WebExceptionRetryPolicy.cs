@@ -6,10 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Internal;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     internal sealed class WebExceptionRetryPolicy : IRetryPolicy
@@ -31,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            Exception exception, 
+            Exception exception,
             CancellationToken cancellationToken)
         {
             TimeSpan backoffTime = TimeSpan.FromSeconds(0);
@@ -63,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(
-            ResponseMessage cosmosResponseMessage, 
+            ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
