@@ -12,6 +12,8 @@
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
   </PropertyGroup>
 
+  <Import Project="..\..\version.props"/>
+
   <ItemGroup>
     <Compile Remove="GlobalDatabaseAccountTests.cs" />
   </ItemGroup>
