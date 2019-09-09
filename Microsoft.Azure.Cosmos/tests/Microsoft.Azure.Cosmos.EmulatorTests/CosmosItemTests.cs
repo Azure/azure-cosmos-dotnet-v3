@@ -12,15 +12,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -226,33 +223,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int count = 0;
             CosmosClient client = TestCommon.CreateCosmosClient(builder =>
+            {
+                builder.WithConnectionModeDirect();
+                builder.WithSendingRequestEventArgs((sender, e) =>
                 {
-                    builder.WithConnectionModeDirect();
-                    builder.WithSendingRequestEventArgs((sender, e) =>
-                        {
-                            if (e.DocumentServiceRequest != null)
-                            {
-                                Trace.TraceInformation($"{e.DocumentServiceRequest.ToString()}");
-                            }
+                    if (e.DocumentServiceRequest != null)
+                    {
+                        Trace.TraceInformation($"{e.DocumentServiceRequest.ToString()}");
+                    }
 
-                            if (e.HttpRequest != null)
-                            {
-                                Trace.TraceInformation($"{e.HttpRequest.ToString()}");
-                            }
+                    if (e.HttpRequest != null)
+                    {
+                        Trace.TraceInformation($"{e.HttpRequest.ToString()}");
+                    }
 
-                            if (e.IsHttpRequest()
-                                && e.HttpRequest.RequestUri.AbsolutePath.Contains("/colls/"))
-                            {
-                                count++;
-                            }
+                    if (e.IsHttpRequest()
+                        && e.HttpRequest.RequestUri.AbsolutePath.Contains("/colls/"))
+                    {
+                        count++;
+                    }
 
-                            if (e.IsHttpRequest()
-                                && e.HttpRequest.RequestUri.AbsolutePath.Contains("/pkranges"))
-                            {
-                                Debugger.Break();
-                            }
-                        });
+                    if (e.IsHttpRequest()
+                        && e.HttpRequest.RequestUri.AbsolutePath.Contains("/pkranges"))
+                    {
+                        Debugger.Break();
+                    }
                 });
+            });
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
@@ -561,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Ignore conflicts since the object already exists
             }
 
-            foreach (var queryDefinition in queryDefinitions)
+            foreach (QueryDefinition queryDefinition in queryDefinitions)
             {
                 toStreamCount = 0;
                 fromStreamCount = 0;
@@ -1052,12 +1049,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 };
 
+                ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
+                    containerResponse.Resource.ResourceId,
+                    null,
+                    containerResponse.Resource.PartitionKey);
+
                 // There should only be one range since the EPK option is set.
                 List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                     queryClient: new CosmosQueryClientCore(container.ClientContext, container),
                     resourceLink: container.LinkUri.OriginalString,
                     partitionedQueryExecutionInfo: null,
-                    collection: containerResponse,
+                    containerQueryProperties: containerQueryProperties,
                     queryRequestOptions: options);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
@@ -1080,6 +1082,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 101, randomPartitionKey: true);
 
             QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
+
             CosmosSerializationFormatOptions options = new CosmosSerializationFormatOptions(
                 ContentSerializationFormat.CosmosBinary.ToString(),
                 (content) => JsonNavigator.Create(content),
@@ -1087,7 +1090,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-                CosmosSerializationOptions = options,
+                CosmosSerializationFormatOptions = options,
                 MaxConcurrency = 5,
                 MaxItemCount = 5,
             };
@@ -1260,7 +1263,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 fixedContainer = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
-                    this.database, 
+                    this.database,
                     "ReadNonPartition" + Guid.NewGuid());
 
                 await NonPartitionedContainerHelper.CreateItemInNonPartitionedContainer(fixedContainer, nonPartitionItemId);
@@ -1601,49 +1604,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cc1.Dispose();
                 cc2.Dispose();
             }
-        }
-
-        [TestMethod]
-        public async Task NoAutoGenerateIdTest()
-        {
-            try
-            {
-                ToDoActivity t = new ToDoActivity();
-                t.status = "AutoID";
-                ItemResponse<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(
-                    partitionKey: new Cosmos.PartitionKey(t.status), item: t);
-
-                Assert.Fail("Unexpected ID auto-generation");
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
-            {
-            }
-        }
-
-        [TestMethod]
-        public async Task AutoGenerateIdPatternTest()
-        {
-            ToDoActivity itemWithoutId = new ToDoActivity();
-            itemWithoutId.status = "AutoID";
-
-            ToDoActivity createdItem = await this.AutoGenerateIdPatternTest<ToDoActivity>(
-                new Cosmos.PartitionKey(itemWithoutId.status), itemWithoutId);
-
-            Assert.IsNotNull(createdItem.id);
-            Assert.AreEqual(itemWithoutId.status, createdItem.status);
-        }
-
-        private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
-        {
-            string autoId = Guid.NewGuid().ToString();
-
-            JObject tmpJObject = JObject.FromObject(itemWithoutId);
-            tmpJObject["id"] = autoId;
-
-            ItemResponse<JObject> response = await this.Container.CreateItemAsync<JObject>(
-                partitionKey: pk, item: tmpJObject);
-
-            return response.Resource.ToObject<T>();
         }
 
         private static async Task VerifyQueryToManyExceptionAsync(

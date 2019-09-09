@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Text;
 
     /// <summary>
@@ -178,61 +179,18 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <summary>
-            /// Writes an integer to the internal buffer.
-            /// </summary>
-            /// <param name="value">The value of the integer to write.</param>
-            public override void WriteIntValue(long value)
-            {
-                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
-                this.PrefixMemberSeparator();
-                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
-            }
-
-            /// <summary>
             /// Writes a number to the internal buffer.
             /// </summary>
             /// <param name="value">The value of the number to write.</param>
-            public override void WriteNumberValue(double value)
+            public override void WriteNumberValue(Number64 value)
             {
-                // The maximum integer value that can be stored in an IEEE 754 double type w/o losing precision
-                const double MaxFullPrecisionValue = ((long)1) << 53;
-
-                // Check if the number is an integer
-                double truncatedValue = Math.Floor(value);
-                if ((truncatedValue == value) && (value >= -MaxFullPrecisionValue) && (value <= MaxFullPrecisionValue))
+                if (value.IsInteger)
                 {
-                    // The number does not have any decimals and fits in a 64-bit value
-                    this.WriteIntValue((long)value);
-                    return;
-                }
-
-                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
-                this.PrefixMemberSeparator();
-
-                if (double.IsNaN(value))
-                {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(NotANumber);
-                    this.WriteChar(StringEndToken);
-                }
-                else if (double.IsNegativeInfinity(value))
-                {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(NegativeInfinity);
-                    this.WriteChar(StringEndToken);
-                }
-                else if (double.IsPositiveInfinity(value))
-                {
-                    this.WriteChar(StringStartToken);
-                    this.streamWriter.Write(PositiveInfinity);
-                    this.WriteChar(StringEndToken);
+                    this.WriteIntegerInternal(Number64.ToLong(value));
                 }
                 else
                 {
-                    // If you require more precision, specify format with the "G17" format specification, which always returns 17 digits of precision,
-                    // or "R", which returns 15 digits if the number can be represented with that precision or 17 digits if the number can only be represented with maximum precision.
-                    // In some cases, Double values formatted with the "R" standard numeric format string do not successfully round-trip if compiled using the /platform:x64 or /platform:anycpu switches and run on 64-bit systems. To work around this problem, you can format Double values by using the "G17" standard numeric format string. 
-                    this.streamWriter.Write(value.ToString("R", CultureInfo.InvariantCulture));
+                    this.WriteDoubleInternal(Number64.ToDouble(value));
                 }
             }
 
@@ -267,47 +225,74 @@ namespace Microsoft.Azure.Cosmos.Json
 
             public override void WriteInt8Value(sbyte value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int8);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("I");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteInt16Value(short value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int16);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("H");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteInt32Value(int value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int32);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("L");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteInt64Value(long value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Int64);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("LL");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteFloat32Value(float value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Float32);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("S");
+                this.streamWriter.Write(value.ToString("G9", CultureInfo.InvariantCulture));
             }
 
             public override void WriteFloat64Value(double value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Float64);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("D");
+                this.streamWriter.Write(value.ToString("G17", CultureInfo.InvariantCulture));
             }
 
             public override void WriteUInt32Value(uint value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.UInt32);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("UL");
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
             }
 
             public override void WriteGuidValue(Guid value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Guid);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("G");
+                this.streamWriter.Write(value.ToString());
             }
 
             public override void WriteBinaryValue(IReadOnlyList<byte> value)
             {
-                throw new NotImplementedException();
+                this.JsonObjectState.RegisterToken(JsonTokenType.Binary);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write("B");
+                this.streamWriter.Write(Convert.ToBase64String(value.ToArray()));
             }
 
             /// <summary>
@@ -363,6 +348,52 @@ namespace Microsoft.Azure.Cosmos.Json
             protected override void WriteRawJsonToken(JsonTokenType jsonTokenType, IReadOnlyList<byte> rawJsonToken)
             {
                 throw new NotImplementedException();
+            }
+
+            /// <summary>
+            /// Writes an integer to the internal buffer.
+            /// </summary>
+            /// <param name="value">The value of the integer to write.</param>
+            private void WriteIntegerInternal(long value)
+            {
+                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
+                this.PrefixMemberSeparator();
+                this.streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+            }
+
+            /// <summary>
+            /// Writes an integer to the internal buffer.
+            /// </summary>
+            /// <param name="value">The value of the integer to write.</param>
+            private void WriteDoubleInternal(double value)
+            {
+                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
+                this.PrefixMemberSeparator();
+                if (double.IsNaN(value))
+                {
+                    this.WriteChar(StringStartToken);
+                    this.streamWriter.Write(NotANumber);
+                    this.WriteChar(StringEndToken);
+                }
+                else if (double.IsNegativeInfinity(value))
+                {
+                    this.WriteChar(StringStartToken);
+                    this.streamWriter.Write(NegativeInfinity);
+                    this.WriteChar(StringEndToken);
+                }
+                else if (double.IsPositiveInfinity(value))
+                {
+                    this.WriteChar(StringStartToken);
+                    this.streamWriter.Write(PositiveInfinity);
+                    this.WriteChar(StringEndToken);
+                }
+                else
+                {
+                    // If you require more precision, specify format with the "G17" format specification, which always returns 17 digits of precision,
+                    // or "R", which returns 15 digits if the number can be represented with that precision or 17 digits if the number can only be represented with maximum precision.
+                    // In some cases, Double values formatted with the "R" standard numeric format string do not successfully round-trip if compiled using the /platform:x64 or /platform:anycpu switches and run on 64-bit systems. To work around this problem, you can format Double values by using the "G17" standard numeric format string. 
+                    this.streamWriter.Write(value.ToString("R", CultureInfo.InvariantCulture));
+                }
             }
 
             /// <summary>

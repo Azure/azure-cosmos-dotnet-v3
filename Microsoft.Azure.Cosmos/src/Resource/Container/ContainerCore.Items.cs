@@ -417,18 +417,14 @@ namespace Microsoft.Azure.Cosmos
                     options: requestOptions);
             }
 
-            return new CosmosQueryExecutionContextFactory(
+            return new QueryIterator(
                 client: this.queryClient,
-                resourceTypeEnum: ResourceType.Document,
-                operationType: OperationType.Query,
-                resourceType: typeof(QueryResponse),
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
-                allowNonValueAggregateQuery: true,
-                correlatedActivityId: Guid.NewGuid());
+                allowNonValueAggregateQuery: true);
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.
@@ -501,6 +497,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 this,
                 partitionKey,
+                itemId,
                 streamPayload,
                 null,
                 cancellationToken);

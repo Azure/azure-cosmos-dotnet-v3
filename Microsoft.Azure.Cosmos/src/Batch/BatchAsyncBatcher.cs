@@ -152,22 +152,21 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, cancellationToken);
-
-                    if (result.IsSplit())
-                    {
-                        foreach (ItemBatchOperation operationToRetry in result.Operations)
-                        {
-                            await this.retrier(operationToRetry, cancellationToken);
-                        }
-
-                        return;
-                    }
-
                     using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.cosmosSerializer))
                     {
                         foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
                         {
                             BatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
+                                if (shouldRetry.ShouldRetry)
+                                {
+                                    await this.retrier(itemBatchOperation, cancellationToken);
+                                    continue;
+                                }
+                            }
+
                             itemBatchOperation.Context.Complete(this, response);
                         }
                     }

@@ -397,6 +397,39 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(OperationType.Batch.IsWriteOperation());
         }
 
+        [TestMethod]
+        public void FromItemRequestOptions_FromNull()
+        {
+            Assert.IsNull(BatchItemRequestOptions.FromItemRequestOptions(null));
+        }
+
+        [TestMethod]
+        public void FromItemRequestOptions_WithCustomValues()
+        {
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+            itemRequestOptions.IfMatchEtag = Guid.NewGuid().ToString();
+            itemRequestOptions.IfNoneMatchEtag = Guid.NewGuid().ToString();
+            itemRequestOptions.IndexingDirective = Cosmos.IndexingDirective.Exclude;
+            itemRequestOptions.Properties = new Dictionary<string, object>() { { "test", "test" } };
+
+            BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
+            Assert.AreEqual(itemRequestOptions.IfMatchEtag, batchItemRequestOptions.IfMatchEtag);
+            Assert.AreEqual(itemRequestOptions.IfNoneMatchEtag, batchItemRequestOptions.IfNoneMatchEtag);
+            Assert.AreEqual(itemRequestOptions.IndexingDirective, batchItemRequestOptions.IndexingDirective);
+            Assert.AreEqual(itemRequestOptions.Properties, batchItemRequestOptions.Properties);
+        }
+
+        [TestMethod]
+        public void FromItemRequestOptions_WithDefaultValues()
+        {
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+            BatchItemRequestOptions batchItemRequestOptions = BatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
+            Assert.AreEqual(itemRequestOptions.IfMatchEtag, batchItemRequestOptions.IfMatchEtag);
+            Assert.AreEqual(itemRequestOptions.IfNoneMatchEtag, batchItemRequestOptions.IfNoneMatchEtag);
+            Assert.AreEqual(itemRequestOptions.IndexingDirective, batchItemRequestOptions.IndexingDirective);
+            Assert.AreEqual(itemRequestOptions.Properties, batchItemRequestOptions.Properties);
+        }
+
         private static async Task<ResponseMessage> GetBatchResponseMessageAsync(List<ItemBatchOperation> operations, int rateLimitedOperationCount = 0)
         {
             BatchOperationResult okOperationResult = new BatchOperationResult(HttpStatusCode.OK);

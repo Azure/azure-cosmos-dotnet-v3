@@ -89,13 +89,13 @@ namespace Microsoft.Azure.Cosmos
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
-                    this.CaptureSessionToken(request, exception.Headers);
+                    this.CaptureSessionToken(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
                 }
 
                 throw;
             }
 
-            this.CaptureSessionToken(request, response.Headers);
+            this.CaptureSessionToken(response.StatusCode, response.SubStatusCode, request, response.Headers);
             return response;
         }
 
@@ -169,8 +169,30 @@ namespace Microsoft.Azure.Cosmos
             GC.SuppressFinalize(this);
         }
 
-        private void CaptureSessionToken(DocumentServiceRequest request, INameValueCollection responseHeaders)
+        private void CaptureSessionToken(
+            HttpStatusCode? statusCode,
+            SubStatusCodes subStatusCode,
+            DocumentServiceRequest request,
+            INameValueCollection responseHeaders)
         {
+            // Exceptionless can try to capture session token from CompleteResponse
+            if (request.IsValidStatusCodeForExceptionlessRetry((int)statusCode, subStatusCode))
+            {
+                // Not capturing on master resources
+                if (ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+                {
+                    return;
+                }
+
+                // Only capturing on 409, 412, 404 && !1002
+                if (statusCode != HttpStatusCode.PreconditionFailed
+                    && statusCode != HttpStatusCode.Conflict
+                        && (statusCode != HttpStatusCode.NotFound || subStatusCode == SubStatusCodes.ReadSessionNotAvailable))
+                {
+                    return;
+                }
+            }
+
             if (request.ResourceType == ResourceType.Collection && request.OperationType == OperationType.Delete)
             {
                 string resourceId;

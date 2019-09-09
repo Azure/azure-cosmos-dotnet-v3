@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
         public const int SPLIT = -1;
 
-        public static (QueryResponse queryResponse, IList<ToDoItem> items) Create(
+        public static (QueryResponseCore queryResponse, IList<ToDoItem> items) Create(
             string itemIdPrefix,
             string continuationToken,
             string collectionRid,
@@ -44,20 +44,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
 
-            Headers headers = new Headers();
-            headers.ContinuationToken = continuationToken;
-            headers.ActivityId = Guid.NewGuid().ToString();
-
-            QueryResponse message = QueryResponse.CreateSuccess(
+            QueryResponseCore message = QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
-                    count: itemCount,
-                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(headers, ResourceType.Document, collectionRid),
+                    continuationToken: continuationToken,
+                    disallowContinuationTokenMessage: null,
+                    activityId: Guid.NewGuid().ToString(),
+                    requestCharge: 42,
+                    queryMetricsText: null,
+                    queryMetrics: new Dictionary<string, QueryMetrics>(),
+                    requestStatistics: null,
                     responseLengthBytes: responseLengthBytes);
 
             return (message, items);
         }
 
-        public static QueryResponse CreateQueryResponse(
+        public static QueryResponseCore CreateQueryResponse(
             IList<ToDoItem> items,
             bool isOrderByQuery,
             string continuationToken,
@@ -84,31 +85,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
 
-            Headers headers = new Headers();
-            headers.ContinuationToken = continuationToken;
-            headers.ActivityId = Guid.NewGuid().ToString();
-
-            QueryResponse message = QueryResponse.CreateSuccess(
+            QueryResponseCore message = QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
-                    count: items.Count,
-                    responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(headers, ResourceType.Document, collectionRid),
-                    responseLengthBytes: responseLengthBytes);
+                    requestCharge: 4,
+                    activityId: Guid.NewGuid().ToString(),
+                    queryMetricsText: null,
+                    queryMetrics: null,
+                    requestStatistics: null,
+                    responseLengthBytes: responseLengthBytes,
+                    disallowContinuationTokenMessage: null,
+                    continuationToken: continuationToken);
 
             return message;
         }
 
-        public static QueryResponse CreateSplitResponse(string collectionRid)
+        public static QueryResponseCore CreateSplitResponse(string collectionRid)
         {
-            QueryResponse splitResponse = QueryResponse.CreateFailure(
-               new CosmosQueryResponseMessageHeaders(null, null, ResourceType.Document, collectionRid)
-               {
-                   SubStatusCode = SubStatusCodes.PartitionKeyRangeGone,
-                   ActivityId = Guid.NewGuid().ToString()
-               },
-               HttpStatusCode.Gone,
-               null,
-               "Partition split error",
-               null);
+            QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
+               statusCode: HttpStatusCode.Gone,
+               subStatusCodes: SubStatusCodes.PartitionKeyRangeGone,
+               errorMessage: "Partition split error",
+               requestCharge: 10.4,
+               activityId: Guid.NewGuid().ToString(),
+               queryMetricsText: null,
+               queryMetrics: null);
 
             return splitResponse;
         }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -226,7 +227,8 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
                 enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
                 storeClientFactory: clientOptionsClone.StoreClientFactory,
-                desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel());
+                desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
+                handler: this.CreateHttpClientHandler(clientOptions));
 
             this.Init(
                 clientOptionsClone,
@@ -629,8 +631,7 @@ namespace Microsoft.Azure.Cosmos
                 sqlQuerySpecSerializer: sqlQuerySpecSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
-                documentClient: this.DocumentClient,
-                documentQueryClient: new DocumentQueryClient(this.DocumentClient));
+                documentClient: this.DocumentClient);
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()
@@ -716,6 +717,19 @@ namespace Microsoft.Azure.Cosmos
                 },
                 responseCreator: response => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DatabaseProperties>(response),
                 cancellationToken: cancellationToken);
+        }
+
+        private HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
+        {
+            if (clientOptions == null || (clientOptions.WebProxy == null))
+            {
+                return null;
+            }
+
+            HttpClientHandler httpClientHandler = new HttpClientHandler();
+            httpClientHandler.Proxy = clientOptions.WebProxy;
+
+            return httpClientHandler;
         }
 
         /// <summary>

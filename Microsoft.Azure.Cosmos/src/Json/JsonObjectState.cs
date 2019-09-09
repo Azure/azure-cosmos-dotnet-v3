@@ -178,6 +178,15 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonTokenType.True:
                 case JsonTokenType.False:
                 case JsonTokenType.Null:
+                case JsonTokenType.Float32:
+                case JsonTokenType.Float64:
+                case JsonTokenType.Int8:
+                case JsonTokenType.Int16:
+                case JsonTokenType.Int32:
+                case JsonTokenType.Int64:
+                case JsonTokenType.UInt32:
+                case JsonTokenType.Binary:
+                case JsonTokenType.Guid:
                     this.RegisterValue(jsonTokenType);
                     break;
                 case JsonTokenType.BeginArray:

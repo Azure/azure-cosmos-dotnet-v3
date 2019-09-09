@@ -100,29 +100,158 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="binaryReader">BinaryReader pointing to a number.</param>
         /// <returns>The number value from the binary reader.</returns>
-        public static double GetNumberValue(BinaryReader binaryReader)
+        public static Number64 GetNumberValue(BinaryReader binaryReader)
         {
             byte typeMarker = binaryReader.ReadByte();
-            if (JsonBinaryEncoding.TypeMarker.IsEncodedIntegerLiteral(typeMarker))
+            if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
             {
                 return typeMarker - JsonBinaryEncoding.TypeMarker.LiteralIntMin;
             }
 
             switch (typeMarker)
             {
-                case JsonBinaryEncoding.TypeMarker.UInt8:
+                case JsonBinaryEncoding.TypeMarker.NumberUInt8:
                     return binaryReader.ReadByte();
-                case JsonBinaryEncoding.TypeMarker.Int16:
+                case JsonBinaryEncoding.TypeMarker.NumberInt16:
                     return binaryReader.ReadInt16();
-                case JsonBinaryEncoding.TypeMarker.Int32:
+                case JsonBinaryEncoding.TypeMarker.NumberInt32:
                     return binaryReader.ReadInt32();
-                case JsonBinaryEncoding.TypeMarker.Int64:
+                case JsonBinaryEncoding.TypeMarker.NumberInt64:
                     return binaryReader.ReadInt64();
-                case JsonBinaryEncoding.TypeMarker.Double:
+                case JsonBinaryEncoding.TypeMarker.NumberDouble:
                     return binaryReader.ReadDouble();
                 default:
                     throw new JsonInvalidNumberException();
             }
+        }
+
+        public static sbyte GetInt8Value(BinaryReader binaryReader)
+        {
+            JsonBinaryEncoding.CheckFixedSizedValue(
+                binaryReader,
+                JsonBinaryEncoding.TypeMarker.Int8);
+            return binaryReader.ReadSByte();
+        }
+
+        public static short GetInt16Value(BinaryReader binaryReader)
+        {
+            JsonBinaryEncoding.CheckFixedSizedValue(
+                binaryReader,
+                JsonBinaryEncoding.TypeMarker.Int16);
+            return binaryReader.ReadInt16();
+        }
+
+        public static int GetInt32Value(BinaryReader binaryReader)
+        {
+            JsonBinaryEncoding.CheckFixedSizedValue(
+                binaryReader,
+                JsonBinaryEncoding.TypeMarker.Int32);
+            return binaryReader.ReadInt32();
+        }
+
+        public static long GetInt64Value(BinaryReader binaryReader)
+        {
+            JsonBinaryEncoding.CheckFixedSizedValue(
+                binaryReader,
+                JsonBinaryEncoding.TypeMarker.Int64);
+            return binaryReader.ReadInt64();
+        }
+
+        public static uint GetUInt32Value(BinaryReader binaryReader)
+        {
+            JsonBinaryEncoding.CheckFixedSizedValue(
+                binaryReader,
+                JsonBinaryEncoding.TypeMarker.UInt32);
+            return binaryReader.ReadUInt32();
+        }
+
+        public static float GetFloat32Value(BinaryReader binaryReader)
+        {
+            JsonBinaryEncoding.CheckFixedSizedValue(
+                binaryReader,
+                JsonBinaryEncoding.TypeMarker.Float32);
+            return binaryReader.ReadSingle();
+        }
+
+        public static double GetFloat64Value(BinaryReader binaryReader)
+        {
+            JsonBinaryEncoding.CheckFixedSizedValue(
+                binaryReader,
+                JsonBinaryEncoding.TypeMarker.Float64);
+            return binaryReader.ReadDouble();
+        }
+
+        public static Guid GetGuidValue(BinaryReader binaryReader)
+        {
+            JsonBinaryEncoding.CheckFixedSizedValue(
+                binaryReader,
+                JsonBinaryEncoding.TypeMarker.Guid);
+
+            uint a = binaryReader.ReadUInt32();
+            ushort b = binaryReader.ReadUInt16();
+            ushort c = binaryReader.ReadUInt16();
+            byte d = binaryReader.ReadByte();
+            byte e = binaryReader.ReadByte();
+            byte f = binaryReader.ReadByte();
+            byte g = binaryReader.ReadByte();
+            byte h = binaryReader.ReadByte();
+            byte i = binaryReader.ReadByte();
+            byte j = binaryReader.ReadByte();
+            byte k = binaryReader.ReadByte();
+
+            return new Guid(a, b, c, d, e, f, g, h, i, j, k);
+        }
+
+        private static void CheckFixedSizedValue(
+            BinaryReader binaryReader,
+            byte expectedTypeMarker)
+        {
+            if (binaryReader == null)
+            {
+                throw new ArgumentNullException(nameof(binaryReader));
+            }
+
+            byte typeMarker = binaryReader.ReadByte();
+
+            if (typeMarker != expectedTypeMarker)
+            {
+                throw new JsonInvalidNumberException();
+            }
+        }
+
+        public static IReadOnlyList<byte> GetBinaryValue(BinaryReader binaryReader)
+        {
+            if (binaryReader == null)
+            {
+                throw new ArgumentNullException(nameof(binaryReader));
+            }
+
+            byte typeMarker = binaryReader.ReadByte();
+            uint binaryLength;
+            switch (typeMarker)
+            {
+                case JsonBinaryEncoding.TypeMarker.Binary1ByteLength:
+                    binaryLength = binaryReader.ReadByte();
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
+                    binaryLength = binaryReader.ReadUInt16();
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
+                    binaryLength = binaryReader.ReadUInt32();
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown type marker {typeMarker}.");
+            }
+
+            if (binaryLength > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException("Binary length was greater than int.MaxValue");
+            }
+
+            return binaryReader.ReadBytes((int)binaryLength);
         }
 
         /// <summary>
@@ -287,22 +416,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
             if (TryGetSystemStringId(value, out int systemStringId))
             {
-                const byte OneByteCount = TypeMarker.SystemString1ByteLengthMax - TypeMarker.SystemString1ByteLengthMin;
-
-                if (systemStringId < OneByteCount)
-                {
-                    multiByteTypeMarker = new MultiByteTypeMarker(
-                        length: 1,
-                        one: (byte)(TypeMarker.SystemString1ByteLengthMin + systemStringId));
-                }
-                else
-                {
-                    int twoByteOffset = systemStringId - OneByteCount;
-                    multiByteTypeMarker = new MultiByteTypeMarker(
-                        length: 2,
-                        one: (byte)((twoByteOffset / 0xFF) + TypeMarker.SystemString2ByteLengthMin),
-                        two: (byte)(twoByteOffset % 0xFF));
-                }
+                multiByteTypeMarker = new MultiByteTypeMarker(
+                    length: 1,
+                    one: (byte)(TypeMarker.SystemString1ByteLengthMin + systemStringId));
 
                 return true;
             }
@@ -449,13 +565,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 systemStringId = multiByteTypeMarker.One - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
 
             }
-            else if (multiByteTypeMarker.Length == 2 && JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedSystemString(multiByteTypeMarker.One))
-            {
-                const byte OneByteCount = JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
-                systemStringId = OneByteCount
-                    + multiByteTypeMarker.Two
-                    + ((multiByteTypeMarker.One - JsonBinaryEncoding.TypeMarker.SystemString2ByteLengthMin) * 0xFF);
-            }
             else
             {
                 systemStringId = null;
@@ -560,16 +669,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 multiByteTypeMarker = new MultiByteTypeMarker(
                     length: 1,
                     one: typeMarker);
-            }
-            else if (JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedSystemString(typeMarker))
-            {
-                byte firstByte = typeMarker;
-                byte secondByte = binaryReader.ReadByte();
-
-                multiByteTypeMarker = new MultiByteTypeMarker(
-                    length: 2,
-                    one: firstByte,
-                    two: secondByte);
             }
             else
             {
@@ -681,28 +780,16 @@ namespace Microsoft.Azure.Cosmos.Json
             public const byte UserString1ByteLengthMax = UserString1ByteLengthMin + 32;
             #endregion
 
-            #region [0x60, 0x68): Encoded 2-byte system string (8 values)
+            #region [0x60, 0x80): 2-byte user string (32 values)
             /// <summary>
             /// The first type marker for a system string whose value can be encoded in a 2 byte type marker.
             /// </summary>
-            public const byte SystemString2ByteLengthMin = UserString1ByteLengthMax;
+            public const byte UserString2ByteLengthMin = UserString1ByteLengthMax;
 
             /// <summary>
             /// The last type marker for a system string whose value can be encoded in a 2 byte type marker.
             /// </summary>
-            public const byte SystemString2ByteLengthMax = SystemString2ByteLengthMin + 8;
-            #endregion
-
-            #region [0x68, 0x80): Encoded 2-byte user string (24 values)
-            /// <summary>
-            /// The first type marker for a user string whose value can be encoded in a 2 byte type marker.
-            /// </summary>
-            public const byte UserString2ByteLengthMin = SystemString2ByteLengthMax;
-
-            /// <summary>
-            /// The last type marker for a user string whose value can be encoded in a 2 byte type marker.
-            /// </summary>
-            public const byte UserString2ByteLengthMax = UserString2ByteLengthMin + 24;
+            public const byte UserString2ByteLengthMax = UserString2ByteLengthMin + 32;
             #endregion
 
             #region [0x80, 0xC0): Encoded string length (64 values)
@@ -719,7 +806,7 @@ namespace Microsoft.Azure.Cosmos.Json
             public const byte EncodedStringLengthMax = EncodedStringLengthMin + 64;
             #endregion
 
-            #region [0xC0, 0xC8): Variable Length Strings
+            #region [0xC0, 0xC8): Variable Length Strings and Binary Values
             /// <summary>
             /// Type marker for a String of 1-byte length
             /// </summary>
@@ -738,50 +825,58 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Type marker for a Compressed string of 1-byte length
             /// </summary>
-            public const byte CompressedString1ByteLength = 0xC3;
+            public const byte Binary1ByteLength = 0xC3;
 
             /// <summary>
             /// Type marker for a Compressed string of 2-byte length
             /// </summary>
-            public const byte CompressedString2ByteLength = 0xC4;
+            public const byte Binary2ByteLength = 0xC4;
 
             /// <summary>
             /// Type marker for a Compressed string of 4-byte length
             /// </summary>
-            public const byte CompressedString4ByteLength = 0xC5;
+            public const byte Binary4ByteLength = 0xC5;
 
-            // <string reserved> 0xC6
-            // <string reserved> 0xC7
+            // <empty> 0xC6
+            // <empty> 0xC7
             #endregion
 
             #region [0xC8, 0xD0): Number Values
             /// <summary>
             /// Type marker for a 1-byte unsigned integer
             /// </summary>
-            public const byte UInt8 = 0xC8;
+            public const byte NumberUInt8 = 0xC8;
 
             /// <summary>
             /// Type marker for a 2-byte singed integer
             /// </summary>
-            public const byte Int16 = 0xC9;
+            public const byte NumberInt16 = 0xC9;
 
             /// <summary>
             /// Type marker for a 4-byte singed integer
             /// </summary>
-            public const byte Int32 = 0xCA;
+            public const byte NumberInt32 = 0xCA;
 
             /// <summary>
             /// Type marker for a 8-byte singed integer
             /// </summary>
-            public const byte Int64 = 0xCB;
+            public const byte NumberInt64 = 0xCB;
 
             /// <summary>
             /// Type marker for a Double-precession floating point number
             /// </summary>
-            public const byte Double = 0xCC;
+            public const byte NumberDouble = 0xCC;
 
-            // <number reserved> 0xCD
-            // <number reserved> 0xCE
+            /// <summary>
+            /// Type marker for a single precision floating point number.
+            /// </summary>
+            public const byte Float32 = 0xCD;
+
+            /// <summary>
+            /// Type marker for double precision floating point number.
+            /// </summary>
+            public const byte Float64 = 0xCE;
+
             // <number reserved> 0xCF
             #endregion
 
@@ -801,17 +896,41 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             public const byte True = 0xD2;
 
-            // <other types reserved> 0xD3
-            // <other types reserved> 0xD4
-            // <other types reserved> 0xD5
-            // <other types reserved> 0xD6
-            // <other types reserved> 0xD7
+            /// <summary>
+            /// The type marker for a GUID
+            /// </summary>
+            public const byte Guid = 0xD3;
 
-            // <other types reserved> 0xD8
-            // <other types reserved> 0xD9
-            // <other types reserved> 0xDA
-            // <other types reserved> 0xDB
-            // <other types reserved> 0xDC
+            // <other types empty> 0xD4
+            // <other types empty> 0xD5
+            // <other types empty> 0xD6
+            // <other types empty> 0xD7
+
+            /// <summary>
+            /// The type marker for a 1-byte signed integer value.
+            /// </summary>
+            public const byte Int8 = 0xD8;
+
+            /// <summary>
+            /// The type marker for a 2-byte signed integer value.
+            /// </summary>
+            public const byte Int16 = 0xD9;
+
+            /// <summary>
+            /// The type marker for a 4-byte signed integer value.
+            /// </summary>
+            public const byte Int32 = 0xDA;
+
+            /// <summary>
+            /// The type marker for a 8-byte signed integer value.
+            /// </summary>
+            public const byte Int64 = 0xDB;
+
+            /// <summary>
+            /// The type marker for a 4-byte signed integer value.
+            /// </summary>
+            public const byte UInt32 = 0xDC;
+
             // <other types reserved> 0xDD
             // <other types reserved> 0xDE
             // <other types reserved> 0xDF
@@ -933,7 +1052,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="value">The input integer.</param>
             /// <returns>Whether an integer can be encoded as a literal.</returns>
-            public static bool IsEncodedIntegerLiteral(long value)
+            public static bool IsEncodedNumberLiteral(long value)
             {
                 return InRange(value, LiteralIntMin, LiteralIntMax);
             }
@@ -943,9 +1062,9 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="value">The input integer.</param>
             /// <returns>Whether an integer is a fixed length integer.</returns>
-            public static bool IsFixedLengthInteger(long value)
+            public static bool IsFixedLengthNumber(long value)
             {
-                return InRange(value, UInt8, Double + 1);
+                return InRange(value, NumberUInt8, NumberDouble + 1);
             }
 
             /// <summary>
@@ -955,7 +1074,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>Whether an integer is a number.</returns>
             public static bool IsNumber(long value)
             {
-                return IsEncodedIntegerLiteral(value) || IsFixedLengthInteger(value);
+                return IsEncodedNumberLiteral(value) || IsFixedLengthNumber(value);
             }
 
             /// <summary>
@@ -965,7 +1084,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>The integer encoded as a literal if it can; else Invalid</returns>
             public static byte EncodeIntegerLiteral(long value)
             {
-                return IsEncodedIntegerLiteral(value) ? (byte)(LiteralIntMin + value) : Invalid;
+                return IsEncodedNumberLiteral(value) ? (byte)(LiteralIntMin + value) : Invalid;
             }
             #endregion
 
@@ -981,23 +1100,13 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <summary>
-            /// Gets whether a typeMarker is for a two byte encoded system string.
-            /// </summary>
-            /// <param name="typeMarker">The input type marker.</param>
-            /// <returns>Whether the typeMarker is for a two byte encoded system string.</returns>
-            public static bool IsTwoByteEncodedSystemString(byte typeMarker)
-            {
-                return InRange(typeMarker, SystemString2ByteLengthMin, SystemString2ByteLengthMax);
-            }
-
-            /// <summary>
             /// Gets whether a typeMarker is for a system string.
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a system string.</returns>
             public static bool IsSystemString(byte typeMarker)
             {
-                return IsOneByteEncodedSystemString(typeMarker) || IsTwoByteEncodedSystemString(typeMarker);
+                return IsOneByteEncodedSystemString(typeMarker);
             }
 
             /// <summary>
@@ -1047,7 +1156,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>Whether the typeMarker is for a two byte encoded string.</returns>
             public static bool IsTwoByteEncodedString(byte typeMarker)
             {
-                return InRange(typeMarker, SystemString2ByteLengthMin, UserString2ByteLengthMax);
+                return IsTwoByteEncodedUserString(typeMarker);
             }
 
             /// <summary>
@@ -1087,7 +1196,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>Whether the typeMarker is for a variable length compressed string.</returns>
             public static bool IsVarLengthCompressedString(byte typeMarker)
             {
-                return InRange(typeMarker, CompressedString1ByteLength, CompressedString4ByteLength + 1);
+                return InRange(typeMarker, Binary1ByteLength, Binary4ByteLength + 1);
             }
 
             /// <summary>
@@ -1097,7 +1206,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>Whether the typeMarker is for a string.</returns>
             public static bool IsString(byte typeMarker)
             {
-                return InRange(typeMarker, SystemString1ByteLengthMin, CompressedString4ByteLength + 1);
+                return InRange(typeMarker, SystemString1ByteLengthMin, Binary4ByteLength + 1);
             }
 
             /// <summary>
@@ -1162,7 +1271,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 return (typeMarker == False) || (typeMarker == True);
             }
 
-            // Array/Object Type Markers
+            public static bool IsGuid(byte typeMarker)
+            {
+                return typeMarker == Guid;
+            }
+            #endregion
+
+            #region Array/Object Type Markers
 
             /// <summary>
             /// Gets whether a type marker is for an array.
@@ -1282,13 +1397,22 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private static class ValueTypes
         {
-            private const JsonNodeType Null = JsonNodeType.Null;
-            private const JsonNodeType False = JsonNodeType.False;
-            private const JsonNodeType True = JsonNodeType.True;
-            private const JsonNodeType Number = JsonNodeType.Number;
-            private const JsonNodeType String = JsonNodeType.String;
             private const JsonNodeType Array = JsonNodeType.Array;
+            private const JsonNodeType Binary = JsonNodeType.Binary;
+            private const JsonNodeType False = JsonNodeType.False;
+            private const JsonNodeType Float32 = JsonNodeType.Float32;
+            private const JsonNodeType Float64 = JsonNodeType.Float64;
+            private const JsonNodeType Guid = JsonNodeType.Guid;
+            private const JsonNodeType Int16 = JsonNodeType.Int16;
+            private const JsonNodeType Int32 = JsonNodeType.Int32;
+            private const JsonNodeType Int64 = JsonNodeType.Int64;
+            private const JsonNodeType Int8 = JsonNodeType.Int8;
+            private const JsonNodeType Null = JsonNodeType.Null;
+            private const JsonNodeType Number = JsonNodeType.Number;
             private const JsonNodeType Object = JsonNodeType.Object;
+            private const JsonNodeType String = JsonNodeType.String;
+            private const JsonNodeType True = JsonNodeType.True;
+            private const JsonNodeType UInt32 = JsonNodeType.UInt32;
             private const JsonNodeType Unknown = JsonNodeType.Unknown;
 
             private static JsonNodeType[] types =
@@ -1311,10 +1435,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,
 
-                // Encoded 2-byte system string (8 values)
+                // Encoded 2-byte user string (32 values)
                 String, String, String, String, String, String, String, String,
-
-                // Encoded 2-byte user string (24 values)
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,
@@ -1329,44 +1451,44 @@ namespace Microsoft.Azure.Cosmos.Json
                 String, String, String, String, String, String, String, String,
                 String, String, String, String, String, String, String, String,
 
-                // Variable Length String Values
+                // Variable Length String Values / Binary Values
                 String,     // StrL1 (1-byte length)
                 String,     // StrL2 (2-byte length)
                 String,     // StrL4 (4-byte length)
-                String,     // CStrL1 (1-byte compressed length and actual length)
-                String,     // CStrL2 (2-byte compressed length and actual length)
-                String,     // CStrL4 (4-byte compressed length and actual length)
-                Unknown,    // <string reserved> 0xC6
-                Unknown,    // <string reserved> 0xC7
+                Binary,     // BinL1 (1-byte length)
+                Binary,     // BinL2 (2-byte length)
+                Binary,     // BinL4 (4-byte length)
+                Unknown,    // <empty> 0xC6
+                Unknown,    // <empty> 0xC7
 
                 // Number Values
-                Number,     // UInt8
-                Number,     // Int16,
-                Number,     // Int32,
-                Number,     // Int64,
-                Number,     // Double,
-                Unknown,    // <number reserved> 0xCD
-                Unknown,    // <number reserved> 0xCE
-                Unknown,    // <number reserved> 0xCF
+                Number,     // NumUI8
+                Number,     // NumI16,
+                Number,     // NumI32,
+                Number,     // NumI64,
+                Number,     // NumDbl,
+                Float32,    // Float32
+                Float64,    // Float64
+                Unknown,    // <empty> 0xCF
 
                 // Other Value Types
                 Null,       // Null
                 False,      // False
                 True,       // True
-                Unknown,    // <other types reserved> 0xD3
-                Unknown,    // <other types reserved> 0xD4
-                Unknown,    // <other types reserved> 0xD5
-                Unknown,    // <other types reserved> 0xD6
-                Unknown,    // <other types reserved> 0xD7
+                Guid,       // Guid
+                Unknown,    // <empty> 0xD4
+                Unknown,    // <empty> 0xD5
+                Unknown,    // <empty> 0xD6
+                Unknown,    // <empty> 0xD7
 
-                Unknown,    // <other types reserved> 0xD8
-                Unknown,    // <other types reserved> 0xD9
-                Unknown,    // <other types reserved> 0xDA
-                Unknown,    // <other types reserved> 0xDB
-                Unknown,    // <other types reserved> 0xDC
-                Unknown,    // <other types reserved> 0xDD
-                Unknown,    // <other types reserved> 0xDE
-                Unknown,    // <other types reserved> 0xDF
+                Int8,       // Int8
+                Int16,      // Int16
+                Int32,      // Int32
+                Int64,      // Int64
+                UInt32,     // UInt32
+                Unknown,    // <empty> 0xDD
+                Unknown,    // <empty> 0xDE
+                Unknown,    // <empty> 0xDF
 
                 // Array Type Markers
                 Array,      // Arr0
@@ -1455,11 +1577,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1, 1, 1,
-
-                // Encoded 2-byte system string (8 values)
-                2, 2, 2, 2, 2, 2, 2, 2, 
     
-                // Encoded 2-byte user string (24 values)
+                // Encoded 2-byte user string (32 values)
+                2, 2, 2, 2, 2, 2, 2, 2,
                 2, 2, 2, 2, 2, 2, 2, 2,
                 2, 2, 2, 2, 2, 2, 2, 2,
                 2, 2, 2, 2, 2, 2, 2, 2,
@@ -1474,44 +1594,44 @@ namespace Microsoft.Azure.Cosmos.Json
                 49, 50, 51, 52, 53, 54, 55, 56,
                 57, 58, 59, 60, 61, 62, 63, 64,
 
-                // Variable Length String Values
+                // Variable Length String Values / Binary Values
                 L1,     // StrL1 (1-byte length)
                 L2,     // StrL2 (2-byte length)
                 L4,     // StrL4 (4-byte length)
-                LC1,    // CStrL1 (1-byte compressed length and actual length)
-                LC2,    // CStrL2 (2-byte compressed length and actual length)
-                LC4,    // CStrL4 (4-byte compressed length and actual length)
-                0,      // <string reserved> 0xC6
-                0,      // <string reserved> 0xC7
+                L1,     // BinL1 (1-byte length)
+                L2,     // BinL2 (2-byte length)
+                L4,     // BinL4 (4-byte length)
+                0,      // <empty> 0xC6
+                0,      // <empty> 0xC7
 
                 // Number Values
-                2,      // UInt8
-                3,      // Int16,
-                5,      // Int32,
-                9,      // Int64,
-                9,      // Double,
-                0,      // <number reserved> 0xCD
-                0,      // <number reserved> 0xCE
-                0,      // <number reserved> 0xCF
+                2,      // NumUI8
+                3,      // NumI16,
+                5,      // NumI32,
+                9,      // NumI64,
+                9,      // NumDbl,
+                5,      // Float32
+                9,      // Float64
+                0,      // <empty> 0xCF
 
                 // Other Value Types
                 1,      // Null
                 1,      // False
                 1,      // True
-                0,      // <other types reserved> 0xD3
-                0,      // <other types reserved> 0xD4
-                0,      // <other types reserved> 0xD5
-                0,      // <other types reserved> 0xD6
-                0,      // <other types reserved> 0xD7
+                17,     // Guid
+                0,      // <empty> 0xD4
+                0,      // <empty> 0xD5
+                0,      // <empty> 0xD6
+                0,      // <empty> 0xD7
 
-                0,      // <other types reserved> 0xD8
-                0,      // <other types reserved> 0xD9
-                0,      // <other types reserved> 0xDA
-                0,      // <other types reserved> 0xDB
-                0,      // <other types reserved> 0xDC
-                0,      // <other types reserved> 0xDD
-                0,      // <other types reserved> 0xDE
-                0,      // <other types reserved> 0xDF
+                2,      // Int8
+                3,      // Int16
+                5,      // Int32
+                9,      // Int64
+                5,      // UInt32
+                0,      // <empty> 0xDD
+                0,      // <empty> 0xDE
+                0,      // <empty> 0xDF
 
                 // Array Type Markers
                 1,      // Arr0
@@ -1610,15 +1730,11 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             private const int SysStr1 = -1;
             private const int UsrStr1 = -2;
-            private const int SysStr2 = -3;
-            private const int UsrStr2 = -4;
-            private const int StrL1 = -5;
-            private const int StrL2 = -6;
-            private const int StrL4 = -7;
-            private const int CStrL1 = -8;
-            private const int CStrL2 = -9;
-            private const int CStrL4 = -10;
-            private const int NotStr = -11;
+            private const int UsrStr2 = -3;
+            private const int StrL1 = -4;
+            private const int StrL2 = -5;
+            private const int StrL4 = -6;
+            private const int NotStr = -7;
 
             /// <summary>
             /// Lookup table for encoded string length for each TypeMarker value (0 to 255)
@@ -1645,11 +1761,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1,
                 UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1,
                 UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1,
-
-                // Encoded 2-byte system string (8 values) 
-                SysStr2, SysStr2, SysStr2, SysStr2, SysStr2, SysStr2, SysStr2, SysStr2, 
     
                 // Encoded 2-byte user string (24 values) 
+                UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2,
                 UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2,
                 UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2,
                 UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2,
@@ -1664,44 +1778,44 @@ namespace Microsoft.Azure.Cosmos.Json
                 48, 49, 50, 51, 52, 53, 54, 55,
                 56, 57, 58, 59, 60, 61, 62, 63,
 
-                // Variable Length String Values
+                // Variable Length String Values / Binary Values
                 StrL1,      // StrL1 (1-byte length)
                 StrL2,      // StrL2 (2-byte length)
                 StrL4,      // StrL4 (4-byte length)
-                CStrL1,     // CStrL1 (1-byte compressed length and actual length)
-                CStrL2,     // CStrL2 (2-byte compressed length and actual length)
-                CStrL4,     // CStrL4 (4-byte compressed length and actual length)
-                NotStr,     // <string reserved> 0xC6
-                NotStr,     // <string reserved> 0xC7
+                NotStr,     // BinL1 (1-byte length)
+                NotStr,     // BinL2 (2-byte length)
+                NotStr,     // BinL4 (4-byte length)
+                NotStr,     // <empty> 0xC6
+                NotStr,     // <empty> 0xC7
 
                 // Number Values
-                NotStr,     // UInt8
-                NotStr,     // Int16,
-                NotStr,     // Int32,
-                NotStr,     // Int64,
-                NotStr,     // Double,
-                NotStr,     // <number reserved> 0xCD
-                NotStr,     // <number reserved> 0xCE
-                NotStr,     // <number reserved> 0xCF
+                NotStr,     // NumUI8
+                NotStr,     // NumI16,
+                NotStr,     // NumI32,
+                NotStr,     // NumI64,
+                NotStr,     // NumDbl,
+                NotStr,     // Float32
+                NotStr,     // Float64
+                NotStr,     // <empty> 0xCF
 
                 // Other Value Types
                 NotStr,     // Null
                 NotStr,     // False
                 NotStr,     // True
-                NotStr,     // <other types reserved> 0xD3
-                NotStr,     // <other types reserved> 0xD4
-                NotStr,     // <other types reserved> 0xD5
-                NotStr,     // <other types reserved> 0xD6
-                NotStr,     // <other types reserved> 0xD7
+                NotStr,     // Guid
+                NotStr,     // <empty> 0xD4
+                NotStr,     // <empty> 0xD5
+                NotStr,     // <empty> 0xD6
+                NotStr,     // <empty> 0xD7
 
-                NotStr,     // <other types reserved> 0xD8
-                NotStr,     // <other types reserved> 0xD9
-                NotStr,     // <other types reserved> 0xDA
-                NotStr,     // <other types reserved> 0xDB
-                NotStr,     // <other types reserved> 0xDC
-                NotStr,     // <other types reserved> 0xDD
-                NotStr,     // <other types reserved> 0xDE
-                NotStr,     // <other types reserved> 0xDF
+                NotStr,     // Int8
+                NotStr,     // Int16
+                NotStr,     // Int32
+                NotStr,     // Int64
+                NotStr,     // UInt32
+                NotStr,     // <empty> 0xDD
+                NotStr,     // <empty> 0xDE
+                NotStr,     // <empty> 0xDF
 
                 // Array Type Markers
                 NotStr,     // Arr0
@@ -1778,10 +1892,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
 
-                // Encoded 2-byte system string (8 values)
-                0, 0, 0, 0, 0, 0, 0, 0, 
-    
-                // Encoded 2-byte user string (24 values)
+                // Encoded 2-byte user string (32 values)
+                0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1796,44 +1908,44 @@ namespace Microsoft.Azure.Cosmos.Json
                 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
 
-                // Variable Length String Values
+                // Variable Length String Values / Binary Values
                 0,      // StrL1 (1-byte length)
                 0,      // StrL2 (2-byte length)
                 0,      // StrL4 (4-byte length)
-                0,      // CStrL1 (1-byte compressed length and actual length)
-                0,      // CStrL2 (2-byte compressed length and actual length)
-                0,      // CStrL4 (4-byte compressed length and actual length)
-                0,      // <string reserved> 0xC6
-                0,      // <string reserved> 0xC7
+                0,      // BinL1 (1-byte length)
+                0,      // BinL2 (2-byte length)
+                0,      // BinL4 (4-byte length)
+                0,      // <empty> 0xC6
+                0,      // <empty> 0xC7
 
-                // Number Values
-                0,      // UInt8
-                0,      // Int16,
-                0,      // Int32,
-                0,      // Int64,
-                0,      // Double,
-                0,      // <number reserved> 0xCD
-                0,      // <number reserved> 0xCE
-                0,      // <number reserved> 0xCF
+                // Numeric Values
+                0,      // NumUI8
+                0,      // NumI16,
+                0,      // NumI32,
+                0,      // NumI64,
+                0,      // NumDbl,
+                0,      // Float32
+                0,      // Float64
+                0,      // <empty> 0xCF
 
                 // Other Value Types
                 0,      // Null
                 0,      // False
                 0,      // True
-                0,      // <other types reserved> 0xD3
-                0,      // <other types reserved> 0xD4
-                0,      // <other types reserved> 0xD5
-                0,      // <other types reserved> 0xD6
-                0,      // <other types reserved> 0xD7
+                0,      // Guid
+                0,      // <empty> 0xD4
+                0,      // <empty> 0xD5
+                0,      // <empty> 0xD6
+                0,      // <empty> 0xD7
 
-                0,      // <other types reserved> 0xD8
-                0,      // <other types reserved> 0xD9
-                0,      // <other types reserved> 0xDA
-                0,      // <other types reserved> 0xDB
-                0,      // <other types reserved> 0xDC
-                0,      // <other types reserved> 0xDD
-                0,      // <other types reserved> 0xDE
-                0,      // <other types reserved> 0xDF
+                0,      // Int8
+                0,      // Int16
+                0,      // Int32
+                0,      // Int64
+                0,      // UInt32
+                0,      // <empty> 0xDD
+                0,      // <empty> 0xDE
+                0,      // <empty> 0xDF
 
                 // Array Type Markers
                 1,      // Arr0

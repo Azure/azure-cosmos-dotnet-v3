@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
+    using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -236,20 +237,25 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the time to wait for response to come back from network peer. Default is 60 connections</param>
+        /// <param name="webProxy">Get or set the proxy information used for web requests.</param>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
         /// <seealso cref="CosmosClientOptions.GatewayModeMaxConnectionLimit"/>
-        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null)
+        public CosmosClientBuilder WithConnectionModeGateway(int? maxConnectionLimit = null,
+            IWebProxy webProxy = null)
         {
             this.clientOptions.ConnectionMode = ConnectionMode.Gateway;
             this.clientOptions.ConnectionProtocol = Protocol.Https;
+
             if (maxConnectionLimit.HasValue)
             {
                 this.clientOptions.GatewayModeMaxConnectionLimit = maxConnectionLimit.Value;
             }
+
+            this.clientOptions.WebProxy = webProxy;
 
             return this;
         }
@@ -325,6 +331,23 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithCustomSerializer(CosmosSerializer cosmosJsonSerializer)
         {
             this.clientOptions.Serializer = cosmosJsonSerializer;
+            return this;
+        }
+
+        /// <summary>
+        /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
+        /// </summary>
+        /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBulkExecution"/> is enabled.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="CosmosClientOptions.AllowBulkExecution"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithBulkexecution(bool enabled)
+        {
+            this.clientOptions.AllowBulkExecution = enabled;
             return this;
         }
 
