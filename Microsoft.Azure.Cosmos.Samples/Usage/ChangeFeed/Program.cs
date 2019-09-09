@@ -286,6 +286,11 @@
                 .WithProcessorOptions(new ChangeFeedProcessorLibrary.ChangeFeedProcessorOptions {
                     StartFromBeginning = true,
                     LeasePrefix = "MyLeasePrefix" })
+                 .WithProcessorOptions(new ChangeFeedProcessorLibrary.ChangeFeedProcessorOptions()
+                 {
+                     MaxItemCount = 10,
+                     FeedPollDelay = TimeSpan.FromSeconds(1)
+                 })
                 .WithFeedCollection(monitoredCollectionInfo)
                 .WithLeaseCollection(leaseCollectionInfo)
                 .WithObserver<ChangeFeedObserver>()
@@ -310,6 +315,8 @@
                 .GetChangeFeedProcessorBuilder<ToDoItem>("MyLeasePrefix", Program.HandleChangesAsync)
                     .WithInstanceName("consoleHost")
                     .WithLeaseContainer(leaseContainer)
+                    .WithMaxItems(10)
+                    .WithPollInterval(TimeSpan.FromSeconds(1))
                     .WithStartTime(DateTime.MinValue.ToUniversalTime())
                     .Build();
             // </ChangeFeedProcessorMigrated>
