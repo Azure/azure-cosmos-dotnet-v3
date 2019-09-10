@@ -9,8 +9,6 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
-    <DirectVersion>3.2.1</DirectVersion>
-    <HybridRowVersion>1.0.0-preview</HybridRowVersion>
   </PropertyGroup>
 
   <Import Project="..\..\version.props"/>
