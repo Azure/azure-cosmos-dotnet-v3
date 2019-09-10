@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal string SessionToken { get; set; }
 
-        internal CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
+        internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the flag that enables skip take across partitions.
@@ -193,9 +193,9 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
 
-            if (this.CosmosSerializationOptions != null)
+            if (this.CosmosSerializationFormatOptions != null)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationOptions.ContentSerializationFormat);
+                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
             }
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel = this.ConsistencyLevel,
                 MaxConcurrency = this.MaxConcurrency,
                 PartitionKey = this.PartitionKey,
-                CosmosSerializationOptions = this.CosmosSerializationOptions,
+                CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
                 EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
                 EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties,
@@ -226,22 +226,6 @@ namespace Microsoft.Azure.Cosmos
             };
 
             return queryRequestOptions;
-        }
-
-        internal FeedOptions ToFeedOptions()
-        {
-            return new FeedOptions()
-            {
-                MaxDegreeOfParallelism = this.MaxConcurrency.HasValue ? this.MaxConcurrency.Value : 0,
-                PartitionKey = this.PartitionKey != null ? new Documents.PartitionKey(this.PartitionKey) : null,
-                ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
-                EnableScanInQuery = this.EnableScanInQuery,
-                EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
-                MaxBufferedItemCount = this.MaxBufferedItemCount.HasValue ? this.MaxBufferedItemCount.Value : 0,
-                CosmosSerializationOptions = this.CosmosSerializationOptions,
-                Properties = this.Properties,
-                EnableGroupBy = this.EnableGroupBy
-            };
         }
 
         internal static void FillContinuationToken(

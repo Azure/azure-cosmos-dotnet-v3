@@ -51,7 +51,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         private int numPagesDrainedFromGroupingTable;
         private bool isDone;
-        private string containerRid;
 
         private GroupByDocumentQueryExecutionComponent(
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
@@ -87,25 +86,23 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 await createSourceCallback(requestContinuation));
         }
 
-        public override async Task<QueryResponse> DrainAsync(
+        public override async Task<QueryResponseCore> DrainAsync(
             int maxElements,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             // Draining GROUP BY is broken down into two stages:
-            QueryResponse response;
+            QueryResponseCore response;
             if (!this.Source.IsDone)
             {
                 // Stage 1: 
                 // Drain the groupings fully from all continuation and all partitions
-                QueryResponse sourceResponse = await base.DrainAsync(int.MaxValue, cancellationToken);
-                if (!sourceResponse.IsSuccessStatusCode)
+                QueryResponseCore sourceResponse = await base.DrainAsync(int.MaxValue, cancellationToken);
+                if (!sourceResponse.IsSuccess)
                 {
                     return sourceResponse;
                 }
-
-                this.containerRid = sourceResponse.QueryHeaders.ContainerRid;
 
                 foreach (CosmosElement result in sourceResponse.CosmosElements)
                 {
@@ -130,14 +127,18 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     singleGroupAggregator.AddValues(payload);
                 }
 
-                string updatedContinuationToken = null;
-
                 // We need to give empty pages until the results are fully drained.
-                response = QueryResponse.CreateSuccess(
-                    EmptyResults,
-                    EmptyResults.Count,
-                    sourceResponse.ResponseLengthBytes,
-                    sourceResponse.QueryHeaders.CloneKnownProperties(updatedContinuationToken, GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy));
+                response = QueryResponseCore.CreateSuccess(
+                    result: EmptyResults,
+                    continuationToken: null,
+                    disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
+                    activityId: sourceResponse.ActivityId,
+                    requestCharge: sourceResponse.RequestCharge,
+                    queryMetricsText: sourceResponse.QueryMetricsText,
+                    queryMetrics: sourceResponse.QueryMetrics,
+                    requestStatistics: sourceResponse.RequestStatistics,
+                    responseLengthBytes: sourceResponse.ResponseLengthBytes);
+
                 this.isDone = false;
             }
             else
@@ -156,15 +157,16 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     results.Add(groupByValues.GetResult());
                 }
 
-                response = QueryResponse.CreateSuccess(
-                    results,
-                    results.Count,
-                    responseLengthBytes: 0,
-                    responseHeaders: new CosmosQueryResponseMessageHeaders(
-                        continauationToken: null,
-                        disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
-                        resourceType: Documents.ResourceType.Document,
-                        containerRid: this.containerRid));
+                response = QueryResponseCore.CreateSuccess(
+                   result: results,
+                   continuationToken: null,
+                   disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
+                   activityId: null,
+                   requestCharge: 0,
+                   queryMetricsText: null,
+                   queryMetrics: EmptyQueryMetrics,
+                   requestStatistics: null,
+                   responseLengthBytes: 0);
 
                 this.numPagesDrainedFromGroupingTable++;
                 if (this.numPagesDrainedFromGroupingTable * maxElements >= this.groupingTable.Count)

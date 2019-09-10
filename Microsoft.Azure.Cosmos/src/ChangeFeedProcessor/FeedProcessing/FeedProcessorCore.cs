@@ -116,12 +116,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             Collection<T> asFeedResponse;
             try
             {
-                asFeedResponse = cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                asFeedResponse = this.cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
             }
             catch (Exception serializationException)
             {
                 // Error using custom serializer to parse stream
                 throw new ObserverException(serializationException);
+            }
+
+            // When StartFromBeginning is used, the first request returns OK but no content
+            if (asFeedResponse.Count == 0)
+            {
+                return Task.CompletedTask;
             }
 
             List<T> asReadOnlyList = new List<T>(asFeedResponse.Count);

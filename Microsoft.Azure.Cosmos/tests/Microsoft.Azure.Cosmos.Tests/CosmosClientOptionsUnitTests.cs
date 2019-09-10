@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.IO;
+    using System.Net;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeSpan openTcpConnectionTimeout = new TimeSpan(0, 0, 5);
             int maxRequestsPerTcpConnection = 30;
             int maxTcpConnectionsPerEndpoint = 65535;
+            IWebProxy webProxy = new TestWebProxy();
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -60,9 +63,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
             Assert.AreNotEqual(userAgentSuffix, clientOptions.ApplicationName);
             Assert.AreNotEqual(apiType, clientOptions.ApiType);
+            Assert.IsFalse(clientOptions.AllowBulkExecution);
             Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
             Assert.IsNull(clientOptions.SerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
+            Assert.IsNull(clientOptions.WebProxy);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -76,12 +81,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
 
             cosmosClientBuilder.WithApplicationRegion(region)
-                .WithConnectionModeGateway(maxConnections)
+                .WithConnectionModeGateway(maxConnections, webProxy)
                 .WithRequestTimeout(requestTimeout)
                 .WithApplicationName(userAgentSuffix)
                 .AddCustomHandlers(preProcessHandler)
                 .WithApiType(apiType)
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                .WithBulkexecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -100,6 +106,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.IgnoreNullValues);
             Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
+            Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
+            Assert.IsTrue(clientOptions.AllowBulkExecution);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -312,13 +320,71 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                ConnectionMode = ConnectionMode.Gateway            
+                ConnectionMode = ConnectionMode.Gateway
             };
             
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.IdleTcpConnectionTimeout = idleTcpConnectionTimeout; });
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.OpenTcpConnectionTimeout = openTcpConnectionTimeout; });
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.MaxRequestsPerTcpConnection = maxRequestsPerTcpConnection; });
             Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.MaxTcpConnectionsPerEndpoint = maxTcpConnectionsPerEndpoint; });
+        }
+
+        [TestMethod]
+        public void VerifyHttpClientHandlerSettingsThrowIfNotUsedInGatewayMode()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct
+            };
+
+            Assert.ThrowsException<ArgumentException>(() => { cosmosClientOptions.WebProxy = new TestWebProxy(); });
+        }
+
+        [TestMethod]
+        public void VerifyHttpClientHandlerIsSet()
+        {
+            string endpoint = AccountEndpoint;
+            string key = "425Mcv8CXQqzRNCgFNjIhT424GK99CKJvASowTnq15Vt8LeahXTcN5wt3342vQ==";
+
+            IWebProxy webProxy = new TestWebProxy();
+
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+            cosmosClientBuilder.WithConnectionModeGateway(
+                maxConnectionLimit: null,
+                webProxy: webProxy);
+
+            CosmosClient cosmosClient = cosmosClientBuilder.Build();
+            DelegatingHandler handler = (DelegatingHandler) cosmosClient.DocumentClient.httpMessageHandler;
+            HttpClientHandler innerHandler = (HttpClientHandler)handler.InnerHandler;
+
+            Assert.IsTrue(object.ReferenceEquals(webProxy, innerHandler.Proxy));
+        }
+
+        [TestMethod]
+        public void VerifyCorrectProtocolIsSet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway };
+            Assert.AreEqual(Protocol.Https, cosmosClientOptions.ConnectionProtocol);
+
+            cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct };
+            Assert.AreEqual(Protocol.Tcp, cosmosClientOptions.ConnectionProtocol);
+        }
+
+        private class TestWebProxy : IWebProxy
+        {
+            public ICredentials Credentials { get; set; }
+
+            public Uri GetProxy(Uri destination)
+            {
+                return new Uri("https://www.test.com");
+            }
+
+            public bool IsBypassed(Uri host)
+            {
+                return false;
+            }
         }
     }
 }

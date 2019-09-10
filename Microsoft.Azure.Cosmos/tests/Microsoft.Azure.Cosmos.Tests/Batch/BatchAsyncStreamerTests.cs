@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.ExecutorWithFailure, this.Retrier);
             ItemBatchOperationContext context = AttachContext(this.ItemBatchOperation);
             batchAsyncStreamer.Add(this.ItemBatchOperation);
-            Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => context.Task);
+            Exception capturedException = await Assert.ThrowsExceptionAsync<Exception>(() => context.OperationTask);
             Assert.AreEqual(expectedException, capturedException);
         }
 
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(2, MaxBatchByteSize, DispatchTimerInSeconds, this.TimerPool, new CosmosJsonDotNetSerializer(), this.Executor, this.Retrier);
             ItemBatchOperationContext context = AttachContext(this.ItemBatchOperation);
             batchAsyncStreamer.Add(this.ItemBatchOperation);
-            BatchOperationResult result = await context.Task;
+            BatchOperationResult result = await context.OperationTask;
 
             Assert.AreEqual(this.ItemBatchOperation.Id, result.ETag);
         }
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, i.ToString());
                 ItemBatchOperationContext context = AttachContext(operation);
                 batchAsyncStreamer.Add(operation);
-                contexts.Add(context.Task);
+                contexts.Add(context.OperationTask);
             }
 
             await Task.WhenAll(contexts);

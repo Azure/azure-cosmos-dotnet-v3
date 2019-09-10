@@ -8,7 +8,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
     <AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests</AssemblyName>
-    <DirectVersion>3.1.6</DirectVersion>
+    <DirectVersion>3.2.1</DirectVersion>
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
   </PropertyGroup>
 
@@ -243,7 +243,12 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Batch\" />
+    <Reference Include="Microsoft.Azure.Cosmos.Core">
+      <HintPath>C:\Users\abpai\.nuget\packages\microsoft.azure.cosmos.direct.myget\3.0.0.33-preview\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow">
+      <HintPath>C:\Users\abpai\.nuget\packages\microsoft.azure.cosmos.direct.myget\3.0.0.33-preview\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <PropertyGroup>

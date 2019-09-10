@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Common
 
         public void Set(TKey key, TValue value)
         {
-            AsyncLazy<TValue> lazyValue = new AsyncLazy<TValue>(() => value, CancellationToken.None);
+            AsyncLazy<TValue> lazyValue = new AsyncLazy<TValue>(value);
 
             // Access it to mark as created+completed, so that further calls to getasync do not overwrite.
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits

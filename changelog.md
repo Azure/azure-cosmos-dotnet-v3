@@ -8,15 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/100) Configurable Tcp settings to CosmosClientOptions
-- [#615](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/615) Adding basic request diagnostics for V3
-- [#729](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/729) Adding aggregate(CountAsync/SumAsync etc.) extensions for LINQ query
+- [#615](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/615) Added request diagnostics to Response's
 - [#622](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/622) Added CRUD and query operations for Users and Permissions which enables [ResourceToken](https://docs.microsoft.com/en-us/azure/cosmos-db/secure-access-to-data#resource-tokens) support
-- [#716](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/716) Adding camel case serialization on LINQ query generation
+- [#716](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/716) Added camel case serialization on LINQ query generation
+- [#729](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/729) Added aggregate(CountAsync/SumAsync etc.) extensions for LINQ query
+- [#743](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/743) Added WebProxy to CosmosClientOptions
+- [#776](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/776) Converted all aggregate linq queries to return Response<T> to allow access to request charge and diagnostics
 
 ### Fixed
 
 - [#726](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/726) Query iterator HasMoreResults now returns false if an exception is hit
 - [#705](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/705) User agent suffix gets truncated
+- [#753](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/753) Reason was not being propagated for Conflict exceptions
+- [#756](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/756) Change Feed Processor with WithStartTime would execute the delegate the first time with no items.
+- [#761](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/761) CosmosClient deadlocks when using a custom Task Scheduler like Orleans (Thanks to jkonecki)
+- [#769](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/769) Session Consistency + Gateway mode session-token bug fix: Under few rare non-success cases session token might be in-correct
 
 ## [3.1.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.1) - 2019-08-12
 
