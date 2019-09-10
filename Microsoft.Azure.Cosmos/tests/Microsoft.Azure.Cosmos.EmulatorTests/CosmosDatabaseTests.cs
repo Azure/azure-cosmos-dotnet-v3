@@ -216,38 +216,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task SharedThroughputTests()
-        {
-            string databaseId = Guid.NewGuid().ToString();
-            int throughput = 10000;
-            DatabaseResponse createResponse = await this.CreateDatabaseHelper(databaseId, databaseExists: false, throughput: throughput);
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-
-            Cosmos.Database cosmosDatabase = createResponse;
-            int? readThroughput = await cosmosDatabase.ReadThroughputAsync();
-            Assert.AreEqual(throughput, readThroughput);
-
-            string containerId = Guid.NewGuid().ToString();
-            string partitionPath = "/users";
-            ContainerResponse containerResponse = await cosmosDatabase.CreateContainerAsync(containerId, partitionPath);
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-
-            Container container = containerResponse;
-            try
-            {
-                readThroughput = await ((ContainerCore)container).ReadThroughputAsync();
-                Assert.Fail("Should through not found exception as throughput is not configured");
-            }
-            catch (CosmosException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
-            }
-
-            await container.DeleteContainerAsync();
-            await cosmosDatabase.DeleteAsync();
-        }
-
-        [TestMethod]
         public async Task ReadReplaceThroughputResponseTests()
         {
             int toStreamCount = 0;
