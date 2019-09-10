@@ -39,13 +39,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int toStreamCount = 0;
             int fromStreamCount = 0;
-            
+
             Mock<CosmosSerializer> mockJsonSerializer = new Mock<CosmosSerializer>();
 
             //The item object will be serialized with the custom json serializer.
-            ToDoActivity testItem = CreateRandomToDoActivity();
+            ToDoActivity testItem = this.CreateRandomToDoActivity();
             mockJsonSerializer.Setup(x => x.ToStream<ToDoActivity>(It.IsAny<ToDoActivity>()))
-                .Callback(()=> toStreamCount++)
+                .Callback(() => toStreamCount++)
                 .Returns(TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
 
             mockJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(It.IsAny<Stream>()))
@@ -83,15 +83,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cost = double.MaxValue
             };
 
-            await container.UpsertItemAsync(document);
+            await this.container.UpsertItemAsync(document);
 
-            ResponseMessage cosmosResponseMessage = await container.ReadItemStreamAsync(document.id, new PartitionKey(document.status));
+            ResponseMessage cosmosResponseMessage = await this.container.ReadItemStreamAsync(document.id, new PartitionKey(document.status));
             StreamReader reader = new StreamReader(cosmosResponseMessage.Content);
             string text = reader.ReadToEnd();
 
             Assert.IsTrue(text.IndexOf(nameof(document.description)) > -1, "Stored item doesn't contains null attributes");
         }
-        
+
         private ToDoActivity CreateRandomToDoActivity(string pk = null)
         {
             if (string.IsNullOrEmpty(pk))
