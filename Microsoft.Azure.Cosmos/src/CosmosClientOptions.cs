@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is true.
         /// </value>
         /// <remarks>
-        /// When the value of this property is true, the SDK will automatically discover the current write and read regions to ensure requests are sent to the correct region based on the region specified in the ApplicationRegion property. When setting the value to false, availability is reduced to that of a single region account to the region specified in ApplicationRegion.</remarks>
+        /// When the value of this property is true, the SDK will automatically discover all account write and read regions, and use them when the configured application region is not available. When set to false, availability is limited to the configured application region only. </remarks>
         /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
         internal bool UseAnyAccountRegion { get; set; } = true;
