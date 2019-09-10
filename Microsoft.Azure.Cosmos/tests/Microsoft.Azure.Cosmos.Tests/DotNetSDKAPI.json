@@ -1549,6 +1549,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
