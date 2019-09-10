@@ -9,11 +9,9 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
-    <DirectVersion>3.2.1</DirectVersion>
-    <HybridRowVersion>1.0.0-preview</HybridRowVersion>
-    <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
-    <DirectPackageName Condition=" '$(SignAssembly)' != 'true' ">Microsoft.Azure.Cosmos.Direct.MyGet</DirectPackageName>
   </PropertyGroup>
+
+  <Import Project="..\..\version.props"/>
 
   <ItemGroup>
     <Compile Remove="Query\TestBaseline\**" />
@@ -27,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="$(DirectPackageName)" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.1.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
@@ -45,7 +43,7 @@
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\microsoft.azure.cosmos.serialization.hybridrow.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="$(NugetPackageRoot)\$(DirectPackageName)\$(DirectVersion)\$(DirectPackageName).nuspec">
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\Microsoft.Azure.Cosmos.Direct.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\src\Microsoft.Azure.Cosmos.csproj">
@@ -226,15 +224,13 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Azure.Cosmos.Core">
-      <HintPath>C:\Users\abpai\.nuget\packages\microsoft.azure.cosmos.direct.myget\3.0.0.33-preview\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow">
-      <HintPath>C:\Users\abpai\.nuget\packages\microsoft.azure.cosmos.direct.myget\3.0.0.33-preview\runtimes\any\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll</HintPath>
-    </Reference>
+    <Folder Include="Batch\" />
   </ItemGroup>
+
   <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   
 </Project>
