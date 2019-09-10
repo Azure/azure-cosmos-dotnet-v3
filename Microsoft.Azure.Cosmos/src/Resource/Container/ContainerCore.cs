@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         public async override Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            ThroughputResponse response = await this.ReadThroughputAsync(null, cancellationToken);
+            ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
             return response.Resource?.Throughput;
         }
 

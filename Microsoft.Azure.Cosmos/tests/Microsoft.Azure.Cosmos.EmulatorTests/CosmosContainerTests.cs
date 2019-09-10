@@ -567,43 +567,75 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReadReplaceThroughputReourceTest()
+        public async Task ReadReplaceThroughputResponseTests()
         {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/users";
+            int toStreamCount = 0;
+            int fromStreamCount = 0;
 
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerName, partitionKeyPath);
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Container container = this.cosmosDatabase.GetContainer(containerName);
+            CosmosSerializerHelper mockJsonSerializer = new CosmosSerializerHelper(
+                null,
+                (x) => fromStreamCount++,
+                (x) => toStreamCount++);
 
-            ThroughputResponse readThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
-            Assert.IsNotNull(readThroughputResponse);
-            Assert.IsNotNull(readThroughputResponse.Resource);
-            Assert.IsNotNull(readThroughputResponse.MinThroughput);
-            Assert.IsNotNull(readThroughputResponse.Resource.Throughput);
+            //Create a new cosmos client with the mocked cosmos json serializer
+            CosmosClient client = TestCommon.CreateCosmosClient(
+                (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer));
 
-            ThroughputResponse replaceThroughputResponse = await container.ReplaceThroughputAsync(readThroughputResponse.Resource.Throughput.Value + 1000);
-            Assert.IsNotNull(replaceThroughputResponse);
-            Assert.IsNotNull(replaceThroughputResponse.Resource);
-            Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
+            int databaseThroughput = 10000;
+            Cosmos.Database databaseNoThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), null);
+            Cosmos.Database databaseWithThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), databaseThroughput, null);
+
+
+            string containerId = Guid.NewGuid().ToString();
+            string partitionPath = "/users";
+            Container containerNoThroughput = await databaseWithThroughput.CreateContainerAsync(containerId, partitionPath, throughput: null);
             try
             {
-                ThroughputResponse nonExistingContainerThroughput = await this.cosmosDatabase
-                        .GetContainer("nonExistingContainer")
-                        .ReadThroughputAsync(new RequestOptions());
-                Assert.Fail("It should throw Resource Not Found exception");
+                await containerNoThroughput.ReadThroughputAsync(new RequestOptions());
+                Assert.Fail("Should through not found exception as throughput is not configured");
             }
-            catch (CosmosException ex)
+            catch (CosmosException exception)
             {
-                Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
             }
 
-            containerResponse = await container.DeleteContainerAsync();
-            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+            try
+            {
+                await containerNoThroughput.ReplaceThroughputAsync(2000, new RequestOptions());
+                Assert.Fail("Should through not found exception as throughput is not configured");
+            }
+            catch (CosmosException exception)
+            {
+                Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
+            }
+
+            int containerThroughput = 1000;
+            Container container = await databaseNoThroughput.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", throughput: containerThroughput);
+
+            int? containerResponseThroughput = await container.ReadThroughputAsync();
+            Assert.AreEqual(containerThroughput, containerResponseThroughput);
+
+            ThroughputResponse containerThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
+            Assert.IsNotNull(containerThroughputResponse);
+            Assert.IsNotNull(containerThroughputResponse.Resource);
+            Assert.IsNotNull(containerThroughputResponse.MinThroughput);
+            Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
+            Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
+
+            containerThroughput += 500;
+            containerThroughputResponse = await container.ReplaceThroughputAsync(containerThroughput, new RequestOptions());
+            Assert.IsNotNull(containerThroughputResponse);
+            Assert.IsNotNull(containerThroughputResponse.Resource);
+            Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
+            Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
+
+            Assert.AreEqual(0, toStreamCount, "Custom serializer to stream should not be used for offer operations");
+            Assert.AreEqual(0, fromStreamCount, "Custom serializer from stream should not be used for offer operations");
+            await databaseNoThroughput.DeleteAsync();
         }
 
         [TestMethod]
-        public async Task ThroughputNonExistingTest()
+        public async Task ThroughputNonExistingResourceTest()
         {
             string containerName = Guid.NewGuid().ToString();
             Container container = this.cosmosDatabase.GetContainer(containerName);

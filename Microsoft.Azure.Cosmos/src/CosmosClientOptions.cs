@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// fallback geo-replicated regions for high availability. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
         /// 
-        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
+        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string, bool)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master"/>
         /// </remarks>
         public string ApplicationRegion { get; set; }
@@ -161,6 +161,15 @@ namespace Microsoft.Azure.Cosmos
             get => this.connectionMode;
             set
             {
+                if (value == ConnectionMode.Gateway)
+                {
+                    this.ConnectionProtocol = Protocol.Https;
+                }
+                else if (value == ConnectionMode.Direct)
+                {
+                    this.connectionProtocol = Protocol.Tcp;
+                }
+
                 this.ValidateDirectTCPSettings();
                 this.connectionMode = value;
             }
@@ -351,6 +360,18 @@ namespace Microsoft.Azure.Cosmos
         bool AllowBulkExecution { get; set; }
 
         /// <summary>
+        /// Allow using account region in-case ApplicationRegion is not available. Defaults to 'true'.
+        /// </summary>
+        /// <value>
+        /// Default value is true.
+        /// </value>
+        /// <remarks>
+        /// When the value of this property is true, the SDK will automatically discover all account write and read regions, and use them when the configured application region is not available. When set to false, availability is limited to the configured application region only. </remarks>
+        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        internal bool UseAnyAccountRegion { get; set; } = true;
+
+        /// <summary>
         /// A JSON serializer used by the CosmosClient to serialize or de-serialize cosmos request/responses.
         /// The default serializer is always used for all system owned types like DatabaseProperties.
         /// The default serializer is used for user types if no UserJsonSerializer is specified
@@ -506,6 +527,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.ApplicationRegion != null)
             {
                 connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
+                connectionPolicy.EnableEndpointDiscovery = this.UseAnyAccountRegion;
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)

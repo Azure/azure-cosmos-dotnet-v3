@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 this.RequestCharge = this.Headers.RequestCharge;
                 this.RetryAfter = this.Headers.RetryAfter;
                 this.SubStatusCode = (int)this.Headers.SubStatusCode;
+                this.Diagnostics = cosmosResponseMessage.Diagnostics;
                 if (this.Headers.ContentLengthAsLong > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(cosmosResponseMessage.Content))
@@ -123,6 +124,11 @@ namespace Microsoft.Azure.Cosmos
         public virtual Headers Headers { get; }
 
         /// <summary>
+        /// Gets the diagnostics for the request
+        /// </summary>
+        public virtual CosmosDiagnostics Diagnostics { get; }
+
+        /// <summary>
         /// Gets the internal error object
         /// </summary>
         internal virtual Error Error { get; }
@@ -150,7 +156,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A string representation of the exception.</returns>
         public override string ToString()
         {
-            return $"{nameof(CosmosException)};StatusCode={this.StatusCode};SubStatusCode={this.SubStatusCode};ActivityId={this.ActivityId ?? string.Empty};RequestCharge={this.RequestCharge};Message={this.Message};";
+            string diagnostics = this.Diagnostics != null ? this.Diagnostics.ToString() : string.Empty;
+            return $"{nameof(CosmosException)};StatusCode={this.StatusCode};SubStatusCode={this.SubStatusCode};ActivityId={this.ActivityId ?? string.Empty};RequestCharge={this.RequestCharge};Message={this.Message};Diagnostics{diagnostics}";
         }
 
         internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)

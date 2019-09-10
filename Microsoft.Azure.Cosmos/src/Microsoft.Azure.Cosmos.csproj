@@ -6,11 +6,6 @@
     <Description>This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/. </Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <ClientVersion>3.1.1</ClientVersion>
-    <DirectVersion>3.2.1</DirectVersion>
-    <HybridRowVersion>1.0.0-preview</HybridRowVersion>
-    <DirectPackageName Condition=" '$(SignAssembly)' == 'true' ">Microsoft.Azure.Cosmos.Direct</DirectPackageName>
-    <DirectPackageName Condition=" '$(SignAssembly)' != 'true' ">Microsoft.Azure.Cosmos.Direct.MyGet</DirectPackageName>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
     <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
@@ -42,7 +37,9 @@
     <RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
     <NoWarn>NU5125</NoWarn>
   </PropertyGroup>
-  
+
+  <Import Project="..\version.props"/>
+
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
@@ -77,7 +74,7 @@
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
 
-    <PackageReference Include="$(DirectPackageName)" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
 
     <!--Direct Dependencies-->
@@ -97,15 +94,23 @@
     <None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-    <None Include="$(NugetPackageRoot)\$(DirectPackageName)\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  
+  <PropertyGroup>
     <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
     <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+    <DefineConstants Condition=" '$(DelaySign)' == 'true' ">DelaySignKeys</DefineConstants>
     <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
   </PropertyGroup>
+  
 </Project>

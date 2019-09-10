@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
 
     internal class CosmosOffers
@@ -51,7 +52,8 @@ namespace Microsoft.Azure.Cosmos
                 return new ThroughputResponse(
                     HttpStatusCode.NotFound,
                     headers: null,
-                    throughputProperties: null);
+                    throughputProperties: null,
+                    diagnostics: null);
             }
 
             return await this.GetThroughputResponseAsync(
@@ -102,25 +104,28 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (DocumentClientException dce)
             {
+                ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
                 return new ThroughputResponse(
-                    dce.StatusCode ?? HttpStatusCode.InternalServerError,
-                    headers: null,
-                    throughputProperties: null);
+                    responseMessage.StatusCode,
+                    headers: responseMessage.Headers,
+                    throughputProperties: null,
+                    diagnostics: responseMessage.Diagnostics);
             }
             catch (AggregateException ex)
             {
-                DocumentClientException dce = ex.Flatten().InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException) as DocumentClientException;
+                ResponseMessage responseMessage = TransportHandler.AggregateExceptionConverter(ex, null);
                 return new ThroughputResponse(
-                    dce?.StatusCode ?? HttpStatusCode.InternalServerError,
-                    headers: null,
-                    throughputProperties: null);
+                    responseMessage.StatusCode,
+                    headers: responseMessage.Headers,
+                    throughputProperties: null,
+                    diagnostics: responseMessage.Diagnostics);
             }
         }
 
         private async Task<OfferV2> GetOfferV2Async(
             string targetRID,
-            bool failIfNotConfigured = true,
-            CancellationToken cancellationToken = default(CancellationToken))
+            bool failIfNotConfigured,
+            CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(targetRID))
             {
@@ -131,13 +136,16 @@ namespace Microsoft.Azure.Cosmos
             queryDefinition.WithParameter("@targetRID", targetRID);
 
             FeedIterator<OfferV2> databaseStreamIterator = this.GetOfferQueryIterator<OfferV2>(
-                 queryDefinition);
+                 queryDefinition: queryDefinition,
+                 continuationToken: null,
+                 requestOptions: null,
+                 cancellationToken: cancellationToken);
             OfferV2 offerV2 = await this.SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
 
             if (offerV2 == null &&
                 failIfNotConfigured)
             {
-                throw new CosmosException(HttpStatusCode.NotFound, "Throughput is not configured");
+                throw new CosmosException(HttpStatusCode.NotFound, $"Throughput is not configured for {targetRID}");
             }
 
             return offerV2;
@@ -145,11 +153,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
             QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken))
+            string continuationToken,
+            QueryRequestOptions requestOptions,
+            CancellationToken cancellationToken)
         {
-            FeedIterator databaseStreamIterator = GetOfferQueryStreamIterator(
+            FeedIterator databaseStreamIterator = this.GetOfferQueryStreamIterator(
                queryDefinition,
                continuationToken,
                requestOptions,
@@ -157,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
         }
 
         internal virtual FeedIterator GetOfferQueryStreamIterator(
@@ -167,12 +175,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return new FeedIteratorCore(
-               this.ClientContext,
-               this.OfferRootUri,
-               ResourceType.Offer,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
+               clientContext: this.ClientContext,
+               resourceLink: this.OfferRootUri,
+               resourceType: ResourceType.Offer,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions,
+               usePropertySerializer: true);
         }
 
         private async Task<T> SingleOrDefaultAsync<T>(

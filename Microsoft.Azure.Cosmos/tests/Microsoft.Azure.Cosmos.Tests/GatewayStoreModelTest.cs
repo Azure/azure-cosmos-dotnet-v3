@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
             const string updatedSessionToken = "0:1#100#1=20#2=5#3=31";
 
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
             {
                 throw ex;
             };
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos
         {
             const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
 
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
             {
                 throw ex;
             };
@@ -430,12 +430,12 @@ namespace Microsoft.Azure.Cosmos
             const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
             const string updatedSessionToken = "0:1#100#1=20#2=5#3=31";
 
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
             {
                 HttpResponseMessage response = new HttpResponseMessage(httpStatusCode);
                 response.Headers.Add(HttpConstants.HttpHeaders.SessionToken, updatedSessionToken);
                 response.Headers.Add(WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());                
-                return response;
+                return Task.FromResult(response);
             };
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
@@ -499,12 +499,12 @@ namespace Microsoft.Azure.Cosmos
             const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
             const string updatedSessionToken = "0:1#100#1=20#2=5#3=31";
 
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
             {
                 HttpResponseMessage response = new HttpResponseMessage(httpStatusCode);
                 response.Headers.Add(HttpConstants.HttpHeaders.SessionToken, updatedSessionToken);
                 response.Headers.Add(WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());
-                return response;
+                return Task.FromResult(response);
             };
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();

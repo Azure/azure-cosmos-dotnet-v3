@@ -28,23 +28,44 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosSerializer = userJsonSerializer;
         }
 
+        internal FeedResponse<T> CreateQueryFeedResponseWithPropertySerializer<T>(
+            ResponseMessage cosmosResponseMessage)
+        {
+            return this.CreateQueryFeedResponseHelper<T>(
+                cosmosResponseMessage,
+                true);
+        }
+
         internal FeedResponse<T> CreateQueryFeedResponse<T>(
             ResponseMessage cosmosResponseMessage)
         {
+            return this.CreateQueryFeedResponseHelper<T>(
+                cosmosResponseMessage,
+                false);
+        }
+
+        private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
+            ResponseMessage cosmosResponseMessage,
+            bool usePropertySerializer)
+        {
             //Throw the exception
             cosmosResponseMessage.EnsureSuccessStatusCode();
+
+            // The property serializer should be used for internal
+            // query operations like throughput since user serializer can break the logic
+            CosmosSerializer serializer = usePropertySerializer ? this.propertiesSerializer : this.cosmosSerializer;
 
             QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
             if (queryResponse != null)
             {
                 return QueryResponse<T>.CreateResponse<T>(
                     cosmosQueryResponse: queryResponse,
-                    jsonSerializer: this.cosmosSerializer);
+                    jsonSerializer: serializer);
             }
 
             return ReadFeedResponse<T>.CreateResponse<T>(
                        cosmosResponseMessage,
-                       this.cosmosSerializer);
+                       serializer);
         }
 
         internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
@@ -115,7 +136,10 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                DatabaseProperties databaseProperties = this.ToObjectInternal<DatabaseProperties>(cosmosResponseMessage, this.propertiesSerializer);
+                DatabaseProperties databaseProperties = this.ToObjectInternal<DatabaseProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer);
+
                 return new DatabaseResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
