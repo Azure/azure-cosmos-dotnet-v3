@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#756](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/756) Change Feed Processor with WithStartTime would execute the delegate the first time with no items.
 - [#761](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/761) CosmosClient deadlocks when using a custom Task Scheduler like Orleans (Thanks to jkonecki)
 - [#769](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/769) Session Consistency + Gateway mode session-token bug fix: Under few rare non-success cases session token might be in-correct
-- [#785](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/785) Unauthorized errors during client initialization now generate CosmosExceptions
+- [#785](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/785) Incorrect key to throw CosmosExceptions with HttpStatusCode.Unauthorized status code
 
 ## [3.1.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.1) - 2019-08-12
 
