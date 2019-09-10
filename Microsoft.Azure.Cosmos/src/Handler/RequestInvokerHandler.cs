@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RequestInvokerHandler : RequestHandler
     {
+        private static (bool, ResponseMessage) clientIsValid = (false, null);
         private readonly CosmosClient client;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
@@ -45,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
-            (bool clientIsValid, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
-            if (!clientIsValid)
+            (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
+            if (isError)
             {
                 return errorResponse;
             }
@@ -188,11 +189,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             try
             {
                 await this.client.DocumentClient.EnsureValidClientAsync();
-                return (true, null);
+                return RequestInvokerHandler.clientIsValid;
             }
             catch (DocumentClientException dce)
             {
-                return (false, dce.ToCosmosResponseMessage(request));
+                return (true, dce.ToCosmosResponseMessage(request));
             }
         }
 
