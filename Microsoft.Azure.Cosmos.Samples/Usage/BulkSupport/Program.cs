@@ -19,7 +19,7 @@
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
     // ----------------------------------------------------------------------------------------------------------
-    // Sample - demonstrates the basic usage of the CosmosClient bulk mode by performing a high volume of operations and comparing throughput
+    // Sample - demonstrates the basic usage of the CosmosClient bulk mode by performing a high volume of operations
     // ----------------------------------------------------------------------------------------------------------
 
     public class Program
@@ -177,11 +177,7 @@
 
             // We create a partitioned collection here which needs a partition key. Partitioned collections
             // can be created with very high values of provisioned throughput (up to Throughput = 250,000)
-            // and used to store up to 250 GB of data. You can also skip specifying a partition key to create
-            // single partition collections that store up to 10 GB of data.
-            // For this demo, we create a collection to store SalesOrders. We set the partition key to the account
-            // number so that we can retrieve all sales orders for an account efficiently from a single partition,
-            // and perform transactions across multiple sales order for a single account number. 
+            // and used to store up to 250 GB of data. 
             ContainerProperties containerProperties = new ContainerProperties(containerId, partitionKeyPath: "/pk");
 
             Console.WriteLine("The demo will create a 20000 RU/s container, press any key to continue.");
