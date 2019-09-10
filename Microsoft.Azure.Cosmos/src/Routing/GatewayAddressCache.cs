@@ -363,7 +363,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 resourceTypeToSign,
                 HttpConstants.HttpMethods.Get,
                 headers,
-                AuthorizationTokenType.PrimaryMasterKey);
+                AuthorizationTokenType.PrimaryMasterKey,
+                payload: out _);
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);
 
@@ -417,7 +418,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     resourceTypeToSign,
                     HttpConstants.HttpMethods.Get,
                     headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    payload: out _);
             }
             catch (UnauthorizedException)
             {
@@ -432,7 +434,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         resourceTypeToSign,
                         HttpConstants.HttpMethods.Get,
                         headers,
-                        AuthorizationTokenType.PrimaryMasterKey);
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        payload: out _);
             }
 
             headers.Set(HttpConstants.HttpHeaders.Authorization, token);

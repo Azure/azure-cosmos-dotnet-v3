@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="BatchOperationResult{T}"/> class.
         /// </summary>
-        /// <param name="result">CosmosBatchOperationResult with stream resource.</param>
+        /// <param name="result">BatchOperationResult with stream resource.</param>
         /// <param name="resource">Deserialized resource.</param>
         internal BatchOperationResult(BatchOperationResult result, T resource)
             : base(result)

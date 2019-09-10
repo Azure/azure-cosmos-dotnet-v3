@@ -283,7 +283,6 @@ namespace Microsoft.Azure.Cosmos
         private async Task GatewayStoreModel_Exception_NotUpdateSessionTokenOnKnownException(Exception ex)
         {
             const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
-            const string updatedSessionToken = "0:1#100#1=20#2=5#3=31";
 
             Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
             {

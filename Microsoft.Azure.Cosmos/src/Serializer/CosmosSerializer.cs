@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos
     {
         /// <summary>
         /// Convert a Stream of JSON to an object. 
-        /// The caller will ensure the stream is disposed. 
-        /// This will prevent memory leaks if an exception is hit.
+        /// The implementation is responsible for Disposing of the stream,
+        /// including when an exception is thrown, to avoid memory leaks.
         /// </summary>
         /// <typeparam name="T">Any typed passed to <see cref="Container"/></typeparam>
         /// <param name="stream">The Stream response containing JSON from Cosmos</param>

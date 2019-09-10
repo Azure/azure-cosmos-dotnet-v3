@@ -76,7 +76,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             string authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
-                request.Method.ToString(), serviceRequest.Headers, AuthorizationTokenType.PrimaryMasterKey);
+                request.Method.ToString(),
+                serviceRequest.Headers,
+                AuthorizationTokenType.PrimaryMasterKey,
+                payload: out _);
+
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
