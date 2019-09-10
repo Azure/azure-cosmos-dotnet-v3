@@ -13,9 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-#pragma warning disable CA1001 // Types that own disposable fields should be disposable
     public class BatchAsyncContainerExecutorTests
-#pragma warning restore CA1001 // Types that own disposable fields should be disposable
     {
         private static CosmosSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
         private CosmosClient cosmosClient;
@@ -99,7 +97,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class MyDocument
         {
-            //[JsonProperty("id")]
             public string id { get; set; }
 
             public string Status { get; set; }

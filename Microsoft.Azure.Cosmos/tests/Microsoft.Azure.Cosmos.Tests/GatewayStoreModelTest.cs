@@ -152,9 +152,9 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestErrorResponsesProvideBody()
         {
             string testContent = "Content";
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
             {
-                return new HttpResponseMessage(HttpStatusCode.Conflict) { Content = new StringContent(testContent) };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict) { Content = new StringContent(testContent) });
             };
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
@@ -198,6 +198,143 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+        }
+
+        [TestMethod]
+        // Verify that for known exceptions, session token is updated
+        public async Task GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException()
+        {
+            INameValueCollection headers = new DictionaryNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.SessionToken, "0:1#100#1=20#2=5#3=31");
+            headers.Set(WFConstants.BackendHeaders.LocalLSN, "10");
+            await this.GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException(new ConflictException("test", headers, new Uri("http://one.com")));
+            await this.GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException(new NotFoundException("test", headers, new Uri("http://one.com")));
+            await this.GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException(new PreconditionFailedException("test", headers, new Uri("http://one.com")));
+        }
+
+        private async Task GatewayStoreModel_Exception_UpdateSessionTokenOnKnownException(Exception ex)
+        {
+            const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
+            const string updatedSessionToken = "0:1#100#1=20#2=5#3=31";
+
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                throw ex;
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                TimeSpan.FromSeconds(5),
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new UserAgentContainer(),
+                ApiType.None,
+                messageHandler);
+
+            INameValueCollection headers = new DictionaryNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
+            headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
+            headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, "0");
+
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                "dbs/OVJwAA==/colls/OVJwAOcMtA0=/docs/OVJwAOcMtA0BAAAAAAAAAA==/",
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers))
+                {
+                    request.UseStatusCodeFor429 = true;
+                    request.UseStatusCodeForFailures = true;
+                    try
+                    {
+                        DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+                        Assert.Fail("Should had thrown exception");
+                    }
+                    catch (Exception)
+                    {
+                        // Expecting exception
+                    }
+                    Assert.AreEqual(updatedSessionToken, sessionContainer.GetSessionToken("dbs/OVJwAA==/colls/OVJwAOcMtA0="));
+                }
+            }
+        }
+
+        [TestMethod]
+        // Verify that for 429 exceptions, session token is not updated
+        public async Task GatewayStoreModel_Exception_NotUpdateSessionTokenOnKnownExceptions()
+        {
+            INameValueCollection headers = new DictionaryNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.SessionToken, "0:1#100#1=20#2=5#3=30");
+            headers.Set(WFConstants.BackendHeaders.LocalLSN, "10");
+            await this.GatewayStoreModel_Exception_NotUpdateSessionTokenOnKnownException(new RequestRateTooLargeException("429", headers, new Uri("http://one.com")));
+        }
+
+        private async Task GatewayStoreModel_Exception_NotUpdateSessionTokenOnKnownException(Exception ex)
+        {
+            const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
+
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                throw ex;
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                TimeSpan.FromSeconds(5),
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new UserAgentContainer(),
+                ApiType.None,
+                messageHandler);
+
+            INameValueCollection headers = new DictionaryNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
+            headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
+            headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, "0");
+
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                "dbs/OVJwAA==/colls/OVJwAOcMtA0=/docs/OVJwAOcMtA0BAAAAAAAAAA==/",
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers))
+                {
+                    request.UseStatusCodeFor429 = true;
+                    request.UseStatusCodeForFailures = true;
+                    try
+                    {
+                        DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+                        Assert.Fail("Should had thrown exception");
+                    }
+                    catch (Exception)
+                    {
+                        // Expecting exception
+                    }
+                    Assert.AreEqual(string.Empty, sessionContainer.GetSessionToken("dbs/OVJwAA==/colls/OVJwAOcMtA0="));
+                }
+            }
         }
 
         /// <summary>
@@ -277,6 +414,137 @@ namespace Microsoft.Azure.Cosmos
                 await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
             }
 
+        }
+
+        [TestMethod]
+        // When exceptionless is turned on Session Token should only be updated on known failures
+        public async Task GatewayStoreModel_Exceptionless_UpdateSessionTokenOnKnownFailedStoreResponses()
+        {
+            await this.GatewayStoreModel_Exceptionless_UpdateSessionTokenOnKnownResponses(HttpStatusCode.Conflict);
+            await this.GatewayStoreModel_Exceptionless_UpdateSessionTokenOnKnownResponses(HttpStatusCode.NotFound, SubStatusCodes.OwnerResourceNotFound);
+            await this.GatewayStoreModel_Exceptionless_UpdateSessionTokenOnKnownResponses(HttpStatusCode.PreconditionFailed);
+        }
+
+        private async Task GatewayStoreModel_Exceptionless_UpdateSessionTokenOnKnownResponses(HttpStatusCode httpStatusCode, SubStatusCodes subStatusCode = SubStatusCodes.Unknown)
+        {
+            const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
+            const string updatedSessionToken = "0:1#100#1=20#2=5#3=31";
+
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                HttpResponseMessage response = new HttpResponseMessage(httpStatusCode);
+                response.Headers.Add(HttpConstants.HttpHeaders.SessionToken, updatedSessionToken);
+                response.Headers.Add(WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());                
+                return Task.FromResult(response);
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                TimeSpan.FromSeconds(5),
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new UserAgentContainer(),
+                ApiType.None,
+                messageHandler);
+
+            INameValueCollection headers = new DictionaryNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
+            headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
+            headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, "0");
+
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                "dbs/OVJwAA==/colls/OVJwAOcMtA0=/docs/OVJwAOcMtA0BAAAAAAAAAA==/",
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers))
+                {
+                    request.UseStatusCodeFor429 = true;
+                    request.UseStatusCodeForFailures = true;
+                    DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+                    Assert.AreEqual(updatedSessionToken, sessionContainer.GetSessionToken("dbs/OVJwAA==/colls/OVJwAOcMtA0="));
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("maquaran")]
+        // Validates that if its a master resource, we don't update the Session Token, even though the status code would be one of the included ones
+        public async Task GatewayStoreModel_Exceptionless_NotUpdateSessionTokenOnKnownFailedMasterResource()
+        {
+            await this.GatewayStoreModel_Exceptionless_NotUpdateSessionTokenOnKnownResponses(ResourceType.Collection, HttpStatusCode.Conflict);
+        }
+
+        [TestMethod]
+        [Owner("maquaran")]
+        // When exceptionless is turned on Session Token should only be updated on known failures
+        public async Task GatewayStoreModel_Exceptionless_NotUpdateSessionTokenOnKnownFailedStoreResponses()
+        {
+            await this.GatewayStoreModel_Exceptionless_NotUpdateSessionTokenOnKnownResponses(ResourceType.Document, (HttpStatusCode)429);
+        }
+
+        private async Task GatewayStoreModel_Exceptionless_NotUpdateSessionTokenOnKnownResponses(ResourceType resourceType, HttpStatusCode httpStatusCode, SubStatusCodes subStatusCode = SubStatusCodes.Unknown)
+        {
+            const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
+            const string updatedSessionToken = "0:1#100#1=20#2=5#3=31";
+
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                HttpResponseMessage response = new HttpResponseMessage(httpStatusCode);
+                response.Headers.Add(HttpConstants.HttpHeaders.SessionToken, updatedSessionToken);
+                response.Headers.Add(WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());
+                return Task.FromResult(response);
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                TimeSpan.FromSeconds(5),
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                new UserAgentContainer(),
+                ApiType.None,
+                messageHandler);
+
+            INameValueCollection headers = new DictionaryNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
+            headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
+            headers.Set(WFConstants.BackendHeaders.PartitionKeyRangeId, "0");
+
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                resourceType,
+                "dbs/OVJwAA==/colls/OVJwAOcMtA0=/docs/OVJwAOcMtA0BAAAAAAAAAA==/",
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers))
+                {
+                    request.UseStatusCodeFor429 = true;
+                    request.UseStatusCodeForFailures = true;
+                    DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+                    Assert.AreEqual(string.Empty, sessionContainer.GetSessionToken("dbs/OVJwAA==/colls/OVJwAOcMtA0="));
+                }
+            }
         }
 
         private class MockMessageHandler : HttpMessageHandler
