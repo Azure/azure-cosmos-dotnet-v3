@@ -24,8 +24,8 @@
 
     public class Program
     {
-        private const int concurrentWorkers = 10;
-        private const int concurrentDocuments = 10000;
+        private const int concurrentWorkers = 3;
+        private const int concurrentDocuments = 100;
         private const string databaseId = "samples";
         private const string containerId = "bulk-support";
         private static readonly JsonSerializer Serializer = new JsonSerializer();
@@ -63,7 +63,7 @@
                 await Program.InitializeAsync(bulkClient);
 
                 Console.WriteLine("Running demo with a Bulk enabled CosmosClient...");
-                // Execute inserts for 60 seconds on a Bulk enabled client
+                // Execute inserts for 30 seconds on a Bulk enabled client
                 await Program.CreateItemsConcurrentlyAsync(bulkClient);
             }
             catch (CosmosException cre)
@@ -93,14 +93,14 @@
 
         private static async Task CreateItemsConcurrentlyAsync(CosmosClient client)
         {
-            // Create concurrent workers that will insert items for 60 seconds
+            // Create concurrent workers that will insert items for 30 seconds
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(60000);
+            cancellationTokenSource.CancelAfter(30000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
             Container container = client.GetContainer(Program.databaseId, Program.containerId);
             List<Task<int>> workerTasks = new List<Task<int>>(Program.concurrentWorkers);
-            Console.WriteLine($"Initiating process with {Program.concurrentWorkers} worker threads writing groups of {Program.concurrentDocuments} items for 60 seconds.");
+            Console.WriteLine($"Initiating process with {Program.concurrentWorkers} worker threads writing groups of {Program.concurrentDocuments} items for 30 seconds.");
             for (var i = 0; i < Program.concurrentWorkers; i++)
             {
                 workerTasks.Add(CreateItemsAsync(container, cancellationToken));
@@ -118,31 +118,29 @@
             string partitionKeyValue = Guid.NewGuid().ToString();
             while (!cancellationToken.IsCancellationRequested)
             {
-                List<Task<ItemResponse<MyDocument>>> tasks = new List<Task<ItemResponse<MyDocument>>>(Program.concurrentDocuments);
+                List<Task> tasks = new List<Task>(Program.concurrentDocuments);
                 for (int i = 0; i < Program.concurrentDocuments; i++)
                 {
                     string id = Guid.NewGuid().ToString();
                     MyDocument myDocument = new MyDocument() { id = id, pk = partitionKeyValue };
-                    tasks.Add(container.CreateItemAsync<MyDocument>(myDocument, new PartitionKey(partitionKeyValue)));
-                }
-
-                while (tasks.Count > 0)
-                {
-                    Task<ItemResponse<MyDocument>> t = await Task.WhenAny(tasks);
-                    try {
-                        ItemResponse<MyDocument> r = await t;
-                        if (r.StatusCode == HttpStatusCode.Created)
+                    tasks.Add(
+                        container.CreateItemAsync<MyDocument>(myDocument, new PartitionKey(partitionKeyValue))
+                        .ContinueWith((Task<ItemResponse<MyDocument>> task) =>
                         {
-                            itemsCreated++;
-                        }
-                    }
-                    catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
-                    {
-                        // With a high volume of operations, some throttling might occur, in this case, we do not consider them successful responses
-                    }
-
-                    tasks.Remove(t);
+                            if (task.IsCompletedSuccessfully)
+                            {
+                                itemsCreated++;
+                            }
+                            else
+                            {
+                                AggregateException innerExceptions = task.Exception.Flatten();
+                                CosmosException cosmosException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) as CosmosException;
+                                Console.WriteLine($"Item {myDocument.id} failed with status code {cosmosException.StatusCode}");
+                            }
+                        }));
                 }
+
+                await Task.WhenAll(tasks);
             }
             
             return itemsCreated;
