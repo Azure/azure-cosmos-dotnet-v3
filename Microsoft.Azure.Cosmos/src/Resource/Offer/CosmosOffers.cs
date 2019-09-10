@@ -65,7 +65,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal async Task<ThroughputResponse> ReplaceThroughputAsync(
-            string resourceName,
             string targetRID,
             int throughput,
             RequestOptions requestOptions,
@@ -143,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
             if (offerV2 == null &&
                 failIfNotConfigured)
             {
-                throw new CosmosException(HttpStatusCode.NotFound, "Throughput is not configured");
+                throw new CosmosException(HttpStatusCode.NotFound, $"Throughput is not configured for {targetRID}");
             }
 
             return offerV2;
