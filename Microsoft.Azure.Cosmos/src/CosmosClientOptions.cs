@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos
         bool AllowBulkExecution { get; set; }
 
         /// <summary>
-        /// Gets or sets the flag to enable endpoint discovery for geo-replicated database accounts in the Azure Cosmos DB service.
+        /// Allow using account region in-case ApplicationRegion is not available. Defaults to 'true'.
         /// </summary>
         /// <value>
         /// Default value is true.
