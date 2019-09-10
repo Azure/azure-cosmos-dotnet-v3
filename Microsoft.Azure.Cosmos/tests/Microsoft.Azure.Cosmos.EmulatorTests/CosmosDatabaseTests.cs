@@ -295,26 +295,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(replaceThroughputResponse.Resource);
             Assert.AreEqual(readThroughputResponse.Resource.Throughput.Value + 1000, replaceThroughputResponse.Resource.Throughput.Value);
 
-            Container containerNoThroughput = containerResponse;
-            try
-            {
-                readThroughputResponse = await containerNoThroughput.ReadThroughputAsync(new RequestOptions());
-                Assert.Fail("Should through not found exception as throughput is not configured");
-            } catch(CosmosException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
-            }
-
-            try
-            {
-                readThroughputResponse = await containerNoThroughput.ReplaceThroughputAsync(2000, new RequestOptions());
-                Assert.Fail("Should through not found exception as throughput is not configured");
-            }
-            catch (CosmosException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
-            }
-
             await cosmosDatabase.DeleteAsync();
             Database databaseNoThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), throughput: null);
             try
@@ -339,26 +319,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             int? dbThroughput = await databaseNoThroughput.ReadThroughputAsync();
             Assert.IsNull(dbThroughput);
-
-            int containerThroughput = 1000;
-            Container container = await databaseNoThroughput.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", throughput: containerThroughput);
-
-            int? containerResponseThroughput = await container.ReadThroughputAsync();
-            Assert.AreEqual(containerThroughput, containerResponseThroughput);
-
-            ThroughputResponse containerThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
-            Assert.IsNotNull(containerThroughputResponse);
-            Assert.IsNotNull(containerThroughputResponse.Resource);
-            Assert.IsNotNull(containerThroughputResponse.MinThroughput);
-            Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
-            Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
-
-            containerThroughput += 500;
-            containerThroughputResponse = await container.ReplaceThroughputAsync(containerThroughput, new RequestOptions());
-            Assert.IsNotNull(containerThroughputResponse);
-            Assert.IsNotNull(containerThroughputResponse.Resource);
-            Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
-            Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
 
             Assert.AreEqual(0, toStreamCount, "Custom serializer to stream should not be used for offer operations");
             Assert.AreEqual(0, fromStreamCount, "Custom serializer from stream should not be used for offer operations");
