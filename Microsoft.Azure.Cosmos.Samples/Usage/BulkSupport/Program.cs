@@ -58,14 +58,9 @@
                     throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
                 }
 
-                CosmosClient client = Program.GetNormalClientInstance(endpoint, authKey);
                 CosmosClient bulkClient = Program.GetBulkClientInstance(endpoint, authKey);
                 // Create the require container, can be done with any client
-                await Program.InitializeAsync(client);
-
-                Console.WriteLine("Running demo with a normal CosmosClient...");
-                // Execute inserts for 60 seconds on a normal client
-                await Program.CreateItemsConcurrentlyAsync(client);
+                await Program.InitializeAsync(bulkClient);
 
                 Console.WriteLine("Running demo with a Bulk enabled CosmosClient...");
                 // Execute inserts for 60 seconds on a Bulk enabled client
@@ -89,15 +84,12 @@
         }
         // </Main>
 
-        private static CosmosClient GetNormalClientInstance(
-            string endpoint,
-            string authKey) => 
-            new CosmosClient(endpoint, authKey);
-
         private static CosmosClient GetBulkClientInstance(
             string endpoint,
-            string authKey) => 
+            string authKey) =>
+        // </Initialization>
             new CosmosClient(endpoint, authKey, new CosmosClientOptions() { AllowBulkExecution = true } );
+        // </Initialization>
 
         private static async Task CreateItemsConcurrentlyAsync(CosmosClient client)
         {
@@ -108,7 +100,7 @@
 
             Container container = client.GetContainer(Program.databaseId, Program.containerId);
             List<Task<int>> workerTasks = new List<Task<int>>(Program.concurrentWorkers);
-            Console.WriteLine($"Initiating process with {Program.concurrentWorkers} worker threads writing groups of {Program.concurrentDocuments} items.");
+            Console.WriteLine($"Initiating process with {Program.concurrentWorkers} worker threads writing groups of {Program.concurrentDocuments} items for 60 seconds.");
             for (var i = 0; i < Program.concurrentWorkers; i++)
             {
                 workerTasks.Add(CreateItemsAsync(container, cancellationToken));
