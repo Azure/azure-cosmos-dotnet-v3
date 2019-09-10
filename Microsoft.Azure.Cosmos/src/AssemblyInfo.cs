@@ -4,7 +4,6 @@
 
 using System.Runtime.CompilerServices;
 
-#if SignAssembly
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2" + AssemblyKeys.MoqPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Friends" + AssemblyKeys.TestPublicKey)]
@@ -20,13 +19,10 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Table.Tests" + AssemblyKeys.TestPublicKey)]
 
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Tests" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Tests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.EmulatorTests" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.EmulatorTests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests" + AssemblyKeys.ProductPublicKey)]
-#else
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Tests")]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.EmulatorTests")]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests")]
-[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Performance.Tests")]
-[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
-#endif
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests" + AssemblyKeys.TestPublicKey)]
