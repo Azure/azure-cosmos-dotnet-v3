@@ -29,7 +29,7 @@
     //
     // 4. Generate Estimator metrics to expose current Change Feed Processor progress
     //
-    // 5. Migrate from Change Feed Processor library V2
+    // 5. Code migration from Change Feed Processor library V2
     //-----------------------------------------------------------------------------------------------------------
 
 
@@ -70,7 +70,7 @@
                     await Program.RunStartFromBeginningChangeFeed("changefeed-beginning", client);
                     Console.WriteLine($"\n4. Generate Estimator metrics to expose current Change Feed Processor progress.");
                     await Program.RunEstimatorChangeFeed("changefeed-estimator", client);
-                    Console.WriteLine($"\n5. Migrate from Change Feed Processor library V2.");
+                    Console.WriteLine($"\n5. Code migration from Change Feed Processor library V2.");
                     await Program.RunMigrationSample("changefeed-migration", client, configuration);
                 }
             }
@@ -263,6 +263,7 @@
             Console.WriteLine("Generating 10 items that will be picked up by the old Change Feed Processor library...");
             await Program.GenerateItems(10, client.GetContainer(databaseId, Program.monitoredContainer));
 
+            // This is how you would initialize the processor in V2
             // <ChangeFeedProcessorLibrary>
             ChangeFeedProcessorLibrary.DocumentCollectionInfo monitoredCollectionInfo = new ChangeFeedProcessorLibrary.DocumentCollectionInfo()
             {
@@ -308,6 +309,7 @@
             Console.WriteLine("Generating 5 items that will be picked up by the new Change Feed Processor...");
             await Program.GenerateItems(5, client.GetContainer(databaseId, Program.monitoredContainer));
 
+            // This is how you would do the same initialization in V3
             // <ChangeFeedProcessorMigrated>
             Container leaseContainer = client.GetContainer(databaseId, Program.leasesContainer);
             Container monitoredContainer = client.GetContainer(databaseId, Program.monitoredContainer);
