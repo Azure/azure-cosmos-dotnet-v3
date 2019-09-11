@@ -15,15 +15,10 @@ variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
   ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
   VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
-  Traces: 0
+  Traces: 1
 
 
 jobs:
-- template:  templates/static-tools.yml
-  parameters:
-    BuildConfiguration: Release
-    VmImage: $(VmImage)
-        
 
 #- template:  templates/build-test.yml
 #  parameters:

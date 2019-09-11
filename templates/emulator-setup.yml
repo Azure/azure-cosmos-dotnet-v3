@@ -10,6 +10,10 @@ steps:
         choco upgrade lessmsi
         mkdir "$env:temp\Azure Cosmos DB Emulator"
         lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
+        If ($env:Traces -eq 1) {
+            Write-Host "Starting Comsos DB Emulator Tracing" -ForegroundColor green 
+            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/startTraces" -Verb RunAs
+        }
         Write-Host "Starting Comsos DB Emulator" -ForegroundColor green 
         Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio /overrides=sqlAllowGroupByClause:true" -Verb RunAs
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
