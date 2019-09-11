@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Timeout(200)]
+        [Timeout(500)]
         public async Task TestAsyncDeadlock()
         {
             AsyncCache<int, int> cache = new AsyncCache<int, int>();

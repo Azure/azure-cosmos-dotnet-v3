@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RequestInvokerHandler : RequestHandler
     {
+        private static (bool, ResponseMessage) clientIsValid = (false, null);
         private readonly CosmosClient client;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
@@ -45,7 +46,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
-            await this.client.DocumentClient.EnsureValidClientAsync();
+            (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
+            if (isError)
+            {
+                return errorResponse;
+            }
+
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
             this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
@@ -175,6 +181,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
             else
             {
                 throw new NotImplementedException();
+            }
+        }
+
+        private async Task<(bool, ResponseMessage)> EnsureValidClientAsync(RequestMessage request)
+        {
+            try
+            {
+                await this.client.DocumentClient.EnsureValidClientAsync();
+                return RequestInvokerHandler.clientIsValid;
+            }
+            catch (DocumentClientException dce)
+            {
+                return (true, dce.ToCosmosResponseMessage(request));
             }
         }
 

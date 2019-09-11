@@ -71,12 +71,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             double requestCharge = storedProcedureResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, storedProcedureResponse.StatusCode);
+            Assert.IsNotNull(storedProcedureResponse.Diagnostics);
+            string diagnostics = storedProcedureResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
             storedProcedureResponse = await this.scripts.ReadStoredProcedureAsync(sprocId);
             requestCharge = storedProcedureResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, storedProcedureResponse.StatusCode);
+            Assert.IsNotNull(storedProcedureResponse.Diagnostics);
+            diagnostics = storedProcedureResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
             string updatedBody = @"function(name) { var context = getContext();
@@ -88,6 +97,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
+            Assert.IsNotNull(replaceResponse.Diagnostics);
+            diagnostics = replaceResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, updatedBody, replaceResponse);
 
 
@@ -95,6 +108,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestCharge = deleteResponse.RequestCharge;
             Assert.IsTrue(requestCharge > 0);
             Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+            Assert.IsNotNull(deleteResponse.Diagnostics);
+            diagnostics = deleteResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
         }
 
         [TestMethod]

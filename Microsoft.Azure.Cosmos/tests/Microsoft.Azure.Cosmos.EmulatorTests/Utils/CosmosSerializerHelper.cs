@@ -4,32 +4,32 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Newtonsoft.Json;
     using System;
     using System.Globalization;
     using System.IO;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Placeholder for VST Logger.
     /// </summary>
     internal class CosmosSerializerHelper : CosmosSerializer
     {
-        private CosmosSerializer cosmosSerializer = TestCommon.Serializer;
-        private Action<dynamic> fromStreamCallback;
-        private Action<dynamic> toStreamCallBack;
+        private readonly CosmosSerializer cosmosSerializer = TestCommon.Serializer;
+        private readonly Action<dynamic> fromStreamCallback;
+        private readonly Action<dynamic> toStreamCallBack;
 
         public CosmosSerializerHelper(
             JsonSerializerSettings jsonSerializerSettings,
             Action<dynamic> fromStreamCallback,
             Action<dynamic> toStreamCallBack)
         {
-            if(jsonSerializerSettings == null)
+            if (jsonSerializerSettings == null)
             {
-                cosmosSerializer = TestCommon.Serializer;
+                this.cosmosSerializer = TestCommon.Serializer;
             }
             else
             {
-                cosmosSerializer = new CosmosJsonDotNetSerializer(jsonSerializerSettings);
+                this.cosmosSerializer = new CosmosJsonDotNetSerializer(jsonSerializerSettings);
             }
 
             this.fromStreamCallback = fromStreamCallback;
@@ -54,14 +54,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             public override bool CanRead => false;
             public override bool CanWrite => true;
-            public override bool CanConvert(Type type) => type == typeof(int) || type == typeof(double);
+            public override bool CanConvert(Type type)
+            {
+                return type == typeof(int) || type == typeof(double);
+            }
 
             public override void WriteJson(
-                JsonWriter writer, 
-                object value, 
+                JsonWriter writer,
+                object value,
                 JsonSerializer serializer)
             {
-                if(value.GetType() == typeof(int))
+                if (value.GetType() == typeof(int))
                 {
                     int number = (int)value;
                     writer.WriteValue(number.ToString(CultureInfo.InvariantCulture));
@@ -71,13 +74,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     double number = (double)value;
                     writer.WriteValue(number.ToString(CultureInfo.InvariantCulture));
                 }
-                
+
             }
 
             public override object ReadJson(
-                JsonReader reader, 
-                Type type, 
-                object existingValue, 
+                JsonReader reader,
+                Type type,
+                object existingValue,
                 JsonSerializer serializer)
             {
                 throw new NotSupportedException();

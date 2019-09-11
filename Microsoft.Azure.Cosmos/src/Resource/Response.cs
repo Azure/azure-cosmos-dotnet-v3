@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostics information for the current request to Azure Cosmos DB service
         /// </summary>
-        public CosmosDiagnostics Diagnostics { get; set; }
+        public abstract CosmosDiagnostics Diagnostics { get; }
 
         /// <summary>
         /// Gets the maximum size limit for this entity from the Azure Cosmos DB service.

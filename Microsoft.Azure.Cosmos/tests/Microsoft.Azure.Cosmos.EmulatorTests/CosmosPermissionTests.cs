@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -220,6 +221,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .DeleteItemAsync<dynamic>(itemId, partitionKey);
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
             }
+        }
+
+        [TestMethod]
+        public async Task EnsureUnauthorized_ThrowsCosmosClientException()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            // Take the key and change some middle character
+            authKey = authKey.Replace("m", "M");
+
+            CosmosClient cosmosClient = new CosmosClient(
+                endpoint,
+                authKey);
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.GetContainer("test", "test").ReadItemAsync<dynamic>("test", new PartitionKey("test")));
+            Assert.AreEqual(HttpStatusCode.Unauthorized, exception.StatusCode);
         }
     }
 }

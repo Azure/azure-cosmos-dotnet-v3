@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
+        private readonly bool usePropertySerializer;
         private bool hasMoreResultsInternal;
 
         internal FeedIteratorCore(
@@ -29,7 +30,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             string continuationToken,
-            QueryRequestOptions options)
+            QueryRequestOptions options,
+            bool usePropertySerializer = false)
         {
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
@@ -37,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.continuationToken = continuationToken;
             this.requestOptions = options;
+            this.usePropertySerializer = usePropertySerializer;
             this.hasMoreResultsInternal = true;
         }
 
@@ -63,7 +66,13 @@ namespace Microsoft.Azure.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.SqlQuerySpecSerializer.ToStream(querySpec);
+                // Use property serializer is for internal query operations like throughput
+                // that should not use custom serializer
+                CosmosSerializer serializer = this.usePropertySerializer ?
+                    this.clientContext.PropertiesSerializer :
+                    this.clientContext.SqlQuerySpecSerializer;
+
+                stream = serializer.ToStream(this.querySpec);    
                 operation = OperationType.Query;
             }
 
@@ -77,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
                streamPayload: stream,
                requestEnricher: request =>
                {
-                   QueryRequestOptions.FillContinuationToken(request, continuationToken);
+                   QueryRequestOptions.FillContinuationToken(request, this.continuationToken);
                    if (this.querySpec != null)
                    {
                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);

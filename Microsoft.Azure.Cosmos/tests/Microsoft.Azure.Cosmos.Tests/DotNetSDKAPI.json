@@ -1078,6 +1078,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1537,6 +1549,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1921,6 +1945,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
         "Microsoft.Azure.Cosmos.Database Database": {
           "Type": "Property",
           "Attributes": [],
@@ -2304,10 +2340,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(System.String)"
         },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)": {
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String, Boolean)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String, Boolean)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()": {
           "Type": "Method",
@@ -2980,6 +3016,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3084,166 +3132,166 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T])"
         },
-        "System.Threading.Tasks.Task`1[System.Decimal] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Decimal] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Decimal] SumAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] SumAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Decimal] SumAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] SumAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Double] AverageAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Double] SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Double] SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Double]] SumAsync(System.Linq.IQueryable`1[System.Double], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Int32] CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] CountAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Int32] SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int32] SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int32]] SumAsync(System.Linq.IQueryable`1[System.Int32], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Int64] SumAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int64]] SumAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Int64] SumAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Int64]] SumAsync(System.Linq.IQueryable`1[System.Int64], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Decimal]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Decimal]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Decimal]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Decimal]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Decimal]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Decimal]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Decimal]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Double]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Double]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Double]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Int32]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int32]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Int32]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int32]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int64]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Int64]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Int64]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Int64]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Int64]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Single]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Single]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Single]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Single]]] AverageAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Nullable`1[System.Single]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Single]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Nullable`1[System.Single]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Nullable`1[System.Single]]] SumAsync(System.Linq.IQueryable`1[System.Nullable`1[System.Single]], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Single] AverageAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] AverageAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Single] AverageAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] AverageAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[System.Single] SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Single] SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Single]] SumAsync(System.Linq.IQueryable`1[System.Single], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[TSource] MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[TSource] MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MaxAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[TSource] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[TSource] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken)"
         }
       },
       "NestedTypes": {}
@@ -3536,6 +3584,18 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -3949,6 +4009,16 @@
           "MethodInfo": null
         },
         "System.String NorthEurope": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorwayEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String NorwayWest": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": null
@@ -4614,11 +4684,9 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()": {
@@ -4675,13 +4743,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
-        },
-        "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)"
         }
       },
       "NestedTypes": {}
@@ -4803,13 +4864,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_Content(System.IO.Stream)"
-        },
-        "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)"
         }
       },
       "NestedTypes": {}
@@ -4962,6 +5016,18 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -5198,6 +5264,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5432,6 +5510,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5596,6 +5686,18 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -6824,6 +6926,18 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -7083,6 +7197,18 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()"
         },
         "Microsoft.Azure.Cosmos.Headers get_Headers()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

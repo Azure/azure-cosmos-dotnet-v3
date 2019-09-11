@@ -266,65 +266,125 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int count = await linqQueryable.CountAsync();
             Assert.AreEqual(10, count);
 
-            int intSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
+            Response<int> intSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
+            Assert.AreEqual(420, intSum.Resource);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            string diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
+
+            Response<int?> intNullableSum = await linqQueryable.Select(item => (int?)item.taskNum).SumAsync();
+            Assert.AreEqual<int?>(420, intNullableSum);
+            Assert.IsTrue(intNullableSum.RequestCharge > 0);
+            diagnostics = intNullableSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
+
+            Response<float> floatSum = await linqQueryable.Select(item => (float)item.taskNum).SumAsync();
             Assert.AreEqual(420, intSum);
+            Assert.IsTrue(floatSum.RequestCharge > 0);
+            diagnostics = floatSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            int? intNullableSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
-            Assert.AreEqual(420, intNullableSum);
+            Response<float?> floatNullableSum = await linqQueryable.Select(item => (float?)item.taskNum).SumAsync();
+            Assert.AreEqual<float?>(420, intNullableSum);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            float floatSum = await linqQueryable.Select(item => (float)item.taskNum).SumAsync();
-            Assert.AreEqual(420, intSum);
+            Response<double> doubleSum = await linqQueryable.Select(item => (double)item.taskNum).SumAsync();
+            Assert.AreEqual(420.0, doubleSum);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            float? floatNullableSum = await linqQueryable.Select(item => (float?)item.taskNum).SumAsync();
-            Assert.AreEqual(420, intNullableSum);
+            Response<double?> doubleNullableSum = await linqQueryable.Select(item => (double?)item.taskNum).SumAsync();
+            Assert.AreEqual<double?>(420.0, doubleNullableSum);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            double doubleSum = await linqQueryable.Select(item => (double)item.taskNum).SumAsync();
-            Assert.AreEqual(420, doubleSum);
+            Response<long> longSum = await linqQueryable.Select(item => (long)item.taskNum).SumAsync();
+            Assert.AreEqual<long>(420, longSum);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            double? doubleNullableSum = await linqQueryable.Select(item => (double?)item.taskNum).SumAsync();
-            Assert.AreEqual(420, doubleNullableSum);
+            Response<long?> longNullableSum = await linqQueryable.Select(item => (long?)item.taskNum).SumAsync();
+            Assert.AreEqual<long?>(420, longNullableSum);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            long longSum = await linqQueryable.Select(item => (long)item.taskNum).SumAsync();
-            Assert.AreEqual(420, longSum);
+            Response<decimal> decimalSum = await linqQueryable.Select(item => (decimal)item.taskNum).SumAsync();
+            Assert.AreEqual<decimal>(420, decimalSum);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            long? longNullableSum = await linqQueryable.Select(item => (long?)item.taskNum).SumAsync();
-            Assert.AreEqual(420, longNullableSum);
+            Response<decimal?> decimalNullableSum = await linqQueryable.Select(item => (decimal?)item.taskNum).SumAsync();
+            Assert.AreEqual<decimal?>(420, decimalNullableSum);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            decimal decimalSum = await linqQueryable.Select(item => (decimal)item.taskNum).SumAsync();
-            Assert.AreEqual(420, decimalSum);
+            Response<double> intToDoubleAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
+            Assert.AreEqual<double>(42, intToDoubleAvg);
+            Assert.IsTrue(intSum.RequestCharge > 0);
+            diagnostics = intSum.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            decimal? decimalNullableSum = await linqQueryable.Select(item => (decimal?)item.taskNum).SumAsync();
-            Assert.AreEqual(420, decimalNullableSum);
+            Response<double?> intToDoubleNulableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
+            Assert.AreEqual<double?>(42, intToDoubleNulableAvg);
+            Assert.IsTrue(intToDoubleNulableAvg.RequestCharge > 0);
+            diagnostics = intToDoubleNulableAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            double intToDoubleAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
-            Assert.AreEqual(42, intToDoubleAvg);
+            Response<float> floatAvg = await linqQueryable.Select(item => (float)item.taskNum).AverageAsync();
+            Assert.AreEqual<float>(42, floatAvg);
+            Assert.IsTrue(floatAvg.RequestCharge > 0);
+            diagnostics = floatAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            double? intToDoubleNulableAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
-            Assert.AreEqual(42, intToDoubleNulableAvg);
+            Response<float?> floatNullableAvg = await linqQueryable.Select(item => (float?)item.taskNum).AverageAsync();
+            Assert.AreEqual<float?>(42, floatNullableAvg);
+            Assert.IsTrue(floatNullableAvg.RequestCharge > 0);
+            diagnostics = floatNullableAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            float floatAvg = await linqQueryable.Select(item => (float)item.taskNum).AverageAsync();
-            Assert.AreEqual(42, floatAvg);
+            Response<double> doubleAvg = await linqQueryable.Select(item => (double)item.taskNum).AverageAsync();
+            Assert.AreEqual<double>(42, doubleAvg);
+            Assert.IsTrue(doubleAvg.RequestCharge > 0);
+            diagnostics = doubleAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            float? floatNullableAvg = await linqQueryable.Select(item => (float?)item.taskNum).AverageAsync();
-            Assert.AreEqual(42, floatNullableAvg);
+            Response<double?> doubleNullableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
+            Assert.AreEqual<double?>(42, doubleNullableAvg);
+            Assert.IsTrue(doubleNullableAvg.RequestCharge > 0);
+            diagnostics = doubleNullableAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            double doubleAvg = await linqQueryable.Select(item => (double)item.taskNum).AverageAsync();
-            Assert.AreEqual(42, doubleAvg);
+            Response<double> longToDoubleAvg = await linqQueryable.Select(item => (long)item.taskNum).AverageAsync();
+            Assert.AreEqual<double>(42, longToDoubleAvg);
+            Assert.IsTrue(longToDoubleAvg.RequestCharge > 0);
+            diagnostics = longToDoubleAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            double? doubleNullableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
-            Assert.AreEqual(42, doubleNullableAvg);
+            Response<double?> longToNullableDoubleAvg = await linqQueryable.Select(item => (long?)item.taskNum).AverageAsync();
+            Assert.AreEqual<double?>(42, longToNullableDoubleAvg);
+            Assert.IsTrue(longToNullableDoubleAvg.RequestCharge > 0);
+            diagnostics = longToNullableDoubleAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            double longToDoubleAvg = await linqQueryable.Select(item => (long)item.taskNum).AverageAsync();
-            Assert.AreEqual(42, longToDoubleAvg);
+            Response<decimal> decimalAvg = await linqQueryable.Select(item => (decimal)item.taskNum).AverageAsync();
+            Assert.AreEqual<decimal>(42, decimalAvg);
+            Assert.IsTrue(decimalAvg.RequestCharge > 0);
+            diagnostics = decimalAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
-            double? longToNullableDoubleAvg = await linqQueryable.Select(item => (long?)item.taskNum).AverageAsync();
-            Assert.AreEqual(42, longToNullableDoubleAvg);
-
-            decimal decimalAvg = await linqQueryable.Select(item => (decimal)item.taskNum).AverageAsync();
-            Assert.AreEqual(42, decimalAvg);
-
-            decimal? decimalNullableAvg = await linqQueryable.Select(item => (decimal?)item.taskNum).AverageAsync();
-            Assert.AreEqual(42, decimalNullableAvg);
+            Response<decimal?> decimalNullableAvg = await linqQueryable.Select(item => (decimal?)item.taskNum).AverageAsync();
+            Assert.AreEqual<decimal?>(42, decimalNullableAvg);
+            Assert.IsTrue(decimalNullableAvg.RequestCharge > 0);
+            diagnostics = decimalNullableAvg.Diagnostics.ToString();
+            Assert.IsTrue(diagnostics.Contains("queryMetrics"));
 
             //Adding more items to test min and max function
             ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
@@ -335,10 +395,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             toDoActivity.id = "maxTaskNum";
             await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.status));
 
-            int minTaskNum = await linqQueryable.Select(item => item.taskNum).MinAsync();
+            Response<int> minTaskNum = await linqQueryable.Select(item => item.taskNum).MinAsync();
             Assert.AreEqual(20, minTaskNum);
 
-            int maxTaskNum = await linqQueryable.Select(item => item.taskNum).MaxAsync();
+            Response<int> maxTaskNum = await linqQueryable.Select(item => item.taskNum).MaxAsync();
             Assert.AreEqual(100, maxTaskNum);
         }
 

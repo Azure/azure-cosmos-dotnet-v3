@@ -148,5 +148,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(((QueryOperationStatistics)responseMessage.Diagnostics).queryMetrics.Values.First().OutputDocumentCount > 0);
             }
         }
+
+        [TestMethod]
+        public async Task NonDataPlaneDiagnosticTest()
+        {
+            DatabaseResponse databaseResponse = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Assert.IsNotNull(databaseResponse.Diagnostics);
+            string diagnostics = databaseResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("SubStatusCode"));
+            Assert.IsTrue(diagnostics.Contains("RequestUri"));
+            Assert.IsTrue(diagnostics.Contains("Method"));
+        }
     }
 }

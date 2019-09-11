@@ -26,13 +26,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
         internal StoredProcedureExecuteResponse(
-           HttpStatusCode httpStatusCode,
-           Headers headers,
-           T response)
+            HttpStatusCode httpStatusCode,
+            Headers headers,
+            T response,
+            CosmosDiagnostics diagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = response;
+            this.Diagnostics = diagnostics;
         }
 
         /// <inheritdoc/>
@@ -43,6 +45,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override CosmosDiagnostics Diagnostics { get; }
 
         /// <inheritdoc/>
         public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
