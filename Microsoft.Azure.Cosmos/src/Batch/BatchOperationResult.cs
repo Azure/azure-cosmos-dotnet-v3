@@ -176,6 +176,16 @@ namespace Microsoft.Azure.Cosmos
 
             return Result.Success;
         }
+
+        internal ResponseMessage ToResponseMessage()
+        {
+            ResponseMessage responseMessage = new ResponseMessage(this.StatusCode);
+            responseMessage.Headers.SubStatusCode = this.SubStatusCode;
+            responseMessage.Headers.ETag = this.ETag;
+            responseMessage.Headers.RetryAfter = this.RetryAfter;
+            responseMessage.Content = this.ResourceStream;
+            return responseMessage;
+        }
     }
 
     /// <summary>
@@ -194,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="BatchOperationResult{T}"/> class.
         /// </summary>
-        /// <param name="result">CosmosBatchOperationResult with stream resource.</param>
+        /// <param name="result">BatchOperationResult with stream resource.</param>
         /// <param name="resource">Deserialized resource.</param>
         internal BatchOperationResult(BatchOperationResult result, T resource)
             : base(result)

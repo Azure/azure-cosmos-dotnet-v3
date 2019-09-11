@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(requestTimeout, clientOptions.RequestTimeout);
             Assert.AreNotEqual(userAgentSuffix, clientOptions.ApplicationName);
             Assert.AreNotEqual(apiType, clientOptions.ApiType);
+            Assert.IsFalse(clientOptions.AllowBulkExecution);
             Assert.AreEqual(0, clientOptions.CustomHandlers.Count);
             Assert.IsNull(clientOptions.SerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
@@ -78,14 +79,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.OpenTcpConnectionTimeout);
             Assert.IsNull(policy.MaxRequestsPerTcpConnection);
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
+            Assert.IsTrue(policy.EnableEndpointDiscovery);
 
-            cosmosClientBuilder.WithApplicationRegion(region)
+            cosmosClientBuilder.WithApplicationRegion(region, false)
                 .WithConnectionModeGateway(maxConnections, webProxy)
                 .WithRequestTimeout(requestTimeout)
                 .WithApplicationName(userAgentSuffix)
                 .AddCustomHandlers(preProcessHandler)
                 .WithApiType(apiType)
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                .WithBulkexecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -105,6 +108,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
+            Assert.IsTrue(clientOptions.AllowBulkExecution);
+            Assert.IsFalse(clientOptions.UseAnyAccountRegion);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -115,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(requestTimeout, policy.RequestTimeout);
             Assert.IsTrue(policy.UserAgentSuffix.Contains(userAgentSuffix));
             Assert.IsTrue(policy.UseMultipleWriteLocations);
+            Assert.IsFalse(policy.EnableEndpointDiscovery);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
 
@@ -357,6 +363,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpClientHandler innerHandler = (HttpClientHandler)handler.InnerHandler;
 
             Assert.IsTrue(object.ReferenceEquals(webProxy, innerHandler.Proxy));
+        }
+
+        [TestMethod]
+        public void VerifyCorrectProtocolIsSet()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway };
+            Assert.AreEqual(Protocol.Https, cosmosClientOptions.ConnectionProtocol);
+
+            cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct };
+            Assert.AreEqual(Protocol.Tcp, cosmosClientOptions.ConnectionProtocol);
         }
 
         private class TestWebProxy : IWebProxy

@@ -191,7 +191,12 @@ namespace Microsoft.Azure.Cosmos
         /// Gets all the Activity IDs associated with the response.
         /// </summary>
         /// <returns>An enumerable that contains the Activity IDs.</returns>
-        internal virtual IEnumerable<string> GetActivityIds()
+#if INTERNAL
+        public 
+#else
+        internal
+#endif
+        virtual IEnumerable<string> GetActivityIds()
         {
             yield return this.ActivityId;
         }

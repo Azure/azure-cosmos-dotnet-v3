@@ -134,7 +134,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override IEnumerable<string> GetActivityIds()
+#if INTERNAL
+        public 
+#else
+        internal
+#endif
+        override IEnumerable<string> GetActivityIds()
         {
             return new string[1] { this.ActivityId };
         }

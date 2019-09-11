@@ -28,12 +28,14 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             DatabaseProperties databaseProperties,
-            Database database)
+            Database database,
+            CosmosDiagnostics diagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = databaseProperties;
             this.Database = database;
+            this.Diagnostics = diagnostics;
         }
 
         /// <summary>
@@ -50,6 +52,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override CosmosDiagnostics Diagnostics { get; }
 
         /// <inheritdoc/>
         public override double RequestCharge => this.Headers?.RequestCharge ?? 0;

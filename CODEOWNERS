@@ -6,4 +6,10 @@
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
 *       @kirankumarkolli 
-Microsoft.Azure.Cosmos/src/ @kirillg
+Microsoft.Azure.Cosmos/src @kirillg
+Microsoft.Azure.Cosmos/src/Json @bchong95 @j82w
+Microsoft.Azure.Cosmos/src/Query @bchong95 @j82w
+Microsoft.Azure.Cosmos/src/CosmosElements @bchong95 @j82w
+Microsoft.Azure.Cosmos/src/SqlObjects @bchong95 @j82w
+Microsoft.Azure.Cosmos/src/Linq @khdang @j82w
+Microsoft.Azure.Cosmos/src/Spatial @lalithamv @j82w

@@ -28,11 +28,13 @@ namespace Microsoft.Azure.Cosmos
         internal ThroughputResponse(
             HttpStatusCode httpStatusCode,
             Headers headers,
-            ThroughputProperties throughputProperties)
+            ThroughputProperties throughputProperties,
+            CosmosDiagnostics diagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = throughputProperties;
+            this.Diagnostics = diagnostics;
         }
 
         /// <inheritdoc/>
@@ -43,6 +45,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override CosmosDiagnostics Diagnostics { get; }
 
         /// <inheritdoc/>
         public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
