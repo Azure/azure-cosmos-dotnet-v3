@@ -127,11 +127,7 @@
                         container.CreateItemAsync<MyDocument>(myDocument, new PartitionKey(partitionKeyValue))
                         .ContinueWith((Task<ItemResponse<MyDocument>> task) =>
                         {
-                            if (task.IsCompletedSuccessfully)
-                            {
-                                itemsCreated++;
-                            }
-                            else
+                            if (!task.IsCompletedSuccessfully)
                             {
                                 AggregateException innerExceptions = task.Exception.Flatten();
                                 CosmosException cosmosException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) as CosmosException;
@@ -141,6 +137,8 @@
                 }
 
                 await Task.WhenAll(tasks);
+
+                itemsCreated += tasks.Count(task => task.IsCompletedSuccessfully);
             }
             
             return itemsCreated;
