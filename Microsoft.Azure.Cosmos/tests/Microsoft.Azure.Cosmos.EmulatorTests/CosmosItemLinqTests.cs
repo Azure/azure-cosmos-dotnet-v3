@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Configuration;
     using System.Linq;
     using System.Linq.Dynamic;
     using System.Threading.Tasks;
@@ -487,6 +488,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ToDoActivity{ id = "child2", taskNum = 40}
             });
             Assert.AreEqual(10, queriable.ToList().Count);
+
+            //Test for app.config flag NonParameterisedLinq 
+            queriable = linqQueryable.Where(item => item.description == "CreateRandomToDoActivity");
+            Assert.IsFalse(queriable.ToQueryDefinition().QueryText.Contains("root[\"description\"] = \"CreateRandomToDoActivity\""));
+
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            config.AppSettings.Settings["NonParameterisedLinq"].Value = "true";
+            config.Save(ConfigurationSaveMode.Modified);
+            ConfigurationManager.RefreshSection("appSettings");
+            Assert.IsTrue(queriable.ToQueryDefinition().QueryText.Contains("root[\"description\"] = \"CreateRandomToDoActivity\""));
+
+            config.AppSettings.Settings.Remove("NonParameterisedLinq");
+            config.Save(ConfigurationSaveMode.Modified);
+            ConfigurationManager.RefreshSection("appSettings");
+            Assert.IsFalse(queriable.ToQueryDefinition().QueryText.Contains("root[\"description\"] = \"CreateRandomToDoActivity\""));
         }
     }
 }

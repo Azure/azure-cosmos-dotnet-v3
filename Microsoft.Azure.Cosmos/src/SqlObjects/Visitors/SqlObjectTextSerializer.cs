@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -17,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         // so changing whitespaces involve manually updating the expected output for each test.
         // When the tests are converted over to baseline files we can just bulk update them and remove this flag.
         private const bool MongoDoesNotUseBaselineFiles = true;
+        private bool nonParameterizedLinq;
         private static readonly string Tab = "    ";
         private readonly StringWriter writer;
         private readonly bool prettyPrint;
@@ -25,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public SqlObjectTextSerializer(bool prettyPrint, Dictionary<object, string> literalToParamStr = null)
         {
+            this.nonParameterizedLinq = Convert.ToBoolean(ConfigurationManager.AppSettings["NonParameterisedLinq"]);
             this.writer = new StringWriter(CultureInfo.InvariantCulture);
             this.prettyPrint = prettyPrint;
             this.literalToParamStr = literalToParamStr;
@@ -119,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
             //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
             string literalStr = null;
-            if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlBooleanLiteral.Value, out literalStr))
+            if (!this.nonParameterizedLinq && this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlBooleanLiteral.Value, out literalStr))
             {
                 this.writer.Write(literalStr);
             }
@@ -364,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
             //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
             string literalStr = null;
-            if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlNumberLiteral.Value, out literalStr))
+            if (!this.nonParameterizedLinq && this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlNumberLiteral.Value, out literalStr))
             {
                 this.writer.Write(literalStr);
             }
@@ -443,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
             //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
             string literalStr = null;
-            if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlObjectLiteral.Value, out literalStr))
+            if (!this.nonParameterizedLinq && this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlObjectLiteral.Value, out literalStr))
             {
                 this.writer.Write(literalStr);
             }
@@ -645,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
             //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
             string literalStr = null;
-            if (this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlStringLiteral.Value, out literalStr))
+            if (!this.nonParameterizedLinq && this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlStringLiteral.Value, out literalStr))
             {
                 this.writer.Write(literalStr);
             }
