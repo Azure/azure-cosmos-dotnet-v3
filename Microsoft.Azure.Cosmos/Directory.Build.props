@@ -4,6 +4,7 @@
     <ClientVersion>3.2.0</ClientVersion>
     <DirectVersion>3.2.1</DirectVersion>
     <HybridRowVersion>1.0.0-preview</HybridRowVersion>
+    <AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
   </PropertyGroup>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" /> 
+  <Import Project="$(AboveDirBuildProps)" Condition=" '$(AboveDirBuildProps)' != '' " />
 </Project>
