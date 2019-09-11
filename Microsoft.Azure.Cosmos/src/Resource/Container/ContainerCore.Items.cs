@@ -564,14 +564,18 @@ namespace Microsoft.Azure.Cosmos
 
                 case CosmosElementType.Number:
                     CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
-                    double? number = cosmosNumber.AsFloatingPoint();
-                    if (!number.HasValue)
+
+                    double value;
+                    if (cosmosNumber.IsFloatingPoint)
                     {
-                        throw new ArgumentException(
-                            string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, cosmosElement));
+                        value = cosmosNumber.AsFloatingPoint().Value;
+                    }
+                    else
+                    {
+                        value = cosmosNumber.AsInteger().Value;
                     }
 
-                    return new PartitionKey(cosmosNumber.AsFloatingPoint().Value);
+                    return new PartitionKey(value);
 
                 case CosmosElementType.Boolean:
                     CosmosBoolean cosmosBool = cosmosElement as CosmosBoolean;
