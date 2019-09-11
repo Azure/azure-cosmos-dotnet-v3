@@ -29,7 +29,7 @@
     //
     // 4. Generate Estimator metrics to expose current Change Feed Processor progress
     //
-    // 5. Code migration from Change Feed Processor library V2
+    // 5. Code migration template from existing Change Feed Processor library V2
     //-----------------------------------------------------------------------------------------------------------
 
 
@@ -70,7 +70,7 @@
                     await Program.RunStartFromBeginningChangeFeed("changefeed-beginning", client);
                     Console.WriteLine($"\n4. Generate Estimator metrics to expose current Change Feed Processor progress.");
                     await Program.RunEstimatorChangeFeed("changefeed-estimator", client);
-                    Console.WriteLine($"\n5. Code migration from Change Feed Processor library V2.");
+                    Console.WriteLine($"\n5. Code migration template from existing Change Feed Processor library V2.");
                     await Program.RunMigrationSample("changefeed-migration", client, configuration);
                 }
             }
@@ -250,7 +250,7 @@
         }
 
         /// <summary>
-        /// Example of a code migration from Change Feed Processor V2 to SDK V3.
+        /// Example of a code migration template from Change Feed Processor V2 to SDK V3.
         /// </summary>
         /// <returns></returns>
         public static async Task RunMigrationSample(
