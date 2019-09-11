@@ -60,14 +60,7 @@ namespace Microsoft.Azure.Cosmos.Json
             else
             {
                 double doubleValue = double.Parse(stringNumber, CultureInfo.InvariantCulture);
-                if ((long)doubleValue == doubleValue)
-                {
-                    numberValue = (long)doubleValue;
-                }
-                else
-                {
-                    numberValue = doubleValue;
-                }
+                numberValue = doubleValue;
             }
 
             return numberValue;
