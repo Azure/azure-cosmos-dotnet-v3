@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKeyInternal">The value to use as partition key.</param>
         /// <param name="isNone">The value to decide partitionKey is None.</param>
-        private PartitionKey(PartitionKeyInternal partitionKeyInternal, bool isNone = false)
+        internal PartitionKey(PartitionKeyInternal partitionKeyInternal, bool isNone = false)
         {
             this.InternalKey = partitionKeyInternal;
             this.IsNone = isNone;
