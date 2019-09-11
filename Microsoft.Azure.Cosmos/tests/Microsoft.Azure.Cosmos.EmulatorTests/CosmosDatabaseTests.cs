@@ -72,9 +72,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DatabaseResponse response = await this.CreateDatabaseHelper();
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            Assert.IsNotNull(response.Diagnostics);
+            string diagnostics = response.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
 
             response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+            Assert.IsNotNull(response.Diagnostics);
+            diagnostics = response.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
         }
 
         [TestMethod]
@@ -199,6 +207,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             createResponse = await this.CreateDatabaseHelper(createResponse.Resource.Id, databaseExists: true);
             Assert.AreEqual(HttpStatusCode.OK, createResponse.StatusCode);
+            Assert.IsNotNull(createResponse.Diagnostics);
+            string diagnostics = createResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("requestStartTime"));
         }
 
         [TestMethod]

@@ -46,6 +46,9 @@ namespace Microsoft.Azure.Cosmos
         public override HttpStatusCode StatusCode { get; }
 
         /// <inheritdoc/>
+        public override CosmosDiagnostics Diagnostics { get; }
+
+        /// <inheritdoc/>
         public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         /// <inheritdoc/>

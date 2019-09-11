@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System.Collections.Generic;
+    using System.Text;
     using Newtonsoft.Json;
 
     internal class CosmosDiagnosticsAggregate : CosmosDiagnostics
@@ -13,7 +14,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+            if (this.Diagnostics.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (CosmosDiagnostics diagnostics in this.Diagnostics)
+            {
+                stringBuilder.Append(diagnostics.ToString());
+            }
+
+            return stringBuilder.ToString();
         }
     }
 }

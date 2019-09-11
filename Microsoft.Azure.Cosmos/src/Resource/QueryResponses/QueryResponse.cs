@@ -172,6 +172,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override HttpStatusCode StatusCode { get; }
 
+        public override CosmosDiagnostics Diagnostics { get; }
+
         public override int Count => this.cosmosElements?.Count() ?? 0;
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }

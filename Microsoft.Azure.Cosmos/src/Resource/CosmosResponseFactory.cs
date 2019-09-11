@@ -93,7 +93,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     containerProperties,
-                    container);
+                    container,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -108,7 +109,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     userProperties,
-                    user);
+                    user,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -123,7 +125,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     permissionProperties,
-                    permission);
+                    permission,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -141,7 +144,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     databaseProperties,
-                    database);
+                    database,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -154,7 +158,8 @@ namespace Microsoft.Azure.Cosmos
                 return new ThroughputResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    throughputProperties);
+                    throughputProperties,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -166,7 +171,8 @@ namespace Microsoft.Azure.Cosmos
                 return new StoredProcedureExecuteResponse<T>(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    item);
+                    item,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -178,7 +184,8 @@ namespace Microsoft.Azure.Cosmos
                 return new StoredProcedureResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    cosmosStoredProcedure);
+                    cosmosStoredProcedure,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -190,7 +197,8 @@ namespace Microsoft.Azure.Cosmos
                 return new TriggerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    triggerProperties);
+                    triggerProperties,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 
@@ -202,7 +210,8 @@ namespace Microsoft.Azure.Cosmos
                 return new UserDefinedFunctionResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    settings);
+                    settings,
+                    cosmosResponseMessage.Diagnostics);
             });
         }
 

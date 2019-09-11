@@ -56,12 +56,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             double reqeustCharge = triggerResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, triggerResponse.StatusCode);
+            Assert.IsNotNull(triggerResponse.Diagnostics);
+            string diagnostics = triggerResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
             triggerResponse = await this.scripts.ReadTriggerAsync(settings.Id);
             reqeustCharge = triggerResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, triggerResponse.StatusCode);
+            Assert.IsNotNull(triggerResponse.Diagnostics);
+            diagnostics = triggerResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
             TriggerProperties updatedSettings = triggerResponse.Resource;
@@ -72,11 +80,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             reqeustCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
+            Assert.IsNotNull(replaceResponse.Diagnostics);
+            diagnostics = replaceResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
 
             replaceResponse = await this.scripts.DeleteTriggerAsync(updatedSettings.Id);
             reqeustCharge = replaceResponse.RequestCharge;
             Assert.IsTrue(reqeustCharge > 0);
             Assert.AreEqual(HttpStatusCode.NoContent, replaceResponse.StatusCode);
+            Assert.IsNotNull(replaceResponse.Diagnostics);
+            diagnostics = replaceResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
         }
 
         [TestMethod]

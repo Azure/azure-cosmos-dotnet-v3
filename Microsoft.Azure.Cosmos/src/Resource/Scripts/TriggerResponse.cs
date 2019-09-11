@@ -25,13 +25,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
         internal TriggerResponse(
-           HttpStatusCode httpStatusCode,
-           Headers headers,
-           TriggerProperties triggerProperties)
+            HttpStatusCode httpStatusCode,
+            Headers headers,
+            TriggerProperties triggerProperties,
+            CosmosDiagnostics diagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = triggerProperties;
+            this.Diagnostics = diagnostics;
         }
 
         /// <inheritdoc/>
@@ -42,6 +44,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override CosmosDiagnostics Diagnostics { get; }
 
         /// <inheritdoc/>
         public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
