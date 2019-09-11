@@ -192,10 +192,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <returns>An enumerable that contains the Activity IDs.</returns>
 #if INTERNAL
-        public virtual IEnumerable<string> GetActivityIds()
+        public 
 #else
-        internal virtual IEnumerable<string> GetActivityIds()
+        internal
 #endif
+        virtual IEnumerable<string> GetActivityIds()
         {
             yield return this.ActivityId;
         }
