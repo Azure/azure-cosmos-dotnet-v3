@@ -230,16 +230,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("Select expr w const array", b => dataQuery(b).Select(x => x.x + array[2])));
             inputs.Add(new LinqTestInput("Select const array index", b => dataQuery(b)
                 .Where(x => x.x >= 0 && x.x < 3)
-                .Select(x => new int[] { 1, 2, 3 }[x.x]), "The specified query includes 'member indexer' which is currently not supported."));
+                .Select(x => new int[] { 1, 2, 3 }[x.x])));
             inputs.Add(new LinqTestInput("Select new simple", b => dataQuery(b).Select(x => new simple { x = x.x, y = x.x })));
             inputs.Add(new LinqTestInput("Select new nested", b => dataQuery(b).Select(x => new nested { s = new simple { x = x.x, y = x.x }, x = 2 })));
             inputs.Add(new LinqTestInput("Select new complex", b => dataQuery(b).Select(d => new complex { dbl = 1.0, str = "", b = false, dblArray = new double[] { 1.0, 2.0, }, inside = new simple { x = d.x, y = d.x } })));
             inputs.Add(new LinqTestInput("Select cast double x", b => dataQuery(b).Select(x => (double)x.x)));
             inputs.Add(new LinqTestInput("Select indexer x", b => dataQuery(b)
                 .Where(x => x.x >= 0 && x.x < array.Length)
-                .Select(x => array[x.x]), "The specified query includes 'member indexer' which is currently not supported."));
-            inputs.Add(new LinqTestInput("Select new constructor", b => dataQuery(b).Select(x => new TimeSpan(x.x)), "Constructor invocation is not supported."));
-            inputs.Add(new LinqTestInput("Select method id", b => dataQuery(b).Select(x => id(x)), "Method 'id' is not supported."));
+                .Select(x => array[x.x])));
+            inputs.Add(new LinqTestInput("Select new constructor", b => dataQuery(b).Select(x => new TimeSpan(x.x))));
+            inputs.Add(new LinqTestInput("Select method id", b => dataQuery(b).Select(x => id(x))));
             inputs.Add(new LinqTestInput("Select identity", b => dataQuery(b).Select(x => x)));
             inputs.Add(new LinqTestInput("Select simple property", b => dataQuery(b).Select(x => x.x)));            
             this.ExecuteTestSuite(inputs);
