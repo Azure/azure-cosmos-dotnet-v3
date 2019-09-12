@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -290,6 +289,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
         {
+            if (!this.ClientContext.ClientOptions.AllowBulkExecution)
+            {
+                return null;
+            }
+
             return new BatchAsyncContainerExecutor(
                 this,
                 this.ClientContext,

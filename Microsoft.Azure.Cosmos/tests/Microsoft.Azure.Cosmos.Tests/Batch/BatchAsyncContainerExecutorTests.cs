@@ -73,6 +73,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            Assert.IsNotNull(result.Diagnostics);
+
+            int diagnosticsLines = 0;
+            string diagnosticsString = result.Diagnostics.ToString();
+            int index = diagnosticsString.IndexOf(Environment.NewLine);
+            while(index > -1)
+            {
+                diagnosticsLines++;
+                index = diagnosticsString.IndexOf(Environment.NewLine, index + 1);
+            }
+
+            Assert.IsTrue(diagnosticsLines > 2);
         }
 
         [TestMethod]
@@ -127,6 +139,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
+            Assert.IsNotNull(result.Diagnostics);
+
+            int diagnosticsLines = 0;
+            string diagnosticsString = result.Diagnostics.ToString();
+            int index = diagnosticsString.IndexOf(Environment.NewLine);
+            while (index > -1)
+            {
+                diagnosticsLines++;
+                index = diagnosticsString.IndexOf(Environment.NewLine, index + 1);
+            }
+
+            Assert.IsTrue(diagnosticsLines > 2);
         }
 
         [TestMethod]
@@ -205,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent };
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent, Diagnostics = new PointOperationStatistics(new CosmosClientSideRequestStatistics()) };
             responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
             return responseMessage;
         }
@@ -232,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests) { Content = responseContent };
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests) { Content = responseContent, Diagnostics = new PointOperationStatistics(new CosmosClientSideRequestStatistics()) };
             return responseMessage;
         }
 
@@ -258,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK) { Content = responseContent };
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = new PointOperationStatistics(new CosmosClientSideRequestStatistics()) };
             return responseMessage;
         }
 
