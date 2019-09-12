@@ -6000,6 +6000,7 @@ namespace Microsoft.Azure.Cosmos
             out string payload) // unused, use token based upon what is passed in constructor 
         {
             payload = null;
+
             if (this.hasAuthKeyResourceToken && this.resourceTokens == null)
             {
                 // If the input auth token is a resource token, then use it as a bearer-token.
@@ -6147,14 +6148,13 @@ namespace Microsoft.Azure.Cosmos
         {
             request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
 
-            string payload;
             request.Headers[HttpConstants.HttpHeaders.Authorization] = ((IAuthorizationTokenProvider)this).GetUserAuthorizationToken(
                 resourceId ?? request.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 verb,
                 request.Headers,
                 request.RequestAuthorizationTokenType,
-                out payload);
+                payload: out _);
 
             return Task.FromResult(0);
         }
@@ -6359,7 +6359,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType = request.OperationType;
 
             if (resourceType == ResourceType.Offer ||
-                resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript ||
+                (resourceType.IsScript() && operationType != OperationType.ExecuteJavaScript) ||
                 resourceType == ResourceType.PartitionKeyRange)
             {
                 return this.gatewayStoreModel;

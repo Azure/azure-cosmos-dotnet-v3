@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="bufferedToken">The jsonToken returned from that holds the raw number that you want the value of.</param>
         /// <returns>The number value from the specified token.</returns>
-        public static double GetNumberValue(ArraySegment<byte> bufferedToken)
+        public static double GetDoubleValue(ArraySegment<byte> bufferedToken)
         {
             byte[] rawBufferedTokenArray = bufferedToken.Array;
             int offset = bufferedToken.Offset;
@@ -43,6 +43,27 @@ namespace Microsoft.Azure.Cosmos.Json
             int count = bufferedToken.Count;
             string stringInteger = Encoding.UTF8.GetString(rawBufferedTokenArray, offset, count);
             return long.Parse(stringInteger, CultureInfo.InvariantCulture);
+        }
+
+        public static Number64 GetNumberValue(ArraySegment<byte> bufferedToken)
+        {
+            byte[] rawBufferedTokenArray = bufferedToken.Array;
+            int offset = bufferedToken.Offset;
+            int count = bufferedToken.Count;
+            string stringNumber = Encoding.UTF8.GetString(rawBufferedTokenArray, offset, count);
+
+            Number64 numberValue;
+            if (long.TryParse(stringNumber, NumberStyles.Integer, CultureInfo.InvariantCulture, out long longValue))
+            {
+                numberValue = longValue;
+            }
+            else
+            {
+                double doubleValue = double.Parse(stringNumber, CultureInfo.InvariantCulture);
+                numberValue = doubleValue;
+            }
+
+            return numberValue;
         }
 
         /// <summary>

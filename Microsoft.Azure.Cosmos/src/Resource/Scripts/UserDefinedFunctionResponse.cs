@@ -25,13 +25,15 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
         internal UserDefinedFunctionResponse(
-          HttpStatusCode httpStatusCode,
-          Headers headers,
-          UserDefinedFunctionProperties userDefinedFunctionProperties)
+            HttpStatusCode httpStatusCode,
+            Headers headers,
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
+            CosmosDiagnostics diagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = userDefinedFunctionProperties;
+            this.Diagnostics = diagnostics;
         }
 
         /// <inheritdoc/>
@@ -42,6 +44,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         /// <inheritdoc/>
         public override HttpStatusCode StatusCode { get; }
+
+        /// <inheritdoc/>
+        public override CosmosDiagnostics Diagnostics { get; }
 
         /// <inheritdoc/>
         public override double RequestCharge => this.Headers?.RequestCharge ?? 0;

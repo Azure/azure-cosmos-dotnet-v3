@@ -85,6 +85,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal virtual SubStatusCodes SubStatusCode { get; set; }
 
+        /// <summary>
+        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
+        /// </summary>
+        internal virtual CosmosDiagnostics Diagnostics { get; set; }
+
         internal static Result ReadOperationResult(Memory<byte> input, out BatchOperationResult batchOperationResult)
         {
             RowBuffer row = new RowBuffer(input.Length);
@@ -184,6 +189,7 @@ namespace Microsoft.Azure.Cosmos
             responseMessage.Headers.ETag = this.ETag;
             responseMessage.Headers.RetryAfter = this.RetryAfter;
             responseMessage.Content = this.ResourceStream;
+            responseMessage.Diagnostics = this.Diagnostics;
             return responseMessage;
         }
     }
@@ -204,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="BatchOperationResult{T}"/> class.
         /// </summary>
-        /// <param name="result">CosmosBatchOperationResult with stream resource.</param>
+        /// <param name="result">BatchOperationResult with stream resource.</param>
         /// <param name="resource">Deserialized resource.</param>
         internal BatchOperationResult(BatchOperationResult result, T resource)
             : base(result)

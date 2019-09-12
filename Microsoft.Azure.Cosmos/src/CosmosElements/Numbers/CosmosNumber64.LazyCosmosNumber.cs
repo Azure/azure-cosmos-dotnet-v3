@@ -50,52 +50,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 });
             }
 
-            public override bool IsFloatingPoint
-            {
-                get
-                {
-                    return this.lazyNumber.Value.IsDouble;
-                }
-            }
-
-            public override bool IsInteger
-            {
-                get
-                {
-                    return this.lazyNumber.Value.IsInteger;
-                }
-            }
-
-            public override double? AsFloatingPoint()
-            {
-                double? value;
-                if (this.IsFloatingPoint)
-                {
-                    value = Number64.ToDouble(this.lazyNumber.Value);
-                }
-                else
-                {
-                    value = null;
-                }
-
-                return value;
-            }
-
-            public override long? AsInteger()
-            {
-                long? value;
-                if (this.IsFloatingPoint)
-                {
-                    value = Number64.ToLong(this.lazyNumber.Value);
-                }
-                else
-                {
-                    value = null;
-                }
-
-                return value;
-            }
-
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 if (jsonWriter == null)
@@ -104,6 +58,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
 
                 jsonWriter.WriteNumberValue(this.lazyNumber.Value);
+            }
+
+            protected override Number64 GetValue()
+            {
+                return this.lazyNumber.Value;
             }
         }
     }

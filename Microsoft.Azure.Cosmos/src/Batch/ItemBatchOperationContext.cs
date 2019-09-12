@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<BatchOperationResult> OperationTask => this.taskCompletionSource.Task;
 
+        public ItemBatchOperationStatistics Diagnostics { get; } = new ItemBatchOperationStatistics();
+
         private readonly IDocumentClientRetryPolicy retryPolicy;
 
         private TaskCompletionSource<BatchOperationResult> taskCompletionSource = new TaskCompletionSource<BatchOperationResult>();
@@ -56,6 +58,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.AssertBatcher(completer))
             {
+                this.Diagnostics.Complete();
+                result.Diagnostics = this.Diagnostics;
                 this.taskCompletionSource.SetResult(result);
             }
 

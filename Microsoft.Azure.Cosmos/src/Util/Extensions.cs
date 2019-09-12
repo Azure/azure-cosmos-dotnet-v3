@@ -36,14 +36,15 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            if (response.RequestStats != null)
-            {
-                CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = response.RequestStats as CosmosClientSideRequestStatistics;
-                if (cosmosClientSideRequestStatistics != null)
-                {
-                    cosmosResponse.Diagnostics = new PointOperationStatistics(cosmosClientSideRequestStatistics);
-                }
-            }
+            CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = response.RequestStats as CosmosClientSideRequestStatistics;
+            cosmosResponse.Diagnostics = new PointOperationStatistics(
+                statusCode: response.StatusCode,
+                subStatusCode: response.SubStatusCode,
+                requestCharge: cosmosResponse.Headers.RequestCharge,
+                errorMessage: cosmosResponse.ErrorMessage,
+                method: requestMessage?.Method,
+                requestUri: requestMessage?.RequestUri,
+                clientSideRequestStatistics: cosmosClientSideRequestStatistics);
 
             return cosmosResponse;
         }

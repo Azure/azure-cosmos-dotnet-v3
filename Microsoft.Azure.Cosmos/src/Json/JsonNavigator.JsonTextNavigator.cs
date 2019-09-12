@@ -1231,7 +1231,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             bufferedToken.Array,
                             bufferedToken.Offset + 1,
                             bufferedToken.Count - 1);
-                        double value = JsonTextUtil.GetNumberValue(offsetToken);
+                        double value = JsonTextUtil.GetDoubleValue(offsetToken);
                         return value;
                     });
                 }

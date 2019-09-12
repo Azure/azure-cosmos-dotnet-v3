@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -106,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
         public async override Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            ThroughputResponse response = await this.ReadThroughputAsync(null, cancellationToken);
+            ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
             return response.Resource?.Throughput;
         }
 
@@ -119,6 +118,15 @@ namespace Microsoft.Azure.Cosmos
             return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
         }
 
+        internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
+        }
+
         public async override Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
@@ -128,6 +136,21 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
             return await cosmosOffers.ReplaceThroughputAsync(
+                targetRID: rid,
+                throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+            int throughput,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputIfExistsAsync(
                 targetRID: rid,
                 throughput: throughput,
                 requestOptions: requestOptions,
@@ -266,6 +289,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
         {
+            if (!this.ClientContext.ClientOptions.AllowBulkExecution)
+            {
+                return null;
+            }
+
             return new BatchAsyncContainerExecutor(
                 this,
                 this.ClientContext,

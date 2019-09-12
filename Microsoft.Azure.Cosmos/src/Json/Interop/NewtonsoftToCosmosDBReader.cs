@@ -40,44 +40,44 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override float GetFloat32Value()
         {
-            throw new NotImplementedException();
+            return (float)this.reader.Value;
         }
 
         public override double GetFloat64Value()
         {
-            throw new NotImplementedException();
+            return (double)this.reader.Value;
         }
 
         public override Guid GetGuidValue()
         {
-            throw new NotImplementedException();
+            return (Guid)this.reader.Value;
         }
 
         public override short GetInt16Value()
         {
-            throw new NotImplementedException();
+            return (short)this.reader.Value;
         }
 
         public override int GetInt32Value()
         {
-            throw new NotImplementedException();
+            return (int)this.reader.Value;
         }
 
         public override long GetInt64Value()
         {
-            throw new NotImplementedException();
+            return (long)this.reader.Value;
         }
 
         public override sbyte GetInt8Value()
         {
-            throw new NotImplementedException();
+            return (sbyte)this.reader.Value;
         }
 
         public override Number64 GetNumberValue()
         {
             string numberString;
             object value = this.reader.Value;
-            if (value is double)
+            if (value is double doubleValue)
             {
                 numberString = ((double)value).ToString("R");
             }
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override uint GetUInt32Value()
         {
-            throw new NotImplementedException();
+            return (uint)this.reader.Value;
         }
 
         public override bool Read()

@@ -1142,7 +1142,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public double GetFloat64Value()
                 {
                     ArraySegment<byte> rawToken = (ArraySegment<byte>)this.GetBufferedRawJsonToken();
-                    double value = JsonTextUtil.GetNumberValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
+                    double value = JsonTextUtil.GetDoubleValue(new ArraySegment<byte>(rawToken.Array, rawToken.Offset + 1, rawToken.Count - 1));
                     if (value > double.MaxValue || value < double.MinValue)
                     {
                         throw new ArgumentOutOfRangeException($"Tried to read {value} as an {typeof(double).FullName}");
