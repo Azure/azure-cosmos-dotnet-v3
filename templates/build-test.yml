@@ -44,7 +44,7 @@ jobs:
   - pwsh:  |
         If ($env:Traces -eq 1) {
             Write-Host "Run logman create trace SdkTrace" -ForegroundColor green 
-            logman create trace SdkTrace -o "env:Build_ArtifactStagingDirectory\sdk.etl" -pf "$env:Build_Repository_LocalPath\trace-providers.txt" -max 1000
+            logman create trace SdkTrace -o "$env:Build_ArtifactStagingDirectory\sdk.etl" -pf "$env:Build_Repository_LocalPath\trace-providers.txt" -max 1000
             logman start SdkTrace
         }
       
@@ -74,7 +74,7 @@ jobs:
             Write-Host "Move Emulator ETL files to artifacts staging directory" -ForegroundColor green
             tree "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator" /F
             Move-Item -Path "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\**\*.etl" -Destination env:Build_ArtifactStagingDirectory -Force -verbose
-            tree "env:Build_ArtifactStagingDirectory" /F
+            tree "$env:Build_ArtifactStagingDirectory" /F
         }
       
     displayName:  Stop Traces
