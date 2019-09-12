@@ -59,16 +59,10 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteStringValue(string value);
 
         /// <summary>
-        /// Writes an integer to the internal buffer.
-        /// </summary>
-        /// <param name="value">The value of the integer to write.</param>
-        void WriteIntValue(long value);
-
-        /// <summary>
         /// Writes a number to the internal buffer.
         /// </summary>
         /// <param name="value">The value of the number to write.</param>
-        void WriteNumberValue(double value);
+        void WriteNumberValue(Number64 value);
 
         /// <summary>
         /// Writes a boolean to the internal buffer.

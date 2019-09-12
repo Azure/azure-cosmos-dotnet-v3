@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Json
+namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
     using System.IO;
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    sealed class JsonCosmosDBReader : Newtonsoft.Json.JsonReader
+    sealed class CosmosDBToNewtonsoftReader : Newtonsoft.Json.JsonReader
     {
         /// <summary>
         /// Singleton boxed value for null.
@@ -43,9 +43,9 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Initializes a new instance of the NewtonsoftReader class.
         /// </summary>
         /// <param name="stream">The stream to read from.</param>
-        public JsonCosmosDBReader(Stream stream)
+        public CosmosDBToNewtonsoftReader(Stream stream)
         {
-            this.jsonReader = JsonReader.Create(stream);
+            this.jsonReader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(stream);
         }
 
         /// <summary>
@@ -68,22 +68,22 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 case JsonTokenType.BeginArray:
                     newtonsoftToken = JsonToken.StartArray;
-                    value = JsonCosmosDBReader.Null;
+                    value = CosmosDBToNewtonsoftReader.Null;
                     break;
 
                 case JsonTokenType.EndArray:
                     newtonsoftToken = JsonToken.EndArray;
-                    value = JsonCosmosDBReader.Null;
+                    value = CosmosDBToNewtonsoftReader.Null;
                     break;
 
                 case JsonTokenType.BeginObject:
                     newtonsoftToken = JsonToken.StartObject;
-                    value = JsonCosmosDBReader.Null;
+                    value = CosmosDBToNewtonsoftReader.Null;
                     break;
 
                 case JsonTokenType.EndObject:
                     newtonsoftToken = JsonToken.EndObject;
-                    value = JsonCosmosDBReader.Null;
+                    value = CosmosDBToNewtonsoftReader.Null;
                     break;
 
                 case JsonTokenType.String:
@@ -92,30 +92,32 @@ namespace Microsoft.Azure.Cosmos.Json
                     break;
 
                 case JsonTokenType.Number:
-                    value = this.jsonReader.GetNumberValue();
-                    if ((double)value % 1 == 0)
+                    Number64 number64Value = this.jsonReader.GetNumberValue();
+                    if (number64Value.IsInteger)
                     {
+                        value = Number64.ToLong(number64Value);
                         newtonsoftToken = JsonToken.Integer;
                     }
                     else
                     {
+                        value = Number64.ToDouble(number64Value);
                         newtonsoftToken = JsonToken.Float;
                     }
                     break;
 
                 case JsonTokenType.True:
                     newtonsoftToken = JsonToken.Boolean;
-                    value = JsonCosmosDBReader.True;
+                    value = CosmosDBToNewtonsoftReader.True;
                     break;
 
                 case JsonTokenType.False:
                     newtonsoftToken = JsonToken.Boolean;
-                    value = JsonCosmosDBReader.False;
+                    value = CosmosDBToNewtonsoftReader.False;
                     break;
 
                 case JsonTokenType.Null:
                     newtonsoftToken = JsonToken.Null;
-                    value = JsonCosmosDBReader.Null;
+                    value = CosmosDBToNewtonsoftReader.Null;
                     break;
 
                 case JsonTokenType.FieldName:
@@ -255,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
             else
             {
-                value = this.jsonReader.GetNumberValue();
+                value = Number64.ToDouble(this.jsonReader.GetNumberValue());
             }
 
             return value;
