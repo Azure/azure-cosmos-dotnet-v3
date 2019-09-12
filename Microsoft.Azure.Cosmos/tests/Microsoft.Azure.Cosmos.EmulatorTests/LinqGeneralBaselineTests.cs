@@ -1355,11 +1355,313 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("OrderBy Desc -> Select", b => getQuery(b).OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId)));
             inputs.Add(new LinqTestInput("OrderBy -> Select -> Take", b => getQuery(b).OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId).Take(10)));
             inputs.Add(new LinqTestInput("OrderBy -> Select -> Select", b => getQuery(b).OrderByDescending(f => f.FamilyId).Select(f => f.FamilyId).Select(x => x)));
-            // orderby multiple expression is not supported yet
             inputs.Add(new LinqTestInput("OrderBy multiple expressions",
                 b => from f in getQuery(b)
                      orderby f.FamilyId, f.Int
-                     select f.FamilyId, "Method 'ThenBy' is not supported."));
+                     select f.FamilyId));
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestThenByTranslation()
+        {
+            var inputs = new List<LinqTestInput>();
+
+            // Ascending and descending
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenBy(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenByDescending", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderByDescending -> ThenBy", b => getQuery(b)
+                .OrderByDescending(f => f.FamilyId)
+                .ThenBy(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderByDescending -> ThenByDescending", b => getQuery(b)
+                .OrderByDescending(f => f.FamilyId)
+                .ThenByDescending(f => f.Int)));
+
+            // Subquery in OrderBy or in ThenBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy subquery -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.Children.Where(c => c.Grade > 100).Count())
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy subquery", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Parents.Where(p => p.GivenName.Length > 10).Count())));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy subquery -> ThenBy subquery", b => getQuery(b)
+                .OrderByDescending(f => f.Children.Where(c => c.Grade > 100).Count())
+                .ThenBy(f => f.Parents.Where(p => p.GivenName.Length > 10).Count())));
+
+            // OrderBy and ThenBy by the same property (not a realistic scenario)
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenBy(f => f.FamilyId)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenByDescending", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.FamilyId)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderByDescending subquery -> ThenBy subquery", b => getQuery(b)
+                .OrderByDescending(f => f.Children.Where(c => c.Grade > 100).Count())
+                .ThenBy(f => f.Children.Where(c => c.Grade > 100).Count())));
+
+            // OrderBy and ThenBy with epxressions
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.Int * 2)
+                .ThenBy(f => f.FamilyId.Substring(2, 3))));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => !f.NullableInt.IsDefined())
+                .ThenByDescending(f => f.Tags.Count() % 2)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy", b => getQuery(b)
+                .OrderByDescending(f => f.IsRegistered ? f.FamilyId : f.Int.ToString())
+                .ThenBy(f => f.Records.Transactions.Max(t => t.Amount) % 1000)));
+
+            // Multiple OrderBy and ThenBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> OrderBy -> ThenBy", b => getQuery(b)
+                .OrderByDescending(f => f.FamilyId)
+                .OrderBy(f => f.Int)
+                .ThenByDescending(f => f.IsRegistered)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy -> ThenBy", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenBy(f => f.Int)
+                .ThenByDescending(f => f.IsRegistered)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> Orderby subquery -> ThenBy subquery", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .OrderBy(f => f.Children.Where(c => c.Grade > 100).Count())
+                .ThenBy(f => f.Parents.Where(p => p.GivenName.Length > 10).Count())));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy subquery -> ThenBy subquery", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Parents.Where(p => p.GivenName.Length > 10).Count())
+                .ThenBy(f => f.Children.Where(c => c.Grade > 100).Count())));
+
+            // Nested ThenBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy(OrderBy -> ThenBy -> Select)", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Parents
+                    .OrderBy(p => p.FamilyName)
+                    .ThenByDescending(p => p.GivenName)
+                    .Select(p => p.FamilyName + p.GivenName))));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(OrderBy -> ThenBy) -> ThenBy(OrderBy -> ThenBy)", b => getQuery(b)
+                .OrderBy(f => f.Children
+                    .OrderBy(c => c.Grade)
+                    .ThenBy(c => c.Pets.Count))
+                .ThenByDescending(f => f.Parents
+                    .OrderBy(p => p.FamilyName)
+                    .ThenByDescending(p => p.GivenName)
+                    .Select(p => p.FamilyName + p.GivenName))));
+
+            // Nested expressions with ThenBy
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy -> ThenBy(OrderBy -> ThenBy -> Take -> Select)", b => getQuery(b)
+                .OrderBy(f => f.FamilyId)
+                .ThenByDescending(f => f.Parents
+                    .OrderBy(p => p.FamilyName)
+                    .ThenByDescending(p => p.GivenName)
+                    .Take(1)
+                    .Select(p => p.FamilyName + p.GivenName))));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(OrderBy -> ThenBy -> Take -> OrderBy -> ThenBy) -> ThenBy(OrderBy -> ThenBy)", b => getQuery(b)
+                .OrderBy(f => f.Children
+                    .OrderBy(c => c.Grade)
+                    .ThenByDescending(c => c.Pets.Count)
+                    .Take(10)
+                    .OrderByDescending(c => c.GivenName)
+                    .ThenBy(c => c.Gender))
+                .ThenByDescending(f => f.Parents
+                    .OrderBy(p => p.FamilyName)
+                    .ThenByDescending(p => p.GivenName)
+                    .Select(p => p.FamilyName + p.GivenName))));
+
+            // On a new object
+
+            inputs.Add(new LinqTestInput(
+                "Select -> OrderBy -> ThenBy", b => getQuery(b)
+                .Select(f => new
+                {
+                    f.FamilyId,
+                    FamilyNumber = f.Int,
+                    ChildrenCount = f.Children.Count(),
+                    ChildrenPetCount = f.Children.Select(c => c.Pets.Count()).Sum()
+                })
+                .OrderBy(r => r.FamilyId)
+                .ThenBy(r => r.FamilyNumber)));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> OrderBy -> ThenBy", b => getQuery(b)
+                .SelectMany(f => f.Children.Select(c => new
+                {
+                    f.FamilyId,
+                    FamilyNumber = f.Int,
+                    ChildrenCount = f.Children.Count(),
+                    Name = c.GivenName,
+                    SpecialPetCount = c.Pets.Where(p => p.GivenName.Length > 5).Count()
+                })
+                .OrderBy(r => r.FamilyId)
+                .ThenBy(r => r.FamilyNumber))));
+
+            inputs.Add(new LinqTestInput(
+                "SelectMany -> OrderBy -> ThenBy", b => getQuery(b)
+                .SelectMany(f => f.Children.Select(c => new
+                {
+                    f.FamilyId,
+                    FamilyNumber = f.Int,
+                    ChildrenCount = f.Children.Count(),
+                    Name = c.GivenName,
+                    SpecialPetCount = c.Pets.Where(p => p.GivenName.Length > 5).Count()
+                }))
+                .OrderBy(r => r.FamilyId)
+                .ThenBy(r => r.FamilyNumber)
+                .Select(r => r.FamilyId)));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(Where, Sum) -> OrderBy(Count) -> ThenBy)", b => getQuery(b)
+                .Select(f => new {
+                    ChildrenWithPets = f.Children.Where(c => c.Pets.Count() > 0),
+                    TotalExpenses = f.Records.Transactions.Sum(t => t.Amount)
+                })
+                .OrderByDescending(r => r.ChildrenWithPets.Count())
+                .ThenByDescending(r => r.TotalExpenses)));
+
+            inputs.Add(new LinqTestInput(
+                "Select(new(Min, Count, SelectMany->Select->Distinct->Count)) -> OrderByDescending -> ThenBy", b => getQuery(b)
+                .Select(f => new {
+                    ParentGivenName = f.Parents.Min(p => p.GivenName),
+                    ParentCount = f.Parents.Count(),
+                    GoodChildrenCount = f.Children.Where(c => c.Grade > 95).Count(),
+                    UniquePetsNameCount = f.Children.SelectMany(c => c.Pets).Select(p => p.GivenName).Distinct().Count()
+                })
+                .OrderByDescending(r => r.GoodChildrenCount)
+                .ThenBy(r => r.UniquePetsNameCount)));
+
+            // With other LINQ operators: Where, SelectMany, Distinct, Skip, Take, and aggregates
+
+            inputs.Add(new LinqTestInput(
+                "Where -> OrderBy -> ThenBy", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .OrderBy(f => f.IsRegistered)
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> ThenBy -> Take", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Children)
+                .OrderBy(c => c.Grade)
+                .ThenByDescending(c => c.Pets.Count())
+                .Take(3)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> ThenBy -> Skip -> Take -> Where -> Select -> Distinct", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Children)
+                .OrderByDescending(c => c.Grade)
+                .ThenBy(c => c.GivenName)
+                .Skip(2)
+                .Take(20)
+                .Where(c => c.Pets.Where(p => p.GivenName.Length > 10).Count() > 0)
+                .Select(c => c.GivenName)
+                .Distinct()));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> ThenBy -> Select => Distinct => Take => OrderBy", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Children)
+                .OrderBy(c => c.Grade)
+                .ThenByDescending(c => c.Pets.Count())
+                .Select(c => c.GivenName)
+                .Distinct()
+                .Take(10)
+                .Skip(5)
+                .OrderBy(n => n.Length)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany -> OrderBy -> ThenBy -> Take", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Records.Transactions)
+                .OrderBy(t => t.Type)
+                .ThenBy(t => t.Amount)
+                .Take(100)));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> OrderBy -> ThenBy", b => getQuery(b)
+                .Take(100)
+                .OrderBy(f => f.IsRegistered)
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "Take -> OrderBy -> ThenBy -> Skip", b => getQuery(b)
+                .Take(100)
+                .OrderBy(f => f.IsRegistered)
+                .ThenByDescending(f => f.Int)
+                .Skip(5)));
+
+            inputs.Add(new LinqTestInput(
+                "Distinct -> OrderBy -> ThenBy", b => getQuery(b)
+                .Distinct()
+                .OrderBy(f => f.IsRegistered)
+                .ThenByDescending(f => f.Int)));
+
+            inputs.Add(new LinqTestInput(
+                "Where -> SelectMany(Select(new Where->Count)) -> Distinct -> OrderBy -> ThenBy", b => getQuery(b)
+                .Where(f => f.Children.Count() > 0)
+                .SelectMany(f => f.Children.Select(c => new {
+                    Name = c.GivenName,
+                    PetWithLongNames = c.Pets.Where(p => p.GivenName.Length > 8).Count()
+                }))
+                .Distinct()
+                .OrderByDescending(r => r.Name)
+                .ThenBy(r => r.PetWithLongNames)));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(Any) -> ThenBy(Any)", b => getQuery(b)
+                .OrderBy(f => f.Children.Any(c => c.Grade > 90))
+                .ThenByDescending(f => f.Parents.Any(p => p.GivenName.Length > 10))));
+
+            inputs.Add(new LinqTestInput(
+                "OrderBy(Min) -> ThenBy(Max) -> ThenBy(Sum) -> ThenBy(Avg)", b => getQuery(b)
+                .OrderBy(f => f.Children.Min(c => c.GivenName))
+                .ThenByDescending(f => f.Parents.Max(p => p.GivenName))
+                .ThenBy(f => f.Records.Transactions.Sum(t => t.Amount))
+                .ThenByDescending(f => f.Records.Transactions.Average(t => t.Amount))));
+
             this.ExecuteTestSuite(inputs);
         }
 

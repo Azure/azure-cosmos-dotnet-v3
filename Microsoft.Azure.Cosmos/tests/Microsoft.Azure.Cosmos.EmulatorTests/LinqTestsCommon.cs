@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
@@ -320,9 +321,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 PartitionKey = partitionKeyDefinition,
                 IndexingPolicy = new Microsoft.Azure.Cosmos.IndexingPolicy()
                 {
-                    IncludedPaths = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.IncludedPath>()
+                    IncludedPaths = new Collection<Cosmos.IncludedPath>()
                     {
-                        new Microsoft.Azure.Cosmos.IncludedPath()
+                        new Cosmos.IncludedPath()
                         {
                             Path = "/*",
                             Indexes = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Index>()
@@ -330,6 +331,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                                 Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.Number, -1),
                                 Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.String, -1)
                             }
+                        }
+                    },
+                    CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
+                    {
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/FamilyId", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Ascending }
+                        },
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/FamilyId", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Descending }
+                        },
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/FamilyId", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/IsRegistered", Order = Cosmos.CompositePathSortOrder.Descending }
+                        },
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/IsRegistered", Order = Cosmos.CompositePathSortOrder.Descending }
+                        },
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/IsRegistered", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Descending }
                         }
                     }
                 }
