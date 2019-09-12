@@ -43,12 +43,12 @@ jobs:
 
   - pwsh:  |
         If ($env:Traces -eq 1) {
-            Write-Host "Run logman create trace SystemNetTrace" -ForegroundColor green 
-            logman create trace SystemNetTrace -o net.etl -pf "$env:Build_Repository_LocalPath\net-trace-providers.txt" -max 1000
-            logman start SystemNetTrace
+            Write-Host "Run logman create trace SdkTrace" -ForegroundColor green 
+            logman create trace SdkTrace -o sdk.etl -pf "$env:Build_Repository_LocalPath\trace-providers.txt" -max 1000
+            logman start SdkTrace
         }
       
-    displayName:  Run logman create trace SystemNetTrace
+    displayName:  Run logman create trace SdkTrace
     failOnStderr:  true
     errorActionPreference:  stop
 
@@ -81,8 +81,8 @@ jobs:
         }
       
     displayName:  Stop Traces
-    failOnStderr:  true
-    errorActionPreference:  stop
+    failOnStderr:  false
+    errorActionPreference:  continue
 
   - task: PublishBuildArtifacts@1
     condition: eq(variables['Traces'], 1)
