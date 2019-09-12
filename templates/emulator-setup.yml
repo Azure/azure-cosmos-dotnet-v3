@@ -13,7 +13,9 @@ steps:
         Write-Host "Traces = $env:Traces" -ForegroundColor green 
         If ($env:Traces -eq 1) {
             Write-Host "Starting Comsos DB Emulator Tracing" -ForegroundColor green 
-            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/StartTraces=$env:Build_ArtifactStagingDirectory\emulator.etl" -Verb RunAs
+            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/StartTraces" -Verb RunAs
+            sleep 20
+            ls "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
         }
         Write-Host "Starting Comsos DB Emulator" -ForegroundColor green 
         Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio /overrides=sqlAllowGroupByClause:true" -Verb RunAs
