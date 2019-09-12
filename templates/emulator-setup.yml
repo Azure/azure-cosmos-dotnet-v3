@@ -10,6 +10,7 @@ steps:
         choco upgrade lessmsi
         mkdir "$env:temp\Azure Cosmos DB Emulator"
         lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
+        Write-Host "Traces = $env:Traces" -ForegroundColor green 
         If ($env:Traces -eq 1) {
             Write-Host "Starting Comsos DB Emulator Tracing" -ForegroundColor green 
             Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/startTraces" -Verb RunAs
