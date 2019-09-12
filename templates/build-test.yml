@@ -72,12 +72,12 @@ jobs:
             logman stop SystemNetTrace
             logman delete SystemNetTrace
             Write-Host "Move EmulatorTest\bin ETL files to artifacts staging directory" -ForegroundColor green 
-            ls "$env:Build_Repository_LocalPath\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin"
+            tree "$env:Build_Repository_LocalPath\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin" /F
             Move-Item -Path "$env:Build_Repository_LocalPath\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin\**\*.etl" -Destination $env:Build_ArtifactStagingDirectory -Force -verbose
             Write-Host "Move Emulator ETL files to artifacts staging directory" -ForegroundColor green
-            ls "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
+            tree "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator" /F
             Move-Item -Path "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\**\*.etl" -Destination env:Build_ArtifactStagingDirectory -Force -verbose
-            ls "env:Build_ArtifactStagingDirectory"
+            tree "env:Build_ArtifactStagingDirectory" /F
         }
       
     displayName:  Stop Traces
