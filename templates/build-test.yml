@@ -72,14 +72,12 @@ jobs:
             logman stop SystemNetTrace
             logman delete SystemNetTrace
             Write-Host "Move EmulatorTest\bin ETL files to artifacts staging directory" -ForegroundColor green 
-            $colItems =  (get-childitem "$env:Build_Repository_LocalPath\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin" | tee-object -variable files | measure-object -property length -sum)
-            $files | foreach-object {write-host $_.FullName}
-            Move-Item -Path "$env:Build_Repository_LocalPath\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin\*.etl" -Destination $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY -Force -verbose
+            ls "$env:Build_Repository_LocalPath\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin"
+            Move-Item -Path "$env:Build_Repository_LocalPath\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin\*.etl" -Destination $env:Build_ArtifactStagingDirectory -Force -verbose
             Write-Host "Move Emulator ETL files to artifacts staging directory" -ForegroundColor green
-            $colItems =  (get-childitem "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator" | tee-object -variable files | measure-object -property length -sum)
-            $files | foreach-object {write-host $_.FullName}
-            Move-Item -Path "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\*.etl" -Destination $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY -Force -verbose
-            dir $ENV:BUILD_ARTIFACTSTAGINGDIRECTORY
+            ls "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
+            Move-Item -Path "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\*.etl" -Destination env:Build_ArtifactStagingDirectory -Force -verbose
+            ls "env:Build_ArtifactStagingDirectory"
         }
       
     displayName:  Stop Traces
