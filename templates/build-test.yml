@@ -41,6 +41,17 @@ jobs:
 
   - template:  emulator-setup.yml
 
+  - pwsh:  |
+        If ($env:Traces -eq 1) {
+            Write-Host "Run logman create trace SystemNetTrace" -ForegroundColor green 
+            logman create trace SystemNetTrace -o net.etl -pf "ENV:BUILD_REPOSITORY_LOCALPATH\net-trace-providers.txt -max 1000
+            logman start SystemNetTrace
+        }
+      
+    displayName:  Run logman create trace SystemNetTrace
+    failOnStderr:  true
+    errorActionPreference:  stop
+
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
     condition: succeeded() 
