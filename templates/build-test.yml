@@ -67,7 +67,9 @@ jobs:
   - pwsh:  |
         If ($env:Traces -eq 1) {
             Write-Host "Stopping Comsos DB Emulator Tracing" -ForegroundColor green 
-            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/StopTraces" -Verb RunAs
+            #Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/StopTraces" -Verb RunAs
+            logman stop DocDBEmulatorTrace
+            logman delete DocDBEmulatorTrace
             sleep 5
             Write-Host "Stopping logman SdkTrace" -ForegroundColor green 
             logman stop SdkTrace

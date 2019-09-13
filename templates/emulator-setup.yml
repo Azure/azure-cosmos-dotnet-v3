@@ -13,7 +13,16 @@ steps:
         Write-Host "Traces = $env:Traces" -ForegroundColor green 
         If ($env:Traces -eq 1) {
             Write-Host "Starting Comsos DB Emulator Tracing" -ForegroundColor green 
-            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/StartTraces" -Verb RunAs
+            #Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/StartTraces" -Verb RunAs
+            logman stop DocDBEmulatorTrace
+            logman delete DocDBEmulatorTrace
+            logman create DocDBEmulatorTrace trace -cnf 0 -nb 16 -bs 100 -o "$env:Build_ArtifactStagingDirectory\emulator.etl" -ow -max 150
+            logman update DocDBEmulatorTrace -p DocDBServer
+            logman update DocDBEmulatorTrace -p DocDBMaster
+            logman update DocDBEmulatorTrace -p DocDBRuntime
+            logman update DocDBEmulatorTrace -p {AA09F651-7EA2-4029-8057-12692E61A9FD}
+            logman update DocDBEmulatorTrace -p {B16218D5-CCFC-47EC-8BB7-55F93F224FE5}
+            logman start DocDBEmulatorTrace
             sleep 20
             ls "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
         }
