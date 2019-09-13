@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
 
     /// <summary>
     /// Defines a Cosmos SQL query
@@ -88,9 +89,41 @@ namespace Microsoft.Azure.Cosmos
             return this;
         }
 
+        /// <summary>
+        /// Add parameters to the SQL query
+        /// </summary>
+        /// <param name="parameters">The parameters to add, in the form of a list of key-value pairs (can be a dictionary).</param>
+        /// <remarks>
+        /// If the same name is added again it will replace the original value
+        /// </remarks>
+        /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
+        public QueryDefinition WithParameters(IEnumerable<KeyValuePair<string, object>> parameters)
+        {
+            if (parameters == null)
+            {
+                throw new ArgumentNullException(nameof(parameters));
+            }
+
+            foreach (var keyValuePair in parameters)
+            {
+                this.SqlParameters[keyValuePair.Key] = new SqlParameter(keyValuePair.Key, keyValuePair.Value);
+            }
+            
+            return this;
+        }
+
         internal SqlQuerySpec ToSqlQuerySpec()
         {
             return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.SqlParameters.Values));
+        }
+
+        /// <summary>
+        /// Returns a copy of the query definition's parameters.
+        /// </summary>
+        /// <returns>A dictionary with the names and values of the parameters.</returns>
+        public IReadOnlyDictionary<string, object> GetParameters()
+        {
+            return SqlParameters.ToDictionary(p => p.Key, p => p.Value.Value);
         }
     }
 }

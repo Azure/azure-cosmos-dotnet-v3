@@ -3745,6 +3745,16 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition WithParameter(System.String, System.Object)"
         },
+        "Microsoft.Azure.Cosmos.QueryDefinition WithParameters(System.Collections.Generic.IEnumerable`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition WithParameters(System.Collections.Generic.IEnumerable`1[System.Collections.Generic.KeyValuePair`2[System.String,System.Object]])"
+        },
+        "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] GetParameters()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] GetParameters()"
+        },
         "System.String get_QueryText()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [

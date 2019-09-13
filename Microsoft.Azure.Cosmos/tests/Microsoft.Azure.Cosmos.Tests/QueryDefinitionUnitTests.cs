@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -50,6 +51,49 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(sqlQueryDefinition.ToSqlQuerySpec().Parameters.First().Name, sqlQuerySpec.Parameters.First().Name);
             Assert.AreEqual(sqlQueryDefinition.ToSqlQuerySpec().Parameters.First().Value, sqlQuerySpec.Parameters.First().Value);
 
+        }
+
+        [TestMethod]
+        public void GetParametersReturnsCopyOfQueryParameters()
+        {
+            var queryDefinition = new QueryDefinition("select * from s where s.Account = @account and s.Name = @name")
+                .WithParameter("@account", "12345")
+                .WithParameter("@name", "ABC");
+
+            var parameters = queryDefinition.GetParameters();
+            Assert.IsTrue(parameters.TryGetValue("@account", out var account));
+            Assert.AreEqual("12345", account);
+            Assert.IsTrue(parameters.TryGetValue("@name", out var name));
+            Assert.AreEqual("ABC", name);
+
+            // Ensure the returned dictionary is a copy, so modifications to the query
+            // definition are not reflected in the dictionary.
+            queryDefinition.WithParameter("@foo", "bar");
+            Assert.IsFalse(parameters.ContainsKey("@foo"));
+        }
+
+        [TestMethod]
+        public void WithParametersCombinesWithExistingParameters()
+        {
+            var queryDefinition = new QueryDefinition("select * from s where s.Account = @account and s.Name = @name")
+                .WithParameter("@account", "12345")
+                .WithParameter("@name", "ABC");
+
+            var parametersToAdd = new Dictionary<string, object>
+            {
+                ["@name"] = "XYZ",
+                ["@foo"] = "bar"
+            };
+
+            queryDefinition.WithParameters(parametersToAdd);
+            
+            var parameters = queryDefinition.GetParameters();
+            Assert.IsTrue(parameters.TryGetValue("@account", out var account));
+            Assert.AreEqual("12345", account);
+            Assert.IsTrue(parameters.TryGetValue("@name", out var name));
+            Assert.AreEqual("XYZ", name);
+            Assert.IsTrue(parameters.TryGetValue("@foo", out var foo));
+            Assert.AreEqual("bar", foo);
         }
 
         [TestMethod]
