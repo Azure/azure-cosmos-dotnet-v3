@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryDefinition
     {
-        private Dictionary<string, SqlParameter> SqlParameters { get; }
+        private readonly Dictionary<string, object> parameters;
 
         /// <summary>
         /// Create a <see cref="QueryDefinition"/>
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.QueryText = query;
-            this.SqlParameters = new Dictionary<string, SqlParameter>();
+            this.parameters = new Dictionary<string, object>();
         }
 
         /// <summary>
@@ -53,10 +53,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.QueryText = sqlQuery.QueryText;
-            this.SqlParameters = new Dictionary<string, SqlParameter>();
+            this.parameters = new Dictionary<string, object>();
             foreach (SqlParameter sqlParameter in sqlQuery.Parameters)
             {
-                this.SqlParameters.Add(sqlParameter.Name, sqlParameter);
+                this.parameters.Add(sqlParameter.Name, sqlParameter.Value);
             }
         }
 
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(name));
             }
 
-            this.SqlParameters[name] = new SqlParameter(name, value);
+            this.parameters[name] = value;
             return this;
         }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (var keyValuePair in parameters)
             {
-                this.SqlParameters[keyValuePair.Key] = new SqlParameter(keyValuePair.Key, keyValuePair.Value);
+                this.parameters[keyValuePair.Key] = keyValuePair.Value;
             }
             
             return this;
@@ -114,16 +114,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal SqlQuerySpec ToSqlQuerySpec()
         {
-            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.SqlParameters.Values));
+            var sqlParameters = this.parameters.Select(p => new SqlParameter(p.Key, p.Value));
+            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(sqlParameters));
         }
 
         /// <summary>
-        /// Returns a copy of the query definition's parameters.
+        /// Returns the query definition's parameters.
         /// </summary>
         /// <returns>A dictionary with the names and values of the parameters.</returns>
-        public IReadOnlyDictionary<string, object> GetParameters()
-        {
-            return SqlParameters.ToDictionary(p => p.Key, p => p.Value.Value);
-        }
+        public IReadOnlyDictionary<string, object> Parameters => this.parameters;
     }
 }

@@ -54,22 +54,22 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void GetParametersReturnsCopyOfQueryParameters()
+        public void ParametersReturnsQueryParameters()
         {
             var queryDefinition = new QueryDefinition("select * from s where s.Account = @account and s.Name = @name")
                 .WithParameter("@account", "12345")
                 .WithParameter("@name", "ABC");
 
-            var parameters = queryDefinition.GetParameters();
+            var parameters = queryDefinition.Parameters;
             Assert.IsTrue(parameters.TryGetValue("@account", out var account));
             Assert.AreEqual("12345", account);
             Assert.IsTrue(parameters.TryGetValue("@name", out var name));
             Assert.AreEqual("ABC", name);
 
-            // Ensure the returned dictionary is a copy, so modifications to the query
-            // definition are not reflected in the dictionary.
+            // Ensure the returned dictionary is not a copy, so modifications to the query
+            // definition are reflected in the returned dictionary.
             queryDefinition.WithParameter("@foo", "bar");
-            Assert.IsFalse(parameters.ContainsKey("@foo"));
+            Assert.IsTrue(parameters.ContainsKey("@foo"));
         }
 
         [TestMethod]
@@ -86,8 +86,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             queryDefinition.WithParameters(parametersToAdd);
-            
-            var parameters = queryDefinition.GetParameters();
+
+            var parameters = queryDefinition.Parameters;
             Assert.IsTrue(parameters.TryGetValue("@account", out var account));
             Assert.AreEqual("12345", account);
             Assert.IsTrue(parameters.TryGetValue("@name", out var name));
