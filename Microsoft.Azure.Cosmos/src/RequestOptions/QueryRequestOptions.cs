@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
+                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, 1.ToString());
             }
 
             if (this.MaxConcurrency.HasValue && this.MaxConcurrency > 0)
