@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Returns the query definition's parameters.
         /// </summary>
-        /// <returns>A dictionary with the names and values of the parameters.</returns>
+        /// <returns>A dictionary with the name and value of the parameters.</returns>
         public IReadOnlyDictionary<string, object> Parameters => this.parameters;
     }
 }
