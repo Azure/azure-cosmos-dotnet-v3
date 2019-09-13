@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Query
         public virtual ResourceType ResourceTypeEnum { get; }
         public virtual OperationType OperationTypeEnum { get; }
         public virtual Type ResourceType { get; }
-        public virtual SqlQuerySpec SqlQuerySpec { get; internal set; }
         public virtual QueryRequestOptions QueryRequestOptions { get; }
         public virtual bool IsContinuationExpected { get; }
         public virtual bool AllowNonValueAggregateQuery { get; }
@@ -31,7 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query
             ResourceType resourceTypeEnum,
             OperationType operationType,
             Type resourceType,
-            SqlQuerySpec sqlQuerySpecFromUser,
             QueryRequestOptions queryRequestOptions,
             Uri resourceLink,
             Guid correlatedActivityId,
@@ -49,11 +47,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(resourceType));
             }
 
-            if (sqlQuerySpecFromUser == null)
-            {
-                throw new ArgumentNullException(nameof(sqlQuerySpecFromUser));
-            }
-
             if (queryRequestOptions == null)
             {
                 throw new ArgumentNullException(nameof(queryRequestOptions));
@@ -68,7 +61,6 @@ namespace Microsoft.Azure.Cosmos.Query
             this.QueryClient = client;
             this.ResourceTypeEnum = resourceTypeEnum;
             this.ResourceType = resourceType;
-            this.SqlQuerySpec = sqlQuerySpecFromUser;
             this.QueryRequestOptions = queryRequestOptions;
             this.ResourceLink = resourceLink;
             this.ContainerResourceId = containerResourceId;

@@ -189,7 +189,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(ToDoItem),
-                sqlQuerySpecFromUser: DefaultQuerySpec,
                 queryRequestOptions: new QueryRequestOptions(),
                 resourceLink: DefaultResourceLink,
                 correlatedActivityId: Guid.NewGuid(),
@@ -287,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new List<int[]>(){ new int[] {0, 1} }
             };
 
-            foreach (var firstPartition in firstPartitionOptions)
+            foreach (List<int[]> firstPartition in firstPartitionOptions)
             {
                 int itemCount = 0;
                 if (firstPartition != null)

@@ -70,8 +70,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private CosmosQueryContext queryContext;
 
-        private QueryRequestOptions queryRequestOptions;
-
         /// <summary>
         /// This stores all the query metrics which have been grouped by partition id.
         /// When a feed response is returned (which includes multiple partitions and potentially multiple continuations)
@@ -108,12 +106,18 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the CosmosCrossPartitionQueryExecutionContext class.
         /// </summary>
-        /// <param name="initParams">Constructor parameters for the base class.</param>
+        /// <param name="queryContext">Constructor parameters for the base class.</param>
+        /// <param name="maxConcurrency">The max concurrency</param>
+        /// <param name="maxBufferedItemCount">The max buffered item count</param>
+        /// <param name="maxItemCount">Max item count</param>
         /// <param name="moveNextComparer">Comparer used to figure out that document producer tree to serve documents from next.</param>
         /// <param name="fetchPrioirtyFunction">The priority function to determine which partition to fetch documents from next.</param>
         /// <param name="equalityComparer">Used to determine whether we need to return the continuation token for a partition.</param>
         protected CosmosCrossPartitionQueryExecutionContext(
-            CosmosQueryContext initParams,
+            CosmosQueryContext queryContext,
+            int? maxConcurrency,
+            int? maxItemCount,
+            int? maxBufferedItemCount,
             IComparer<ItemProducerTree> moveNextComparer,
             Func<ItemProducerTree, int> fetchPrioirtyFunction,
             IEqualityComparer<CosmosElement> equalityComparer)
@@ -133,15 +137,14 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(equalityComparer));
             }
 
-            this.queryContext = initParams;
-            this.queryRequestOptions = initParams.QueryRequestOptions;
+            this.queryContext = queryContext;
             this.itemProducerForest = new PriorityQueue<ItemProducerTree>(moveNextComparer, isSynchronized: true);
             this.fetchPrioirtyFunction = fetchPrioirtyFunction;
-            this.comparableTaskScheduler = new ComparableTaskScheduler(initParams.QueryRequestOptions.MaxConcurrency.GetValueOrDefault(0));
+            this.comparableTaskScheduler = new ComparableTaskScheduler(maxConcurrency.GetValueOrDefault(0));
             this.equalityComparer = equalityComparer;
             this.requestChargeTracker = new RequestChargeTracker();
             this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
-            this.actualMaxPageSize = this.queryRequestOptions.MaxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
+            this.actualMaxPageSize = maxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
 
             if (this.actualMaxPageSize < 0)
             {
@@ -153,9 +156,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentOutOfRangeException("actualMaxPageSize should never be greater than int.MaxValue");
             }
 
-            if (this.queryRequestOptions.MaxBufferedItemCount.HasValue)
+            if (maxBufferedItemCount.HasValue)
             {
-                this.actualMaxBufferedItemCount = this.queryRequestOptions.MaxBufferedItemCount.Value;
+                this.actualMaxBufferedItemCount = maxBufferedItemCount.Value;
             }
             else
             {
@@ -171,6 +174,8 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 throw new ArgumentOutOfRangeException("actualMaxBufferedItemCount should never be greater than int.MaxValue");
             }
+
+            this.CanPrefetch = maxConcurrency.HasValue && maxConcurrency.Value != 0;
         }
 
         /// <summary>
@@ -204,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether we are allowed to prefetch.
         /// </summary>
-        private bool CanPrefetch => this.queryRequestOptions.MaxConcurrency.HasValue && this.queryRequestOptions.MaxConcurrency.Value != 0;
+        private bool CanPrefetch { get; }
 
         /// <summary>
         /// Gets a value indicating whether the context still has more results.
@@ -707,17 +712,23 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <summary>
             /// Initializes a new instance of the InitParams struct.
             /// </summary>
+            /// <param name="sqlQuerySpec">The Sql query spec</param>
             /// <param name="collectionRid">The collection rid.</param>
             /// <param name="partitionedQueryExecutionInfo">The partitioned query execution info.</param>
             /// <param name="partitionKeyRanges">The partition key ranges.</param>
             /// <param name="initialPageSize">The initial page size.</param>
-            /// <param name="requestContinuation">The request continuation.</param>
+            /// <param name="maxConcurrency">The max concurrency</param>
+            /// <param name="maxBufferedItemCount">The max buffered item count</param>
+            /// <param name="maxItemCount">Max item count</param>
             public CrossPartitionInitParams(
+                SqlQuerySpec sqlQuerySpec,
                 string collectionRid,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 List<PartitionKeyRange> partitionKeyRanges,
                 int initialPageSize,
-                string requestContinuation)
+                int? maxConcurrency,
+                int? maxItemCount,
+                int? maxBufferedItemCount)
             {
                 if (string.IsNullOrWhiteSpace(collectionRid))
                 {
@@ -747,14 +758,26 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new ArgumentOutOfRangeException($"{nameof(initialPageSize)} must be at least 1.");
                 }
 
-                //// Request continuation is allowed to be null
+                if (sqlQuerySpec == null)
+                {
+                    throw new ArgumentNullException($"{nameof(sqlQuerySpec)} can not be null.");
+                }
 
+                //// Request continuation is allowed to be null
+                this.SqlQuerySpec = sqlQuerySpec;
                 this.CollectionRid = collectionRid;
                 this.PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
                 this.PartitionKeyRanges = partitionKeyRanges;
                 this.InitialPageSize = initialPageSize;
-                this.RequestContinuation = requestContinuation;
+                this.MaxBufferedItemCount = maxBufferedItemCount;
+                this.MaxConcurrency = maxConcurrency;
+                this.MaxItemCount = maxItemCount;
             }
+
+            /// <summary>
+            /// Get the sql query spec
+            /// </summary>
+            public SqlQuerySpec SqlQuerySpec { get; }
 
             /// <summary>
             /// Gets the collection rid to drain documents from.
@@ -777,9 +800,19 @@ namespace Microsoft.Azure.Cosmos.Query
             public int InitialPageSize { get; }
 
             /// <summary>
-            /// Gets the continuation token to use for resuming the context (potentially on a different machine and different SDK).
+            /// Gets the max concurrency
             /// </summary>
-            public string RequestContinuation { get; }
+            public int? MaxConcurrency { get; }
+
+            /// <summary>
+            /// Gets the max item count
+            /// </summary>
+            public int? MaxItemCount { get; }
+
+            /// <summary>
+            /// Gets the max buffered item count
+            /// </summary>
+            public int? MaxBufferedItemCount { get; }
         }
 
         #region ItemProducerTreeComparableTask

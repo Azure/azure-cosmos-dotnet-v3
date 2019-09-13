@@ -167,12 +167,6 @@ namespace Microsoft.Azure.Cosmos
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
 
-            // Flow the pageSize only when we are not doing client eval
-            if (this.MaxItemCount.HasValue)
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
-            }
-
             if (this.MaxConcurrency.HasValue && this.MaxConcurrency > 0)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery, bool.TrueString);

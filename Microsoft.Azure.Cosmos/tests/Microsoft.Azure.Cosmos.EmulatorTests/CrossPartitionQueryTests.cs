@@ -4071,46 +4071,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Simple property reference
                 // ------------------------------------------
 
-                new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.age FROM c GROUP BY c.age",
-                    documentsAsJTokens
-                        .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(new JProperty("age", grouping.Key)))),
+                //new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.age FROM c GROUP BY c.age",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(new JProperty("age", grouping.Key)))),
 
-                 new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.name FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value).
-                        Select(grouping => new JObject(new JProperty("name", grouping.Key)))),
+                // new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.name FROM c GROUP BY c.name",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value).
+                //        Select(grouping => new JObject(new JProperty("name", grouping.Key)))),
 
-                 new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.team FROM c GROUP BY c.team",
-                    documentsAsJTokens
-                        .GroupBy(document => document["team"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(new JProperty("team", grouping.Key)))),
+                // new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.team FROM c GROUP BY c.team",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["team"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(new JProperty("team", grouping.Key)))),
 
-                 new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.gender FROM c GROUP BY c.gender",
-                    documentsAsJTokens
-                        .GroupBy(document => document["gender"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(new JProperty("gender", grouping.Key)))),
+                // new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.gender FROM c GROUP BY c.gender",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["gender"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(new JProperty("gender", grouping.Key)))),
 
-                 new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.id FROM c GROUP BY c.id",
-                    documentsAsJTokens
-                        .GroupBy(document => document["id"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(new JProperty("id", grouping.Key)))),
+                // new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.id FROM c GROUP BY c.id",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["id"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(new JProperty("id", grouping.Key)))),
 
-                  new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.age, c.name FROM c GROUP BY c.age, c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => new JObject(
-                            new JProperty("age", document["age"]),
-                            new JProperty("name", document["name"])),
-                            JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("age", grouping.Key["age"]),
-                            new JProperty("name", grouping.Key["name"])))),
+                //  new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.age, c.name FROM c GROUP BY c.age, c.name",
+                //    documentsAsJTokens
+                //        .GroupBy(document => new JObject(
+                //            new JProperty("age", document["age"]),
+                //            new JProperty("name", document["name"])),
+                //            JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(
+                //            new JProperty("age", grouping.Key["age"]),
+                //            new JProperty("name", grouping.Key["name"])))),
 
                  // ------------------------------------------
                  // With Aggregates
@@ -4124,105 +4124,105 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             new JProperty("age", grouping.Key),
                             new JProperty("count", grouping.Count())))),
 
-                  new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.name, MIN(c.age) AS min_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("min_age", grouping.Select(document => document["age"]).Min(jToken => jToken.Value<double>()))))),
+                //  new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.name, MIN(c.age) AS min_age FROM c GROUP BY c.name",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(
+                //            new JProperty("name", grouping.Key),
+                //            new JProperty("min_age", grouping.Select(document => document["age"]).Min(jToken => jToken.Value<double>()))))),
 
-                 new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.name, MAX(c.age) AS max_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("max_age", grouping.Select(document => document["age"]).Max(jToken => jToken.Value<double>()))))),
+                // new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.name, MAX(c.age) AS max_age FROM c GROUP BY c.name",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(
+                //            new JProperty("name", grouping.Key),
+                //            new JProperty("max_age", grouping.Select(document => document["age"]).Max(jToken => jToken.Value<double>()))))),
 
-                 new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.name, SUM(c.age) AS sum_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("sum_age", grouping.Select(document => document["age"]).Sum(jToken => jToken.Value<double>()))))),
+                // new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.name, SUM(c.age) AS sum_age FROM c GROUP BY c.name",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(
+                //            new JProperty("name", grouping.Key),
+                //            new JProperty("sum_age", grouping.Select(document => document["age"]).Sum(jToken => jToken.Value<double>()))))),
 
-                 new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.name, AVG(c.age) AS avg_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("avg_age", grouping.Select(document => document["age"]).Average(jToken => jToken.Value<double>()))))),
+                // new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.name, AVG(c.age) AS avg_age FROM c GROUP BY c.name",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(
+                //            new JProperty("name", grouping.Key),
+                //            new JProperty("avg_age", grouping.Select(document => document["age"]).Average(jToken => jToken.Value<double>()))))),
 
-                  new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT c.name, Count(1) AS count, Min(c.age) AS min_age, Max(c.age) AS max_age FROM c GROUP BY c.name",
-                    documentsAsJTokens
-                        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
-                        .Select(grouping => new JObject(
-                            new JProperty("name", grouping.Key),
-                            new JProperty("count", grouping.Count()),
-                            new JProperty("min_age", grouping.Select(document => document["age"]).Min(jToken => jToken.Value<double>())),
-                            new JProperty("max_age", grouping.Select(document => document["age"]).Max(jToken => jToken.Value<double>()))))),
+                //  new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT c.name, Count(1) AS count, Min(c.age) AS min_age, Max(c.age) AS max_age FROM c GROUP BY c.name",
+                //    documentsAsJTokens
+                //        .GroupBy(document => document["name"], JsonTokenEqualityComparer.Value)
+                //        .Select(grouping => new JObject(
+                //            new JProperty("name", grouping.Key),
+                //            new JProperty("count", grouping.Count()),
+                //            new JProperty("min_age", grouping.Select(document => document["age"]).Min(jToken => jToken.Value<double>())),
+                //            new JProperty("max_age", grouping.Select(document => document["age"]).Max(jToken => jToken.Value<double>()))))),
 
-                // ------------------------------------------
-                // SELECT VALUE
-                // ------------------------------------------
+                //// ------------------------------------------
+                //// SELECT VALUE
+                //// ------------------------------------------
 
-                new Tuple<string, IEnumerable<JToken>>(
-                        "SELECT VALUE c.age FROM c GROUP BY c.age",
-                        documentsAsJTokens
-                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                            .Select(grouping => grouping.Key)),
+                //new Tuple<string, IEnumerable<JToken>>(
+                //        "SELECT VALUE c.age FROM c GROUP BY c.age",
+                //        documentsAsJTokens
+                //            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
+                //            .Select(grouping => grouping.Key)),
 
-                // ------------------------------------------
-                // Corner Cases
-                // ------------------------------------------
+                //// ------------------------------------------
+                //// Corner Cases
+                //// ------------------------------------------
 
-                new Tuple<string, IEnumerable<JToken>>(
-                    "SELECT AVG(\"asdf\") as avg_asdf FROM c GROUP BY c.age",
-                        documentsAsJTokens
-                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                            .Select(grouping => new JObject())),
+                //new Tuple<string, IEnumerable<JToken>>(
+                //    "SELECT AVG(\"asdf\") as avg_asdf FROM c GROUP BY c.age",
+                //        documentsAsJTokens
+                //            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
+                //            .Select(grouping => new JObject())),
 
-                new Tuple<string, IEnumerable<JToken>>(
-                    @"SELECT 
-                        c.age, 
-                        AVG(c.doesNotExist) as undefined_avg,
-                        MIN(c.doesNotExist) as undefined_min,
-                        MAX(c.doesNotExist) as undefined_max,
-                        COUNT(c.doesNotExist) as undefined_count,
-                        SUM(c.doesNotExist) as undefined_sum
-                    FROM c 
-                    GROUP BY c.age",
-                        documentsAsJTokens
-                            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
-                            .Select(grouping => new JObject(
-                                new JProperty("age", grouping.Key),
-                                // sum and count default the counter at 0
-                                new JProperty("undefined_sum", 0),
-                                new JProperty("undefined_count", 0)))),
+                //new Tuple<string, IEnumerable<JToken>>(
+                //    @"SELECT 
+                //        c.age, 
+                //        AVG(c.doesNotExist) as undefined_avg,
+                //        MIN(c.doesNotExist) as undefined_min,
+                //        MAX(c.doesNotExist) as undefined_max,
+                //        COUNT(c.doesNotExist) as undefined_count,
+                //        SUM(c.doesNotExist) as undefined_sum
+                //    FROM c 
+                //    GROUP BY c.age",
+                //        documentsAsJTokens
+                //            .GroupBy(document => document["age"], JsonTokenEqualityComparer.Value)
+                //            .Select(grouping => new JObject(
+                //                new JProperty("age", grouping.Key),
+                //                // sum and count default the counter at 0
+                //                new JProperty("undefined_sum", 0),
+                //                new JProperty("undefined_count", 0)))),
 
-                new Tuple<string, IEnumerable<JToken>>(
-                    @"SELECT 
-                        c.age, 
-                        c.doesNotExist
-                    FROM c 
-                    GROUP BY c.age, c.doesNotExist",
-                        documentsAsJTokens
-                            .GroupBy(document => new JObject(
-                                new JProperty("age", document["age"]),
-                                new JProperty("doesNotExist", document["doesNotExist"])),
-                                JsonTokenEqualityComparer.Value)
-                            .Select(grouping => new JObject(
-                                new JProperty("age", grouping.Key["age"])))),
+                //new Tuple<string, IEnumerable<JToken>>(
+                //    @"SELECT 
+                //        c.age, 
+                //        c.doesNotExist
+                //    FROM c 
+                //    GROUP BY c.age, c.doesNotExist",
+                //        documentsAsJTokens
+                //            .GroupBy(document => new JObject(
+                //                new JProperty("age", document["age"]),
+                //                new JProperty("doesNotExist", document["doesNotExist"])),
+                //                JsonTokenEqualityComparer.Value)
+                //            .Select(grouping => new JObject(
+                //                new JProperty("age", grouping.Key["age"])))),
             };
 
             // Test query correctness.
             foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
             {
-                foreach (int maxItemCount in new int[] { 1, 5, 10 })
+                foreach (int maxItemCount in new int[] { 5 })
                 {
                     int maxConcurrency = 2;
                     List<JToken> actual = await QueryWithoutContinuationTokens<JToken>(
@@ -4251,27 +4251,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Test that continuation token is blocked
-            {
-                try
-                {
-                    int maxConcurrency = 2;
-                    int maxItemCount = 1;
+            //{
+            //    try
+            //    {
+            //        int maxConcurrency = 2;
+            //        int maxItemCount = 1;
 
-                    List<JToken> actual = await QueryWithContinuationTokens<JToken>(
-                        container,
-                        "SELECT c.age FROM c GROUP BY c.age",
-                        maxConcurrency,
-                        maxItemCount,
-                        new QueryRequestOptions()
-                        {
-                            EnableGroupBy = true,
-                        });
-                    Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
-                }
-                catch (Exception e) when (e.GetBaseException().Message.Contains(GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy))
-                {
-                }
-            }
+            //        List<JToken> actual = await QueryWithContinuationTokens<JToken>(
+            //            container,
+            //            "SELECT c.age FROM c GROUP BY c.age",
+            //            maxConcurrency,
+            //            maxItemCount,
+            //            new QueryRequestOptions()
+            //            {
+            //                EnableGroupBy = true,
+            //            });
+            //        Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
+            //    }
+            //    catch (Exception e) when (e.GetBaseException().Message.Contains(GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy))
+            //    {
+            //    }
+            //}
         }
 
         private sealed class Headers

@@ -22,18 +22,31 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery)
         {
-            this.cosmosQueryExecutionContext = new CosmosQueryExecutionContextFactory(
+            CosmosQueryContext context = new CosmosQueryContext(
                 client: client,
                 resourceTypeEnum: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.Query,
                 resourceType: typeof(QueryResponseCore),
-                sqlQuerySpec: sqlQuerySpec,
-                continuationToken: continuationToken,
                 queryRequestOptions: queryRequestOptions,
                 resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: Guid.NewGuid());
+
+            CosmosQueryExecutionContextFactory.InputParameters inputParams = new CosmosQueryExecutionContextFactory.InputParameters()
+            {
+                SqlQuerySpec = sqlQuerySpec,
+                InitialUserContinuationToken = continuationToken,
+                MaxBufferedItemCount = queryRequestOptions?.MaxBufferedItemCount,
+                MaxConcurrency = queryRequestOptions?.MaxConcurrency,
+                MaxItemCount = queryRequestOptions?.MaxItemCount,
+                PartitionKey = queryRequestOptions?.PartitionKey,
+                Properties = queryRequestOptions?.Properties
+            };
+
+            this.cosmosQueryExecutionContext = new CosmosQueryExecutionContextFactory(
+                cosmosQueryContext: context,
+                inputParameters: inputParams);
         }
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
