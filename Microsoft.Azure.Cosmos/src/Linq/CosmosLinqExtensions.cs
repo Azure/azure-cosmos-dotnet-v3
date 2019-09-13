@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>s>
         public static bool IsArray(this object obj)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>s>
         public static bool IsBool(this object obj)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>s>
         public static bool IsNumber(this object obj)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>s>
         public static bool IsObject(this object obj)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>s>
         public static bool IsString(this object obj)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
 
         /// <summary>
