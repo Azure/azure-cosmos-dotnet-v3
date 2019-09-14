@@ -28,12 +28,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
         public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
-        public override IReadOnlyList<byte> GetBinaryValue()
+        public override ReadOnlySpan<byte> GetBinaryValue()
         {
             throw new NotImplementedException();
         }
 
-        public override IReadOnlyList<byte> GetBufferedRawJsonToken()
+        public override ReadOnlySpan<byte> GetBufferedRawJsonToken()
         {
             throw new NotImplementedException();
         }

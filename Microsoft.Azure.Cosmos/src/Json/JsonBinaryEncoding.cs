@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Text;
 
     /// <summary>
@@ -98,218 +99,676 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets the number value from the binary reader.
         /// </summary>
-        /// <param name="binaryReader">BinaryReader pointing to a number.</param>
+        /// <param name="numberToken">The buffer to read the number from.</param>
         /// <returns>The number value from the binary reader.</returns>
-        public static Number64 GetNumberValue(BinaryReader binaryReader)
+        public static Number64 GetNumberValue(ReadOnlySpan<byte> numberToken)
         {
-            byte typeMarker = binaryReader.ReadByte();
-            if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
+            if (!JsonBinaryEncoding.TryGetNumberValue(numberToken, out Number64 number64, out int bytesConsumed))
             {
-                return typeMarker - JsonBinaryEncoding.TypeMarker.LiteralIntMin;
+                throw new JsonNotNumberTokenException();
             }
 
-            switch (typeMarker)
-            {
-                case JsonBinaryEncoding.TypeMarker.NumberUInt8:
-                    return binaryReader.ReadByte();
-                case JsonBinaryEncoding.TypeMarker.NumberInt16:
-                    return binaryReader.ReadInt16();
-                case JsonBinaryEncoding.TypeMarker.NumberInt32:
-                    return binaryReader.ReadInt32();
-                case JsonBinaryEncoding.TypeMarker.NumberInt64:
-                    return binaryReader.ReadInt64();
-                case JsonBinaryEncoding.TypeMarker.NumberDouble:
-                    return binaryReader.ReadDouble();
-                default:
-                    throw new JsonInvalidNumberException();
-            }
-        }
-
-        public static sbyte GetInt8Value(BinaryReader binaryReader)
-        {
-            JsonBinaryEncoding.CheckFixedSizedValue(
-                binaryReader,
-                JsonBinaryEncoding.TypeMarker.Int8);
-            return binaryReader.ReadSByte();
-        }
-
-        public static short GetInt16Value(BinaryReader binaryReader)
-        {
-            JsonBinaryEncoding.CheckFixedSizedValue(
-                binaryReader,
-                JsonBinaryEncoding.TypeMarker.Int16);
-            return binaryReader.ReadInt16();
-        }
-
-        public static int GetInt32Value(BinaryReader binaryReader)
-        {
-            JsonBinaryEncoding.CheckFixedSizedValue(
-                binaryReader,
-                JsonBinaryEncoding.TypeMarker.Int32);
-            return binaryReader.ReadInt32();
-        }
-
-        public static long GetInt64Value(BinaryReader binaryReader)
-        {
-            JsonBinaryEncoding.CheckFixedSizedValue(
-                binaryReader,
-                JsonBinaryEncoding.TypeMarker.Int64);
-            return binaryReader.ReadInt64();
-        }
-
-        public static uint GetUInt32Value(BinaryReader binaryReader)
-        {
-            JsonBinaryEncoding.CheckFixedSizedValue(
-                binaryReader,
-                JsonBinaryEncoding.TypeMarker.UInt32);
-            return binaryReader.ReadUInt32();
-        }
-
-        public static float GetFloat32Value(BinaryReader binaryReader)
-        {
-            JsonBinaryEncoding.CheckFixedSizedValue(
-                binaryReader,
-                JsonBinaryEncoding.TypeMarker.Float32);
-            return binaryReader.ReadSingle();
-        }
-
-        public static double GetFloat64Value(BinaryReader binaryReader)
-        {
-            JsonBinaryEncoding.CheckFixedSizedValue(
-                binaryReader,
-                JsonBinaryEncoding.TypeMarker.Float64);
-            return binaryReader.ReadDouble();
-        }
-
-        public static Guid GetGuidValue(BinaryReader binaryReader)
-        {
-            JsonBinaryEncoding.CheckFixedSizedValue(
-                binaryReader,
-                JsonBinaryEncoding.TypeMarker.Guid);
-
-            uint a = binaryReader.ReadUInt32();
-            ushort b = binaryReader.ReadUInt16();
-            ushort c = binaryReader.ReadUInt16();
-            byte d = binaryReader.ReadByte();
-            byte e = binaryReader.ReadByte();
-            byte f = binaryReader.ReadByte();
-            byte g = binaryReader.ReadByte();
-            byte h = binaryReader.ReadByte();
-            byte i = binaryReader.ReadByte();
-            byte j = binaryReader.ReadByte();
-            byte k = binaryReader.ReadByte();
-
-            return new Guid(a, b, c, d, e, f, g, h, i, j, k);
-        }
-
-        private static void CheckFixedSizedValue(
-            BinaryReader binaryReader,
-            byte expectedTypeMarker)
-        {
-            if (binaryReader == null)
-            {
-                throw new ArgumentNullException(nameof(binaryReader));
-            }
-
-            byte typeMarker = binaryReader.ReadByte();
-
-            if (typeMarker != expectedTypeMarker)
-            {
-                throw new JsonInvalidNumberException();
-            }
-        }
-
-        public static IReadOnlyList<byte> GetBinaryValue(BinaryReader binaryReader)
-        {
-            if (binaryReader == null)
-            {
-                throw new ArgumentNullException(nameof(binaryReader));
-            }
-
-            byte typeMarker = binaryReader.ReadByte();
-            uint binaryLength;
-            switch (typeMarker)
-            {
-                case JsonBinaryEncoding.TypeMarker.Binary1ByteLength:
-                    binaryLength = binaryReader.ReadByte();
-                    break;
-
-                case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
-                    binaryLength = binaryReader.ReadUInt16();
-                    break;
-
-                case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
-                    binaryLength = binaryReader.ReadUInt32();
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown type marker {typeMarker}.");
-            }
-
-            if (binaryLength > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException("Binary length was greater than int.MaxValue");
-            }
-
-            return binaryReader.ReadBytes((int)binaryLength);
-        }
-
-        /// <summary>
-        /// Gets the string value from the binary reader.
-        /// </summary>
-        /// <param name="binaryReader">A binary reader whose cursor is at the beginning of a stream.</param>
-        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
-        /// <returns>A string value from the binary reader.</returns>
-        public static string GetStringValue(BinaryReader binaryReader, JsonStringDictionary jsonStringDictionary)
-        {
-            byte typeMarker = binaryReader.ReadByte();
-            binaryReader.BaseStream.Position--;
-            string value;
-            if (JsonBinaryEncoding.TypeMarker.IsSystemString(typeMarker))
-            {
-                value = JsonBinaryEncoding.GetEncodedSystemString(binaryReader);
-            }
-            else if (JsonBinaryEncoding.TypeMarker.IsUserString(typeMarker))
-            {
-                value = JsonBinaryEncoding.GetEncodedUserString(binaryReader, jsonStringDictionary);
-            }
-            else
-            {
-                // Retrieve utf-8 buffered string
-                value = JsonBinaryEncoding.GetUTFString(binaryReader);
-            }
-
-            return value;
-        }
-
-        /// <summary>
-        /// Try Get JsonTokenType
-        /// </summary>
-        /// <param name="buffer">The buffer.</param>
-        /// <returns>the JsonTokenType</returns>
-        public static JsonTokenType TryGetJsonTokenType(byte[] buffer)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Try Get Value Length
-        /// </summary>
-        /// <param name="buffer">The buffer.</param>
-        /// <returns>the ValueLength</returns>
-        public static long TryGetValueLength(byte[] buffer)
-        {
-            throw new NotImplementedException();
+            return number64;
         }
 
         /// <summary>
         /// Try Get NumberValue
         /// </summary>
-        /// <param name="buffer">The buffer.</param>
-        /// <returns>the NumberValue</returns>
-        public static double TryGetNumberValue(byte[] buffer)
+        /// <param name="numberToken">The buffer.</param>
+        /// <param name="number64">The number.</param>
+        /// <param name="bytesConsumed">The number of bytes consumed</param>
+        /// <returns>Whether a number was parsed.</returns>
+        public static bool TryGetNumberValue(ReadOnlySpan<byte> numberToken, out Number64 number64, out int bytesConsumed)
         {
-            throw new NotImplementedException();
+            number64 = 0;
+            bytesConsumed = 0;
+
+            if (numberToken.Length == 0)
+            {
+                return false;
+            }
+
+            byte typeMarker = numberToken[0];
+
+            if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
+            {
+                number64 = typeMarker - JsonBinaryEncoding.TypeMarker.LiteralIntMin;
+                bytesConsumed = 1;
+            }
+            else
+            {
+                switch (typeMarker)
+                {
+                    case JsonBinaryEncoding.TypeMarker.NumberUInt8:
+                        if (numberToken.Length < (1 + 1))
+                        {
+                            return false;
+                        }
+
+                        number64 = MemoryMarshal.Read<byte>(numberToken.Slice(1));
+                        bytesConsumed = 1 + 1;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.NumberInt16:
+                        if (numberToken.Length < (1 + 2))
+                        {
+                            return false;
+                        }
+
+                        number64 = MemoryMarshal.Read<short>(numberToken.Slice(1));
+                        bytesConsumed = 1 + 2;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.NumberInt32:
+                        if (numberToken.Length < (1 + 4))
+                        {
+                            return false;
+                        }
+
+                        number64 = MemoryMarshal.Read<int>(numberToken.Slice(1));
+                        bytesConsumed = 1 + 4;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.NumberInt64:
+                        if (numberToken.Length < (1 + 8))
+                        {
+                            return false;
+                        }
+
+                        number64 = MemoryMarshal.Read<long>(numberToken.Slice(1));
+                        bytesConsumed = 1 + 8;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.NumberDouble:
+                        if (numberToken.Length < (1 + 8))
+                        {
+                            return false;
+                        }
+
+                        number64 = MemoryMarshal.Read<double>(numberToken.Slice(1));
+                        bytesConsumed = 1 + 8;
+                        break;
+
+                    default:
+                        throw new JsonInvalidNumberException();
+                }
+            }
+
+            return true;
+        }
+
+        public static sbyte GetInt8Value(ReadOnlySpan<byte> int8Token)
+        {
+            if (!JsonBinaryEncoding.TryGetInt8Value(int8Token, out sbyte int8Value))
+            {
+                throw new JsonInvalidNumberException();
+            }
+
+            return int8Value;
+        }
+
+        public static bool TryGetInt8Value(
+            ReadOnlySpan<byte> int8Token,
+            out sbyte int8Value)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<sbyte>(
+                int8Token,
+                JsonBinaryEncoding.TypeMarker.Int8,
+                out int8Value);
+        }
+
+        public static short GetInt16Value(ReadOnlySpan<byte> int16Token)
+        {
+            if (!JsonBinaryEncoding.TryGetInt16Value(int16Token, out short int16Value))
+            {
+                throw new JsonInvalidNumberException();
+            }
+
+            return int16Value;
+        }
+
+        public static bool TryGetInt16Value(
+            ReadOnlySpan<byte> int16Token,
+            out short int16Value)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<short>(
+                int16Token,
+                JsonBinaryEncoding.TypeMarker.Int16,
+                out int16Value);
+        }
+
+        public static int GetInt32Value(ReadOnlySpan<byte> int32Token)
+        {
+            if (!JsonBinaryEncoding.TryGetInt32Value(int32Token, out int int32Value))
+            {
+                throw new JsonInvalidNumberException();
+            }
+
+            return int32Value;
+        }
+
+        public static bool TryGetInt32Value(
+            ReadOnlySpan<byte> int32Token,
+            out int int32Value)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<int>(
+                int32Token,
+                JsonBinaryEncoding.TypeMarker.Int32,
+                out int32Value);
+        }
+
+        public static long GetInt64Value(ReadOnlySpan<byte> int64Token)
+        {
+            if (!JsonBinaryEncoding.TryGetInt64Value(int64Token, out long int64Value))
+            {
+                throw new JsonInvalidNumberException();
+            }
+
+            return int64Value;
+        }
+
+        public static bool TryGetInt64Value(
+            ReadOnlySpan<byte> int64Token,
+            out long int64Value)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<long>(
+                int64Token,
+                JsonBinaryEncoding.TypeMarker.Int64,
+                out int64Value);
+        }
+
+        public static uint GetUInt32Value(ReadOnlySpan<byte> uInt32Token)
+        {
+            if (!JsonBinaryEncoding.TryGetUInt32Value(uInt32Token, out uint uInt32Value))
+            {
+                throw new JsonInvalidNumberException();
+            }
+
+            return uInt32Value;
+        }
+
+        public static bool TryGetUInt32Value(
+            ReadOnlySpan<byte> uInt32Token,
+            out uint uInt32Value)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<uint>(
+                uInt32Token,
+                JsonBinaryEncoding.TypeMarker.UInt32,
+                out uInt32Value);
+        }
+
+        public static float GetFloat32Value(ReadOnlySpan<byte> float32Token)
+        {
+            if (!JsonBinaryEncoding.TryGetFloat32Value(float32Token, out float float32Value))
+            {
+                throw new JsonInvalidNumberException();
+            }
+
+            return float32Value;
+        }
+
+        public static bool TryGetFloat32Value(
+            ReadOnlySpan<byte> float32Token,
+            out float float32Value)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<float>(
+                float32Token,
+                JsonBinaryEncoding.TypeMarker.Float32,
+                out float32Value);
+        }
+
+        public static double GetFloat64Value(ReadOnlySpan<byte> float64Token)
+        {
+            if (!JsonBinaryEncoding.TryGetFloat64Value(float64Token, out double float64Value))
+            {
+                throw new JsonInvalidNumberException();
+            }
+
+            return float64Value;
+        }
+
+        public static bool TryGetFloat64Value(
+            ReadOnlySpan<byte> float64Token,
+            out double float64Value)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<double>(
+                float64Token,
+                JsonBinaryEncoding.TypeMarker.Float64,
+                out float64Value);
+        }
+
+        public static Guid GetGuidValue(ReadOnlySpan<byte> guidToken)
+        {
+            if (!JsonBinaryEncoding.TryGetGuidValue(guidToken, out Guid guidValue))
+            {
+                throw new JsonInvalidNumberException();
+            }
+
+            return guidValue;
+        }
+
+        public static bool TryGetGuidValue(
+            ReadOnlySpan<byte> guidToken,
+            out Guid guidValue)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<Guid>(
+                guidToken,
+                JsonBinaryEncoding.TypeMarker.Guid,
+                out guidValue);
+        }
+
+        public static ReadOnlySpan<byte> GetBinaryValue(ReadOnlySpan<byte> binaryToken)
+        {
+            if (!JsonBinaryEncoding.TryGetBinaryValue(binaryToken, out ReadOnlySpan<byte> binaryValue))
+            {
+                throw new JsonInvalidTokenException();
+            }
+
+            return binaryValue;
+        }
+
+        public static bool TryGetBinaryValue(ReadOnlySpan<byte> binaryToken, out ReadOnlySpan<byte> binaryValue)
+        {
+            binaryValue = default;
+            if (binaryToken.Length == 0)
+            {
+                return false;
+            }
+
+            byte typeMarker = binaryToken[0];
+            uint length;
+            switch (typeMarker)
+            {
+                case JsonBinaryEncoding.TypeMarker.Binary1ByteLength:
+                    if (binaryToken.Length < (1 + 1))
+                    {
+                        return false;
+                    }
+
+                    length = MemoryMarshal.Read<byte>(binaryToken.Slice(1));
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
+                    if (binaryToken.Length < (1 + 2))
+                    {
+                        return false;
+                    }
+
+                    length = MemoryMarshal.Read<ushort>(binaryToken.Slice(1));
+                    break;
+
+                case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
+                    if (binaryToken.Length < (1 + 4))
+                    {
+                        return false;
+                    }
+
+                    length = MemoryMarshal.Read<uint>(binaryToken.Slice(1));
+                    break;
+
+                default:
+                    return false;
+            }
+
+            if (length > int.MaxValue)
+            {
+                return false;
+            }
+
+            binaryValue = binaryToken.Slice(1, (int)length);
+            return true;
+        }
+
+        /// <summary>
+        /// Gets the string value from the binary reader.
+        /// </summary>
+        /// <param name="stringToken">The buffer that has the string.</param>
+        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
+        /// <returns>A string value from the binary reader.</returns>
+        public static string GetStringValue(
+            ReadOnlySpan<byte> stringToken,
+            JsonStringDictionary jsonStringDictionary)
+        {
+            if (!JsonBinaryEncoding.TryGetStringValue(stringToken, jsonStringDictionary, out string result))
+            {
+                throw new JsonInvalidTokenException();
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Try Get String Value
+        /// </summary>
+        /// <param name="stringToken">The buffer.</param>
+        /// <param name="jsonStringDictionary">The dictionary to use for string decoding.</param>
+        /// <param name="result">The result.</param>
+        /// <returns>Whether we got the string.</returns>
+        public static bool TryGetStringValue(
+            ReadOnlySpan<byte> stringToken,
+            JsonStringDictionary jsonStringDictionary,
+            out string result)
+        {
+            result = null;
+            if (stringToken.Length == 0)
+            {
+                return false;
+            }
+
+            if (JsonBinaryEncoding.TryGetEncodedStringValue(stringToken, jsonStringDictionary, out result))
+            {
+                return true;
+            }
+
+            if (JsonBinaryEncoding.TryGetUtf8String(stringToken, out result))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Try Get Encoded String Value
+        /// </summary>
+        /// <param name="stringToken">The string token to read from.</param>
+        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
+        /// <param name="encodedStringValue">The encoded string if found.</param>
+        /// <returns>Encoded String Value</returns>
+        private static bool TryGetEncodedStringValue(
+            ReadOnlySpan<byte> stringToken,
+            JsonStringDictionary jsonStringDictionary,
+            out string encodedStringValue)
+        {
+            encodedStringValue = default(string);
+
+            bool found;
+            if (JsonBinaryEncoding.TryGetEncodedSystemStringValue(stringToken, out encodedStringValue))
+            {
+                found = true;
+            }
+            else if (JsonBinaryEncoding.TryGetEncodedUserStringValue(stringToken, jsonStringDictionary, out encodedStringValue))
+            {
+                found = true;
+            }
+            else
+            {
+                found = false;
+            }
+
+            return found;
+        }
+
+        /// <summary>
+        /// Try Get Encoded System String Value
+        /// </summary>
+        /// <param name="stringToken">The buffer to read from..</param>
+        /// <param name="encodedSystemString">The encoded system string.</param>
+        /// <returns>Encoded System String Value</returns>
+        private static bool TryGetEncodedSystemStringValue(
+            ReadOnlySpan<byte> stringToken,
+            out string encodedSystemString)
+        {
+            encodedSystemString = default(string);
+            if (stringToken.Length == 0)
+            {
+                return false;
+            }
+
+            int? systemStringId;
+            if (stringToken.Length == 1 && JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(stringToken[0]))
+            {
+                systemStringId = stringToken[0] - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
+
+            }
+            else
+            {
+                systemStringId = null;
+            }
+
+            if (systemStringId.HasValue)
+            {
+                encodedSystemString = GetSystemStringById(systemStringId.Value);
+            }
+
+            return systemStringId.HasValue;
+        }
+
+        /// <summary>
+        /// Try Get Encoded User String Value
+        /// </summary>
+        /// <param name="stringToken">The string token to read from.</param>
+        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
+        /// <param name="encodedUserStringValue">The encoded user string value if found.</param>
+        /// <returns>Whether or not the Encoded User String Value was found</returns>
+        private static bool TryGetEncodedUserStringValue(
+            ReadOnlySpan<byte> stringToken,
+            JsonStringDictionary jsonStringDictionary,
+            out string encodedUserStringValue)
+        {
+            encodedUserStringValue = default(string);
+            if (jsonStringDictionary == null || stringToken.Length == 0)
+            {
+                return false;
+            }
+
+            int userStringId;
+            if (stringToken.Length == 1 && JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(stringToken[0]))
+            {
+                userStringId = stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
+
+            }
+            else if (stringToken.Length == 2 && JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(stringToken[0]))
+            {
+                const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
+                userStringId = OneByteCount
+                    + stringToken[1]
+                    + ((stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin) * 0xFF);
+            }
+            else
+            {
+                return false;
+            }
+
+            return jsonStringDictionary.TryGetStringAtIndex(userStringId, out encodedUserStringValue);
+        }
+
+        private static bool TryGetUtf8String(
+            ReadOnlySpan<byte> stringToken,
+            out string utf8StringValue)
+        {
+            utf8StringValue = null;
+            if (stringToken.Length == 0)
+            {
+                return false;
+            }
+
+            byte typeMarker = stringToken[0];
+            long length;
+            if (JsonBinaryEncoding.TypeMarker.IsEncodedLengthString(typeMarker))
+            {
+                length = JsonBinaryEncoding.GetStringLengths(typeMarker);
+            }
+            else
+            {
+                switch (typeMarker)
+                {
+                    case JsonBinaryEncoding.TypeMarker.String1ByteLength:
+                        if (stringToken.Length < (1 + 1))
+                        {
+                            return false;
+                        }
+
+                        length = MemoryMarshal.Read<byte>(stringToken.Slice(1));
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.String2ByteLength:
+                        if (stringToken.Length < (1 + 2))
+                        {
+                            return false;
+                        }
+
+                        length = MemoryMarshal.Read<ushort>(stringToken.Slice(1));
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.String4ByteLength:
+                        if (stringToken.Length < (1 + 4))
+                        {
+                            return false;
+                        }
+
+                        length = MemoryMarshal.Read<uint>(stringToken.Slice(1));
+                        break;
+
+                    default:
+                        return false;
+                }
+            }
+
+            if ((length > int.MaxValue) || length < 0)
+            {
+                return false;
+            }
+
+            unsafe
+            {
+                fixed (byte* spanPointer = stringToken)
+                {
+                    utf8StringValue = Encoding.UTF8.GetString(spanPointer, (int)length);
+                }
+            }
+
+            return true;
+        }
+
+        public static JsonTokenType GetJsonTokenType(byte typeMarker)
+        {
+            JsonTokenType jsonTokenType;
+            if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
+            {
+                jsonTokenType = JsonTokenType.Number;
+            }
+            else if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedString(typeMarker))
+            {
+                jsonTokenType = JsonTokenType.String;
+            }
+            else if (JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedString(typeMarker))
+            {
+                jsonTokenType = JsonTokenType.String;
+            }
+            else if (JsonBinaryEncoding.TypeMarker.IsEncodedLengthString(typeMarker))
+            {
+                jsonTokenType = JsonTokenType.String;
+            }
+            else
+            {
+                switch (typeMarker)
+                {
+                    // Single-byte values
+                    case JsonBinaryEncoding.TypeMarker.Null:
+                        jsonTokenType = JsonTokenType.Null;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.False:
+                        jsonTokenType = JsonTokenType.False;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.True:
+                        jsonTokenType = JsonTokenType.True;
+                        break;
+
+                    // Number values
+                    case JsonBinaryEncoding.TypeMarker.NumberUInt8:
+                    case JsonBinaryEncoding.TypeMarker.NumberInt16:
+                    case JsonBinaryEncoding.TypeMarker.NumberInt32:
+                    case JsonBinaryEncoding.TypeMarker.NumberInt64:
+                    case JsonBinaryEncoding.TypeMarker.NumberDouble:
+                        jsonTokenType = JsonTokenType.Number;
+                        break;
+
+                    // Extended Type System
+                    case JsonBinaryEncoding.TypeMarker.Int8:
+                        jsonTokenType = JsonTokenType.Int8;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Int16:
+                        jsonTokenType = JsonTokenType.Int16;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Int32:
+                        jsonTokenType = JsonTokenType.Int32;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Int64:
+                        jsonTokenType = JsonTokenType.Int64;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.UInt32:
+                        jsonTokenType = JsonTokenType.UInt32;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Float32:
+                        jsonTokenType = JsonTokenType.Float32;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Float64:
+                        jsonTokenType = JsonTokenType.Float64;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Guid:
+                        jsonTokenType = JsonTokenType.Guid;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.Binary1ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
+                        jsonTokenType = JsonTokenType.Binary;
+                        break;
+
+                    // Variable Length String Values
+                    case JsonBinaryEncoding.TypeMarker.String1ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.String2ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.String4ByteLength:
+                        jsonTokenType = JsonTokenType.String;
+                        break;
+
+                    // Array Values
+                    case JsonBinaryEncoding.TypeMarker.EmptyArray:
+                    case JsonBinaryEncoding.TypeMarker.SingleItemArray:
+                    case JsonBinaryEncoding.TypeMarker.Array1ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Array2ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Array4ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount:
+                        jsonTokenType = JsonTokenType.BeginArray;
+                        break;
+
+                    // Object Values
+                    case JsonBinaryEncoding.TypeMarker.EmptyObject:
+                    case JsonBinaryEncoding.TypeMarker.SinglePropertyObject:
+                    case JsonBinaryEncoding.TypeMarker.Object1ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Object2ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Object4ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount:
+                        jsonTokenType = JsonTokenType.BeginObject;
+                        break;
+
+                    default:
+                        throw new JsonInvalidTokenException();
+                }
+            }
+
+            return jsonTokenType;
+        }
+
+        public static bool TryGetValueLength(ReadOnlySpan<byte> buffer, out int length)
+        {
+            // Too lazy to convert this right now.
+            length = (int)JsonBinaryEncoding.GetValueLength(buffer);
+            return true;
         }
 
         /// <summary>
@@ -345,57 +804,6 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             return found;
-        }
-
-        /// <summary>
-        /// Try Get Encoded String Value
-        /// </summary>
-        /// <param name="multiByteTypeMarker">The multi byte type marker.</param>
-        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
-        /// <param name="encodedStringValue">The encoded string if found.</param>
-        /// <returns>Encoded String Value</returns>
-        public static bool TryGetEncodedStringValue(
-            MultiByteTypeMarker multiByteTypeMarker,
-            JsonStringDictionary jsonStringDictionary,
-            out string encodedStringValue)
-        {
-            encodedStringValue = default(string);
-
-            bool found;
-            if (TryGetEncodedSystemStringValue(multiByteTypeMarker, out encodedStringValue))
-            {
-                found = true;
-            }
-            else if (TryGetEncodedUserStringValue(multiByteTypeMarker, jsonStringDictionary, out encodedStringValue))
-            {
-                found = true;
-            }
-            else
-            {
-                found = false;
-            }
-
-            return found;
-        }
-
-        /// <summary>
-        /// Try Get Buffered String Value
-        /// </summary>
-        /// <param name="buffer">The buffer.</param>
-        /// <returns>Buffered String Value</returns>
-        public static IReadOnlyList<byte> TryGetBufferedStringValue(byte[] buffer)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Try Get String Value
-        /// </summary>
-        /// <param name="buffer">The buffer.</param>
-        /// <returns>String Value</returns>
-        public static string TryGetStringValue(byte[] buffer)
-        {
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -440,15 +848,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets the length of a particular value given it's typemarker
         /// </summary>
         /// <param name="buffer">The buffer to read from as input.</param>
-        /// <param name="offset">The offset to read from as input.</param>
         /// <returns>
         /// - Positive Value: The length of the value including its TypeMarker
         /// - Negative Value: The length is encoded as an integer of size equals to abs(value) following the TypeMarker byte
         /// - Zero Value: The length is unknown (for instance an unassigned type marker)
         /// </returns>
-        public static long GetValueLength(byte[] buffer, long offset)
+        public static long GetValueLength(ReadOnlySpan<byte> buffer)
         {
-            return JsonBinaryEncoding.ValueLengths.GetValueLength(buffer, (int)offset);
+            return JsonBinaryEncoding.ValueLengths.GetValueLength(buffer);
         }
 
         /// <summary>
@@ -515,7 +922,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             const int MinStringLength = 2;
             const int MaxStringLength = 128;
-            if (jsonStringDictionary != null && ((value.Length >= MinStringLength) && (value.Length <= MaxStringLength)))
+            if (jsonStringDictionary != null && (value.Length >= MinStringLength) && (value.Length <= MaxStringLength))
             {
                 const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
                 if (jsonStringDictionary.TryAddString(value, out int index))
@@ -543,198 +950,27 @@ namespace Microsoft.Azure.Cosmos.Json
             return false;
         }
 
-        /// <summary>
-        /// Try Get Encoded System String Value
-        /// </summary>
-        /// <param name="multiByteTypeMarker">The multi byte type marker.</param>
-        /// <param name="encodedSystemString">The encoded system string.</param>
-        /// <returns>Encoded System String Value</returns>
-        private static bool TryGetEncodedSystemStringValue(
-            MultiByteTypeMarker multiByteTypeMarker,
-            out string encodedSystemString)
+        private static bool TryGetFixedWidthValue<T>(
+            ReadOnlySpan<byte> token,
+            int expectedTypeMarker,
+            out T fixedWidthValue)
+            where T : struct
         {
-            encodedSystemString = default(string);
-            if (multiByteTypeMarker.Length == 0)
+            fixedWidthValue = default(T);
+            int sizeofType = Marshal.SizeOf(fixedWidthValue);
+            if (token.Length < 1 + sizeofType)
             {
                 return false;
             }
 
-            int? systemStringId;
-            if (multiByteTypeMarker.Length == 1 && JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(multiByteTypeMarker.One))
-            {
-                systemStringId = multiByteTypeMarker.One - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
-
-            }
-            else
-            {
-                systemStringId = null;
-            }
-
-            if (systemStringId.HasValue)
-            {
-                encodedSystemString = GetSystemStringById(systemStringId.Value);
-            }
-
-            return systemStringId.HasValue;
-        }
-
-        /// <summary>
-        /// Try Get Encoded User String Value
-        /// </summary>
-        /// <param name="multiByteTypeMarker">The multi byte type marker.</param>
-        /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
-        /// <param name="encodedUserStringValue">The encoded user string value if found.</param>
-        /// <returns>Whether or not the Encoded User String Value was found</returns>
-        private static bool TryGetEncodedUserStringValue(
-            MultiByteTypeMarker multiByteTypeMarker,
-            JsonStringDictionary jsonStringDictionary,
-            out string encodedUserStringValue)
-        {
-            encodedUserStringValue = default(string);
-            if (jsonStringDictionary == null || multiByteTypeMarker.Length == 0)
+            byte typeMarker = token[0];
+            if (typeMarker != expectedTypeMarker)
             {
                 return false;
             }
 
-            int? userStringId;
-            if (multiByteTypeMarker.Length == 1 && JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(multiByteTypeMarker.One))
-            {
-                userStringId = multiByteTypeMarker.One - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
-
-            }
-            else if (multiByteTypeMarker.Length == 2 && JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(multiByteTypeMarker.One))
-            {
-                const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
-                userStringId = OneByteCount
-                    + multiByteTypeMarker.Two
-                    + ((multiByteTypeMarker.One - JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin) * 0xFF);
-            }
-            else
-            {
-                userStringId = null;
-            }
-
-            if (userStringId.HasValue)
-            {
-                if (jsonStringDictionary.TryGetStringAtIndex(userStringId.Value, out encodedUserStringValue))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static string GetEncodedUserString(BinaryReader binaryReader, JsonStringDictionary jsonStringDictionary)
-        {
-            byte typeMarker = binaryReader.ReadByte();
-
-            MultiByteTypeMarker multiByteTypeMarker;
-            if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(typeMarker))
-            {
-                multiByteTypeMarker = new MultiByteTypeMarker(
-                    length: 1,
-                    one: typeMarker);
-            }
-            else if (JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(typeMarker))
-            {
-                byte firstByte = typeMarker;
-                byte secondByte = binaryReader.ReadByte();
-
-                multiByteTypeMarker = new MultiByteTypeMarker(
-                    length: 2,
-                    one: firstByte,
-                    two: secondByte);
-            }
-            else
-            {
-                throw new JsonNotStringTokenException();
-            }
-
-            if (!JsonBinaryEncoding.TryGetEncodedUserStringValue(multiByteTypeMarker, jsonStringDictionary, out string encodedUserString))
-            {
-                throw new JsonNotStringTokenException();
-            }
-
-            return encodedUserString;
-        }
-
-        private static string GetEncodedSystemString(BinaryReader binaryReader)
-        {
-            byte typeMarker = binaryReader.ReadByte();
-
-            MultiByteTypeMarker multiByteTypeMarker;
-            if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(typeMarker))
-            {
-                multiByteTypeMarker = new MultiByteTypeMarker(
-                    length: 1,
-                    one: typeMarker);
-            }
-            else
-            {
-                throw new JsonNotStringTokenException();
-            }
-
-            if (!JsonBinaryEncoding.TryGetEncodedSystemStringValue(multiByteTypeMarker, out string encodedSystemString))
-            {
-                throw new JsonNotStringTokenException();
-            }
-
-            return encodedSystemString;
-        }
-
-        private static string GetStringFromReader(BinaryReader binaryReader, long length)
-        {
-            if (length > int.MaxValue)
-            {
-                throw new InvalidOperationException("Can not get a string value that is greater than int.MaxValue");
-            }
-
-            // Note that all string in binary encoding is UTF8
-            MemoryStream memoryStream = binaryReader.BaseStream as MemoryStream;
-            byte[] buffer;
-            int offset;
-            if (memoryStream != null)
-            {
-                buffer = memoryStream.GetBuffer();
-                offset = (int)binaryReader.BaseStream.Position;
-            }
-            else
-            {
-                buffer = binaryReader.ReadBytes((int)length);
-                offset = 0;
-            }
-
-            return Encoding.UTF8.GetString(buffer, offset, (int)length);
-        }
-
-        private static string GetUTFString(BinaryReader binaryReader)
-        {
-            byte typeMarker = binaryReader.ReadByte();
-            long length;
-            if (JsonBinaryEncoding.TypeMarker.IsEncodedLengthString(typeMarker))
-            {
-                length = JsonBinaryEncoding.GetStringLengths(typeMarker);
-            }
-            else
-            {
-                switch (typeMarker)
-                {
-                    case JsonBinaryEncoding.TypeMarker.String1ByteLength:
-                        length = binaryReader.ReadByte();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.String2ByteLength:
-                        length = binaryReader.ReadUInt16();
-                        break;
-                    case JsonBinaryEncoding.TypeMarker.String4ByteLength:
-                        length = binaryReader.ReadUInt32();
-                        break;
-                    default:
-                        throw new JsonNotStringTokenException();
-                }
-            }
-
-            return JsonBinaryEncoding.GetStringFromReader(binaryReader, length);
+            fixedWidthValue = MemoryMarshal.Read<T>(token.Slice(1));
+            return true;
         }
 
         /// <summary>
@@ -1674,45 +1910,45 @@ namespace Microsoft.Azure.Cosmos.Json
                 0,      // Invalid
             };
 
-            public static long GetValueLength(byte[] buffer, int offset)
+            public static long GetValueLength(ReadOnlySpan<byte> buffer)
             {
-                long length = ValueLengths.lengths[buffer[offset]];
+                long length = ValueLengths.lengths[buffer[0]];
                 if (length < 0)
                 {
                     // Length was negative meaning we need to look into the buffer to find the length
                     switch (length)
                     {
                         case L1:
-                            length = TypeMarkerLength + OneByteLength + buffer[offset + 1];
+                            length = TypeMarkerLength + OneByteLength + MemoryMarshal.Read<byte>(buffer.Slice(1));
                             break;
                         case L2:
-                            length = TypeMarkerLength + TwoByteLength + BitConverter.ToUInt16(buffer, offset + 1);
+                            length = TypeMarkerLength + TwoByteLength + MemoryMarshal.Read<ushort>(buffer.Slice(1));
                             break;
                         case L4:
-                            length = TypeMarkerLength + FourByteLength + BitConverter.ToUInt32(buffer, offset + 1);
+                            length = TypeMarkerLength + FourByteLength + MemoryMarshal.Read<uint>(buffer.Slice(1));
                             break;
                         case LC1:
-                            length = TypeMarkerLength + OneByteLength + OneByteCount + buffer[offset + 1];
+                            length = TypeMarkerLength + OneByteLength + OneByteCount + MemoryMarshal.Read<byte>(buffer.Slice(1));
                             break;
                         case LC2:
-                            length = TypeMarkerLength + TwoByteLength + TwoByteCount + BitConverter.ToUInt16(buffer, offset + 1);
+                            length = TypeMarkerLength + TwoByteLength + TwoByteCount + MemoryMarshal.Read<ushort>(buffer.Slice(1));
                             break;
                         case LC4:
-                            length = TypeMarkerLength + FourByteLength + FourByteCount + BitConverter.ToUInt32(buffer, offset + 1);
+                            length = TypeMarkerLength + FourByteLength + FourByteCount + MemoryMarshal.Read<uint>(buffer.Slice(1));
                             break;
                         case Arr1:
-                            long arrayOneItemLength = ValueLengths.GetValueLength(buffer, offset + 1);
+                            long arrayOneItemLength = ValueLengths.GetValueLength(buffer.Slice(1));
                             length = arrayOneItemLength == 0 ? 0 : 1 + arrayOneItemLength;
                             break;
                         case Obj1:
-                            long nameLength = ValueLengths.GetValueLength(buffer, offset + 1);
+                            long nameLength = ValueLengths.GetValueLength(buffer.Slice(1));
                             if (nameLength == 0)
                             {
                                 length = 0;
                             }
                             else
                             {
-                                long valueLength = ValueLengths.GetValueLength(buffer, offset + 1 + (int)nameLength);
+                                long valueLength = ValueLengths.GetValueLength(buffer.Slice(1 + (int)nameLength));
                                 length = TypeMarkerLength + nameLength + valueLength;
                             }
 

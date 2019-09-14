@@ -189,8 +189,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     return false;
                 }
 
-                this.token.Start = this.jsonTextBuffer.GetPosition();
-                char nextChar = this.jsonTextBuffer.Peek();
+                this.token.Start = this.jsonTextBuffer.Position;
+                char nextChar = this.jsonTextBuffer.PeekCharacter();
 
                 switch (nextChar)
                 {
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new JsonUnexpectedTokenException();
                 }
 
-                this.token.End = this.jsonTextBuffer.GetPosition();
+                this.token.End = this.jsonTextBuffer.Position;
                 return true;
             }
 
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>The next JSON token from the JsonReader as a double.</returns>
             public override Number64 GetNumberValue()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetNumberValue(numberToken);
             }
 
@@ -307,61 +307,61 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>The next JSON token from the JsonReader as a string.</returns>
             public override string GetStringValue()
             {
-                ReadOnlySpan<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetStringValue(stringToken);
             }
 
             public override sbyte GetInt8Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetInt8Value(numberToken);
             }
 
             public override short GetInt16Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetInt16Value(numberToken);
             }
 
             public override int GetInt32Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetInt32Value(numberToken);
             }
 
             public override long GetInt64Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetInt64Value(numberToken);
             }
 
             public override uint GetUInt32Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetUInt32Value(numberToken);
             }
 
             public override float GetFloat32Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetFloat32Value(numberToken);
             }
 
             public override double GetFloat64Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetFloat64Value(numberToken);
             }
 
             public override Guid GetGuidValue()
             {
-                ReadOnlySpan<byte> guidToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> guidToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetGuidValue(guidToken);
             }
 
             public override ReadOnlySpan<byte> GetBinaryValue()
             {
-                ReadOnlySpan<byte> binaryToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                ReadOnlySpan<byte> binaryToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
                 return JsonTextParser.GetBinaryValue(binaryToken);
             }
 
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>the next JSON token from the JsonReader as a buffered list of bytes</returns>
             public override ReadOnlySpan<byte> GetBufferedRawJsonToken()
             {
-                return this.jsonTextBuffer.GetBufferedRawJsonToken(this.token);
+                return this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
             }
 
             private static JsonTokenType JsonTextToJsonTokenType(JsonTextTokenType jsonTextTokenType)
@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 ////name-separator  = ws %x3A ws  ; : colon
                 ////value-separator = ws %x2C ws  ; , comma
                 this.token.JsonTextTokenType = jsonTextTokenType;
-                this.jsonTextBuffer.Read();
+                this.jsonTextBuffer.ReadCharacter();
                 this.RegisterToken();
             }
 
@@ -457,22 +457,22 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.token.JsonTextTokenType = JsonTextTokenType.Number;
 
                 // Check for optional sign.
-                if (this.jsonTextBuffer.Peek() == '-')
+                if (this.jsonTextBuffer.PeekCharacter() == '-')
                 {
-                    this.jsonTextBuffer.Read();
+                    this.jsonTextBuffer.ReadCharacter();
                 }
 
                 // There MUST best at least one digit before the dot
-                if (!char.IsDigit(this.jsonTextBuffer.Peek()))
+                if (!char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                 {
                     throw new JsonInvalidNumberException();
                 }
 
                 // Only zero or a float can have a zero
-                if (this.jsonTextBuffer.Peek() == '0')
+                if (this.jsonTextBuffer.PeekCharacter() == '0')
                 {
-                    this.jsonTextBuffer.Read();
-                    if (this.jsonTextBuffer.Peek() == '0')
+                    this.jsonTextBuffer.ReadCharacter();
+                    if (this.jsonTextBuffer.PeekCharacter() == '0')
                     {
                         throw new JsonInvalidNumberException();
                     }
@@ -480,59 +480,59 @@ namespace Microsoft.Azure.Cosmos.Json
                 else
                 {
                     // Read all digits before the dot
-                    while (char.IsDigit(this.jsonTextBuffer.Peek()))
+                    while (char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                     {
-                        this.jsonTextBuffer.Read();
+                        this.jsonTextBuffer.ReadCharacter();
                     }
                 }
 
                 // Check for optional '.'
-                if (this.jsonTextBuffer.Peek() == '.')
+                if (this.jsonTextBuffer.PeekCharacter() == '.')
                 {
                     this.token.JsonTextTokenType = JsonTextTokenType.Number;
 
-                    this.jsonTextBuffer.Read();
+                    this.jsonTextBuffer.ReadCharacter();
 
                     // There MUST best at least one digit after the dot
-                    if (!char.IsDigit(this.jsonTextBuffer.Peek()))
+                    if (!char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                     {
                         throw new JsonInvalidNumberException();
                     }
 
                     // Read all digits after the dot
-                    while (char.IsDigit(this.jsonTextBuffer.Peek()))
+                    while (char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                     {
-                        this.jsonTextBuffer.Read();
+                        this.jsonTextBuffer.ReadCharacter();
                     }
                 }
 
                 // Check for optional e/E.
-                if (this.jsonTextBuffer.Peek() == 'e' || this.jsonTextBuffer.Peek() == 'E')
+                if (this.jsonTextBuffer.PeekCharacter() == 'e' || this.jsonTextBuffer.PeekCharacter() == 'E')
                 {
                     this.token.JsonTextTokenType = JsonTextTokenType.Number;
-                    this.jsonTextBuffer.Read();
+                    this.jsonTextBuffer.ReadCharacter();
 
                     // Check for optional +/- after e/E.
-                    if (this.jsonTextBuffer.Peek() == '+' || this.jsonTextBuffer.Peek() == '-')
+                    if (this.jsonTextBuffer.PeekCharacter() == '+' || this.jsonTextBuffer.PeekCharacter() == '-')
                     {
-                        this.jsonTextBuffer.Read();
+                        this.jsonTextBuffer.ReadCharacter();
                     }
 
                     // There MUST best at least one digit after the e/E and optional +/-
-                    if (!char.IsDigit(this.jsonTextBuffer.Peek()))
+                    if (!char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                     {
                         throw new JsonInvalidNumberException();
                     }
 
                     // Read all digits after the e/E
-                    while (char.IsDigit(this.jsonTextBuffer.Peek()))
+                    while (char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                     {
-                        this.jsonTextBuffer.Read();
+                        this.jsonTextBuffer.ReadCharacter();
                     }
                 }
 
                 // Make sure no gargbage came after the number
-                char current = this.jsonTextBuffer.Peek();
+                char current = this.jsonTextBuffer.PeekCharacter();
                 if (!(this.jsonTextBuffer.IsEof || JsonTextBuffer.IsWhitespace(current) || current == '}' || current == ',' || current == ']'))
                 {
                     throw new JsonInvalidNumberException();
@@ -541,7 +541,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessInt8()
             {
-                if (this.jsonTextBuffer.Read() != JsonTextReader.Int8TokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int8TokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessInt16()
             {
-                if (this.jsonTextBuffer.Read() != JsonTextReader.Int16TokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int16TokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
@@ -561,14 +561,14 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessInt32OrInt64()
             {
-                if (this.jsonTextBuffer.Read() != JsonTextReader.Int32TokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int32TokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
 
-                if (this.jsonTextBuffer.Peek() == JsonTextReader.Int32TokenPrefix)
+                if (this.jsonTextBuffer.PeekCharacter() == JsonTextReader.Int32TokenPrefix)
                 {
-                    if (this.jsonTextBuffer.Read() != JsonTextReader.Int32TokenPrefix)
+                    if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int32TokenPrefix)
                     {
                         throw new JsonInvalidTokenException();
                     }
@@ -583,18 +583,18 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessUInt32()
             {
-                if (this.jsonTextBuffer.Read() != JsonTextReader.UnsignedTokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.UnsignedTokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
 
-                if (this.jsonTextBuffer.Read() != JsonTextReader.Int32TokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.Int32TokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
 
                 // First character must be a digit.
-                if (!char.IsDigit(this.jsonTextBuffer.Peek()))
+                if (!char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                 {
                     throw new JsonInvalidNumberException();
                 }
@@ -605,21 +605,21 @@ namespace Microsoft.Azure.Cosmos.Json
             private void ProcessIntegerToken(JsonTextTokenType jsonTextTokenType)
             {
                 // Check for optional sign.
-                if (this.jsonTextBuffer.Peek() == '-')
+                if (this.jsonTextBuffer.PeekCharacter() == '-')
                 {
-                    this.jsonTextBuffer.Read();
+                    this.jsonTextBuffer.ReadCharacter();
                 }
 
                 // There MUST best at least one digit
-                if (!char.IsDigit(this.jsonTextBuffer.Peek()))
+                if (!char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                 {
                     throw new JsonInvalidNumberException();
                 }
 
                 // Read all digits 
-                while (char.IsDigit(this.jsonTextBuffer.Peek()))
+                while (char.IsDigit(this.jsonTextBuffer.PeekCharacter()))
                 {
-                    this.jsonTextBuffer.Read();
+                    this.jsonTextBuffer.ReadCharacter();
                 }
 
                 this.token.JsonTextTokenType = jsonTextTokenType;
@@ -628,7 +628,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessFloat32()
             {
-                if (this.jsonTextBuffer.Read() != JsonTextReader.FloatTokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.FloatTokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
@@ -640,7 +640,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessFloat64()
             {
-                if (this.jsonTextBuffer.Read() != JsonTextReader.DoubleTokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.DoubleTokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
@@ -652,15 +652,15 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessGuid()
             {
-                if (this.jsonTextBuffer.Read() != JsonTextReader.GuidTokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.GuidTokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
 
                 int length = 0;
-                while (char.IsLetterOrDigit(this.jsonTextBuffer.Peek()) || this.jsonTextBuffer.Peek() == '-')
+                while (char.IsLetterOrDigit(this.jsonTextBuffer.PeekCharacter()) || this.jsonTextBuffer.PeekCharacter() == '-')
                 {
-                    this.jsonTextBuffer.Read();
+                    this.jsonTextBuffer.ReadCharacter();
                     length++;
                 }
 
@@ -676,16 +676,16 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private void ProcessBinary()
             {
-                if (this.jsonTextBuffer.Read() != JsonTextReader.BinaryTokenPrefix)
+                if (this.jsonTextBuffer.ReadCharacter() != JsonTextReader.BinaryTokenPrefix)
                 {
                     throw new JsonInvalidTokenException();
                 }
 
-                char current = this.jsonTextBuffer.Peek();
+                char current = this.jsonTextBuffer.PeekCharacter();
                 while (char.IsLetterOrDigit(current) || current == '+' || current == '/' || current == '=')
                 {
-                    this.jsonTextBuffer.Read();
-                    current = this.jsonTextBuffer.Peek();
+                    this.jsonTextBuffer.ReadCharacter();
+                    current = this.jsonTextBuffer.PeekCharacter();
                 }
 
                 this.token.JsonTextTokenType = JsonTextTokenType.Binary;
@@ -697,7 +697,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.token.JsonTextTokenType = this.JsonObjectState.IsPropertyExpected ? JsonTextTokenType.UnescapedFieldName : JsonTextTokenType.UnescapedString;
 
                 // Skip the opening quote
-                char current = this.jsonTextBuffer.Read();
+                char current = this.jsonTextBuffer.ReadCharacter();
                 if (current != '"')
                 {
                     throw new JsonUnexpectedTokenException();
@@ -706,7 +706,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 bool registeredToken = false;
                 while (!registeredToken)
                 {
-                    current = this.jsonTextBuffer.Read();
+                    current = this.jsonTextBuffer.ReadCharacter();
                     switch (current)
                     {
                         case '"':
@@ -716,7 +716,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                         case '\\':
                             this.token.JsonTextTokenType = (JsonTextTokenType)(this.token.JsonTextTokenType | JsonTextTokenType.EscapedFlag);
-                            char escapeCharacter = this.jsonTextBuffer.Read();
+                            char escapeCharacter = this.jsonTextBuffer.ReadCharacter();
                             if (escapeCharacter == 'u')
                             {
                                 // parse escaped unicode of the form "\uXXXX"
@@ -724,7 +724,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                 for (int i = 0; i < UnicodeEscapeLength; i++)
                                 {
                                     // Just need to make sure that we are getting valid hex characters
-                                    char unicodeEscapeCharacter = this.jsonTextBuffer.Read();
+                                    char unicodeEscapeCharacter = this.jsonTextBuffer.ReadCharacter();
                                     if (!(
                                         (unicodeEscapeCharacter >= '0' && unicodeEscapeCharacter <= '9') ||
                                         (unicodeEscapeCharacter >= 'a' && unicodeEscapeCharacter <= 'f') ||
@@ -763,7 +763,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonUnexpectedNameSeparatorException();
                 }
 
-                this.jsonTextBuffer.Read();
+                this.jsonTextBuffer.ReadCharacter();
                 this.hasSeperator = true;
 
                 // We don't surface Json.NameSeparator tokens to the caller, so proceed to the next token
@@ -792,7 +792,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new JsonUnexpectedValueSeparatorException();
                 }
 
-                this.jsonTextBuffer.Read();
+                this.jsonTextBuffer.ReadCharacter();
 
                 // We don't surface Json_ValueSeparator tokens to the caller, so proceed to the next token
                 this.Read();
@@ -855,48 +855,32 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private sealed class JsonTextBuffer
+            private sealed class JsonTextBuffer : JsonBuffer
             {
                 private static readonly ReadOnlyMemory<byte> TrueMemory = new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
                 private static readonly ReadOnlyMemory<byte> FalseMemory = new byte[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
                 private static readonly ReadOnlyMemory<byte> NullMemory = new byte[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
 
-                private readonly ReadOnlyMemory<byte> buffer;
-                private int position;
-
                 public JsonTextBuffer(ReadOnlyMemory<byte> buffer)
+                    : base(buffer)
                 {
-                    this.buffer = buffer;
                 }
 
-                public bool IsEof
+                public char ReadCharacter()
                 {
-                    get { return this.position >= this.buffer.Length; }
+                    return (char)this.Read();
                 }
 
-                public char Read()
+                public char PeekCharacter()
                 {
-                    char character = this.position < this.buffer.Length ? (char)this.buffer.Span[this.position] : (char)0;
-                    this.position++;
-                    return character;
-                }
-
-                public char Peek()
-                {
-                    char character = this.position < this.buffer.Length ? (char)this.buffer.Span[this.position] : (char)0;
-                    return character;
-                }
-
-                public int GetPosition()
-                {
-                    return this.position;
+                    return (char)this.Peek();
                 }
 
                 public void AdvanceWhileWhitespace()
                 {
-                    while (JsonTextBuffer.IsWhitespace(this.Peek()))
+                    while (JsonTextBuffer.IsWhitespace(this.PeekCharacter()))
                     {
-                        this.Read();
+                        this.ReadCharacter();
                     }
                 }
 
@@ -913,11 +897,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 public bool TryReadNullToken()
                 {
                     return this.TryReadToken(JsonTextBuffer.NullMemory.Span);
-                }
-
-                public ReadOnlySpan<byte> GetBufferedRawJsonToken(Token token)
-                {
-                    return this.buffer.Slice(token.Start, token.End - token.Start).Span;
                 }
 
                 private bool TryReadToken(ReadOnlySpan<byte> token)
