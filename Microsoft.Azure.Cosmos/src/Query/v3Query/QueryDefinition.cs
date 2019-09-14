@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
 
@@ -13,7 +14,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class QueryDefinition
     {
-        private readonly Dictionary<string, object> parameters;
+        private IReadOnlyDictionary<string, object> parameters;
+
+        private Dictionary<string, SqlParameter> SqlParameters { get; }
 
         /// <summary>
         /// Create a <see cref="QueryDefinition"/>
@@ -36,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.QueryText = query;
-            this.parameters = new Dictionary<string, object>();
+            this.SqlParameters = new Dictionary<string, SqlParameter>();
         }
 
         /// <summary>
@@ -53,10 +56,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.QueryText = sqlQuery.QueryText;
-            this.parameters = new Dictionary<string, object>();
+            this.SqlParameters = new Dictionary<string, SqlParameter>();
             foreach (SqlParameter sqlParameter in sqlQuery.Parameters)
             {
-                this.parameters.Add(sqlParameter.Name, sqlParameter.Value);
+                this.SqlParameters.Add(sqlParameter.Name, sqlParameter);
             }
         }
 
@@ -85,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(name));
             }
 
-            this.parameters[name] = value;
+            this.SqlParameters[name] = new SqlParameter(name, value);
             return this;
         }
 
@@ -104,9 +107,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(parameters));
             }
 
-            foreach (var keyValuePair in parameters)
+            foreach (KeyValuePair<string, object> keyValuePair in parameters)
             {
-                this.parameters[keyValuePair.Key] = keyValuePair.Value;
+                this.SqlParameters[keyValuePair.Key] = new SqlParameter(keyValuePair.Key, keyValuePair.Value);
             }
             
             return this;
@@ -114,14 +117,60 @@ namespace Microsoft.Azure.Cosmos
 
         internal SqlQuerySpec ToSqlQuerySpec()
         {
-            var sqlParameters = this.parameters.Select(p => new SqlParameter(p.Key, p.Value));
-            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(sqlParameters));
+            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.SqlParameters.Values));
         }
 
         /// <summary>
         /// Returns the query definition's parameters.
         /// </summary>
         /// <returns>A dictionary with the name and value of the parameters.</returns>
-        public IReadOnlyDictionary<string, object> Parameters => this.parameters;
+        public IReadOnlyDictionary<string, object> Parameters
+        {
+            get
+            {
+                return this.parameters ?? (this.parameters = new ParameterValuesDictionary(this.SqlParameters));
+            }
+        }
+
+        private class ParameterValuesDictionary : IReadOnlyDictionary<string, object>
+        {
+            private Dictionary<string, SqlParameter> sqlParameters;
+            public ParameterValuesDictionary(Dictionary<string, SqlParameter> sqlParameters)
+            {
+                this.sqlParameters = sqlParameters;
+            }
+
+            public object this[string key] => this.sqlParameters[key].Value;
+
+            public IEnumerable<string> Keys => this.sqlParameters.Keys;
+
+            public IEnumerable<object> Values => this.sqlParameters.Values.Select(p => p.Value);
+
+            public int Count => this.sqlParameters.Count;
+
+            public bool ContainsKey(string key) => this.sqlParameters.ContainsKey(key);
+
+            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            {
+                foreach (SqlParameter p in this.sqlParameters.Values)
+                {
+                    yield return new KeyValuePair<string, object>(p.Name, p.Value);
+                }
+            }
+
+            public bool TryGetValue(string key, out object value)
+            {
+                if (this.sqlParameters.TryGetValue(key, out SqlParameter sqlParameter))
+                {
+                    value = sqlParameter.Value;
+                    return true;
+                }
+
+                value = null;
+                return false;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
+        }
     }
 }

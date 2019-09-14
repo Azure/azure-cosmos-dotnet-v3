@@ -56,14 +56,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ParametersReturnsQueryParameters()
         {
-            var queryDefinition = new QueryDefinition("select * from s where s.Account = @account and s.Name = @name")
+            QueryDefinition queryDefinition = new QueryDefinition("select * from s where s.Account = @account and s.Name = @name")
                 .WithParameter("@account", "12345")
                 .WithParameter("@name", "ABC");
 
-            var parameters = queryDefinition.Parameters;
-            Assert.IsTrue(parameters.TryGetValue("@account", out var account));
+            IReadOnlyDictionary<string, object> parameters = queryDefinition.Parameters;
+            Assert.IsTrue(parameters.TryGetValue("@account", out object account));
             Assert.AreEqual("12345", account);
-            Assert.IsTrue(parameters.TryGetValue("@name", out var name));
+            Assert.IsTrue(parameters.TryGetValue("@name", out object name));
             Assert.AreEqual("ABC", name);
 
             // Ensure the returned dictionary is not a copy, so modifications to the query
@@ -75,11 +75,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void WithParametersCombinesWithExistingParameters()
         {
-            var queryDefinition = new QueryDefinition("select * from s where s.Account = @account and s.Name = @name")
+            QueryDefinition queryDefinition = new QueryDefinition("select * from s where s.Account = @account and s.Name = @name")
                 .WithParameter("@account", "12345")
                 .WithParameter("@name", "ABC");
 
-            var parametersToAdd = new Dictionary<string, object>
+            Dictionary<string, object> parametersToAdd = new Dictionary<string, object>
             {
                 ["@name"] = "XYZ",
                 ["@foo"] = "bar"
@@ -87,12 +87,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             queryDefinition.WithParameters(parametersToAdd);
 
-            var parameters = queryDefinition.Parameters;
-            Assert.IsTrue(parameters.TryGetValue("@account", out var account));
+            IReadOnlyDictionary<string, object> parameters = queryDefinition.Parameters;
+            Assert.IsTrue(parameters.TryGetValue("@account", out object account));
             Assert.AreEqual("12345", account);
-            Assert.IsTrue(parameters.TryGetValue("@name", out var name));
+            Assert.IsTrue(parameters.TryGetValue("@name", out object name));
             Assert.AreEqual("XYZ", name);
-            Assert.IsTrue(parameters.TryGetValue("@foo", out var foo));
+            Assert.IsTrue(parameters.TryGetValue("@foo", out object foo));
             Assert.AreEqual("bar", foo);
         }
 
