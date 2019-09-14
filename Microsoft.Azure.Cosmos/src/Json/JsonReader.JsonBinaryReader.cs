@@ -25,9 +25,9 @@ namespace Microsoft.Azure.Cosmos.Json
         private sealed class JsonBinaryReader : JsonReader
         {
             /// <summary>
-            /// JsonBinaryReader can read from either a stream or a byte array and that is abstracted as a JsonBinaryBuffer.
+            /// Buffer to read from.
             /// </summary>
-            private readonly JsonBinaryBufferBase jsonBinaryBuffer;
+            private readonly ReadOnlyMemory<byte> jsonBinaryBuffer;
 
             /// <summary>
             /// Dictionary used for user string encoding.
@@ -41,17 +41,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             private readonly ProgressStack progressStack;
 
-            public JsonBinaryReader(byte[] buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
-                : this(new JsonBinaryArrayBuffer(buffer, jsonStringDictionary))
-            {
-            }
-
-            public JsonBinaryReader(Stream stream, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
-                : this(new JsonBinaryStreamBuffer(stream, jsonStringDictionary))
-            {
-            }
-
-            private JsonBinaryReader(JsonBinaryBufferBase jsonBinaryBuffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
+            public JsonBinaryReader(ReadOnlyMemory<byte> jsonBinaryBuffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
                 : base(skipValidation)
             {
                 this.jsonBinaryBuffer = jsonBinaryBuffer;
