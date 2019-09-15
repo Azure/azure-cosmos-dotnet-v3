@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Query
                initParams.PartitionedQueryExecutionInfo.QueryInfo,
                initialPageSize,
                requestContinuationToken,
-               queryContext.QueryRequestOptions.EnableGroupBy,
+               queryContext.EnableGroupBy,
                createOrderByComponentFunc,
                createParallelComponentFunc);
         }

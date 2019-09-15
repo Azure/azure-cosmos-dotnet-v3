@@ -184,16 +184,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static CosmosQueryContext CreateContext(
             CosmosQueryClient cosmosQueryClient)
         {
-            return new CosmosQueryContext(
+            return new CosmosQueryContextCore(
                 client: cosmosQueryClient,
+                queryRequestOptions: null,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(ToDoItem),
-                queryRequestOptions: new QueryRequestOptions(),
                 resourceLink: DefaultResourceLink,
                 correlatedActivityId: Guid.NewGuid(),
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
+                enableGroupBy: true,
                 containerResourceId: DefaultCollectionRid);
         }
 

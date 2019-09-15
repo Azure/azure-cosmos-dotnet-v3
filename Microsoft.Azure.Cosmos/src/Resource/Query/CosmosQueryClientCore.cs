@@ -107,11 +107,11 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey);
         }
 
-        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync(
+        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            QueryRequestOptions requestOptions,
+            RequestOptionType requestOptions,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -119,12 +119,18 @@ namespace Microsoft.Azure.Cosmos
             int pageSize,
             CancellationToken cancellationToken)
         {
+            QueryRequestOptions queryRequestOptions = requestOptions as QueryRequestOptions;
+            if (queryRequestOptions == null)
+            {
+                throw new InvalidOperationException($"CosmosQueryClientCore.ExecuteItemQueryAsync only supports RequestOptionType of QueryRequestOptions");
+            }
+
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: requestOptions.PartitionKey,
+                requestOptions: queryRequestOptions,
+                partitionKey: queryRequestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
                 requestEnricher: (cosmosRequestMessage) =>
@@ -145,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(
-                requestOptions,
+                queryRequestOptions,
                 resourceType,
                 message);
         }

@@ -70,7 +70,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = new QueryInfo() },
                     partitionKeyRanges: new List<PartitionKeyRange>() { MockQueryFactory.DefaultPartitionKeyRange },
                     initialPageSize: maxPageSize,
-                    requestContinuation: fullConitnuationToken,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null);
@@ -78,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosParallelItemQueryExecutionContext executionContext = await CosmosParallelItemQueryExecutionContext.CreateAsync(
                     context,
                     initParams,
+                    fullConitnuationToken,
                     this.cancellationToken);
 
                 // Read all the pages from both splits
@@ -178,12 +178,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 };
 
                 CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
-                    MockQueryFactory.DefaultQuerySpec,
-                    MockQueryFactory.DefaultCollectionRid,
-                    new PartitionedQueryExecutionInfo() { QueryInfo = queryInfo },
-                    new List<PartitionKeyRange>() { MockQueryFactory.DefaultPartitionKeyRange },
-                    maxPageSize,
-                    fullConitnuationToken,
+                    sqlQuerySpec: MockQueryFactory.DefaultQuerySpec,
+                    collectionRid: MockQueryFactory.DefaultCollectionRid,
+                    partitionedQueryExecutionInfo: new PartitionedQueryExecutionInfo() { QueryInfo = queryInfo },
+                    partitionKeyRanges: new List<PartitionKeyRange>() { MockQueryFactory.DefaultPartitionKeyRange },
+                    initialPageSize: maxPageSize,
                     maxConcurrency: null,
                     maxItemCount: maxPageSize,
                     maxBufferedItemCount: null);
@@ -191,6 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CosmosOrderByItemQueryExecutionContext executionContext = await CosmosOrderByItemQueryExecutionContext.CreateAsync(
                     context,
                     initParams,
+                    fullConitnuationToken,
                     this.cancellationToken);
 
                 // For order by it will drain all the pages till it gets a value.
