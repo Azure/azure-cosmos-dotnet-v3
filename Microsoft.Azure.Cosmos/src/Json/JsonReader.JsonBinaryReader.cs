@@ -275,14 +275,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonBinaryEncoding.GetGuidValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }
 
-            public override ReadOnlySpan<byte> GetBinaryValue()
+            public override ReadOnlyMemory<byte> GetBinaryValue()
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Binary)
                 {
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetRawMemoryJsonToken(this.currentTokenPosition));
             }
         }
 
@@ -296,6 +296,11 @@ namespace Microsoft.Azure.Cosmos.Json
             public void SkipBytes(int offset)
             {
                 this.position += offset;
+            }
+
+            public ReadOnlyMemory<byte> GetRawMemoryJsonToken(int startPosition)
+            {
+                return this.buffer.Slice(startPosition);
             }
         }
     }

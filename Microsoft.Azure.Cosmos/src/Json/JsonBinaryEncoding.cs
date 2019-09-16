@@ -357,9 +357,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 out guidValue);
         }
 
-        public static ReadOnlySpan<byte> GetBinaryValue(ReadOnlySpan<byte> binaryToken)
+        public static ReadOnlyMemory<byte> GetBinaryValue(ReadOnlyMemory<byte> binaryToken)
         {
-            if (!JsonBinaryEncoding.TryGetBinaryValue(binaryToken, out ReadOnlySpan<byte> binaryValue))
+            if (!JsonBinaryEncoding.TryGetBinaryValue(binaryToken, out ReadOnlyMemory<byte> binaryValue))
             {
                 throw new JsonInvalidTokenException();
             }
@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return binaryValue;
         }
 
-        public static bool TryGetBinaryValue(ReadOnlySpan<byte> binaryToken, out ReadOnlySpan<byte> binaryValue)
+        public static bool TryGetBinaryValue(ReadOnlyMemory<byte> binaryToken, out ReadOnlyMemory<byte> binaryValue)
         {
             binaryValue = default;
             if (binaryToken.Length == 0)
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            byte typeMarker = binaryToken[0];
+            byte typeMarker = binaryToken.Span[0];
             uint length;
             switch (typeMarker)
             {
@@ -385,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         return false;
                     }
 
-                    length = MemoryMarshal.Read<byte>(binaryToken.Slice(1));
+                    length = MemoryMarshal.Read<byte>(binaryToken.Span.Slice(1));
                     break;
 
                 case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
@@ -394,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         return false;
                     }
 
-                    length = MemoryMarshal.Read<ushort>(binaryToken.Slice(1));
+                    length = MemoryMarshal.Read<ushort>(binaryToken.Span.Slice(1));
                     break;
 
                 case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         return false;
                     }
 
-                    length = MemoryMarshal.Read<uint>(binaryToken.Slice(1));
+                    length = MemoryMarshal.Read<uint>(binaryToken.Span.Slice(1));
                     break;
 
                 default:
@@ -853,9 +853,15 @@ namespace Microsoft.Azure.Cosmos.Json
         /// - Negative Value: The length is encoded as an integer of size equals to abs(value) following the TypeMarker byte
         /// - Zero Value: The length is unknown (for instance an unassigned type marker)
         /// </returns>
-        public static long GetValueLength(ReadOnlySpan<byte> buffer)
+        public static int GetValueLength(ReadOnlySpan<byte> buffer)
         {
-            return JsonBinaryEncoding.ValueLengths.GetValueLength(buffer);
+            long valueLength = JsonBinaryEncoding.ValueLengths.GetValueLength(buffer);
+            if (valueLength > int.MaxValue)
+            {
+                throw new InvalidOperationException($"{nameof(valueLength)} is greater than int.MaxValue");
+            }
+
+            return (int)valueLength;
         }
 
         /// <summary>

@@ -107,6 +107,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets the next JSON token from the JsonReader as a binary list.
         /// </summary>
         /// <returns>The next JSON token from the JsonReader as a binary list.</returns>
-        ReadOnlySpan<byte> GetBinaryValue();
+        ReadOnlyMemory<byte> GetBinaryValue();
     }
 }
