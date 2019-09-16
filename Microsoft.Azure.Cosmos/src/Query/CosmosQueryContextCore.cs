@@ -47,7 +47,11 @@ namespace Microsoft.Azure.Cosmos.Query
             int pageSize,
             CancellationToken cancellationToken)
         {
-            QueryRequestOptions requestOptions = this.queryRequestOptions.Clone();
+            QueryRequestOptions requestOptions = null;
+            if (this.queryRequestOptions != null)
+            {
+                requestOptions = this.queryRequestOptions.Clone();
+            }    
 
             return this.QueryClient.ExecuteItemQueryAsync(
                            resourceUri: this.ResourceLink,
