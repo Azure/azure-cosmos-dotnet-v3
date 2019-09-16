@@ -59,73 +59,78 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <inheritdoc />
-        public abstract ReadOnlyMemory<byte> GetRootNode();
+        public abstract IJsonNavigatorNode GetRootNode();
 
         /// <inheritdoc />
-        public abstract JsonNodeType GetNodeType(ReadOnlyMemory<byte> node);
+        public abstract JsonNodeType GetNodeType(IJsonNavigatorNode node);
 
         /// <inheritdoc />
-        public abstract Number64 GetNumberValue(ReadOnlyMemory<byte> numberNode);
+        public abstract Number64 GetNumberValue(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
         public abstract bool TryGetBufferedStringValue(
-            ReadOnlyMemory<byte> stringNode,
+            IJsonNavigatorNode stringNode,
             out ReadOnlyMemory<byte> bufferedStringValue);
 
         /// <inheritdoc />
-        public abstract string GetStringValue(ReadOnlyMemory<byte> stringNode);
+        public abstract string GetStringValue(IJsonNavigatorNode stringNode);
 
         /// <inheritdoc />
-        public abstract sbyte GetInt8Value(ReadOnlyMemory<byte> numberNode);
+        public abstract sbyte GetInt8Value(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract short GetInt16Value(ReadOnlyMemory<byte> numberNode);
+        public abstract short GetInt16Value(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract int GetInt32Value(ReadOnlyMemory<byte> numberNode);
+        public abstract int GetInt32Value(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract long GetInt64Value(ReadOnlyMemory<byte> numberNode);
+        public abstract long GetInt64Value(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract float GetFloat32Value(ReadOnlyMemory<byte> numberNode);
+        public abstract float GetFloat32Value(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract double GetFloat64Value(ReadOnlyMemory<byte> numberNode);
+        public abstract double GetFloat64Value(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract uint GetUInt32Value(ReadOnlyMemory<byte> numberNode);
+        public abstract uint GetUInt32Value(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
-        public abstract Guid GetGuidValue(ReadOnlyMemory<byte> guidNode);
+        public abstract Guid GetGuidValue(IJsonNavigatorNode guidNode);
 
         /// <inheritdoc />
-        public abstract ReadOnlyMemory<byte> GetBinaryValue(ReadOnlyMemory<byte> binaryNode);
+        public abstract ReadOnlyMemory<byte> GetBinaryValue(IJsonNavigatorNode binaryNode);
 
         /// <inheritdoc />
         public abstract bool TryGetBufferedBinaryValue(
-            ReadOnlyMemory<byte> binaryNode,
+            IJsonNavigatorNode binaryNode,
             out ReadOnlyMemory<byte> bufferedBinaryValue);
 
         /// <inheritdoc />
-        public abstract int GetArrayItemCount(ReadOnlyMemory<byte> arrayNode);
+        public abstract int GetArrayItemCount(IJsonNavigatorNode arrayNode);
 
         /// <inheritdoc />
-        public abstract ReadOnlyMemory<byte> GetArrayItemAt(ReadOnlyMemory<byte> arrayNode, int index);
+        public abstract IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode arrayNode, int index);
 
         /// <inheritdoc />
-        public abstract IEnumerable<ReadOnlyMemory<byte>> GetArrayItems(ReadOnlyMemory<byte> arrayNode);
+        public abstract IEnumerable<IJsonNavigatorNode> GetArrayItems(IJsonNavigatorNode arrayNode);
 
         /// <inheritdoc />
-        public abstract int GetObjectPropertyCount(ReadOnlyMemory<byte> objectNode);
+        public abstract int GetObjectPropertyCount(IJsonNavigatorNode objectNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetObjectProperty(ReadOnlyMemory<byte> objectNode, string propertyName, out ObjectProperty objectProperty);
+        public abstract bool TryGetObjectProperty(
+            IJsonNavigatorNode objectNode,
+            string propertyName,
+            out ObjectProperty objectProperty);
 
         /// <inheritdoc />
-        public abstract IEnumerable<ObjectProperty> GetObjectProperties(ReadOnlyMemory<byte> objectNode);
+        public abstract IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode);
 
         /// <inheritdoc />
-        public abstract bool TryGetBufferedRawJson(ReadOnlyMemory<byte> jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
+        public abstract bool TryGetBufferedRawJson(
+            IJsonNavigatorNode jsonNode,
+            out ReadOnlyMemory<byte> bufferedRawJson);
     }
 }

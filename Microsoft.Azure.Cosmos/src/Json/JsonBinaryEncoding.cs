@@ -367,7 +367,9 @@ namespace Microsoft.Azure.Cosmos.Json
             return binaryValue;
         }
 
-        public static bool TryGetBinaryValue(ReadOnlyMemory<byte> binaryToken, out ReadOnlyMemory<byte> binaryValue)
+        public static bool TryGetBinaryValue(
+            ReadOnlyMemory<byte> binaryToken,
+            out ReadOnlyMemory<byte> binaryValue)
         {
             binaryValue = default;
             if (binaryToken.Length == 0)

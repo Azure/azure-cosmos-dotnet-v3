@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets next JSON token from the JsonReader as a raw series of bytes that is buffered.
         /// </summary>
         /// <returns>The next JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
-        public abstract ReadOnlySpan<byte> GetBufferedRawJsonToken();
+        public abstract ReadOnlyMemory<byte> GetBufferedRawJsonToken();
 
         /// <inheritdoc />
         public abstract sbyte GetInt8Value();
@@ -134,6 +134,6 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract Guid GetGuidValue();
 
         /// <inheritdoc />
-        public abstract ReadOnlySpan<byte> GetBinaryValue();
+        public abstract ReadOnlyMemory<byte> GetBinaryValue();
     }
 }

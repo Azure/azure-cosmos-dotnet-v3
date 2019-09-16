@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                     jsonTokenType = JsonBinaryEncoding.GetJsonTokenType(this.jsonBinaryBuffer.Peek());
                     if (!JsonBinaryEncoding.TryGetValueLength(
-                        this.jsonBinaryBuffer.GetBufferedRawJsonToken(),
+                        this.jsonBinaryBuffer.GetBufferedRawJsonToken().Span,
                         out valueLength))
                     {
                         throw new JsonUnexpectedTokenException();
@@ -162,7 +162,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetNumberValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetNumberValue(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             /// <summary>
@@ -177,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return JsonBinaryEncoding.GetStringValue(
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(),
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken().Span,
                     this.jsonStringDictionary);
             }
 
@@ -185,9 +186,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Gets next JSON token from the JsonReader as a raw series of bytes that is buffered.
             /// </summary>
             /// <returns>The next JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
-            public override ReadOnlySpan<byte> GetBufferedRawJsonToken()
+            public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
             {
-                if (!JsonBinaryEncoding.TryGetValueLength(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition), out int length))
+                if (!JsonBinaryEncoding.TryGetValueLength(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span,
+                    out int length))
                 {
                     throw new InvalidOperationException();
                 }
@@ -202,7 +205,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetInt8Value(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetInt8Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             public override short GetInt16Value()
@@ -212,7 +216,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetInt16Value(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetInt16Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             public override int GetInt32Value()
@@ -222,7 +227,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetInt32Value(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetInt32Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             public override long GetInt64Value()
@@ -232,7 +238,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetInt64Value(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetInt64Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             public override uint GetUInt32Value()
@@ -242,7 +249,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetUInt32Value(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetUInt32Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             public override float GetFloat32Value()
@@ -252,7 +260,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetFloat32Value(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetFloat32Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             public override double GetFloat64Value()
@@ -262,7 +271,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetFloat64Value(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetFloat64Value(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             public override Guid GetGuidValue()
@@ -272,7 +282,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotNumberTokenException();
                 }
 
-                return JsonBinaryEncoding.GetGuidValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+                return JsonBinaryEncoding.GetGuidValue(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
             }
 
             public override ReadOnlyMemory<byte> GetBinaryValue()

@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return value;
         }
 
-        public static ReadOnlySpan<byte> GetBinaryValue(ReadOnlySpan<byte> binaryToken)
+        public static ReadOnlyMemory<byte> GetBinaryValue(ReadOnlySpan<byte> binaryToken)
         {
             ReadOnlySpan<byte> binaryTokenWithoutPrefix = binaryToken.Slice(1, binaryToken.Length - 1);
             string encodedString = Encoding.UTF8.GetString(binaryTokenWithoutPrefix.ToArray());

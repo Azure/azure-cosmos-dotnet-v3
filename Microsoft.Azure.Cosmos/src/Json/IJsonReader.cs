@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets current JSON token from the JsonReader as a raw series of bytes that is buffered.
         /// </summary>
         /// <returns>The current JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
-        ReadOnlySpan<byte> GetBufferedRawJsonToken();
+        ReadOnlyMemory<byte> GetBufferedRawJsonToken();
 
         /// <summary>
         /// Gets the next JSON token from the JsonReader as a 1 byte signed integer.

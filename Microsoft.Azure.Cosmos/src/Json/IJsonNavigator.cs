@@ -25,21 +25,21 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets the root node.
         /// </summary>
         /// <returns>The root node.</returns>
-        ReadOnlyMemory<byte> GetRootNode();
+        IJsonNavigatorNode GetRootNode();
 
         /// <summary>
         /// Gets the <see cref="JsonNodeType"/> type for a particular node
         /// </summary>
         /// <param name="node">The the node you want to know the type of</param>
         /// <returns><see cref="JsonNodeType"/> for the node</returns>
-        JsonNodeType GetNodeType(ReadOnlyMemory<byte> node);
+        JsonNodeType GetNodeType(IJsonNavigatorNode node);
 
         /// <summary>
         /// Gets the numeric value for a node
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A double that represents the number value in the node.</returns>
-        Number64 GetNumberValue(ReadOnlyMemory<byte> numberNode);
+        Number64 GetNumberValue(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Tries to get the buffered string value from a node.
@@ -47,77 +47,77 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="stringNode">The node to get the buffered string from.</param>
         /// <param name="bufferedStringValue">The buffered string value if possible</param>
         /// <returns><code>true</code> if the JsonNavigator successfully got the buffered string value; <code>false</code> if the JsonNavigator failed to get the buffered string value.</returns>
-        bool TryGetBufferedStringValue(ReadOnlyMemory<byte> stringNode, out ReadOnlyMemory<byte> bufferedStringValue);
+        bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out ReadOnlyMemory<byte> bufferedStringValue);
 
         /// <summary>
         /// Gets a string value from a node.
         /// </summary>
         /// <param name="stringNode">The node to get the string value from.</param>
         /// <returns>The string value from the node.</returns>
-        string GetStringValue(ReadOnlyMemory<byte> stringNode);
+        string GetStringValue(IJsonNavigatorNode stringNode);
 
         /// <summary>
         /// Gets the numeric value for a node as a signed byte.
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A sbyte value that represents the number value in the node.</returns>
-        sbyte GetInt8Value(ReadOnlyMemory<byte> numberNode);
+        sbyte GetInt8Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Gets the numeric value for a node as a 16-bit signed integer.
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A short value that represents the number value in the node.</returns>
-        short GetInt16Value(ReadOnlyMemory<byte> numberNode);
+        short GetInt16Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Gets the numeric value for a node as a 32-bit signed integer.
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>An int value that represents the number value in the node.</returns>
-        int GetInt32Value(ReadOnlyMemory<byte> numberNode);
+        int GetInt32Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Gets the numeric value for a node as a 64-bit signed integer.
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A long value that represents the number value in the node.</returns>
-        long GetInt64Value(ReadOnlyMemory<byte> numberNode);
+        long GetInt64Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Gets the numeric value for a node as a single precision number if the number is expressed as a floating point.
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A double that represents the number value in the node.</returns>
-        float GetFloat32Value(ReadOnlyMemory<byte> numberNode);
+        float GetFloat32Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Gets the numeric value for a node as double precision number if the number is expressed as a floating point.
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A double that represents the number value in the node.</returns>
-        double GetFloat64Value(ReadOnlyMemory<byte> numberNode);
+        double GetFloat64Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Gets the numeric value for a node as an unsigned 32 bit integer if the node is expressed as an uint32.
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>An unsigned integer that represents the number value in the node.</returns>
-        uint GetUInt32Value(ReadOnlyMemory<byte> numberNode);
+        uint GetUInt32Value(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Gets the Guid value for a node.
         /// </summary>
         /// <param name="guidNode">The node you want the guid value from.</param>
         /// <returns>A guid read from the node.</returns>
-        Guid GetGuidValue(ReadOnlyMemory<byte> guidNode);
+        Guid GetGuidValue(IJsonNavigatorNode guidNode);
 
         /// <summary>
         /// Gets a binary value for a given node from the input.
         /// </summary>
         /// <param name="binaryNode">The node to get the binary value from.</param>
         /// <returns>The binary value from the node</returns>
-        ReadOnlyMemory<byte> GetBinaryValue(ReadOnlyMemory<byte> binaryNode);
+        ReadOnlyMemory<byte> GetBinaryValue(IJsonNavigatorNode binaryNode);
 
         /// <summary>
         /// Tries to get the buffered binary value from a node.
@@ -125,14 +125,16 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="binaryNode">The node to get the buffered binary from.</param>
         /// <param name="bufferedBinaryValue">The buffered binary value if possible</param>
         /// <returns><code>true</code> if the JsonNavigator successfully got the buffered binary value; <code>false</code> if the JsonNavigator failed to get the buffered binary value.</returns>
-        bool TryGetBufferedBinaryValue(ReadOnlyMemory<byte> binaryNode, out ReadOnlyMemory<byte> bufferedBinaryValue);
+        bool TryGetBufferedBinaryValue(
+            IJsonNavigatorNode binaryNode,
+            out ReadOnlyMemory<byte> bufferedBinaryValue);
 
         /// <summary>
         /// Gets the number of elements in an array node.
         /// </summary>
         /// <param name="arrayNode">The (array) node to get the count of.</param>
         /// <returns>The number of elements in the array node.</returns>
-        int GetArrayItemCount(ReadOnlyMemory<byte> arrayNode);
+        int GetArrayItemCount(IJsonNavigatorNode arrayNode);
 
         /// <summary>
         /// Gets the node at a particular index of an array node
@@ -140,21 +142,21 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="arrayNode">The (array) node to index from.</param>
         /// <param name="index">The offset into the array</param>
         /// <returns>The node at a particular index of an array node</returns>
-        ReadOnlyMemory<byte> GetArrayItemAt(ReadOnlyMemory<byte> arrayNode, int index);
+        IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode arrayNode, int index);
 
         /// <summary>
         /// Gets the array item nodes of the array node.
         /// </summary>
         /// <param name="arrayNode">The array to get the items from.</param>
         /// <returns>The array item nodes of the array node</returns>
-        IEnumerable<ReadOnlyMemory<byte>> GetArrayItems(ReadOnlyMemory<byte> arrayNode);
+        IEnumerable<IJsonNavigatorNode> GetArrayItems(IJsonNavigatorNode arrayNode);
 
         /// <summary>
         /// Gets the number of properties in an object node.
         /// </summary>
         /// <param name="objectNode">The node to get the property count from.</param>
         /// <returns>The number of properties in an object node.</returns>
-        int GetObjectPropertyCount(ReadOnlyMemory<byte> objectNode);
+        int GetObjectPropertyCount(IJsonNavigatorNode objectNode);
 
         /// <summary>
         /// Tries to get a object property from an object with a particular property name.
@@ -163,14 +165,14 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="propertyName">The name of the property to search for.</param>
         /// <param name="objectProperty">The <see cref="ObjectProperty"/> with the specified property name if it exists.</param>
         /// <returns><code>true</code> if the JsonNavigator successfully found the <see cref="ObjectProperty"/> with the specified property name; <code>false</code> otherwise.</returns>
-        bool TryGetObjectProperty(ReadOnlyMemory<byte> objectNode, string propertyName, out ObjectProperty objectProperty);
+        bool TryGetObjectProperty(IJsonNavigatorNode objectNode, string propertyName, out ObjectProperty objectProperty);
 
         /// <summary>
         /// Gets the <see cref="ObjectProperty"/> properties from an object node.
         /// </summary>
         /// <param name="objectNode">The object node to get the properties from.</param>
         /// <returns>The <see cref="ObjectProperty"/> properties from an object node.</returns>
-        IEnumerable<ObjectProperty> GetObjectProperties(ReadOnlyMemory<byte> objectNode);
+        IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode);
 
         /// <summary>
         /// Tries to get the buffered raw json
@@ -178,6 +180,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="jsonNode">The json node of interest</param>
         /// <param name="bufferedRawJson">The raw json.</param>
         /// <returns>True if bufferedRawJson was set. False otherwise.</returns>
-        bool TryGetBufferedRawJson(ReadOnlyMemory<byte> jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
+        bool TryGetBufferedRawJson(IJsonNavigatorNode jsonNode, out ReadOnlyMemory<byte> bufferedRawJson);
     }
 }

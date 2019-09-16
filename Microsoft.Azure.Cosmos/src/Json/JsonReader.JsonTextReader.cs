@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>The next JSON token from the JsonReader as a double.</returns>
             public override Number64 GetNumberValue()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End).Span;
                 return JsonTextParser.GetNumberValue(numberToken);
             }
 
@@ -307,61 +307,81 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>The next JSON token from the JsonReader as a string.</returns>
             public override string GetStringValue()
             {
-                ReadOnlySpan<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetStringValue(stringToken);
             }
 
             public override sbyte GetInt8Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetInt8Value(numberToken);
             }
 
             public override short GetInt16Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetInt16Value(numberToken);
             }
 
             public override int GetInt32Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetInt32Value(numberToken);
             }
 
             public override long GetInt64Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetInt64Value(numberToken);
             }
 
             public override uint GetUInt32Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetUInt32Value(numberToken);
             }
 
             public override float GetFloat32Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetFloat32Value(numberToken);
             }
 
             public override double GetFloat64Value()
             {
-                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetFloat64Value(numberToken);
             }
 
             public override Guid GetGuidValue()
             {
-                ReadOnlySpan<byte> guidToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> guidToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetGuidValue(guidToken);
             }
 
-            public override ReadOnlySpan<byte> GetBinaryValue()
+            public override ReadOnlyMemory<byte> GetBinaryValue()
             {
-                ReadOnlySpan<byte> binaryToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                ReadOnlySpan<byte> binaryToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End).Span;
                 return JsonTextParser.GetBinaryValue(binaryToken);
             }
 
@@ -369,9 +389,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Gets the next JSON token from the JsonReader as a buffered list of bytes
             /// </summary>
             /// <returns>the next JSON token from the JsonReader as a buffered list of bytes</returns>
-            public override ReadOnlySpan<byte> GetBufferedRawJsonToken()
+            public override ReadOnlyMemory<byte> GetBufferedRawJsonToken()
             {
-                return this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End);
+                return this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End);
             }
 
             private static JsonTokenType JsonTextToJsonTokenType(JsonTextTokenType jsonTextTokenType)

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    struct ObjectProperty
+    readonly struct ObjectProperty
     {
         /// <summary>
         /// Initializes a new instance of the ObjectProperty struct.
@@ -21,8 +21,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="nameNode">The IJsonNavigatorNode to the node that holds the object property name.</param>
         /// <param name="valueNode">The IJsonNavigatorNode to the node that holds the object property value.</param>
         public ObjectProperty(
-            ReadOnlyMemory<byte> nameNode,
-            ReadOnlyMemory<byte> valueNode)
+            IJsonNavigatorNode nameNode,
+            IJsonNavigatorNode valueNode)
         {
             this.NameNode = nameNode;
             this.ValueNode = valueNode;
@@ -31,11 +31,11 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// The node that holds the object property name.
         /// </summary>
-        public ReadOnlyMemory<byte> NameNode { get; }
+        public IJsonNavigatorNode NameNode { get; }
 
         /// <summary>
         /// The node that holds the object property value.
         /// </summary>
-        public ReadOnlyMemory<byte> ValueNode { get; }
+        public IJsonNavigatorNode ValueNode { get; }
     }
 }

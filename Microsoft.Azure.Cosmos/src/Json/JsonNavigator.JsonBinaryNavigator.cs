@@ -56,33 +56,48 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override ReadOnlyMemory<byte> GetRootNode()
+            public override IJsonNavigatorNode GetRootNode()
             {
                 // offset for the 0x80 (128) binary serialization type marker.
-                return this.buffer.Slice(1);
+                return new BinaryNavigatorNode(this.buffer.Slice(1));
             }
 
             /// <inheritdoc />
-            public override JsonNodeType GetNodeType(ReadOnlyMemory<byte> node)
+            public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
             {
-                if (node.Length == 0)
+                if (node == null)
                 {
-                    throw new ArgumentException($"{nameof(node)} must not be empty.");
+                    throw new ArgumentNullException(nameof(node));
                 }
 
-                return JsonBinaryEncoding.GetNodeType(node.Span[0]);
+                if (!(node is BinaryNavigatorNode binaryNavigatorNode))
+                {
+                    throw new ArgumentException($"{nameof(node)} must be a {nameof(BinaryNavigatorNode)}");
+                }
+
+                ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
+
+                if (buffer.Length == 0)
+                {
+                    throw new ArgumentException($"Node must not be empty.");
+                }
+
+                JsonNodeType jsonNodeType = JsonBinaryEncoding.GetNodeType(buffer.Span[0]);
+                return jsonNodeType;
             }
 
             /// <inheritdoc />
-            public override Number64 GetNumberValue(ReadOnlyMemory<byte> numberNode)
+            public override Number64 GetNumberValue(IJsonNavigatorNode numberNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Number, numberNode.Span);
-                return JsonBinaryEncoding.GetNumberValue(numberNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Number,
+                    numberNode);
+                return JsonBinaryEncoding.GetNumberValue(buffer.Span);
             }
 
             /// <inheritdoc />
             public override bool TryGetBufferedStringValue(
-                ReadOnlyMemory<byte> stringNode,
+                IJsonNavigatorNode stringNode,
                 out ReadOnlyMemory<byte> bufferedStringValue)
             {
                 //TODO (brchon): implement this when optimizing code.
@@ -91,81 +106,117 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override string GetStringValue(ReadOnlyMemory<byte> stringNode)
+            public override string GetStringValue(IJsonNavigatorNode stringNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.String, stringNode.Span);
-                return JsonBinaryEncoding.GetStringValue(stringNode.Span, this.jsonStringDictionary);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.String,
+                    stringNode);
+                return JsonBinaryEncoding.GetStringValue(buffer.Span, this.jsonStringDictionary);
             }
 
             /// <inheritdoc />
-            public override sbyte GetInt8Value(ReadOnlyMemory<byte> numberNode)
+            public override sbyte GetInt8Value(IJsonNavigatorNode numberNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Int8, numberNode.Span);
-                return JsonBinaryEncoding.GetInt8Value(numberNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Int8,
+                    numberNode);
+                return JsonBinaryEncoding.GetInt8Value(buffer.Span);
             }
 
             /// <inheritdoc />
-            public override short GetInt16Value(ReadOnlyMemory<byte> numberNode)
+            public override short GetInt16Value(IJsonNavigatorNode numberNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Int16, numberNode.Span);
-                return JsonBinaryEncoding.GetInt16Value(numberNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Int16,
+                    numberNode);
+                return JsonBinaryEncoding.GetInt16Value(buffer.Span);
             }
 
             /// <inheritdoc />
-            public override int GetInt32Value(ReadOnlyMemory<byte> numberNode)
+            public override int GetInt32Value(IJsonNavigatorNode numberNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Int32, numberNode.Span);
-                return JsonBinaryEncoding.GetInt32Value(numberNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Int32,
+                    numberNode);
+                return JsonBinaryEncoding.GetInt32Value(buffer.Span);
             }
 
             /// <inheritdoc />
-            public override long GetInt64Value(ReadOnlyMemory<byte> numberNode)
+            public override long GetInt64Value(IJsonNavigatorNode numberNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Int64, numberNode.Span);
-                return JsonBinaryEncoding.GetInt64Value(numberNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Int64,
+                    numberNode);
+                return JsonBinaryEncoding.GetInt64Value(buffer.Span);
             }
 
             /// <inheritdoc />
-            public override float GetFloat32Value(ReadOnlyMemory<byte> numberNode)
+            public override float GetFloat32Value(IJsonNavigatorNode numberNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Float32, numberNode.Span);
-                return JsonBinaryEncoding.GetFloat32Value(numberNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Float32,
+                    numberNode);
+                return JsonBinaryEncoding.GetFloat32Value(buffer.Span);
             }
 
             /// <inheritdoc />
-            public override double GetFloat64Value(ReadOnlyMemory<byte> numberNode)
+            public override double GetFloat64Value(IJsonNavigatorNode numberNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Float64, numberNode.Span);
-                return JsonBinaryEncoding.GetFloat64Value(numberNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Float64,
+                    numberNode);
+                return JsonBinaryEncoding.GetFloat64Value(buffer.Span);
             }
 
             /// <inheritdoc />
-            public override uint GetUInt32Value(ReadOnlyMemory<byte> numberNode)
+            public override uint GetUInt32Value(IJsonNavigatorNode numberNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.UInt32, numberNode.Span);
-                return JsonBinaryEncoding.GetUInt32Value(numberNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.UInt32,
+                    numberNode);
+                return JsonBinaryEncoding.GetUInt32Value(buffer.Span);
             }
 
             /// <inheritdoc />
-            public override Guid GetGuidValue(ReadOnlyMemory<byte> guidNode)
+            public override Guid GetGuidValue(IJsonNavigatorNode guidNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Guid, guidNode.Span);
-                return JsonBinaryEncoding.GetGuidValue(guidNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Guid,
+                    guidNode);
+                return JsonBinaryEncoding.GetGuidValue(buffer.Span);
             }
 
             /// <inheritdoc />
-            public override ReadOnlyMemory<byte> GetBinaryValue(ReadOnlyMemory<byte> binaryNode)
+            public override ReadOnlyMemory<byte> GetBinaryValue(IJsonNavigatorNode binaryNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Binary, binaryNode.Span);
-                return JsonBinaryEncoding.GetBinaryValue(binaryNode);
+                if (!this.TryGetBufferedBinaryValue(
+                    binaryNode,
+                    out ReadOnlyMemory<byte> bufferedBinaryValue))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return bufferedBinaryValue;
+            }
+
+            public override bool TryGetBufferedBinaryValue(
+                IJsonNavigatorNode binaryNode,
+                out ReadOnlyMemory<byte> bufferedBinaryValue)
+            {
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Binary,
+                    binaryNode);
+                bufferedBinaryValue = JsonBinaryEncoding.GetBinaryValue(buffer);
+                return true;
             }
 
             /// <inheritdoc />
-            public override int GetArrayItemCount(ReadOnlyMemory<byte> arrayNode)
+            public override int GetArrayItemCount(IJsonNavigatorNode arrayNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Array, arrayNode.Span);
-                ReadOnlySpan<byte> buffer = arrayNode.Span;
-                byte typeMarker = arrayNode.Span[0];
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Binary,
+                    arrayNode);
+                byte typeMarker = buffer.Span[0];
                 int firstValueOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
                 long count;
                 switch (typeMarker)
@@ -181,35 +232,22 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Arrays with length and count prefix
                     case JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount:
                         count = MemoryMarshal.Read<byte>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength));
+                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength).Span);
                         break;
                     case JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount:
                         count = MemoryMarshal.Read<ushort>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength));
+                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength).Span);
                         break;
                     case JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount:
                         count = MemoryMarshal.Read<uint>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength));
+                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength).Span);
                         break;
 
                     // Arrays with length prefix
                     case JsonBinaryEncoding.TypeMarker.Array1ByteLength:
-                        byte array1ByteLength = MemoryMarshal.Read<byte>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength));
-                        count = JsonBinaryNavigator.GetValueCount(buffer
-                            .Slice(0, array1ByteLength));
-                        break;
                     case JsonBinaryEncoding.TypeMarker.Array2ByteLength:
-                        ushort array2ByteLength = MemoryMarshal.Read<ushort>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength));
-                        count = JsonBinaryNavigator.GetValueCount(buffer
-                            .Slice(0, array2ByteLength));
-                        break;
                     case JsonBinaryEncoding.TypeMarker.Array4ByteLength:
-                        uint array4ByteLength = MemoryMarshal.Read<uint>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength));
-                        count = JsonBinaryNavigator.GetValueCount(buffer
-                            .Slice(0, (int)array4ByteLength));
+                        count = JsonBinaryNavigator.GetValueCount(buffer.Span);
                         break;
 
                     default:
@@ -225,9 +263,11 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override ReadOnlyMemory<byte> GetArrayItemAt(ReadOnlyMemory<byte> arrayNode, int index)
+            public override IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode arrayNode, int index)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Array, arrayNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Array,
+                    arrayNode);
 
                 if (index < 0)
                 {
@@ -235,20 +275,21 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 // TODO (brchon): We can optimize for the case where the count is serialized so we can avoid using the linear time call to TryGetValueAt().
-                if (!JsonBinaryNavigator.TryGetValueAt(arrayNode, index, out ReadOnlyMemory<byte> arrayItem))
+                if (!JsonBinaryNavigator.TryGetValueAt(buffer, index, out ReadOnlyMemory<byte> arrayItem))
                 {
                     throw new IndexOutOfRangeException($"Tried to access index:{index} in an array.");
                 }
 
-                return arrayItem;
+                return new BinaryNavigatorNode(arrayItem);
             }
 
             /// <inheritdoc />
-            public override IEnumerable<ReadOnlyMemory<byte>> GetArrayItems(ReadOnlyMemory<byte> arrayNode)
+            public override IEnumerable<IJsonNavigatorNode> GetArrayItems(IJsonNavigatorNode arrayNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Array, arrayNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Array,
+                    arrayNode);
 
-                ReadOnlyMemory<byte> buffer = arrayNode;
                 byte typeMarker = buffer.Span[0];
 
                 int firstArrayItemOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
@@ -270,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
 
                     // Create a buffer for that array item
-                    ReadOnlyMemory<byte> arrayItem = buffer.Slice(0, arrayItemLength);
+                    IJsonNavigatorNode arrayItem = new BinaryNavigatorNode(buffer.Slice(0, arrayItemLength));
                     yield return arrayItem;
 
                     // Slice off the array item
@@ -279,13 +320,13 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override int GetObjectPropertyCount(ReadOnlyMemory<byte> objectNode)
+            public override int GetObjectPropertyCount(IJsonNavigatorNode objectNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Object, objectNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Object,
+                    objectNode);
 
-                ReadOnlySpan<byte> buffer = objectNode.Span;
-
-                byte typeMarker = buffer[0];
+                byte typeMarker = buffer.Span[0];
                 int firstObjectPropertyOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
                 long count;
                 switch (typeMarker)
@@ -302,22 +343,22 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Object with length and count prefix
                     case JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount:
                         count = MemoryMarshal.Read<byte>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength));
+                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength).Span);
                         break;
                     case JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount:
                         count = MemoryMarshal.Read<ushort>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength));
+                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength).Span);
                         break;
                     case JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount:
                         count = MemoryMarshal.Read<uint>(buffer
-                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength));
+                            .Slice(JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.FourByteLength).Span);
                         break;
 
                     // Object with length prefix
                     case JsonBinaryEncoding.TypeMarker.Object1ByteLength:
                     case JsonBinaryEncoding.TypeMarker.Object2ByteLength:
                     case JsonBinaryEncoding.TypeMarker.Object4ByteLength:
-                        count = JsonBinaryNavigator.GetValueCount(buffer);
+                        count = JsonBinaryNavigator.GetValueCount(buffer.Span);
                         break;
 
                     default:
@@ -335,9 +376,14 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override bool TryGetObjectProperty(ReadOnlyMemory<byte> objectNode, string propertyName, out ObjectProperty objectProperty)
+            public override bool TryGetObjectProperty(
+                IJsonNavigatorNode objectNode,
+                string propertyName,
+                out ObjectProperty objectProperty)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Object, objectNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Object,
+                    objectNode);
 
                 foreach (ObjectProperty objectPropertyNode in this.GetObjectProperties(objectNode))
                 {
@@ -353,42 +399,55 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override IEnumerable<ObjectProperty> GetObjectProperties(ReadOnlyMemory<byte> objectNode)
+            public override IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode)
             {
-                JsonBinaryNavigator.ThrowIfNotValidType(JsonNodeType.Object, objectNode.Span);
+                ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
+                    JsonNodeType.Object,
+                    objectNode);
 
-                byte typeMarker = objectNode.Span[0];
+                byte typeMarker = buffer.Span[0];
                 int firstValueOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
 
-                objectNode = objectNode.Slice(firstValueOffset);
-                while (objectNode.Length != 0)
+                buffer = buffer.Slice(firstValueOffset);
+                while (buffer.Length != 0)
                 {
-                    int nameNodeLength = JsonBinaryEncoding.GetValueLength(objectNode.Span);
-                    ReadOnlyMemory<byte> nameNode = objectNode.Slice(0, nameNodeLength);
-                    objectNode = objectNode.Slice(nameNodeLength);
+                    int nameNodeLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
+                    ReadOnlyMemory<byte> nameNode = buffer.Slice(0, nameNodeLength);
+                    buffer = buffer.Slice(nameNodeLength);
 
-                    int valueNodeLength = JsonBinaryEncoding.GetValueLength(objectNode.Span);
-                    ReadOnlyMemory<byte> valueNode = objectNode.Slice(0, valueNodeLength);
-                    objectNode = objectNode.Slice(valueNodeLength);
+                    int valueNodeLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
+                    ReadOnlyMemory<byte> valueNode = buffer.Slice(0, valueNodeLength);
+                    buffer = buffer.Slice(valueNodeLength);
 
-                    yield return new ObjectProperty(nameNode, valueNode);
+                    yield return new ObjectProperty(
+                        new BinaryNavigatorNode(nameNode),
+                        new BinaryNavigatorNode(valueNode));
                 }
             }
 
             /// <inheritdoc />
             public override bool TryGetBufferedRawJson(
-                ReadOnlyMemory<byte> jsonNode,
+                IJsonNavigatorNode jsonNode,
                 out ReadOnlyMemory<byte> bufferedRawJson)
             {
-                if (jsonNode.Length == 0)
+                if (jsonNode == null)
                 {
-                    bufferedRawJson = default(ReadOnlyMemory<byte>);
-                    return false;
+                    throw new ArgumentNullException(nameof(jsonNode));
                 }
 
-                int nodeLength = JsonBinaryEncoding.GetValueLength(jsonNode.Span);
-                bufferedRawJson = jsonNode.Slice(0, nodeLength);
+                if (!(jsonNode is BinaryNavigatorNode binaryNavigatorNode))
+                {
+                    throw new ArgumentException($"{nameof(jsonNode)} must be a {nameof(BinaryNavigatorNode)}");
+                }
 
+                ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
+
+                if (buffer.Length == 0)
+                {
+                    throw new ArgumentException($"Node must not be empty.");
+                }
+
+                bufferedRawJson = buffer;
                 return true;
             }
 
@@ -443,19 +502,44 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
-            private static void ThrowIfNotValidType(JsonNodeType expected, ReadOnlySpan<byte> buffer)
+            private static ReadOnlyMemory<byte> GetNodeOfType(
+                JsonNodeType expected,
+                IJsonNavigatorNode node)
             {
+                if (node == null)
+                {
+                    throw new ArgumentNullException(nameof(node));
+                }
+
+                if (!(node is BinaryNavigatorNode binaryNavigatorNode))
+                {
+                    throw new ArgumentException($"{nameof(node)} must be a {nameof(BinaryNavigatorNode)}");
+                }
+
+                ReadOnlyMemory<byte> buffer = binaryNavigatorNode.Buffer;
+
                 if (buffer.Length == 0)
                 {
                     throw new ArgumentException($"Node must not be empty.");
                 }
 
-                JsonNodeType actual = JsonBinaryEncoding.GetNodeType(buffer[0]);
+                JsonNodeType actual = JsonBinaryEncoding.GetNodeType(buffer.Span[0]);
                 if (actual != expected)
                 {
                     throw new ArgumentException($"Node needs to be of type {expected}.");
                 }
 
+                return buffer;
+            }
+
+            private sealed class BinaryNavigatorNode : IJsonNavigatorNode
+            {
+                public BinaryNavigatorNode(ReadOnlyMemory<byte> buffer)
+                {
+                    this.Buffer = buffer;
+                }
+
+                public ReadOnlyMemory<byte> Buffer { get; }
             }
         }
     }

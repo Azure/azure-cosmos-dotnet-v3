@@ -41,19 +41,19 @@ namespace Microsoft.Azure.Cosmos.Json
             return value;
         }
 
-        public ReadOnlySpan<byte> GetBufferedRawJsonToken()
+        public ReadOnlyMemory<byte> GetBufferedRawJsonToken()
         {
-            return this.buffer.Span;
+            return this.buffer;
         }
 
-        public ReadOnlySpan<byte> GetBufferedRawJsonToken(int startPosition)
+        public ReadOnlyMemory<byte> GetBufferedRawJsonToken(int startPosition)
         {
-            return this.buffer.Slice(startPosition).Span;
+            return this.buffer.Slice(startPosition);
         }
 
-        public ReadOnlySpan<byte> GetBufferedRawJsonToken(int startPosition, int endPosition)
+        public ReadOnlyMemory<byte> GetBufferedRawJsonToken(int startPosition, int endPosition)
         {
-            return this.buffer.Slice(startPosition, endPosition - startPosition).Span;
+            return this.buffer.Slice(startPosition, endPosition - startPosition);
         }
     }
 }
