@@ -4112,9 +4112,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             new JProperty("age", grouping.Key["age"]),
                             new JProperty("name", grouping.Key["name"])))),
 
-                  //------------------------------------------
-                  //With Aggregates
-                  //------------------------------------------
+                 // ------------------------------------------
+                 // With Aggregates
+                 // ------------------------------------------
 
                   new Tuple<string, IEnumerable<JToken>>(
                     "SELECT c.age, COUNT(1) as count FROM c GROUP BY c.age",
@@ -4222,7 +4222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Test query correctness.
             foreach ((string query, IEnumerable<JToken> expectedResults) in queryAndExpectedResultsList)
             {
-                foreach (int maxItemCount in new int[] { 5 })
+                foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
                     int maxConcurrency = 2;
                     List<JToken> actual = await QueryWithoutContinuationTokens<JToken>(
