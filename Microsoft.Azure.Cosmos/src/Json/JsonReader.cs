@@ -74,9 +74,9 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <param name="skipValidation">Whether or not to skip validation.</param>
         /// <returns>A concrete JsonReader that can read the supplied byte array.</returns>
-        public static IJsonReader Create(ArraySegment<byte> buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
+        public static IJsonReader Create(ReadOnlyMemory<byte> buffer, JsonStringDictionary jsonStringDictionary = null, bool skipValidation = false)
         {
-            byte firstByte = buffer.AsSpan<byte>()[0];
+            byte firstByte = buffer.Span[0];
 
             // Explicitly pick from the set of supported formats, or otherwise assume text format
             switch ((JsonSerializationFormat)firstByte)
@@ -88,25 +88,16 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        /// <summary>
-        /// Advances the JsonReader by one token.
-        /// </summary>
-        /// <returns><code>true</code> if the JsonReader successfully advanced to the next token; <code>false</code> if the JsonReader has passed the end of the JSON.</returns>
+        /// <inheritdoc />
         public abstract bool Read();
 
         /// <inheritdoc />
         public abstract Number64 GetNumberValue();
 
-        /// <summary>
-        /// Gets the next JSON token from the JsonReader as a string.
-        /// </summary>
-        /// <returns>The next JSON token from the JsonReader as a string.</returns>
+        /// <inheritdoc />
         public abstract string GetStringValue();
 
-        /// <summary>
-        /// Gets next JSON token from the JsonReader as a raw series of bytes that is buffered.
-        /// </summary>
-        /// <returns>The next JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
+        /// <inheritdoc />
         public abstract ReadOnlyMemory<byte> GetBufferedRawJsonToken();
 
         /// <inheritdoc />

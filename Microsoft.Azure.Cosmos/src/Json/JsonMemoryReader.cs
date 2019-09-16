@@ -5,12 +5,12 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
 
-    internal abstract class JsonBuffer
+    internal abstract class JsonMemoryReader
     {
         protected readonly ReadOnlyMemory<byte> buffer;
         protected int position;
 
-        protected JsonBuffer(ReadOnlyMemory<byte> buffer)
+        protected JsonMemoryReader(ReadOnlyMemory<byte> buffer)
         {
             this.buffer = buffer;
         }

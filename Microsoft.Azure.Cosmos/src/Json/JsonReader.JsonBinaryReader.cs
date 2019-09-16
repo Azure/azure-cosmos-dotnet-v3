@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Buffer to read from.
             /// </summary>
-            private readonly JsonBinaryBuffer jsonBinaryBuffer;
+            private readonly JsonBinaryMemoryReader jsonBinaryBuffer;
 
             /// <summary>
             /// Dictionary used for user string encoding.
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 bool skipValidation = false)
                 : base(skipValidation)
             {
-                this.jsonBinaryBuffer = new JsonBinaryBuffer(buffer);
+                this.jsonBinaryBuffer = new JsonBinaryMemoryReader(buffer);
 
                 // First byte is the serialization format so we are skipping over it
                 this.jsonBinaryBuffer.Read();
@@ -297,9 +297,9 @@ namespace Microsoft.Azure.Cosmos.Json
             }
         }
 
-        private sealed class JsonBinaryBuffer : JsonBuffer
+        private sealed class JsonBinaryMemoryReader : JsonMemoryReader
         {
-            public JsonBinaryBuffer(ReadOnlyMemory<byte> buffer)
+            public JsonBinaryMemoryReader(ReadOnlyMemory<byte> buffer)
                 : base(buffer)
             {
             }

@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             private static readonly HashSet<char> EscapeCharacters = new HashSet<char> { 'b', 'f', 'n', 'r', 't', '\\', '"', '/', 'u' };
 
-            private readonly JsonTextBuffer jsonTextBuffer;
+            private readonly JsonTextMemoryReader jsonTextBuffer;
             private Token token;
             private bool hasSeperator;
 
@@ -49,10 +49,10 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="buffer">The IJsonTextBuffer to read from.</param>
             /// <param name="skipValidation">Whether or not to skip validation.</param>
-            public JsonTextReader(ArraySegment<byte> buffer, bool skipValidation = false)
+            public JsonTextReader(ReadOnlyMemory<byte> buffer, bool skipValidation = false)
                 : base(skipValidation)
             {
-                this.jsonTextBuffer = new JsonTextBuffer(buffer);
+                this.jsonTextBuffer = new JsonTextMemoryReader(buffer);
             }
 
             /// <summary>
@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // Make sure no gargbage came after the number
                 char current = this.jsonTextBuffer.PeekCharacter();
-                if (!(this.jsonTextBuffer.IsEof || JsonTextBuffer.IsWhitespace(current) || current == '}' || current == ',' || current == ']'))
+                if (!(this.jsonTextBuffer.IsEof || JsonTextMemoryReader.IsWhitespace(current) || current == '}' || current == ',' || current == ']'))
                 {
                     throw new JsonInvalidNumberException();
                 }
@@ -877,13 +877,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private sealed class JsonTextBuffer : JsonBuffer
+            private sealed class JsonTextMemoryReader : JsonMemoryReader
             {
                 private static readonly ReadOnlyMemory<byte> TrueMemory = new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
                 private static readonly ReadOnlyMemory<byte> FalseMemory = new byte[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
                 private static readonly ReadOnlyMemory<byte> NullMemory = new byte[] { (byte)'n', (byte)'u', (byte)'l', (byte)'l' };
 
-                public JsonTextBuffer(ReadOnlyMemory<byte> buffer)
+                public JsonTextMemoryReader(ReadOnlyMemory<byte> buffer)
                     : base(buffer)
                 {
                 }
@@ -900,7 +900,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public void AdvanceWhileWhitespace()
                 {
-                    while (JsonTextBuffer.IsWhitespace(this.PeekCharacter()))
+                    while (JsonTextMemoryReader.IsWhitespace(this.PeekCharacter()))
                     {
                         this.ReadCharacter();
                     }
@@ -908,17 +908,17 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 public bool TryReadTrueToken()
                 {
-                    return this.TryReadToken(JsonTextBuffer.TrueMemory.Span);
+                    return this.TryReadToken(JsonTextMemoryReader.TrueMemory.Span);
                 }
 
                 public bool TryReadFalseToken()
                 {
-                    return this.TryReadToken(JsonTextBuffer.FalseMemory.Span);
+                    return this.TryReadToken(JsonTextMemoryReader.FalseMemory.Span);
                 }
 
                 public bool TryReadNullToken()
                 {
-                    return this.TryReadToken(JsonTextBuffer.NullMemory.Span);
+                    return this.TryReadToken(JsonTextMemoryReader.NullMemory.Span);
                 }
 
                 private bool TryReadToken(ReadOnlySpan<byte> token)
