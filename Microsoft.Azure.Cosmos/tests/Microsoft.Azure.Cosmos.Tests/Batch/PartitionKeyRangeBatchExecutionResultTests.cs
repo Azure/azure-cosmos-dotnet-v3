@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -75,7 +76,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
                 ETag = "1234",
                 SubStatusCode = SubStatusCodes.CompletingSplit,
-                RetryAfter = TimeSpan.FromSeconds(10)
+                RetryAfter = TimeSpan.FromSeconds(10),
+                Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics())
             };
 
             ResponseMessage response = result.ToResponseMessage();
@@ -84,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(result.SubStatusCode, response.Headers.SubStatusCode);
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
             Assert.AreEqual(result.StatusCode, response.StatusCode);
+            Assert.AreEqual(result.Diagnostics, response.Diagnostics);
         }
 
         private async Task<bool> ConstainsSplitIsTrueInternal(HttpStatusCode statusCode, SubStatusCodes subStatusCode)

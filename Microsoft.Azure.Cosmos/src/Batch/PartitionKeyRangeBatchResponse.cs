@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     {
         // Results sorted in the order operations had been added.
         private readonly BatchOperationResult[] resultsByOperationIndex;
+        private readonly BatchResponse serverResponse;
         private bool isDisposed;
 
         /// <summary>
@@ -49,11 +50,10 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = serverResponse.StatusCode;
 
-            this.ServerResponse = serverResponse;
+            this.serverResponse = serverResponse;
             this.resultsByOperationIndex = new BatchOperationResult[originalOperationsCount];
 
             StringBuilder errorMessageBuilder = new StringBuilder();
-            List<string> activityIds = new List<string>();
             List<ItemBatchOperation> itemBatchOperations = new List<ItemBatchOperation>();
             // We expect number of results == number of operations here
             for (int index = 0; index < serverResponse.Operations.Count; index++)
@@ -74,7 +74,6 @@ namespace Microsoft.Azure.Cosmos
                 errorMessageBuilder.AppendFormat("{0}; ", serverResponse.ErrorMessage);
             }
 
-            this.ActivityId = serverResponse.ActivityId;
             this.ErrorMessage = errorMessageBuilder.Length > 2 ? errorMessageBuilder.ToString(0, errorMessageBuilder.Length - 2) : null;
             this.Operations = itemBatchOperations;
             this.Serializer = serializer;
@@ -83,12 +82,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the ActivityId that identifies the server request made to execute the batch request.
         /// </summary>
-        public override string ActivityId { get; }
+        public override string ActivityId => this.serverResponse.ActivityId;
+
+        /// <inheritdoc />
+        public override CosmosDiagnostics Diagnostics => this.serverResponse.Diagnostics;
 
         internal override CosmosSerializer Serializer { get; }
-
-        // for unit testing only
-        internal BatchResponse ServerResponse { get; private set; }
 
         /// <summary>
         /// Gets the number of operation results.
@@ -134,7 +133,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal override IEnumerable<string> GetActivityIds()
+#if INTERNAL
+        public 
+#else
+        internal
+#endif
+        override IEnumerable<string> GetActivityIds()
         {
             return new string[1] { this.ActivityId };
         }
@@ -148,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
             if (disposing && !this.isDisposed)
             {
                 this.isDisposed = true;
-                this.ServerResponse?.Dispose();
+                this.serverResponse?.Dispose();
             }
 
             base.Dispose(disposing);
