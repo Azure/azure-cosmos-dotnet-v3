@@ -255,7 +255,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        //[TestCategory("Quarantine")] //passes locally but fails in CI
         public async Task VerifyNegativeWebProxySettings()
         {
             TestWebProxy proxy = new TestWebProxy() { Credentials = new NetworkCredential("test", "test") };
