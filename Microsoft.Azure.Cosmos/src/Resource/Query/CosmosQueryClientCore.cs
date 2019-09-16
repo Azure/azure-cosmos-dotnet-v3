@@ -125,6 +125,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException($"CosmosQueryClientCore.ExecuteItemQueryAsync only supports RequestOptionType of QueryRequestOptions");
             }
 
+            queryRequestOptions.MaxItemCount = pageSize;
+
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -142,9 +144,6 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(
                         cosmosRequestMessage,
                         continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(
-                        cosmosRequestMessage,
-                        pageSize);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
