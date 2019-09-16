@@ -350,6 +350,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Allow using account region in-case ApplicationRegion is not available. Defaults to 'true'.
+        /// </summary>
+        /// <value>
+        /// Default value is true.
+        /// </value>
+        /// <remarks>
+        /// When the value of this property is true, the SDK will automatically discover all account write and read regions, and use them when the configured application region is not available. When set to false, availability is limited to the configured application region only. </remarks>
+        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        public bool UseAnyAccountRegion { get; set; } = true;
+
+        /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
         /// </summary>
 #if PREVIEW
@@ -509,7 +521,8 @@ namespace Microsoft.Azure.Cosmos
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
-                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                EnableEndpointDiscovery = this.UseAnyAccountRegion
             };
 
             if (this.ApplicationRegion != null)
