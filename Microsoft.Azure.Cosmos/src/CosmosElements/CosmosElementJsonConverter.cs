@@ -72,7 +72,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool CanConvert(Type objectType)
         {
+#if NETSTANDARD15 || NETSTANDARD16
+            return ConvertableTypes.Contains(objectType) || ConvertableTypes.Contains(objectType.GetTypeInfo().BaseType) || objectType == typeof(CosmosElement);
+#else
             return ConvertableTypes.Contains(objectType) || ConvertableTypes.Contains(objectType.BaseType) || objectType == typeof(CosmosElement);
+#endif
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
