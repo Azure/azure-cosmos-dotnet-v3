@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
-            Action<RequestMessage> requestEnricher,
+            string supportedQueryFeatures,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -172,7 +172,14 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
-                requestEnricher: requestEnricher,
+                requestEnricher: (requestMessage) =>
+                {
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQueryPlanRequest, bool.TrueString);
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.SupportedQueryFeatures, supportedQueryFeatures);
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
+                    requestMessage.UseGatewayMode = true;
+                },
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.

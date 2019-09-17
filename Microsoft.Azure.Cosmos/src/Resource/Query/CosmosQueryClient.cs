@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
-            Action<RequestMessage> requestEnricher,
+            string supportedQueryFeatures,
             CancellationToken cancellationToken);
 
         internal abstract void ClearSessionTokenCache(string collectionFullName);
