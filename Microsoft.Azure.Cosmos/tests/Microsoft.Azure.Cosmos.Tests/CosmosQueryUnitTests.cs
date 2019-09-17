@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
-               operators.ToArray(),
+                operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
                 {
                     { "test", AggregateOperator.Count }
@@ -122,24 +122,27 @@ namespace Microsoft.Azure.Cosmos.Tests
                 setupContext.func));
 
             components.Add(await DistinctDocumentQueryExecutionComponent.CreateAsync(
-                     null,
-                     setupContext.func,
-                     DistinctQueryType.Ordered));
+                new Mock<CosmosQueryClient>().Object,
+                null,
+                setupContext.func,
+                DistinctQueryType.Ordered));
 
             components.Add(await SkipDocumentQueryExecutionComponent.CreateAsync(
-                       5,
-                       null,
-                       setupContext.func));
+                5,
+                null,
+                setupContext.func));
 
             components.Add(await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
-                      5,
-                      null,
-                      setupContext.func));
+                new Mock<CosmosQueryClient>().Object,
+                5,
+                null,
+                setupContext.func));
 
             components.Add(await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
-                       5,
-                       null,
-                       setupContext.func));
+                new Mock<CosmosQueryClient>().Object,
+                5,
+                null,
+                setupContext.func));
 
             return (components, setupContext.response);
         }
