@@ -672,7 +672,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                jsonNavigator = JsonNavigator.Create(content);
+                jsonNavigator = JsonNavigator.Create(new ArraySegment<byte>(content));
             }
 
             string resourceName = this.GetRootNodeName(documentServiceRequest.ResourceType);

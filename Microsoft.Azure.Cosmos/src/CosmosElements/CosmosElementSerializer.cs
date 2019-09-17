@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
             else
             {
-                jsonNavigator = JsonNavigator.Create(content);
+                jsonNavigator = JsonNavigator.Create(new ArraySegment<byte>(content));
             }
 
             string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             jsonWriter.WriteObjectEnd();
 
-            return new MemoryStream(jsonWriter.GetResult());
+            return new MemoryStream(jsonWriter.GetResult().ToArray());
         }
 
         /// <summary>

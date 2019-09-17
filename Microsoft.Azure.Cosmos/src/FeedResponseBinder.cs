@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// DEVNOTE: Need to refactor to use CosmosJsonSerializer
+        /// Todo: This method can be optimized by not writing the result out to text.
         /// </summary>
         public static DocumentFeedResponse<T> ConvertCosmosElementFeed<T>(
             DocumentFeedResponse<CosmosElement> dynamicFeed,
@@ -72,7 +74,17 @@ namespace Microsoft.Azure.Cosmos
             }
 
             jsonWriter.WriteArrayEnd();
-            string jsonText = Encoding.UTF8.GetString(jsonWriter.GetResult());
+
+            string jsonText;
+            unsafe
+            {
+                ReadOnlySpan<byte> result = jsonWriter.GetResult().Span;
+                fixed (byte* buffer = result)
+                {
+                    jsonText = Encoding.UTF8.GetString(buffer, result.Length);
+                }
+            }
+
             IEnumerable<T> typedResults;
 
             // If the resource type is an offer and the requested type is either a Offer or OfferV2 or dynamic

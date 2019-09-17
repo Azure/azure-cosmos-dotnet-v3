@@ -31,7 +31,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             this.WriteTo(jsonWriter);
-            return Encoding.UTF8.GetString(jsonWriter.GetResult());
+
+            string toStringResult;
+            unsafe
+            {
+                ReadOnlySpan<byte> result = jsonWriter.GetResult().Span;
+                fixed (byte* bytes = result)
+                {
+                    toStringResult = Encoding.UTF8.GetString(bytes, result.Length);
+                }
+            }
+
+            return toStringResult;
         }
 
         public abstract void WriteTo(IJsonWriter jsonWriter);

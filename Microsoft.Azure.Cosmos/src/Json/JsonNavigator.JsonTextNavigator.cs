@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="buffer">The (UTF-8) buffer to navigate.</param>
             /// <param name="skipValidation">whether to skip validation or not.</param>
             public JsonTextNavigator(
-                ArraySegment<byte> buffer,
+                ReadOnlyMemory<byte> buffer,
                 bool skipValidation = false)
             {
                 IJsonReader jsonTextReader = JsonReader.Create(

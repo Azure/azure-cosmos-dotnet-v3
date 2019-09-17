@@ -35,17 +35,12 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="skipValidation">Whether validation should be skipped.</param>
         /// <returns>A concrete JsonNavigator that can navigate the supplied buffer.</returns>
         public static IJsonNavigator Create(
-            ArraySegment<byte> buffer,
+            ReadOnlyMemory<byte> buffer,
             JsonStringDictionary jsonStringDictionary = null,
             bool skipValidation = false)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException("buffer");
-            }
-
             // Examine the first buffer byte to determine the serialization format
-            byte firstByte = buffer.AsSpan<byte>()[0];
+            byte firstByte = buffer.Span[0];
 
             switch ((JsonSerializationFormat)firstByte)
             {
