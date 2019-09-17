@@ -257,9 +257,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifyNegativeWebProxySettings()
         {
-            TestWebProxy proxy = new TestWebProxy() { Credentials = new NetworkCredential("test", "test") };
+            WebProxy proxy = new WebProxy
+            {
+                Address = new Uri("http://www.cosmostestproxyshouldfail.com"),
+                BypassProxyOnLocal = false,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential("test", "test")
+            };
+
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
-                cosmosClientBuilder.WithConnectionModeGateway(webProxy: new TestWebProxy());
+                cosmosClientBuilder.WithConnectionModeGateway(webProxy: proxy);
             });
 
             await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
@@ -273,21 +280,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static string EscapeForSQL(this string input)
         {
             return input.Replace("'", "\\'").Replace("\"", "\\\"");
-        }
-    }
-
-    internal class TestWebProxy : IWebProxy
-    {
-        public ICredentials Credentials { get; set; }
-
-        public Uri GetProxy(Uri destination)
-        {
-            return new Uri("http://www.cosmostestproxyshouldfail.com");
-        }
-
-        public bool IsBypassed(Uri host)
-        {
-            return false;
         }
     }
 }
