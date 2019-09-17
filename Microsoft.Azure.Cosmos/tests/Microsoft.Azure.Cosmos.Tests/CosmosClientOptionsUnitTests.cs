@@ -382,6 +382,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosClientOptions.GetConnectionPolicy();
         }
 
+        [TestMethod]
+        public void WithLimitToEndpointAffectsEndpointDiscovery()
+        {
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: Guid.NewGuid().ToString());
+
+            CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsFalse(cosmosClientOptions.LimitToEndpoint);
+
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            Assert.IsTrue(connectionPolicy.EnableEndpointDiscovery);
+
+            cosmosClientBuilder
+                .WithLimitToEndpoint(true);
+
+            cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsTrue(cosmosClientOptions.LimitToEndpoint);
+
+            connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            Assert.IsFalse(connectionPolicy.EnableEndpointDiscovery);
+        }
+
         private class TestWebProxy : IWebProxy
         {
             public ICredentials Credentials { get; set; }
