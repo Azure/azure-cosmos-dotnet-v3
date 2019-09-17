@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// fallback geo-replicated regions for high availability. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
         /// 
-        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
+        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string, bool)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master"/>
         /// </remarks>
         public string ApplicationRegion { get; set; }
