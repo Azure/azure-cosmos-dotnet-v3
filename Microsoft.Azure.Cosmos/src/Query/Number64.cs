@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Struct that represents either a double or 64 bit int
     /// </summary>
-    [JsonConverter(typeof(Number64JsonConverter))]
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
@@ -588,36 +587,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
         #endregion
-
-        private sealed class Number64JsonConverter : JsonConverter
-        {
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-            {
-                Number64 number64 = (Number64)value;
-                writer.WriteValue(number64.IsDouble ? Number64.ToDouble(number64) : Number64.ToLong(number64));
-            }
-
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-            {
-                Number64 number64;
-                if (reader.TokenType == JsonToken.Float)
-                {
-                    number64 = (double)reader.Value;
-                }
-                else
-                {
-                    // reader.TokenType == JsonToken.Integer
-                    number64 = (long)reader.Value;
-                }
-
-                return number64;
-            }
-
-            public override bool CanConvert(Type objectType)
-            {
-                return objectType == typeof(User);
-            }
-        }
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented
