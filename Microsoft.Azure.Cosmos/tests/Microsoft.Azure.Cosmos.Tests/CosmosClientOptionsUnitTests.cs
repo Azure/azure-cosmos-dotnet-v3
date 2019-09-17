@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.SerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
-            Assert.IsTrue(clientOptions.UseAnyAccountRegion);
+            Assert.IsFalse(clientOptions.LimitToEndpoint);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosClient.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), cosmosClient.ClientOptions.PropertiesSerializer);
 
             CosmosSerializer defaultSerializer = cosmosClient.ClientOptions.PropertiesSerializer;
-            CosmosSerializer mockJsonSerializer = new Mock<CosmosSerializer>().Object;
+            CosmosSerializer mockJsonSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
             cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer);
             CosmosClient cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
             Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.PropertiesSerializer);
@@ -372,6 +372,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct };
             Assert.AreEqual(Protocol.Tcp, cosmosClientOptions.ConnectionProtocol);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyLimitToEndpointSettings()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = LocationNames.EastUS, LimitToEndpoint = true };
+            cosmosClientOptions.GetConnectionPolicy();
         }
 
         private class TestWebProxy : IWebProxy

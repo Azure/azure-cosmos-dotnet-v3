@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// fallback geo-replicated regions for high availability. 
         /// When this property is not specified, the SDK uses the write region as the preferred region for all operations.
         /// 
-        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string, bool)"/>
+        /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-multi-master"/>
         /// </remarks>
         public string ApplicationRegion { get; set; }
@@ -350,16 +350,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Allow using account region in-case ApplicationRegion is not available. Defaults to 'true'.
+        /// Limits the operations to the provided endpoint on the CosmosClient.
         /// </summary>
         /// <value>
-        /// Default value is true.
+        /// Default value is false.
         /// </value>
         /// <remarks>
-        /// When the value of this property is true, the SDK will automatically discover all account write and read regions, and use them when the configured application region is not available. When set to false, availability is limited to the configured application region only. </remarks>
-        /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
+        /// When the value of this property is false, the SDK will automatically discover write and read regions, and use them when the configured application region is not available. When set to true, availability is limited to the endpoint specified on the CosmosClient constructor and defining the application region is not allowed.
+        /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
-        public bool UseAnyAccountRegion { get; set; } = true;
+        public bool LimitToEndpoint { get; set; }
 
         /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
@@ -510,6 +510,7 @@ namespace Microsoft.Azure.Cosmos
         internal ConnectionPolicy GetConnectionPolicy()
         {
             this.ValidateDirectTCPSettings();
+            this.ValidateLimitToEndpointSettings();
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -522,7 +523,7 @@ namespace Microsoft.Azure.Cosmos
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableEndpointDiscovery = this.UseAnyAccountRegion
+                EnableEndpointDiscovery = !this.LimitToEndpoint
             };
 
             if (this.ApplicationRegion != null)
@@ -619,6 +620,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             throw new ArgumentException("The connection string is missing a required property: " + keyName);
+        }
+
+        private void ValidateLimitToEndpointSettings()
+        {
+            if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.LimitToEndpoint)
+            {
+                throw new ArgumentException($"Cannot specify {nameof(this.ApplicationRegion)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
+            }
         }
 
         private void ValidateDirectTCPSettings()
