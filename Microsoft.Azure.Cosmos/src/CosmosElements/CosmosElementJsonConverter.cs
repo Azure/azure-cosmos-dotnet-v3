@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System;
     using System.Collections.Generic;
     using System.Linq;
+#if NETSTANDARD15 || NETSTANDARD16
+    using System.Reflection;
+#endif
     using System.Text;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Newtonsoft.Json;
