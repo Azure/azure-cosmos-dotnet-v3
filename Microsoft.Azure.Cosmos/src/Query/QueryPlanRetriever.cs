@@ -7,7 +7,11 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
+    using HttpConstants = Documents.HttpConstants;
+    using OperationType = Documents.OperationType;
+    using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
+    using ResourceType = Documents.ResourceType;
+    using RuntimeConstants = Documents.RuntimeConstants;
 
     internal static class QueryPlanRetriever
     {

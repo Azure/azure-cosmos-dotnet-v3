@@ -7,7 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
+    using ClientSideRequestStatistics = Documents.ClientSideRequestStatistics;
+    using SubStatusCodes = Documents.SubStatusCodes;
 
     internal struct QueryResponseCore
     {

@@ -340,5 +340,10 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.documentClient.GetPartitionKeyRangeCacheAsync();
         }
+
+        internal override Exception CreateBadRequestException(string message)
+        {
+            return new ArgumentException(message);
+        }
     }
 }

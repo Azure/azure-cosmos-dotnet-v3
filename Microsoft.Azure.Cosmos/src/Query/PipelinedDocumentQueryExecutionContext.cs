@@ -7,14 +7,15 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// You can imagine the pipeline to be a directed acyclic graph where documents flow from multiple sources (the partitions) to a single sink (the client who calls on ExecuteNextAsync()).
@@ -189,15 +190,17 @@ namespace Microsoft.Azure.Cosmos.Query
             };
 
             return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
-               partitionedQueryExecutionInfo.QueryInfo,
-               initialPageSize,
-               requestContinuation,
-               constructorParams.QueryRequestOptions.EnableGroupBy,
-               createOrderByComponentFunc,
-               createParallelComponentFunc);
+                constructorParams.QueryClient,
+                partitionedQueryExecutionInfo.QueryInfo,
+                initialPageSize,
+                requestContinuation,
+                constructorParams.QueryRequestOptions.EnableGroupBy,
+                createOrderByComponentFunc,
+                createParallelComponentFunc);
         }
 
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
+            CosmosQueryClient queryClient,
             QueryInfo queryInfo,
             int initialPageSize,
             string requestContinuation,
@@ -235,6 +238,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await DistinctDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
                         continuationToken,
                         createSourceCallback,
                         queryInfo.DistinctType);
@@ -277,6 +281,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
+                        queryClient,
                         queryInfo.Limit.Value,
                         continuationToken,
                         createSourceCallback);
@@ -289,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
+                        queryClient,
                         queryInfo.Top.Value,
                         continuationToken,
                         createSourceCallback);

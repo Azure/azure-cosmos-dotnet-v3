@@ -77,5 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query
         internal abstract Task ForceRefreshCollectionCacheAsync(
             string collectionLink,
             CancellationToken cancellationToken);
+
+        internal abstract Exception CreateBadRequestException(string message);
     }
 }

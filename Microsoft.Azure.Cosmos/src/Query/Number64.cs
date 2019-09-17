@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using BitUtils = Documents.BitUtils;
 
     /// <summary>
     /// Struct that represents either a double or 64 bit int
@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos
                 ushort extraBits;
 
                 long absValue = Math.Abs(value);
-                int msbIndex = BitUtils.GetMostSignificantBitIndex((ulong)absValue);
+                int msbIndex = Documents.BitUtils.GetMostSignificantBitIndex((ulong)absValue);
 
                 // Check if the integer value spans more than 52 bits (meaning it won't fit in a double's mantissa at full precision)
                 if ((msbIndex > 52) && ((msbIndex - BitUtils.GetLeastSignificantBitIndex((long)absValue)) > 52))

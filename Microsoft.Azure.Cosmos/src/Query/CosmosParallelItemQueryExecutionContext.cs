@@ -193,23 +193,20 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         if (suppliedCompositeContinuationToken.Range == null || suppliedCompositeContinuationToken.Range.IsEmpty)
                         {
-                            throw new CosmosException(
-                                statusCode: HttpStatusCode.BadRequest,
+                            throw this.queryClient.CreateBadRequestException(
                                 message: $"Invalid Range in the continuation token {requestContinuation} for Parallel~Context.");
                         }
                     }
 
                     if (suppliedCompositeContinuationTokens.Length == 0)
                     {
-                        throw new CosmosException(
-                            statusCode: HttpStatusCode.BadRequest,
+                        throw this.queryClient.CreateBadRequestException(
                             message: $"Invalid format for continuation token {requestContinuation} for Parallel~Context.");
                     }
                 }
                 catch (JsonException ex)
                 {
-                    throw new CosmosException(
-                        statusCode: HttpStatusCode.BadRequest,
+                    throw this.queryClient.CreateBadRequestException(
                         message: $"Invalid JSON in continuation token {requestContinuation} for Parallel~Context, exception: {ex.Message}");
                 }
 

@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
 
     /// <summary> 
     /// Provides awaitable and bounding capabilities for thread-safe collections that implement IProducerConsumerCollection&lt;T&gt;.
@@ -65,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
             this.notEmpty = new SemaphoreSlim(count);
             MethodInfo tryPeekMethod = this.collection.GetType().GetMethod("TryPeek", BindingFlags.Instance | BindingFlags.Public);
             this.tryPeekDelegate = tryPeekMethod == null ?
-                null : (TryPeekDelegate)CustomTypeExtensions.CreateDelegate(typeof(TryPeekDelegate), this.collection, tryPeekMethod);
+                null : (TryPeekDelegate)Documents.CustomTypeExtensions.CreateDelegate(typeof(TryPeekDelegate), this.collection, tryPeekMethod);
         }
 
         public int Count
