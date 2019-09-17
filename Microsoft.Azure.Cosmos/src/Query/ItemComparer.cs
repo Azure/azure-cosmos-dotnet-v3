@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                 order = 12;
                                 break;
                             default:
-                                throw new InvalidEnumArgumentException("Unknown number type", (int)number.NumberType, typeof(CosmosNumberType));
+                                throw new ArgumentException($"Unknown number type. Number {(int)number.NumberType}; Typeof:{ typeof(CosmosNumberType)}");
                         }
                     }
 
