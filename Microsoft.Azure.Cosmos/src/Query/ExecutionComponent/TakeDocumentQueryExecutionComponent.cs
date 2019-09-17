@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (limitContinuationToken.Limit > limitCount)
             {
-                throw new CosmosException(HttpStatusCode.BadRequest, $"limit count in continuation token: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}.");
+                queryClient.CreateBadRequestException($"limit count in continuation token: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}.");
             }
 
             return new TakeDocumentQueryExecutionComponent(
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (topContinuationToken.Top > topCount)
             {
-                throw new CosmosException(HttpStatusCode.BadRequest, $"top count in continuation token: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}.");
+                queryClient.CreateBadRequestException($"top count in continuation token: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}.");
             }
 
             return new TakeDocumentQueryExecutionComponent(

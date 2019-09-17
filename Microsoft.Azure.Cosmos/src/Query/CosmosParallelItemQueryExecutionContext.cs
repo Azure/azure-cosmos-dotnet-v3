@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// CosmosParallelItemQueryExecutionContext is a concrete implementation for CrossPartitionQueryExecutionContext.

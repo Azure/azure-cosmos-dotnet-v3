@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -292,14 +291,13 @@ namespace Microsoft.Azure.Cosmos.Query
                     requestContinuation,
                     sortOrders,
                     orderByExpressions);
-                Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap = null;
 
                 RangeFilterInitializationInfo[] orderByInfos = this.GetPartitionKeyRangesInitializationInfo(
                     suppliedContinuationTokens,
                     partitionKeyRanges,
                     sortOrders,
                     orderByExpressions,
-                    out targetRangeToOrderByContinuationMap);
+                    out Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap);
 
                 Debug.Assert(targetRangeToOrderByContinuationMap != null, "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
 
@@ -330,8 +328,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         info.Filter,
                         async (itemProducerTree) =>
                         {
-                            OrderByContinuationToken continuationToken;
-                            if (targetRangeToOrderByContinuationMap.TryGetValue(itemProducerTree.Root.PartitionKeyRange.Id, out continuationToken))
+                            if (targetRangeToOrderByContinuationMap.TryGetValue(itemProducerTree.Root.PartitionKeyRange.Id, out OrderByContinuationToken continuationToken))
                             {
                                 await this.FilterAsync(
                                     itemProducerTree,
@@ -457,8 +454,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     if (cmp == 0)
                     {
-                        ResourceId rid;
-                        if (!resourceIds.TryGetValue(orderByResult.Rid, out rid))
+                        if (!resourceIds.TryGetValue(orderByResult.Rid, out ResourceId rid))
                         {
                             if (!ResourceId.TryParse(orderByResult.Rid, out rid))
                             {
