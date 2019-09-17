@@ -5,10 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     internal sealed class RangeJsonConverter : JsonConverter
     {
@@ -19,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             try
             {
-                Range<string> range = (Range<string>)value;
+                Documents.Routing.Range<string> range = (Documents.Routing.Range<string>)value;
 
                 writer.WriteStartObject();
                 writer.WritePropertyName(MinProperty);
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 JObject jsonObject = JObject.Load(reader);
-                return new Range<string>(
+                return new Documents.Routing.Range<string>(
                     jsonObject[MinProperty].Value<string>(),
                     jsonObject[MaxProperty].Value<string>(),
                     true, false);
