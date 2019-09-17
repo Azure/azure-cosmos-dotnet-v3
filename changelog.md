@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Fixed
+
+## [3.2.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.2.0) - 2019-09-17
+
+### Added
+
 - [#100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/100) Configurable Tcp settings to CosmosClientOptions
 - [#615](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/615), [#775](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/775)  Added request diagnostics to Response's
 - [#622](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/622) Added CRUD and query operations for Users and Permissions which enables [ResourceToken](https://docs.microsoft.com/en-us/azure/cosmos-db/secure-access-to-data#resource-tokens) support
