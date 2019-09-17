@@ -902,10 +902,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                         switch (writer.SerializationFormat)
                         {
                             case JsonSerializationFormat.Text:
-                                result = Encoding.UTF8.GetString(writer.GetResult());
+                                result = Encoding.UTF8.GetString(writer.GetResult().ToArray());
                                 break;
                             case JsonSerializationFormat.Binary:
-                                result = JsonTestUtils.ConvertBinaryToText(writer.GetResult());
+                                result = JsonTestUtils.ConvertBinaryToText(writer.GetResult().ToArray());
                                 break;
                             default:
                                 throw new ArgumentException();
@@ -977,10 +977,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                     switch (writer.SerializationFormat)
                     {
                         case JsonSerializationFormat.Text:
-                            result = Encoding.UTF8.GetString(writer.GetResult());
+                            result = Encoding.UTF8.GetString(writer.GetResult().ToArray());
                             break;
                         case JsonSerializationFormat.Binary:
-                            result = JsonTestUtils.ConvertBinaryToText(writer.GetResult());
+                            result = JsonTestUtils.ConvertBinaryToText(writer.GetResult().ToArray());
                             break;
                         default:
                             throw new ArgumentException();
@@ -1000,7 +1000,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             IJsonReader jsonReaderFormatter = JsonReader.Create(Encoding.UTF8.GetBytes(json));
             IJsonWriter jsonWriterFormatter = JsonWriter.Create(JsonSerializationFormat.Text);
             jsonWriterFormatter.WriteAll(jsonReaderFormatter);
-            string formattedJson = Encoding.UTF8.GetString(jsonWriterFormatter.GetResult());
+            string formattedJson = Encoding.UTF8.GetString(jsonWriterFormatter.GetResult().ToArray());
             return formattedJson;
         }
 
@@ -1011,7 +1011,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(formattedJson));
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             jsonWriter.WriteAll(jsonReader);
-            string jsonFromWriter = Encoding.UTF8.GetString(jsonWriter.GetResult());
+            string jsonFromWriter = Encoding.UTF8.GetString(jsonWriter.GetResult().ToArray());
             Assert.AreEqual(formattedJson, jsonFromWriter);
         }
 
@@ -1020,7 +1020,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             NewtonsoftToCosmosDBReader newtonsoftReader = NewtonsoftToCosmosDBReader.CreateFromString(json);
             NewtonsoftToCosmosDBWriter newtonsoftWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
             newtonsoftWriter.WriteAll(newtonsoftReader);
-            return Encoding.UTF8.GetString(newtonsoftWriter.GetResult());
+            return Encoding.UTF8.GetString(newtonsoftWriter.GetResult().ToArray());
         }
 
         private void PerformRoundTripTest(string input, JsonToken[] tokens)
@@ -1040,7 +1040,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
 
             jsonWriter.WriteAll(jsonReader);
-            string output = Encoding.UTF8.GetString(jsonWriter.GetResult());
+            string output = Encoding.UTF8.GetString(jsonWriter.GetResult().ToArray());
 
             string inputNoWhitespace = Regex.Replace(input, @"\s+", "");
             string outputNoWhitespace = Regex.Replace(output, @"\s+", "");
@@ -1052,7 +1052,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             JsonPerfMeasurement.MeasureWritePerformance(tokens, jsonWriter);
-            string writerResults = Encoding.UTF8.GetString(jsonWriter.GetResult());
+            string writerResults = Encoding.UTF8.GetString(jsonWriter.GetResult().ToArray());
             IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(writerResults));
             JsonToken[] tokenArrayFromReader = JsonPerfMeasurement.Tokenize(jsonReader, writerResults);
             tokenArrayFromReader.SequenceEqual(tokens);

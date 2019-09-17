@@ -13,7 +13,7 @@
             IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
             binaryWriter.WriteAll(textReader);
-            return binaryWriter.GetResult();
+            return binaryWriter.GetResult().ToArray();
         }
 
         public static string ConvertBinaryToText(byte[] binary)
@@ -21,7 +21,7 @@
             IJsonReader binaryReader = JsonReader.Create(binary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             textWriter.WriteAll(binaryReader);
-            return Encoding.UTF8.GetString(textWriter.GetResult());
+            return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
         }
 
         public static string RandomSampleJson(string json)

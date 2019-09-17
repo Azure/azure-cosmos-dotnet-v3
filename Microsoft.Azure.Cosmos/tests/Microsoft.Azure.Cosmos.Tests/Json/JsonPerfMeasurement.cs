@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             return tokensFromReader.ToArray();
         }
 
-        public static byte[] ConvertTextToBinary(string text)
+        public static ReadOnlyMemory<byte> ConvertTextToBinary(string text)
         {
             IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             IJsonReader binaryReader = JsonReader.Create(binary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             textWriter.WriteAll(binaryReader);
-            return Encoding.UTF8.GetString(textWriter.GetResult());
+            return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
         }
 
         public static void PrintStatisticsTable(string inputFileName, JsonExecutionTimes text, JsonExecutionTimes newtonsoft, JsonExecutionTimes binary)

@@ -174,9 +174,9 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         public void WriteToWriter()
         {
             CosmosArray lazilyDeserializedPeople = CosmosElement.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
-            IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(Encoding.UTF8);
+            IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
             lazilyDeserializedPeople.WriteTo(jsonWriter);
-            byte[] bufferedResult = jsonWriter.GetResult();
+            byte[] bufferedResult = jsonWriter.GetResult().ToArray();
 
             string bufferedSerializedPeopleString = Encoding.UTF8.GetString(bufferedSerializedPeople);
             string bufferedResultString = Encoding.UTF8.GetString(bufferedResult);
@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 
         private static void TestCosmosElementVisitability(string filename)
         {
-            byte[] payload = LazyCosmosElementTests.GetPayload(filename);
+            ReadOnlyMemory<byte> payload = LazyCosmosElementTests.GetPayload(filename);
 
             CosmosElement cosmosElement = CosmosElement.Create(payload);
 
@@ -301,14 +301,14 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             LazyCosmosElementTests.VisitCosmosElementIndexer(cosmosElement, jsonWriterIndexer);
             LazyCosmosElementTests.VisitCosmosElementEnumerable(cosmosElement, jsonWriterEnumerable);
 
-            byte[] payloadIndexer = jsonWriterIndexer.GetResult();
-            byte[] payloadEnumerable = jsonWriterEnumerable.GetResult();
+            ReadOnlySpan<byte> payloadIndexer = jsonWriterIndexer.GetResult().Span;
+            ReadOnlySpan<byte> payloadEnumerable = jsonWriterEnumerable.GetResult().Span;
 
-            Assert.IsTrue(payload.SequenceEqual(payloadIndexer));
-            Assert.IsTrue(payload.SequenceEqual(payloadEnumerable));
+            Assert.IsTrue(payload.Span.SequenceEqual(payloadIndexer));
+            Assert.IsTrue(payload.Span.SequenceEqual(payloadEnumerable));
         }
 
-        private static byte[] GetPayload(string filename)
+        private static ReadOnlyMemory<byte> GetPayload(string filename)
         {
             string path = string.Format("TestJsons/{0}", filename);
             string json = File.ReadAllText(path);

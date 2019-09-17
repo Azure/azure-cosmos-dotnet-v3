@@ -1056,7 +1056,7 @@
                 binaryOutputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength });
 
                 List<byte[]> elements = new List<byte[]>();
-                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin) });
+                elements.Add(new byte[] { (byte)JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin });
                 elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 10 });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 1) });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "example glossary".Length), 101, 120, 97, 109, 112, 108, 101, 32, 103, 108, 111, 115, 115, 97, 114, 121 });
@@ -1175,7 +1175,7 @@
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 12) });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "7029d079-4016-4436-b7da-36c0bae54ff6".Length), 55, 48, 50, 57, 100, 48, 55, 57, 45, 52, 48, 49, 54, 45, 52, 52, 51, 54, 45, 98, 55, 100, 97, 45, 51, 54, 99, 48, 98, 97, 101, 53, 52, 102, 102, 54 });
 
-                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin) });
+                elements.Add(new byte[] { (byte)JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin });
                 elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberDouble, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 1) });
@@ -1598,7 +1598,7 @@
 
                 JsonToken[] tokensToWrite =
                 {
-                    JsonToken.Binary(new List<byte>())
+                    JsonToken.Binary(expectedBinaryOutput)
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
@@ -1607,7 +1607,7 @@
 
             {
                 // Binary 1 Byte Length
-                IReadOnlyList<byte> binary = Enumerable.Range(0, 25).Select(x => (byte)x).ToList();
+                byte[] binary = Enumerable.Range(0, 25).Select(x => (byte)x).ToArray();
                 string expectedStringOutput = $"B{Convert.ToBase64String(binary.ToArray())}";
                 byte[] expectedBinaryOutput;
                 unchecked
@@ -1657,37 +1657,6 @@
                 foreach (CultureInfo cultureInfo in cultureInfoList)
                 {
                     System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
-
-                    Encoding[] encodings =
-                    {
-                        Encoding.UTF8,
-                        Encoding.Unicode,
-                        Encoding.UTF32,
-                    };
-
-                    foreach (Encoding encoding in encodings)
-                    {
-                        // Create through encoding API
-                        IJsonWriter jsonWriterWithEncoding = JsonWriter.Create(encoding);
-                        if (expectedString != null)
-                        {
-                            this.VerifyWriter(
-                                jsonWriterWithEncoding, 
-                                tokensToWrite, 
-                                encoding.GetBytes(expectedString), 
-                                JsonSerializationFormat.Text, 
-                                expectedException);
-                        }
-                        else
-                        {
-                            this.VerifyWriter(
-                                jsonWriterWithEncoding, 
-                                tokensToWrite, 
-                                null, 
-                                JsonSerializationFormat.Text, 
-                                expectedException);
-                        }
-                    }
 
                     // Create through serializtion api
                     IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
@@ -1822,8 +1791,8 @@
                             break;
 
                         case JsonTokenType.Binary:
-                            IReadOnlyList<byte> binaryValue = (token as JsonBinaryToken).Value;
-                            jsonWriter.WriteBinaryValue(binaryValue);
+                            ReadOnlyMemory<byte> binaryValue = (token as JsonBinaryToken).Value;
+                            jsonWriter.WriteBinaryValue(binaryValue.Span);
                             break;
 
                         case JsonTokenType.NotStarted:
@@ -1841,7 +1810,7 @@
 
             if (expectedException == null)
             {
-                byte[] result = jsonWriter.GetResult();
+                byte[] result = jsonWriter.GetResult().ToArray();
                 Assert.IsTrue(expectedOutput.SequenceEqual(result),
                     string.Format("Expected : {0}, Actual :{1}",
                     string.Join(", ", expectedOutput),
