@@ -136,7 +136,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(equalityComparer));
             }
 
-            this.queryContext = initParams;
+            this.queryContext = initParams ?? throw new ArgumentNullException(nameof(initParams));
+            this.queryClient = initParams.QueryClient ?? throw new ArgumentNullException(nameof(initParams.QueryClient));
             this.queryRequestOptions = initParams.QueryRequestOptions;
             this.itemProducerForest = new PriorityQueue<ItemProducerTree>(moveNextComparer, isSynchronized: true);
             this.fetchPrioirtyFunction = fetchPrioirtyFunction;

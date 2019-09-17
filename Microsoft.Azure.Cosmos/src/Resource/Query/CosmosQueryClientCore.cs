@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override Exception CreateBadRequestException(string message)
         {
-            return new ArgumentException(message);
+            return new CosmosException(System.Net.HttpStatusCode.BadRequest, message);
         }
     }
 }
