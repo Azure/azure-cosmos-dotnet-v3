@@ -62,9 +62,21 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
             this.boundingCapacity = boundingCapacity;
             this.notFull = this.IsUnbounded ? null : new SemaphoreSlim(boundingCapacity - count, boundingCapacity);
             this.notEmpty = new SemaphoreSlim(count);
-            MethodInfo tryPeekMethod = this.collection.GetType().GetMethod("TryPeek", BindingFlags.Instance | BindingFlags.Public);
-            this.tryPeekDelegate = tryPeekMethod == null ?
-                null : (TryPeekDelegate)Documents.CustomTypeExtensions.CreateDelegate(typeof(TryPeekDelegate), this.collection, tryPeekMethod);
+            ConcurrentQueue<T> concurrentQueue = collection as ConcurrentQueue<T>;
+            if (concurrentQueue != null)
+            {
+                this.tryPeekDelegate = concurrentQueue.TryPeek;
+                return;
+            }
+
+            PriorityQueue<T> priorityQueue = new PriorityQueue<T>();
+            if (priorityQueue != null)
+            {
+                this.tryPeekDelegate = priorityQueue.TryPeek;
+                return;
+            }
+
+            throw new NotSupportedException($"The IProducerConsumerCollection type of {typeof(T)} is not supported.");
         }
 
         public int Count
