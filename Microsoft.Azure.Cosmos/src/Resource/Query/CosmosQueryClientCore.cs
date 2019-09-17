@@ -99,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.queryPartitionProvider.GetPartitionedQueryExecutionInfo(
+                this.CreateBadRequestException,
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,

@@ -104,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(
+            Func<string, Exception> createBadRequestException,
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -112,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool hasLogicalPartitionKey)
         {
             PartitionedQueryExecutionInfoInternal queryInfoInternal = this.GetPartitionedQueryExecutionInfoInternal(
+                createBadRequestException,
                 querySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
@@ -146,6 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         internal PartitionedQueryExecutionInfoInternal GetPartitionedQueryExecutionInfoInternal(
+            Func<string, Exception> createBadRequestException,
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -238,9 +241,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     errorMessage = "Message: " + serializedQueryExecutionInfo;
                 }
 
-                throw new CosmosException(
-                    HttpStatusCode.BadRequest,
-                    errorMessage);
+                throw createBadRequestException(errorMessage);
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =
