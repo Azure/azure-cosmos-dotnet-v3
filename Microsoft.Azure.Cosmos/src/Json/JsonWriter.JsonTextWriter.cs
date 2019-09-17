@@ -434,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         else
                         {
                             char characterToEscape = value[readOffset++];
-                            char escapeSequence = default(char);
+                            char escapeSequence = default;
                             switch (characterToEscape)
                             {
                                 case '\\':

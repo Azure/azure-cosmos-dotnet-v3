@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public int Position { get; set; }
 
-        public ReadOnlyMemory<byte> Buffer
+        public Memory<byte> Buffer
         {
             get
             {
