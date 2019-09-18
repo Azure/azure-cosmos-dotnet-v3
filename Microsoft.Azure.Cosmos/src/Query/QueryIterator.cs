@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     internal class QueryIterator : FeedIterator
     {
         private readonly CosmosQueryExecutionContextFactory cosmosQueryExecutionContext;
+        private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
 
         internal QueryIterator(
             CosmosQueryClient client,
@@ -22,18 +23,38 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery)
         {
-            this.cosmosQueryExecutionContext = new CosmosQueryExecutionContextFactory(
+            if (queryRequestOptions == null)
+            {
+                queryRequestOptions = new QueryRequestOptions();
+            }
+
+            CosmosQueryContext context = new CosmosQueryContextCore(
                 client: client,
+                queryRequestOptions: queryRequestOptions,
                 resourceTypeEnum: Documents.ResourceType.Document,
                 operationType: Documents.OperationType.Query,
                 resourceType: typeof(QueryResponseCore),
-                sqlQuerySpec: sqlQuerySpec,
-                continuationToken: continuationToken,
-                queryRequestOptions: queryRequestOptions,
                 resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                enableGroupBy: queryRequestOptions.EnableGroupBy,
                 correlatedActivityId: Guid.NewGuid());
+            
+            CosmosQueryExecutionContextFactory.InputParameters inputParams = new CosmosQueryExecutionContextFactory.InputParameters()
+            {
+                SqlQuerySpec = sqlQuerySpec,
+                InitialUserContinuationToken = continuationToken,
+                MaxBufferedItemCount = queryRequestOptions.MaxBufferedItemCount,
+                MaxConcurrency = queryRequestOptions.MaxConcurrency,
+                MaxItemCount = queryRequestOptions.MaxItemCount,
+                PartitionKey = queryRequestOptions.PartitionKey,
+                Properties = queryRequestOptions.Properties
+            };
+
+            this.cosmosSerializationFormatOptions = queryRequestOptions.CosmosSerializationFormatOptions;
+            this.cosmosQueryExecutionContext = new CosmosQueryExecutionContextFactory(
+                cosmosQueryContext: context,
+                inputParameters: inputParams);
         }
 
         public override bool HasMoreResults => !this.cosmosQueryExecutionContext.IsDone;
@@ -87,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     queryResponse.Diagnostics = new QueryOperationStatistics(responseCore.QueryMetrics);
                 }
 
-                queryResponse.CosmosSerializationOptions = cosmosQueryContext.QueryRequestOptions.CosmosSerializationFormatOptions;
+                queryResponse.CosmosSerializationOptions = this.cosmosSerializationFormatOptions;
 
                 response = queryResponse;
             }
