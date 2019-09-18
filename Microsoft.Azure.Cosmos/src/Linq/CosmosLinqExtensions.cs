@@ -19,44 +19,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     public static class CosmosLinqExtensions
     {
         /// <summary>
-        /// Determines if a certain property is of array JSON type.
-        /// This method is to be used in LINQ expressions only and will be evaluated on server.
-        /// There's no implementation provided in the client library.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns>Returns true if this property is an array otherwise returns false.</returns>
-        /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// var isArrayQuery = documents.Where(document => document.Names.IsArray());
-        /// ]]>
-        /// </code>
-        /// </example>s>
-        public static bool IsArray(this object obj)
-        {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
-        }
-
-        /// <summary>
-        /// Determines if a certain property is of boolean JSON type.
-        /// This method is to be used in LINQ expressions only and will be evaluated on server.
-        /// There's no implementation provided in the client library.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns>Returns true if this property is a boolean otherwise returns false.</returns>
-        /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// var isBoolQuery = documents.Where(document => document.Name.IsBool());
-        /// ]]>
-        /// </code>
-        /// </example>s>
-        public static bool IsBool(this object obj)
-        {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
-        }
-
-        /// <summary>
         /// Determines if a certain property is defined or not.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.
@@ -95,44 +57,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Determines if a certain property is of number JSON type.
-        /// This method is to be used in LINQ expressions only and will be evaluated on server.
-        /// There's no implementation provided in the client library.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns>Returns true if this property is a number otherwise returns false.</returns>
-        /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// var isNumberQuery = documents.Where(document => document.Amount.IsNumber());
-        /// ]]>
-        /// </code>
-        /// </example>s>
-        public static bool IsNumber(this object obj)
-        {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
-        }
-
-        /// <summary>
-        /// Determines if a certain property is of object JSON type.
-        /// This method is to be used in LINQ expressions only and will be evaluated on server.
-        /// There's no implementation provided in the client library.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns>Returns true if this property is an object otherwise returns false.</returns>
-        /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// var isObjectQuery = documents.Where(document => document.Person.IsObject());
-        /// ]]>
-        /// </code>
-        /// </example>s>
-        public static bool IsObject(this object obj)
-        {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
-        }
-
-        /// <summary>
         /// Determines if a certain property is of primitive JSON type.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.
@@ -150,25 +74,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </code>
         /// </example>s>
         public static bool IsPrimitive(this object obj)
-        {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
-        }
-
-        /// <summary>
-        /// Determines if a certain property is of string JSON type.
-        /// This method is to be used in LINQ expressions only and will be evaluated on server.
-        /// There's no implementation provided in the client library.
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns>Returns true if this property is a string otherwise returns false.</returns>
-        /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// var isStringQuery = documents.Where(document => document.Name.IsString());
-        /// ]]>
-        /// </code>
-        /// </example>s>
-        public static bool IsString(this object obj)
         {
             throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }

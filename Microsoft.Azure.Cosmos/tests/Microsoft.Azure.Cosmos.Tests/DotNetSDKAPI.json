@@ -3090,20 +3090,6 @@
     "CosmosLinqExtensions": {
       "Subclasses": {},
       "Members": {
-        "Boolean IsArray(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Boolean IsArray(System.Object)"
-        },
-        "Boolean IsBool(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Boolean IsBool(System.Object)"
-        },
         "Boolean IsDefined(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3118,33 +3104,12 @@
           ],
           "MethodInfo": "Boolean IsNull(System.Object)"
         },
-        "Boolean IsNumber(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Boolean IsNumber(System.Object)"
-        },
-        "Boolean IsObject(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Boolean IsObject(System.Object)"
-        },
         "Boolean IsPrimitive(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
           "MethodInfo": "Boolean IsPrimitive(System.Object)"
-        },
-        "Boolean IsString(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Boolean IsString(System.Object)"
         },
         "Microsoft.Azure.Cosmos.FeedIterator ToStreamIterator[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",

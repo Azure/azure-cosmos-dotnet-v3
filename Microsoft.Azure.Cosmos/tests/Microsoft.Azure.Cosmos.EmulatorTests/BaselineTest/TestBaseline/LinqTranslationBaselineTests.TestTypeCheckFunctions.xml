@@ -1,52 +1,6 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description><![CDATA[IsArray array]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsArray())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE IS_ARRAY(root["ArrayField"]) 
-FROM root ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsArray string]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.StringField.IsArray())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE IS_ARRAY(root["StringField"]) ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsBool array]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsBool())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE IS_BOOL(root["ArrayField"]) 
-FROM root ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsBool number]]></Description>
-      <Expression><![CDATA[query.Where(doc => Convert(doc.IntField, Object).IsBool())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE IS_BOOL(root["IntField"]) ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
       <Description><![CDATA[IsDefined array]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsDefined())]]></Expression>
     </Input>
@@ -93,64 +47,6 @@ WHERE IS_NULL(root["StringField"]) ]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[IsNumber string]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.IsNumber())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE IS_NUMBER(root["StringField"]) 
-FROM root ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsNumber number]]></Description>
-      <Expression><![CDATA[query.Where(doc => Convert(doc.NumericField, Object).IsNumber())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE IS_NUMBER(root["NumericField"]) ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsObject array]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsObject())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE IS_OBJECT(root["ArrayField"]) 
-FROM root ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsObject string]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.StringField.IsObject())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE IS_OBJECT(root["StringField"]) ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsObject object]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.Point.IsObject())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE IS_OBJECT(root["Point"]) ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
       <Description><![CDATA[IsPrimitive array]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsPrimitive())]]></Expression>
     </Input>
@@ -170,41 +66,6 @@ FROM root ]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE IS_PRIMITIVE(root["StringField"]) ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsString array]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsString())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE IS_STRING(root["ArrayField"]) 
-FROM root ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsString string]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.StringField.IsString())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE IS_STRING(root["StringField"]) ]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[IsString object]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.Point.IsString())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE root 
-FROM root 
-WHERE IS_STRING(root["Point"]) ]]></SqlQuery>
     </Output>
   </Result>
 </Results>

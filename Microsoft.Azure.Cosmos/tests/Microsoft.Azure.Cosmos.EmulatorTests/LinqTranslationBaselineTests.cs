@@ -218,25 +218,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("IsArray array", b => getQuery(b).Select(doc => doc.ArrayField.IsArray())));
-            inputs.Add(new LinqTestInput("IsArray string", b => getQuery(b).Where(doc => doc.StringField.IsArray())));
-            inputs.Add(new LinqTestInput("IsBool array", b => getQuery(b).Select(doc => doc.ArrayField.IsBool())));
-            inputs.Add(new LinqTestInput("IsBool number", b => getQuery(b).Where(doc => doc.IntField.IsBool())));
             inputs.Add(new LinqTestInput("IsDefined array", b => getQuery(b).Select(doc => doc.ArrayField.IsDefined())));
             inputs.Add(new LinqTestInput("IsDefined string", b => getQuery(b).Where(doc => doc.StringField.IsDefined())));
             inputs.Add(new LinqTestInput("IsNull array", b => getQuery(b).Select(doc => doc.ArrayField.IsNull())));
             inputs.Add(new LinqTestInput("IsNull string", b => getQuery(b).Where(doc => doc.StringField.IsNull())));
-            inputs.Add(new LinqTestInput("IsNumber string", b => getQuery(b).Select(doc => doc.StringField.IsNumber())));
-            inputs.Add(new LinqTestInput("IsNumber number", b => getQuery(b).Where(doc => doc.NumericField.IsNumber())));
-            inputs.Add(new LinqTestInput("IsObject array", b => getQuery(b).Select(doc => doc.ArrayField.IsObject())));
-            inputs.Add(new LinqTestInput("IsObject string", b => getQuery(b).Where(doc => doc.StringField.IsObject())));
-            inputs.Add(new LinqTestInput("IsObject object", b => getQuery(b).Where(doc => doc.Point.IsObject())));
             inputs.Add(new LinqTestInput("IsPrimitive array", b => getQuery(b).Select(doc => doc.ArrayField.IsPrimitive())));
             inputs.Add(new LinqTestInput("IsPrimitive string", b => getQuery(b).Where(doc => doc.StringField.IsPrimitive())));
-            inputs.Add(new LinqTestInput("IsString array", b => getQuery(b).Select(doc => doc.ArrayField.IsString())));
-            inputs.Add(new LinqTestInput("IsString string", b => getQuery(b).Where(doc => doc.StringField.IsString())));
-            inputs.Add(new LinqTestInput("IsString object", b => getQuery(b).Where(doc => doc.Point.IsString())));
-
             this.ExecuteTestSuite(inputs);
         }
 
