@@ -655,11 +655,18 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            unsafe
+            if (length == 0)
             {
-                fixed (byte* spanPointer = stringToken)
+                utf8StringValue = string.Empty;
+            }
+            else
+            {
+                unsafe
                 {
-                    utf8StringValue = Encoding.UTF8.GetString(spanPointer, (int)length);
+                    fixed (byte* spanPointer = stringToken)
+                    {
+                        utf8StringValue = Encoding.UTF8.GetString(spanPointer, (int)length);
+                    }
                 }
             }
 

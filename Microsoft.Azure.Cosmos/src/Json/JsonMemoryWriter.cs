@@ -42,15 +42,22 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public void EnsureRemainingBufferSpace(int size)
         {
-            if (this.Position + size > this.buffer.Length)
+            if (this.Position + size >= this.buffer.Length)
             {
-                this.Resize();
+                this.Resize(this.Position + size);
             }
         }
 
-        private void Resize()
+        private void Resize(int minNewSize)
         {
-            Array.Resize(ref this.buffer, this.buffer.Length * 2);
+            if (minNewSize < 0)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+
+            long newLength = minNewSize * 2;
+            newLength = Math.Min(newLength, int.MaxValue);
+            Array.Resize(ref this.buffer, (int)newLength);
         }
     }
 }

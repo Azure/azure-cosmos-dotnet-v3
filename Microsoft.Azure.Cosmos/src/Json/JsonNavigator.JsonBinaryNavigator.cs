@@ -37,10 +37,27 @@ namespace Microsoft.Azure.Cosmos.Json
                 JsonStringDictionary jsonStringDictionary,
                 bool skipValidation = false)
             {
-                if (buffer.Length < 1)
+                if (buffer.Length < 2)
                 {
-                    throw new ArgumentException($"{nameof(buffer)} must have at least one byte.");
+                    throw new ArgumentException($"{nameof(buffer)} must have at least two byte.");
                 }
+
+                if (buffer.Span[0] != (byte)JsonSerializationFormat.Binary)
+                {
+                    throw new ArgumentNullException("buffer must be binary encoded.");
+                }
+
+                // offset for the 0x80 (128) binary serialization type marker.
+                buffer = buffer.Slice(1);
+
+                // Only navigate the outer most json value and trim off trailing bytes
+                int jsonValueLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
+                if (buffer.Length < jsonValueLength)
+                {
+                    throw new ArgumentException("buffer is shorter than the length prefix.");
+                }
+
+                buffer = buffer.Slice(0, jsonValueLength);
 
                 this.buffer = buffer;
                 this.jsonStringDictionary = jsonStringDictionary;
@@ -58,8 +75,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override IJsonNavigatorNode GetRootNode()
             {
-                // offset for the 0x80 (128) binary serialization type marker.
-                return new BinaryNavigatorNode(this.buffer.Slice(1));
+                return new BinaryNavigatorNode(this.buffer);
             }
 
             /// <inheritdoc />
@@ -214,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Json
             public override int GetArrayItemCount(IJsonNavigatorNode arrayNode)
             {
                 ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
-                    JsonNodeType.Binary,
+                    JsonNodeType.Array,
                     arrayNode);
                 byte typeMarker = buffer.Span[0];
                 int firstValueOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
@@ -247,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonBinaryEncoding.TypeMarker.Array1ByteLength:
                     case JsonBinaryEncoding.TypeMarker.Array2ByteLength:
                     case JsonBinaryEncoding.TypeMarker.Array4ByteLength:
-                        count = JsonBinaryNavigator.GetValueCount(buffer.Span);
+                        count = JsonBinaryNavigator.GetValueCount(buffer.Slice(firstValueOffset).Span);
                         break;
 
                     default:
@@ -304,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 while (buffer.Length != 0)
                 {
                     int arrayItemLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                    if (arrayItemLength >= buffer.Length)
+                    if (arrayItemLength > buffer.Length)
                     {
                         // Array Item got cut off.
                         throw new JsonInvalidTokenException();
@@ -315,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     yield return arrayItem;
 
                     // Slice off the array item
-                    buffer.Slice(arrayItemLength);
+                    buffer = buffer.Slice(arrayItemLength);
                 }
             }
 
@@ -358,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     case JsonBinaryEncoding.TypeMarker.Object1ByteLength:
                     case JsonBinaryEncoding.TypeMarker.Object2ByteLength:
                     case JsonBinaryEncoding.TypeMarker.Object4ByteLength:
-                        count = JsonBinaryNavigator.GetValueCount(buffer.Span);
+                        count = JsonBinaryNavigator.GetValueCount(buffer.Slice(firstObjectPropertyOffset).Span);
                         break;
 
                     default:
@@ -412,10 +428,18 @@ namespace Microsoft.Azure.Cosmos.Json
                 while (buffer.Length != 0)
                 {
                     int nameNodeLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
+                    if (nameNodeLength > buffer.Length)
+                    {
+                        throw new JsonInvalidTokenException();
+                    }
                     ReadOnlyMemory<byte> nameNode = buffer.Slice(0, nameNodeLength);
                     buffer = buffer.Slice(nameNodeLength);
 
                     int valueNodeLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
+                    if (valueNodeLength > buffer.Length)
+                    {
+                        throw new JsonInvalidTokenException();
+                    }
                     ReadOnlyMemory<byte> valueNode = buffer.Slice(0, valueNodeLength);
                     buffer = buffer.Slice(valueNodeLength);
 
@@ -453,12 +477,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private static int GetValueCount(ReadOnlySpan<byte> node)
             {
-                long bytesProcessed = 0;
                 int count = 0;
-                while (bytesProcessed < node.Length)
+                while (!node.IsEmpty)
                 {
                     count++;
-                    bytesProcessed += JsonBinaryEncoding.GetValueLength(node);
+                    int nodeLength = JsonBinaryEncoding.GetValueLength(node);
+                    node = node.Slice(nodeLength);
                 }
 
                 return count;
