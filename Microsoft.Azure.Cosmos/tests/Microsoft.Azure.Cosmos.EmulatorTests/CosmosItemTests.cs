@@ -1601,6 +1601,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task NoAutoGenerateIdTest()
+        {
+            try
+            {
+                ToDoActivity t = new ToDoActivity();
+                t.status = "AutoID";
+                ItemResponse<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(
+                    partitionKey: new Cosmos.PartitionKey(t.status), item: t);
+
+                Assert.Fail("Unexpected ID auto-generation");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+            {
+            }
+        }
+
+        [TestMethod]
+        public async Task AutoGenerateIdPatternTest()
+        {
+            ToDoActivity itemWithoutId = new ToDoActivity();
+            itemWithoutId.status = "AutoID";
+
+            ToDoActivity createdItem = await this.AutoGenerateIdPatternTest<ToDoActivity>(
+                new Cosmos.PartitionKey(itemWithoutId.status), itemWithoutId);
+
+            Assert.IsNotNull(createdItem.id);
+            Assert.AreEqual(itemWithoutId.status, createdItem.status);
+        }
+
+        private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
+        {
+            string autoId = Guid.NewGuid().ToString();
+
+            JObject tmpJObject = JObject.FromObject(itemWithoutId);
+            tmpJObject["id"] = autoId;
+
+            ItemResponse<JObject> response = await this.Container.CreateItemAsync<JObject>(
+                partitionKey: pk, item: tmpJObject);
+
+            return response.Resource.ToObject<T>();
+        }
+
         private static async Task VerifyQueryToManyExceptionAsync(
             Container container,
             bool isQuery,
