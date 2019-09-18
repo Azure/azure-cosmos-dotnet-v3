@@ -194,7 +194,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 correlatedActivityId: Guid.NewGuid(),
                 isContinuationExpected: true,
                 allowNonValueAggregateQuery: true,
-                enableGroupBy: true,
                 containerResourceId: DefaultCollectionRid);
         }
 

@@ -1,3 +1,4 @@
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -182,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
                initParams.PartitionedQueryExecutionInfo.QueryInfo,
                initialPageSize,
-               requestContinuation,
+               requestContinuationToken,
                createOrderByComponentFunc,
                createParallelComponentFunc);
         }
