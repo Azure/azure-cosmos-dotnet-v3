@@ -6,7 +6,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONCAT(root["StringField"], @param0) 
+SELECT VALUE CONCAT(root["StringField"], "str") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -17,7 +17,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONCAT(root["StringField"], @param0, @param1) 
+SELECT VALUE CONCAT(root["StringField"], "str1", "str2") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -28,7 +28,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONCAT(root["StringField"], @param0, @param1, @param2) 
+SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -39,7 +39,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONCAT(root["StringField"], @param0, @param1, @param2, @param3) 
+SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3", "str4") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -50,7 +50,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONCAT(root["StringField"], @param0, @param1, @param2, @param3) 
+SELECT VALUE CONCAT(root["StringField"], "str1", "str2", "str3", "str4") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -61,7 +61,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONTAINS(root["StringField"], @param0) 
+SELECT VALUE CONTAINS(root["StringField"], "str") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -72,7 +72,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONTAINS(root["StringField"], @param0) 
+SELECT VALUE CONTAINS(root["StringField"], "c") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -83,7 +83,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONTAINS(@param0, root["StringField"]) 
+SELECT VALUE CONTAINS("str", root["StringField"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -94,7 +94,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["StringField"] IN (@param0, @param1, @param2)) 
+SELECT VALUE (root["StringField"] IN ("one", "two", "three")) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -105,7 +105,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["StringField"] IN (@param0, @param1, @param2)) 
+SELECT VALUE (root["StringField"] IN ("one", "two", "three")) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -118,7 +118,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["StringField"] IN (@param0, @param1, @param2)) ]]></SqlQuery>
+WHERE (root["StringField"] IN ("one", "two", "three")) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -130,7 +130,7 @@ WHERE (root["StringField"] IN (@param0, @param1, @param2)) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["StringField"] IN (@param0, @param1, @param2)) ]]></SqlQuery>
+WHERE (root["StringField"] IN ("one", "two", "three")) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -140,7 +140,7 @@ WHERE (root["StringField"] IN (@param0, @param1, @param2)) ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["StringField"] NOT IN (@param0, @param1, @param2)) 
+SELECT VALUE (root["StringField"] NOT IN ("one", "two", "three")) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -151,7 +151,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["StringField"] NOT IN (@param0, @param1, @param2)) 
+SELECT VALUE (root["StringField"] NOT IN ("one", "two", "three")) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -164,7 +164,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["StringField"] NOT IN (@param0, @param1, @param2)) ]]></SqlQuery>
+WHERE (root["StringField"] NOT IN ("one", "two", "three")) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -176,7 +176,7 @@ WHERE (root["StringField"] NOT IN (@param0, @param1, @param2)) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["StringField"] 
 FROM root 
-WHERE (root["StringField"] NOT IN (@param0, @param1, @param2)) ]]></SqlQuery>
+WHERE (root["StringField"] NOT IN ("one", "two", "three")) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -208,7 +208,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ENDSWITH(root["StringField"], @param0) 
+SELECT VALUE ENDSWITH(root["StringField"], "str") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -219,7 +219,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ENDSWITH(@param0, root["StringField"]) 
+SELECT VALUE ENDSWITH("str", root["StringField"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -230,7 +230,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE INDEX_OF(root["StringField"], @param0) 
+SELECT VALUE INDEX_OF(root["StringField"], "c") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -241,7 +241,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE INDEX_OF(root["StringField"], @param0) 
+SELECT VALUE INDEX_OF(root["StringField"], "str") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -252,7 +252,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE INDEX_OF(root["StringField"], @param0, @param1) 
+SELECT VALUE INDEX_OF(root["StringField"], "c", 0) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -263,7 +263,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE INDEX_OF(root["StringField"], @param0, @param1) 
+SELECT VALUE INDEX_OF(root["StringField"], "str", 0) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -307,7 +307,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE REPLACE(root["StringField"], @param0, @param1) 
+SELECT VALUE REPLACE(root["StringField"], "c", "a") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -318,7 +318,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE REPLACE(root["StringField"], @param0, @param1) 
+SELECT VALUE REPLACE(root["StringField"], "str", "str2") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -340,7 +340,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE STARTSWITH(root["StringField"], @param0) 
+SELECT VALUE STARTSWITH(root["StringField"], "str") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -351,7 +351,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE STARTSWITH(@param0, root["StringField"]) 
+SELECT VALUE STARTSWITH("str", root["StringField"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -362,7 +362,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE SUBSTRING(root["StringField"], @param0, @param1) 
+SELECT VALUE SUBSTRING(root["StringField"], 0, 1) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>

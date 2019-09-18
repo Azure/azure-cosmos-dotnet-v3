@@ -28,7 +28,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["Int"] % @param0) * ARRAY_LENGTH(root["Children"])) 
+SELECT VALUE ((root["Int"] % 10) * ARRAY_LENGTH(root["Children"])) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -39,7 +39,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE @param0 
+SELECT VALUE 0 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -72,7 +72,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((ARRAY_LENGTH(root["Children"]) > @param0) ? @param1 : @param2) 
+SELECT VALUE ((ARRAY_LENGTH(root["Children"]) > 0) ? "have kids" : "no kids") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -83,9 +83,9 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["Children"][@param0]["Pets"][@param0]["GivenName"] 
+SELECT VALUE root["Children"][0]["Pets"][0]["GivenName"] 
 FROM root 
-WHERE ((ARRAY_LENGTH(root["Children"]) > @param0) AND (ARRAY_LENGTH(root["Children"][@param0]["Pets"]) > @param0)) ]]></SqlQuery>
+WHERE ((ARRAY_LENGTH(root["Children"]) > 0) AND (ARRAY_LENGTH(root["Children"][0]["Pets"]) > 0)) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -95,7 +95,7 @@ WHERE ((ARRAY_LENGTH(root["Children"]) > @param0) AND (ARRAY_LENGTH(root["Childr
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE [root["Int"]][@param0] 
+SELECT VALUE [root["Int"]][0] 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -106,9 +106,9 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ABS((- ARRAY_LENGTH(root["Children"][@param0]["Pets"]))) 
+SELECT VALUE ABS((- ARRAY_LENGTH(root["Children"][0]["Pets"]))) 
 FROM root 
-WHERE (ARRAY_LENGTH(root["Children"]) > @param0) ]]></SqlQuery>
+WHERE (ARRAY_LENGTH(root["Children"]) > 0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -118,7 +118,7 @@ WHERE (ARRAY_LENGTH(root["Children"]) > @param0) ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((((root["Int"] % @param0) * ARRAY_LENGTH(root["Children"])) > @param1) ? [((root["Int"] % @param0) * ARRAY_LENGTH(root["Children"]))] : []) 
+SELECT VALUE ((((root["Int"] % 10) * ARRAY_LENGTH(root["Children"])) > 0) ? [((root["Int"] % 10) * ARRAY_LENGTH(root["Children"]))] : []) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -129,7 +129,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (({"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["parentCount"] > @param0) ? FLOOR(({"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["childrenCount"] / {"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["parentCount"])) : @param0) 
+SELECT VALUE (({"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["parentCount"] > 0) ? FLOOR(({"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["childrenCount"] / {"parentCount": ARRAY_LENGTH(root["Parents"]), "childrenCount": ARRAY_LENGTH(root["Children"])}["parentCount"])) : 0) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -140,7 +140,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE CONCAT(root["Parents"][@param0]["FamilyName"], root["Parents"][@param0]["GivenName"]) 
+SELECT VALUE CONCAT(root["Parents"][0]["FamilyName"], root["Parents"][0]["GivenName"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -151,7 +151,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"parentCount": ARRAY_LENGTH(((ARRAY_LENGTH(root["Parents"]) > @param0) ? root["Parents"] : []))} 
+SELECT VALUE {"parentCount": ARRAY_LENGTH(((ARRAY_LENGTH(root["Parents"]) > 0) ? root["Parents"] : []))} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -162,7 +162,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((ARRAY_LENGTH({"children": root["Children"]}["children"]) > @param0) ? {"children": root["Children"]}["children"][@param0]["GivenName"] : @param1) 
+SELECT VALUE ((ARRAY_LENGTH({"children": root["Children"]}["children"]) > 0) ? {"children": root["Children"]}["children"][0]["GivenName"] : "no kids") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -173,7 +173,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((({"family": root, "children": ARRAY_LENGTH(root["Children"])}["children"] > @param0) AND (ARRAY_LENGTH({"family": root, "children": ARRAY_LENGTH(root["Children"])}["family"]["Children"][@param0]["Pets"]) > @param0)) ? {"family": root, "children": ARRAY_LENGTH(root["Children"])}["family"]["Children"][@param0]["Pets"][@param0]["GivenName"] : @param1) 
+SELECT VALUE ((({"family": root, "children": ARRAY_LENGTH(root["Children"])}["children"] > 0) AND (ARRAY_LENGTH({"family": root, "children": ARRAY_LENGTH(root["Children"])}["family"]["Children"][0]["Pets"]) > 0)) ? {"family": root, "children": ARRAY_LENGTH(root["Children"])}["family"]["Children"][0]["Pets"][0]["GivenName"] : "no kids") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>

@@ -55,7 +55,7 @@ FROM root ]]></SqlQuery>
 SELECT VALUE COUNT(1) 
 FROM root 
 JOIN m0 IN root["Multiples"] 
-WHERE ((m0 % @param0) = @param1) ]]></SqlQuery>
+WHERE ((m0 % 3) = 0) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -79,7 +79,7 @@ WHERE root["Flag"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE (root["Number"] < @param0) ]]></SqlQuery>
+WHERE (root["Number"] < -7) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -91,7 +91,7 @@ WHERE (root["Number"] < @param0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE COUNT(1) 
 FROM root 
-WHERE (root["Number"] < @param0) ]]></SqlQuery>
+WHERE (root["Number"] < -13) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -175,14 +175,14 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE COUNT(@param0) 
+SELECT VALUE COUNT(1) 
 FROM (
     SELECT VALUE r4 
     FROM (
         SELECT VALUE {"v0": v4, "v1": v8, "v2": v12} 
         FROM root 
         JOIN (
-            SELECT VALUE COUNT(@param0) 
+            SELECT VALUE COUNT(1) 
             FROM (
                 SELECT VALUE v2["Grade"] 
                 FROM root 
@@ -191,7 +191,7 @@ FROM (
             ) AS r0
         ) AS v4 
         JOIN (
-            SELECT VALUE COUNT(@param0) 
+            SELECT VALUE COUNT(1) 
             FROM (
                 SELECT VALUE v5["Grade"] 
                 FROM root 
@@ -200,7 +200,7 @@ FROM (
             ) AS r1
         ) AS v8 
         JOIN (
-            SELECT VALUE COUNT(@param0) 
+            SELECT VALUE COUNT(1) 
             FROM (
                 SELECT VALUE r2["Grade"] 
                 FROM (
@@ -226,34 +226,34 @@ FROM (
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE COUNT(@param0) 
+SELECT VALUE COUNT(1) 
 FROM (
     SELECT VALUE r7 
     FROM (
         SELECT VALUE {"v0": v4, "v1": v8, "v2": v12, "v3": v15, "v4": v17} 
         FROM root 
         JOIN (
-            SELECT VALUE COUNT(@param0) 
+            SELECT VALUE COUNT(1) 
             FROM (
                 SELECT VALUE v2 
                 FROM root 
                 JOIN v2 IN root["Children"] 
                 OFFSET 1 LIMIT 2147483647
             ) AS r0 
-            WHERE (r0["Grade"] > @param2)
+            WHERE (r0["Grade"] > 50)
         ) AS v4 
         JOIN (
-            SELECT VALUE COUNT(@param0) 
+            SELECT VALUE COUNT(1) 
             FROM (
                 SELECT VALUE v5 
                 FROM root 
                 JOIN v5 IN root["Children"] 
                 OFFSET 1 LIMIT 3
             ) AS r1 
-            WHERE (r1["Grade"] > @param2)
+            WHERE (r1["Grade"] > 50)
         ) AS v8 
         JOIN (
-            SELECT VALUE COUNT(@param0) 
+            SELECT VALUE COUNT(1) 
             FROM (
                 SELECT VALUE r2 
                 FROM (
@@ -263,10 +263,10 @@ FROM (
                 ) AS r2 
                 OFFSET 1 LIMIT 2147483647
             ) AS r3 
-            WHERE (r3["Grade"] > @param2)
+            WHERE (r3["Grade"] > 50)
         ) AS v12 
         JOIN (
-            SELECT VALUE COUNT(@param0) 
+            SELECT VALUE COUNT(1) 
             FROM (
                 SELECT VALUE t0["Amount"] 
                 FROM root 
@@ -276,12 +276,12 @@ FROM (
             ) AS r5
         ) AS v15 
         JOIN (
-            SELECT VALUE COUNT(@param0) 
+            SELECT VALUE COUNT(1) 
             FROM (
                 SELECT VALUE c0["Grade"] 
                 FROM root 
                 JOIN c0 IN root["Children"] 
-                WHERE (c0["Grade"] > @param1) 
+                WHERE (c0["Grade"] > 20) 
                 ORDER BY c0["Grade"] ASC 
                 OFFSET 1 LIMIT 2147483647
             ) AS r6

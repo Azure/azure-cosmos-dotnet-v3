@@ -6,7 +6,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["str"] = @param0) 
+SELECT VALUE (root["str"] = "5") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -17,7 +17,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (@param0 || root["str"]) 
+SELECT VALUE ("x" || root["str"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -28,7 +28,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (@param0 || root["str"]) 
+SELECT VALUE ("xs" || root["str"]) 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -51,10 +51,10 @@ JOIN d0 IN root["dblArray"] ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (z0 + @param0) 
+SELECT VALUE (z0 + 2) 
 FROM root 
 JOIN z0 IN root["dblArray"] 
-WHERE (z0 > @param0) ]]></SqlQuery>
+WHERE (z0 > 2) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -64,10 +64,10 @@ WHERE (z0 > @param0) ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (x0 + @param1) 
+SELECT VALUE (x0 + 1) 
 FROM root 
 JOIN x0 IN root["dblArray"] 
-WHERE (x0 = @param0) ]]></SqlQuery>
+WHERE (x0 = 3) ]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -113,7 +113,7 @@ JOIN x0 IN root["dblArray"] ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"b": root["b"], "x": TRUNC((x0 * @param0))} 
+SELECT VALUE {"b": root["b"], "x": TRUNC((x0 * 100))} 
 FROM root 
 JOIN x0 IN root["dblArray"] ]]></SqlQuery>
     </Output>

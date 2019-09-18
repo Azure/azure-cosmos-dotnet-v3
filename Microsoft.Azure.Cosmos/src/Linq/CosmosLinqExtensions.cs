@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
@@ -83,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <typeparam name="T">the type of object to query.</typeparam>
         /// <param name="query">the IQueryable{T} to be converted.</param>
+        /// <param name="parameters">Dictionary containing parameter value and name for parameterized query</param>
         /// <returns>The queryDefinition which can be used in query execution.</returns>
         /// <example>
         /// This example shows how to generate query definition from LINQ.
@@ -95,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query)
+        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> parameters = null)
         {
             CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
 
@@ -104,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToSqlQueryText is only supported on cosmos LINQ query operations");
             }
 
-            return linqQuery.ToQueryDefinition();
+            return linqQuery.ToQueryDefinition(parameters);
         }
 
         /// <summary>

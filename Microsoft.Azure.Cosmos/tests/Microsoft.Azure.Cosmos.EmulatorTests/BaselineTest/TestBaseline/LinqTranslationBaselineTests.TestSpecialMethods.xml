@@ -6,7 +6,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE (root["StringField"] = @param0) 
+SELECT VALUE (root["StringField"] = "str") 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -28,7 +28,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["EnumerableField"][@param0] 
+SELECT VALUE root["EnumerableField"][0] 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>

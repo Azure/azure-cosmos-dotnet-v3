@@ -45,14 +45,16 @@ namespace Microsoft.Azure.Cosmos.Sql
             return this.Accept(sqlObjectObfuscator);
         }
 
-        public string ToParameterizedString(Dictionary<object, string> literalParamKey)
+        public string ToParamterizedString(IDictionary<object, string> parameters, bool prettyPrint = false)
         {
-            return this.Serialize(prettyPrint: false, literalParamKey: literalParamKey);
+            SqlObjectParameterizedTextSerializer sqlObjectParameterizedTextSerializer = new SqlObjectParameterizedTextSerializer(prettyPrint, parameters);
+            this.Accept(sqlObjectParameterizedTextSerializer);
+            return sqlObjectParameterizedTextSerializer.ToString();
         }
 
-        private string Serialize(bool prettyPrint, Dictionary<object, string> literalParamKey = null)
+        private string Serialize(bool prettyPrint)
         {
-            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint, literalParamKey);
+            SqlObjectTextSerializer sqlObjectTextSerializer = new SqlObjectTextSerializer(prettyPrint);
             this.Accept(sqlObjectTextSerializer);
             return sqlObjectTextSerializer.ToString();
         }

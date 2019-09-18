@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Configuration;
     using System.Linq;
     using System.Linq.Dynamic;
     using System.Threading.Tasks;
@@ -443,66 +442,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
 
+            // Testing string, number and boolean value in parameterized query
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
-            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
-            QueryDefinition queryDefinition = queriable.ToQueryDefinition();
-            Assert.AreEqual(1, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.AreEqual("@param0", queryDefinition.ToSqlQuerySpec().Parameters[0].Name);
-            Assert.AreEqual(10, queriable.ToList().Count);
-
-            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
-                .Where(item => item.description == "CreateRandomToDoActivity")
-                .Where(item => item.taskNum < 100);
-            queryDefinition = queriable.ToQueryDefinition();
-            Assert.AreEqual(100, Number64.ToLong((Number64)queryDefinition.ToSqlQuerySpec().Parameters[2].Value));
-            Assert.AreEqual(10, queriable.ToList().Count);
-
-            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
                .Where(item => item.description == "CreateRandomToDoActivity")
                .Where(item => item.taskNum < 100)
-                .Where(item => item.taskNum <= 100)
                .Where(item => item.valid == false);
-            queryDefinition = queriable.ToQueryDefinition();
+            Dictionary<object, string> parameters = new Dictionary<object, string>();
+            parameters.Add("camelCase", "@param1");
+            parameters.Add("CreateRandomToDoActivity", "@param2");
+            parameters.Add(100, "@param3");
+            parameters.Add(false, "@param4");
+            QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(4, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.AreEqual(false, queryDefinition.ToSqlQuerySpec().Parameters[3].Value);
-            Assert.AreEqual(0, queriable.ToList().Count);
+            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param1"));
+            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param2"));
+            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param3"));
+            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param4"));
+            Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
 
-            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
-               .Where(item => item.description == "CreateRandomToDoActivity")
-               .Where(item => item.taskNum < 100)
-               .Where(item => item.valid == true);
-            Assert.AreEqual(10, queriable.ToList().Count);
+            //updating parameter and query again, this time it will return results
+            queryDefinition.WithParameter("@param4", true);
+            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
 
+            // Testing object value in parameterized query
+            ToDoActivity child1 = new ToDoActivity { id = "child1", taskNum = 30 };
             queriable = linqQueryable
                 .Where(item => item.description == "CreateRandomToDoActivity")
                 .SelectMany(item => item.children)
-                .Where(child => child.id == "child1")
-                .Where(child => child.taskNum == 30);
-            queryDefinition = queriable.ToQueryDefinition();
-            Assert.AreEqual(3, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.AreEqual(10, queriable.ToList().Count);
+                .Where(child => child == child1);
+            parameters = new Dictionary<object, string>();
+            parameters.Add("CreateRandomToDoActivity", "@param1");
+            parameters.Add(child1, "@param2");
+            queryDefinition = queriable.ToQueryDefinition(parameters);
+            Assert.AreEqual(2, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("= @param2"));
+            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+        }
 
-            queriable = linqQueryable.Where(item => item.children == new ToDoActivity[]
+        private async Task<List<ToDoActivity>> FetchResults(QueryDefinition queryDefinition)
+        {
+            List<ToDoActivity> itemList = new List<ToDoActivity>();
+            FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(queryDefinition);
+            while (feedIterator.HasMoreResults)
             {
-                new ToDoActivity{ id = "child1", taskNum = 30},
-                new ToDoActivity{ id = "child2", taskNum = 40}
-            });
-            Assert.AreEqual(10, queriable.ToList().Count);
-
-            //Test for app.config flag NonParameterisedLinq 
-            queriable = linqQueryable.Where(item => item.description == "CreateRandomToDoActivity");
-            Assert.IsFalse(queriable.ToQueryDefinition().QueryText.Contains("root[\"description\"] = \"CreateRandomToDoActivity\""));
-
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            config.AppSettings.Settings["NonParameterisedLinq"].Value = "true";
-            config.Save(ConfigurationSaveMode.Modified);
-            ConfigurationManager.RefreshSection("appSettings");
-            Assert.IsTrue(queriable.ToQueryDefinition().QueryText.Contains("root[\"description\"] = \"CreateRandomToDoActivity\""));
-
-            config.AppSettings.Settings.Remove("NonParameterisedLinq");
-            config.Save(ConfigurationSaveMode.Modified);
-            ConfigurationManager.RefreshSection("appSettings");
-            Assert.IsFalse(queriable.ToQueryDefinition().QueryText.Contains("root[\"description\"] = \"CreateRandomToDoActivity\""));
+                FeedResponse<ToDoActivity> queryResponse = await feedIterator.ReadNextAsync();
+                IEnumerator<ToDoActivity> iter = queryResponse.GetEnumerator();
+                while (iter.MoveNext())
+                {
+                    itemList.Add(iter.Current);
+                }
+            }
+            return itemList;
         }
     }
 }

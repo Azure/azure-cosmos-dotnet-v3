@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System.Text;
     using Newtonsoft.Json;
 
-    internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
+    internal class SqlObjectTextSerializer : SqlObjectVisitor
     {
         // Mongo's query translation tests do not use baseline files,
         // so changing whitespaces involve manually updating the expected output for each test.
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private const bool MongoDoesNotUseBaselineFiles = true;
         private bool nonParameterizedLinq;
         private static readonly string Tab = "    ";
-        private readonly StringWriter writer;
+        private protected readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
         private Dictionary<object, string> literalToParamStr;
@@ -760,7 +760,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
-        private static string GetEscapedString(string value)
+        private protected static string GetEscapedString(string value)
         {
             if (value == null)
             {
