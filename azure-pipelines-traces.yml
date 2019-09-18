@@ -1,15 +1,7 @@
 # A pipeline with no CI trigger
 trigger: none
 
-pr:
-  branches:
-    include:
-    - master
-    - releases/*
-  paths:
-    include:
-    - Microsoft.Azure.Cosmos/*
-    - NuGet.config
+pr: none
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
