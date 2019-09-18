@@ -4,8 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System;
-    using System.Collections.Generic;
-    using System.Configuration;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -18,19 +16,15 @@ namespace Microsoft.Azure.Cosmos.Sql
         // so changing whitespaces involve manually updating the expected output for each test.
         // When the tests are converted over to baseline files we can just bulk update them and remove this flag.
         private const bool MongoDoesNotUseBaselineFiles = true;
-        private bool nonParameterizedLinq;
         private static readonly string Tab = "    ";
         private protected readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
-        private Dictionary<object, string> literalToParamStr;
 
-        public SqlObjectTextSerializer(bool prettyPrint, Dictionary<object, string> literalToParamStr = null)
+        public SqlObjectTextSerializer(bool prettyPrint)
         {
-            this.nonParameterizedLinq = Convert.ToBoolean(ConfigurationManager.AppSettings["NonParameterisedLinq"]);
             this.writer = new StringWriter(CultureInfo.InvariantCulture);
             this.prettyPrint = prettyPrint;
-            this.literalToParamStr = literalToParamStr;
         }
 
         public override void Visit(SqlAliasedCollectionExpression sqlAliasedCollectionExpression)
@@ -119,17 +113,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlBooleanLiteral sqlBooleanLiteral)
         {
-            //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
-            //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
-            string literalStr = null;
-            if (!this.nonParameterizedLinq && this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlBooleanLiteral.Value, out literalStr))
-            {
-                this.writer.Write(literalStr);
-            }
-            else
-            {
-                this.writer.Write(sqlBooleanLiteral.Value ? "true" : "false");
-            }
+            this.writer.Write(sqlBooleanLiteral.Value ? "true" : "false");
         }
 
         public override void Visit(SqlCoalesceScalarExpression sqlCoalesceScalarExpression)
@@ -364,35 +348,25 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlNumberLiteral sqlNumberLiteral)
         {
-            //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
-            //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
-            string literalStr = null;
-            if (!this.nonParameterizedLinq && this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlNumberLiteral.Value, out literalStr))
+            // We have to use InvariantCulture due to number formatting.
+            // "1234.1234" is correct while "1234,1234" is incorrect.
+            if (sqlNumberLiteral.Value.IsDouble)
             {
-                this.writer.Write(literalStr);
+                string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
+                double literalValue = 0.0;
+                if (!sqlNumberLiteral.Value.IsNaN &&
+                    !sqlNumberLiteral.Value.IsInfinity &&
+                    (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
+                    !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
+                {
+                    literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
+                }
+
+                this.writer.Write(literalString);
             }
             else
             {
-                // We have to use InvariantCulture due to number formatting.
-                // "1234.1234" is correct while "1234,1234" is incorrect.
-                if (sqlNumberLiteral.Value.IsDouble)
-                {
-                    string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
-                    double literalValue = 0.0;
-                    if (!sqlNumberLiteral.Value.IsNaN &&
-                        !sqlNumberLiteral.Value.IsInfinity &&
-                        (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
-                        !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
-                    {
-                        literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
-                    }
-
-                    this.writer.Write(literalString);
-                }
-                else
-                {
-                    this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
-                }
+                this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
 
@@ -443,23 +417,13 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlObjectLiteral sqlObjectLiteral)
         {
-            //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
-            //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
-            string literalStr = null;
-            if (!this.nonParameterizedLinq && this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlObjectLiteral.Value, out literalStr))
+            if (sqlObjectLiteral.isValueSerialized)
             {
-                this.writer.Write(literalStr);
+                this.writer.Write(sqlObjectLiteral.Value);
             }
             else
             {
-                if (sqlObjectLiteral.isValueSerialized)
-                {
-                    this.writer.Write(sqlObjectLiteral.Value);
-                }
-                else
-                {
-                    this.writer.Write(JsonConvert.SerializeObject(sqlObjectLiteral.Value));
-                }
+                this.writer.Write(JsonConvert.SerializeObject(sqlObjectLiteral.Value));
             }
         }
 
@@ -645,19 +609,9 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlStringLiteral sqlStringLiteral)
         {
-            //If the literal are constant value then instead of value, their respective parameterized string will be added in query string
-            //Please check VisitConstant method in ExpressionToSQL where we are adding to literalToParamStr map
-            string literalStr = null;
-            if (!this.nonParameterizedLinq && this.literalToParamStr != null && this.literalToParamStr.TryGetValue(sqlStringLiteral.Value, out literalStr))
-            {
-                this.writer.Write(literalStr);
-            }
-            else
-            {
-                this.writer.Write("\"");
-                this.writer.Write(SqlObjectTextSerializer.GetEscapedString(sqlStringLiteral.Value));
-                this.writer.Write("\"");
-            }
+            this.writer.Write("\"");
+            this.writer.Write(SqlObjectTextSerializer.GetEscapedString(sqlStringLiteral.Value));
+            this.writer.Write("\"");
         }
 
         public override void Visit(SqlStringPathExpression sqlStringPathExpression)
