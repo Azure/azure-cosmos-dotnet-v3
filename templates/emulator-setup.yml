@@ -13,8 +13,6 @@ steps:
         Write-Host "Traces = $env:Traces" -ForegroundColor green 
         If ($env:Traces -eq 1) {
             Write-Host "Starting Comsos DB Emulator Tracing" -ForegroundColor green 
-            logman stop DocDBEmulatorTrace
-            logman delete DocDBEmulatorTrace
             logman create DocDBEmulatorTrace trace -cnf 0 -nb 16 -bs 100 -o "$env:Build_ArtifactStagingDirectory\emulator.etl" -ow -max 150
             logman update DocDBEmulatorTrace -p DocDBServer
             logman update DocDBEmulatorTrace -p DocDBMaster
