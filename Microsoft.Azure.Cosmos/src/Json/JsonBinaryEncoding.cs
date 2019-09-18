@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Json
             number64 = 0;
             bytesConsumed = 0;
 
-            if (numberToken.Length == 0)
+            if (numberToken.IsEmpty)
             {
                 return false;
             }
@@ -372,40 +372,46 @@ namespace Microsoft.Azure.Cosmos.Json
             out ReadOnlyMemory<byte> binaryValue)
         {
             binaryValue = default;
-            if (binaryToken.Length == 0)
+            if (binaryToken.Length < 1)
             {
                 return false;
             }
 
             byte typeMarker = binaryToken.Span[0];
+            // trim off the type marker
+            binaryToken = binaryToken.Slice(1);
+
             uint length;
             switch (typeMarker)
             {
                 case JsonBinaryEncoding.TypeMarker.Binary1ByteLength:
-                    if (binaryToken.Length < (1 + 1))
+                    if (binaryToken.Length < JsonBinaryEncoding.OneByteLength)
                     {
                         return false;
                     }
 
-                    length = MemoryMarshal.Read<byte>(binaryToken.Span.Slice(1));
+                    length = MemoryMarshal.Read<byte>(binaryToken.Span);
+                    binaryToken = binaryToken.Slice(JsonBinaryEncoding.OneByteLength);
                     break;
 
                 case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
-                    if (binaryToken.Length < (1 + 2))
+                    if (binaryToken.Length < JsonBinaryEncoding.TwoByteLength)
                     {
                         return false;
                     }
 
-                    length = MemoryMarshal.Read<ushort>(binaryToken.Span.Slice(1));
+                    length = MemoryMarshal.Read<ushort>(binaryToken.Span);
+                    binaryToken = binaryToken.Slice(JsonBinaryEncoding.TwoByteLength);
                     break;
 
                 case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
-                    if (binaryToken.Length < (1 + 4))
+                    if (binaryToken.Length < JsonBinaryEncoding.FourByteLength)
                     {
                         return false;
                     }
 
-                    length = MemoryMarshal.Read<uint>(binaryToken.Span.Slice(1));
+                    length = MemoryMarshal.Read<uint>(binaryToken.Span);
+                    binaryToken = binaryToken.Slice(JsonBinaryEncoding.FourByteLength);
                     break;
 
                 default:
@@ -417,7 +423,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            binaryValue = binaryToken.Slice(1, (int)length);
+            if (binaryToken.Length < length)
+            {
+                return false;
+            }
+
+            binaryValue = binaryToken.Slice(0, (int)length);
             return true;
         }
 
@@ -452,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.Json
             out string result)
         {
             result = null;
-            if (stringToken.Length == 0)
+            if (stringToken.IsEmpty)
             {
                 return false;
             }
@@ -512,28 +523,24 @@ namespace Microsoft.Azure.Cosmos.Json
             out string encodedSystemString)
         {
             encodedSystemString = default(string);
-            if (stringToken.Length == 0)
+            if (stringToken.IsEmpty)
             {
                 return false;
             }
 
-            int? systemStringId;
-            if (stringToken.Length == 1 && JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(stringToken[0]))
+            if (!JsonBinaryEncoding.TypeMarker.IsOneByteEncodedSystemString(stringToken[0]))
             {
-                systemStringId = stringToken[0] - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
-
-            }
-            else
-            {
-                systemStringId = null;
+                return false;
             }
 
-            if (systemStringId.HasValue)
+            if (stringToken.Length < 1)
             {
-                encodedSystemString = GetSystemStringById(systemStringId.Value);
+                return false;
             }
 
-            return systemStringId.HasValue;
+            int systemStringId = stringToken[0] - JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin;
+            encodedSystemString = GetSystemStringById(systemStringId);
+            return true;
         }
 
         /// <summary>
@@ -549,19 +556,28 @@ namespace Microsoft.Azure.Cosmos.Json
             out string encodedUserStringValue)
         {
             encodedUserStringValue = default(string);
-            if (jsonStringDictionary == null || stringToken.Length == 0)
+            if ((jsonStringDictionary == null) || stringToken.IsEmpty)
             {
                 return false;
             }
 
             int userStringId;
-            if (stringToken.Length == 1 && JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(stringToken[0]))
+            if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedUserString(stringToken[0]))
             {
-                userStringId = stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
+                if (stringToken.Length < 1)
+                {
+                    return false;
+                }
 
+                userStringId = stringToken[0] - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
             }
-            else if (stringToken.Length == 2 && JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(stringToken[0]))
+            else if (JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedUserString(stringToken[0]))
             {
+                if (stringToken.Length < 2)
+                {
+                    return false;
+                }
+
                 const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
                 userStringId = OneByteCount
                     + stringToken[1]
@@ -580,12 +596,16 @@ namespace Microsoft.Azure.Cosmos.Json
             out string utf8StringValue)
         {
             utf8StringValue = null;
-            if (stringToken.Length == 0)
+            if (stringToken.IsEmpty)
             {
                 return false;
             }
 
             byte typeMarker = stringToken[0];
+
+            // trim off the type marker
+            stringToken = stringToken.Slice(1);
+
             long length;
             if (JsonBinaryEncoding.TypeMarker.IsEncodedLengthString(typeMarker))
             {
@@ -596,30 +616,33 @@ namespace Microsoft.Azure.Cosmos.Json
                 switch (typeMarker)
                 {
                     case JsonBinaryEncoding.TypeMarker.String1ByteLength:
-                        if (stringToken.Length < (1 + 1))
+                        if (stringToken.Length < JsonBinaryEncoding.OneByteLength)
                         {
                             return false;
                         }
 
-                        length = MemoryMarshal.Read<byte>(stringToken.Slice(1));
+                        length = MemoryMarshal.Read<byte>(stringToken);
+                        stringToken = stringToken.Slice(JsonBinaryEncoding.OneByteLength);
                         break;
 
                     case JsonBinaryEncoding.TypeMarker.String2ByteLength:
-                        if (stringToken.Length < (1 + 2))
+                        if (stringToken.Length < JsonBinaryEncoding.TwoByteLength)
                         {
                             return false;
                         }
 
-                        length = MemoryMarshal.Read<ushort>(stringToken.Slice(1));
+                        length = MemoryMarshal.Read<ushort>(stringToken);
+                        stringToken = stringToken.Slice(JsonBinaryEncoding.TwoByteLength);
                         break;
 
                     case JsonBinaryEncoding.TypeMarker.String4ByteLength:
-                        if (stringToken.Length < (1 + 4))
+                        if (stringToken.Length < JsonBinaryEncoding.FourByteLength)
                         {
                             return false;
                         }
 
-                        length = MemoryMarshal.Read<uint>(stringToken.Slice(1));
+                        length = MemoryMarshal.Read<uint>(stringToken);
+                        stringToken = stringToken.Slice(JsonBinaryEncoding.FourByteLength);
                         break;
 
                     default:
@@ -641,129 +664,6 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             return true;
-        }
-
-        public static JsonTokenType GetJsonTokenType(byte typeMarker)
-        {
-            JsonTokenType jsonTokenType;
-            if (JsonBinaryEncoding.TypeMarker.IsEncodedNumberLiteral(typeMarker))
-            {
-                jsonTokenType = JsonTokenType.Number;
-            }
-            else if (JsonBinaryEncoding.TypeMarker.IsOneByteEncodedString(typeMarker))
-            {
-                jsonTokenType = JsonTokenType.String;
-            }
-            else if (JsonBinaryEncoding.TypeMarker.IsTwoByteEncodedString(typeMarker))
-            {
-                jsonTokenType = JsonTokenType.String;
-            }
-            else if (JsonBinaryEncoding.TypeMarker.IsEncodedLengthString(typeMarker))
-            {
-                jsonTokenType = JsonTokenType.String;
-            }
-            else
-            {
-                switch (typeMarker)
-                {
-                    // Single-byte values
-                    case JsonBinaryEncoding.TypeMarker.Null:
-                        jsonTokenType = JsonTokenType.Null;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.False:
-                        jsonTokenType = JsonTokenType.False;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.True:
-                        jsonTokenType = JsonTokenType.True;
-                        break;
-
-                    // Number values
-                    case JsonBinaryEncoding.TypeMarker.NumberUInt8:
-                    case JsonBinaryEncoding.TypeMarker.NumberInt16:
-                    case JsonBinaryEncoding.TypeMarker.NumberInt32:
-                    case JsonBinaryEncoding.TypeMarker.NumberInt64:
-                    case JsonBinaryEncoding.TypeMarker.NumberDouble:
-                        jsonTokenType = JsonTokenType.Number;
-                        break;
-
-                    // Extended Type System
-                    case JsonBinaryEncoding.TypeMarker.Int8:
-                        jsonTokenType = JsonTokenType.Int8;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.Int16:
-                        jsonTokenType = JsonTokenType.Int16;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.Int32:
-                        jsonTokenType = JsonTokenType.Int32;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.Int64:
-                        jsonTokenType = JsonTokenType.Int64;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.UInt32:
-                        jsonTokenType = JsonTokenType.UInt32;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.Float32:
-                        jsonTokenType = JsonTokenType.Float32;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.Float64:
-                        jsonTokenType = JsonTokenType.Float64;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.Guid:
-                        jsonTokenType = JsonTokenType.Guid;
-                        break;
-
-                    case JsonBinaryEncoding.TypeMarker.Binary1ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.Binary2ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.Binary4ByteLength:
-                        jsonTokenType = JsonTokenType.Binary;
-                        break;
-
-                    // Variable Length String Values
-                    case JsonBinaryEncoding.TypeMarker.String1ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.String2ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.String4ByteLength:
-                        jsonTokenType = JsonTokenType.String;
-                        break;
-
-                    // Array Values
-                    case JsonBinaryEncoding.TypeMarker.EmptyArray:
-                    case JsonBinaryEncoding.TypeMarker.SingleItemArray:
-                    case JsonBinaryEncoding.TypeMarker.Array1ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.Array2ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.Array4ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount:
-                    case JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount:
-                    case JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount:
-                        jsonTokenType = JsonTokenType.BeginArray;
-                        break;
-
-                    // Object Values
-                    case JsonBinaryEncoding.TypeMarker.EmptyObject:
-                    case JsonBinaryEncoding.TypeMarker.SinglePropertyObject:
-                    case JsonBinaryEncoding.TypeMarker.Object1ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.Object2ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.Object4ByteLength:
-                    case JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount:
-                    case JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount:
-                    case JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount:
-                        jsonTokenType = JsonTokenType.BeginObject;
-                        break;
-
-                    default:
-                        throw new JsonInvalidTokenException();
-                }
-            }
-
-            return jsonTokenType;
         }
 
         public static bool TryGetValueLength(ReadOnlySpan<byte> buffer, out int length)
@@ -1180,7 +1080,7 @@ namespace Microsoft.Azure.Cosmos.Json
             // <other types reserved> 0xDF
             #endregion
 
-            #region [0xEO, 0xE8): Array Type Markers
+            #region [0xE0, 0xE8): Array Type Markers
 
             /// <summary>
             /// Empty array type marker.

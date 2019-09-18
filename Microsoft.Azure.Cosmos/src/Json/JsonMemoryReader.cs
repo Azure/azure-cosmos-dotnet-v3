@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public ReadOnlyMemory<byte> GetBufferedRawJsonToken()
         {
-            return this.buffer;
+            return this.buffer.Slice(this.position);
         }
 
         public ReadOnlyMemory<byte> GetBufferedRawJsonToken(int startPosition)

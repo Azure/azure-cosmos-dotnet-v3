@@ -923,12 +923,14 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 private bool TryReadToken(ReadOnlySpan<byte> token)
                 {
-                    if (this.position + token.Length < this.buffer.Length)
+                    if (this.position + token.Length <= this.buffer.Length)
                     {
-                        return this.buffer
+                        bool read = this.buffer
                             .Slice(this.position, token.Length)
                             .Span
                             .SequenceEqual(token);
+                        this.position += token.Length;
+                        return read;
                     }
 
                     return false;

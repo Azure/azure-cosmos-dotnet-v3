@@ -14,16 +14,18 @@ namespace Microsoft.Azure.Cosmos.Json
     /// </summary>
     internal static class JsonTextParser
     {
+        private const int MaxStackAlloc = 1024;
+        private static readonly ReadOnlyMemory<byte> ReverseSolidusBytes = new byte[] { (byte)'\\' };
         public static Number64 GetNumberValue(ReadOnlySpan<byte> token)
         {
             Number64 numberValue;
-            if (Utf8Parser.TryParse(token, out long longValue, out int bytesConsumed1))
+            if (Utf8Parser.TryParse(token, out long longValue, out int bytesConsumed1) && (bytesConsumed1 == token.Length))
             {
                 numberValue = longValue;
             }
             else
             {
-                if (!Utf8Parser.TryParse(token, out double doubleValue, out int bytesConsumed2))
+                if (!Utf8Parser.TryParse(token, out double doubleValue, out int bytesConsumed2) && (bytesConsumed2 == token.Length))
                 {
                     throw new JsonNotNumberTokenException();
                 }
@@ -37,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.Json
         public static string GetStringValue(ReadOnlySpan<byte> token)
         {
             // Offsetting by an additional character and removing 2 from the length since I want to skip the quotes.
-            ReadOnlySpan<byte> stringToken = token.Slice(1, token.Length);
-            return JsonTextParser.UnescapeJson(token);
+            ReadOnlySpan<byte> stringToken = token.Slice(1, token.Length - 2);
+            return JsonTextParser.UnescapeJson(stringToken);
         }
 
         public static sbyte GetInt8Value(ReadOnlySpan<byte> intToken)
@@ -128,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public static Guid GetGuidValue(ReadOnlySpan<byte> guidToken)
         {
             ReadOnlySpan<byte> guidTokenWithoutPrefix = guidToken.Slice(1, guidToken.Length - 1);
-            if (!Utf8Parser.TryParse(guidToken, out Guid value, out int bytesConsumed))
+            if (!Utf8Parser.TryParse(guidTokenWithoutPrefix, out Guid value, out int bytesConsumed))
             {
                 throw new JsonInvalidTokenException();
             }
@@ -180,12 +182,48 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>The unescaped json.</returns>
         private static string UnescapeJson(ReadOnlySpan<byte> escapedString)
         {
+            if (escapedString.IsEmpty)
+            {
+                return string.Empty;
+            }
+
+            if (escapedString.IndexOf(JsonTextParser.ReverseSolidusBytes.Span) < 0)
+            {
+                // String doesn't need escaping
+                unsafe
+                {
+                    fixed (byte* escapedStringPointer = escapedString)
+                    {
+                        return Encoding.UTF8.GetString(escapedStringPointer, escapedString.Length);
+                    }
+                }
+            }
+
             int readOffset = 0;
             int writeOffset = 0;
 
-            Span<byte> stringBuffer = escapedString.ToArray();
+            int bufferLength;
+            unsafe
+            {
+                fixed (byte* pointer = escapedString)
+                {
+                    bufferLength = Encoding.UTF8.GetCharCount(pointer, escapedString.Length);
+                }
+            }
 
-            while (readOffset != escapedString.Length)
+            Span<char> stringBuffer = bufferLength <= MaxStackAlloc ? stackalloc char[bufferLength] : new char[bufferLength];
+            unsafe
+            {
+                fixed (char* stringBufferPointer = stringBuffer)
+                {
+                    fixed (byte* escapedStringPointer = escapedString)
+                    {
+                        Encoding.UTF8.GetChars(escapedStringPointer, escapedString.Length, stringBufferPointer, bufferLength);
+                    }
+                }
+            }
+
+            while (readOffset != stringBuffer.Length)
             {
                 if (stringBuffer[readOffset] == '\\')
                 {
@@ -195,50 +233,50 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Figure out how to escape.
                     switch (stringBuffer[readOffset++])
                     {
-                        case (byte)'b':
-                            stringBuffer[writeOffset++] = (byte)'\b';
+                        case 'b':
+                            stringBuffer[writeOffset++] = '\b';
                             break;
-                        case (byte)'f':
-                            stringBuffer[writeOffset++] = (byte)'\f';
+                        case 'f':
+                            stringBuffer[writeOffset++] = '\f';
                             break;
-                        case (byte)'n':
-                            stringBuffer[writeOffset++] = (byte)'\n';
+                        case 'n':
+                            stringBuffer[writeOffset++] = '\n';
                             break;
-                        case (byte)'r':
-                            stringBuffer[writeOffset++] = (byte)'\r';
+                        case 'r':
+                            stringBuffer[writeOffset++] = '\r';
                             break;
-                        case (byte)'t':
-                            stringBuffer[writeOffset++] = (byte)'\t';
+                        case 't':
+                            stringBuffer[writeOffset++] = '\t';
                             break;
-                        case (byte)'\\':
-                            stringBuffer[writeOffset++] = (byte)'\\';
+                        case '\\':
+                            stringBuffer[writeOffset++] = '\\';
                             break;
-                        case (byte)'"':
-                            stringBuffer[writeOffset++] = (byte)'"';
+                        case '"':
+                            stringBuffer[writeOffset++] = '"';
                             break;
-                        case (byte)'/':
-                            stringBuffer[writeOffset++] = (byte)'/';
+                        case '/':
+                            stringBuffer[writeOffset++] = '/';
                             break;
-                        case (byte)'u':
-                            // parse Json unicode sequence: \uXXXX(\uXXXX)
+                        case 'u':
+                            // parse Json unicode sequence: \uXXXX(\uXXXX)*
                             // Start by reading XXXX. \u is already read.
-                            byte unescpaedUnicodeCharacter = 0;
+                            char unescpaedUnicodeCharacter = (char)0;
                             for (int sequenceIndex = 0; sequenceIndex < 4; sequenceIndex++)
                             {
                                 unescpaedUnicodeCharacter <<= 4;
 
-                                byte currentCharacter = stringBuffer[readOffset++];
+                                char currentCharacter = stringBuffer[readOffset++];
                                 if (currentCharacter >= '0' && currentCharacter <= '9')
                                 {
-                                    unescpaedUnicodeCharacter += (byte)(currentCharacter - '0');
+                                    unescpaedUnicodeCharacter += (char)(currentCharacter - '0');
                                 }
                                 else if (currentCharacter >= 'A' && currentCharacter <= 'F')
                                 {
-                                    unescpaedUnicodeCharacter += (byte)(10 + currentCharacter - 'A');
+                                    unescpaedUnicodeCharacter += (char)(10 + currentCharacter - 'A');
                                 }
                                 else if (currentCharacter >= 'a' && currentCharacter <= 'f')
                                 {
-                                    unescpaedUnicodeCharacter += (byte)(10 + currentCharacter - 'a');
+                                    unescpaedUnicodeCharacter += (char)(10 + currentCharacter - 'a');
                                 }
                                 else
                                 {
@@ -256,12 +294,16 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
+            string value;
             unsafe
             {
-                return Encoding.UTF8.GetString(
-                    (byte*)Unsafe.AsPointer(ref stringBuffer.GetPinnableReference()),
-                    stringBuffer.Length);
+                fixed (char* stringBufferPointer = stringBuffer)
+                {
+                    value = new string(stringBufferPointer, 0, writeOffset);
+                }
             }
+
+            return value;
         }
     }
 }
