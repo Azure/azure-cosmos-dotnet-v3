@@ -20,6 +20,52 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
+        public override bool IsFloatingPoint
+        {
+            get
+            {
+                return this.GetValue().IsDouble;
+            }
+        }
+
+        public override bool IsInteger
+        {
+            get
+            {
+                return this.GetValue().IsInteger;
+            }
+        }
+
+        public override double? AsFloatingPoint()
+        {
+            double? value;
+            if (this.IsFloatingPoint)
+            {
+                value = Number64.ToDouble(this.GetValue());
+            }
+            else
+            {
+                value = null;
+            }
+
+            return value;
+        }
+
+        public override long? AsInteger()
+        {
+            long? value;
+            if (this.IsInteger)
+            {
+                value = Number64.ToLong(this.GetValue());
+            }
+            else
+            {
+                value = null;
+            }
+
+            return value;
+        }
+
         public static CosmosNumber64 Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
@@ -31,6 +77,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return new EagerCosmosNumber64(number);
         }
+
+        protected abstract Number64 GetValue();
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The throughput response</returns>
         /// <value>
@@ -246,7 +246,8 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputProperties throughputProperties = await container.ReadThroughputAsync();
+        /// RequestOptions requestOptions = new RequestOptions();
+        /// ThroughputProperties throughputProperties = await container.ReadThroughputAsync(requestOptions);
         /// Console.WriteLine($"Throughput: {throughputProperties?.Throughput}");
         /// ]]>
         /// </code>
@@ -255,7 +256,8 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get throughput, MinThroughput and is replace in progress
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputResponse response = await container.ReadThroughputAsync();
+        /// RequestOptions requestOptions = new RequestOptions();
+        /// ThroughputResponse response = await container.ReadThroughputAsync(requestOptions);
         /// Console.WriteLine($"Throughput: {response.Resource?.Throughput}");
         /// Console.WriteLine($"MinThroughput: {response.MinThroughput}");
         /// Console.WriteLine($"IsReplacePending: {response.IsReplacePending}");

@@ -69,6 +69,46 @@ namespace Microsoft.Azure.Cosmos.Json
         FieldName,
 
         /// <summary>
+        /// Corresponds to a signed 1 byte integer.
+        /// </summary>
+        Int8,
+
+        /// <summary>
+        /// Corresponds to a signed 2 byte integer.
+        /// </summary>
+        Int16,
+
+        /// <summary>
+        /// Corresponds to a signed 4 byte integer.
+        /// </summary>
+        Int32,
+
+        /// <summary>
+        /// Corresponds to a signed 8 byte integer.
+        /// </summary>
+        Int64,
+
+        /// <summary>
+        /// Corresponds to an unsigned 4 byte integer
+        /// </summary>
+        UInt32,
+
+        /// <summary>
+        /// Corresponds to a single precision floating point.
+        /// </summary>
+        Float32,
+
+        /// <summary>
+        /// Corresponds to a double precision floating point.
+        /// </summary>
+        Float64,
+
+        /// <summary>
+        /// Corresponds to a GUID.
+        /// </summary>
+        Guid,
+
+        /// <summary>
         /// Corresponds to an arbitrary sequence of bytes in an object.
         /// </summary>
         Binary,
