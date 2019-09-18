@@ -356,10 +356,12 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is false.
         /// </value>
         /// <remarks>
-        /// When the value of this property is false, the SDK will automatically discover write and read regions, and use them when the configured application region is not available. When set to true, availability is limited to the endpoint specified on the CosmosClient constructor and defining the application region is not allowed.
+        /// When the value of this property is false, the SDK will automatically discover write and read regions, and use them when the configured application region is not available.
+        /// When set to true, availability is limited to the endpoint specified on the CosmosClient constructor.
+        /// Defining the <see cref="ApplicationRegion"/> is not allowed when setting the value to true.
         /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
-        public bool LimitToEndpoint { get; set; }
+        public bool LimitToEndpoint { get; set; } = false;
 
         /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.

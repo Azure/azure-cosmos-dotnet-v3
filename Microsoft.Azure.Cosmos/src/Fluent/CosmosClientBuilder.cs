@@ -151,7 +151,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="limitToEndpoint">Whether operations are limited to the endpoint or not.</param>
         /// <value>Default value is false.</value>
         /// <remarks>
-        /// When the value of <paramref name="limitToEndpoint"/> is false, the SDK will automatically discover all account write and read regions, and use them when the configured application region is not available. When set to true, availability is limited to the endpoint specified on the CosmosClientBuilder constructor and defining the application region is not allowed.. </remarks>
+        /// When the value of <paramref name="limitToEndpoint"/> is false, the SDK will automatically discover all account write and read regions, and use them when the configured application region is not available.
+        /// When set to true, availability is limited to the endpoint specified on the CosmosClientBuilder constructor.
+        /// Using <see cref="WithApplicationRegion(string)"/> is not allowed when the value is true. </remarks>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/> to limit the endpoint to East US.
         /// <code language="c#">
