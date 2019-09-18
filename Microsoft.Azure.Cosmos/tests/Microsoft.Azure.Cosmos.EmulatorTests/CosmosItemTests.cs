@@ -1041,14 +1041,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
                 Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
-                QueryRequestOptions options = new QueryRequestOptions()
-                {
-                    Properties = new Dictionary<string, object>()
-                    {
-                        {"x-ms-effective-partition-key-string", "AA" }
-                    }
-                };
-
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
                     null,
@@ -1060,7 +1052,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     resourceLink: container.LinkUri.OriginalString,
                     partitionedQueryExecutionInfo: null,
                     containerQueryProperties: containerQueryProperties,
-                    queryRequestOptions: options);
+                    properties: new Dictionary<string, object>()
+                    {
+                        {"x-ms-effective-partition-key-string", "AA" }
+                    });
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
             }
