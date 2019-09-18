@@ -331,8 +331,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new ArgumentNullException($"{nameof(jsonNavigatorNode)} can not be null");
             }
 
-            // For now short circuit this to false until we figure out how to optimize this.
-            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat && (this.SerializationFormat == JsonSerializationFormat.Binary || this.SerializationFormat == JsonSerializationFormat.HybridRow);
+            bool sameFormat = jsonNavigator.SerializationFormat == this.SerializationFormat;
 
             JsonNodeType jsonNodeType = jsonNavigator.GetNodeType(jsonNavigatorNode);
 

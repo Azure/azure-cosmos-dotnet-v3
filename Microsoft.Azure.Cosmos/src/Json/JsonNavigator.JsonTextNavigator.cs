@@ -269,7 +269,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 IJsonNavigatorNode binaryNode,
                 out ReadOnlyMemory<byte> bufferedBinaryValue)
             {
-                throw new NotImplementedException();
+                bufferedBinaryValue = default;
+                return false;
             }
 
             /// <inheritdoc />
@@ -395,7 +396,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 IJsonNavigatorNode jsonNode,
                 out ReadOnlyMemory<byte> bufferedRawJson)
             {
-                throw new NotImplementedException();
+                bufferedRawJson = default;
+                return false;
             }
 
             #region JsonTextParser
