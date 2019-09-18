@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#822](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/822) GROUP BY query support.
-- [#801](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/801) Enabled ThenBy after OrderBy operator
+- [#801](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/801) Enabled LINQ ThenBy operator after OrderBy
 
 ### Fixed
 
