@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
-                enableGroupBy: queryRequestOptions.EnableGroupBy,
                 correlatedActivityId: Guid.NewGuid());
             
             CosmosQueryExecutionContextFactory.InputParameters inputParams = new CosmosQueryExecutionContextFactory.InputParameters()
