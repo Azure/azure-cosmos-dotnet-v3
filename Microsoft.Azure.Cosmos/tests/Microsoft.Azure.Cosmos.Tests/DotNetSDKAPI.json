@@ -1298,9 +1298,11 @@
           "Attributes": [],
           "MethodInfo": "System.Net.IWebProxy get_WebProxy()"
         },
-        "System.Net.IWebProxy WebProxy": {
+        "System.Net.IWebProxy WebProxy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
-          "Attributes": [],
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
           "MethodInfo": null
         },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
