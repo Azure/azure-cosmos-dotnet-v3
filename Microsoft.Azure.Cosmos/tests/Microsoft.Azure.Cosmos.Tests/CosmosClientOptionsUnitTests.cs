@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosClient.ClientOptions.GetCosmosSerializerWithWrapperOrDefault(), cosmosClient.ClientOptions.PropertiesSerializer);
 
             CosmosSerializer defaultSerializer = cosmosClient.ClientOptions.PropertiesSerializer;
-            CosmosSerializer mockJsonSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+            CosmosSerializer mockJsonSerializer = new Mock<CosmosSerializer>().Object;
             cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer);
             CosmosClient cosmosClientCustom = cosmosClientBuilder.Build(new MockDocumentClient());
             Assert.AreEqual(defaultSerializer, cosmosClientCustom.ClientOptions.PropertiesSerializer);

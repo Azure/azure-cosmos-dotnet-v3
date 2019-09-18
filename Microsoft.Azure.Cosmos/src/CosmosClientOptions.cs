@@ -687,6 +687,12 @@ namespace Microsoft.Azure.Cosmos
                 {
                     writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
                 }
+
+                CosmosSerializer cosmosSerializer = value as CosmosSerializer;
+                if (cosmosSerializer is CosmosSerializer)
+                {
+                    writer.WriteValue(cosmosSerializer.GetType().ToString());
+                }
             }
 
             public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
