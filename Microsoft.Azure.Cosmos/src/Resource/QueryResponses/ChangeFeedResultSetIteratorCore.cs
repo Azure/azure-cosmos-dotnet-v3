@@ -146,8 +146,9 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            bool pageSizeError = response.ErrorMessage.Contains(ChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
-            if (pageSizeError)
+            bool? pageSizeError = response.ErrorMessage?.Contains(ChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
+            if (pageSizeError.HasValue &&
+                pageSizeError.Value)
             {
                 if (!this.maxItemCount.HasValue)
                 {
