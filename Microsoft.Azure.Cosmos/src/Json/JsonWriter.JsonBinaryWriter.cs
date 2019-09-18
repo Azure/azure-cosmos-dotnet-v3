@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.OneByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
-                        Memory<byte> payload = buffer.Slice(payloadIndex);
+                        Memory<byte> payload = buffer.Slice(payloadIndex, payloadLength);
                         Memory<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
                         payload.CopyTo(newPayloadStart);
 
@@ -486,7 +486,9 @@ namespace Microsoft.Azure.Cosmos.Json
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.FourByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.FourByteCount : 0);
-                        buffer.Slice(payloadIndex).CopyTo(buffer.Slice(typeMarkerIndex + bytesToWrite));
+                        Memory<byte> payload = buffer.Slice(payloadIndex, payloadLength);
+                        Memory<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
+                        payload.CopyTo(newPayloadStart);
 
                         // Move the cursor back
                         this.binaryWriter.Position = typeMarkerIndex;
