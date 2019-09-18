@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query
         public virtual bool AllowNonValueAggregateQuery { get; }
         public virtual Uri ResourceLink { get; }
         public virtual string ContainerResourceId { get; set; }
-        public virtual bool EnableGroupBy { get; set; }
         public virtual Guid CorrelatedActivityId { get; }
 
         internal CosmosQueryContext()
@@ -36,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            bool enableGroupBy,
             string containerResourceId = null)
         {
             if (client == null)
@@ -54,7 +52,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentException(nameof(correlatedActivityId));
             }
 
-            this.EnableGroupBy = enableGroupBy;
             this.OperationTypeEnum = operationType;
             this.QueryClient = client;
             this.ResourceTypeEnum = resourceTypeEnum;

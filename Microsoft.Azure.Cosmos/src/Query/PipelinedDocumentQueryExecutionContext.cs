@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -186,7 +186,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 initParams.PartitionedQueryExecutionInfo.QueryInfo,
                 initialPageSize,
                 requestContinuationToken,
-                queryContext.EnableGroupBy,
                 createOrderByComponentFunc,
                 createParallelComponentFunc);
         }
@@ -196,7 +195,6 @@ namespace Microsoft.Azure.Cosmos.Query
             QueryInfo queryInfo,
             int initialPageSize,
             string requestContinuation,
-            bool allowGroupBy,
             Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
             Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
         {
@@ -239,11 +237,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (queryInfo.HasGroupBy)
             {
-                if (!allowGroupBy)
-                {
-                    throw new ArgumentException("Cross Partition GROUP BY is not supported.");
-                }
-
                 Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
                 createComponentFunc = async (continuationToken) =>
                 {

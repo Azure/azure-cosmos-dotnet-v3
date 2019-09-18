@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            bool enableGroupBy,
             string containerResourceId = null)
             : base(
                 client,
@@ -33,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 correlatedActivityId,
                 isContinuationExpected,
                 allowNonValueAggregateQuery,
-                enableGroupBy,
                 containerResourceId)
         {
             this.queryRequestOptions = queryRequestOptions;
