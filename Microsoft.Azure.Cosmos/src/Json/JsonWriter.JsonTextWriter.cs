@@ -503,10 +503,10 @@ namespace Microsoft.Azure.Cosmos.Json
             private sealed class JsonTextMemoryWriter : JsonMemoryWriter
             {
                 private static readonly StandardFormat floatFormat = new StandardFormat(
-                    symbol: 'G');
+                    symbol: 'R');
 
                 private static readonly StandardFormat doubleFormat = new StandardFormat(
-                    symbol: 'G');
+                    symbol: 'R');
 
                 public JsonTextMemoryWriter(int initialCapacity = 256)
                     : base(initialCapacity)
@@ -596,24 +596,30 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxNumberLength = 32;
                     this.EnsureRemainingBufferSpace(MaxNumberLength);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten, JsonTextMemoryWriter.floatFormat))
+                    // Can't use Utf8Formatter until we bump to core 3.0, since they don't support float.ToString("G9")
+                    // Also for the 2.0 shim they are creating an intermediary string anyways
+                    string floatString = value.ToString("R", CultureInfo.InvariantCulture);
+                    for (int index = 0; index < floatString.Length; index++)
                     {
-                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(double).FullName}{value})");
+                        // we can cast to byte, since it's all ascii
+                        this.Cursor.Span[0] = (byte)floatString[index];
+                        this.Position++;
                     }
-
-                    this.Position += bytesWritten;
                 }
 
                 public void Write(double value)
                 {
                     const int MaxNumberLength = 32;
                     this.EnsureRemainingBufferSpace(MaxNumberLength);
-                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten, JsonTextMemoryWriter.doubleFormat))
+                    // Can't use Utf8Formatter until we bump to core 3.0, since they don't support float.ToString("R")
+                    // Also for the 2.0 shim they are creating an intermediary string anyways
+                    string doubleString = value.ToString("R", CultureInfo.InvariantCulture);
+                    for (int index = 0; index < doubleString.Length; index++)
                     {
-                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(double).FullName}{value})");
+                        // we can cast to byte, since it's all ascii
+                        this.Cursor.Span[0] = (byte)doubleString[index];
+                        this.Position++;
                     }
-
-                    this.Position += bytesWritten;
                 }
 
                 public void Write(Guid value)
