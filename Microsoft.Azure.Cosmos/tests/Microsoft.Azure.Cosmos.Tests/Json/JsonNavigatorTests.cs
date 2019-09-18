@@ -487,7 +487,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             this.VerifyNavigator(input, null, performExtraChecks);
         }
 
-        private void VerifyNavigator(string input, Exception expectedException, bool performExtraChecks = true)
+        private void VerifyNavigator(
+            string input,
+            Exception expectedException,
+            bool performExtraChecks = true)
         {
             CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
 

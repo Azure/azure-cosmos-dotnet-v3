@@ -77,7 +77,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength + (this.serializeCount ? JsonBinaryEncoding.TwoByteCount : 0);
 
                 // Write the serialization format as the very first byte
-                this.binaryWriter.Write((byte)JsonSerializationFormat.Binary);
+                byte binaryTypeMarker = (byte)JsonSerializationFormat.Binary;
+                this.binaryWriter.Write(binaryTypeMarker);
 
                 // Push on the outermost context
                 this.bufferedContexts.Push(new BeginOffsetAndCount(this.CurrentLength));
@@ -300,7 +301,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonNotCompleteException();
                 }
 
-                return this.binaryWriter.Buffer;
+                return this.binaryWriter.Buffer.Slice(
+                    0,
+                    this.binaryWriter.Position);
             }
 
             /// <summary>
@@ -414,7 +417,9 @@ namespace Microsoft.Azure.Cosmos.Json
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.OneByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
-                        buffer.Slice(payloadIndex).CopyTo(buffer.Slice(typeMarkerIndex + bytesToWrite));
+                        Memory<byte> payload = buffer.Slice(payloadIndex);
+                        Memory<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
+                        payload.CopyTo(newPayloadStart);
 
                         // Move the cursor back
                         this.binaryWriter.Position = typeMarkerIndex;
@@ -657,6 +662,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                 }
 
+                public void Write(byte value)
+                {
+                    this.EnsureRemainingBufferSpace(sizeof(byte));
+                    this.Cursor.Span[0] = value;
+                    this.Position++;
+                }
+
                 public void Write(sbyte value)
                 {
                     this.Write((byte)value);
@@ -665,42 +677,49 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void Write(short value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(short));
-                    BinaryPrimitives.WriteInt16LittleEndian(this.buffer, value);
+                    BinaryPrimitives.WriteInt16LittleEndian(this.Cursor.Span, value);
                     this.Position += sizeof(short);
+                }
+
+                public void Write(ushort value)
+                {
+                    this.EnsureRemainingBufferSpace(sizeof(ushort));
+                    BinaryPrimitives.WriteUInt16LittleEndian(this.Cursor.Span, value);
+                    this.Position += sizeof(ushort);
                 }
 
                 public void Write(int value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(int));
-                    BinaryPrimitives.WriteInt32LittleEndian(this.buffer, value);
+                    BinaryPrimitives.WriteInt32LittleEndian(this.Cursor.Span, value);
                     this.Position += sizeof(int);
                 }
 
                 public void Write(uint value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(uint));
-                    BinaryPrimitives.WriteUInt32LittleEndian(this.buffer, value);
+                    BinaryPrimitives.WriteUInt32LittleEndian(this.Cursor.Span, value);
                     this.Position += sizeof(uint);
                 }
 
                 public void Write(long value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(long));
-                    BinaryPrimitives.WriteInt64LittleEndian(this.buffer, value);
+                    BinaryPrimitives.WriteInt64LittleEndian(this.Cursor.Span, value);
                     this.Position += sizeof(long);
                 }
 
                 public void Write(float value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(float));
-                    MemoryMarshal.Write<float>(this.buffer, ref value);
+                    MemoryMarshal.Write<float>(this.Cursor.Span, ref value);
                     this.Position += sizeof(float);
                 }
 
                 public void Write(double value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(double));
-                    MemoryMarshal.Write<double>(this.buffer, ref value);
+                    MemoryMarshal.Write<double>(this.Cursor.Span, ref value);
                     this.Position += sizeof(double);
                 }
 
@@ -708,7 +727,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     int sizeOfGuid = Marshal.SizeOf(Guid.Empty);
                     this.EnsureRemainingBufferSpace(sizeOfGuid);
-                    MemoryMarshal.Write<Guid>(this.buffer, ref value);
+                    MemoryMarshal.Write<Guid>(this.Cursor.Span, ref value);
                     this.Position += sizeOfGuid;
                 }
             }

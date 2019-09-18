@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Buffers;
     using System.Buffers.Text;
     using System.Collections.Generic;
     using System.Globalization;
@@ -320,7 +321,9 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>The result of the JsonWriter as an array of bytes.</returns>
             public override ReadOnlyMemory<byte> GetResult()
             {
-                return this.jsonTextMemoryWriter.Buffer;
+                return this.jsonTextMemoryWriter.Buffer.Slice(
+                    0,
+                    this.jsonTextMemoryWriter.Position);
             }
 
             /// <summary>
@@ -475,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                 stringBuilder.AppendFormat(
                                     CultureInfo.InvariantCulture,
                                     "\\u{0:X4}",
-                                    (int)escapeSequence);
+                                    (int)characterToEscape);
                             }
                         }
                     }
@@ -499,6 +502,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private sealed class JsonTextMemoryWriter : JsonMemoryWriter
             {
+                private static readonly StandardFormat floatFormat = new StandardFormat(
+                    symbol: 'G');
+
+                private static readonly StandardFormat doubleFormat = new StandardFormat(
+                    symbol: 'G');
+
                 public JsonTextMemoryWriter(int initialCapacity = 256)
                     : base(initialCapacity)
                 {
@@ -508,7 +517,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxBoolLength = 5;
                     this.EnsureRemainingBufferSpace(MaxBoolLength);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(bool).FullName}{value})");
                     }
@@ -516,11 +525,18 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.Position += bytesWritten;
                 }
 
+                public void Write(byte value)
+                {
+                    this.EnsureRemainingBufferSpace(1);
+                    this.Buffer.Span[this.Position] = value;
+                    this.Position++;
+                }
+
                 public void Write(sbyte value)
                 {
                     const int MaxInt8Length = 4;
                     this.EnsureRemainingBufferSpace(MaxInt8Length);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(sbyte).FullName}{value})");
                     }
@@ -532,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt16Length = 6;
                     this.EnsureRemainingBufferSpace(MaxInt16Length);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(short).FullName}{value})");
                     }
@@ -544,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt32Length = 11;
                     this.EnsureRemainingBufferSpace(MaxInt32Length);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(int).FullName}{value})");
                     }
@@ -556,7 +572,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt32Length = 11;
                     this.EnsureRemainingBufferSpace(MaxInt32Length);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(int).FullName}{value})");
                     }
@@ -568,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt64Length = 20;
                     this.EnsureRemainingBufferSpace(MaxInt64Length);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(long).FullName}{value})");
                     }
@@ -580,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxNumberLength = 32;
                     this.EnsureRemainingBufferSpace(MaxNumberLength);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten, JsonTextMemoryWriter.floatFormat))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(double).FullName}{value})");
                     }
@@ -592,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxNumberLength = 32;
                     this.EnsureRemainingBufferSpace(MaxNumberLength);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten, JsonTextMemoryWriter.doubleFormat))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(double).FullName}{value})");
                     }
@@ -604,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int GuidLength = 38;
                     this.EnsureRemainingBufferSpace(GuidLength);
-                    if (!Utf8Formatter.TryFormat(value, this.buffer, out int bytesWritten))
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor.Span, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(double).FullName}{value})");
                     }
@@ -615,7 +631,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void WriteBinaryAsBase64(ReadOnlySpan<byte> binary)
                 {
                     this.EnsureRemainingBufferSpace(Base64.GetMaxEncodedToUtf8Length(binary.Length));
-                    Base64.EncodeToUtf8(binary, this.buffer, out int bytesConsumed, out int bytesWritten);
+                    Base64.EncodeToUtf8(binary, this.Cursor.Span, out int bytesConsumed, out int bytesWritten);
 
                     this.Position += bytesWritten;
                 }

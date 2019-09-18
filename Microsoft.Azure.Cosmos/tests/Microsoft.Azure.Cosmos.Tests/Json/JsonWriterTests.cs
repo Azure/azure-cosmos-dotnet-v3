@@ -412,8 +412,7 @@
                 // remove formatting on the json and also replace "/" with "\/" since newtonsoft is dumb.
                 expectedString = Newtonsoft.Json.Linq.JToken
                     .Parse(expectedString)
-                    .ToString(Newtonsoft.Json.Formatting.None)
-                    .Replace("/", @"\/");
+                    .ToString(Newtonsoft.Json.Formatting.None);
 
                 byte[] binaryOutput =
                 {
@@ -879,7 +878,6 @@
                 new Tuple<string, string>(@"\t", "\t"),
                 new Tuple<string, string>(@"\""", "\""),
                 new Tuple<string, string>(@"\\", @"\"),
-                new Tuple<string, string>(@"\/", "/"),
             };
 
             foreach (Tuple<string, string> escapeCharacter in escapeCharacters)
@@ -987,7 +985,7 @@
                 // Whitespace characters have special escaping
                 if (!escapeCharacters.Contains((char)controlCharacter))
                 {
-                    string expectedString = "\"" + "\\u" + "00" + controlCharacter.ToString("x2") + "\"";
+                    string expectedString = "\"" + "\\u" + "00" + controlCharacter.ToString("X2") + "\"";
 
                     JsonToken[] tokensToWrite =
                     {
@@ -1598,7 +1596,7 @@
 
                 JsonToken[] tokensToWrite =
                 {
-                    JsonToken.Binary(expectedBinaryOutput)
+                    JsonToken.Binary(new byte[]{ })
                 };
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
@@ -1671,10 +1669,10 @@
                     }
 
                     this.VerifyWriter(
-                        jsonWriter, 
-                        tokensToWrite, 
-                        expectedOutput, 
-                        JsonSerializationFormat.Text, 
+                        jsonWriter,
+                        tokensToWrite,
+                        expectedOutput,
+                        JsonSerializationFormat.Text,
                         expectedException);
                 }
             }
@@ -1811,10 +1809,17 @@
             if (expectedException == null)
             {
                 byte[] result = jsonWriter.GetResult().ToArray();
-                Assert.IsTrue(expectedOutput.SequenceEqual(result),
-                    string.Format("Expected : {0}, Actual :{1}",
-                    string.Join(", ", expectedOutput),
-                    string.Join(", ", result)));
+                if (jsonSerializationFormat == JsonSerializationFormat.Text)
+                {
+                    Assert.AreEqual(Encoding.UTF8.GetString(expectedOutput), Encoding.UTF8.GetString(result));
+                }
+                else
+                {
+                    Assert.IsTrue(expectedOutput.SequenceEqual(result),
+                        string.Format("Expected : {0}, Actual :{1}",
+                        string.Join(", ", expectedOutput),
+                        string.Join(", ", result)));
+                }
             }
         }
     }
