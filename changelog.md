@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Fixed
+
+## [3.2.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.2.0) - 2019-09-17
+
+### Added
+
 - [#100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/100) Configurable Tcp settings to CosmosClientOptions
 - [#615](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/615), [#775](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/775)  Added request diagnostics to Response's
 - [#622](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/622) Added CRUD and query operations for Users and Permissions which enables [ResourceToken](https://docs.microsoft.com/en-us/azure/cosmos-db/secure-access-to-data#resource-tokens) support
 - [#716](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/716) Added camel case serialization on LINQ query generation
 - [#729](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/729), [#776](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/776) Added aggregate(CountAsync/SumAsync etc.) extensions for LINQ query
 - [#743](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/743) Added WebProxy to CosmosClientOptions
-- [#767](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/767) Ability to limit to configured application region only
 
 ### Fixed
 
@@ -76,3 +81,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to scale non-partitioned containers 
 - Extensible and customizable serializer
 - Extensible request pipeline with support for custom handlers
+
+## Release & Retirement dates
+Microsoft provides notification at least **12 months** in advance of retiring an SDK in order to smooth the transition to a newer/supported version.
+
+New features and functionality and optimizations are only added to the current SDK, as such it is recommended that you always upgrade to the latest SDK version as early as possible. 
+
+Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
+
+<br/>
+
+| Version | Release Date | Retirement Date |
+| --- | --- | --- |
+| [3.2.0](#3.2.0) |September 18, 2019 |--- |
+| [3.1.1](#3.1.1) |August 12, 2019 |--- |
+| [3.1.0](#3.1.0) |July 29, 2019 |--- |
+| [3.0.0](#3.0.0) |July 15, 2019 |--- |

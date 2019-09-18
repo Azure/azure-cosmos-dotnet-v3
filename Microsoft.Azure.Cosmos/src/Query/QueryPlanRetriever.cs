@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using HttpConstants = Documents.HttpConstants;
@@ -57,18 +58,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 ResourceType.Document,
                 OperationType.QueryPlan,
                 sqlQuerySpec,
-                QueryPlanRequestEnricher,
+                QueryPlanRetriever.SupportedQueryFeaturesString,
                 cancellationToken);
-        }
-
-        private static void QueryPlanRequestEnricher(
-            RequestMessage requestMessage)
-        {
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQueryPlanRequest, bool.TrueString);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.SupportedQueryFeatures, SupportedQueryFeaturesString);
-            requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
-            requestMessage.UseGatewayMode = true;
         }
     }
 }

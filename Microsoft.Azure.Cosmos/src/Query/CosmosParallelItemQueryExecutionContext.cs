@@ -42,14 +42,23 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the CosmosParallelItemQueryExecutionContext class.
         /// </summary>
-        /// <param name="constructorParams">The parameters for constructing the base class.</param>
+        /// <param name="queryContext">The parameters for constructing the base class.</param>
+        /// <param name="maxConcurrency">The max concurrency</param>
+        /// <param name="maxBufferedItemCount">The max buffered item count</param>
+        /// <param name="maxItemCount">Max item count</param>
         private CosmosParallelItemQueryExecutionContext(
-            CosmosQueryContext constructorParams)
+            CosmosQueryContext queryContext,
+            int? maxConcurrency,
+            int? maxItemCount,
+            int? maxBufferedItemCount)
             : base(
-                constructorParams,
-                CosmosParallelItemQueryExecutionContext.MoveNextComparer,
-                CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
-                CosmosParallelItemQueryExecutionContext.EqualityComparer)
+                queryContext: queryContext,
+                maxConcurrency: maxConcurrency,
+                maxItemCount: maxItemCount,
+                maxBufferedItemCount: maxBufferedItemCount,
+                moveNextComparer: CosmosParallelItemQueryExecutionContext.MoveNextComparer,
+                fetchPrioirtyFunction: CosmosParallelItemQueryExecutionContext.FetchPriorityFunction,
+                equalityComparer: CosmosParallelItemQueryExecutionContext.EqualityComparer)
         {
         }
 
@@ -85,13 +94,15 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Creates a CosmosParallelItemQueryExecutionContext
         /// </summary>
-        /// <param name="constructorParams">The params the construct the base class.</param>
+        /// <param name="queryContext">The params the construct the base class.</param>
         /// <param name="initParams">The params to initialize the cross partition context.</param>
+        /// <param name="requestContinuationToken">The request continuation.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on, which in turn returns a CosmosParallelItemQueryExecutionContext.</returns>
         public static async Task<CosmosParallelItemQueryExecutionContext> CreateAsync(
-            CosmosQueryContext constructorParams,
+            CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
+            string requestContinuationToken,
             CancellationToken token)
         {
             Debug.Assert(
@@ -99,15 +110,18 @@ namespace Microsoft.Azure.Cosmos.Query
                 "Parallel~Context must not have order by query info.");
 
             CosmosParallelItemQueryExecutionContext context = new CosmosParallelItemQueryExecutionContext(
-                constructorParams);
+                queryContext: queryContext,
+                maxConcurrency: initParams.MaxConcurrency,
+                maxItemCount: initParams.MaxItemCount,
+                maxBufferedItemCount: initParams.MaxBufferedItemCount);
 
             await context.InitializeAsync(
-                constructorParams.SqlQuerySpec,
-                initParams.CollectionRid,
-                initParams.PartitionKeyRanges,
-                initParams.InitialPageSize,
-                initParams.RequestContinuation,
-                token);
+                sqlQuerySpec: initParams.SqlQuerySpec,
+                collectionRid: initParams.CollectionRid,
+                partitionKeyRanges: initParams.PartitionKeyRanges,
+                initialPageSize: initParams.InitialPageSize,
+                requestContinuation: requestContinuationToken,
+                token: token);
 
             return context;
         }

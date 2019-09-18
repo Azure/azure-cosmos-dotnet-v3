@@ -81,18 +81,32 @@ namespace Microsoft.Azure.Cosmos.Tests
                 false, // has logical partition key
                 cancellationtoken)).Throws(new InvalidOperationException("Verified that the PartitionKeyDefinition was correctly set. Cancel the rest of the query"));
 
-            CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters()
+            {
+                SqlQuerySpec = sqlQuerySpec,
+                InitialUserContinuationToken = null,
+                MaxBufferedItemCount = queryRequestOptions?.MaxBufferedItemCount,
+                MaxConcurrency = queryRequestOptions?.MaxConcurrency,
+                MaxItemCount = queryRequestOptions?.MaxItemCount,
+                PartitionKey = queryRequestOptions?.PartitionKey,
+                Properties = queryRequestOptions?.Properties
+            };
+
+            CosmosQueryContext cosmosQueryContext = new CosmosQueryContextCore(
                 client: client.Object,
+                queryRequestOptions: queryRequestOptions,
                 resourceTypeEnum: ResourceType.Document,
                 operationType: OperationType.Query,
                 resourceType: typeof(QueryResponse),
-                sqlQuerySpec: sqlQuerySpec,
-                continuationToken: null,
-                queryRequestOptions: queryRequestOptions,
                 resourceLink: new Uri("dbs/mockdb/colls/mockColl", UriKind.Relative),
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                enableGroupBy: true,
                 correlatedActivityId: new Guid("221FC86C-1825-4284-B10E-A6029652CCA6"));
+
+            CosmosQueryExecutionContextFactory factory = new CosmosQueryExecutionContextFactory(
+                cosmosQueryContext: cosmosQueryContext,
+                inputParameters: inputParameters);
 
             await factory.ExecuteNextAsync(cancellationtoken);
         }

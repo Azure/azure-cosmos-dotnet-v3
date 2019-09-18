@@ -79,9 +79,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.OpenTcpConnectionTimeout);
             Assert.IsNull(policy.MaxRequestsPerTcpConnection);
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
-            Assert.IsTrue(policy.EnableEndpointDiscovery);
 
-            cosmosClientBuilder.WithApplicationRegion(region, false)
+            cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
                 .WithRequestTimeout(requestTimeout)
                 .WithApplicationName(userAgentSuffix)
@@ -109,7 +108,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
-            Assert.IsFalse(clientOptions.UseAnyAccountRegion);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -120,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(requestTimeout, policy.RequestTimeout);
             Assert.IsTrue(policy.UserAgentSuffix.Contains(userAgentSuffix));
             Assert.IsTrue(policy.UseMultipleWriteLocations);
-            Assert.IsFalse(policy.EnableEndpointDiscovery);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
 
