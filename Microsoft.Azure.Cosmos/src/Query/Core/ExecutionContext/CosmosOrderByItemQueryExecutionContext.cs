@@ -68,15 +68,24 @@ namespace Microsoft.Azure.Cosmos.Query
         /// ORDER BY r.field_7]]>
         /// This is needed because we need to add additional filters to the query when we resume from a continuation,
         /// and it lets us easily parse out the _rid orderByItems, and payload without parsing the entire document (and having to remember the order by field).
+        /// <param name="maxConcurrency">The max concurrency</param>
+        /// <param name="maxBufferedItemCount">The max buffered item count</param>
+        /// <param name="maxItemCount">Max item count</param>
         /// <param name="consumeComparer">Comparer used to internally compare documents from different sorted partitions.</param>
         private CosmosOrderByItemQueryExecutionContext(
-           CosmosQueryContext initPararms,
-           OrderByConsumeComparer consumeComparer)
+            CosmosQueryContext initPararms,
+            int? maxConcurrency,
+            int? maxItemCount,
+            int? maxBufferedItemCount,
+            OrderByConsumeComparer consumeComparer)
             : base(
-                initPararms,
-                consumeComparer,
-                CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
-                new OrderByEqualityComparer(consumeComparer))
+                queryContext: initPararms,
+                maxConcurrency: maxConcurrency,
+                maxItemCount: maxItemCount,
+                maxBufferedItemCount: maxBufferedItemCount,
+                moveNextComparer: consumeComparer,
+                fetchPrioirtyFunction: CosmosOrderByItemQueryExecutionContext.FetchPriorityFunction,
+                equalityComparer: new OrderByEqualityComparer(consumeComparer))
         {
         }
 
@@ -130,13 +139,15 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Creates an CosmosOrderByItemQueryExecutionContext
         /// </summary>
-        /// <param name="constructorParams">The parameters for the base class constructor.</param>
+        /// <param name="queryContext">The parameters for the base class constructor.</param>
         /// <param name="initParams">The parameters to initialize the base class.</param>
+        /// <param name="requestContinuationToken">The request continuation.</param>
         /// <param name="token">The cancellation token.</param>
         /// <returns>A task to await on, which in turn creates an CosmosOrderByItemQueryExecutionContext.</returns>
         public static async Task<CosmosOrderByItemQueryExecutionContext> CreateAsync(
-            CosmosQueryContext constructorParams,
+            CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
+            string requestContinuationToken,
             CancellationToken token)
         {
             Debug.Assert(
@@ -144,18 +155,21 @@ namespace Microsoft.Azure.Cosmos.Query
                 "OrderBy~Context must have order by query info.");
 
             CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
-                constructorParams,
-                new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
+                initPararms: queryContext,
+                maxConcurrency: initParams.MaxConcurrency,
+                maxItemCount: initParams.MaxItemCount,
+                maxBufferedItemCount: initParams.MaxBufferedItemCount,
+                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
 
             await context.InitializeAsync(
-                constructorParams.SqlQuerySpec,
-                initParams.RequestContinuation,
-                initParams.CollectionRid,
-                initParams.PartitionKeyRanges,
-                initParams.InitialPageSize,
-                initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy,
-                initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions,
-                token);
+                sqlQuerySpec: initParams.SqlQuerySpec,
+                requestContinuation: requestContinuationToken,
+                collectionRid: initParams.CollectionRid,
+                partitionKeyRanges: initParams.PartitionKeyRanges,
+                initialPageSize: initParams.InitialPageSize,
+                sortOrders: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy,
+                orderByExpressions: initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderByExpressions,
+                cancellationToken: token);
 
             return context;
         }
