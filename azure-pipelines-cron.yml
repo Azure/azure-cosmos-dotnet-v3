@@ -22,7 +22,7 @@ jobs:
   - template:  templates/static-tools.yml
     parameters:
       BuildConfiguration: Release
-      VmImage: vs2017-win2016
+      VmImage: windows-latest
 
   - template:  templates/build-test.yml
     parameters:

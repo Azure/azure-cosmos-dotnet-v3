@@ -14,7 +14,7 @@ schedules:
 
 variables:
   ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal ' 
-  VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
   BuildConfiguration: Release 
   IsNightly: true 
 
