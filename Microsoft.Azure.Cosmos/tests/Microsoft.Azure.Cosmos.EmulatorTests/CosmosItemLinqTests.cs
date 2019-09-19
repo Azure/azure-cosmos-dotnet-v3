@@ -442,92 +442,113 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
 
+            string queryText = "SELECT VALUE item0 FROM root JOIN item0 IN root[\"children\"] WHERE (((((root[\"CamelCase\"] = @param1)" +
+                " AND (root[\"description\"] = @param2)) AND (root[\"taskNum\"] < @param3))" +
+                " AND (root[\"valid\"] = @param4)) AND (item0 = @param5)) ";
+            ToDoActivity child1 = new ToDoActivity { id = "child1", taskNum = 30 };
+            string description = "CreateRandomToDoActivity";
+            string camelCase = "camelCase";
+            int taskNum = 100;
+            bool valid = true;
+
+
             // Passing incorrect boolean value, generating queryDefinition, updating parameter and verifying new result
+            valid = false;
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
-            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
-               .Where(item => item.description == "CreateRandomToDoActivity")
-               .Where(item => item.taskNum < 100)
-               .Where(item => item.valid == false);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == camelCase)
+               .Where(item => item.description == description)
+               .Where(item => item.taskNum < taskNum)
+               .Where(item => item.valid == valid)
+               .SelectMany(item => item.children)
+               .Where(child => child == child1);
             Dictionary<object, string> parameters = new Dictionary<object, string>();
-            parameters.Add("camelCase", "@param1");
-            parameters.Add("CreateRandomToDoActivity", "@param2");
-            parameters.Add(100, "@param3");
-            parameters.Add(false, "@param4");
+            parameters.Add(camelCase, "@param1");
+            parameters.Add(description, "@param2");
+            parameters.Add(taskNum, "@param3");
+            parameters.Add(valid, "@param4");
+            parameters.Add(child1, "@param5");
             QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
-            Assert.AreEqual(4, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param1"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param2"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param3"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param4"));
+            Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
 
-            queryDefinition.WithParameter("@param4", true);
+            string paramNameForUpdate = parameters[valid];
+            valid = true;
+            queryDefinition.WithParameter(paramNameForUpdate, valid);
             Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
 
             // Passing incorrect string value, generating queryDefinition, updating parameter and verifying new result
-            string description = "wrongDescription";
+            description = "wrongDescription";
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
                .Where(item => item.description == description)
                .Where(item => item.taskNum < 100)
-               .Where(item => item.valid == true);
+               .Where(item => item.valid == true)
+               .SelectMany(item => item.children)
+               .Where(child => child == child1);
             parameters = new Dictionary<object, string>();
-            parameters.Add("camelCase", "@param1");
+            parameters.Add(camelCase, "@param1");
             parameters.Add(description, "@param2");
-            parameters.Add(100, "@param3");
-            parameters.Add(true, "@param4");
+            parameters.Add(taskNum, "@param3");
+            parameters.Add(valid, "@param4");
+            parameters.Add(child1, "@param5");
             queryDefinition = queriable.ToQueryDefinition(parameters);
-            Assert.AreEqual(4, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param1"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param2"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param3"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param4"));
             Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
 
-            queryDefinition.WithParameter(parameters[description], "CreateRandomToDoActivity");
+            paramNameForUpdate = parameters[description];
+            description = "CreateRandomToDoActivity";
+            queryDefinition.WithParameter(paramNameForUpdate, description);
             Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
 
             // Passing incorrect number value, generating queryDefinition, updating parameter and verifying new result
-            int taskNum = 10;
+            taskNum = 10;
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
                .Where(item => item.description == "CreateRandomToDoActivity")
                .Where(item => item.taskNum < taskNum)
-               .Where(item => item.valid == true);
+               .Where(item => item.valid == true)
+               .SelectMany(item => item.children)
+               .Where(child => child == child1);
             parameters = new Dictionary<object, string>();
-            parameters.Add("camelCase", "@param1");
-            parameters.Add("CreateRandomToDoActivity", "@param2");
+            parameters.Add(camelCase, "@param1");
+            parameters.Add(description, "@param2");
             parameters.Add(taskNum, "@param3");
-            parameters.Add(true, "@param4");
+            parameters.Add(valid, "@param4");
+            parameters.Add(child1, "@param5");
             queryDefinition = queriable.ToQueryDefinition(parameters);
-            Assert.AreEqual(4, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param1"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param2"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param3"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param4"));
+            Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
 
-            queryDefinition.WithParameter(parameters[taskNum], 100);
+            paramNameForUpdate = parameters[taskNum];
+            taskNum = 100;
+            queryDefinition.WithParameter(paramNameForUpdate, taskNum);
             Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
 
             // Passing incorrect object value, generating queryDefinition, updating parameter and verifying new result
-            ToDoActivity child1 = new ToDoActivity { id = "child1", taskNum = 40 };
-            queriable = linqQueryable
-                .Where(item => item.description == "CreateRandomToDoActivity")
-                .SelectMany(item => item.children)
-                .Where(child => child == child1);
+            child1.taskNum = 40;
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase")
+               .Where(item => item.description == "CreateRandomToDoActivity")
+               .Where(item => item.taskNum < taskNum)
+               .Where(item => item.valid == true)
+               .SelectMany(item => item.children)
+               .Where(child => child == child1);
             parameters = new Dictionary<object, string>();
-            parameters.Add("CreateRandomToDoActivity", "@param1");
-            parameters.Add(child1, "@param2");
+            parameters.Add(camelCase, "@param1");
+            parameters.Add(description, "@param2");
+            parameters.Add(taskNum, "@param3");
+            parameters.Add(valid, "@param4");
+            parameters.Add(child1, "@param5");
             queryDefinition = queriable.ToQueryDefinition(parameters);
-            Assert.AreEqual(2, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("= @param1"));
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("= @param2"));
+            Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
 
-            string paramName = parameters[child1];
+            paramNameForUpdate = parameters[child1];
             child1.taskNum = 30;
-            queryDefinition.WithParameter(paramName, child1);
+            queryDefinition.WithParameter(paramNameForUpdate, child1);
             Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
         }
 

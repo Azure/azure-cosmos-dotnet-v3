@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (linqQuery == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToSqlQueryText is only supported on cosmos LINQ query operations");
+                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToQueryDefinition is only supported on cosmos LINQ query operations");
             }
 
             return linqQuery.ToQueryDefinition(parameters);
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (linqQuery == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToSqlQueryText is only supported on cosmos LINQ query operations");
+                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToQueryDefinition is only supported on cosmos LINQ query operations");
             }
 
             return linqQuery.ToQueryDefinition();
