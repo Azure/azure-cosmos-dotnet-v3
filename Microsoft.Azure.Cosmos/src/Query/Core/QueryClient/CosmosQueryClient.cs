@@ -40,11 +40,11 @@ namespace Microsoft.Azure.Cosmos.Query
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken);
 
-        internal abstract Task<QueryResponseCore> ExecuteItemQueryAsync(
+        internal abstract Task<QueryResponseCore> ExecuteItemQueryAsync<QueryRequestOptionType>(
             Uri resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
-            QueryRequestOptions requestOptions,
+            QueryRequestOptionType requestOptions,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             Documents.PartitionKeyRangeIdentity partitionKeyRange,
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
-            Action<RequestMessage> requestEnricher,
+            string supportedQueryFeatures,
             CancellationToken cancellationToken);
 
         internal abstract void ClearSessionTokenCache(string collectionFullName);

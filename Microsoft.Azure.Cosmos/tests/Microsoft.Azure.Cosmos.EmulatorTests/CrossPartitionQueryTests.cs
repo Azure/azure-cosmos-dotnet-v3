@@ -3329,8 +3329,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             MaxItemCount = pageSize,
                             MaxBufferedItemCount = 1000,
-                            MaxConcurrency = 2,
-                            EnableCrossPartitionSkipTake = true,
+                            MaxConcurrency = 2
                         };
 
                         IEnumerable<JToken> expectedResults = documents.Select(document => document.propertyBag);
@@ -4232,7 +4231,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         maxItemCount,
                         new QueryRequestOptions()
                         {
-                            EnableGroupBy = true,
                             MaxItemCount = maxItemCount,
                             MaxBufferedItemCount = 100,
                         });
@@ -4264,7 +4262,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         maxItemCount,
                         new QueryRequestOptions()
                         {
-                            EnableGroupBy = true,
                         });
                     Assert.Fail("Expected an error when trying to drain a GROUP BY query with continuation tokens.");
                 }

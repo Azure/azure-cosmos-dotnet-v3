@@ -107,11 +107,11 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey);
         }
 
-        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync(
+        internal override async Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            QueryRequestOptions requestOptions,
+            RequestOptionType requestOptions,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             PartitionKeyRangeIdentity partitionKeyRange,
@@ -119,12 +119,20 @@ namespace Microsoft.Azure.Cosmos
             int pageSize,
             CancellationToken cancellationToken)
         {
+            QueryRequestOptions queryRequestOptions = requestOptions as QueryRequestOptions;
+            if (queryRequestOptions == null)
+            {
+                throw new InvalidOperationException($"CosmosQueryClientCore.ExecuteItemQueryAsync only supports RequestOptionType of QueryRequestOptions");
+            }
+
+            queryRequestOptions.MaxItemCount = pageSize;
+
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: requestOptions.PartitionKey,
+                requestOptions: queryRequestOptions,
+                partitionKey: queryRequestOptions.PartitionKey,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
                 requestEnricher: (cosmosRequestMessage) =>
@@ -136,16 +144,13 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(
                         cosmosRequestMessage,
                         continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(
-                        cosmosRequestMessage,
-                        pageSize);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
                 cancellationToken: cancellationToken);
 
             return this.GetCosmosElementResponse(
-                requestOptions,
+                queryRequestOptions,
                 resourceType,
                 message);
         }
@@ -155,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             SqlQuerySpec sqlQuerySpec,
-            Action<RequestMessage> requestEnricher,
+            string supportedQueryFeatures,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -167,7 +172,14 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: null,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SqlQuerySpecSerializer.ToStream(sqlQuerySpec),
-                requestEnricher: requestEnricher,
+                requestEnricher: (requestMessage) =>
+                {
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQueryPlanRequest, bool.TrueString);
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.SupportedQueryFeatures, supportedQueryFeatures);
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
+                    requestMessage.UseGatewayMode = true;
+                },
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.
