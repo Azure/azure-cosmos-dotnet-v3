@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
                 return;
             }
 
-            PriorityQueue<T> priorityQueue = new PriorityQueue<T>();
+            PriorityQueue<T> priorityQueue = collection as PriorityQueue<T>;
             if (priorityQueue != null)
             {
                 this.tryPeekDelegate = priorityQueue.TryPeek;
