@@ -3125,12 +3125,12 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToFeedIterator[T](System.Linq.IQueryable`1[T])"
         },
-        "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String])"
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T])"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",

@@ -97,7 +97,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> parameters = null)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> parameters)
         {
             CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
 
@@ -107,6 +112,35 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             return linqQuery.ToQueryDefinition(parameters);
+        }
+
+        /// <summary>
+        /// This method generate query definition from LINQ query.
+        /// </summary>
+        /// <typeparam name="T">the type of object to query.</typeparam>
+        /// <param name="query">the IQueryable{T} to be converted.</param>
+        /// <returns>The queryDefinition which can be used in query execution.</returns>
+        /// <example>
+        /// This example shows how to generate query definition from LINQ.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IQueryable<T> queryable = container.GetItemsQueryIterator<T>(allowSynchronousQueryExecution = true)
+        ///                      .Where(t => b.id.contains("test"));
+        /// QueryDefinition queryDefinition = queryable.ToQueryDefinition();
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query)
+        {
+            CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
+
+            if (linqQuery == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToSqlQueryText is only supported on cosmos LINQ query operations");
+            }
+
+            return linqQuery.ToQueryDefinition();
         }
 
         /// <summary>
