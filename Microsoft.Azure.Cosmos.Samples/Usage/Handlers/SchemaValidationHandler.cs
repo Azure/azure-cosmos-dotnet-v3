@@ -45,7 +45,7 @@ namespace Cosmos.Samples.Handlers
             if (request.Method == HttpMethod.Post && _schemas.ContainsKey(requestUri))
             {
                 // This is an item being created
-                ValidateContent(request.Content, _schemas[requestUri]);
+                ValidateContent(request, _schemas[requestUri]);
             }
             else if (request.Method == HttpMethod.Put && requestUri.Contains("/docs/"))
             {
@@ -54,25 +54,27 @@ namespace Cosmos.Samples.Handlers
                 if (_schemas.ContainsKey(requestUriRoot))
                 {
                     // This is an item being updated
-                    ValidateContent(request.Content, _schemas[requestUriRoot]);
+                    ValidateContent(request, _schemas[requestUriRoot]);
                 }
             }
 
             return base.SendAsync(request, cancellationToken);
         }
 
-        private void ValidateContent(Stream contentStream, JSchema schema)
+        private void ValidateContent(RequestMessage request, JSchema schema)
         {
             // Create a StreamReader with leaveOpen = true so it doesn't close the Stream when disposed
-            using (var sr = new StreamReader(contentStream, Encoding.UTF8, true, 1024, true))
+            using (var sr = new StreamReader(request.Content, Encoding.UTF8, true, 1024, true))
             {
                 var content = sr.ReadToEnd();
 
                 if (!JObject.Parse(content).IsValid(schema, out IList<ValidationError> errors))
                 {
+                    request.Dispose();
                     throw new InvalidItemSchemaException(errors);
                 }
             }
+            request.Content.Position = 0;
         }
     }
 }
