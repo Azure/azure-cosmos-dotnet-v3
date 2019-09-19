@@ -351,6 +351,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Limits the operations to the provided endpoint on the CosmosClient.
+        /// </summary>
+        /// <value>
+        /// Default value is false.
+        /// </value>
+        /// <remarks>
+        /// When the value of this property is false, the SDK will automatically discover write and read regions, and use them when the configured application region is not available.
+        /// When set to true, availability is limited to the endpoint specified on the CosmosClient constructor.
+        /// Defining the <see cref="ApplicationRegion"/> is not allowed when setting the value to true.
+        /// </remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        public bool LimitToEndpoint { get; set; } = false;
+
+        /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
         /// </summary>
 #if PREVIEW
@@ -499,6 +513,7 @@ namespace Microsoft.Azure.Cosmos
         internal ConnectionPolicy GetConnectionPolicy()
         {
             this.ValidateDirectTCPSettings();
+            this.ValidateLimitToEndpointSettings();
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -510,7 +525,8 @@ namespace Microsoft.Azure.Cosmos
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
-                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                EnableEndpointDiscovery = !this.LimitToEndpoint
             };
 
             if (this.ApplicationRegion != null)
@@ -609,6 +625,14 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentException("The connection string is missing a required property: " + keyName);
         }
 
+        private void ValidateLimitToEndpointSettings()
+        {
+            if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.LimitToEndpoint)
+            {
+                throw new ArgumentException($"Cannot specify {nameof(this.ApplicationRegion)} and enable {nameof(this.LimitToEndpoint)}. Only one can be set.");
+            }
+        }
+
         private void ValidateDirectTCPSettings()
         {
             string settingName = string.Empty;
@@ -665,6 +689,12 @@ namespace Microsoft.Azure.Cosmos
                 if (value is CosmosJsonSerializerWrapper)
                 {
                     writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                }
+
+                CosmosSerializer cosmosSerializer = value as CosmosSerializer;
+                if (cosmosSerializer is CosmosSerializer)
+                {
+                    writer.WriteValue(cosmosSerializer.GetType().ToString());
                 }
             }
 
