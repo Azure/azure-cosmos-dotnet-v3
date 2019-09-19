@@ -49,10 +49,29 @@ namespace Microsoft.Azure.Cosmos.Json
                 bool skipValidation = false)
                 : base(skipValidation)
             {
-                this.jsonBinaryBuffer = new JsonBinaryMemoryReader(buffer);
+                if (buffer.Length < 2)
+                {
+                    throw new ArgumentException($"{nameof(buffer)} must have at least two byte.");
+                }
 
-                // First byte is the serialization format so we are skipping over it
-                this.jsonBinaryBuffer.Read();
+                if (buffer.Span[0] != (byte)JsonSerializationFormat.Binary)
+                {
+                    throw new ArgumentNullException("buffer must be binary encoded.");
+                }
+
+                // offset for the 0x80 (128) binary serialization type marker.
+                buffer = buffer.Slice(1);
+
+                // Only navigate the outer most json value and trim off trailing bytes
+                int jsonValueLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
+                if (buffer.Length < jsonValueLength)
+                {
+                    throw new ArgumentException("buffer is shorter than the length prefix.");
+                }
+
+                buffer = buffer.Slice(0, jsonValueLength);
+
+                this.jsonBinaryBuffer = new JsonBinaryMemoryReader(buffer);
                 this.arrayAndObjectEndStack = new Stack<int>();
                 this.jsonStringDictionary = jsonStringDictionary;
             }
@@ -120,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         return false;
                     }
 
-                    if (this.JsonObjectState.CurrentDepth == 0 && this.CurrentTokenType != JsonTokenType.NotStarted)
+                    if ((this.JsonObjectState.CurrentDepth == 0) && (this.CurrentTokenType != JsonTokenType.NotStarted))
                     {
                         // There are trailing characters outside of the outter most object or array
                         throw new JsonUnexpectedTokenException();
