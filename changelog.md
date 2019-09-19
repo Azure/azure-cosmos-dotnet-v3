@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#822](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/822) GROUP BY query support.
+
 ### Fixed
 
-## [3.2.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.2.0) - 2019-09-17
+## <a name="3.2.0"/> [3.2.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.2.0) - 2019-09-17
 
 ### Added
 
@@ -31,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#772](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/772) Fixed Throughput throwing when custom serializer used or offer doesn't exists
 - [#785](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/785) Incorrect key to throw CosmosExceptions with HttpStatusCode.Unauthorized status code
 
-## [3.1.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.1) - 2019-08-12
+## <a name="3.1.1"/> [3.1.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.1.1) - 2019-08-12
 
 ### Added
 
@@ -46,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#629](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/629) Fixed CreateContainerIfNotExistsAsync validation to limited to partitionKeyPath only
 - [#630](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/630) Fixed User Agent to contain environment and package information
 
-## 3.1.0 - 2019-07-29 - Unlisted
+## <a name="3.1.0"/> 3.1.0 - 2019-07-29 - Unlisted
 
 ### Added
 
@@ -68,7 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#574](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/574) Fixed empty error message if query parsing fails from unexpected exception
 - [#576](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/576) Query correctly serializes the input into a stream
 
-## [3.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0) - 2019-07-15
+## <a name="3.0.0"/> [3.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.0.0) - 2019-07-15
 
 - General availability of [Version 3.0.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/) of the .NET SDK
 - Targets .NET Standard 2.0, which supports .NET framework 4.6.1+ and .NET Core 2.0+
@@ -81,3 +83,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to scale non-partitioned containers 
 - Extensible and customizable serializer
 - Extensible request pipeline with support for custom handlers
+
+## Release & Retirement dates
+Microsoft provides notification at least **12 months** in advance of retiring an SDK in order to smooth the transition to a newer/supported version.
+
+New features and functionality and optimizations are only added to the current SDK, as such it is recommended that you always upgrade to the latest SDK version as early as possible. 
+
+Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
+
+<br/>
+
+| Version | Release Date | Retirement Date |
+| --- | --- | --- |
+| [3.2.0](#3.2.0) |September 18, 2019 |--- |
+| [3.1.1](#3.1.1) |August 12, 2019 |--- |
+| [3.1.0](#3.1.0) |July 29, 2019 |--- |
+| [3.0.0](#3.0.0) |July 15, 2019 |--- |
