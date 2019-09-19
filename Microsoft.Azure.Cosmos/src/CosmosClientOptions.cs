@@ -276,6 +276,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// (Gateway/Https) Get or set the proxy information used for web requests.
         /// </summary>
+        [JsonIgnore]
         public IWebProxy WebProxy
         {
             get => this.webProxy;
