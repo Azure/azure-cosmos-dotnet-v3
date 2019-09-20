@@ -248,15 +248,22 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions);
         }
 
-        internal override async Task<(PartitionedQueryExecutionInfo, (bool, FeedIterator))> TryExecuteQueryAsync(
+        internal override async Task<(PartitionedQueryExecutionInfo, (bool, QueryIterator))> TryExecuteQueryAsync(
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Contract.Requires<ArgumentNullException>(queryDefinition != null, nameof(queryDefinition));
-            Contract.Requires<ArgumentNullException>(requestOptions != null, nameof(requestOptions));
+            if (queryDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(queryDefinition));
+            }
+
+            if (requestOptions == null)
+            {
+                throw new ArgumentNullException(nameof(requestOptions));
+            }
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -297,14 +304,14 @@ namespace Microsoft.Azure.Cosmos
             if (supported)
             {
                 queryIterator = QueryIterator.Create(
-                client: this.queryClient,
-                sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
-                continuationToken: continuationToken,
-                queryRequestOptions: requestOptions,
-                resourceLink: this.LinkUri,
-                isContinuationExpected: false,
-                allowNonValueAggregateQuery: true,
-                partitionedQueryExecutionInfo: partitionedQueryExecutionInfo);
+                    client: this.queryClient,
+                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
+                    continuationToken: continuationToken,
+                    queryRequestOptions: requestOptions,
+                    resourceLink: this.LinkUri,
+                    isContinuationExpected: false,
+                    allowNonValueAggregateQuery: true,
+                    partitionedQueryExecutionInfo: partitionedQueryExecutionInfo);
             }
             else
             {

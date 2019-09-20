@@ -66,8 +66,15 @@ namespace Microsoft.Azure.Cosmos
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Contract.Requires<ArgumentNullException>(sqlQuerySpec != null, nameof(sqlQuerySpec));
-            Contract.Requires<ArgumentNullException>(partitionKeyDefinition != null, nameof(sqlQuerySpec));
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (partitionKeyDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyDefinition));
+            }
 
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await this.GetQueryInfoAsync(
                 sqlQuerySpec,
@@ -221,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
                 QueryInfo queryInfo,
                 QueryFeatures supportedQueryFeatures)
             {
-                QueryFeatures neededQueryFeatures = QueryFeatures.GroupBy;
+                QueryFeatures neededQueryFeatures = QueryFeatures.None;
                 if (queryInfo.HasGroupBy)
                 {
                     if (!supportedQueryFeatures.HasFlag(QueryFeatures.GroupBy))

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
-    using System.Diagnostics.Contracts;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -19,8 +18,10 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryExecutionContextFactory cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions)
         {
-            Contract.Requires<ArgumentNullException>(cosmosQueryExecutionContext != null, nameof(cosmosQueryExecutionContext));
-            Contract.Requires<ArgumentNullException>(cosmosSerializationFormatOptions != null, nameof(cosmosSerializationFormatOptions));
+            if (cosmosQueryExecutionContext == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
+            }
 
             this.cosmosQueryExecutionContext = cosmosQueryExecutionContext;
             this.cosmosSerializationFormatOptions = cosmosSerializationFormatOptions;
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             ActivityId = responseCore.ActivityId
                         });
                 }
-                
+
                 if (responseCore.QueryMetrics != null && responseCore.QueryMetrics.Count > 0)
                 {
                     queryResponse.Diagnostics = new QueryOperationStatistics(responseCore.QueryMetrics);

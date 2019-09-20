@@ -800,7 +800,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
-        internal abstract Task<(PartitionedQueryExecutionInfo, (bool, FeedIterator))> TryExecuteQueryAsync(
+        internal abstract Task<(PartitionedQueryExecutionInfo, (bool, QueryIterator))> TryExecuteQueryAsync(
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,
