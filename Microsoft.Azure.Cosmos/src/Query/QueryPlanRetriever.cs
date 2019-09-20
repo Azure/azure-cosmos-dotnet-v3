@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
+    using System.Diagnostics.Contracts;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -29,14 +30,19 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec sqlQuerySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
+            Contract.Requires<ArgumentNullException>(queryClient != null, nameof(queryClient));
+            Contract.Requires<ArgumentNullException>(sqlQuerySpec != null, nameof(sqlQuerySpec));
+            Contract.Requires<ArgumentNullException>(partitionKeyDefinition != null, nameof(partitionKeyDefinition));
+
+            cancellationToken.ThrowIfCancellationRequested();
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
 
             return queryPlanHandler.GetQueryPlanAsync(
                     sqlQuerySpec,
                     partitionKeyDefinition,
-                    SupportedQueryFeatures,
+                    QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
                     cancellationToken);
         }
@@ -45,8 +51,12 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosQueryClient client,
             SqlQuerySpec sqlQuerySpec,
             Uri resourceLink,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default(CancellationToken))
         {
+            Contract.Requires<ArgumentNullException>(client != null, nameof(client));
+            Contract.Requires<ArgumentNullException>(sqlQuerySpec != null, nameof(sqlQuerySpec));
+            Contract.Requires<ArgumentNullException>(resourceLink != null, nameof(resourceLink));
+
             cancellationToken.ThrowIfCancellationRequested();
 
             return client.ExecuteQueryPlanRequestAsync(
