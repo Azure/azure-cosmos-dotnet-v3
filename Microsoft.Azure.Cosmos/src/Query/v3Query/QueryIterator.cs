@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 correlatedActivityId: Guid.NewGuid());
-            
+
             CosmosQueryExecutionContextFactory.InputParameters inputParams = new CosmosQueryExecutionContextFactory.InputParameters()
             {
                 SqlQuerySpec = sqlQuerySpec,
@@ -47,7 +47,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 MaxConcurrency = queryRequestOptions.MaxConcurrency,
                 MaxItemCount = queryRequestOptions.MaxItemCount,
                 PartitionKey = queryRequestOptions.PartitionKey,
-                Properties = queryRequestOptions.Properties
+                Properties = queryRequestOptions.Properties,
+                ResponseContinuationTokenLimitInKb = queryRequestOptions.ResponseContinuationTokenLimitInKb,
             };
 
             this.cosmosSerializationFormatOptions = queryRequestOptions.CosmosSerializationFormatOptions;
