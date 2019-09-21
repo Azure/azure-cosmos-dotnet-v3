@@ -145,24 +145,27 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
                 else
                 {
-                    QueryPlanContinuationToken queryPlanContinuationToken = new QueryPlanContinuationToken(
-                        this.partitionedQueryExecutionInfo,
-                        response.ContinuationToken);
+                    if (response.ContinuationToken != null)
+                    {
+                        QueryPlanContinuationToken queryPlanContinuationToken = new QueryPlanContinuationToken(
+                            this.partitionedQueryExecutionInfo,
+                            response.ContinuationToken);
 
-                    const int globalContinuationTokenLimitInKb = 16;
-                    string queryPlanContinuationTokenString = QueryPlanContinuationToken.Serialize(
-                        queryPlanContinuationToken,
-                        this.inputParameters.ResponseContinuationTokenLimitInKb.GetValueOrDefault(globalContinuationTokenLimitInKb) * 1024);
-                    response = QueryResponseCore.CreateSuccess(
-                        result: response.CosmosElements,
-                        continuationToken: queryPlanContinuationTokenString,
-                        disallowContinuationTokenMessage: response.DisallowContinuationTokenMessage,
-                        activityId: response.ActivityId,
-                        requestCharge: response.RequestCharge,
-                        queryMetricsText: response.QueryMetricsText,
-                        queryMetrics: response.QueryMetrics,
-                        requestStatistics: response.RequestStatistics,
-                        responseLengthBytes: response.ResponseLengthBytes);
+                        const int globalContinuationTokenLimitInKb = 16;
+                        string queryPlanContinuationTokenString = QueryPlanContinuationToken.Serialize(
+                            queryPlanContinuationToken,
+                            this.inputParameters.ResponseContinuationTokenLimitInKb.GetValueOrDefault(globalContinuationTokenLimitInKb) * 1024);
+                        response = QueryResponseCore.CreateSuccess(
+                            result: response.CosmosElements,
+                            continuationToken: queryPlanContinuationTokenString,
+                            disallowContinuationTokenMessage: response.DisallowContinuationTokenMessage,
+                            activityId: response.ActivityId,
+                            requestCharge: response.RequestCharge,
+                            queryMetricsText: response.QueryMetricsText,
+                            queryMetrics: response.QueryMetrics,
+                            requestStatistics: response.RequestStatistics,
+                            responseLengthBytes: response.ResponseLengthBytes);
+                    }
                 }
 
                 return response;
@@ -190,6 +193,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await this.GetQueryPlanAsync(
                 containerQueryProperties,
                 cancellationToken);
+            this.partitionedQueryExecutionInfo = partitionedQueryExecutionInfo;
             List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
                    this.CosmosQueryContext.QueryClient,
                    this.CosmosQueryContext.ResourceLink.OriginalString,
