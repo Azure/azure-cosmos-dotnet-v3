@@ -16,13 +16,11 @@ stages:
         BuildConfiguration: $(BuildConfiguration)
         VmImage: $(VmImage)
 
-    
     - template:  templates/build-test.yml
       parameters:
         BuildConfiguration: $(BuildConfiguration)
         Arguments: $(ReleaseArguments)
         VmImage: $(VmImage)
-          
 
 - stage:
   displayName: Publish 
@@ -102,7 +100,7 @@ stages:
                 }
             ]
         SessionTimeout: 20
-          
+
       - task: DotNetCoreCLI@2
         displayName: Pack Microsoft.Azure.Cosmos
         inputs: 
