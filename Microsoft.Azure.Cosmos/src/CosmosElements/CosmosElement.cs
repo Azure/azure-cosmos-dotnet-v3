@@ -123,6 +123,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             return item;
         }
+
+        public static CosmosElement Parse(string serializedCosmosElement)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
+            return CosmosElement.Create(buffer);
+        }
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented

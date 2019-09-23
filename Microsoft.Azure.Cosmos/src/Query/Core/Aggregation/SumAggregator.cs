@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// </summary>
         private double globalSum;
 
+        private SumAggregator(double globalSum)
+        {
+            this.globalSum = globalSum;
+        }
+
         /// <summary>
         /// Adds a local sum to the global sum.
         /// </summary>
@@ -59,6 +64,26 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             }
 
             return CosmosNumber64.Create(this.globalSum);
+        }
+
+        public string GetContinuationToken()
+        {
+            return this.globalSum.ToString("G17");
+        }
+
+        public static SumAggregator Create(string continuationToken)
+        {
+            double partialSum;
+            if (continuationToken != null)
+            {
+                partialSum = double.Parse(continuationToken);
+            }
+            else
+            {
+                partialSum = 0.0;
+            }
+
+            return new SumAggregator(partialSum);
         }
     }
 }

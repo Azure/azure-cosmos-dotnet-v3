@@ -18,7 +18,12 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// <summary>
         /// The running weighted average for this aggregator.
         /// </summary>
-        private AverageInfo globalAverage = new AverageInfo(0, 0);
+        private AverageInfo globalAverage;
+
+        private AverageAggregator(AverageInfo globalAverage)
+        {
+            this.globalAverage = globalAverage;
+        }
 
         /// <summary>
         /// Averages the supplied item with the previously supplied items.
@@ -38,6 +43,26 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         public CosmosElement GetResult()
         {
             return this.globalAverage.GetAverage();
+        }
+
+        public string GetContinuationToken()
+        {
+            return this.globalAverage.ToString();
+        }
+
+        public static AverageAggregator Create(string continuationToken)
+        {
+            AverageInfo averageInfo;
+            if (continuationToken != null)
+            {
+                averageInfo = AverageInfo.Parse(continuationToken);
+            }
+            else
+            {
+                averageInfo = new AverageInfo(0, 0);
+            }
+
+            return new AverageAggregator(averageInfo);
         }
 
         /// <summary>
@@ -165,6 +190,20 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 }
 
                 return CosmosNumber64.Create(this.Sum.Value / this.Count);
+            }
+
+            public override string ToString()
+            {
+                return $@"{{
+                    {(this.Sum.HasValue ? $@"""{SumName}"" : {this.Sum.Value}," : string.Empty)}
+                    ""{CountName}"" : {this.Count}
+                }}";
+            }
+
+            public static AverageInfo Parse(string serializedAverageInfo)
+            {
+                CosmosElement cosmosElementAverageInfo = CosmosElement.Parse(serializedAverageInfo);
+                return AverageInfo.Create(cosmosElementAverageInfo);
             }
         }
     }

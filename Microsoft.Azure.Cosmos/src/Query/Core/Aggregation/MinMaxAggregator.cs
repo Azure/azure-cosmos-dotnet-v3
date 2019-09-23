@@ -24,17 +24,10 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
         /// </summary>
         private CosmosElement globalMinMax;
 
-        public MinMaxAggregator(bool isMinAggregation)
+        private MinMaxAggregator(bool isMinAggregation, CosmosElement globalMinMax)
         {
             this.isMinAggregation = isMinAggregation;
-            if (this.isMinAggregation)
-            {
-                globalMinMax = ItemComparer.MaxValue;
-            }
-            else
-            {
-                globalMinMax = ItemComparer.MinValue;
-            }
+            this.globalMinMax = globalMinMax;
         }
 
         public void Aggregate(CosmosElement localMinMax)
@@ -134,6 +127,41 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             }
 
             return result;
+        }
+
+        public string GetContinuationToken()
+        {
+            return this.globalMinMax.ToString();
+        }
+
+        public static MinMaxAggregator CreateMinAggregator(string continuationToken)
+        {
+            CosmosElement globalMinMax;
+            if (continuationToken != null)
+            {
+                globalMinMax = CosmosElement.Parse(continuationToken);
+            }
+            else
+            {
+                globalMinMax = ItemComparer.MaxValue;
+            }
+
+            return new MinMaxAggregator(isMinAggregation: true, globalMinMax: globalMinMax);
+        }
+
+        public static MinMaxAggregator CreateMaxAggregator(string continuationToken)
+        {
+            CosmosElement globalMinMax;
+            if (continuationToken != null)
+            {
+                globalMinMax = CosmosElement.Parse(continuationToken);
+            }
+            else
+            {
+                globalMinMax = ItemComparer.MinValue;
+            }
+
+            return new MinMaxAggregator(isMinAggregation: false, globalMinMax: globalMinMax);
         }
 
         private static bool CosmosElementIsPrimitive(CosmosElement cosmosElement)
