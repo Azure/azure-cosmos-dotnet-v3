@@ -346,11 +346,4 @@
             Console.ForegroundColor = color;
         }
     }
-
-    public class ToDoActivity
-    {
-        public string id = null;
-        public string activityId = null;
-        public string status = null;
-    }
 }
