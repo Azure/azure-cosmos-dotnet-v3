@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         public abstract CosmosElement GetResult();
 
+        public abstract string GetContinuationToken();
+
         public static SingleGroupAggregator Create(
             CosmosQueryClient queryClient,
             AggregateOperator[] aggregates,
@@ -89,6 +91,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 return this.aggregateValue.Result;
             }
 
+            public override string GetContinuationToken()
+            {
+                return this.aggregateValue.GetContinuationToken();
+            }
+
             public override string ToString()
             {
                 return this.aggregateValue.ToString();
@@ -123,6 +130,18 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 return CosmosObject.Create(aliasToElement);
+            }
+
+            public override string GetContinuationToken()
+            {
+                Dictionary<string, CosmosElement> aliasToContinuationToken = new Dictionary<string, CosmosElement>();
+                foreach (KeyValuePair<string, AggregateValue> kvp in this.aliasToValue)
+                {
+                    aliasToContinuationToken[kvp.Key] = CosmosString.Create(kvp.Value.GetContinuationToken());
+                }
+
+                CosmosObject cosmosObject = CosmosObject.Create(aliasToContinuationToken);
+                return cosmosObject.ToString();
             }
 
             public static SelectListAggregateValues Create(
@@ -198,6 +217,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
             public abstract CosmosElement Result { get; }
 
+            public abstract string GetContinuationToken();
+
             public override string ToString()
             {
                 return this.Result.ToString();
@@ -212,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
                 else
                 {
-                    value = ScalarAggregateValue.Create();
+                    value = ScalarAggregateValue.Create(continuationToken);
                 }
 
                 return value;
@@ -238,6 +259,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     AggregateItem aggregateItem = new AggregateItem(aggregateValue);
                     this.aggregator.Aggregate(aggregateItem.Item);
+                }
+
+                public override string GetContinuationToken()
+                {
+                    return this.aggregator.GetContinuationToken();
                 }
 
                 public static AggregateAggregateValue Create(AggregateOperator aggregateOperator, string continuationToken)
@@ -278,10 +304,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 private CosmosElement value;
                 private bool initialized;
 
-                private ScalarAggregateValue()
+                private ScalarAggregateValue(CosmosElement initialValue, bool initialized)
                 {
-                    this.value = null;
-                    this.initialized = false;
+                    this.value = initialValue;
+                    this.initialized = initialized;
                 }
 
                 public override CosmosElement Result
@@ -297,9 +323,30 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
                 }
 
-                public static ScalarAggregateValue Create()
+                public override string GetContinuationToken()
                 {
-                    return new ScalarAggregateValue();
+                    return this.value.ToString();
+                }
+
+                public static ScalarAggregateValue Create(string continuationToken)
+                {
+                    CosmosElement initialValue;
+                    bool initialized;
+                    if (continuationToken != null)
+                    {
+                        if (!CosmosElement.TryParse(continuationToken, out initialValue))
+                        {
+                            throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
+                        }
+                        initialized = true;
+                    }
+                    else
+                    {
+                        initialValue = null;
+                        initialized = false;
+                    }
+
+                    return new ScalarAggregateValue(initialValue, initialized);
                 }
 
                 public override void AddValue(CosmosElement aggregateValue)

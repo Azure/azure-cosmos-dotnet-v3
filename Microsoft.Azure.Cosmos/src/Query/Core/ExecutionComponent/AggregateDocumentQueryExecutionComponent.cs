@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     /// </summary>
     internal sealed class AggregateDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
+        private static readonly List<CosmosElement> EmptyResults = new List<CosmosElement>();
+
         /// <summary>
         /// This class does most of the work, since a query like:
         /// 
@@ -38,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// We need to keep track of whether the projection has the 'VALUE' keyword.
         /// </summary>
         private readonly bool isValueAggregateQuery;
+
+        private bool isDone;
 
         /// <summary>
         /// Initializes a new instance of the AggregateDocumentQueryExecutionComponent class.
@@ -60,6 +64,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.singleGroupAggregator = singleGroupAggregator;
             this.isValueAggregateQuery = isValueAggregateQuery;
         }
+
+        public override bool IsDone => this.isDone;
 
         /// <summary>
         /// Creates a AggregateDocumentQueryExecutionComponent.
@@ -85,13 +91,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             return new AggregateDocumentQueryExecutionComponent(
-                await createSourceCallback(aggregateContinuationToken.SourceContinuationToken.Value),
+                await createSourceCallback(aggregateContinuationToken.SourceContinuationToken),
                 SingleGroupAggregator.Create(
                     queryClient,
                     aggregates,
                     aliasToAggregateType,
                     hasSelectValue,
-                    aggregateContinuationToken.SingleGroupAggregatorContinuationToken.Value),
+                    aggregateContinuationToken.SingleGroupAggregatorContinuationToken),
                 (aggregates != null) && (aggregates.Count() == 1));
         }
 
@@ -99,70 +105,79 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Drains at most 'maxElements' documents from the AggregateDocumentQueryExecutionComponent.
         /// </summary>
         /// <param name="maxElements">This value is ignored, since the aggregates are aggregated for you.</param>
-        /// <param name="token">The cancellation token.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The aggregate result after all the continuations have been followed.</returns>
         /// <remarks>
         /// Note that this functions follows all continuations meaning that it won't return until all continuations are drained.
         /// This means that if you have a long running query this function will take a very long time to return.
         /// </remarks>
-        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
+        public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
-            // Note-2016-10-25-felixfan: Given what we support now, we should expect to return only 1 document.
-            // Note-2019-07-11-brchon: We can return empty pages until all the documents are drained,
-            // but then we will have to design a continuation token.
+            cancellationToken.ThrowIfCancellationRequested();
 
-            double requestCharge = 0;
-            long responseLengthBytes = 0;
-            List<Uri> replicaUris = new List<Uri>();
-            ClientSideRequestStatistics requestStatistics = new ClientSideRequestStatistics();
-            PartitionedQueryMetrics partitionedQueryMetrics = new PartitionedQueryMetrics();
-
-            while (!this.IsDone)
+            // Draining aggregates is broken down into two stages
+            QueryResponseCore response;
+            if (!this.Source.IsDone)
             {
-                QueryResponseCore result = await base.DrainAsync(int.MaxValue, token);
-                if (!result.IsSuccess)
+                // Stage 1:
+                // Drain the aggregates fully from all continuations and all partitions
+                QueryResponseCore sourceResponse = await base.DrainAsync(int.MaxValue, cancellationToken);
+                if (!sourceResponse.IsSuccess)
                 {
-                    return result;
+                    return sourceResponse;
                 }
 
-                requestCharge += result.RequestCharge;
-                responseLengthBytes += result.ResponseLengthBytes;
-                // DEVNOTE: Add when query metrics is supported
-                // partitionedQueryMetrics += new PartitionedQueryMetrics(results.QueryMetrics);
-                if (result.RequestStatistics != null)
-                {
-                    replicaUris.AddRange(result.RequestStatistics.ContactedReplicas);
-                }
-
-                foreach (CosmosElement element in result.CosmosElements)
+                foreach (CosmosElement element in sourceResponse.CosmosElements)
                 {
                     RewrittenAggregateProjections rewrittenAggregateProjections = new RewrittenAggregateProjections(
                         this.isValueAggregateQuery,
                         element);
                     this.singleGroupAggregator.AddValues(rewrittenAggregateProjections.Payload);
                 }
-            }
 
-            List<CosmosElement> finalResult = new List<CosmosElement>();
-            CosmosElement aggregationResult = this.singleGroupAggregator.GetResult();
-            if (aggregationResult != null)
+                AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
+                    this.singleGroupAggregator.GetContinuationToken(),
+                    sourceResponse.ContinuationToken);
+
+                // We need to give empty pages until the results are fully drained.
+                response = QueryResponseCore.CreateSuccess(
+                    result: EmptyResults,
+                    continuationToken: aggregateContinuationToken.ToString(),
+                    disallowContinuationTokenMessage: null,
+                    activityId: sourceResponse.ActivityId,
+                    requestCharge: sourceResponse.RequestCharge,
+                    queryMetricsText: sourceResponse.QueryMetricsText,
+                    queryMetrics: sourceResponse.QueryMetrics,
+                    requestStatistics: sourceResponse.RequestStatistics,
+                    responseLengthBytes: sourceResponse.ResponseLengthBytes);
+
+                this.isDone = false;
+            }
+            else
             {
-                finalResult.Add(aggregationResult);
+                // Stage 2:
+                // Emit the final aggregate
+
+                List<CosmosElement> finalResult = new List<CosmosElement>();
+                CosmosElement aggregationResult = this.singleGroupAggregator.GetResult();
+                if (aggregationResult != null)
+                {
+                    finalResult.Add(aggregationResult);
+                }
+
+                response = QueryResponseCore.CreateSuccess(
+                    result: finalResult,
+                    continuationToken: null,
+                    activityId: null,
+                    disallowContinuationTokenMessage: null,
+                    requestCharge: 0,
+                    queryMetricsText: null,
+                    queryMetrics: this.GetQueryMetrics(),
+                    requestStatistics: null,
+                    responseLengthBytes: 0);
             }
 
-            // The replicaUris may have duplicates.
-            requestStatistics.ContactedReplicas.AddRange(replicaUris);
-
-            return QueryResponseCore.CreateSuccess(
-                result: finalResult,
-                continuationToken: null,
-                activityId: null,
-                disallowContinuationTokenMessage: null,
-                requestCharge: requestCharge,
-                queryMetricsText: null,
-                queryMetrics: this.GetQueryMetrics(),
-                requestStatistics: requestStatistics,
-                responseLengthBytes: responseLengthBytes);
+            return response;
         }
 
         /// <summary>
@@ -223,8 +238,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             private const string SourceContinuationTokenName = "SourceContinuationToken";
 
             public AggregateContinuationToken(
-                CosmosString singleGroupAggregatorContinuationToken,
-                CosmosString sourceContinuationToken)
+                string singleGroupAggregatorContinuationToken,
+                string sourceContinuationToken)
             {
                 if (singleGroupAggregatorContinuationToken == null)
                 {
@@ -273,7 +288,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     return false;
                 }
 
-                aggregateContinuationToken = new AggregateContinuationToken(singleGroupAggregatorContinuationToken, sourceContinuationToken);
+                aggregateContinuationToken = new AggregateContinuationToken(
+                    singleGroupAggregatorContinuationToken.Value,
+                    sourceContinuationToken.Value);
                 return true;
             }
 
@@ -281,14 +298,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 return $@"
                     {{
-                        ""{AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName}"": ""{this.SingleGroupAggregatorContinuationToken.Value}"",
-                        ""{AggregateContinuationToken.SourceContinuationTokenName}"": ""{this.SourceContinuationToken.Value}""
+                        ""{AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName}"": ""{this.SingleGroupAggregatorContinuationToken}"",
+                        ""{AggregateContinuationToken.SourceContinuationTokenName}"": ""{this.SourceContinuationToken}""
                     }}";
             }
 
-            public CosmosString SingleGroupAggregatorContinuationToken { get; }
+            public string SingleGroupAggregatorContinuationToken { get; }
 
-            public CosmosString SourceContinuationToken { get; }
+            public string SourceContinuationToken { get; }
         }
     }
 }
