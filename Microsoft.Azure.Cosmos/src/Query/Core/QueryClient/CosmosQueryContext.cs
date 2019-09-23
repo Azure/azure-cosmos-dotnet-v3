@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
+    using OperationType = Documents.OperationType;
+    using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
+    using ResourceType = Documents.ResourceType;
 
     internal abstract class CosmosQueryContext
     {

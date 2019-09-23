@@ -306,6 +306,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     QueryInfo queryInfo;
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
+                        (errorMessage) => new BadRequestException(errorMessage),
                         this.QuerySpec,
                         enableCrossPartitionQuery,
                         false,

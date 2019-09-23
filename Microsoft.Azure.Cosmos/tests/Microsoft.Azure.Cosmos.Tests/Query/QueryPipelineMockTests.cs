@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             List<MockPartitionResponse[]> mockResponsesScenario = MockQueryFactory.GetSplitScenarios();
 
+            Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
             foreach (MockPartitionResponse[] mockResponse in mockResponsesScenario)
             {
                 string initialContinuationToken = null;
@@ -141,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     };
 
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                        queryClient: mockQueryClient.Object,
                         compositeContinuationToken: compositeContinuation,
                         orderByItems: orderByItems,
                         rid: itemToRepresentPreviousQuery._rid,
@@ -150,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     fullConitnuationToken = JsonConvert.SerializeObject(new OrderByContinuationToken[] { orderByContinuationToken });
                 }
 
-                Mock<CosmosQueryClient> mockQueryClient = new Mock<CosmosQueryClient>();
+               
                 IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
                     mockQueryClient,
                     isOrderByQuery: true,

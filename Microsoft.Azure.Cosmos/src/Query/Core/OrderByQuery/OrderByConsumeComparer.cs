@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.ParallelQuery
     using System.Diagnostics;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
+    using RMResources = Documents.RMResources;
 
     /// <summary>
     /// For cross partition order by queries we serve documents from the partition
