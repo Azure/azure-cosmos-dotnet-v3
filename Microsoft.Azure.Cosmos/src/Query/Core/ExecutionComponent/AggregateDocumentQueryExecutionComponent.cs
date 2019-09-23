@@ -64,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <summary>
         /// Creates a AggregateDocumentQueryExecutionComponent.
         /// </summary>
+        /// <param name="queryClient">The query client.</param>
         /// <param name="aggregates">The aggregates.</param>
         /// <param name="aliasToAggregateType">The alias to aggregate type.</param>
         /// <param name="hasSelectValue">Whether or not the query has the 'VALUE' keyword.</param>
@@ -71,16 +72,27 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <param name="createSourceCallback">The callback to create the source component that supplies the local aggregates.</param>
         /// <returns>The AggregateDocumentQueryExecutionComponent.</returns>
         public static async Task<AggregateDocumentQueryExecutionComponent> CreateAsync(
+            CosmosQueryClient queryClient,
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             bool hasSelectValue,
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
         {
+            if (!AggregateContinuationToken.TryParse(requestContinuation, out AggregateContinuationToken aggregateContinuationToken))
+            {
+                throw queryClient.CreateBadRequestException($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'");
+            }
+
             return new AggregateDocumentQueryExecutionComponent(
-                await createSourceCallback(requestContinuation),
-                SingleGroupAggregator.Create(aggregates, aliasToAggregateType, hasSelectValue),
-                aggregates != null && aggregates.Count() == 1);
+                await createSourceCallback(aggregateContinuationToken.SourceContinuationToken.Value),
+                SingleGroupAggregator.Create(
+                    queryClient,
+                    aggregates,
+                    aliasToAggregateType,
+                    hasSelectValue,
+                    aggregateContinuationToken.SingleGroupAggregatorContinuationToken.Value),
+                (aggregates != null) && (aggregates.Count() == 1));
         }
 
         /// <summary>
@@ -203,6 +215,80 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 get;
             }
+        }
+
+        private struct AggregateContinuationToken
+        {
+            private const string SingleGroupAggregatorContinuationTokenName = "SingleGroupAggregatorContinuationToken";
+            private const string SourceContinuationTokenName = "SourceContinuationToken";
+
+            public AggregateContinuationToken(
+                CosmosString singleGroupAggregatorContinuationToken,
+                CosmosString sourceContinuationToken)
+            {
+                if (singleGroupAggregatorContinuationToken == null)
+                {
+                    throw new ArgumentNullException(nameof(singleGroupAggregatorContinuationToken));
+                }
+
+                if (sourceContinuationToken == null)
+                {
+                    throw new ArgumentNullException(nameof(sourceContinuationToken));
+                }
+
+                this.SingleGroupAggregatorContinuationToken = singleGroupAggregatorContinuationToken;
+                this.SourceContinuationToken = sourceContinuationToken;
+            }
+
+            public static bool TryParse(string serializedContinuationToken, out AggregateContinuationToken aggregateContinuationToken)
+            {
+                if (serializedContinuationToken == null)
+                {
+                    throw new ArgumentNullException(nameof(serializedContinuationToken));
+                }
+
+                if (!CosmosElement.TryParse(serializedContinuationToken, out CosmosElement rawCosmosElement))
+                {
+                    aggregateContinuationToken = default(AggregateContinuationToken);
+                    return false;
+                }
+
+                if (!(rawCosmosElement is CosmosObject rawAggregateContinuationToken))
+                {
+                    aggregateContinuationToken = default(AggregateContinuationToken);
+                    return false;
+                }
+
+                CosmosElement rawSingleGroupAggregatorContinuationToken = rawAggregateContinuationToken[AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName];
+                if (!(rawSingleGroupAggregatorContinuationToken is CosmosString singleGroupAggregatorContinuationToken))
+                {
+                    aggregateContinuationToken = default(AggregateContinuationToken);
+                    return false;
+                }
+
+                CosmosElement rawSourceContinuationToken = rawAggregateContinuationToken[AggregateContinuationToken.SourceContinuationTokenName];
+                if (!(rawSourceContinuationToken is CosmosString sourceContinuationToken))
+                {
+                    aggregateContinuationToken = default(AggregateContinuationToken);
+                    return false;
+                }
+
+                aggregateContinuationToken = new AggregateContinuationToken(singleGroupAggregatorContinuationToken, sourceContinuationToken);
+                return true;
+            }
+
+            public override string ToString()
+            {
+                return $@"
+                    {{
+                        ""{AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName}"": ""{this.SingleGroupAggregatorContinuationToken.Value}"",
+                        ""{AggregateContinuationToken.SourceContinuationTokenName}"": ""{this.SourceContinuationToken.Value}""
+                    }}";
+            }
+
+            public CosmosString SingleGroupAggregatorContinuationToken { get; }
+
+            public CosmosString SourceContinuationToken { get; }
         }
     }
 }

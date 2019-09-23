@@ -139,7 +139,10 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             CosmosElement globalMinMax;
             if (continuationToken != null)
             {
-                globalMinMax = CosmosElement.Parse(continuationToken);
+                if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
+                {
+                    throw new ArgumentException($"Malformed continuation token: {continuationToken}");
+                }
             }
             else
             {
@@ -154,7 +157,10 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             CosmosElement globalMinMax;
             if (continuationToken != null)
             {
-                globalMinMax = CosmosElement.Parse(continuationToken);
+                if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
+                {
+                    throw new ArgumentException($"Malformed continuation token: {continuationToken}");
+                }
             }
             else
             {

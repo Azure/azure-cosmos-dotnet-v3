@@ -214,6 +214,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await AggregateDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
                         queryInfo.HasSelectValue,
@@ -241,6 +242,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 createComponentFunc = async (continuationToken) =>
                 {
                     return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                        queryClient,
                         continuationToken,
                         createSourceCallback,
                         queryInfo.GroupByAliasToAggregateType,

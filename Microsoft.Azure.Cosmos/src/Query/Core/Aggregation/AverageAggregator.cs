@@ -55,7 +55,10 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             AverageInfo averageInfo;
             if (continuationToken != null)
             {
-                averageInfo = AverageInfo.Parse(continuationToken);
+                if (!AverageInfo.TryParse(continuationToken, out averageInfo))
+                {
+                    throw new ArgumentException($"Invalid continuation token: {continuationToken}");
+                }
             }
             else
             {
@@ -200,10 +203,21 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
                 }}";
             }
 
-            public static AverageInfo Parse(string serializedAverageInfo)
+            public static bool TryParse(string serializedAverageInfo, out AverageInfo averageInfo)
             {
-                CosmosElement cosmosElementAverageInfo = CosmosElement.Parse(serializedAverageInfo);
-                return AverageInfo.Create(cosmosElementAverageInfo);
+                if (serializedAverageInfo == null)
+                {
+                    throw new ArgumentNullException(nameof(serializedAverageInfo));
+                }
+
+                if (!CosmosElement.TryParse(serializedAverageInfo, out CosmosElement cosmosElementAverageInfo))
+                {
+                    averageInfo = default(AverageInfo);
+                    return false;
+                }
+
+                averageInfo = AverageInfo.Create(cosmosElementAverageInfo);
+                return true;
             }
         }
     }

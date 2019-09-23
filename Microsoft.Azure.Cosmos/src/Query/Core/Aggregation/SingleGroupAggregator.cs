@@ -27,9 +27,11 @@ namespace Microsoft.Azure.Cosmos.Query
         public abstract CosmosElement GetResult();
 
         public static SingleGroupAggregator Create(
+            CosmosQueryClient queryClient,
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
-            bool hasSelectValue)
+            bool hasSelectValue,
+            string continuationToken)
         {
             SingleGroupAggregator aggregateValues;
             if (hasSelectValue)
@@ -37,17 +39,17 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (aggregates != null && aggregates.Any())
                 {
                     // SELECT VALUE <AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(aggregates[0]);
+                    aggregateValues = SelectValueAggregateValues.Create(aggregates[0], continuationToken);
                 }
                 else
                 {
                     // SELECT VALUE <NON AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(aggregateOperator: null);
+                    aggregateValues = SelectValueAggregateValues.Create(aggregateOperator: null, continuationToken: null);
                 }
             }
             else
             {
-                aggregateValues = SelectListAggregateValues.Create(aggregateAliasToAggregateType);
+                aggregateValues = SelectListAggregateValues.Create(queryClient, aggregateAliasToAggregateType, continuationToken);
             }
 
             return aggregateValues;
@@ -71,9 +73,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.aggregateValue = aggregateValue;
             }
 
-            public static SelectValueAggregateValues Create(AggregateOperator? aggregateOperator)
+            public static SelectValueAggregateValues Create(AggregateOperator? aggregateOperator, string continuationToken)
             {
-                AggregateValue aggregateValue = AggregateValue.Create(aggregateOperator);
+                AggregateValue aggregateValue = AggregateValue.Create(aggregateOperator, continuationToken);
                 return new SelectValueAggregateValues(aggregateValue);
             }
 
@@ -123,14 +125,42 @@ namespace Microsoft.Azure.Cosmos.Query
                 return CosmosObject.Create(aliasToElement);
             }
 
-            public static SelectListAggregateValues Create(IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType)
+            public static SelectListAggregateValues Create(
+                CosmosQueryClient cosmosQueryClient,
+                IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
+                string continuationToken)
             {
+                if (!CosmosElement.TryParse(continuationToken, out CosmosElement parsedContinuationToken))
+                {
+                    throw cosmosQueryClient.CreateBadRequestException(
+                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}.");
+                }
+
+                if (parsedContinuationToken == null)
+                {
+                    throw cosmosQueryClient.CreateBadRequestException(
+                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}.");
+                }
+
+                if (!(parsedContinuationToken is CosmosObject aliasContinuationTokens))
+                {
+                    throw cosmosQueryClient.CreateBadRequestException(
+                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}. Expected an object instead.");
+                }
+
                 Dictionary<string, AggregateValue> groupingTable = new Dictionary<string, AggregateValue>();
                 foreach (KeyValuePair<string, AggregateOperator?> aliasToAggregate in aggregateAliasToAggregateType)
                 {
                     string alias = aliasToAggregate.Key;
                     AggregateOperator? aggregateOperator = aliasToAggregate.Value;
-                    groupingTable[alias] = AggregateValue.Create(aggregateOperator);
+                    CosmosElement aliasContinuationToken = aliasContinuationTokens[alias];
+                    if (aliasContinuationToken == null)
+                    {
+                        throw cosmosQueryClient.CreateBadRequestException(
+                            $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}. Expected key: {alias}.");
+                    }
+
+                    groupingTable[alias] = AggregateValue.Create(aggregateOperator, aliasContinuationToken.ToString());
                 }
 
                 return new SelectListAggregateValues(groupingTable);
@@ -173,12 +203,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 return this.Result.ToString();
             }
 
-            public static AggregateValue Create(AggregateOperator? aggregateOperator)
+            public static AggregateValue Create(AggregateOperator? aggregateOperator, string continuationToken)
             {
                 AggregateValue value;
                 if (aggregateOperator.HasValue)
                 {
-                    value = AggregateAggregateValue.Create(aggregateOperator.Value);
+                    value = AggregateAggregateValue.Create(aggregateOperator.Value, continuationToken);
                 }
                 else
                 {
@@ -210,29 +240,29 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.aggregator.Aggregate(aggregateItem.Item);
                 }
 
-                public static AggregateAggregateValue Create(AggregateOperator aggregateOperator)
+                public static AggregateAggregateValue Create(AggregateOperator aggregateOperator, string continuationToken)
                 {
                     IAggregator aggregator;
                     switch (aggregateOperator)
                     {
                         case AggregateOperator.Average:
-                            aggregator = new AverageAggregator();
+                            aggregator = AverageAggregator.Create(continuationToken);
                             break;
 
                         case AggregateOperator.Count:
-                            aggregator = new CountAggregator();
+                            aggregator = CountAggregator.Create(continuationToken);
                             break;
 
                         case AggregateOperator.Max:
-                            aggregator = new MinMaxAggregator(isMinAggregation: false);
+                            aggregator = MinMaxAggregator.CreateMaxAggregator(continuationToken);
                             break;
 
                         case AggregateOperator.Min:
-                            aggregator = new MinMaxAggregator(isMinAggregation: true);
+                            aggregator = MinMaxAggregator.CreateMinAggregator(continuationToken);
                             break;
 
                         case AggregateOperator.Sum:
-                            aggregator = new SumAggregator();
+                            aggregator = SumAggregator.Create(continuationToken);
                             break;
 
                         default:

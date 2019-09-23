@@ -124,10 +124,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return item;
         }
 
-        public static CosmosElement Parse(string serializedCosmosElement)
+        public static bool TryParse(string serializedCosmosElement, out CosmosElement cosmosElement)
         {
+            cosmosElement = default(CosmosElement);
+            if (serializedCosmosElement == null)
+            {
+                throw new ArgumentNullException(nameof(serializedCosmosElement));
+            }
+
             byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
-            return CosmosElement.Create(buffer);
+            cosmosElement = CosmosElement.Create(buffer);
+            return true;
         }
     }
 #if INTERNAL
