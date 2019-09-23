@@ -114,29 +114,26 @@
             await Program.ExplicitlyExcludeFromIndex(client);
 
             // 2. Use lazy (instead of consistent) indexing
-            //await Program.UseLazyIndexing();
+            await Program.UseLazyIndexing();
 
             // 3. Exclude specified document paths from the index
-            //await Program.ExcludePathsFromIndex();
-
-            // 4. Use range indexes on strings
-            //await Program.UsingRangeIndexes();
-
-            // 5. Perform an index transform
-            //await Program.PerformIndexTransformations();
-
-            // Uncomment to delete container!
-            // await Program.DeleteContainer();
+            await Program.ExcludePathsFromIndex();
         }
         // </RunIndexDemo>
 
+        /// <summary>
+        /// The default index policy on a Container will AUTOMATICALLY index ALL documents added.
+        /// There may be scenarios where you want to exclude a specific doc from the index even though all other 
+        /// documents are being indexed automatically. 
+        /// This method demonstrates how to use an index directive to control this
+        /// </summary>
         private static async Task ExplicitlyExcludeFromIndex(CosmosClient client)
         {
-            string collectionId = string.Format(CultureInfo.InvariantCulture, "{0}-ExplicitlyExcludeFromIndex", Program.containerId);
+            string containerId = $"{Program.containerId}-ExplicitlyExcludeFromIndex";
 
             // Create a collection with default index policy(i.e.automatic = true)
-            ContainerResponse response = await Program.database.CreateContainerAsync(collectionId, Program.partitionKey);
-            Console.WriteLine("Container {0} created with index policy \n{1}", collectionId, JsonConvert.SerializeObject(response.Resource.IndexingPolicy));
+            ContainerResponse response = await Program.database.CreateContainerAsync(containerId, Program.partitionKey);
+            Console.WriteLine("Container {0} created with index policy \n{1}", containerId, JsonConvert.SerializeObject(response.Resource.IndexingPolicy));
             Container container = (Container)response;
 
             try
@@ -188,9 +185,165 @@
             }
         }
 
+        /// <summary>
+        /// Azure Cosmos DB offers synchronous (consistent) and asynchronous (lazy) index updates. 
+        /// By default, the index is updated synchronously on each insert, replace or delete of a document to the container. 
+        /// There are times when you might want to configure certain containers to update their index asynchronously. 
+        /// Lazy indexing boosts write performance and is ideal for bulk ingestion scenarios for primarily read-heavy collections
+        /// It is important to note that you might get inconsistent reads whilst the writes are in progress,
+        /// However once the write volume tapers off and the index catches up, then reads continue as normal
+        /// 
+        /// This method demonstrates how to switch IndexMode to Lazy.
+        /// </summary>
+        private static async Task UseLazyIndexing()
+        {
+            string containerId = $"{Program.containerId}-UseLazyIndexing";
+
+            Console.WriteLine("\n2. Use lazy (instead of consistent) indexing");
+
+            ContainerResponse response = await Program.database.CreateContainerAsync(new ContainerProperties(containerId, Program.partitionKey)
+            {
+                IndexingPolicy = new IndexingPolicy()
+                {
+                    IndexingMode = IndexingMode.Lazy
+                }
+            });
+
+            Console.WriteLine("Container {0} created with index policy \n{1}", containerId, JsonConvert.SerializeObject(response.Resource.IndexingPolicy));
+            Container container = (Container)response;
+
+            // It is very difficult to demonstrate lazy indexing as you only notice the difference under sustained heavy write load
+            // because we're using a small container in this demo we'd likely get throttled long before we were able to replicate sustained high throughput
+            // which would give the index time to catch-up.
+
+            await container.DeleteContainerAsync();
+        }
+
+        /// <summary>
+        /// The default behavior is for DocumentDB to index every attribute in every document automatically.
+        /// There are times when a document contains large amounts of information, in deeply nested structures
+        /// that you know you will never search on. In extreme cases like this, you can exclude paths from the 
+        /// index to save on storage cost, improve write performance and also improve read performance because the index is smaller
+        ///
+        /// This method demonstrates how to set IndexingPolicy.ExcludedPaths
+        /// </summary>
+        private static async Task ExcludePathsFromIndex()
+        {
+            string containerId = $"{Program.containerId}-ExcludePathsFromIndex";
+            Console.WriteLine("\n3. Exclude specified paths from document index");
+
+            ContainerProperties containerProperties = new ContainerProperties(containerId, Program.partitionKey);
+
+            containerProperties.IndexingPolicy.IncludedPaths.Add(new IncludedPath { Path = "/*" });  // Special manadatory path of "/*" required to denote include entire tree
+            containerProperties.IndexingPolicy.ExcludedPaths.Add(new ExcludedPath { Path = "/metaData/*" });   // exclude metaData node, and anything under it
+            containerProperties.IndexingPolicy.ExcludedPaths.Add(new ExcludedPath { Path = "/subDoc/nonSearchable/*" });  // exclude ONLY a part of subDoc    
+            containerProperties.IndexingPolicy.ExcludedPaths.Add(new ExcludedPath { Path = "/\"excludedNode\"/*" }); // exclude excludedNode node, and anything under it
+
+            // The effect of the above IndexingPolicy is that only id, foo, and the subDoc/searchable are indexed
+
+            ContainerResponse response = await Program.database.CreateContainerAsync(containerProperties);
+            Console.WriteLine("Container {0} created with index policy \n{1}", containerId, JsonConvert.SerializeObject(response.Resource.IndexingPolicy));
+            Container container = (Container)response;
+
+            try
+            {
+                int numDocs = 250;
+                Console.WriteLine("Creating {0} documents", numDocs);
+                for (int docIndex = 0; docIndex < numDocs; docIndex++)
+                {
+                    dynamic dyn = new
+                    {
+                        id = "doc" + docIndex,
+                        partitionKey = "doc" + docIndex,
+                        foo = "bar" + docIndex,
+                        metaData = "meta" + docIndex,
+                        subDoc = new { searchable = "searchable" + docIndex, nonSearchable = "value" + docIndex },
+                        excludedNode = new { subExcluded = "something" + docIndex, subExcludedNode = new { someProperty = "value" + docIndex } }
+                    };
+                    ItemResponse<dynamic> created = await container.CreateItemAsync<dynamic>(dyn, new PartitionKey("doc" + docIndex));
+                    Console.WriteLine("Creating document with id {0}", created.Resource.id);
+                }
+
+                // Querying for a document on either metaData or /subDoc/subSubDoc/someProperty will be expensive since they do not utilize the index,
+                // but instead are served from scan automatically.
+                int queryDocId = numDocs / 2;
+                QueryStats queryStats = await Program.GetQueryResult(container, string.Format(CultureInfo.InvariantCulture, "SELECT * FROM root r WHERE r.metaData='meta{0}'", queryDocId));
+                Console.WriteLine("Query on metaData returned {0} results", queryStats.Count);
+                Console.WriteLine("Query on metaData consumed {0} RUs", queryStats.RequestCharge);
+
+                queryStats = await Program.GetQueryResult(container, string.Format(CultureInfo.InvariantCulture, "SELECT * FROM root r WHERE r.subDoc.nonSearchable='value{0}'", queryDocId));
+                Console.WriteLine("Query on /subDoc/nonSearchable returned {0} results", queryStats.Count);
+                Console.WriteLine("Query on /subDoc/nonSearchable consumed {0} RUs", queryStats.RequestCharge);
+
+                queryStats = await Program.GetQueryResult(container, string.Format(CultureInfo.InvariantCulture, "SELECT * FROM root r WHERE r.excludedNode.subExcludedNode.someProperty='value{0}'", queryDocId));
+                Console.WriteLine("Query on /excludedNode/subExcludedNode/someProperty returned {0} results", queryStats.Count);
+                Console.WriteLine("Query on /excludedNode/subExcludedNode/someProperty cost {0} RUs", queryStats.RequestCharge);
+
+                // Querying for a document using foo, or even subDoc/searchable > consume less RUs because they were not excluded
+                queryStats = await Program.GetQueryResult(container, string.Format(CultureInfo.InvariantCulture, "SELECT * FROM root r WHERE r.foo='bar{0}'", queryDocId));
+                Console.WriteLine("Query on /foo returned {0} results", queryStats.Count);
+                Console.WriteLine("Query on /foo cost {0} RUs", queryStats.RequestCharge);
+
+                queryStats = await Program.GetQueryResult(container, string.Format(CultureInfo.InvariantCulture, "SELECT * FROM root r WHERE r.subDoc.searchable='searchable{0}'", queryDocId));
+                Console.WriteLine("Query on /subDoc/searchable returned {0} results", queryStats.Count);
+                Console.WriteLine("Query on /subDoc/searchable cost {0} RUs", queryStats.RequestCharge);
+
+            }
+            finally
+            {
+                // Cleanup
+                await container.DeleteContainerAsync();
+            }
+        }
+
+        private static async Task<QueryStats> GetQueryResult(Container container, string query)
+        {
+            try
+            {
+                FeedIterator<dynamic> documentQuery = container.GetItemQueryIterator<dynamic>(
+                    query,
+                    requestOptions: 
+                    new QueryRequestOptions
+                    {
+                        MaxItemCount = -1
+                    });
+
+                FeedResponse<dynamic> response = await documentQuery.ReadNextAsync();
+                return new QueryStats(response.Count, response.RequestCharge);
+            }
+            catch (Exception e)
+            {
+                Program.LogException(e);
+                return new QueryStats(0, 0.0);
+            }
+        }
+
         private static async Task Setup(CosmosClient client)
         {
             database = await client.CreateDatabaseIfNotExistsAsync(databaseId);
+        }
+
+        /// <summary>
+        /// Log exception error message to the console
+        /// </summary>
+        /// <param name="e">The caught exception.</param>
+        private static void LogException(Exception e)
+        {
+            ConsoleColor color = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Red;
+
+            Exception baseException = e.GetBaseException();
+            if (e is CosmosException)
+            {
+                CosmosException de = (CosmosException)e;
+                Console.WriteLine("{0} error occurred: {1}, Message: {2}", de.StatusCode, de.Message, baseException.Message);
+            }
+            else
+            {
+                Console.WriteLine("Error: {0}, Message: {1}", e.Message, baseException.Message);
+            }
+
+            Console.ForegroundColor = color;
         }
     }
 
