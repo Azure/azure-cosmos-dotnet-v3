@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Linq;
@@ -666,6 +667,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
             OrderByItem orderByItem = new OrderByItem(CosmosElement.Create(bytes));
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                new Mock<CosmosQueryClient>().Object,
                 compositeContinuationToken,
                 new List<OrderByItem> { orderByItem },
                 "asdf",

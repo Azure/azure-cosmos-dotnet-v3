@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Documents;
+    using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
 
     internal sealed class QueryPlanHandler
     {

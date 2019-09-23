@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System.Collections.Generic;
-    using Microsoft.Azure.Documents;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
 
     /// <summary>
     /// For parallel queries we drain from left partition to right,
