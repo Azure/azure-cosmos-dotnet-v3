@@ -5,6 +5,7 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
+    using Newtonsoft.Json;
 
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
@@ -135,38 +136,56 @@
 
             // Create a collection with default index policy(i.e.automatic = true)
             ContainerResponse response = await Program.database.CreateContainerAsync(collectionId, Program.partitionKey);
-            Console.WriteLine("Container {0} created with index policy \n{1}", collectionId, response.Resource.IndexingPolicy);
+            Console.WriteLine("Container {0} created with index policy \n{1}", collectionId, JsonConvert.SerializeObject(response.Resource.IndexingPolicy));
+            Container container = (Container)response;
 
-            Container container = (Container) response;
-            // Create a document
-            // Then query on it immediately
-            // Will work as this Collection is set to automatically index everything
-            ItemResponse<dynamic> created = await container.CreateItemAsync<dynamic>(new { id = "doc1", partitionKey = "doc1", orderId = "order1" }, new PartitionKey("doc1"));
-            Console.WriteLine("\nItem created: \n{0}", created);
-
-            FeedIterator resultSetIterator = container.GetItemQueryStreamIterator(new QueryDefinition("SELECT * FROM root r WHERE r.orderId='order1'"));
-            bool found = resultSetIterator.HasMoreResults;
-            Console.WriteLine("Item found by query: {0}", found);
-
-            // Now, create an item but this time explictly exclude it from the collection using IndexingDirective
-            // Then query for that document
-            // Shoud NOT find it, because we excluded it from the index
-            // BUT, the document is there and doing a ReadItem by Id will prove it
-            created = await container.CreateItemAsync<dynamic>(new { id = "doc2", partitionKey = "doc1", orderId = "order2" }, new PartitionKey("doc1"), new ItemRequestOptions
+            try
             {
-                IndexingDirective = IndexingDirective.Exclude
-            });
-            Console.WriteLine("\nItem created: \n{0}", created);
+                
+                // Create a document
+                // Then query on it immediately
+                // Will work as this Collection is set to automatically index everything
+                ItemResponse<dynamic> created = await container.CreateItemAsync<dynamic>(new { id = "doc1", partitionKey = "doc1", orderId = "order1" }, new PartitionKey("doc1"));
+                Console.WriteLine("\nItem created: \n{0}", JsonConvert.SerializeObject(created.Resource));
 
-            resultSetIterator = container.GetItemQueryStreamIterator(new QueryDefinition("SELECT * FROM root r WHERE r.orderId='order2'"));
-            found = resultSetIterator.HasMoreResults;
-            Console.WriteLine("Item found by query: {0}", found);
+                FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(new QueryDefinition("SELECT * FROM root r WHERE r.orderId='order1'"), requestOptions: new QueryRequestOptions { MaxItemCount = 1 });
+                bool found = false;
+                while (resultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<dynamic> feedResponse = await resultSetIterator.ReadNextAsync();
+                    found = feedResponse.Count > 0;
+                }
 
-            ItemResponse<dynamic> document = await container.ReadItemAsync<dynamic>(created.Resource.id, new PartitionKey(created.Resource.id));
-            Console.WriteLine("Item read by id: {0}", document != null);
+                Console.WriteLine("Item found by query: {0}", found);
 
-            // Cleanup
-            await container.DeleteContainerAsync();
+                // Now, create an item but this time explictly exclude it from the collection using IndexingDirective
+                // Then query for that document
+                // Shoud NOT find it, because we excluded it from the index
+                // BUT, the document is there and doing a ReadItem by Id will prove it
+                created = await container.CreateItemAsync<dynamic>(new { id = "doc2", partitionKey = "doc2", orderId = "order2" }, new PartitionKey("doc2"), new ItemRequestOptions
+                {
+                    IndexingDirective = IndexingDirective.Exclude
+                });
+
+                Console.WriteLine("\nItem created: \n{0}", JsonConvert.SerializeObject(created.Resource));
+
+                resultSetIterator = container.GetItemQueryIterator<dynamic>(new QueryDefinition("SELECT * FROM root r WHERE r.orderId='order2'"), requestOptions: new QueryRequestOptions { MaxItemCount = 1 });
+                found = false;
+                while (resultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<dynamic> feedResponse = await resultSetIterator.ReadNextAsync();
+                    found = feedResponse.Count > 0;
+                }
+                Console.WriteLine("Item found by query: {0}", found);
+
+                ItemResponse<dynamic> document = await container.ReadItemAsync<dynamic>((string)created.Resource.id, new PartitionKey("doc2"));
+                Console.WriteLine("Item read by id: {0}", document != null);
+            }
+            finally
+            {
+                // Cleanup
+                await container.DeleteContainerAsync();
+            }
         }
 
         private static async Task Setup(CosmosClient client)
