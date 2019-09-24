@@ -85,19 +85,32 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
         {
-            if (!AggregateContinuationToken.TryParse(requestContinuation, out AggregateContinuationToken aggregateContinuationToken))
+            string sourceContinuationToken;
+            string singleGroupAggregatorContinuationToken;
+            if (requestContinuation != null)
             {
-                throw queryClient.CreateBadRequestException($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'");
+                if (!AggregateContinuationToken.TryParse(requestContinuation, out AggregateContinuationToken aggregateContinuationToken))
+                {
+                    throw queryClient.CreateBadRequestException($"Malfomed {nameof(AggregateContinuationToken)}: '{requestContinuation}'");
+                }
+
+                sourceContinuationToken = aggregateContinuationToken.SourceContinuationToken;
+                singleGroupAggregatorContinuationToken = aggregateContinuationToken.SingleGroupAggregatorContinuationToken;
+            }
+            else
+            {
+                sourceContinuationToken = null;
+                singleGroupAggregatorContinuationToken = null;
             }
 
             return new AggregateDocumentQueryExecutionComponent(
-                await createSourceCallback(aggregateContinuationToken.SourceContinuationToken),
+                await createSourceCallback(sourceContinuationToken),
                 SingleGroupAggregator.Create(
                     queryClient,
                     aggregates,
                     aliasToAggregateType,
                     hasSelectValue,
-                    aggregateContinuationToken.SingleGroupAggregatorContinuationToken),
+                    singleGroupAggregatorContinuationToken),
                 (aggregates != null) && (aggregates.Count() == 1));
         }
 
@@ -135,47 +148,66 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     this.singleGroupAggregator.AddValues(rewrittenAggregateProjections.Payload);
                 }
 
-                AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
-                    this.singleGroupAggregator.GetContinuationToken(),
-                    sourceResponse.ContinuationToken);
-
-                // We need to give empty pages until the results are fully drained.
-                response = QueryResponseCore.CreateSuccess(
-                    result: EmptyResults,
-                    continuationToken: aggregateContinuationToken.ToString(),
-                    disallowContinuationTokenMessage: null,
-                    activityId: sourceResponse.ActivityId,
-                    requestCharge: sourceResponse.RequestCharge,
-                    queryMetricsText: sourceResponse.QueryMetricsText,
-                    queryMetrics: sourceResponse.QueryMetrics,
-                    requestStatistics: sourceResponse.RequestStatistics,
-                    responseLengthBytes: sourceResponse.ResponseLengthBytes);
-
-                this.isDone = false;
+                if (this.Source.IsDone)
+                {
+                    response = this.GetFinalResponse();
+                }
+                else
+                {
+                    response = this.GetEmptyPage(sourceResponse);
+                }
             }
             else
             {
-                // Stage 2:
-                // Emit the final aggregate
-
-                List<CosmosElement> finalResult = new List<CosmosElement>();
-                CosmosElement aggregationResult = this.singleGroupAggregator.GetResult();
-                if (aggregationResult != null)
-                {
-                    finalResult.Add(aggregationResult);
-                }
-
-                response = QueryResponseCore.CreateSuccess(
-                    result: finalResult,
-                    continuationToken: null,
-                    activityId: null,
-                    disallowContinuationTokenMessage: null,
-                    requestCharge: 0,
-                    queryMetricsText: null,
-                    queryMetrics: this.GetQueryMetrics(),
-                    requestStatistics: null,
-                    responseLengthBytes: 0);
+                response = this.GetFinalResponse();
             }
+
+            return response;
+        }
+
+        private QueryResponseCore GetFinalResponse()
+        {
+            List<CosmosElement> finalResult = new List<CosmosElement>();
+            CosmosElement aggregationResult = this.singleGroupAggregator.GetResult();
+            if (aggregationResult != null)
+            {
+                finalResult.Add(aggregationResult);
+            }
+
+            QueryResponseCore response = QueryResponseCore.CreateSuccess(
+                result: finalResult,
+                continuationToken: null,
+                activityId: null,
+                disallowContinuationTokenMessage: null,
+                requestCharge: 0,
+                queryMetricsText: null,
+                queryMetrics: this.GetQueryMetrics(),
+                requestStatistics: null,
+                responseLengthBytes: 0);
+            this.isDone = true;
+
+            return response;
+        }
+
+        private QueryResponseCore GetEmptyPage(QueryResponseCore sourceResponse)
+        {
+            AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
+                    this.singleGroupAggregator.GetContinuationToken(),
+                    sourceResponse.ContinuationToken);
+
+            // We need to give empty pages until the results are fully drained.
+            QueryResponseCore response = QueryResponseCore.CreateSuccess(
+                result: EmptyResults,
+                continuationToken: aggregateContinuationToken.ToString(),
+                disallowContinuationTokenMessage: null,
+                activityId: sourceResponse.ActivityId,
+                requestCharge: sourceResponse.RequestCharge,
+                queryMetricsText: sourceResponse.QueryMetricsText,
+                queryMetrics: sourceResponse.QueryMetrics,
+                requestStatistics: sourceResponse.RequestStatistics,
+                responseLengthBytes: sourceResponse.ResponseLengthBytes);
+
+            this.isDone = false;
 
             return response;
         }
@@ -195,8 +227,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 if (isValueAggregateQuery)
                 {
                     // SELECT VALUE [{"item": {"sum": SUM(c.blah), "count": COUNT(c.blah)}}]
-                    CosmosArray aggregates = raw as CosmosArray;
-                    if (aggregates == null)
+                    if (!(raw is CosmosArray aggregates))
                     {
                         throw new ArgumentException($"{nameof(RewrittenAggregateProjections)} was not an array for a value aggregate query. Type is: {raw.Type}");
                     }
@@ -205,8 +236,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
                 else
                 {
-                    CosmosObject cosmosObject = raw as CosmosObject;
-                    if (cosmosObject == null)
+                    if (!(raw is CosmosObject cosmosObject))
                     {
                         throw new ArgumentException($"{nameof(raw)} must not be an object.");
                     }
