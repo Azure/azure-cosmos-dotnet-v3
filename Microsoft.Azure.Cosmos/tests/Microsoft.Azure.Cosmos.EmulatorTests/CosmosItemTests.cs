@@ -1536,13 +1536,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifySessionNotFoundStatistics()
         {
-            Container container = await this.database.CreateContainerIfNotExistsAsync("NoSession", "/id");
+            Container container = await this.database.CreateContainerIfNotExistsAsync("NoSession", "/status");
 
             try
             {
                 ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
 
-                ItemResponse<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(temp.status), item: temp);
+                ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(temp.status), item: temp);
 
                 string invalidSessionToken = "0:-1#2000";
 
