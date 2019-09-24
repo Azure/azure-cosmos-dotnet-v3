@@ -150,6 +150,61 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            //need to lock in case of concurrent operations. this should be extremely rare since ToString()
+            //should only be called at the end of request.
+            lock (this.lockObject)
+            {
+                //first trace request start time, as well as total non-head/headfeed requests made.
+                sb.AppendLine(string.Format(CultureInfo.InvariantCulture,
+                    "RequestStartTime: {0}, RequestEndTime: {1}, Number of regions attempted: {2}",
+                    this.requestStartTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+                    this.requestEndTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+                    this.RegionsContacted.Count == 0 ? 1 : this.RegionsContacted.Count));
+
+                //take all responses here - this should be limited in number and each one contains relevant information.
+                foreach (StoreResponseStatistics item in this.responseStatisticsList)
+                {
+                    sb.AppendLine(item.ToString());
+                }
+
+                //take all responses here - this should be limited in number and each one is important.
+                foreach (AddressResolutionStatistics item in this.addressResolutionStatistics.Values)
+                {
+                    sb.AppendLine(item.ToString());
+                }
+
+                //only take last 10 responses from this list - this has potential of having large number of entries. 
+                //since this is for establishing consistency, we can make do with the last responses to paint a meaningful picture.
+                int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList.Count;
+                int initialIndex = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
+
+                if (initialIndex != 0)
+                {
+                    sb.AppendLine(string.Format(CultureInfo.InvariantCulture,
+                        "  -- Displaying only the last {0} head/headfeed requests. Total head/headfeed requests: {1}",
+                        CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString,
+                        supplementalResponseStatisticsListCount));
+                }
+
+                for (int i = initialIndex; i < supplementalResponseStatisticsListCount; i++)
+                {
+                    sb.AppendLine(this.supplementalResponseStatisticsList[i].ToString());
+                }
+            }
+
+            string requestStatsString = sb.ToString();
+            if (requestStatsString.Length > 0)
+            {
+                return Environment.NewLine + requestStatsString;
+            }
+
+            return string.Empty;
+        }
+
         internal struct StoreResponseStatistics
         {
             public DateTime RequestResponseTime;
