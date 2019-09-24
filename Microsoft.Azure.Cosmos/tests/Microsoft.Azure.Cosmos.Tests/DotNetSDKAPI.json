@@ -2311,6 +2311,11 @@
           "Attributes": [],
           "MethodInfo": "T WithDefaultTimeToLive(System.TimeSpan)"
         },
+        "T WithPartitionKeyDefinitionVersion2()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "T WithPartitionKeyDefinitionVersion2()"
+        },
         "T WithTimeToLivePropertyPath(System.String)": {
           "Type": "Method",
           "Attributes": [],
