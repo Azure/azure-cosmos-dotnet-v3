@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private int? defaultTimeToLive;
         private IndexingPolicy indexingPolicy;
         private string timeToLivePropertyPath;
+        private PartitionKeyDefinitionVersion? partitionKeyDefinitionVersion = null;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -31,6 +32,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             this.containerName = name;
             this.partitionKeyPath = partitionKeyPath;
+        }
+
+        /// <summary>
+        /// Set the partition key definition version for the container.
+        /// </summary>
+        /// <returns>An instance of the current Fluent builder.</returns>
+        /// <seealso cref="ContainerProperties.PartitionKeyDefinitionVersion"/>
+        public T WithPartitionKeyDefinitionVersion2()
+        {
+            this.partitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2;
+            return (T)this;
         }
 
         /// <summary>
@@ -125,6 +137,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #pragma warning disable 0612
                 containerProperties.TimeToLivePropertyPath = this.timeToLivePropertyPath;
 #pragma warning restore 0612
+            }
+
+            if (this.partitionKeyDefinitionVersion.HasValue)
+            {
+                containerProperties.PartitionKeyDefinitionVersion = this.partitionKeyDefinitionVersion.Value;
             }
 
             containerProperties.ValidateRequiredProperties();

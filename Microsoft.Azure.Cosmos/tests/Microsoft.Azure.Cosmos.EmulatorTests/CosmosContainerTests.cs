@@ -109,6 +109,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ContainerBuilderPartitionKeyDefinitionContractTest()
+        {
+            ContainerResponse response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id")
+                .WithPartitionKeyDefinitionVersion2()
+                .CreateAsync();
+
+            this.ValidateCreateContainerResponseContract(response);
+            Assert.AreEqual(response.Resource.PartitionKeyDefinitionVersion, Cosmos.PartitionKeyDefinitionVersion.V2);
+
+            response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateIfNotExistsAsync();
+            this.ValidateCreateContainerResponseContract(response);
+            Assert.AreEqual(response.Resource.PartitionKeyDefinitionVersion, Cosmos.PartitionKeyDefinitionVersion.V2);
+
+            response = await this.cosmosDatabase.DefineContainer(response.Container.Id, "/id").CreateIfNotExistsAsync();
+            this.ValidateCreateContainerResponseContract(response);
+            Assert.AreEqual(response.Resource.PartitionKeyDefinitionVersion, Cosmos.PartitionKeyDefinitionVersion.V2);
+        }
+
+        [TestMethod]
         public async Task PartitionedCRUDTest()
         {
             string containerName = Guid.NewGuid().ToString();
