@@ -1542,6 +1542,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
 
+                ItemResponse<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(temp.status), item: temp);
+
                 string invalidSessionToken = "0:-1#2000";
 
                 try
