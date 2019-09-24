@@ -146,6 +146,36 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Limits the operations to the provided endpoint on the CosmosClientBuilder constructor.
+        /// </summary>
+        /// <param name="limitToEndpoint">Whether operations are limited to the endpoint or not.</param>
+        /// <value>Default value is false.</value>
+        /// <remarks>
+        /// When the value of <paramref name="limitToEndpoint"/> is false, the SDK will automatically discover all account write and read regions, and use them when the configured application region is not available.
+        /// When set to true, availability is limited to the endpoint specified on the CosmosClientBuilder constructor.
+        /// Using <see cref="WithApplicationRegion(string)"/> is not allowed when the value is true. </remarks>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> to limit the endpoint to East US.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos-eastus.documents.azure.com:443/",
+        ///     authKeyOrResourceToken: "SuperSecretKey")
+        /// .WithLimitToEndpoint(true);
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        /// <seealso cref="CosmosClientOptions.LimitToEndpoint"/>
+        public CosmosClientBuilder WithLimitToEndpoint(bool limitToEndpoint)
+        {
+            this.clientOptions.LimitToEndpoint = limitToEndpoint;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the request timeout in seconds when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="requestTimeout">A time to use as timeout for operations.</param>

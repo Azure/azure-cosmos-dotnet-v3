@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using System.Collections.Generic;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
+    using Constants = Documents.Constants;
+    using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
 
     // Note: We also return this to client when query execution is disallowed by Gateway
     internal sealed class PartitionedQueryExecutionInfoInternal
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         [JsonProperty(Constants.Properties.QueryRanges)]
-        public List<Range<PartitionKeyInternal>> QueryRanges
+        public List<Documents.Routing.Range<PartitionKeyInternal>> QueryRanges
         {
             get;
             set;

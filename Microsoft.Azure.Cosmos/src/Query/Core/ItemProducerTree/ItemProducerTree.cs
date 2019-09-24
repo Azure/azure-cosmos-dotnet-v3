@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Routing;
 
     /// <summary>
     /// This class is responsible for fetching documents from a partition and all it's descendants, which is modeled as a tree of document producers.

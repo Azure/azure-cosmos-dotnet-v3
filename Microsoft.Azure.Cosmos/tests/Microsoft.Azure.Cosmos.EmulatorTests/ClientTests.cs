@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.IO;
     using System.Net;
+    using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -256,18 +258,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifyNegativeWebProxySettings()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
-                cosmosClientBuilder.WithConnectionModeGateway(webProxy: new TestWebProxy());
-            });
+            //proxy will be bypassed if the endpoint is localhost or 127.0.0.1
+            string endpoint = $"https://{Environment.MachineName}";
 
-            DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            Assert.AreEqual(HttpStatusCode.Created, databaseResponse.StatusCode);
+            IWebProxy proxy = new WebProxy
+            {
+                Address = new Uri("http://www.cosmostestproxyshouldfail.com"),
+                BypassProxyOnLocal = false,
+                BypassList = new string[] { },
+            };
 
-            /*
+            CosmosClient cosmosClient = new CosmosClient(
+                endpoint,
+                ConfigurationManager.AppSettings["MasterKey"],
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ConnectionProtocol = Protocol.Https,
+                    WebProxy = proxy
+                }
+            );
+
             await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             });
-            */
+
+            proxy = new TestWebProxy { Credentials = new NetworkCredential("test", "test") };
+
+            cosmosClient = new CosmosClient(
+                endpoint,
+                ConfigurationManager.AppSettings["MasterKey"],
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    ConnectionProtocol = Protocol.Https,
+                    WebProxy = proxy
+                }
+            );
+
+            await Assert.ThrowsExceptionAsync<HttpRequestException>(async () => {
+                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            });
         }
     }
 
