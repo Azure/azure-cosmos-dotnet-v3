@@ -1536,18 +1536,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifySessionNotFoundStatistics()
         {
-            ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
-
-            string invalidSessionToken = "0:-1#20";
+            Container container = await this.database.CreateContainerIfNotExistsAsync("NoSession", "/id");
 
             try
             {
-                ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(temp.id, new Cosmos.PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = invalidSessionToken });
-                Assert.Fail("Should had thrown ReadSessionNotAvailable");
+                ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
+
+                string invalidSessionToken = "0:-1#2000";
+
+                try
+                {
+                    ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(temp.id, new Cosmos.PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = invalidSessionToken });
+                    Assert.Fail("Should had thrown ReadSessionNotAvailable");
+                }
+                catch (CosmosException cosmosException)
+                {
+                    Assert.IsTrue(cosmosException.Message.Contains("ContactedReplicas"), cosmosException.Message);
+                }
             }
-            catch (CosmosException cosmosException)
+            finally
             {
-                Assert.IsTrue(cosmosException.Message.Contains("ContactedReplicas"));
+                await container.DeleteContainerAsync();
             }
         }
 
