@@ -1533,6 +1533,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(sessionToken, readResponse.Headers.Session);
         }
 
+        [TestMethod]
+        public async Task VerifySessionNotFoundStatistics()
+        {
+            ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
+
+            string invalidSessionToken = "0:-1#20";
+
+            try
+            {
+                ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(temp.id, new Cosmos.PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = invalidSessionToken });
+                Assert.Fail("Should had thrown ReadSessionNotAvailable");
+            }
+            catch (CosmosException cosmosException)
+            {
+                Assert.IsTrue(cosmosException.Message.Contains("RequestStartTime:"));
+            }
+        }
+
         /// <summary>
         /// Stateless container re-create test. 
         /// Create two client instances and do meta data operations through a single client
