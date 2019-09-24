@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 jsonWriter.WriteNumberValue(this.number);
             }
 
-            protected override Number64 GetValue()
+            public override Number64 GetValue()
             {
                 return this.number;
             }
