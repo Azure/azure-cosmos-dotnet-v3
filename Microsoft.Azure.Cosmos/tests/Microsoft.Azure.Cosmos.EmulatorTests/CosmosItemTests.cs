@@ -1536,7 +1536,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifySessionNotFoundStatistics()
         {
-            Container container = await this.database.CreateContainerIfNotExistsAsync("NoSession", "/status");
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
+            DatabaseResponse database = await cosmosClient.CreateDatabaseIfNotExistsAsync("NoSession");
+            Container container = await database.Database.CreateContainerIfNotExistsAsync("NoSession", "/status");
 
             try
             {
@@ -1544,7 +1546,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(temp.status), item: temp);
 
-                string invalidSessionToken = "0:-1#2000";
+                string invalidSessionToken = this.GetDifferentLSNToken(responseAstype.Headers.Session, 2000);
 
                 try
                 {
@@ -1558,8 +1560,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                await container.DeleteContainerAsync();
+                await database.Database.DeleteAsync();
             }
+        }
+
+        private string GetDifferentLSNToken(string token, long lsnDifferent)
+        {
+            string[] tokenParts = token.Split(':');
+            ISessionToken sessionToken = SessionTokenHelper.Parse(tokenParts[1]);
+            ISessionToken differentSessionToken = TestCommon.CreateSessionToken(sessionToken, sessionToken.LSN + lsnDifferent);
+            return string.Format(CultureInfo.InvariantCulture, "{0}:{1}", tokenParts[0], differentSessionToken.ConvertToString());
         }
 
         /// <summary>
