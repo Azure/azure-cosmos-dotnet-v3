@@ -13,6 +13,11 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics
     {
+        private static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+            Formatting = Formatting.None
+        };
         internal const int MaxSupplementalRequestsForToString = 10;
 
         internal DateTime requestStartTime;
@@ -20,15 +25,12 @@ namespace Microsoft.Azure.Cosmos
 
         private object lockObject = new object();
 
-        internal List<StoreResponseStatistics> responseStatisticsList;
-        internal List<StoreResponseStatistics> supplementalResponseStatisticsList;
-        internal Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics;
+        public List<StoreResponseStatistics> responseStatisticsList { get; private set; }
+        public List<StoreResponseStatistics> supplementalResponseStatisticsList { get; internal set; }
+        public Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics { get; private set; }
 
-        [JsonIgnoreAttribute]
         public List<Uri> ContactedReplicas { get; set; }
-        [JsonIgnoreAttribute]
         public HashSet<Uri> FailedReplicas { get; private set; }
-        [JsonIgnoreAttribute]
         public HashSet<Uri> RegionsContacted { get; private set; }
 
         public CosmosClientSideRequestStatistics()
@@ -152,57 +154,16 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
-
-            //need to lock in case of concurrent operations. this should be extremely rare since ToString()
-            //should only be called at the end of request.
-            lock (this.lockObject)
+            if (this.supplementalResponseStatisticsList != null)
             {
-                //first trace request start time, as well as total non-head/headfeed requests made.
-                sb.AppendLine(string.Format(CultureInfo.InvariantCulture,
-                    "RequestStartTime: {0}, RequestEndTime: {1}, Number of regions attempted: {2}",
-                    this.requestStartTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
-                    this.requestEndTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
-                    this.RegionsContacted.Count == 0 ? 1 : this.RegionsContacted.Count));
-
-                //take all responses here - this should be limited in number and each one contains relevant information.
-                foreach (StoreResponseStatistics item in this.responseStatisticsList)
-                {
-                    sb.AppendLine(item.ToString());
-                }
-
-                //take all responses here - this should be limited in number and each one is important.
-                foreach (AddressResolutionStatistics item in this.addressResolutionStatistics.Values)
-                {
-                    sb.AppendLine(item.ToString());
-                }
-
-                //only take last 10 responses from this list - this has potential of having large number of entries. 
-                //since this is for establishing consistency, we can make do with the last responses to paint a meaningful picture.
                 int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList.Count;
-                int initialIndex = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
-
-                if (initialIndex != 0)
+                int countToRemove = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
+                if (countToRemove > 0)
                 {
-                    sb.AppendLine(string.Format(CultureInfo.InvariantCulture,
-                        "  -- Displaying only the last {0} head/headfeed requests. Total head/headfeed requests: {1}",
-                        CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString,
-                        supplementalResponseStatisticsListCount));
-                }
-
-                for (int i = initialIndex; i < supplementalResponseStatisticsListCount; i++)
-                {
-                    sb.AppendLine(this.supplementalResponseStatisticsList[i].ToString());
+                    this.supplementalResponseStatisticsList.RemoveRange(0, countToRemove);
                 }
             }
-
-            string requestStatsString = sb.ToString();
-            if (requestStatsString.Length > 0)
-            {
-                return Environment.NewLine + requestStatsString;
-            }
-
-            return string.Empty;
+            return JsonConvert.SerializeObject(this, CosmosClientSideRequestStatistics.SerializerSettings);
         }
 
         internal struct StoreResponseStatistics

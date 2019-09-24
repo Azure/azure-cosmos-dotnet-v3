@@ -1547,7 +1547,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException cosmosException)
             {
-                Assert.IsTrue(cosmosException.Message.Contains("RequestStartTime:"));
+                Assert.IsTrue(cosmosException.Message.Contains("ContactedReplicas"));
             }
         }
 
