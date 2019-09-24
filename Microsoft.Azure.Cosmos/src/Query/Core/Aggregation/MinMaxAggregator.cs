@@ -13,6 +13,10 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
     /// </summary>
     internal sealed class MinMaxAggregator : IAggregator
     {
+        private const string MinValueContinuationToken = "MIN_VALUE";
+        private const string MaxValueContinuationToken = "MAX_VALUE";
+        private const string UndefinedContinuationToken = "UNDEFINED";
+
         private static readonly CosmosElement Undefined = null;
         /// <summary>
         /// Whether or not the aggregation is a min or a max.
@@ -131,43 +135,68 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
 
         public string GetContinuationToken()
         {
-            return this.globalMinMax.ToString();
+            string continuationToken;
+            if (this.globalMinMax == ItemComparer.MinValue)
+            {
+                continuationToken = MinMaxAggregator.MinValueContinuationToken;
+            }
+            else if (this.globalMinMax == ItemComparer.MaxValue)
+            {
+                continuationToken = MinMaxAggregator.MaxValueContinuationToken;
+            }
+            else if (this.globalMinMax == Undefined)
+            {
+                continuationToken = MinMaxAggregator.UndefinedContinuationToken;
+            }
+            else
+            {
+                continuationToken = this.globalMinMax.ToString();
+            }
+
+            return continuationToken;
         }
 
         public static MinMaxAggregator CreateMinAggregator(string continuationToken)
         {
-            CosmosElement globalMinMax;
-            if (continuationToken != null)
-            {
-                if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
-                {
-                    throw new ArgumentException($"Malformed continuation token: {continuationToken}");
-                }
-            }
-            else
-            {
-                globalMinMax = ItemComparer.MaxValue;
-            }
-
-            return new MinMaxAggregator(isMinAggregation: true, globalMinMax: globalMinMax);
+            return MinMaxAggregator.Create(isMinAggregation: true, continuationToken: continuationToken);
         }
 
         public static MinMaxAggregator CreateMaxAggregator(string continuationToken)
         {
+            return MinMaxAggregator.Create(isMinAggregation: false, continuationToken: continuationToken);
+        }
+
+        private static MinMaxAggregator Create(bool isMinAggregation, string continuationToken)
+        {
             CosmosElement globalMinMax;
             if (continuationToken != null)
             {
-                if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
+                if (continuationToken == MinMaxAggregator.MaxValueContinuationToken)
                 {
-                    throw new ArgumentException($"Malformed continuation token: {continuationToken}");
+                    globalMinMax = ItemComparer.MaxValue;
+                }
+                else if (continuationToken == MinMaxAggregator.MinValueContinuationToken)
+                {
+                    globalMinMax = ItemComparer.MinValue;
+                }
+                else if (continuationToken == MinMaxAggregator.UndefinedContinuationToken)
+                {
+                    globalMinMax = MinMaxAggregator.Undefined;
+                }
+                else
+                {
+                    if (!CosmosElement.TryParse(continuationToken, out globalMinMax))
+                    {
+                        throw new ArgumentException($"Malformed continuation token: {continuationToken}");
+                    }
                 }
             }
             else
             {
-                globalMinMax = ItemComparer.MinValue;
+                globalMinMax = isMinAggregation ? (CosmosElement)ItemComparer.MaxValue : (CosmosElement)ItemComparer.MinValue;
             }
 
-            return new MinMaxAggregator(isMinAggregation: false, globalMinMax: globalMinMax);
+            return new MinMaxAggregator(isMinAggregation: isMinAggregation, globalMinMax: globalMinMax);
         }
 
         private static bool CosmosElementIsPrimitive(CosmosElement cosmosElement)

@@ -266,7 +266,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     return this.aggregator.GetContinuationToken();
                 }
 
-                public static AggregateAggregateValue Create(AggregateOperator aggregateOperator, string continuationToken)
+                public static AggregateAggregateValue Create(
+                    AggregateOperator aggregateOperator,
+                    string continuationToken)
                 {
                     IAggregator aggregator;
                     switch (aggregateOperator)
