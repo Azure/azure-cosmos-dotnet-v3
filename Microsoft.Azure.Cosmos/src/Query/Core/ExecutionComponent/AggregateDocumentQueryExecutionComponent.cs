@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         private QueryResponseCore GetEmptyPage(QueryResponseCore sourceResponse)
         {
-            AggregateContinuationToken aggregateContinuationToken = new AggregateContinuationToken(
+            AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
                     this.singleGroupAggregator.GetContinuationToken(),
                     sourceResponse.ContinuationToken);
 
@@ -267,7 +267,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             private const string SingleGroupAggregatorContinuationTokenName = "SingleGroupAggregatorContinuationToken";
             private const string SourceContinuationTokenName = "SourceContinuationToken";
 
-            public AggregateContinuationToken(
+            private readonly CosmosObject rawCosmosObject;
+
+            private AggregateContinuationToken(CosmosObject rawCosmosObject)
+            {
+                this.rawCosmosObject = rawCosmosObject;
+            }
+
+            public static AggregateContinuationToken Create(
                 string singleGroupAggregatorContinuationToken,
                 string sourceContinuationToken)
             {
@@ -281,8 +288,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     throw new ArgumentNullException(nameof(sourceContinuationToken));
                 }
 
-                this.SingleGroupAggregatorContinuationToken = singleGroupAggregatorContinuationToken;
-                this.SourceContinuationToken = sourceContinuationToken;
+                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>
+                {
+                    [AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName] = CosmosString.Create(singleGroupAggregatorContinuationToken),
+                    [AggregateContinuationToken.SourceContinuationTokenName] = CosmosString.Create(sourceContinuationToken)
+                };
+
+                CosmosObject rawCosmosObject = CosmosObject.Create(dictionary);
+                return new AggregateContinuationToken(rawCosmosObject);
             }
 
             public static bool TryParse(string serializedContinuationToken, out AggregateContinuationToken aggregateContinuationToken)
@@ -318,24 +331,30 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     return false;
                 }
 
-                aggregateContinuationToken = new AggregateContinuationToken(
-                    singleGroupAggregatorContinuationToken.Value,
-                    sourceContinuationToken.Value);
+                aggregateContinuationToken = new AggregateContinuationToken(rawAggregateContinuationToken);
                 return true;
             }
 
             public override string ToString()
             {
-                return $@"
-                    {{
-                        ""{AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName}"": ""{this.SingleGroupAggregatorContinuationToken}"",
-                        ""{AggregateContinuationToken.SourceContinuationTokenName}"": ""{this.SourceContinuationToken}""
-                    }}";
+                return this.rawCosmosObject.ToString();
             }
 
-            public string SingleGroupAggregatorContinuationToken { get; }
+            public string SingleGroupAggregatorContinuationToken
+            {
+                get
+                {
+                    return (this.rawCosmosObject[AggregateContinuationToken.SingleGroupAggregatorContinuationTokenName] as CosmosString).Value;
+                }
+            }
 
-            public string SourceContinuationToken { get; }
+            public string SourceContinuationToken
+            {
+                get
+                {
+                    return (this.rawCosmosObject[AggregateContinuationToken.SourceContinuationTokenName] as CosmosString).Value;
+                }
+            }
         }
     }
 }

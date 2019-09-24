@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Aggregation
             if (!ItemComparer.IsMinOrMax(this.globalMinMax)
                 && (!CosmosElementIsPrimitive(localMinMax) || !CosmosElementIsPrimitive(this.globalMinMax)))
             {
-                // This means we are comparing non primitives with is undefined
+                // This means we are comparing non primitives which is undefined
                 this.globalMinMax = Undefined;
                 return;
             }

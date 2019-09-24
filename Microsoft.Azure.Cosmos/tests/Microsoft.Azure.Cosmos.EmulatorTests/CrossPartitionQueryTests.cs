@@ -651,6 +651,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void TestContinuationTokenSerialization()
         {
+            CompositeContinuationToken[] tokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>("[{\"token\":null,\"range\":{\"min\":\"05C1C9CD673398\",\"max\":\"05C1D9CD673398\"}}]");
             CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
             {
                 Token = "asdf",
@@ -1507,16 +1508,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         string query = string.Format(CultureInfo.InvariantCulture, queryFormat, argument.AggregateOperator, partitionKey, argument.Predicate);
                         string message = string.Format(CultureInfo.InvariantCulture, "query: {0}, data: {1}", query, JsonConvert.SerializeObject(argument));
-                        List<dynamic> items = new List<dynamic>();
 
-                        FeedIterator<dynamic> resultSetIterator = container.GetItemQueryIterator<dynamic>(
-                            query,
-                            requestOptions: new QueryRequestOptions() { MaxConcurrency = maxDoP });
-                        while (resultSetIterator.HasMoreResults)
-                        {
-                            items.AddRange(await resultSetIterator.ReadNextAsync());
-                        }
-
+                        List<dynamic> items = await CrossPartitionQueryTests.RunQuery<dynamic>(container, query, maxConcurrency: maxDoP);
                         if (Undefined.Value.Equals(argument.ExpectedValue))
                         {
                             Assert.AreEqual(0, items.Count, message);
@@ -1660,9 +1653,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     List<dynamic> items = await CrossPartitionQueryTests.RunQuery<dynamic>(
-                    container,
-                    query,
-                    maxConcurrency: 10);
+                        container,
+                        query,
+                        maxConcurrency: 10);
 
                     Assert.AreEqual(valueOfInterest, items.Single());
                 }
