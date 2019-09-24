@@ -91,17 +91,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ContainerContractTest()
         {
-            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(new Guid().ToString(), "/id");
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
             this.ValidateCreateContainerResponseContract(response);
         }
 
         [TestMethod]
         public async Task ContainerBuilderContractTest()
         {
-            ContainerResponse response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateAsync();
+            ContainerResponse response = await this.cosmosDatabase.DefineContainer(Guid.NewGuid().ToString(), "/id").CreateAsync();
             this.ValidateCreateContainerResponseContract(response);
 
-            response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateIfNotExistsAsync();
+            response = await this.cosmosDatabase.DefineContainer(Guid.NewGuid().ToString(), "/id").CreateIfNotExistsAsync();
             this.ValidateCreateContainerResponseContract(response);
 
             response = await this.cosmosDatabase.DefineContainer(response.Container.Id, "/id").CreateIfNotExistsAsync();
@@ -111,18 +111,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ContainerBuilderPartitionKeyDefinitionContractTest()
         {
-            ContainerResponse response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id")
-                .WithPartitionKeyDefinitionVersion2()
+            ContainerResponse response = await this.cosmosDatabase.DefineContainer(Guid.NewGuid().ToString(), "/id")
+                .WithPartitionKeyDefinitionVersion(Cosmos.PartitionKeyDefinitionVersion.V2)
                 .CreateAsync();
 
             this.ValidateCreateContainerResponseContract(response);
             Assert.AreEqual(response.Resource.PartitionKeyDefinitionVersion, Cosmos.PartitionKeyDefinitionVersion.V2);
 
-            response = await this.cosmosDatabase.DefineContainer(new Guid().ToString(), "/id").CreateIfNotExistsAsync();
+            //response = await this.cosmosDatabase.CreateContainerAsync(new ContainerProperties(new))
+            response = await this.cosmosDatabase.DefineContainer(Guid.NewGuid().ToString(), "/id")
+                .WithPartitionKeyDefinitionVersion(Cosmos.PartitionKeyDefinitionVersion.V2)
+                .CreateIfNotExistsAsync();
             this.ValidateCreateContainerResponseContract(response);
             Assert.AreEqual(response.Resource.PartitionKeyDefinitionVersion, Cosmos.PartitionKeyDefinitionVersion.V2);
 
-            response = await this.cosmosDatabase.DefineContainer(response.Container.Id, "/id").CreateIfNotExistsAsync();
+            response = await this.cosmosDatabase.DefineContainer(response.Container.Id, "/id")
+                .WithPartitionKeyDefinitionVersion(Cosmos.PartitionKeyDefinitionVersion.V2)
+                .CreateIfNotExistsAsync();
             this.ValidateCreateContainerResponseContract(response);
             Assert.AreEqual(response.Resource.PartitionKeyDefinitionVersion, Cosmos.PartitionKeyDefinitionVersion.V2);
         }

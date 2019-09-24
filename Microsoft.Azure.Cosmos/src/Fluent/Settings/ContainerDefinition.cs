@@ -35,19 +35,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Set the partition key definition version 2 which can generate a
-        /// unique hash from large partition keys up to 2 KB.
-        /// </summary>
-        /// <remarks>
+        /// Sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
+        ///
         /// The partition key definition version 1 uses a hash function that computes
         /// hash based on the first 100 bytes of the partition key. This can cause
         /// conflicts for documents with partition keys greater than 100 bytes.
-        /// </remarks>
+        /// 
+        /// The partition key definition version 2 uses a hash function that computes
+        /// hash based on the first 2 KB of the partition key.
+        /// </summary>
+        /// <param name="partitionKeyDefinitionVersion">The partition key definition version</param>
         /// <returns>An instance of the current Fluent builder.</returns>
         /// <seealso cref="ContainerProperties.PartitionKeyDefinitionVersion"/>
-        public T WithPartitionKeyDefinitionVersion2()
+        public T WithPartitionKeyDefinitionVersion(PartitionKeyDefinitionVersion partitionKeyDefinitionVersion)
         {
-            this.partitionKeyDefinitionVersion = PartitionKeyDefinitionVersion.V2;
+            this.partitionKeyDefinitionVersion = partitionKeyDefinitionVersion;
             return (T)this;
         }
 
