@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (initialPageSize < -1 || initialPageSize == 0)
             {
-                throw new Documents.BadRequestException(string.Format(CultureInfo.InvariantCulture, "Invalid MaxItemCount {0}", initialPageSize));
+                throw cosmosQueryContext.QueryClient.CreateBadRequestException($"Invalid MaxItemCount {initialPageSize}");
             }
 
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;

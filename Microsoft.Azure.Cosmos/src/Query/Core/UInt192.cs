@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using Microsoft.Azure.Documents;
+    using UInt128 = Documents.UInt128;
 
     /// <summary>
     /// Struct that represents a 192 bit unsigned integer

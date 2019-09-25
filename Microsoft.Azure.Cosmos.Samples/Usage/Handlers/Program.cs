@@ -9,6 +9,7 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Newtonsoft.Json.Schema;
 
     // ----------------------------------------------------------------------------------------------------------
     // Prerequisites - 
@@ -24,6 +25,7 @@
     // 1. LoggingHandler that will log all requests to Application Insights
     // 2. ConcurrencyHandler that will act upon requests that violate ETag concurrency
     // 3. ThrottlingHandler that will use Polly to handle retries on 429s
+    // 4. SchemaValidationHandler that will validate items against a JSON schema
 
 
     public class Program
@@ -51,10 +53,20 @@
             // Connecting to Emulator. Change if you want a live account
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(endpoint, authKey);
 
+            // Declare a JSON schema to use with the schema validation handler
+            var myContainerSchema = JSchema.Parse(@"{
+  'type': 'object',
+  'properties': {
+    'name': {'type': 'string'}
+  },
+  'required': ['name']
+}");
+
             cosmosClientBuilder.AddCustomHandlers(
                 new LoggingHandler(),
                 new ConcurrencyHandler(),
-                new ThrottlingHandler()
+                new ThrottlingHandler(),
+                new SchemaValidationHandler((database: "mydb", container: "mycoll2", schema: myContainerSchema))
                 );
 
             CosmosClient client = cosmosClientBuilder.Build();
@@ -120,6 +132,59 @@
 
             // Delete
             await container.DeleteItemAsync<Item>(item.Id, new PartitionKey(item.Id));
+
+            // Schema validation
+
+            containerResponse = await database.CreateContainerIfNotExistsAsync("mycoll2", "/id");
+            container = containerResponse.Container;
+
+            // Insert an item with invalid schema
+            var writeSucceeded = true;
+            try
+            {
+                await container.CreateItemAsync(new { id = "12345" });
+            }
+            catch (InvalidItemSchemaException)
+            {
+                writeSucceeded = false;
+            }
+            Debug.Assert(!writeSucceeded);
+
+            // Insert an item with valid schema
+            try
+            {
+                await container.CreateItemAsync(new { id = "12345", name = "Youri" });
+                writeSucceeded = true;
+            }
+            catch (InvalidItemSchemaException)
+            {
+                writeSucceeded = false;
+            }
+            Debug.Assert(writeSucceeded);
+
+            // Update an item with invalid schema
+            try
+            {
+                await container.ReplaceItemAsync(new { id = "12345" }, "12345");
+                writeSucceeded = true;
+            }
+            catch (InvalidItemSchemaException)
+            {
+                writeSucceeded = false;
+            }
+            Debug.Assert(!writeSucceeded);
+
+            // Update an item with valid schema
+            try
+            {
+                await container.ReplaceItemAsync(new { id = "12345", name = "Vladimir" }, "12345");
+                writeSucceeded = true;
+            }
+            catch (InvalidItemSchemaException)
+            {
+                writeSucceeded = false;
+            }
+            Debug.Assert(writeSucceeded);
         }
         // </Main>
 

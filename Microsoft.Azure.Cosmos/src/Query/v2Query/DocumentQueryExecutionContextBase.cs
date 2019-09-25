@@ -166,6 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryPartitionProvider queryPartitionProvider = await this.client.GetQueryPartitionProviderAsync(cancellationToken);
             return queryPartitionProvider.GetPartitionedQueryExecutionInfo(
+                (errorMessage) => new BadRequestException(errorMessage),
                 this.QuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,

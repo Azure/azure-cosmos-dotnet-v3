@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -55,12 +55,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Initializes a new instance of the OrderByContinuationToken struct.
         /// </summary>
+        /// <param name="queryClient">The query client</param>
         /// <param name="compositeContinuationToken">The composite continuation token (refer to property documentation).</param>
         /// <param name="orderByItems">The order by items (refer to property documentation).</param>
         /// <param name="rid">The rid (refer to property documentation).</param>
         /// <param name="skipCount">The skip count (refer to property documentation).</param>
         /// <param name="filter">The filter (refer to property documentation).</param>
         public OrderByContinuationToken(
+            CosmosQueryClient queryClient,
             CompositeContinuationToken compositeContinuationToken,
             IList<OrderByItem> orderByItems,
             string rid,
@@ -93,7 +95,6 @@ namespace Microsoft.Azure.Cosmos.Query
             }
 
             //// filter is allowed to be null.
-
             this.CompositeContinuationToken = compositeContinuationToken;
             this.OrderByItems = orderByItems;
             this.Rid = rid;
@@ -202,24 +203,6 @@ namespace Microsoft.Azure.Cosmos.Query
         public string Filter
         {
             get;
-        }
-
-        /// <summary>
-        /// Parses the OrderByContinuationToken from it's string form.
-        /// </summary>
-        /// <param name="value">The string form to parse from.</param>
-        /// <returns>The parsed OrderByContinuationToken.</returns>
-        public static OrderByContinuationToken Parse(string value)
-        {
-            OrderByContinuationToken result;
-            if (!TryParse(value, out result))
-            {
-                throw new BadRequestException($"Invalid OrderByContinuationToken: {value}");
-            }
-            else
-            {
-                return result;
-            }
         }
 
         /// <summary>
