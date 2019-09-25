@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// Initializes a new instance of the OrderedDistinctMap class.
             /// </summary>
             /// <param name="lastHash">The previous hash from the previous continuation.</param>
-            public OrderedDistinctMap(UInt192 lastHash)
+            private OrderedDistinctMap(UInt192 lastHash)
             {
                 this.lastHash = lastHash;
             }
@@ -61,6 +61,26 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
 
                 return added;
+            }
+
+            public override string GetContinuationToken()
+            {
+                return this.lastHash.ToString();
+            }
+
+            public static OrderedDistinctMap Create(string continuationToken)
+            {
+                UInt192 lastHash;
+                if (continuationToken != null)
+                {
+                    lastHash = UInt192.Parse(continuationToken);
+                }
+                else
+                {
+                    lastHash = default(UInt192);
+                }
+
+                return new OrderedDistinctMap(lastHash);
             }
         }
     }

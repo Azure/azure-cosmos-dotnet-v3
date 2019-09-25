@@ -4,11 +4,14 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using UInt128 = Documents.UInt128;
 
     /// <summary>
     /// Struct that represents a 192 bit unsigned integer
     /// </summary>
+    [JsonConverter(typeof(UInt192JsonConverter))]
     internal struct UInt192 : IComparable, IComparable<UInt192>, IEquatable<UInt192>
     {
         /// <summary>
@@ -439,6 +442,48 @@ namespace Microsoft.Azure.Cosmos
         public ulong GetLow()
         {
             return this.low;
+        }
+
+        /// <summary>
+        /// Customer converter for UInt192.
+        /// </summary>
+        private sealed class UInt192JsonConverter : JsonConverter
+        {
+            /// <summary>
+            /// Gets whether or not you can convert the object type.
+            /// </summary>
+            /// <param name="objectType">The object type.</param>
+            /// <returns>Whether or not you can convert the object type.</returns>
+            public override bool CanConvert(Type objectType)
+            {
+                return objectType == typeof(UInt192);
+            }
+
+            /// <summary>
+            /// Reads the nullable UInt192
+            /// </summary>
+            /// <param name="reader">The reader to read from.</param>
+            /// <param name="objectType">The object type.</param>
+            /// <param name="existingValue">The existing value.</param>
+            /// <param name="serializer">The serializer.</param>
+            /// <returns>The nullable UInt192.</returns>
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            {
+                return UInt192.Parse(reader.Value.ToString());
+            }
+
+            /// <summary>
+            /// Writes the nullable UInt192
+            /// </summary>
+            /// <param name="writer">The writer.</param>
+            /// <param name="value">The value.</param>
+            /// <param name="serializer">The serializer.</param>
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            {
+                UInt192 uint192 = (UInt192)value;
+                JToken token = JToken.FromObject(uint192.ToString());
+                token.WriteTo(writer);
+            }
         }
     }
 }

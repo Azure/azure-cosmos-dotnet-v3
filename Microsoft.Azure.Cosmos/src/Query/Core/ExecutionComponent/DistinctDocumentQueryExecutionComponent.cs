@@ -34,39 +34,25 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         private readonly DistinctMap distinctMap;
 
         /// <summary>
-        /// The type of distinct query this component is serving.
-        /// </summary>
-        private readonly DistinctQueryType distinctQueryType;
-
-        private readonly CosmosQueryClient queryClient;
-
-        /// <summary>
-        /// The hash of the last value added to the distinct map.
-        /// </summary>
-        private UInt192? lastHash;
-
-        /// <summary>
         /// Initializes a new instance of the DistinctDocumentQueryExecutionComponent class.
         /// </summary>
-        /// <param name="queryClient">The query client</param>
         /// <param name="distinctQueryType">The type of distinct query.</param>
-        /// <param name="previousHash">The previous that distinct map saw.</param>
+        /// <param name="distinctMapContinuationToken">The distinct map continuation token.</param>
         /// <param name="source">The source to drain from.</param>
         private DistinctDocumentQueryExecutionComponent(
-            CosmosQueryClient queryClient,
             DistinctQueryType distinctQueryType,
-            UInt192? previousHash,
+            string distinctMapContinuationToken,
             IDocumentQueryExecutionComponent source)
             : base(source)
         {
-            if (distinctQueryType == DistinctQueryType.None)
+            if (!((distinctQueryType == DistinctQueryType.Ordered) || (distinctQueryType == DistinctQueryType.Unordered)))
             {
                 throw new ArgumentException("It doesn't make sense to create a distinct component of type None.");
             }
 
-            this.queryClient = queryClient;
-            this.distinctQueryType = distinctQueryType;
-            this.distinctMap = DistinctMap.Create(distinctQueryType, previousHash);
+            this.distinctMap = DistinctMap.Create(
+                distinctQueryType,
+                distinctMapContinuationToken);
         }
 
         /// <summary>
@@ -83,20 +69,22 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
             DistinctQueryType distinctQueryType)
         {
-            DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(null, null);
+            DistinctContinuationToken distinctContinuationToken;
             if (requestContinuation != null)
             {
-                distinctContinuationToken = DistinctContinuationToken.Parse(queryClient, requestContinuation);
-                if (distinctQueryType != DistinctQueryType.Ordered && distinctContinuationToken.LastHash != null)
+                if (!DistinctContinuationToken.TryParse(requestContinuation, out distinctContinuationToken))
                 {
-                    throw queryClient.CreateBadRequestException($"DistinctContinuationToken is malformed: {distinctContinuationToken}. DistinctContinuationToken can not have a 'lastHash', when the query type is not ordered (ex SELECT DISTINCT VALUE c.blah FROM c ORDER BY c.blah).");
+                    throw queryClient.CreateBadRequestException($"Invalid {nameof(DistinctContinuationToken)}: {requestContinuation}");
                 }
+            }
+            else
+            {
+                distinctContinuationToken = new DistinctContinuationToken(sourceToken: null, distinctMapToken: null);
             }
 
             return new DistinctDocumentQueryExecutionComponent(
-                queryClient,
                 distinctQueryType,
-                distinctContinuationToken.LastHash,
+                distinctContinuationToken.DistinctMapToken,
                 await createSourceCallback(distinctContinuationToken.SourceToken));
         }
 
@@ -109,44 +97,31 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         public override async Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken cancellationToken)
         {
             List<CosmosElement> distinctResults = new List<CosmosElement>();
-            QueryResponseCore cosmosQueryResponse = await base.DrainAsync(maxElements, cancellationToken);
-            if (!cosmosQueryResponse.IsSuccess)
+            QueryResponseCore sourceResponse = await base.DrainAsync(maxElements, cancellationToken);
+
+            if (!sourceResponse.IsSuccess)
             {
-                return cosmosQueryResponse;
+                return sourceResponse;
             }
 
-            foreach (CosmosElement document in cosmosQueryResponse.CosmosElements)
+            foreach (CosmosElement document in sourceResponse.CosmosElements)
             {
-                if (this.distinctMap.Add(document, out this.lastHash))
+                if (this.distinctMap.Add(document, out UInt192? hash))
                 {
                     distinctResults.Add(document);
                 }
             }
 
-            string updatedContinuationToken;
-            if (!this.IsDone)
-            {
-                updatedContinuationToken = new DistinctContinuationToken(
-                    this.lastHash,
-                    cosmosQueryResponse.ContinuationToken).ToString();
-            }
-            else
-            {
-                this.Source.Stop();
-                updatedContinuationToken = null;
-            }
-
-            string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : Documents.RMResources.UnorderedDistinctQueryContinuationToken;
             return QueryResponseCore.CreateSuccess(
                 result: distinctResults,
-                continuationToken: updatedContinuationToken,
-                disallowContinuationTokenMessage: disallowContinuationTokenMessage,
-                activityId: cosmosQueryResponse.ActivityId,
-                requestCharge: cosmosQueryResponse.RequestCharge,
-                queryMetricsText: cosmosQueryResponse.QueryMetricsText,
-                queryMetrics: cosmosQueryResponse.QueryMetrics,
-                requestStatistics: cosmosQueryResponse.RequestStatistics,
-                responseLengthBytes: cosmosQueryResponse.ResponseLengthBytes);
+                continuationToken: this.distinctMap.GetContinuationToken(),
+                disallowContinuationTokenMessage: null,
+                activityId: sourceResponse.ActivityId,
+                requestCharge: sourceResponse.RequestCharge,
+                queryMetricsText: sourceResponse.QueryMetricsText,
+                queryMetrics: sourceResponse.QueryMetrics,
+                requestStatistics: sourceResponse.RequestStatistics,
+                responseLengthBytes: sourceResponse.ResponseLengthBytes);
         }
 
         /// <summary>
@@ -181,57 +156,17 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <summary>
         /// Continuation token for distinct queries.
         /// </summary>
-        private struct DistinctContinuationToken
+        private sealed class DistinctContinuationToken
         {
-            /// <summary>
-            /// Initializes a new instance of the DistinctContinuationToken struct.
-            /// </summary>
-            /// <param name="lastHash">The last hash.</param>
-            /// <param name="sourceToken">The continuation token for the source context.</param>
-            public DistinctContinuationToken(UInt192? lastHash, string sourceToken)
+            public DistinctContinuationToken(string sourceToken, string distinctMapToken)
             {
-                this.LastHash = lastHash;
                 this.SourceToken = sourceToken;
+                this.DistinctMapToken = distinctMapToken;
             }
 
-            /// <summary>
-            /// Gets the previous hash.
-            /// </summary>
-            /// <remarks>The type is nullable, since only ordered distinct queries will have a previous hash.</remarks>
-            [JsonProperty("lastHash")]
-            [JsonConverter(typeof(NullableUInt192Serializer))]
-            public UInt192? LastHash
-            {
-                get;
-            }
+            public string SourceToken { get; }
 
-            /// <summary>
-            /// Gets he continuation token for the source context.
-            /// </summary>
-            [JsonProperty("sourceToken")]
-            public string SourceToken
-            {
-                get;
-            }
-
-            /// <summary>
-            /// Parses out the DistinctContinuationToken from a string.
-            /// </summary>
-            /// <param name="queryClient">The query client</param>
-            /// <param name="value">The value to parse.</param>
-            /// <returns>The parsed DistinctContinuationToken.</returns>
-            public static DistinctContinuationToken Parse(CosmosQueryClient queryClient, string value)
-            {
-                DistinctContinuationToken result;
-                if (!TryParse(value, out result))
-                {
-                    throw queryClient.CreateBadRequestException($"Invalid DistinctContinuationToken: {value}");
-                }
-                else
-                {
-                    return result;
-                }
-            }
+            public string DistinctMapToken { get; }
 
             /// <summary>
             /// Tries to parse a DistinctContinuationToken from a string.
@@ -239,7 +174,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             /// <param name="value">The value to parse.</param>
             /// <param name="distinctContinuationToken">The output DistinctContinuationToken.</param>
             /// <returns>True if we successfully parsed the DistinctContinuationToken, else false.</returns>
-            public static bool TryParse(string value, out DistinctContinuationToken distinctContinuationToken)
+            public static bool TryParse(
+                string value,
+                out DistinctContinuationToken distinctContinuationToken)
             {
                 distinctContinuationToken = default(DistinctContinuationToken);
                 if (string.IsNullOrWhiteSpace(value))
@@ -266,60 +203,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             public override string ToString()
             {
                 return JsonConvert.SerializeObject(this);
-            }
-
-            /// <summary>
-            /// Customer converter for nullable UInt192 so that we can serialize and deserialize the previous hash for distinct queries.
-            /// </summary>
-            private class NullableUInt192Serializer : JsonConverter
-            {
-                /// <summary>
-                /// Gets whether or not you can convert the object type.
-                /// </summary>
-                /// <param name="objectType">The object type.</param>
-                /// <returns>Whether or not you can convert the object type.</returns>
-                public override bool CanConvert(Type objectType)
-                {
-                    return objectType == typeof(UInt192) || objectType == typeof(object);
-                }
-
-                /// <summary>
-                /// Reads the nullable UInt192
-                /// </summary>
-                /// <param name="reader">The reader to read from.</param>
-                /// <param name="objectType">The object type.</param>
-                /// <param name="existingValue">The existing value.</param>
-                /// <param name="serializer">The serializer.</param>
-                /// <returns>The nullable UInt192.</returns>
-                public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-                {
-                    if (reader.Value == null)
-                    {
-                        return null;
-                    }
-
-                    return UInt192.Parse(reader.Value.ToString());
-                }
-
-                /// <summary>
-                /// Writes the nullable UInt192
-                /// </summary>
-                /// <param name="writer">The writer.</param>
-                /// <param name="value">The value.</param>
-                /// <param name="serializer">The serializer.</param>
-                public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-                {
-                    if (value == null)
-                    {
-                        writer.WriteNull();
-                    }
-                    else
-                    {
-                        UInt192 uint192 = (UInt192)value;
-                        JToken token = JToken.FromObject(uint192.ToString());
-                        token.WriteTo(writer);
-                    }
-                }
             }
         }
     }

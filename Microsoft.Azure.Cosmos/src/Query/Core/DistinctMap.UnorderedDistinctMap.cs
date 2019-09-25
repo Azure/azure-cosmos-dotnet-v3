@@ -5,8 +5,10 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using UInt128 = Documents.UInt128;
 
     /// <summary>
@@ -89,63 +91,136 @@ namespace Microsoft.Azure.Cosmos.Query
             /// </summary>
             private const int UIntLength = 4;
 
+            private const string NumbersName = "Numbers";
+            private const string StringsLength4Name = "StringsLength4";
+            private const string StringsLength8Name = "StringsLength8";
+            private const string StringsLength16Name = "StringsLength16";
+            private const string StringsLength24Name = "StringsLength24";
+            private const string StringsLength24PlusName = "StringsLength24+";
+            private const string ArraysName = "Arrays";
+            private const string ObjectName = "Object";
+            private const string SimpleValuesName = "SimpleValues";
+
             /// <summary>
             /// Buffer that gets reused to convert a .net string (utf-16) to a (utf-8) byte array.
             /// </summary>
-            private readonly byte[] utf8Buffer = new byte[UnorderdDistinctMap.UInt192Length];
+            private readonly byte[] utf8Buffer;
 
             /// <summary>
             /// HashSet for all numbers seen.
             /// This takes less space than a 24 byte hash and has full fidelity.
             /// </summary>
-            private readonly HashSet<double> numbers = new HashSet<double>();
+            private readonly HashSet<Number64> numbers;
 
             /// <summary>
             /// HashSet for all strings seen of length less than or equal to 4 stored as a uint.
             /// This takes less space than a 24 byte hash and has full fidelity.
             /// </summary>
-            private readonly HashSet<uint> stringsLength4 = new HashSet<uint>();
+            private readonly HashSet<uint> stringsLength4;
 
             /// <summary>
             /// HashSet for all strings seen of length less than or equal to 8 stored as a ulong.
             /// This takes less space than a 24 byte hash and has full fidelity.
             /// </summary>
-            private readonly HashSet<ulong> stringLength8 = new HashSet<ulong>();
+            private readonly HashSet<ulong> stringsLength8;
 
             /// <summary>
             /// HashSet for all strings of length less than or equal to 16 stored as a UInt128.
             /// This takes less space than a 24 byte hash and has full fidelity.
             /// </summary>
-            private readonly HashSet<UInt128> stringLength16 = new HashSet<UInt128>();
+            private readonly HashSet<UInt128> stringsLength16;
 
             /// <summary>
             /// HashSet for all strings seen of length less than or equal to 24 stored as a UInt192.
             /// This takes the same space as 24 byte hash and has full fidelity.
             /// </summary>
-            private readonly HashSet<UInt192> stringLength24 = new HashSet<UInt192>();
+            private readonly HashSet<UInt192> stringsLength24;
 
             /// <summary>
             /// HashSet for all strings seen of length greater than 24 stored as a UInt192.
             /// This set only stores the hash, since we don't want to spend the space for storing large strings.
             /// </summary>
-            private readonly HashSet<UInt192> stringLength24Plus = new HashSet<UInt192>();
+            private readonly HashSet<UInt192> stringsLength24Plus;
 
             /// <summary>
             /// HashSet for all arrays seen.
             /// This set only stores the hash, since we don't want to spend the space for storing large arrays.
             /// </summary>
-            private readonly HashSet<UInt192> arrays = new HashSet<UInt192>();
+            private readonly HashSet<UInt192> arrays;
 
             /// <summary>
             /// HashSet for all object seen.
             /// This set only stores the hash, since we don't want to spend the space for storing large objects.
             /// </summary>
-            private readonly HashSet<UInt192> objects = new HashSet<UInt192>();
+            private readonly HashSet<UInt192> objects;
 
             /// <summary>
             /// Stores all the simple values that we don't want to dedicate a hash set for.
             /// </summary>
             private SimpleValues simpleValues;
+
+            private UnorderdDistinctMap(
+                HashSet<Number64> numbers,
+                HashSet<uint> stringsLength4,
+                HashSet<ulong> stringsLength8,
+                HashSet<UInt128> stringsLength16,
+                HashSet<UInt192> stringsLength24,
+                HashSet<UInt192> stringsLength24Plus,
+                HashSet<UInt192> arrays,
+                HashSet<UInt192> objects,
+                SimpleValues simpleValues)
+            {
+                if (numbers == null)
+                {
+                    throw new ArgumentNullException(nameof(numbers));
+                }
+
+                if (stringsLength4 == null)
+                {
+                    throw new ArgumentNullException(nameof(stringsLength4));
+                }
+
+                if (stringsLength8 == null)
+                {
+                    throw new ArgumentNullException(nameof(stringsLength8));
+                }
+
+                if (stringsLength16 == null)
+                {
+                    throw new ArgumentNullException(nameof(stringsLength16));
+                }
+
+                if (stringsLength24 == null)
+                {
+                    throw new ArgumentNullException(nameof(stringsLength24));
+                }
+
+                if (stringsLength24Plus == null)
+                {
+                    throw new ArgumentNullException(nameof(stringsLength24Plus));
+                }
+
+                if (arrays == null)
+                {
+                    throw new ArgumentNullException(nameof(arrays));
+                }
+
+                if (objects == null)
+                {
+                    throw new ArgumentNullException(nameof(objects));
+                }
+
+                this.utf8Buffer = new byte[UnorderdDistinctMap.UInt192Length];
+                this.numbers = numbers;
+                this.stringsLength4 = stringsLength4;
+                this.stringsLength8 = stringsLength8;
+                this.stringsLength16 = stringsLength16;
+                this.stringsLength24 = stringsLength24;
+                this.stringsLength24Plus = stringsLength24Plus;
+                this.arrays = arrays;
+                this.objects = objects;
+                this.simpleValues = simpleValues;
+            }
 
             /// <summary>
             /// Adds a JToken to this map if it hasn't already been added.
@@ -204,6 +279,81 @@ namespace Microsoft.Azure.Cosmos.Query
                 return added;
             }
 
+            public override string GetContinuationToken()
+            {
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                jsonWriter.WriteObjectStart();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.NumbersName);
+                jsonWriter.WriteArrayStart();
+                foreach (Number64 number in this.numbers)
+                {
+                    jsonWriter.WriteNumberValue(number);
+                }
+                jsonWriter.WriteArrayEnd();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength4Name);
+                jsonWriter.WriteArrayStart();
+                foreach (uint stringLength4 in this.stringsLength4)
+                {
+                    jsonWriter.WriteUInt32Value(stringLength4);
+                }
+                jsonWriter.WriteArrayEnd();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength8Name);
+                jsonWriter.WriteArrayStart();
+                foreach (ulong stringLength8 in this.stringsLength8)
+                {
+                    jsonWriter.WriteInt64Value((long)stringLength8);
+                }
+                jsonWriter.WriteArrayEnd();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength16Name);
+                jsonWriter.WriteArrayStart();
+                foreach (UInt128 stringLength16 in this.stringsLength16)
+                {
+                    jsonWriter.WriteBinaryValue(UInt128.ToByteArray(stringLength16));
+                }
+                jsonWriter.WriteArrayEnd();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength24Name);
+                jsonWriter.WriteArrayStart();
+                foreach (UInt192 stringLength24 in this.stringsLength24)
+                {
+                    jsonWriter.WriteBinaryValue(UInt192.ToByteArray(stringLength24));
+                }
+                jsonWriter.WriteArrayEnd();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.StringsLength24PlusName);
+                jsonWriter.WriteArrayStart();
+                foreach (UInt192 stringLength24Plus in this.stringsLength24Plus)
+                {
+                    jsonWriter.WriteBinaryValue(UInt192.ToByteArray(stringLength24Plus));
+                }
+                jsonWriter.WriteArrayEnd();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.ArraysName);
+                jsonWriter.WriteArrayStart();
+                foreach (UInt192 array in this.arrays)
+                {
+                    jsonWriter.WriteBinaryValue(UInt192.ToByteArray(array));
+                }
+                jsonWriter.WriteArrayEnd();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.ObjectName);
+                jsonWriter.WriteArrayStart();
+                foreach (UInt192 objectHash in this.objects)
+                {
+                    jsonWriter.WriteBinaryValue(UInt192.ToByteArray(objectHash));
+                }
+                jsonWriter.WriteArrayEnd();
+
+                jsonWriter.WriteFieldName(UnorderdDistinctMap.SimpleValuesName);
+                jsonWriter.WriteStringValue(this.simpleValues.ToString());
+
+                return Convert.ToBase64String(jsonWriter.GetResult());
+            }
+
             /// <summary>
             /// Adds a number value to the map.
             /// </summary>
@@ -259,24 +409,24 @@ namespace Microsoft.Azure.Cosmos.Query
                     else if (utf8Length <= UnorderdDistinctMap.ULongLength)
                     {
                         ulong uLongValue = BitConverter.ToUInt64(this.utf8Buffer, 0);
-                        added = this.stringLength8.Add(uLongValue);
+                        added = this.stringsLength8.Add(uLongValue);
                     }
                     else if (utf8Length <= UnorderdDistinctMap.UInt128Length)
                     {
                         UInt128 uInt128Value = UInt128.FromByteArray(this.utf8Buffer, 0);
-                        added = this.stringLength16.Add(uInt128Value);
+                        added = this.stringsLength16.Add(uInt128Value);
                     }
                     else
                     {
                         UInt192 uInt192Value = UInt192.FromByteArray(this.utf8Buffer, 0);
-                        added = this.stringLength24.Add(uInt192Value);
+                        added = this.stringsLength24.Add(uInt192Value);
                     }
                 }
                 else
                 {
                     // Else the string is too large and we will just store the hash.
                     UInt192 uint192Value = DistinctMap.GetHash(CosmosString.Create(value));
-                    added = this.stringLength24Plus.Add(uint192Value);
+                    added = this.stringsLength24Plus.Add(uint192Value);
                 }
 
                 return added;
@@ -302,6 +452,162 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 UInt192 hash = DistinctMap.GetHash(cosmosObject);
                 return this.objects.Add(hash);
+            }
+
+            public static UnorderdDistinctMap Create(string continuationToken)
+            {
+                HashSet<Number64> numbers = new HashSet<Number64>();
+                HashSet<uint> stringsLength4 = new HashSet<uint>();
+                HashSet<ulong> stringsLength8 = new HashSet<ulong>();
+                HashSet<UInt128> stringsLength16 = new HashSet<UInt128>();
+                HashSet<UInt192> stringsLength24 = new HashSet<UInt192>();
+                HashSet<UInt192> stringsLength24Plus = new HashSet<UInt192>();
+                HashSet<UInt192> arrays = new HashSet<UInt192>();
+                HashSet<UInt192> objects = new HashSet<UInt192>();
+                SimpleValues simpleValues = SimpleValues.None;
+
+                if (continuationToken != null)
+                {
+                    byte[] binaryBuffer = Convert.FromBase64String(continuationToken);
+                    CosmosElement cosmosElement = CosmosElement.Create(binaryBuffer);
+                    if (!(cosmosElement is CosmosObject hashDictionary))
+                    {
+                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    }
+
+                    // Numbers
+                    CosmosElement rawNumbers = hashDictionary[UnorderdDistinctMap.NumbersName];
+                    if (!(rawNumbers is CosmosArray numbersArray))
+                    {
+                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    }
+
+                    foreach (CosmosElement rawNumber in numbersArray)
+                    {
+                        if (!(rawNumber is CosmosNumber64 number))
+                        {
+                            throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        }
+
+                        numbers.Add(number.GetValue());
+                    }
+
+                    // Strings Length 4
+                    CosmosElement rawStringsLength4 = hashDictionary[UnorderdDistinctMap.StringsLength4Name];
+                    if (!(rawStringsLength4 is CosmosArray stringsLength4Array))
+                    {
+                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    }
+
+                    foreach (CosmosElement rawStringLength4 in stringsLength4Array)
+                    {
+                        if (!(rawStringLength4 is CosmosInt32 stringlength4))
+                        {
+                            throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        }
+
+                        stringsLength4.Add((uint)stringlength4.GetValue());
+                    }
+
+                    // Strings Length 8
+                    CosmosElement rawStringsLength8 = hashDictionary[UnorderdDistinctMap.StringsLength8Name];
+                    if (!(rawStringsLength8 is CosmosArray stringsLength8Array))
+                    {
+                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    }
+
+                    foreach (CosmosElement rawStringLength8 in stringsLength8Array)
+                    {
+                        if (!(rawStringLength8 is CosmosInt64 stringlength8))
+                        {
+                            throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        }
+
+                        stringsLength8.Add((ulong)stringlength8.GetValue());
+                    }
+
+                    // Strings Length 16
+                    CosmosElement rawStringsLength16 = hashDictionary[UnorderdDistinctMap.StringsLength16Name];
+                    if (!(rawStringsLength16 is CosmosArray stringsLength16Array))
+                    {
+                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    }
+
+                    foreach (CosmosElement rawStringLength16 in stringsLength16Array)
+                    {
+                        if (!(rawStringLength16 is CosmosBinary stringlength16))
+                        {
+                            throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        }
+
+                        // Todo have this method work with span<byte> instead to avoid the allocation.
+                        UInt128 stringLength16 = UInt128.FromByteArray(stringlength16.Value.ToArray());
+                        stringsLength16.Add(stringLength16);
+                    }
+
+                    // Strings Length 24
+                    HashSet<UInt192> parsedStringsLength24 = Parse192BitHashes(hashDictionary, UnorderdDistinctMap.StringsLength24Name);
+                    stringsLength24.UnionWith(parsedStringsLength24);
+
+                    // Strings Length 24Plus
+                    HashSet<UInt192> parsedStringsLength24Plus = Parse192BitHashes(hashDictionary, UnorderdDistinctMap.StringsLength24PlusName);
+                    stringsLength24Plus.UnionWith(parsedStringsLength24Plus);
+
+                    // Array
+                    HashSet<UInt192> parsedArrays = Parse192BitHashes(hashDictionary, UnorderdDistinctMap.ArraysName);
+                    arrays.UnionWith(parsedArrays);
+
+                    // Object
+                    HashSet<UInt192> parsedObjects = Parse192BitHashes(hashDictionary, UnorderdDistinctMap.ObjectName);
+                    objects.UnionWith(parsedObjects);
+
+                    // Simple Values
+                    CosmosElement rawSimpleValues = hashDictionary[UnorderdDistinctMap.SimpleValuesName];
+                    if (!(rawSimpleValues is CosmosString simpleValuesString))
+                    {
+                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    }
+
+                    if (!Enum.TryParse<SimpleValues>(simpleValuesString.Value, out simpleValues))
+                    {
+                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    }
+                }
+
+                return new UnorderdDistinctMap(
+                    numbers,
+                    stringsLength4,
+                    stringsLength8,
+                    stringsLength16,
+                    stringsLength24,
+                    stringsLength24Plus,
+                    arrays,
+                    objects,
+                    simpleValues);
+            }
+
+            private static HashSet<UInt192> Parse192BitHashes(CosmosObject hashDictionary, string propertyName)
+            {
+                HashSet<UInt192> hashSet = new HashSet<UInt192>();
+                CosmosElement raw = hashDictionary[propertyName];
+                if (!(raw is CosmosArray array))
+                {
+                    throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                }
+
+                foreach (CosmosElement item in array)
+                {
+                    if (!(item is CosmosBinary binary))
+                    {
+                        throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                    }
+
+                    // Todo have this method work with span<byte> instead to avoid the allocation.
+                    UInt192 uint192 = UInt192.FromByteArray(binary.Value.ToArray());
+                    hashSet.Add(uint192);
+                }
+
+                return hashSet;
             }
         }
     }

@@ -24,18 +24,20 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Creates an IDistinctMap based on the type.
         /// </summary>
         /// <param name="distinctQueryType">The type of distinct query.</param>
-        /// <param name="previousHash">The hash of the previous value successfully inserted into this DistinctMap</param>
+        /// <param name="distinctMapContinuationToken">The continuation token to resume from.</param>
         /// <returns>The appropriate IDistinctMap.</returns>
-        public static DistinctMap Create(DistinctQueryType distinctQueryType, UInt192? previousHash)
+        public static DistinctMap Create(
+            DistinctQueryType distinctQueryType,
+            string distinctMapContinuationToken)
         {
             switch (distinctQueryType)
             {
                 case DistinctQueryType.None:
                     throw new ArgumentException("distinctQueryType can not be None. This part of code is not supposed to be reachable. Please contact support to resolve this issue.");
                 case DistinctQueryType.Unordered:
-                    return new UnorderdDistinctMap();
+                    return UnorderdDistinctMap.Create(distinctMapContinuationToken);
                 case DistinctQueryType.Ordered:
-                    return new OrderedDistinctMap(previousHash.GetValueOrDefault());
+                    return OrderedDistinctMap.Create(distinctMapContinuationToken);
                 default:
                     throw new ArgumentException($"Unrecognized DistinctQueryType: {distinctQueryType}.");
             }
@@ -45,9 +47,11 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Adds a JToken to this DistinctMap.
         /// </summary>
         /// <param name="cosmosElement">The element to add.</param>
-        /// <param name="hash">The hash of the token.</param>
+        /// <param name="hash">The hash of the cosmos element</param>
         /// <returns>Whether or not the token was successfully added.</returns>
         public abstract bool Add(CosmosElement cosmosElement, out UInt192? hash);
+
+        public abstract string GetContinuationToken();
 
         /// <summary>
         /// Gets the hash of a JToken.
