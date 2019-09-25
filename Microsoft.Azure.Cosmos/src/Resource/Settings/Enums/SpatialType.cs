@@ -1,7 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+#if AZUREDATA
+namespace Azure.Data.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
     /// <summary>
     /// Defines the target data type of an index path specification in the Azure Cosmos DB service.

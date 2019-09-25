@@ -1,7 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+#if AZUREDATA
+namespace Azure.Data.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
     /// <summary>
     /// These are the indexing types available for indexing a path in the Azure Cosmos DB service.

@@ -2,7 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZUREDATA
+namespace Azure.Data.Cosmos.Scripts
+#else
 namespace Microsoft.Azure.Cosmos.Scripts
+#endif
 {
     /// <summary>
     /// Specifies the operations on which a trigger should be executed in the Azure Cosmos DB service.
