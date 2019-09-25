@@ -2214,7 +2214,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("Functional")]
         public async Task TestQueryDistinct()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -2225,14 +2224,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             for (int i = 0; i < numberOfDocuments; i++)
             {
+                // Generate random people
                 Person person = CrossPartitionQueryTests.GetRandomPerson(rand);
                 for (int j = 0; j < rand.Next(0, 4); j++)
                 {
+                    // Force an exact duplicate
                     people.Add(person);
                 }
             }
 
             List<string> documents = new List<string>();
+            // Shuffle them so they end up in different pages
             people = people.OrderBy((person) => Guid.NewGuid()).ToList();
             foreach (Person person in people)
             {
@@ -2363,6 +2365,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
                 "SELECT {0} VALUE c.name from c",
                 "SELECT {0} VALUE c.age from c",
+                "SELECT {0} VALUE c.mixedTypeField from c",
                 "SELECT {0} TOP 2147483647 VALUE c.city from c",
                 "SELECT {0} VALUE c.age from c ORDER BY c.name",
             })
@@ -2370,10 +2373,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string queryWithoutDistinct = string.Format(query, "");
                 MockDistinctMap documentsSeen = new MockDistinctMap();
                 List<JToken> documentsFromWithoutDistinct = await CrossPartitionQueryTests.RunQuery<JToken>(
-                       container,
-                       queryWithoutDistinct,
-                       maxConcurrency: 10,
-                       maxItemCount: 100);
+                    container,
+                    queryWithoutDistinct,
+                    maxConcurrency: 10,
+                    maxItemCount: 100);
                 documentsFromWithoutDistinct = documentsFromWithoutDistinct
                     .Where(document => documentsSeen.Add(document, out UInt192? hash))
                     .ToList();
@@ -3150,14 +3153,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             for (int i = 0; i < numberOfDocuments; i++)
             {
+                // Generate random people
                 Person person = GetRandomPerson(rand);
                 for (int j = 0; j < rand.Next(0, 4); j++)
                 {
+                    // Force an exact duplicate
                     people.Add(person);
                 }
             }
 
             List<string> documents = new List<string>();
+            // Shuffle them so that they end up in different pages.
             people = people.OrderBy((person) => Guid.NewGuid()).ToList();
             foreach (Person person in people)
             {
@@ -3495,6 +3501,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     documents.Add(JsonConvert.SerializeObject(partitionClone));
                 }
             }
+
+            // Shuffle the documents so they end up in different pages
+            documents = documents.OrderBy((person) => Guid.NewGuid()).ToList();
 
             Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
             {
@@ -4462,7 +4471,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int age = CrossPartitionQueryTests.GetRandomAge(rand);
             Pet pet = CrossPartitionQueryTests.GetRandomPet(rand);
             Guid guid = Guid.NewGuid();
-            return new Person(name, city, income, children, age, pet, guid);
+
+            object mixedTypeField;
+            switch (rand.Next(0, 7))
+            {
+                case 0:
+                    mixedTypeField = name;
+                    break;
+
+                case 1:
+                    mixedTypeField = city;
+                    break;
+
+                case 2:
+                    mixedTypeField = income;
+                    break;
+
+                case 3:
+                    mixedTypeField = children;
+                    break;
+
+                case 4:
+                    mixedTypeField = age;
+                    break;
+
+                case 5:
+                    mixedTypeField = pet;
+                    break;
+
+                case 6:
+                    mixedTypeField = guid;
+                    break;
+
+                default:
+                    throw new ArgumentException();
+            }
+            return new Person(name, city, income, children, age, pet, guid, mixedTypeField);
         }
 
         public sealed class JsonTokenEqualityComparer : IEqualityComparer<JToken>
@@ -4664,7 +4708,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             [JsonProperty("guid")]
             public Guid Guid { get; }
 
-            public Person(string name, City city, double income, Person[] children, int age, Pet pet, Guid guid)
+            [JsonProperty("mixedTypeField")]
+            public object MixedTypeField { get; }
+
+            public Person(
+                string name,
+                City city,
+                double income,
+                Person[] children,
+                int age,
+                Pet pet,
+                Guid guid,
+                object mixedTypeField)
             {
                 this.Name = name;
                 this.City = city;
@@ -4673,6 +4728,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Age = age;
                 this.Pet = pet;
                 this.Guid = guid;
+                this.MixedTypeField = mixedTypeField;
             }
         }
     }

@@ -503,12 +503,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
                     foreach (CosmosElement rawStringLength4 in stringsLength4Array)
                     {
-                        if (!(rawStringLength4 is CosmosInt32 stringlength4))
+                        if (!(rawStringLength4 is CosmosUInt32 stringlength4))
                         {
                             throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
                         }
 
-                        stringsLength4.Add((uint)stringlength4.GetValue());
+                        stringsLength4.Add(stringlength4.GetValue());
                     }
 
                     // Strings Length 8
