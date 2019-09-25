@@ -351,6 +351,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 jsonWriter.WriteFieldName(UnorderdDistinctMap.SimpleValuesName);
                 jsonWriter.WriteStringValue(this.simpleValues.ToString());
 
+                jsonWriter.WriteObjectEnd();
+
                 return Convert.ToBase64String(jsonWriter.GetResult());
             }
 

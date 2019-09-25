@@ -112,9 +112,22 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
             }
 
+            string updatedContinuationToken;
+            if (!this.IsDone)
+            {
+                updatedContinuationToken = new DistinctContinuationToken(
+                    sourceResponse.ContinuationToken,
+                    this.distinctMap.GetContinuationToken()).ToString();
+            }
+            else
+            {
+                this.Source.Stop();
+                updatedContinuationToken = null;
+            }
+
             return QueryResponseCore.CreateSuccess(
                 result: distinctResults,
-                continuationToken: this.distinctMap.GetContinuationToken(),
+                continuationToken: updatedContinuationToken,
                 disallowContinuationTokenMessage: null,
                 activityId: sourceResponse.ActivityId,
                 requestCharge: sourceResponse.RequestCharge,

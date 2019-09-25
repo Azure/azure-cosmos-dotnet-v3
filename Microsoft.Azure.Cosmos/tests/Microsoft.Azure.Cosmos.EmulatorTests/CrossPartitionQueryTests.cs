@@ -2240,8 +2240,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             await this.CreateIngestQueryDelete(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                ConnectionModes.Direct ,
+                CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryDistinct,
                 "/id");
@@ -2249,282 +2249,143 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryDistinct(Container container, IEnumerable<Document> documents, dynamic testArgs = null)
         {
-            #region Queries
-            // To verify distint queries you can run it once without the distinct clause and run it through a hash set 
-            // then compare to the query with the distinct clause.
-            List<string> queries = new List<string>()
-            {
-                // basic distinct queries
-                "SELECT {0} VALUE null",
-                "SELECT {0} VALUE false",
-                "SELECT {0} VALUE true",
-                "SELECT {0} VALUE 1",
-                "SELECT {0} VALUE 'a'",
-                "SELECT {0} VALUE [null, true, false, 1, 'a']",
-                "SELECT {0} VALUE {{p1:null, p2:true, p3:false, p4:1, p5:'a'}}",
-                "SELECT {0} false AS p",
-                "SELECT {0} 1 AS p",
-                "SELECT {0} 'a' AS p",
-                "SELECT {0} [null, true, false, 1, 'a'] AS p",
-                "SELECT {0} {{p1:null, p2:true, p3:false, p4:1, p5:'a'}} AS p",
-                "SELECT {0} VALUE {{p1:null, p2:true, p3:false, p4:1, p5:'a'}}",
-                "SELECT {0} VALUE null FROM c",
-                "SELECT {0} VALUE false FROM c",
-                "SELECT {0} VALUE 1 FROM c",
-                "SELECT {0} VALUE 'a' FROM c",
-                "SELECT {0} VALUE [null, true, false, 1, 'a'] FROM c",
-                "SELECT {0} null AS p FROM c",
-                "SELECT {0} false AS p FROM c",
-                "SELECT {0} 1 AS p FROM c",
-                "SELECT {0} 'a' AS p FROM c",
-                "SELECT {0} [null, true, false, 1, 'a'] AS p FROM c",
-                "SELECT {0} {{p1:null, p2:true, p3:false, p4:1, p5:'a'}} AS p FROM c",
+            //#region Queries
+            //// To verify distint queries you can run it once without the distinct clause and run it through a hash set 
+            //// then compare to the query with the distinct clause.
+            //List<string> queries = new List<string>()
+            //{
+            //    // basic distinct queries
+            //    "SELECT {0} VALUE null",
 
-                // number value distinct queries
-                "SELECT {0} VALUE c.income from c",
-                "SELECT {0} VALUE c.age from c",
-                "SELECT {0} c.income, c.income AS income2 from c",
-                "SELECT {0} c.income, c.age from c",
-                "SELECT {0} VALUE [c.income, c.age] from c",
+            //    // number value distinct queries
+            //    "SELECT {0} VALUE c.income from c",
 
-                // string value distinct queries
-                "SELECT {0} VALUE c.name from c",
-                "SELECT {0} VALUE c.city from c",
-                "SELECT {0} VALUE c.partitionKey from c",
-                "SELECT {0} c.name, c.name AS name2 from c",
-                "SELECT {0} c.name, c.city from c",
-                "SELECT {0} VALUE [c.name, c.city] from c",
+            //    // string value distinct queries
+            //    "SELECT {0} VALUE c.name from c",
 
-                // array value distinct queries
-                "SELECT {0} VALUE c.children from c",
-                "SELECT {0} c.children, c.children AS children2 from c",
-                "SELECT {0} VALUE [c.name, c.age, c.pet] from c",
+            //    // array value distinct queries
+            //    "SELECT {0} VALUE c.children from c",
 
-                // object value distinct queries
-                "SELECT {0} VALUE c.pet from c",
-                "SELECT {0} c.pet, c.pet AS pet2 from c",
+            //    // object value distinct queries
+            //    "SELECT {0} VALUE c.pet from c",
 
-                // scalar expressions distinct query
-                "SELECT {0} VALUE c.age % 2 FROM c",
-                "SELECT {0} VALUE ABS(c.age) FROM c",
-                "SELECT {0} VALUE LEFT(c.name, 1) FROM c",
-                "SELECT {0} VALUE c.name || ', ' || (c.city ?? '') FROM c",
-                "SELECT {0} VALUE ARRAY_LENGTH(c.children) FROM c",
-                "SELECT {0} VALUE IS_DEFINED(c.city) FROM c",
-                "SELECT {0} VALUE (c.children[0].age ?? 0) + (c.children[1].age ?? 0) FROM c",
+            //    // scalar expressions distinct query
+            //    "SELECT {0} VALUE c.age % 2 FROM c",
 
-                // distinct queries with order by
-                "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
-                "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
-                "SELECT {0} VALUE c.city FROM c ORDER BY c.city",
-                "SELECT {0} VALUE c.city FROM c ORDER BY c.age",
-                "SELECT {0} VALUE LEFT(c.name, 1) FROM c ORDER BY c.name",
+            //    // distinct queries with order by
+            //    "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
 
-                // distinct queries with top and no matching order by
-                "SELECT {0} TOP 2147483647 VALUE c.age FROM c",
+            //    // distinct queries with top and no matching order by
+            //    "SELECT {0} TOP 2147483647 VALUE c.age FROM c",
 
-                // distinct queries with top and  matching order by
-                "SELECT {0} TOP 2147483647 VALUE c.age FROM c ORDER BY c.age",
+            //    // distinct queries with top and  matching order by
+            //    "SELECT {0} TOP 2147483647 VALUE c.age FROM c ORDER BY c.age",
 
-                // distinct queries with aggregates
-                "SELECT {0} VALUE MAX(c.age) FROM c",
+            //    // distinct queries with aggregates
+            //    "SELECT {0} VALUE MAX(c.age) FROM c",
 
-                // distinct queries with joins
-                "SELECT {0} VALUE c.age FROM p JOIN c IN p.children",
-                "SELECT {0} p.age AS ParentAge, c.age ChildAge FROM p JOIN c IN p.children",
-                "SELECT {0} VALUE c.name FROM p JOIN c IN p.children",
-                "SELECT {0} p.name AS ParentName, c.name ChildName FROM p JOIN c IN p.children",
+            //    // distinct queries with joins
+            //    "SELECT {0} VALUE c.age FROM p JOIN c IN p.children",
 
-                // distinct queries in subqueries
-                "SELECT {0} r.age, s FROM r JOIN (SELECT DISTINCT VALUE c FROM (SELECT 1 a) c) s WHERE r.age > 25",
-                "SELECT {0} p.name, p.age FROM (SELECT DISTINCT * FROM r) p WHERE p.age > 25",
+            //    // distinct queries in subqueries
+            //    "SELECT {0} r.age, s FROM r JOIN (SELECT DISTINCT VALUE c FROM (SELECT 1 a) c) s WHERE r.age > 25",
 
-                // distinct queries in scalar subqeries
-                "SELECT {0} p.name, (SELECT DISTINCT VALUE p.age) AS Age FROM p",
-                "SELECT {0} p.name, p.age FROM p WHERE (SELECT DISTINCT VALUE LEFT(p.name, 1)) > 'A' AND (SELECT DISTINCT VALUE p.age) > 21",
-                "SELECT {0} p.name, (SELECT DISTINCT VALUE p.age) AS Age FROM p WHERE (SELECT DISTINCT VALUE p.name) > 'A' OR (SELECT DISTINCT VALUE p.age) > 21",
+            //    // distinct queries in scalar subqeries
+            //    "SELECT {0} p.name, (SELECT DISTINCT VALUE p.age) AS Age FROM p",
 
-                // select *
-                "SELECT {0} * FROM c",
-            };
-            #endregion
-            #region ExecuteNextAsync API
-            // run the query with distinct and without + MockDistinctMap
-            // Should receive same results
-            // PageSize = 1 guarantees that the backend will return some duplicates.
-            foreach (string query in queries)
-            {
-                foreach (int pageSize in new int[] { 1, 10, 100 })
-                {
-                    string queryWithDistinct = string.Format(query, "DISTINCT");
-                    string queryWithoutDistinct = string.Format(query, "");
-                    MockDistinctMap documentsSeen = new MockDistinctMap();
-                    List<JToken> documentsFromWithDistinct = new List<JToken>();
-                    List<JToken> documentsFromWithoutDistinct = new List<JToken>();
+            //    // select *
+            //    "SELECT {0} * FROM c",
+            //};
+            //#endregion
+            //#region ExecuteNextAsync API
+            //// run the query with distinct and without + MockDistinctMap
+            //// Should receive same results
+            //// PageSize = 1 guarantees that the backend will return some duplicates.
+            //foreach (string query in queries)
+            //{
+            //    string queryWithoutDistinct = string.Format(query, "");
+                
+            //    QueryRequestOptions requestOptions = new QueryRequestOptions() { MaxItemCount = 100, MaxConcurrency = 100 };
+            //    FeedIterator<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
+            //            queryWithoutDistinct,
+            //            requestOptions: requestOptions);
 
-                    QueryRequestOptions requestOptions = new QueryRequestOptions() { MaxItemCount = pageSize, MaxConcurrency = 100 };
-                    FeedIterator<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
-                        queryWithoutDistinct,
-                        requestOptions: requestOptions);
+            //    MockDistinctMap documentsSeen = new MockDistinctMap();
+            //    List<JToken> documentsFromWithoutDistinct = new List<JToken>();
+            //    while (documentQueryWithoutDistinct.HasMoreResults)
+            //    {
+            //        FeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.ReadNextAsync();
+            //        foreach (JToken document in cosmosQueryResponse)
+            //        {
+            //            if (documentsSeen.Add(document, out UInt192? hash))
+            //            {
+            //                documentsFromWithoutDistinct.Add(document);
+            //            }
+            //            else
+            //            {
+            //                // No Op for debugging purposes.
+            //            }
+            //        }
+            //    }
 
-                    while (documentQueryWithoutDistinct.HasMoreResults)
-                    {
-                        FeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.ReadNextAsync();
-                        foreach (JToken document in cosmosQueryResponse)
-                        {
-                            if (documentsSeen.Add(document, out UInt192? hash))
-                            {
-                                documentsFromWithoutDistinct.Add(document);
-                            }
-                            else
-                            {
-                                // No Op for debugging purposes.
-                            }
-                        }
-                    }
+            //    foreach (int pageSize in new int[] { 1, 10, 100 })
+            //    {
+            //        string queryWithDistinct = string.Format(query, "DISTINCT");
+            //        List<JToken> documentsFromWithDistinct = new List<JToken>();
+            //        FeedIterator<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
+            //            queryWithDistinct,
+            //            requestOptions: requestOptions);
 
-                    FeedIterator<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
-                        queryWithDistinct,
-                        requestOptions: requestOptions);
+            //        while (documentQueryWithDistinct.HasMoreResults)
+            //        {
+            //            FeedResponse<JToken> cosmosQueryResponse = await documentQueryWithDistinct.ReadNextAsync();
+            //            documentsFromWithDistinct.AddRange(cosmosQueryResponse);
+            //        }
 
-                    while (documentQueryWithDistinct.HasMoreResults)
-                    {
-                        FeedResponse<JToken> cosmosQueryResponse = await documentQueryWithDistinct.ReadNextAsync();
-                        documentsFromWithDistinct.AddRange(cosmosQueryResponse);
-                    }
-
-                    Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
-                    for (int i = 0; i < documentsFromWithDistinct.Count; i++)
-                    {
-                        JToken documentFromWithDistinct = documentsFromWithDistinct.ElementAt(i);
-                        JToken documentFromWithoutDistinct = documentsFromWithoutDistinct.ElementAt(i);
-                        Assert.IsTrue(
-                            JsonTokenEqualityComparer.Value.Equals(documentFromWithDistinct, documentFromWithoutDistinct),
-                            $"{documentFromWithDistinct} did not match {documentFromWithoutDistinct} at index {i} for {queryWithDistinct}, with page size: {pageSize} on a container");
-                    }
-                }
-            }
-            #endregion
-            #region Unordered Continuation
-            // Run the unordered distinct query through the continuation api should result in the same set(but maybe some duplicates)
-            foreach (string query in new string[]
-            {
-                "SELECT {0} VALUE c.name from c",
-                "SELECT {0} VALUE c.age from c",
-                "SELECT {0} TOP 2147483647 VALUE c.city from c",
-                "SELECT {0} VALUE c.age from c ORDER BY c.name",
-            })
-            {
-                string queryWithDistinct = string.Format(query, "DISTINCT");
-                string queryWithoutDistinct = string.Format(query, "");
-                HashSet<JToken> documentsFromWithDistinct = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
-                HashSet<JToken> documentsFromWithoutDistinct = new HashSet<JToken>(JsonTokenEqualityComparer.Value);
-
-                FeedIterator<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
-                        queryWithoutDistinct,
-                        requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = 100 });
-
-                while (documentQueryWithoutDistinct.HasMoreResults)
-                {
-                    FeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.ReadNextAsync();
-                    foreach (JToken jToken in cosmosQueryResponse)
-                    {
-                        documentsFromWithoutDistinct.Add(jToken);
-                    }
-                }
-
-                FeedIterator<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
-                    queryWithDistinct,
-                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = 100 });
-
-                // For now we are blocking the use of continuation 
-                // This try catch can be removed if we do allow the continuation token.
-                try
-                {
-                    string continuationToken = null;
-                    do
-                    {
-                        FeedIterator<JToken> documentQuery = container.GetItemQueryIterator<JToken>(
-                            queryWithDistinct,
-                           requestOptions: new QueryRequestOptions() { MaxItemCount = 10, MaxConcurrency = 100 });
-
-                        FeedResponse<JToken> cosmosQueryResponse = await documentQuery.ReadNextAsync();
-                        foreach (JToken jToken in cosmosQueryResponse)
-                        {
-                            documentsFromWithDistinct.Add(jToken);
-                        }
-
-                        continuationToken = cosmosQueryResponse.ContinuationToken;
-
-                    }
-                    while (continuationToken != null);
-                    Assert.IsTrue(
-                        documentsFromWithDistinct.IsSubsetOf(documentsFromWithoutDistinct),
-                        $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
-
-                    Assert.Fail("Expected an exception when using continuation tokens on an unordered distinct query.");
-                }
-                catch (ArgumentException ex)
-                {
-                    string disallowContinuationErrorMessage = RMResources.UnorderedDistinctQueryContinuationToken;
-                    Assert.AreEqual(disallowContinuationErrorMessage, ex.Message);
-                }
-            }
-            #endregion
-            #region Ordered Region
+            //        Assert.AreEqual(documentsFromWithDistinct.Count, documentsFromWithoutDistinct.Count());
+            //        for (int i = 0; i < documentsFromWithDistinct.Count; i++)
+            //        {
+            //            JToken documentFromWithDistinct = documentsFromWithDistinct.ElementAt(i);
+            //            JToken documentFromWithoutDistinct = documentsFromWithoutDistinct.ElementAt(i);
+            //            Assert.IsTrue(
+            //                JsonTokenEqualityComparer.Value.Equals(documentFromWithDistinct, documentFromWithoutDistinct),
+            //                $"{documentFromWithDistinct} did not match {documentFromWithoutDistinct} at index {i} for {queryWithDistinct}, with page size: {pageSize} on a container");
+            //        }
+            //    }
+            //}
+            //#endregion
+            #region Continuation Token Support
             // Run the ordered distinct query through the continuation api, should result in the same set
             // since the previous hash is passed in the continuation token.
             foreach (string query in new string[]
             {
                 "SELECT {0} VALUE c.age FROM c ORDER BY c.age",
                 "SELECT {0} VALUE c.name FROM c ORDER BY c.name",
+                "SELECT {0} VALUE c.name from c",
+                "SELECT {0} VALUE c.age from c",
+                "SELECT {0} TOP 2147483647 VALUE c.city from c",
+                "SELECT {0} VALUE c.age from c ORDER BY c.name",
             })
             {
+                string queryWithoutDistinct = string.Format(query, "");
+                MockDistinctMap documentsSeen = new MockDistinctMap();
+                List<JToken> documentsFromWithoutDistinct = await CrossPartitionQueryTests.RunQuery<JToken>(
+                       container,
+                       queryWithoutDistinct,
+                       maxConcurrency: 10,
+                       maxItemCount: 100);
+                documentsFromWithoutDistinct = documentsFromWithoutDistinct
+                    .Where(document => documentsSeen.Add(document, out UInt192? hash))
+                    .ToList();
+
                 foreach (int pageSize in new int[] { 1, 10, 100 })
                 {
                     string queryWithDistinct = string.Format(query, "DISTINCT");
-                    string queryWithoutDistinct = string.Format(query, "");
-                    MockDistinctMap documentsSeen = new MockDistinctMap();
-                    List<JToken> documentsFromWithDistinct = new List<JToken>();
-                    List<JToken> documentsFromWithoutDistinct = new List<JToken>();
-
-                    FeedIterator<JToken> documentQueryWithoutDistinct = container.GetItemQueryIterator<JToken>(
-                        queryText: queryWithoutDistinct,
-                        requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
-
-                    while (documentQueryWithoutDistinct.HasMoreResults)
-                    {
-                        FeedResponse<JToken> cosmosQueryResponse = await documentQueryWithoutDistinct.ReadNextAsync();
-                        foreach (JToken document in cosmosQueryResponse)
-                        {
-                            if (documentsSeen.Add(document, out UInt192? hash))
-                            {
-                                documentsFromWithoutDistinct.Add(document);
-                            }
-                            else
-                            {
-                                // No Op for debugging purposes.
-                            }
-                        }
-                    }
-
-                    FeedIterator<JToken> documentQueryWithDistinct = container.GetItemQueryIterator<JToken>(
-                       queryText: queryWithDistinct,
-                       requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
-
-                    string continuationToken = null;
-                    do
-                    {
-                        FeedIterator<JToken> cosmosQuery = container.GetItemQueryIterator<JToken>(
-                                   queryText: queryWithDistinct,
-                                   continuationToken: continuationToken,
-                                   requestOptions: new QueryRequestOptions() { MaxItemCount = 1, MaxConcurrency = 100 });
-
-                        FeedResponse<JToken> cosmosQueryResponse = await cosmosQuery.ReadNextAsync();
-                        documentsFromWithDistinct.AddRange(cosmosQueryResponse);
-                        continuationToken = cosmosQueryResponse.ContinuationToken;
-                    }
-                    while (continuationToken != null);
+                    List<JToken> documentsFromWithDistinct = await CrossPartitionQueryTests.RunQuery<JToken>(
+                        container,
+                        queryWithDistinct,
+                        maxConcurrency: 10,
+                        maxItemCount: pageSize);
 
                     Assert.IsTrue(
                         documentsFromWithDistinct.SequenceEqual(documentsFromWithoutDistinct, JsonTokenEqualityComparer.Value),
