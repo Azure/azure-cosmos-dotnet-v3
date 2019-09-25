@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
                 CosmosArray cosmosArray = CosmosElementSerializer.ToCosmosElements(
                     memoryStream,
                     resourceType,
-                    requestOptions.CosmosSerializationFormatOptions);
+                    requestOptions.CosmosSerializationFormatOptions?.CreateCustomNavigatorCallback);
 
                 int itemCount = cosmosArray.Count;
                 return QueryResponseCore.CreateSuccess(

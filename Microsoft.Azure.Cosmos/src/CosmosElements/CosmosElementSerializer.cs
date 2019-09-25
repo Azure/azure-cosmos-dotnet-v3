@@ -24,12 +24,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// </summary>
         /// <param name="memoryStream">The memory stream response from Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
-        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
+        /// <param name="createJsonNavigator">The custom jsonNavigator. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
         internal static CosmosArray ToCosmosElements(
             MemoryStream memoryStream,
             ResourceType resourceType,
-            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
+            CosmosSerializationFormatOptions.CreateCustomNavigator createJsonNavigator)
         {
             if (!memoryStream.CanRead)
             {
@@ -54,16 +54,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             long responseLengthBytes = memoryStream.Length;
             byte[] content = memoryStream.ToArray();
-            IJsonNavigator jsonNavigator = null;
 
+            IJsonNavigator jsonNavigator = null;
             // Use the users custom navigator
-            if (cosmosSerializationOptions != null)
+            if (createJsonNavigator == null)
             {
-                jsonNavigator = cosmosSerializationOptions.CreateCustomNavigatorCallback(content);
-                if (jsonNavigator == null)
-                {
-                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
-                }
+                jsonNavigator = createJsonNavigator(content);
             }
             else
             {
@@ -97,20 +93,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// <param name="containerRid">Container Rid</param>
         /// <param name="cosmosElements">The cosmos elements</param>
         /// <param name="resourceType">The resource type</param>
-        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
+        /// <param name="jsonWriter">The custom jsonWriter. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>Returns a memory stream of cosmos elements. By default the memory stream will contain JSON.</returns>
         internal static Stream ToStream(
             string containerRid,
             IEnumerable<CosmosElement> cosmosElements,
             ResourceType resourceType,
-            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
+            IJsonWriter jsonWriter)
         {
-            IJsonWriter jsonWriter;
-            if (cosmosSerializationOptions != null)
-            {
-                jsonWriter = cosmosSerializationOptions.CreateCustomWriterCallback();
-            }
-            else
+            if (jsonWriter == null)
             {
                 jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             }
@@ -165,14 +156,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         /// <param name="cosmosElements">The cosmos elements</param>
         /// <param name="resourceType">The resource type</param>
         /// <param name="jsonSerializer">The JSON </param>
-        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
+        /// <param name="jsonWriter">The custom jsonWriter. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>Returns a list of deserialized objects</returns>
         internal static IEnumerable<T> Deserialize<T>(
             string containerRid,
             IEnumerable<CosmosElement> cosmosElements,
             ResourceType resourceType,
             CosmosSerializer jsonSerializer,
-            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
+            IJsonWriter jsonWriter = null)
         {
             if (!cosmosElements.Any())
             {
@@ -183,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 containerRid,
                 cosmosElements,
                 resourceType,
-                cosmosSerializationOptions);
+                jsonWriter);
 
             IEnumerable<T> typedResults = jsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(stream).Data;
 

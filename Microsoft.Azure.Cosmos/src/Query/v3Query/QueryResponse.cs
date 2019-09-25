@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
@@ -49,11 +50,27 @@ namespace Microsoft.Azure.Cosmos
 
         public int Count { get; }
 
-        public override Stream Content => CosmosElementSerializer.ToStream(
-            this.QueryHeaders.ContainerRid,
-            this.CosmosElements,
-            this.QueryHeaders.ResourceType,
-            this.CosmosSerializationOptions);
+        public override Stream Content
+        {
+            get
+            {
+                IJsonWriter jsonWriter = null;
+                if (this.CosmosSerializationOptions != null)
+                {
+                    jsonWriter = this.CosmosSerializationOptions.CreateCustomWriterCallback();
+                    if (jsonWriter == null)
+                    {
+                        throw new ArgumentNullException("CosmosSerializationFormatOptions.CosmosSerializationFormatOptions returned null");
+                    }
+                }
+
+                return CosmosElementSerializer.ToStream(
+                    this.QueryHeaders.ContainerRid,
+                    this.CosmosElements,
+                    this.QueryHeaders.ResourceType,
+                    jsonWriter);
+            }
+        }
 
         internal virtual IEnumerable<CosmosElement> CosmosElements { get; }
 
@@ -189,12 +206,22 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.resources == null)
                 {
+                    IJsonWriter jsonWriter = null;
+                    if (this.serializationOptions != null)
+                    {
+                        jsonWriter = this.serializationOptions.CreateCustomWriterCallback();
+                        if (jsonWriter == null)
+                        {
+                            throw new ArgumentNullException("CosmosSerializationFormatOptions.CosmosSerializationFormatOptions returned null");
+                        }
+                    }
+
                     this.resources = CosmosElementSerializer.Deserialize<T>(
                         this.QueryHeaders.ContainerRid,
                         this.cosmosElements,
                         this.QueryHeaders.ResourceType,
                         this.jsonSerializer,
-                        this.serializationOptions);
+                        jsonWriter);
                 }
 
                 return this.resources;
