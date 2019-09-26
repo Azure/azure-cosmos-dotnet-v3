@@ -15,9 +15,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeGoneRetryHandler : AbstractRetryHandler
     {
-        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
 
-        public PartitionKeyRangeGoneRetryHandler(ClientPipelineBuilderContext clientPipelineBuilderContext)
+        public PartitionKeyRangeGoneRetryHandler(CosmosDriverContext clientPipelineBuilderContext)
         {
             if (clientPipelineBuilderContext == null)
             {

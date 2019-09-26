@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
-    internal abstract class ClientPipelineBuilderContext
+    internal abstract class CosmosDriverContext
     {
         public abstract IAuthorizationTokenProvider AuthorizationTokenProvider { get; }
 
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract bool UseMultipleWriteLocations { get; }
 
-        public abstract CosmosClientOptions CosmosClientOptions { get; }
+        public abstract ConsistencyLevel? ConsistencyLevel { get; }
 
         public abstract IStoreModel GetStoreModel(DocumentServiceRequest request);
 

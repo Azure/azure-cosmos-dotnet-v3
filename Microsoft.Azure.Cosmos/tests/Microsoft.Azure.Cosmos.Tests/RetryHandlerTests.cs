@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(new CosmosClientPipelineBuilderContext(client));
+            RetryHandler retryHandler = new RetryHandler(new CosmosClientDriverContext(client));
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(new CosmosClientPipelineBuilderContext(client));
+            RetryHandler retryHandler = new RetryHandler(new CosmosClientDriverContext(client));
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RetryHandler retryHandler = new RetryHandler(new CosmosClientPipelineBuilderContext(client));
+            RetryHandler retryHandler = new RetryHandler(new CosmosClientDriverContext(client));
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockRetryPolicy.Setup(m => m.GetRequestPolicy())
                 .Returns(() => mockClientRetryPolicy.Object);
 
-            RetryHandler retryHandler = new RetryHandler(new CosmosClientPipelineBuilderContext(client));
+            RetryHandler retryHandler = new RetryHandler(new CosmosClientDriverContext(client));
             int handlerCalls = 0;
             int expectedHandlerCalls = 2;
             TestHandler testHandler = new TestHandler((request, response) => {
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -187,10 +187,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            RetryHandler retryHandler = new RetryHandler(new CosmosClientPipelineBuilderContext(client));
+            RetryHandler retryHandler = new RetryHandler(new CosmosClientDriverContext(client));
             retryHandler.InnerHandler = testHandler;
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Delete, RetryHandlerTests.TestUri);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
             await invoker.SendAsync(requestMessage, new CancellationToken());
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
             
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            PartitionKeyRangeGoneRetryHandler retryHandler = new PartitionKeyRangeGoneRetryHandler(new CosmosClientPipelineBuilderContext(client));
+            PartitionKeyRangeGoneRetryHandler retryHandler = new PartitionKeyRangeGoneRetryHandler(new CosmosClientDriverContext(client));
             int handlerCalls = 0;
             int expectedHandlerCalls = 1;
             TestHandler testHandler = new TestHandler((request, cancellationToken) => {
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
             await invoker.SendAsync(requestMessage, new CancellationToken());
@@ -290,10 +290,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            PartitionKeyRangeGoneRetryHandler retryHandler = new PartitionKeyRangeGoneRetryHandler(new CosmosClientPipelineBuilderContext(client));
+            PartitionKeyRangeGoneRetryHandler retryHandler = new PartitionKeyRangeGoneRetryHandler(new CosmosClientDriverContext(client));
             retryHandler.InnerHandler = testHandler;
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = retryHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://localhost/dbs/db1/colls/col1/docs/doc1"));
             await invoker.SendAsync(requestMessage, new CancellationToken());

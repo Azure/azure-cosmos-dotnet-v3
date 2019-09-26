@@ -15,11 +15,13 @@ namespace Microsoft.Azure.Cosmos
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
         private readonly RequestHandler partitionKeyRangeGoneRetryHandler;
-        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
-        public ClientPipelineBuilder(ClientPipelineBuilderContext clientPipelineBuilderContext)
+        public ClientPipelineBuilder(
+            CosmosDriverContext clientPipelineBuilderContext,
+            IReadOnlyCollection<RequestHandler> customHandlers)
         {
             if (clientPipelineBuilderContext == null)
             {
@@ -41,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.UseRetryPolicy();
-            this.AddCustomHandlers(clientPipelineBuilderContext.CosmosClientOptions.CustomHandlers);
+            this.AddCustomHandlers(customHandlers);
         }
 
         internal IReadOnlyCollection<RequestHandler> CustomHandlers

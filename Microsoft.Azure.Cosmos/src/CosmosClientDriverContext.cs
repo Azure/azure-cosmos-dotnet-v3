@@ -4,15 +4,26 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
-    internal class CosmosClientPipelineBuilderContext : ClientPipelineBuilderContext
+    internal class CosmosClientDriverContext : CosmosDriverContext
     {
         private readonly CosmosClient cosmosClient;
-        public CosmosClientPipelineBuilderContext(CosmosClient cosmosClient)
+        public CosmosClientDriverContext(CosmosClient cosmosClient)
         {
+            if (cosmosClient == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosClient));
+            }
+
+            if (cosmosClient.DocumentClient == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosClient.DocumentClient));
+            }
+
             this.cosmosClient = cosmosClient;
         }
 
@@ -22,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool UseMultipleWriteLocations => this.cosmosClient.DocumentClient.UseMultipleWriteLocations;
 
-        public override CosmosClientOptions CosmosClientOptions => this.cosmosClient.ClientOptions;
+        public override ConsistencyLevel? ConsistencyLevel => this.cosmosClient.ClientOptions.ConsistencyLevel;
 
         public override void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
         {

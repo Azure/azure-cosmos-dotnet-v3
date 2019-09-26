@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
         {
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = this.GetPartitionRoutingHelperMock();
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(new CosmosClientPipelineBuilderContext(client), partitionRoutingHelperMock.Object);
+            PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(new CosmosClientDriverContext(client), partitionRoutingHelperMock.Object);
 
             TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
                 ResponseMessage errorResponse = await TestHandler.ReturnStatusCode(HttpStatusCode.Gone);
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Client.Core.Tests
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).ThrowsAsync(new DocumentClientException("error", HttpStatusCode.ServiceUnavailable, SubStatusCodes.Unknown));
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-            PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(new CosmosClientPipelineBuilderContext(client), partitionRoutingHelperMock.Object);
+            PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(new CosmosClientDriverContext(client), partitionRoutingHelperMock.Object);
 
             TestHandler testHandler = new TestHandler(async (request, cancellationToken) => {
                 ResponseMessage successResponse = await TestHandler.ReturnSuccess();

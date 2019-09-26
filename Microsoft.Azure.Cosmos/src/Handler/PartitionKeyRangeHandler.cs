@@ -27,10 +27,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeHandler : RequestHandler
     {
-        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
         private PartitionRoutingHelper partitionRoutingHelper;
         public PartitionKeyRangeHandler(
-            ClientPipelineBuilderContext clientPipelineBuilderContext,
+            CosmosDriverContext clientPipelineBuilderContext,
             PartitionRoutingHelper partitionRoutingHelper = null)
         {
             if (clientPipelineBuilderContext == null)

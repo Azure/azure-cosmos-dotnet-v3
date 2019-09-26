@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
     //TODO: write unit test for this handler
     internal class TransportHandler : RequestHandler
     {
-        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
 
-        public TransportHandler(ClientPipelineBuilderContext clientPipelineBuilderContext)
+        public TransportHandler(CosmosDriverContext clientPipelineBuilderContext)
         {
             if (clientPipelineBuilderContext == null)
             {

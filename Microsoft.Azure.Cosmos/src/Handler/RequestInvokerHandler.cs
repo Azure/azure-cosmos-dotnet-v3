@@ -20,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class RequestInvokerHandler : RequestHandler
     {
         private static (bool, ResponseMessage) clientIsValid = (false, null);
-        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
-        public RequestInvokerHandler(ClientPipelineBuilderContext clientPipelineBuilderContext)
+        public RequestInvokerHandler(CosmosDriverContext clientPipelineBuilderContext)
         {
             this.clientPipelineBuilderContext = clientPipelineBuilderContext;
-            this.RequestedClientConsistencyLevel = clientPipelineBuilderContext.CosmosClientOptions.ConsistencyLevel;
+            this.RequestedClientConsistencyLevel = clientPipelineBuilderContext.ConsistencyLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(
