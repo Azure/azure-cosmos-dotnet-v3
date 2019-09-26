@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class RetryHandler : AbstractRetryHandler
     {
-        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
+        private readonly CosmosDriverContext clientPipelineBuilderContext;
 
-        public RetryHandler(ClientPipelineBuilderContext clientPipelineBuilderContext)
+        public RetryHandler(CosmosDriverContext clientPipelineBuilderContext)
         {
             if (clientPipelineBuilderContext == null)
             {

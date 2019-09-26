@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = testHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return TestHandler.ReturnSuccess();
                     });
 
-                    RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+                    RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
                     invoker.InnerHandler = testHandler;
 
                     RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = testHandler;
 
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return TestHandler.ReturnSuccess();
             });
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = testHandler;
 
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientPipelineBuilderContext(client));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(new CosmosClientDriverContext(client));
             invoker.InnerHandler = testHandler;
             RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
