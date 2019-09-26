@@ -27,26 +27,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeHandler : RequestHandler
     {
-        private readonly Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync;
-        private readonly Func<Task<ClientCollectionCache>> getCollectionCacheAsync;
+        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
         private PartitionRoutingHelper partitionRoutingHelper;
         public PartitionKeyRangeHandler(
-            Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync,
-            Func<Task<ClientCollectionCache>> getCollectionCacheAsync,
+            ClientPipelineBuilderContext clientPipelineBuilderContext,
             PartitionRoutingHelper partitionRoutingHelper = null)
         {
-            if (getPartitionKeyRangeCacheAsync == null)
+            if (clientPipelineBuilderContext == null)
             {
-                throw new ArgumentNullException(nameof(getPartitionKeyRangeCacheAsync));
+                throw new ArgumentNullException(nameof(clientPipelineBuilderContext));
             }
 
-            if (getCollectionCacheAsync == null)
-            {
-                throw new ArgumentNullException(nameof(getCollectionCacheAsync));
-            }
-
-            this.getPartitionKeyRangeCacheAsync = getPartitionKeyRangeCacheAsync;
-            this.getCollectionCacheAsync = getCollectionCacheAsync;
+            this.clientPipelineBuilderContext = clientPipelineBuilderContext;
             this.partitionRoutingHelper = partitionRoutingHelper ?? new PartitionRoutingHelper();
         }
 
@@ -91,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-                PartitionKeyRangeCache routingMapProvider = await this.getPartitionKeyRangeCacheAsync();
-                CollectionCache collectionCache = await this.getCollectionCacheAsync();
+                PartitionKeyRangeCache routingMapProvider = await this.clientPipelineBuilderContext.GetPartitionKeyRangeCacheAsync();
+                CollectionCache collectionCache = await this.clientPipelineBuilderContext.GetCollectionCacheAsync();
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 

@@ -15,32 +15,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeGoneRetryHandler : AbstractRetryHandler
     {
-        private readonly Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync;
-        private readonly Func<Task<ClientCollectionCache>> getCollectionCacheAsync;
+        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
 
-        public PartitionKeyRangeGoneRetryHandler(
-            Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync,
-            Func<Task<ClientCollectionCache>> getCollectionCacheAsync)
+        public PartitionKeyRangeGoneRetryHandler(ClientPipelineBuilderContext clientPipelineBuilderContext)
         {
-            if (getPartitionKeyRangeCacheAsync == null)
+            if (clientPipelineBuilderContext == null)
             {
-                throw new ArgumentNullException(nameof(getPartitionKeyRangeCacheAsync));
+                throw new ArgumentNullException(nameof(clientPipelineBuilderContext));
             }
 
-            if (getCollectionCacheAsync == null)
-            {
-                throw new ArgumentNullException(nameof(getCollectionCacheAsync));
-            }
-
-            this.getPartitionKeyRangeCacheAsync = getPartitionKeyRangeCacheAsync;
-            this.getCollectionCacheAsync = getCollectionCacheAsync;
+            this.clientPipelineBuilderContext = clientPipelineBuilderContext;
         }
 
         internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
             return new PartitionKeyRangeGoneRetryPolicy(
-                await this.getCollectionCacheAsync(),
-                await this.getPartitionKeyRangeCacheAsync(),
+                await this.clientPipelineBuilderContext.GetCollectionCacheAsync(),
+                await this.clientPipelineBuilderContext.GetPartitionKeyRangeCacheAsync(),
                 PathsHelper.GetCollectionPath(request.RequestUri.ToString()),
                 null);
         }
