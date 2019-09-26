@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     internal sealed class SkipDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
@@ -42,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (offsetContinuationToken.Offset > offsetCount)
             {
-                throw new BadRequestException("offset count in continuation token can not be greater than the offsetcount in the query.");
+                throw new ArgumentException("offset count in continuation token can not be greater than the offsetcount in the query.");
             }
 
             return new SkipDocumentQueryExecutionComponent(
@@ -145,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 OffsetContinuationToken result;
                 if (!TryParse(value, out result))
                 {
-                    throw new BadRequestException($"Invalid OffsetContinuationToken: {value}");
+                    throw new ArgumentException($"Invalid OffsetContinuationToken: {value}");
                 }
                 else
                 {

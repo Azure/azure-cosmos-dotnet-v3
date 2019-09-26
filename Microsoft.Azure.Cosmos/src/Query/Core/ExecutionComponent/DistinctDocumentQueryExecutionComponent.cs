@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using QueryResult = Documents.QueryResult;
 
     /// <summary>
     /// Distinct queries return documents that are distinct with a page.
@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </summary>
         private readonly DistinctQueryType distinctQueryType;
 
+        private readonly CosmosQueryClient queryClient;
+
         /// <summary>
         /// The hash of the last value added to the distinct map.
         /// </summary>
@@ -46,10 +48,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <summary>
         /// Initializes a new instance of the DistinctDocumentQueryExecutionComponent class.
         /// </summary>
+        /// <param name="queryClient">The query client</param>
         /// <param name="distinctQueryType">The type of distinct query.</param>
         /// <param name="previousHash">The previous that distinct map saw.</param>
         /// <param name="source">The source to drain from.</param>
         private DistinctDocumentQueryExecutionComponent(
+            CosmosQueryClient queryClient,
             DistinctQueryType distinctQueryType,
             UInt192? previousHash,
             IDocumentQueryExecutionComponent source)
@@ -60,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 throw new ArgumentException("It doesn't make sense to create a distinct component of type None.");
             }
 
+            this.queryClient = queryClient;
             this.distinctQueryType = distinctQueryType;
             this.distinctMap = DistinctMap.Create(distinctQueryType, previousHash);
         }
@@ -67,11 +72,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <summary>
         /// Creates an DistinctDocumentQueryExecutionComponent
         /// </summary>
+        /// <param name="queryClient">The query client</param>
         /// <param name="requestContinuation">The continuation token.</param>
         /// <param name="createSourceCallback">The callback to create the source to drain from.</param>
         /// <param name="distinctQueryType">The type of distinct query.</param>
         /// <returns>A task to await on and in return </returns>
         public static async Task<DistinctDocumentQueryExecutionComponent> CreateAsync(
+            CosmosQueryClient queryClient,
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
             DistinctQueryType distinctQueryType)
@@ -79,14 +86,15 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             DistinctContinuationToken distinctContinuationToken = new DistinctContinuationToken(null, null);
             if (requestContinuation != null)
             {
-                distinctContinuationToken = DistinctContinuationToken.Parse(requestContinuation);
+                distinctContinuationToken = DistinctContinuationToken.Parse(queryClient, requestContinuation);
                 if (distinctQueryType != DistinctQueryType.Ordered && distinctContinuationToken.LastHash != null)
                 {
-                    throw new BadRequestException($"DistinctContinuationToken is malformed: {distinctContinuationToken}. DistinctContinuationToken can not have a 'lastHash', when the query type is not ordered (ex SELECT DISTINCT VALUE c.blah FROM c ORDER BY c.blah).");
+                    throw queryClient.CreateBadRequestException($"DistinctContinuationToken is malformed: {distinctContinuationToken}. DistinctContinuationToken can not have a 'lastHash', when the query type is not ordered (ex SELECT DISTINCT VALUE c.blah FROM c ORDER BY c.blah).");
                 }
             }
 
             return new DistinctDocumentQueryExecutionComponent(
+                queryClient,
                 distinctQueryType,
                 distinctContinuationToken.LastHash,
                 await createSourceCallback(distinctContinuationToken.SourceToken));
@@ -128,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 updatedContinuationToken = null;
             }
 
-            string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : RMResources.UnorderedDistinctQueryContinuationToken;
+            string disallowContinuationTokenMessage = this.distinctQueryType == DistinctQueryType.Ordered ? null : Documents.RMResources.UnorderedDistinctQueryContinuationToken;
             return QueryResponseCore.CreateSuccess(
                 result: distinctResults,
                 continuationToken: updatedContinuationToken,
@@ -209,14 +217,15 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             /// <summary>
             /// Parses out the DistinctContinuationToken from a string.
             /// </summary>
+            /// <param name="queryClient">The query client</param>
             /// <param name="value">The value to parse.</param>
             /// <returns>The parsed DistinctContinuationToken.</returns>
-            public static DistinctContinuationToken Parse(string value)
+            public static DistinctContinuationToken Parse(CosmosQueryClient queryClient, string value)
             {
                 DistinctContinuationToken result;
                 if (!TryParse(value, out result))
                 {
-                    throw new BadRequestException($"Invalid DistinctContinuationToken: {value}");
+                    throw queryClient.CreateBadRequestException($"Invalid DistinctContinuationToken: {value}");
                 }
                 else
                 {

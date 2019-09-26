@@ -10,7 +10,8 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
+    using PartitionKeyRange = Documents.PartitionKeyRange;
+    using PartitionKeyRangeIdentity = Documents.PartitionKeyRangeIdentity;
 
     /// <summary>
     /// The ItemProducer is the base unit of buffering and iterating through documents.

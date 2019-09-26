@@ -12,9 +12,11 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
+    using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
+    using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
+    using PartitionKind = Documents.PartitionKind;
+    using ServiceInteropWrapper = Documents.ServiceInteropWrapper;
 
     internal sealed class QueryPartitionProvider : IDisposable
     {
@@ -25,9 +27,9 @@ namespace Microsoft.Azure.Cosmos.Query
         private static readonly PartitionedQueryExecutionInfoInternal DefaultInfoInternal = new PartitionedQueryExecutionInfoInternal
         {
             QueryInfo = new QueryInfo(),
-            QueryRanges = new List<Range<PartitionKeyInternal>>
+            QueryRanges = new List<Documents.Routing.Range<PartitionKeyInternal>>
                     {
-                        new Range<PartitionKeyInternal>(
+                        new Documents.Routing.Range<PartitionKeyInternal>(
                             PartitionKeyInternal.InclusiveMinimum,
                             PartitionKeyInternal.ExclusiveMaximum,
                             true,
@@ -102,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         public PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(
+            Func<string, Exception> createBadRequestException,
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -110,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool hasLogicalPartitionKey)
         {
             PartitionedQueryExecutionInfoInternal queryInfoInternal = this.GetPartitionedQueryExecutionInfoInternal(
+                createBadRequestException,
                 querySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
@@ -124,17 +128,17 @@ namespace Microsoft.Azure.Cosmos.Query
             PartitionedQueryExecutionInfoInternal queryInfoInternal,
             PartitionKeyDefinition partitionKeyDefinition)
         {
-            List<Range<string>> effectiveRanges = new List<Range<string>>(queryInfoInternal.QueryRanges.Count);
-            foreach (Range<PartitionKeyInternal> internalRange in queryInfoInternal.QueryRanges)
+            List<Documents.Routing.Range<string>> effectiveRanges = new List<Documents.Routing.Range<string>>(queryInfoInternal.QueryRanges.Count);
+            foreach (Documents.Routing.Range<PartitionKeyInternal> internalRange in queryInfoInternal.QueryRanges)
             {
-                effectiveRanges.Add(new Range<string>(
+                effectiveRanges.Add(new Documents.Routing.Range<string>(
                      internalRange.Min.GetEffectivePartitionKeyString(partitionKeyDefinition, false),
                      internalRange.Max.GetEffectivePartitionKeyString(partitionKeyDefinition, false),
                      internalRange.IsMinInclusive,
                      internalRange.IsMaxInclusive));
             }
 
-            effectiveRanges.Sort(Range<string>.MinComparer.Instance);
+            effectiveRanges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);
 
             return new PartitionedQueryExecutionInfo()
             {
@@ -144,6 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         internal PartitionedQueryExecutionInfoInternal GetPartitionedQueryExecutionInfoInternal(
+            Func<string, Exception> createBadRequestException,
             SqlQuerySpec querySpec,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
@@ -236,9 +241,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     errorMessage = "Message: " + serializedQueryExecutionInfo;
                 }
 
-                throw new CosmosException(
-                    HttpStatusCode.BadRequest,
-                    errorMessage);
+                throw createBadRequestException(errorMessage);
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =

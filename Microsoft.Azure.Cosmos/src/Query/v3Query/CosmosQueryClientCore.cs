@@ -99,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.queryPartitionProvider.GetPartitionedQueryExecutionInfo(
+                this.CreateBadRequestException,
                 sqlQuerySpec,
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery,
@@ -351,6 +352,11 @@ namespace Microsoft.Azure.Cosmos
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
         {
             return this.documentClient.GetPartitionKeyRangeCacheAsync();
+        }
+
+        internal override Exception CreateBadRequestException(string message)
+        {
+            return new CosmosException(System.Net.HttpStatusCode.BadRequest, message);
         }
     }
 }

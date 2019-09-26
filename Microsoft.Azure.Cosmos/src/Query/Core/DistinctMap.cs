@@ -7,8 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
+    using MurmurHash3 = Documents.Routing.MurmurHash3;
 
     /// <summary>
     /// Base class for all types of DistinctMaps.
@@ -134,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>The hash.</returns>
             public UInt192 GetHash(byte[] bytes, UInt192 seed)
             {
-                UInt128 hash128 = MurmurHash3.Hash128(bytes, bytes.Length, UInt128.Create(seed.GetLow(), seed.GetMid()));
+                Documents.UInt128 hash128 = MurmurHash3.Hash128(bytes, bytes.Length, Documents.UInt128.Create(seed.GetLow(), seed.GetMid()));
                 ulong hash64 = MurmurHash3.Hash64(bytes, bytes.Length, seed.GetHigh());
                 return UInt192.Create(hash128.GetLow(), hash128.GetHigh(), hash64);
             }
@@ -179,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         break;
 
                     case CosmosElementType.Number:
-                        CosmosNumber cosmosNumber = (cosmosElement as CosmosNumber);
+                        CosmosNumber cosmosNumber = cosmosElement as CosmosNumber;
                         double number;
                         if (cosmosNumber.IsFloatingPoint)
                         {

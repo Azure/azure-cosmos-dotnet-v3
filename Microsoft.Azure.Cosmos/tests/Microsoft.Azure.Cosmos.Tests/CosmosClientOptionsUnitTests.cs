@@ -68,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.SerializerOptions);
             Assert.IsNull(clientOptions.Serializer);
             Assert.IsNull(clientOptions.WebProxy);
+            Assert.IsFalse(clientOptions.LimitToEndpoint);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.OpenTcpConnectionTimeout);
             Assert.IsNull(policy.MaxRequestsPerTcpConnection);
             Assert.IsNull(policy.MaxTcpConnectionsPerEndpoint);
+            Assert.IsTrue(policy.EnableEndpointDiscovery);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -370,6 +372,37 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosClientOptions = new CosmosClientOptions { ConnectionMode = ConnectionMode.Direct };
             Assert.AreEqual(Protocol.Tcp, cosmosClientOptions.ConnectionProtocol);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void VerifyLimitToEndpointSettings()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = LocationNames.EastUS, LimitToEndpoint = true };
+            cosmosClientOptions.GetConnectionPolicy();
+        }
+
+        [TestMethod]
+        public void WithLimitToEndpointAffectsEndpointDiscovery()
+        {
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: AccountEndpoint,
+                authKeyOrResourceToken: Guid.NewGuid().ToString());
+
+            CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsFalse(cosmosClientOptions.LimitToEndpoint);
+
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            Assert.IsTrue(connectionPolicy.EnableEndpointDiscovery);
+
+            cosmosClientBuilder
+                .WithLimitToEndpoint(true);
+
+            cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
+            Assert.IsTrue(cosmosClientOptions.LimitToEndpoint);
+
+            connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            Assert.IsFalse(connectionPolicy.EnableEndpointDiscovery);
         }
 
         private class TestWebProxy : IWebProxy

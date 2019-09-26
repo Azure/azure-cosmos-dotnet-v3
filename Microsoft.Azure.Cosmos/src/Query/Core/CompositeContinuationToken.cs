@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query
 {
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -22,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         [JsonProperty("range")]
         [JsonConverter(typeof(RangeJsonConverter))]
-        public Range<string> Range
+        public Documents.Routing.Range<string> Range
         {
             get;
             set;

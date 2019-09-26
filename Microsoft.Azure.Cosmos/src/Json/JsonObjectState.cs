@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Diagnostics;
     using System.Globalization;
-    using Microsoft.Azure.Documents;
+    using RMResources = Documents.RMResources;
 
     /// <summary>
     /// This class maintains the current state of a JSON object/value while it is being read or written.

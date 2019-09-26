@@ -29,6 +29,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChangeFeed", "ChangeFeed\Ch
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BulkSupport", "BulkSupport\BulkSupport.csproj", "{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IndexManagement", "IndexManagement\IndexManagement.csproj", "{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,10 @@ Global
 		{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Documents;
+    using UInt128 = Documents.UInt128;
 
     /// <summary>
     /// Partial wrapper
