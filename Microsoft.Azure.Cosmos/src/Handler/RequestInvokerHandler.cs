@@ -20,25 +20,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class RequestInvokerHandler : RequestHandler
     {
         private static (bool, ResponseMessage) clientIsValid = (false, null);
-        private readonly Func<Task<ClientCollectionCache>> getCollectionCacheAsync;
-        private readonly Func<Task> ensureClientIsValidAsync;
-        private readonly Func<Task<Cosmos.ConsistencyLevel>> getAccountConsistencyLevelAsync;
-        private readonly bool useMultipleWriteLocations;
+        private readonly ClientPipelineBuilderContext clientPipelineBuilderContext;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
         private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
 
-        public RequestInvokerHandler(
-            Func<Task<ClientCollectionCache>> getCollectionCacheAsync,
-            Func<Task<Cosmos.ConsistencyLevel>> getAccountConsistencyLevelAsync,
-            Func<Task> ensureClientIsValidAsync,
-            bool useMultipleWriteLocations,
-            CosmosClientOptions cosmosClientOptions)
+        public RequestInvokerHandler(ClientPipelineBuilderContext clientPipelineBuilderContext)
         {
-            this.getCollectionCacheAsync = getCollectionCacheAsync;
-            this.ensureClientIsValidAsync = ensureClientIsValidAsync;
-            this.getAccountConsistencyLevelAsync = getAccountConsistencyLevelAsync;
-            this.useMultipleWriteLocations = useMultipleWriteLocations;
-            this.RequestedClientConsistencyLevel = cosmosClientOptions.ConsistencyLevel;
+            this.clientPipelineBuilderContext = clientPipelineBuilderContext;
+            this.RequestedClientConsistencyLevel = clientPipelineBuilderContext.CosmosClientOptions.ConsistencyLevel;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -64,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return errorResponse;
             }
 
-            await request.AssertPartitioningDetailsAsync(this.getCollectionCacheAsync, cancellationToken);
+            await request.AssertPartitioningDetailsAsync(this.clientPipelineBuilderContext.GetCollectionCacheAsync, cancellationToken);
             this.FillMultiMasterContext(request);
             return await base.SendAsync(request, cancellationToken);
         }
@@ -200,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             try
             {
-                await this.ensureClientIsValidAsync();
+                await this.clientPipelineBuilderContext.EnsureClientIsValidAsync();
                 return RequestInvokerHandler.clientIsValid;
             }
             catch (DocumentClientException dce)
@@ -211,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private void FillMultiMasterContext(RequestMessage request)
         {
-            if (this.useMultipleWriteLocations)
+            if (this.clientPipelineBuilderContext.UseMultipleWriteLocations)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
             }
@@ -236,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 if (!this.AccountConsistencyLevel.HasValue)
                 {
-                    this.AccountConsistencyLevel = await this.getAccountConsistencyLevelAsync();
+                    this.AccountConsistencyLevel = await this.clientPipelineBuilderContext.GetAccountConsistencyLevelAsync();
                 }
 
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
