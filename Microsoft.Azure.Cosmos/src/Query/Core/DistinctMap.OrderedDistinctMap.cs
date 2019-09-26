@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <remarks>This function assumes data is added in sorted order.</remarks>
             public override bool Add(CosmosElement cosmosElement, out UInt192? hash)
             {
-                hash = DistinctMap.GetHash(cosmosElement);
+                hash = DistinctHash.GetHash(cosmosElement);
 
                 bool added;
                 if (this.lastHash != hash)

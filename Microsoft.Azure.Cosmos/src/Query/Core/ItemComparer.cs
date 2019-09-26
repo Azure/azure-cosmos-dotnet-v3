@@ -166,6 +166,14 @@ namespace Microsoft.Azure.Cosmos.Query
                         cmp = ItemComparer.CompareTo(binary1, binary2);
                         break;
 
+                    case CosmosElementType.Array:
+                    case CosmosElementType.Object:
+                        {
+                            UInt192 hash1 = DistinctHash.GetHash(element1);
+                            UInt192 hash2 = DistinctHash.GetHash(element2);
+                            return hash1.CompareTo(hash2);
+                        }
+
                     default:
                         throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {type1}");
                 }

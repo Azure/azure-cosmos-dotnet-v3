@@ -2921,8 +2921,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxBufferedItemCount = 1000,
                         };
 
-                        List<JToken> actualFromQueryWithoutContinutionTokens;
-                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
+                        List<CosmosElement> actualFromQueryWithoutContinutionTokens;
+                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<CosmosElement>(
                             container,
                             query,
                             maxItemCount: 16,
@@ -2949,46 +2949,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         and that is because comparision across types is undefined so "aaaaaaaaaaa" > 303093052 never got emitted
 #endif
 
-                        IEnumerable<object> insertedDocs = documents
-                            .Select(document => document.GetPropertyValue<object>(nameof(MixedTypedDocument.MixedTypeField)));
+                        IEnumerable<CosmosElement> insertedDocs = documents
+                            .Select(document => document.GetPropertyValue<CosmosElement>(nameof(MixedTypedDocument.MixedTypeField)));
 
                         // Build the expected results using LINQ
-                        IEnumerable<object> expected = new List<object>();
+                        IEnumerable<CosmosElement> expected = new List<CosmosElement>();
 
                         // Filter based on the mixedOrderByType enum
                         if (orderByTypes.HasFlag(OrderByTypes.Array))
                         {
-                            // no arrays should be served from the range index
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Array));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Bool))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x is bool));
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Boolean));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Null))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x == null));
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Null));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Number))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x is double || x is int || x is long));
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Number));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Object))
                         {
-                            // no objects should be served from the range index
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Object));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.String))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x is string));
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.String));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Undefined))
                         {
-                            // no undefined should be served from the range index
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == null));
                         }
 
                         // Order using the mock order by comparer
@@ -3001,11 +3001,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             expected = expected.OrderBy(x => x, MockOrderByComparer.Value);
                         }
 
-                        // bind all the value to JTokens so they can be compared agaisnt the actual.
-                        List<JToken> expectedBinded = expected.Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
-
                         Assert.IsTrue(
-                            expectedBinded.SequenceEqual(actualFromQueryWithoutContinutionTokens, JsonTokenEqualityComparer.Value),
+                            expected.SequenceEqual(actualFromQueryWithoutContinutionTokens, CosmosElementEqualityComparer.Value),
                             $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
                             actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionTokens)}");
