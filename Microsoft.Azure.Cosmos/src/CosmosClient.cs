@@ -609,8 +609,16 @@ namespace Microsoft.Azure.Cosmos
 
             //Request pipeline 
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
-                this,
-                this.ClientOptions.CustomHandlers);
+                (Documents.IAuthorizationTokenProvider)this.DocumentClient,
+                this.DocumentClient.GetStoreProxy,
+                this.DocumentClient.CaptureSessionToken,
+                this.DocumentClient.GetPartitionKeyRangeCacheAsync,
+                this.DocumentClient.GetCollectionCacheAsync,
+                this.DocumentClient.ResetSessionTokenRetryPolicy,
+                this.GetAccountConsistencyLevelAsync,
+                this.DocumentClient.EnsureValidClientAsync,
+                this.DocumentClient.UseMultipleWriteLocations,
+                this.ClientOptions);
 
             this.RequestHandler = clientPipelineBuilder.Build();
 

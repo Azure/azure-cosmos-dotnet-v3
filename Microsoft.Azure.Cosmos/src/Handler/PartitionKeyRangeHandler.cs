@@ -27,15 +27,26 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeHandler : RequestHandler
     {
-        private readonly CosmosClient client;
+        private readonly Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync;
+        private readonly Func<Task<ClientCollectionCache>> getCollectionCacheAsync;
         private PartitionRoutingHelper partitionRoutingHelper;
-        public PartitionKeyRangeHandler(CosmosClient client, PartitionRoutingHelper partitionRoutingHelper = null)
+        public PartitionKeyRangeHandler(
+            Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync,
+            Func<Task<ClientCollectionCache>> getCollectionCacheAsync,
+            PartitionRoutingHelper partitionRoutingHelper = null)
         {
-            if (client == null)
+            if (getPartitionKeyRangeCacheAsync == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(getPartitionKeyRangeCacheAsync));
             }
-            this.client = client;
+
+            if (getCollectionCacheAsync == null)
+            {
+                throw new ArgumentNullException(nameof(getCollectionCacheAsync));
+            }
+
+            this.getPartitionKeyRangeCacheAsync = getPartitionKeyRangeCacheAsync;
+            this.getCollectionCacheAsync = getCollectionCacheAsync;
             this.partitionRoutingHelper = partitionRoutingHelper ?? new PartitionRoutingHelper();
         }
 
@@ -80,8 +91,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-                PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync();
+                PartitionKeyRangeCache routingMapProvider = await this.getPartitionKeyRangeCacheAsync();
+                CollectionCache collectionCache = await this.getCollectionCacheAsync();
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
 

@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -13,22 +15,32 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeGoneRetryHandler : AbstractRetryHandler
     {
-        private readonly CosmosClient client;
+        private readonly Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync;
+        private readonly Func<Task<ClientCollectionCache>> getCollectionCacheAsync;
 
-        public PartitionKeyRangeGoneRetryHandler(CosmosClient client)
+        public PartitionKeyRangeGoneRetryHandler(
+            Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync,
+            Func<Task<ClientCollectionCache>> getCollectionCacheAsync)
         {
-            if (client == null)
+            if (getPartitionKeyRangeCacheAsync == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(getPartitionKeyRangeCacheAsync));
             }
-            this.client = client;
+
+            if (getCollectionCacheAsync == null)
+            {
+                throw new ArgumentNullException(nameof(getCollectionCacheAsync));
+            }
+
+            this.getPartitionKeyRangeCacheAsync = getPartitionKeyRangeCacheAsync;
+            this.getCollectionCacheAsync = getCollectionCacheAsync;
         }
 
         internal override async Task<IDocumentClientRetryPolicy> GetRetryPolicyAsync(RequestMessage request)
         {
             return new PartitionKeyRangeGoneRetryPolicy(
-                await this.client.DocumentClient.GetCollectionCacheAsync(),
-                await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(),
+                await this.getCollectionCacheAsync(),
+                await this.getPartitionKeyRangeCacheAsync(),
                 PathsHelper.GetCollectionPath(request.RequestUri.ToString()),
                 null);
         }

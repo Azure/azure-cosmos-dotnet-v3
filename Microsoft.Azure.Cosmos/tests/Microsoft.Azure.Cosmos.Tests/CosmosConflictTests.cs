@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
 
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = MockCosmosUtil.GetPartitionRoutingHelperMock("0");
-            PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(client, partitionRoutingHelperMock.Object);
+            PartitionKeyRangeHandler partitionKeyRangeHandler = new PartitionKeyRangeHandler(client.DocumentClient.GetPartitionKeyRangeCacheAsync, client.DocumentClient.GetCollectionCacheAsync, partitionRoutingHelperMock.Object);
 
             TestHandler testHandler = new TestHandler(handlerFunc);
             partitionKeyRangeHandler.InnerHandler = testHandler;
