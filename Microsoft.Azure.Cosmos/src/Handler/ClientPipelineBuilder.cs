@@ -8,36 +8,86 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     internal class ClientPipelineBuilder
     {
-        private readonly CosmosClient client;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
         private readonly RequestHandler partitionKeyRangeGoneRetryHandler;
+        private readonly IRetryPolicyFactory retryPolicyFactory;
+        private readonly Func<Task<ClientCollectionCache>> getCollectionCacheAsync;
+        private readonly CosmosClientOptions cosmosClientOptions;
+        private readonly Func<Task> ensureClientIsValidAsync;
+        private readonly Func<Task<Cosmos.ConsistencyLevel>> getAccountConsistencyLevelAsync;
+        private readonly bool useMultipleWriteLocations;
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
-            CosmosClient client,
-            IReadOnlyCollection<RequestHandler> customHandlers)
+            IAuthorizationTokenProvider authorizationTokenProvider,
+            Func<DocumentServiceRequest, IStoreModel> storeModelFactory,
+            Action<DocumentServiceRequest, DocumentServiceResponse> captureSession,
+            Func<Task<PartitionKeyRangeCache>> getPartitionKeyRangeCacheAsync,
+            Func<Task<ClientCollectionCache>> getCollectionCacheAsync,
+            IRetryPolicyFactory retryPolicyFactory,
+            Func<Task<ConsistencyLevel>> getAccountConsistencyLevelAsync,
+            Func<Task> ensureClientIsValidAsync,
+            bool useMultipleWriteLocations,
+            CosmosClientOptions cosmosClientOptions)
         {
-            this.client = client;
-            this.transportHandler = new TransportHandler(client);
+            if (retryPolicyFactory == null)
+            {
+                throw new ArgumentNullException(nameof(retryPolicyFactory));
+            }
+
+            if (getCollectionCacheAsync == null)
+            {
+                throw new ArgumentNullException(nameof(getCollectionCacheAsync));
+            }
+
+            if (cosmosClientOptions == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosClientOptions));
+            }
+
+            if (getAccountConsistencyLevelAsync == null)
+            {
+                throw new ArgumentNullException(nameof(getAccountConsistencyLevelAsync));
+            }
+
+            if (ensureClientIsValidAsync == null)
+            {
+                throw new ArgumentNullException(nameof(ensureClientIsValidAsync));
+            }
+
+            this.retryPolicyFactory = retryPolicyFactory;
+            this.getCollectionCacheAsync = getCollectionCacheAsync;
+            this.cosmosClientOptions = cosmosClientOptions;
+            this.ensureClientIsValidAsync = ensureClientIsValidAsync;
+            this.getAccountConsistencyLevelAsync = getAccountConsistencyLevelAsync;
+            this.useMultipleWriteLocations = useMultipleWriteLocations;
+
+            this.transportHandler = new TransportHandler(
+                authorizationTokenProvider,
+                storeModelFactory,
+                captureSession);
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
 
-            this.partitionKeyRangeGoneRetryHandler = new PartitionKeyRangeGoneRetryHandler(this.client);
+            this.partitionKeyRangeGoneRetryHandler = new PartitionKeyRangeGoneRetryHandler(getPartitionKeyRangeCacheAsync, getCollectionCacheAsync);
             Debug.Assert(this.partitionKeyRangeGoneRetryHandler.InnerHandler == null, "The partitionKeyRangeGoneRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler();
             Debug.Assert(this.invalidPartitionExceptionRetryHandler.InnerHandler == null, "The invalidPartitionExceptionRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
 
-            this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
+            this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(getPartitionKeyRangeCacheAsync, getCollectionCacheAsync);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
 
             this.UseRetryPolicy();
-            this.AddCustomHandlers(customHandlers);
+            this.AddCustomHandlers(cosmosClientOptions.CustomHandlers);
         }
 
         internal IReadOnlyCollection<RequestHandler> CustomHandlers
@@ -124,7 +174,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The request invoker handler used to do calls to Cosmos DB</returns>
         public RequestInvokerHandler Build()
         {
-            RequestInvokerHandler root = new RequestInvokerHandler(this.client);
+            RequestInvokerHandler root = new RequestInvokerHandler(this.getCollectionCacheAsync, this.getAccountConsistencyLevelAsync, this.ensureClientIsValidAsync, this.useMultipleWriteLocations, this.cosmosClientOptions);
 
             RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())
@@ -179,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
 
         private ClientPipelineBuilder UseRetryPolicy()
         {
-            this.retryHandler = new RetryHandler(this.client);
+            this.retryHandler = new RetryHandler(this.retryPolicyFactory);
             Debug.Assert(this.retryHandler.InnerHandler == null, "The retryHandler.InnerHandler must be null to allow other handlers to be linked.");
             return this;
         }

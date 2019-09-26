@@ -13,16 +13,33 @@ namespace Microsoft.Azure.Cosmos.Handlers
     //TODO: write unit test for this handler
     internal class TransportHandler : RequestHandler
     {
-        private readonly CosmosClient client;
+        private readonly IAuthorizationTokenProvider authorizationTokenProvider;
+        private readonly Func<DocumentServiceRequest, IStoreModel> storeModelFactory;
+        public readonly Action<DocumentServiceRequest, DocumentServiceResponse> captureSession;
 
-        public TransportHandler(CosmosClient client)
+        public TransportHandler(
+            IAuthorizationTokenProvider authorizationTokenProvider,
+            Func<DocumentServiceRequest, IStoreModel> storeModelFactory,
+            Action<DocumentServiceRequest, DocumentServiceResponse> captureSession)
         {
-            if (client == null)
+            if (authorizationTokenProvider == null)
             {
-                throw new ArgumentNullException(nameof(client));
+                throw new ArgumentNullException(nameof(authorizationTokenProvider));
             }
 
-            this.client = client;
+            if (storeModelFactory == null)
+            {
+                throw new ArgumentNullException(nameof(storeModelFactory));
+            }
+
+            if (captureSession == null)
+            {
+                throw new ArgumentNullException(nameof(captureSession));
+            }
+
+            this.authorizationTokenProvider = authorizationTokenProvider;
+            this.captureSession = captureSession;
+            this.storeModelFactory = storeModelFactory;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -73,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
             //TODO: extrace auth into a separate handler
-            string authorization = ((IAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationToken(
+            string authorization = this.authorizationTokenProvider.GetUserAuthorizationToken(
                 serviceRequest.ResourceAddress,
                 PathsHelper.GetResourcePath(request.ResourceType),
                 request.Method.ToString(),
@@ -83,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
-            IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
+            IStoreModel storeProxy = this.storeModelFactory(serviceRequest);
             if (request.OperationType == OperationType.Upsert)
             {
                 return this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken);
@@ -116,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellationToken)
         {
             DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
-            this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
+            this.captureSession(serviceRequest, response);
             return response;
         }
     }
