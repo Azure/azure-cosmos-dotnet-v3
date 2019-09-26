@@ -14,12 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Custom implementations are required to be stateless.
     /// </remarks>
-#if AZUREDATA
-    internal
-#else
-    public
-#endif
-    abstract class RequestHandler
+    public abstract class RequestHandler
     {
         /// <summary>
         /// Defines a next handler to be called in the chain.
