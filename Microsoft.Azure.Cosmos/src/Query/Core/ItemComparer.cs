@@ -215,25 +215,25 @@ namespace Microsoft.Azure.Cosmos.Query
                                 order = 2;
                                 break;
                             case CosmosNumberType.Float32:
-                                order = 6;
-                                break;
-                            case CosmosNumberType.Float64:
-                                order = 7;
-                                break;
-                            case CosmosNumberType.Int16:
                                 order = 8;
                                 break;
-                            case CosmosNumberType.Int32:
+                            case CosmosNumberType.Float64:
                                 order = 9;
                                 break;
-                            case CosmosNumberType.Int64:
+                            case CosmosNumberType.Int16:
                                 order = 10;
                                 break;
-                            case CosmosNumberType.Int8:
+                            case CosmosNumberType.Int32:
                                 order = 11;
                                 break;
-                            case CosmosNumberType.UInt32:
+                            case CosmosNumberType.Int64:
                                 order = 12;
+                                break;
+                            case CosmosNumberType.Int8:
+                                order = 13;
+                                break;
+                            case CosmosNumberType.UInt32:
+                                order = 14;
                                 break;
                             default:
                                 throw new ArgumentException($"Unknown number type. Number {(int)number.NumberType}; Typeof:{ typeof(CosmosNumberType)}");
@@ -244,11 +244,17 @@ namespace Microsoft.Azure.Cosmos.Query
                 case CosmosElementType.String:
                     order = 3;
                     break;
-                case CosmosElementType.Guid:
+                case CosmosElementType.Array:
+                    order = 4;
+                    break;
+                case CosmosElementType.Object:
                     order = 5;
                     break;
+                case CosmosElementType.Guid:
+                    order = 6;
+                    break;
                 case CosmosElementType.Binary:
-                    order = 4;
+                    order = 7;
                     break;
                 default:
                     throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {cosmosElement.Type}");
