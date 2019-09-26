@@ -2,10 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Scripts
+#if AZUREDATA
+namespace Azure.Data.Cosmos
+#else
+namespace Microsoft.Azure.Cosmos
+#endif
 {
-    using Microsoft.Azure.Cosmos;
-
     /// <summary>
     /// The cosmos stored procedure request options
     /// </summary>
@@ -46,9 +48,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///
         /// <para>
         /// In some scenarios you need to manage this Session yourself;
-        /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="DocumentClient"/>
+        /// Consider a web application with multiple nodes, each node will have its own instance of the client
         /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
-        /// you would have to send the SessionToken from <see cref="Microsoft.Azure.Documents.Client.ResourceResponse{T}"/> of the write action on one node
+        /// you would have to send the SessionToken from the response of the write action on one node
         /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
         /// If you are using a round-robin load balancer which does not maintain session affinity between requests, such as the Azure Load Balancer,
         /// the read could potentially land on a different node to the write request, where the session was created.

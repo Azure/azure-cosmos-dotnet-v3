@@ -2,8 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZUREDATA
+namespace Azure.Data.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     /// <summary>
