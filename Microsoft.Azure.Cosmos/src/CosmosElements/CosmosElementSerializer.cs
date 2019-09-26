@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             IJsonNavigator jsonNavigator = null;
             // Use the users custom navigator
-            if (createJsonNavigator == null)
+            if (createJsonNavigator != null)
             {
                 jsonNavigator = createJsonNavigator(content);
             }
@@ -165,6 +165,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             CosmosSerializer jsonSerializer,
             IJsonWriter jsonWriter = null)
         {
+            if (jsonSerializer == null)
+            {
+                throw new ArgumentNullException(nameof(jsonSerializer));
+            }
+
             if (!cosmosElements.Any())
             {
                 return Enumerable.Empty<T>();
