@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case ExpressionType.Call:
                     {
-                        return DocumentQueryEvaluator.HandleMethodCallExpression((MethodCallExpression)expression, serializationOptions, parameters);
+                        return DocumentQueryEvaluator.HandleMethodCallExpression((MethodCallExpression)expression, parameters, serializationOptions);
                     }
 
                 default:
@@ -74,8 +74,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlQuerySpec HandleMethodCallExpression(
             MethodCallExpression expression,
-            CosmosSerializationOptions serializationOptions = null,
-            IDictionary<object, string> parameters = null)
+            IDictionary<object, string> parameters,
+            CosmosSerializationOptions serializationOptions = null)
         {
             if (DocumentQueryEvaluator.IsTransformExpression(expression))
             {

@@ -714,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
-        private protected static string GetEscapedString(string value)
+        private static string GetEscapedString(string value)
         {
             if (value == null)
             {

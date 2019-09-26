@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
@@ -437,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task LinqParameterisedTest()
+        public async Task LinqParameterisedTest1()
         {
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
@@ -494,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             parameters.Add(child1, "@param5");
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.IsTrue(queryDefinition.ToSqlQuerySpec().QueryText.Contains("@param1"));
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
 
             paramNameForUpdate = parameters[description];
@@ -549,6 +550,90 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             paramNameForUpdate = parameters[child1];
             child1.taskNum = 30;
             queryDefinition.WithParameter(paramNameForUpdate, child1);
+            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+        }
+
+        [TestMethod]
+        public async Task LinqParameterisedTest2()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
+
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
+
+            //Test same values in two where clause
+            string camelCase = "wrongValue";
+            IQueryable<ToDoActivity> queriable = linqQueryable
+               .Where(item => item.CamelCase == camelCase)
+               .Where(item => item.description != camelCase);
+            Dictionary<object, string> parameters = new Dictionary<object, string>();
+            parameters.Add(camelCase, "@param1");
+            QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
+            Assert.AreEqual(1, queryDefinition.ToSqlQuerySpec().Parameters.Count);
+            Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
+
+            camelCase = "camelCase";
+            queryDefinition.WithParameter("@param1", camelCase);
+            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+
+            string queryText = "SELECT VALUE root FROM root WHERE (root[\"children\"] = " +
+                "[{\"id\":\"child1\",\"taskNum\":30,\"cost\":0.0,\"description\":null,\"status\":null,\"CamelCase\":null,\"valid\":false,\"children\":null}," +
+                " {\"id\":\"child2\",\"taskNum\":40,\"cost\":0.0,\"description\":null,\"status\":null,\"CamelCase\":null,\"valid\":false,\"children\":null}]) ";
+            //Test array value, array will not change into parametrized value
+            ToDoActivity[] children = new ToDoActivity[]
+                { new ToDoActivity { id = "child1", taskNum = 30 },
+                  new ToDoActivity { id = "child2", taskNum = 40}
+                };
+            queriable = linqQueryable
+               .Where(item => item.children == children);
+            parameters = new Dictionary<object, string>();
+            parameters.Add(children, "@param1");
+            queryDefinition = queriable.ToQueryDefinition(parameters);
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
+            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+
+            //no change in result, after changing parameter in queryDefinition
+            children = new ToDoActivity[]
+                { new ToDoActivity { id = "child1", taskNum = 30 },
+                  new ToDoActivity { id = "child2", taskNum = 40},
+                  new ToDoActivity { id = "child3", taskNum = 50}
+                };
+            queryDefinition.WithParameter("@param1", children);
+            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+
+                        queriable = linqQueryable
+               .Where(item => item.children == children);
+
+            //Test orderby, skip, take, distinct, these will not get parameterized.
+            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] = \"camelCase\")" +
+                " ORDER BY root[\"taskNum\"] ASC OFFSET 5 LIMIT 4 ";
+            queriable = linqQueryable
+                .Where(item => item.CamelCase == camelCase)
+                .OrderBy(item => item.taskNum)
+                .Skip(5)
+                .Take(4);
+            parameters = new Dictionary<object, string>();
+            parameters.Add(camelCase, "@param1");
+            parameters.Add(5, "@param2");
+            parameters.Add(4, "@param3");
+            queryDefinition = queriable.ToQueryDefinition();
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
+            Assert.AreEqual(4, (await this.FetchResults(queryDefinition)).Count);
+
+            queryDefinition.WithParameter("@param2", 10);
+            queryDefinition.WithParameter("@param3", 0);
+            Assert.AreEqual(4, (await this.FetchResults(queryDefinition)).Count);
+
+
+            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] != @param1) ";
+            camelCase = "\b\n";
+            queriable = linqQueryable
+                .Where(item => item.CamelCase != camelCase);
+            parameters = new Dictionary<object, string>();
+            parameters.Add(camelCase, "@param1");
+            queryDefinition = queriable.ToQueryDefinition(parameters);
+            Assert.AreEqual("\b\n", queryDefinition.ToSqlQuerySpec().Parameters[0].Value);
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
         }
 

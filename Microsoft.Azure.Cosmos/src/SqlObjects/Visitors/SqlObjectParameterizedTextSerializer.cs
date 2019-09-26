@@ -11,8 +11,9 @@ namespace Microsoft.Azure.Cosmos.Sql
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Child SqlObjectTextSerializer class used when user provides parameterized query by passing
+    /// This class used when user provides parameterized query by passing
     /// object string dictionary in <see cref="Linq.CosmosLinqExtensions.ToQueryDefinition{T}(IQueryable{T}, IDictionary{object, string})"/>
+    /// Number, String, Boolean and Object(non array) will be parametrized
     /// </summary>
     internal class SqlObjectParameterizedTextSerializer : SqlObjectTextSerializer
     {
@@ -27,32 +28,13 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override void Visit(SqlNumberLiteral sqlNumberLiteral)
         {
-            if (this.findSqlNumberLiteralInParams(sqlNumberLiteral.Value, out string paramStr))
+            if (this.findSqlNumberLiteralInParams(sqlNumberLiteral.Value, out string paramName))
             {
-                this.writer.Write(paramStr);
+                this.writer.Write(paramName);
             }
             else
             {
-                // We have to use InvariantCulture due to number formatting.
-                // "1234.1234" is correct while "1234,1234" is incorrect.
-                if (sqlNumberLiteral.Value.IsDouble)
-                {
-                    string literalString = sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture);
-                    double literalValue = 0.0;
-                    if (!sqlNumberLiteral.Value.IsNaN &&
-                        !sqlNumberLiteral.Value.IsInfinity &&
-                        (!double.TryParse(literalString, NumberStyles.Number, CultureInfo.InvariantCulture, out literalValue) ||
-                        !Number64.ToDouble(sqlNumberLiteral.Value).Equals(literalValue)))
-                    {
-                        literalString = sqlNumberLiteral.Value.ToString("G17", CultureInfo.InvariantCulture);
-                    }
-
-                    this.writer.Write(literalString);
-                }
-                else
-                {
-                    this.writer.Write(sqlNumberLiteral.Value.ToString(CultureInfo.InvariantCulture));
-                }
+                base.Visit(sqlNumberLiteral);
             }
         }
 
@@ -64,9 +46,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
             else
             {
-                this.writer.Write("\"");
-                this.writer.Write(SqlObjectTextSerializer.GetEscapedString(sqlStringLiteral.Value));
-                this.writer.Write("\"");
+                base.Visit(sqlStringLiteral);
             }
         }
 
@@ -78,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
             else
             {
-                this.writer.Write(sqlBooleanLiteral.Value ? "true" : "false");
+                base.Visit(sqlBooleanLiteral);
             }
         }
 
@@ -90,26 +70,19 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
             else
             {
-                if (sqlObjectLiteral.isValueSerialized)
-                {
-                    this.writer.Write(sqlObjectLiteral.Value);
-                }
-                else
-                {
-                    this.writer.Write(JsonConvert.SerializeObject(sqlObjectLiteral.Value));
-                }
+                base.Visit(sqlObjectLiteral);
             }
         }
 
-        private bool findSqlNumberLiteralInParams(Number64 value, out string paramStr)
+        private bool findSqlNumberLiteralInParams(Number64 value, out string paramName)
         {
-            paramStr = null;
+            paramName = null;
             foreach (object key in this.parameters.Keys)
             {
                 SqlNumberLiteral sqlNumberLiteral = ExpressionToSql.GetSqlNumberLiteral(key);
                 if (sqlNumberLiteral != null && sqlNumberLiteral.Value.Equals(value))
                 {
-                    paramStr = this.parameters[key];
+                    paramName = this.parameters[key];
                     return true;
                 }
             }
