@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         internal static CosmosArray ToCosmosElements(
             MemoryStream memoryStream,
             ResourceType resourceType,
-            CosmosSerializationFormatOptions.CreateCustomNavigator createJsonNavigator)
+            CosmosSerializationFormatOptions.CreateCustomNavigator createJsonNavigator = null)
         {
             if (!memoryStream.CanRead)
             {
