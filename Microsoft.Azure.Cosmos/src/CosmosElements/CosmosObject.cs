@@ -42,6 +42,36 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             get;
         }
 
+        public abstract bool ContainsKey(string key);
+
+        public abstract bool TryGetValue(string key, out CosmosElement value);
+
+        public bool TryGetValue<TCosmosElement>(string key, out TCosmosElement typedCosmosElement)
+            where TCosmosElement : CosmosElement
+        {
+            if (!this.TryGetValue(key, out CosmosElement cosmosElement))
+            {
+                typedCosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            if (!(cosmosElement is TCosmosElement tCosmosElement))
+            {
+                typedCosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            typedCosmosElement = tCosmosElement;
+            return true;
+        }
+
+        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return this.GetEnumerator();
+        }
+
         public static CosmosObject Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
@@ -52,17 +82,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public static CosmosObject Create(IDictionary<string, CosmosElement> dictionary)
         {
             return new EagerCosmosObject(dictionary);
-        }
-
-        public abstract bool ContainsKey(string key);
-
-        public abstract bool TryGetValue(string key, out CosmosElement value);
-
-        public abstract IEnumerator<KeyValuePair<string, CosmosElement>> GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
         }
     }
 #if INTERNAL

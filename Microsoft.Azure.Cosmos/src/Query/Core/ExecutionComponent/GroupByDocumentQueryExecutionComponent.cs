@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         private GroupByDocumentQueryExecutionComponent(
             CosmosQueryClient cosmosQueryClient,
+            string groupingTableContinuationToken,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             bool hasSelectValue,
             IDocumentQueryExecutionComponent source)
@@ -72,6 +73,36 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             this.cosmosQueryClient = cosmosQueryClient;
             this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
+            if (groupingTableContinuationToken != null)
+            {
+                if (!CosmosElement.TryParse<CosmosObject>(
+                    groupingTableContinuationToken,
+                    out CosmosObject parsedGroupingTableContinuations))
+                {
+                    throw cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
+                }
+
+                foreach (KeyValuePair<string, CosmosElement> kvp in parsedGroupingTableContinuations)
+                {
+                    string key = kvp.Key;
+                    CosmosElement value = kvp.Value;
+
+                    UInt192 groupByKey = UInt192.Parse(key);
+
+                    if (!(value is CosmosString singleGroupAggregatorContinuationToken))
+                    {
+                        throw cosmosQueryClient.CreateBadRequestException($"Invalid GroupingTableContinuationToken");
+                    }
+                    SingleGroupAggregator singleGroupAggregator = SingleGroupAggregator.Create(
+                        this.cosmosQueryClient,
+                        EmptyAggregateOperators,
+                        this.groupByAliasToAggregateType,
+                        this.hasSelectValue,
+                        singleGroupAggregatorContinuationToken.Value);
+
+                    this.groupingTable[groupByKey] = singleGroupAggregator;
+                }
+            }
 
             // Using an ordered distinct map to get hashes.
             this.distinctMap = DistinctMap.Create(DistinctQueryType.Ordered, null);
@@ -88,12 +119,26 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             bool hasSelectValue)
         {
-            // We do not support continuation tokens for GROUP BY.
+            GroupByContinuationToken groupByContinuationToken;
+            if (requestContinuation != null)
+            {
+                if (!GroupByContinuationToken.TryParse(requestContinuation, out groupByContinuationToken))
+                {
+                    throw cosmosQueryClient.CreateBadRequestException(
+                        $"Invalid {nameof(GroupByContinuationToken)}: '{requestContinuation}'");
+                }
+            }
+            else
+            {
+                groupByContinuationToken = default(GroupByContinuationToken);
+            }
+
             return new GroupByDocumentQueryExecutionComponent(
                 cosmosQueryClient,
+                groupByContinuationToken.GroupingTableContinuationToken,
                 groupByAliasToAggregateType,
                 hasSelectValue,
-                await createSourceCallback(requestContinuation));
+                await createSourceCallback(groupByContinuationToken.SourceContinuationToken));
         }
 
         public override async Task<QueryResponseCore> DrainAsync(
@@ -188,6 +233,60 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             return response;
+        }
+
+        private struct GroupByContinuationToken
+        {
+            private GroupByContinuationToken(
+                string groupingTableContinuationToken,
+                string sourceContinuationToken)
+            {
+                this.GroupingTableContinuationToken = groupingTableContinuationToken;
+                this.SourceContinuationToken = sourceContinuationToken;
+            }
+
+            public string GroupingTableContinuationToken { get; }
+
+            public string SourceContinuationToken { get; }
+
+            public override string ToString()
+            {
+                return CosmosObject.Create(new Dictionary<string, CosmosElement>()
+                {
+                    {nameof(this.GroupingTableContinuationToken), CosmosString.Create(this.GroupingTableContinuationToken)},
+                    {nameof(this.SourceContinuationToken), CosmosString.Create(this.SourceContinuationToken)},
+                }).ToString();
+            }
+
+            public static bool TryParse(string value, out GroupByContinuationToken groupByContinuationToken)
+            {
+                if (!CosmosElement.TryParse<CosmosObject>(value, out CosmosObject groupByContinuationTokenObject))
+                {
+                    groupByContinuationToken = default(GroupByContinuationToken);
+                    return false;
+                }
+
+                if (!groupByContinuationTokenObject.TryGetValue<CosmosString>(
+                    nameof(GroupByContinuationToken.GroupingTableContinuationToken),
+                    out CosmosString groupingTableContinuationToken))
+                {
+                    groupByContinuationToken = default(GroupByContinuationToken);
+                    return false;
+                }
+
+                if (!groupByContinuationTokenObject.TryGetValue<CosmosString>(
+                    nameof(GroupByContinuationToken.SourceContinuationToken),
+                    out CosmosString sourceContinuationToken))
+                {
+                    groupByContinuationToken = default(GroupByContinuationToken);
+                    return false;
+                }
+
+                groupByContinuationToken = new GroupByContinuationToken(
+                    groupingTableContinuationToken.Value,
+                    sourceContinuationToken.Value);
+                return true;
+            }
         }
 
         /// <summary>
