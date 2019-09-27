@@ -24,13 +24,6 @@ namespace Microsoft.Azure.Cosmos
         internal List<StoreResponseStatistics> supplementalResponseStatisticsList;
         internal Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics;
 
-        [JsonIgnoreAttribute]
-        public List<Uri> ContactedReplicas { get; set; }
-        [JsonIgnoreAttribute]
-        public HashSet<Uri> FailedReplicas { get; private set; }
-        [JsonIgnoreAttribute]
-        public HashSet<Uri> RegionsContacted { get; private set; }
-
         public CosmosClientSideRequestStatistics()
         {
             this.requestStartTime = DateTime.UtcNow;
@@ -42,6 +35,12 @@ namespace Microsoft.Azure.Cosmos
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContacted = new HashSet<Uri>();
         }
+
+        public List<Uri> ContactedReplicas { get; set; }
+
+        public HashSet<Uri> FailedReplicas { get; private set; }
+
+        public HashSet<Uri> RegionsContacted { get; private set; }
 
         public TimeSpan RequestLatency
         {
@@ -150,6 +149,72 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            this.AppendToBuilder(sb);
+            return sb.ToString();
+        }
+
+        public void AppendToBuilder(StringBuilder stringBuilder)
+        {
+            if (stringBuilder == null)
+            {
+                throw new ArgumentNullException(nameof(stringBuilder));
+            }
+
+            //need to lock in case of concurrent operations. this should be extremely rare since ToString()
+            //should only be called at the end of request.
+            lock (this.lockObject)
+            {
+                stringBuilder.AppendLine();
+
+                //first trace request start time, as well as total non-head/headfeed requests made.
+                stringBuilder.AppendFormat(
+                   CultureInfo.InvariantCulture,
+                   "RequestStartTime: {0}, RequestEndTime: {1},  Number of regions attempted:{2}",
+                   this.requestStartTime.ToString("o", CultureInfo.InvariantCulture),
+                   this.requestEndTime.ToString("o", CultureInfo.InvariantCulture),
+                   this.RegionsContacted.Count == 0 ? 1 : this.RegionsContacted.Count);
+                stringBuilder.AppendLine();
+
+                //take all responses here - this should be limited in number and each one contains relevant information.
+                foreach (StoreResponseStatistics item in this.responseStatisticsList)
+                {
+                    item.AppendToBuilder(stringBuilder);
+                    stringBuilder.AppendLine();
+                }
+
+                //take all responses here - this should be limited in number and each one is important.
+                foreach (AddressResolutionStatistics item in this.addressResolutionStatistics.Values)
+                {
+                    item.AppendToBuilder(stringBuilder);
+                    stringBuilder.AppendLine();
+                }
+
+                //only take last 10 responses from this list - this has potential of having large number of entries. 
+                //since this is for establishing consistency, we can make do with the last responses to paint a meaningful picture.
+                int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList.Count;
+                int initialIndex = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
+
+                if (initialIndex != 0)
+                {
+                    stringBuilder.AppendFormat(
+                        CultureInfo.InvariantCulture,
+                        "  -- Displaying only the last {0} head/headfeed requests. Total head/headfeed requests: {1}",
+                        CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString,
+                        supplementalResponseStatisticsListCount);
+                    stringBuilder.AppendLine();
+                }
+
+                for (int i = initialIndex; i < supplementalResponseStatisticsListCount; i++)
+                {
+                    this.supplementalResponseStatisticsList[i].AppendToBuilder(stringBuilder);
+                    stringBuilder.AppendLine();
+                }
+            }
+        }
+
         internal struct StoreResponseStatistics
         {
             public DateTime RequestResponseTime;
@@ -159,10 +224,32 @@ namespace Microsoft.Azure.Cosmos
 
             public override string ToString()
             {
-                return String.Format(CultureInfo.InvariantCulture, "ResponseTime: {0}, StoreResult: {1}, ResourceType: {2}, OperationType: {3}",
-                    this.RequestResponseTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
-                    this.StoreResult != null ? this.StoreResult.ToString() : string.Empty,
-                    this.RequestResourceType, this.RequestOperationType);
+                StringBuilder stringBuilder = new StringBuilder();
+                this.AppendToBuilder(stringBuilder);
+                return stringBuilder.ToString();
+            }
+
+            public void AppendToBuilder(StringBuilder stringBuilder)
+            {
+                if (stringBuilder == null)
+                {
+                    throw new ArgumentNullException(nameof(stringBuilder));
+                }
+
+                stringBuilder.Append($"ResponseTime: {this.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture)}, ");
+
+                stringBuilder.Append("StoreResult: ");
+                if (this.StoreResult != null)
+                {
+                    //Requrires another deploy of microsoft.azure.cosmos.direct
+                    //this.StoreResult.AppendToBuilder(stringBuilder);
+                }
+
+                stringBuilder.AppendFormat(
+                    CultureInfo.InvariantCulture,
+                    ", ResourceType: {0}, OperationType: {1}",
+                    this.RequestResourceType,
+                    this.RequestOperationType);
             }
         }
 
@@ -174,10 +261,24 @@ namespace Microsoft.Azure.Cosmos
 
             public override string ToString()
             {
-                return string.Format(CultureInfo.InvariantCulture, "AddressResolution - StartTime: {0}, EndTime: {1}, TargetEndpoint: {2}",
-                    this.StartTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
-                    this.EndTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
-                    this.TargetEndpoint);
+                StringBuilder stringBuilder = new StringBuilder();
+                this.AppendToBuilder(stringBuilder);
+                return stringBuilder.ToString();
+            }
+
+            public void AppendToBuilder(StringBuilder stringBuilder)
+            {
+                if (stringBuilder == null)
+                {
+                    throw new ArgumentNullException(nameof(stringBuilder));
+                }
+
+                stringBuilder
+                    .Append($"AddressResolution - StartTime: {this.StartTime.ToString("o", CultureInfo.InvariantCulture)}, ")
+                    .Append($"EndTime: {this.EndTime.ToString("o", CultureInfo.InvariantCulture)}, ")
+                    .Append("TargetEndpoint: ")
+                    .Append(this.TargetEndpoint);
+
             }
         }
     }
