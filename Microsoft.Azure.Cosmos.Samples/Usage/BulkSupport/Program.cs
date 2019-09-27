@@ -174,10 +174,9 @@
             // We create a partitioned collection here which needs a partition key. Partitioned collections
             // can be created with very high values of provisioned throughput (up to Throughput = 250,000)
             // and used to store up to 250 GB of data. 
-            ContainerProperties containerProperties = new ContainerProperties(containerId, partitionKeyPath: "/pk");
-
             Console.WriteLine("The demo will create a 20000 RU/s container, press any key to continue.");
             Console.ReadKey();
+
             // Create with a throughput of 20000 RU/s - this demo is about throughput so it needs a higher degree of RU/s to show volume
             // Indexing Policy to exclude all attributes to maximize RU/s usage
             await database.DefineContainer(containerId, "/pk")
