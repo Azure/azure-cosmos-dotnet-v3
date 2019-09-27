@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Net.Http;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosClientResourceUnitTests
@@ -19,8 +20,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
+
             CosmosClientContext context = new ClientContextCore(
-                client: null,
+                client: mockClient.Object,
                 clientOptions: new CosmosClientOptions(),
                 userJsonSerializer: null,
                 defaultJsonSerializer: null,
@@ -120,8 +124,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
+
             CosmosClientContext context = new ClientContextCore(
-                client: null,
+                client: mockClient.Object,
                 clientOptions: new CosmosClientOptions(),
                 userJsonSerializer: null,
                 defaultJsonSerializer: null,
@@ -141,8 +148,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             string databaseId = "db1234";
             string crId = "cr42";
 
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
+
             CosmosClientContext context = new ClientContextCore(
-                client: null,
+                client: mockClient.Object,
                 clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
                 userJsonSerializer: null,
                 defaultJsonSerializer: null,
