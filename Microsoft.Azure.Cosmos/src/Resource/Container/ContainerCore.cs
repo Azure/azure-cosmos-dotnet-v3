@@ -293,8 +293,22 @@ namespace Microsoft.Azure.Cosmos
             {
                 return null;
             }
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+            return this.ClientContext.Client.BatchExecutorCache.GetAsync(
+                this.LinkUri.ToString(),
+                this.BatchExecutor,
+                this.CreateBatchExecutorForContainerAsync,
+                default(CancellationToken)).Result;
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+        }
 
-            return this.ClientContext.Client.BatchExecutorCache.GetExecutorForContainer(this, this.ClientContext);
+        private Task<BatchAsyncContainerExecutor> CreateBatchExecutorForContainerAsync()
+        {
+            return Task.FromResult(new BatchAsyncContainerExecutor(
+                       this,
+                       this.ClientContext,
+                       Constants.MaxOperationsInDirectModeBatchRequest,
+                       Constants.MaxDirectModeBatchRequestBodySizeInBytes));
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
