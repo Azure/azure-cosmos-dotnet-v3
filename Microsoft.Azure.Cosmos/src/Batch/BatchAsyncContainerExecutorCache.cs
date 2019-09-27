@@ -44,15 +44,6 @@ namespace Microsoft.Azure.Cosmos
             return this.executorsPerContainer[containerLink];
         }
 
-        public void DisposeExecutor(ContainerCore container)
-        {
-            string containerLink = container.LinkUri.ToString();
-            if (this.executorsPerContainer.TryRemove(containerLink, out BatchAsyncContainerExecutor executor))
-            {
-                executor.Dispose();
-            }
-        }
-
         public void Dispose()
         {
             foreach (KeyValuePair<string, BatchAsyncContainerExecutor> cacheEntry in this.executorsPerContainer)

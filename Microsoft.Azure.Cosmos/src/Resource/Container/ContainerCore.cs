@@ -157,22 +157,15 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<ResponseMessage> DeleteContainerStreamAsync(
+        public override Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            ResponseMessage responseMessage = await this.ProcessStreamAsync(
+            return this.ProcessStreamAsync(
                streamPayload: null,
                operationType: OperationType.Delete,
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
-
-            if (responseMessage.IsSuccessStatusCode)
-            {
-                this.ClientContext.Client.BatchExecutorCache.DisposeExecutor(this);
-            }
-
-            return responseMessage;
         }
 
         public override Task<ResponseMessage> ReadContainerStreamAsync(
