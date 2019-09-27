@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (responseMessage.IsSuccessStatusCode)
             {
-                BatchAsyncContainerExecutorFactory.DisposeExecutor(this);
+                this.ClientContext.Client.BatchExecutorCache.DisposeExecutor(this);
             }
 
             return responseMessage;
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
         {
-            return BatchAsyncContainerExecutorFactory.GetExecutorForContainer(this, this.ClientContext);
+            return this.ClientContext.Client.BatchExecutorCache.GetExecutorForContainer(this, this.ClientContext);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(

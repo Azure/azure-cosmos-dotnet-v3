@@ -4,17 +4,19 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Factory to create and share Executor instances across the client's lifetime.
+    /// Cache to create and share Executor instances across the client's lifetime.
     /// </summary>
-    internal static class BatchAsyncContainerExecutorFactory
+    internal class BatchAsyncContainerExecutorCache : IDisposable
     {
-        private static ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
+        private ConcurrentDictionary<string, BatchAsyncContainerExecutor> executorsPerContainer = new ConcurrentDictionary<string, BatchAsyncContainerExecutor>();
 
-        public static BatchAsyncContainerExecutor GetExecutorForContainer(
+        public BatchAsyncContainerExecutor GetExecutorForContainer(
             ContainerCore container,
             CosmosClientContext cosmosClientContext)
         {
@@ -24,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string containerLink = container.LinkUri.ToString();
-            if (BatchAsyncContainerExecutorFactory.executorsPerContainer.TryGetValue(containerLink, out BatchAsyncContainerExecutor executor))
+            if (this.executorsPerContainer.TryGetValue(containerLink, out BatchAsyncContainerExecutor executor))
             {
                 return executor;
             }
@@ -34,20 +36,28 @@ namespace Microsoft.Azure.Cosmos
                 cosmosClientContext,
                 Constants.MaxOperationsInDirectModeBatchRequest,
                 Constants.MaxDirectModeBatchRequestBodySizeInBytes);
-            if (!BatchAsyncContainerExecutorFactory.executorsPerContainer.TryAdd(containerLink, newExecutor))
+            if (!this.executorsPerContainer.TryAdd(containerLink, newExecutor))
             {
                 newExecutor.Dispose();
             }
 
-            return BatchAsyncContainerExecutorFactory.executorsPerContainer[containerLink];
+            return this.executorsPerContainer[containerLink];
         }
 
-        public static void DisposeExecutor(ContainerCore container)
+        public void DisposeExecutor(ContainerCore container)
         {
             string containerLink = container.LinkUri.ToString();
-            if (BatchAsyncContainerExecutorFactory.executorsPerContainer.TryRemove(containerLink, out BatchAsyncContainerExecutor executor))
+            if (this.executorsPerContainer.TryRemove(containerLink, out BatchAsyncContainerExecutor executor))
             {
                 executor.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach (KeyValuePair<string, BatchAsyncContainerExecutor> cacheEntry in this.executorsPerContainer)
+            {
+                cacheEntry.Value.Dispose();
             }
         }
     }
