@@ -157,15 +157,22 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<ResponseMessage> DeleteContainerStreamAsync(
+        public override async Task<ResponseMessage> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessStreamAsync(
+            ResponseMessage responseMessage = await this.ProcessStreamAsync(
                streamPayload: null,
                operationType: OperationType.Delete,
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
+
+            if (responseMessage.IsSuccessStatusCode)
+            {
+                BatchAsyncContainerExecutorFactory.DisposeExecutor(this);
+            }
+
+            return responseMessage;
         }
 
         public override Task<ResponseMessage> ReadContainerStreamAsync(
@@ -289,16 +296,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
         {
-            if (!this.ClientContext.ClientOptions.AllowBulkExecution)
-            {
-                return null;
-            }
-
-            return new BatchAsyncContainerExecutor(
-                this,
-                this.ClientContext,
-                Constants.MaxOperationsInDirectModeBatchRequest,
-                Constants.MaxDirectModeBatchRequestBodySizeInBytes);
+            return BatchAsyncContainerExecutorFactory.GetExecutorForContainer(this, this.ClientContext);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
