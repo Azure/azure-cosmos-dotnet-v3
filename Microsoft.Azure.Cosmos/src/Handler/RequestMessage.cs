@@ -25,7 +25,12 @@ namespace Microsoft.Azure.Cosmos
     /// <see cref="RequestMessage.Properties"/> should be used for any other property that needs to be sent to the backend but will not be read nor used within the Azure Cosmos DB SDK pipeline.
     /// <see cref="RequestMessage.Headers"/> should be used for HTTP headers that need to be passed down and sent to the backend.
     /// </remarks>
-    public class RequestMessage : IDisposable
+#if AZUREDATA
+    internal
+#else
+    public
+#endif
+    class RequestMessage : IDisposable
     {
         /// <summary>
         /// Create a <see cref="RequestMessage"/>

@@ -61,6 +61,15 @@
     <Compile Include="..\src\Handler\*.cs">
       <Link>Handler\%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="..\src\Diagnostics\CosmosDiagnostics.cs">
+      <Link>Diagnostics\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Headers\*.cs">
+      <Link>Headers\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Routing\*.cs">
+      <Link>Routing\%(Filename)%(Extension)</Link>
+    </Compile>
   </ItemGroup>
   <!--SDK V3 dependencies-->
   

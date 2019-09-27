@@ -13,7 +13,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a response from the Azure Cosmos DB service.
     /// </summary>
-    public class ResponseMessage : IDisposable
+#if AZUREDATA
+    internal
+#else
+    public
+#endif
+    class ResponseMessage : IDisposable
     {
         /// <summary>
         /// Create a <see cref="ResponseMessage"/>

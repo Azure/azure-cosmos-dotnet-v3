@@ -7,7 +7,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     ///  Contains the cosmos diagnostic information for the current request to Azure Cosmos DB service.
     /// </summary>
-    public abstract class CosmosDiagnostics
+#if AZUREDATA
+    internal
+#else
+    public
+#endif
+    abstract class CosmosDiagnostics
     {
         /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
