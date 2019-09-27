@@ -296,6 +296,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
         {
+            if (!this.ClientContext.ClientOptions.AllowBulkExecution)
+            {
+                return null;
+            }
+
             return this.ClientContext.Client.BatchExecutorCache.GetExecutorForContainer(this, this.ClientContext);
         }
 

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!cosmosClientContext.ClientOptions.AllowBulkExecution)
             {
-                return null;
+                throw new InvalidOperationException("AllowBulkExecution is not currently enabled.");
             }
 
             string containerLink = container.LinkUri.ToString();
