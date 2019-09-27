@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#814](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/814) Ability to limit to configured endpoint only
 - [#822](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/822) GROUP BY query support.
+- [#844](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/844) Added PartitionKeyDefinitionVersion to container builder
 
 ### Fixed
 
