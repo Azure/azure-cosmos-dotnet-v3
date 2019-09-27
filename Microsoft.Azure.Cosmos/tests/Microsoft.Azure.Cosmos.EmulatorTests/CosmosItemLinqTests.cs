@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
@@ -471,12 +470,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
-            Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             string paramNameForUpdate = parameters[valid];
             valid = true;
             queryDefinition.WithParameter(paramNameForUpdate, valid);
-            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             // Passing incorrect string value, generating queryDefinition, updating parameter and verifying new result
             description = "wrongDescription";
@@ -496,12 +495,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
-            Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             paramNameForUpdate = parameters[description];
             description = "CreateRandomToDoActivity";
             queryDefinition.WithParameter(paramNameForUpdate, description);
-            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             // Passing incorrect number value, generating queryDefinition, updating parameter and verifying new result
             taskNum = 10;
@@ -521,12 +520,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
-            Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             paramNameForUpdate = parameters[taskNum];
             taskNum = 100;
             queryDefinition.WithParameter(paramNameForUpdate, taskNum);
-            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             // Passing incorrect object value, generating queryDefinition, updating parameter and verifying new result
             child1.taskNum = 40;
@@ -545,12 +544,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(5, queryDefinition.ToSqlQuerySpec().Parameters.Count);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
-            Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             paramNameForUpdate = parameters[child1];
             child1.taskNum = 30;
             queryDefinition.WithParameter(paramNameForUpdate, child1);
-            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
         }
 
         [TestMethod]
@@ -570,11 +569,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             parameters.Add(camelCase, "@param1");
             QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(1, queryDefinition.ToSqlQuerySpec().Parameters.Count);
-            Assert.AreEqual(0, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             camelCase = "camelCase";
             queryDefinition.WithParameter("@param1", camelCase);
-            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             string queryText = "SELECT VALUE root FROM root WHERE (root[\"children\"] = " +
                 "[{\"id\":\"child1\",\"taskNum\":30,\"cost\":0.0,\"description\":null,\"status\":null,\"CamelCase\":null,\"valid\":false,\"children\":null}," +
@@ -587,11 +586,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queriable = linqQueryable
                .Where(item => item.children == children);
             parameters = new Dictionary<object, string>();
-            parameters.Add(children, "@param1");
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
-            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
-
+            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
+            int f = 90;
+            sbyte s = (sbyte)f;
             //no change in result, after changing parameter in queryDefinition
             children = new ToDoActivity[]
                 { new ToDoActivity { id = "child1", taskNum = 30 },
@@ -599,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                   new ToDoActivity { id = "child3", taskNum = 50}
                 };
             queryDefinition.WithParameter("@param1", children);
-            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
                         queriable = linqQueryable
                .Where(item => item.children == children);
@@ -618,11 +617,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             parameters.Add(4, "@param3");
             queryDefinition = queriable.ToQueryDefinition();
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
-            Assert.AreEqual(4, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(4, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             queryDefinition.WithParameter("@param2", 10);
             queryDefinition.WithParameter("@param3", 0);
-            Assert.AreEqual(4, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(4, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
 
             queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] != @param1) ";
@@ -634,17 +633,137 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual("\b\n", queryDefinition.ToSqlQuerySpec().Parameters[0].Value);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
-            Assert.AreEqual(10, (await this.FetchResults(queryDefinition)).Count);
+            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
         }
 
-        private async Task<List<ToDoActivity>> FetchResults(QueryDefinition queryDefinition)
+        [TestMethod]
+        public async Task LinqParameterisedTest3()
         {
-            List<ToDoActivity> itemList = new List<ToDoActivity>();
-            FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(queryDefinition);
+            string queryText = "SELECT VALUE item0 FROM root JOIN item0 IN root[\"children\"]" +
+                " WHERE (((((((((((((root[\"id\"] = @param1)" +
+                " AND (root[\"stringValue\"] = @Param2))" +
+                " AND (root[\"sbyteValue\"] = @param3))" +
+                " AND (root[\"byteValue\"] = @param4))" +
+                " AND (root[\"shortValue\"] = @param5))" +
+                " AND (root[\"uintValue\"] = @param6))" +
+                " AND (root[\"longValue\"] = @param7))" +
+                " AND (root[\"ulongValue\"] = @Param8))" +
+                " AND (root[\"floatValue\"] = @param9))" +
+                " AND (root[\"doubleValue\"] = @param10))" +
+                " AND (root[\"decimaleValue\"] = @param11))" +
+                " AND (root[\"booleanValue\"] = @param12))" +
+                " AND (item0 = @param13)) ";
+
+            string id = "testId";
+            string pk = "testPk";
+            string stringValue = "testStringValue";
+            sbyte sbyteValue = 5;
+            byte byteValue = 6;
+            short shortValue = 7;
+            int intValue = 8;
+            uint uintValue = 9;
+            long longValue = 10;
+            ulong ulongValue = 11;
+            float floatValue = 12;
+            double doubleValue = 13;
+            decimal decimaleValue = 14;
+            bool booleanValue = true;
+            ParametrizedLinqItem child = new ParametrizedLinqItem { id = "childId" };
+            ParametrizedLinqItem[] children = new ParametrizedLinqItem[]
+            {
+                child
+            };
+
+
+            ParametrizedLinqItem parametrizedLinqItem = new ParametrizedLinqItem
+            {
+                id = id,
+                status = pk,
+                stringValue = stringValue,
+                sbyteValue = sbyteValue,
+                byteValue = byteValue,
+                shortValue = shortValue,
+                intValue = intValue,
+                uintValue = uintValue,
+                longValue = longValue,
+                ulongValue = ulongValue,
+                floatValue = floatValue,
+                doubleValue = doubleValue,
+                decimaleValue = decimaleValue,
+                booleanValue = booleanValue,
+                children = children
+            };
+
+            await this.Container.CreateItemAsync(parametrizedLinqItem, new PartitionKey(pk));
+
+            IOrderedQueryable<ParametrizedLinqItem> linqQueryable = this.Container.GetItemLinqQueryable<ParametrizedLinqItem>(true);
+            IQueryable<ParametrizedLinqItem> queriable = linqQueryable
+               .Where(item => item.id == id)
+               .Where(item => item.stringValue == stringValue)
+               .Where(item => item.sbyteValue == sbyteValue)
+               .Where(item => item.byteValue == byteValue)
+               .Where(item => item.shortValue == shortValue)
+               .Where(item => item.uintValue == uintValue)
+               .Where(item => item.longValue == longValue)
+               .Where(item => item.ulongValue == ulongValue)
+               .Where(item => item.floatValue == floatValue)
+               .Where(item => item.doubleValue == doubleValue)
+               .Where(item => item.decimaleValue == decimaleValue)
+               .Where(item => item.booleanValue == booleanValue)
+               .SelectMany(item => item.children)
+               .Where(ch => ch == child);
+            Dictionary<object, string> parameters = new Dictionary<object, string>();
+            parameters.Add(id, "@param1");
+            parameters.Add(stringValue, "@Param2");
+            parameters.Add(sbyteValue, "@param3");
+            parameters.Add(byteValue, "@param4");
+            parameters.Add(shortValue, "@param5");
+            parameters.Add(uintValue, "@param6");
+            parameters.Add(longValue, "@param7");
+            parameters.Add(ulongValue, "@Param8");
+            parameters.Add(floatValue, "@param9");
+            parameters.Add(doubleValue, "@param10");
+            parameters.Add(decimaleValue, "@param11");
+            parameters.Add(booleanValue, "@param12");
+            parameters.Add(child, "@param13");
+
+            QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
+            Assert.AreEqual(1, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
+
+            queryDefinition.WithParameter("@param3", 6);
+            Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
+
+        }
+
+        private class ParametrizedLinqItem
+        {
+            public string id;
+            public string status;
+            public string stringValue;
+            public sbyte sbyteValue;
+            public byte byteValue;
+            public short shortValue;
+            public int intValue;
+            public uint uintValue;
+            public long longValue;
+            public ulong ulongValue;
+            public float floatValue;
+            public double doubleValue;
+            public decimal decimaleValue;
+            public bool booleanValue;
+            public ParametrizedLinqItem[] children;
+
+        }
+
+            private async Task<List<T>> FetchResults<T>(QueryDefinition queryDefinition)
+        {
+            List<T> itemList = new List<T>();
+            FeedIterator<T> feedIterator = this.Container.GetItemQueryIterator<T>(queryDefinition);
             while (feedIterator.HasMoreResults)
             {
-                FeedResponse<ToDoActivity> queryResponse = await feedIterator.ReadNextAsync();
-                IEnumerator<ToDoActivity> iter = queryResponse.GetEnumerator();
+                FeedResponse<T> queryResponse = await feedIterator.ReadNextAsync();
+                IEnumerator<T> iter = queryResponse.GetEnumerator();
                 while (iter.MoveNext())
                 {
                     itemList.Add(iter.Current);

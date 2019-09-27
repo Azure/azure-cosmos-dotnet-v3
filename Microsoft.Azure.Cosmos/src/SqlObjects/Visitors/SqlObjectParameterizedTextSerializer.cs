@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Sql
 {
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Linq;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// This class used when user provides parameterized query by passing

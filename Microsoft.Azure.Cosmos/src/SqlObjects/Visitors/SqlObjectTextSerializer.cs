@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         // When the tests are converted over to baseline files we can just bulk update them and remove this flag.
         private const bool MongoDoesNotUseBaselineFiles = true;
         private static readonly string Tab = "    ";
-        private protected readonly StringWriter writer;
+        protected readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
 

@@ -1237,18 +1237,6 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
-        "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Boolean get_LimitToEndpoint()"
-        },
-        "Boolean LimitToEndpoint": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": null
-        },
         "Int32 GatewayModeMaxConnectionLimit": {
           "Type": "Property",
           "Attributes": [],
@@ -1310,11 +1298,9 @@
           "Attributes": [],
           "MethodInfo": "System.Net.IWebProxy get_WebProxy()"
         },
-        "System.Net.IWebProxy WebProxy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+        "System.Net.IWebProxy WebProxy": {
           "Type": "Property",
-          "Attributes": [
-            "JsonIgnoreAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": null
         },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
@@ -1465,13 +1451,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_IdleTcpConnectionTimeout(System.Nullable`1[System.TimeSpan])"
-        },
-        "Void set_LimitToEndpoint(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_LimitToEndpoint(Boolean)"
         },
         "Void set_MaxRequestsPerTcpConnection(System.Nullable`1[System.Int32])": {
           "Type": "Method",
@@ -2385,11 +2364,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Microsoft.Azure.Cosmos.CosmosSerializer)"
-        },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(Boolean)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan)": {
           "Type": "Method",
