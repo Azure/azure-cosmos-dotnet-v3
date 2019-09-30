@@ -2309,6 +2309,11 @@
           "Attributes": [],
           "MethodInfo": "T WithDefaultTimeToLive(System.TimeSpan)"
         },
+        "T WithPartitionKeyDefinitionVersion(Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "T WithPartitionKeyDefinitionVersion(Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion)"
+        },
         "T WithTimeToLivePropertyPath(System.String)": {
           "Type": "Method",
           "Attributes": [],

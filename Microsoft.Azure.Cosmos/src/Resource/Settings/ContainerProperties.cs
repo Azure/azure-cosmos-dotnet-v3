@@ -90,8 +90,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the Partitioning scheme version used. <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
+        /// Gets or sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
+        ///
+        /// The partition key definition version 1 uses a hash function that computes
+        /// hash based on the first 100 bytes of the partition key. This can cause
+        /// conflicts for documents with partition keys greater than 100 bytes.
+        /// 
+        /// The partition key definition version 2 uses a hash function that computes
+        /// hash based on the first 2 KB of the partition key.
         /// </summary>
+        /// <returns>The Partition Key Definition Version of the container</returns>
         [JsonIgnore]
         public PartitionKeyDefinitionVersion? PartitionKeyDefinitionVersion
         {
