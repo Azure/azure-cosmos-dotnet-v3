@@ -1,7 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+#if AZUREDATA
+namespace Azure.Data.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
     /// <summary>
     /// Represents the connection mode to be used by the client when connecting to the Azure Cosmos DB service.

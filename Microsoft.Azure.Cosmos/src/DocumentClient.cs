@@ -1307,9 +1307,9 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the configured consistency level of the client from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// The configured <see cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/> of the client.
+        /// The configured <see cref="Documents.ConsistencyLevel"/> of the client.
         /// </value>
-        /// <seealso cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/>
+        /// <seealso cref="Documents.ConsistencyLevel"/>
         public virtual Documents.ConsistencyLevel ConsistencyLevel
         {
             get
