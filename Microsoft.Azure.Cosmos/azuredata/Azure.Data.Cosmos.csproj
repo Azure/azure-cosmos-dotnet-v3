@@ -70,6 +70,24 @@
     <Compile Include="..\src\Routing\*.cs">
       <Link>Routing\%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="..\src\SqlObjects\**\*.cs">
+      <Link>SqlObjects\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Util\Extensions.cs">
+      <Link>Util\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Util\Extensions.cs">
+      <Link>Util\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Policies\*.cs">
+      <Link>Policies\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosJsonSerializerWrapper.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosSerializer.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
   </ItemGroup>
   <!--SDK V3 dependencies-->
   
