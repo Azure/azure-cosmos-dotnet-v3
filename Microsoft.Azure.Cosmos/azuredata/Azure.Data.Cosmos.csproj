@@ -85,8 +85,89 @@
     <Compile Include="..\src\Serializer\CosmosJsonSerializerWrapper.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosPropertyNamingPolicy.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializer.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ConnectionPolicy.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ConnectionMode.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Regions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\*DocumentClient*.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Query\v2Query\IDocumentQueryClient.cs">
+      <Link>Query\v2Query\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Query\v2Query\DocumentFeedResponse.cs">
+      <Link>Query\v2Query\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\RetryPolicy.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\IComputeHash.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Resource\Settings\CosmosAccountServiceConfiguration.cs">
+      <Link>Resource\Settings\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\AuthorizationHelper.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\SecureStringHMACSHA256Helper.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\StringHMACSHA256Hash.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ResourceToken.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\TaskHelper.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ResourceFeedReader.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\FeedOptions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\SessionContainer.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\GatewayStoreModel.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\GatewayStoreClient.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ActivityScope.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ClientResources*.*">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\UriFactory.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\DocumentCollectionRestoreStatus.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\RestoreState.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ResourceFeedReader*.cs">
+      <Link>%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
   <!--SDK V3 dependencies-->
