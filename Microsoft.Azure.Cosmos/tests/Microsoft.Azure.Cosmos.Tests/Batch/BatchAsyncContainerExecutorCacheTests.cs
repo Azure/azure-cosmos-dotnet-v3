@@ -52,6 +52,46 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Timeout(60000)]
+        public async Task SingleTaskScheduler_ExecutorTest()
+        {
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(x => x.Endpoint).Returns(new Uri("http://localhost"));
+
+            CosmosClientContext context = new ClientContextCore(
+                client: mockClient.Object,
+                clientOptions: new CosmosClientOptions() { AllowBulkExecution = true },
+                userJsonSerializer: null,
+                defaultJsonSerializer: null,
+                sqlQuerySpecSerializer: null,
+                cosmosResponseFactory: null,
+                requestHandler: null,
+                documentClient: null);
+
+            DatabaseCore db = new DatabaseCore(context, "test");
+
+            List<Task<ContainerCore>> tasks = new List<Task<ContainerCore>>();
+            for (int i = 0; i < 20; i++)
+            {
+                tasks.Add(
+                    Task.Factory.StartNew(() => (ContainerCore)db.GetContainer("test"),
+                    CancellationToken.None,
+                    TaskCreationOptions.None,
+                    new SingleTaskScheduler()));
+            }
+
+            await Task.WhenAll(tasks);
+
+            BatchAsyncContainerExecutor firstExecutor = tasks[0].Result.BatchExecutor;
+            Assert.IsNotNull(firstExecutor);
+            for (int i = 1; i < 20; i++)
+            {
+                BatchAsyncContainerExecutor otherExecutor = tasks[i].Result.BatchExecutor;
+                Assert.AreEqual(firstExecutor, otherExecutor);
+            }
+        }
+
+        [TestMethod]
         public void Null_When_OptionsOff()
         {
             Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
