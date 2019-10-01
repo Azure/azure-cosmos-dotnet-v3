@@ -297,15 +297,6 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.Client.BatchExecutorCache.GetExecutorForContainer(this, this.ClientContext);
         }
 
-        private Task<BatchAsyncContainerExecutor> CreateBatchExecutorForContainerAsync()
-        {
-            return Task.FromResult(new BatchAsyncContainerExecutor(
-                       this,
-                       this.ClientContext,
-                       Constants.MaxOperationsInDirectModeBatchRequest,
-                       Constants.MaxDirectModeBatchRequestBodySizeInBytes));
-        }
-
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
             Stream streamPayload,
             ContainerRequestOptions requestOptions = null,
