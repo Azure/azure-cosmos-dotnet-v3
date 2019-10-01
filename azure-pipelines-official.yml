@@ -42,7 +42,6 @@ stages:
 
       - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
         displayName: 'ESRP CodeSigning - binaries'
-        inputs:
         ConnectedServiceName: 'ESRP Code Signing 2019'
         FolderPath: Microsoft.Azure.Cosmos
         Pattern: Microsoft.Azure.Cosmos.Client.dll
@@ -145,8 +144,7 @@ stages:
              ]
           SessionTimeout: 20
 
-#      - task: PublishBuildArtifacts@1
-#        displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
-#        inputs:
-#          artifactName: Microsoft.Azure.Cosmos
-#
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
+        inputs:
+          artifactName: Microsoft.Azure.Cosmos
