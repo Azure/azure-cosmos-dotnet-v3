@@ -1,7 +1,11 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+#if AZUREDATA
+namespace Azure.Data.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
     using Microsoft.Azure.Documents.Routing;
 
@@ -10,15 +14,15 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public struct PartitionKey
     {
-        private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Documents.PartitionKey(null).InternalKey;
-        private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Documents.PartitionKey(true).InternalKey;
-        private static readonly PartitionKeyInternal FalsePartitionKeyInternal = new Documents.PartitionKey(false).InternalKey;
+        private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Microsoft.Azure.Documents.PartitionKey(null).InternalKey;
+        private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Microsoft.Azure.Documents.PartitionKey(true).InternalKey;
+        private static readonly PartitionKeyInternal FalsePartitionKeyInternal = new Microsoft.Azure.Documents.PartitionKey(false).InternalKey;
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing items
         /// without a value for partition key.
         /// </summary>
-        public static readonly PartitionKey None = new PartitionKey(Documents.PartitionKey.None.InternalKey, true);
+        public static readonly PartitionKey None = new PartitionKey(Microsoft.Azure.Documents.PartitionKey.None.InternalKey, true);
 
         /// <summary>
         /// The returned object represents a partition key value that allows creating and accessing items
@@ -30,12 +34,12 @@ namespace Microsoft.Azure.Cosmos
         /// The tag name to use in the documents for specifying a partition key value
         /// when inserting such documents into a migrated collection
         /// </summary>
-        public static readonly string SystemKeyName = Documents.PartitionKey.SystemKeyName;
+        public static readonly string SystemKeyName = Microsoft.Azure.Documents.PartitionKey.SystemKeyName;
 
         /// <summary>
         /// The partition key path in the collection definition for migrated collections
         /// </summary>
-        public static readonly string SystemKeyPath = Documents.PartitionKey.SystemKeyPath;
+        public static readonly string SystemKeyPath = Microsoft.Azure.Documents.PartitionKey.SystemKeyPath;
 
         /// <summary>
         /// Gets the value provided at initialization.
@@ -59,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
+                this.InternalKey = new Microsoft.Azure.Documents.PartitionKey(partitionKeyValue).InternalKey;
             }
             this.IsNone = false;
         }
@@ -80,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyValue">The value to use as partition key.</param>
         public PartitionKey(double partitionKeyValue)
         {
-            this.InternalKey = new Documents.PartitionKey(partitionKeyValue).InternalKey;
+            this.InternalKey = new Microsoft.Azure.Documents.PartitionKey(partitionKeyValue).InternalKey;
             this.IsNone = false;
         }
 
@@ -90,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">The value to use as partition key.</param>
         internal PartitionKey(object value)
         {
-            this.InternalKey = new Documents.PartitionKey(value).InternalKey;
+            this.InternalKey = new Microsoft.Azure.Documents.PartitionKey(value).InternalKey;
             this.IsNone = false;
         }
 
