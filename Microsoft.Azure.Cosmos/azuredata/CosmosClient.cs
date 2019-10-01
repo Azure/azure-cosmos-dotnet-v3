@@ -421,7 +421,7 @@ namespace Azure.Data.Cosmos
         /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="Response"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>

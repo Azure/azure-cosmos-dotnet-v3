@@ -51,7 +51,7 @@ namespace Azure.Data.Cosmos
         /// <summary>
         /// Default request timeout
         /// </summary>
-        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosTextJsonSerializer());
 
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
@@ -76,7 +76,6 @@ namespace Azure.Data.Cosmos
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
-            this.CustomHandlers = new Collection<RequestHandler>();
         }
 
         /// <summary>
@@ -490,7 +489,7 @@ namespace Azure.Data.Cosmos
         {
             if (this.SerializerOptions != null)
             {
-                CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer(this.SerializerOptions);
+                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = new CosmosTextJsonSerializer(this.SerializerOptions);
                 return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
             }
             else
@@ -566,7 +565,7 @@ namespace Azure.Data.Cosmos
             return connectionPolicy;
         }
 
-        internal Documents.ConsistencyLevel? GetDocumentsConsistencyLevel()
+        internal Microsoft.Azure.Documents.ConsistencyLevel? GetDocumentsConsistencyLevel()
         {
             if (!this.ConsistencyLevel.HasValue)
             {
@@ -576,15 +575,15 @@ namespace Azure.Data.Cosmos
             switch (this.ConsistencyLevel.Value)
             {
                 case Cosmos.ConsistencyLevel.BoundedStaleness:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
+                    return Microsoft.Azure.Documents.ConsistencyLevel.BoundedStaleness;
                 case Cosmos.ConsistencyLevel.ConsistentPrefix:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
+                    return Microsoft.Azure.Documents.ConsistencyLevel.BoundedStaleness;
                 case Cosmos.ConsistencyLevel.Eventual:
-                    return Documents.ConsistencyLevel.Eventual;
+                    return Microsoft.Azure.Documents.ConsistencyLevel.Eventual;
                 case Cosmos.ConsistencyLevel.Session:
-                    return Documents.ConsistencyLevel.Session;
+                    return Microsoft.Azure.Documents.ConsistencyLevel.Session;
                 case Cosmos.ConsistencyLevel.Strong:
-                    return Documents.ConsistencyLevel.Strong;
+                    return Microsoft.Azure.Documents.ConsistencyLevel.Strong;
                 default:
                     throw new ArgumentException($"Unsupported ConsistencyLevel {this.ConsistencyLevel.Value}");
             }

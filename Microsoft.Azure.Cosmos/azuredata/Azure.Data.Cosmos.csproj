@@ -76,22 +76,13 @@
     <Compile Include="..\src\Util\Extensions.cs">
       <Link>Util\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Util\Extensions.cs">
-      <Link>Util\%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\Policies\*.cs">
       <Link>Policies\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Serializer\CosmosJsonSerializerWrapper.cs">
-      <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Serializer\CosmosPropertyNamingPolicy.cs">
-      <Link>Serializer\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Serializer\CosmosSerializer.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\ConnectionPolicy.cs">
@@ -136,9 +127,6 @@
     <Compile Include="..\src\TaskHelper.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ResourceFeedReader.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\FeedOptions.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
@@ -152,9 +140,6 @@
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\ActivityScope.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\ClientResources*.*">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\UriFactory.cs">
@@ -192,7 +177,7 @@
   <ItemGroup>
     <EmbeddedResource Update="..\src\ClientResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
+      <LastGenOutput>..\src\ClientResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
   
