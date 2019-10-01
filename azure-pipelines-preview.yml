@@ -12,9 +12,10 @@ pr:
     - NuGet.config
 
 variables:
-  DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Preview" --verbosity normal '
-  ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Preview" --verbosity normal '
-  VmImage: vs2017-win2016 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+  DebugArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory=Preview" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory=Preview" --verbosity normal '
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+  Preview: 1
 
 
 jobs:
