@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
     /// Query execution component that groups groupings across continuations and pages.
@@ -39,10 +41,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     /// </summary>
     internal sealed class GroupByDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
     {
-        public const string ContinuationTokenNotSupportedWithGroupBy = "Continuation token is not supported for queries with GROUP BY. Do not use FeedResponse.ResponseContinuation or remove the GROUP BY from the query.";
         private static readonly List<CosmosElement> EmptyResults = new List<CosmosElement>();
         private static readonly Dictionary<string, QueryMetrics> EmptyQueryMetrics = new Dictionary<string, QueryMetrics>();
         private static readonly AggregateOperator[] EmptyAggregateOperators = new AggregateOperator[] { };
+        private static readonly string DoneReadingGroupingsContinuationToken = "DONE";
 
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
@@ -54,11 +56,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         private bool isDone;
 
         private GroupByDocumentQueryExecutionComponent(
+            IDocumentQueryExecutionComponent source,
             CosmosQueryClient cosmosQueryClient,
-            string groupingTableContinuationToken,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
+            string groupingTableContinuationToken,
             bool hasSelectValue,
-            IDocumentQueryExecutionComponent source)
+            int numPagesDrainedFromGroupingTable)
             : base(source)
         {
             if (cosmosQueryClient == null)
@@ -108,6 +111,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.distinctMap = DistinctMap.Create(DistinctQueryType.Ordered, null);
             this.groupByAliasToAggregateType = groupByAliasToAggregateType;
             this.hasSelectValue = hasSelectValue;
+            this.numPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
+
         }
 
         public override bool IsDone => this.isDone;
@@ -133,12 +138,23 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 groupByContinuationToken = default(GroupByContinuationToken);
             }
 
+            IDocumentQueryExecutionComponent source;
+            if (groupByContinuationToken.SourceContinuationToken == GroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken)
+            {
+                source = DoneDocumentQueryExecutionComponent.Value;
+            }
+            else
+            {
+                source = await createSourceCallback(groupByContinuationToken.SourceContinuationToken);
+            }
+
             return new GroupByDocumentQueryExecutionComponent(
+                source,
                 cosmosQueryClient,
-                groupByContinuationToken.GroupingTableContinuationToken,
                 groupByAliasToAggregateType,
+                groupByContinuationToken.GroupingTableContinuationToken,
                 hasSelectValue,
-                await createSourceCallback(groupByContinuationToken.SourceContinuationToken));
+                groupByContinuationToken.NumPagesDrainedFromGroupingTable);
         }
 
         public override async Task<QueryResponseCore> DrainAsync(
@@ -184,11 +200,27 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     singleGroupAggregator.AddValues(payload);
                 }
 
+                string updatedContinuationToken;
+                if (this.Source.IsDone)
+                {
+                    updatedContinuationToken = new GroupByContinuationToken(
+                        this.GetGroupingTableContinuationToken(),
+                        GroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken,
+                        numPagesDrainedFromGroupingTable: 0).ToString();
+                }
+                else
+                {
+                    updatedContinuationToken = new GroupByContinuationToken(
+                        this.GetGroupingTableContinuationToken(),
+                        sourceResponse.ContinuationToken,
+                        numPagesDrainedFromGroupingTable: 0).ToString();
+                }
+
                 // We need to give empty pages until the results are fully drained.
                 response = QueryResponseCore.CreateSuccess(
                     result: EmptyResults,
-                    continuationToken: null,
-                    disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
+                    continuationToken: updatedContinuationToken,
+                    disallowContinuationTokenMessage: null,
                     activityId: sourceResponse.ActivityId,
                     requestCharge: sourceResponse.RequestCharge,
                     queryMetricsText: sourceResponse.QueryMetricsText,
@@ -214,47 +246,80 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     results.Add(groupByValues.GetResult());
                 }
 
+                this.numPagesDrainedFromGroupingTable++;
+                if (this.numPagesDrainedFromGroupingTable * maxElements >= this.groupingTable.Count)
+                {
+                    this.isDone = true;
+                }
+
+                string continuationToken;
+                if (this.isDone)
+                {
+                    continuationToken = null;
+                }
+                else
+                {
+                    continuationToken = new GroupByContinuationToken(
+                        this.GetGroupingTableContinuationToken(),
+                        sourceContinuationToken: GroupByDocumentQueryExecutionComponent.DoneReadingGroupingsContinuationToken,
+                        numPagesDrainedFromGroupingTable: this.numPagesDrainedFromGroupingTable).ToString();
+                }
+
                 response = QueryResponseCore.CreateSuccess(
                    result: results,
-                   continuationToken: null,
-                   disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
+                   continuationToken: continuationToken,
+                   disallowContinuationTokenMessage: null,
                    activityId: null,
                    requestCharge: 0,
                    queryMetricsText: null,
                    queryMetrics: EmptyQueryMetrics,
                    requestStatistics: null,
                    responseLengthBytes: 0);
-
-                this.numPagesDrainedFromGroupingTable++;
-                if (this.numPagesDrainedFromGroupingTable * maxElements >= this.groupingTable.Count)
-                {
-                    this.isDone = true;
-                }
             }
 
             return response;
         }
 
+        private string GetGroupingTableContinuationToken()
+        {
+            IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            jsonWriter.WriteObjectStart();
+            foreach (KeyValuePair<UInt192, SingleGroupAggregator> kvp in this.groupingTable)
+            {
+                jsonWriter.WriteFieldName(kvp.Key.ToString());
+                jsonWriter.WriteStringValue(kvp.Value.GetContinuationToken());
+            }
+            jsonWriter.WriteObjectEnd();
+
+            string result = Encoding.UTF8.GetString(jsonWriter.GetResult());
+            return result;
+        }
+
         private struct GroupByContinuationToken
         {
-            private GroupByContinuationToken(
+            public GroupByContinuationToken(
                 string groupingTableContinuationToken,
-                string sourceContinuationToken)
+                string sourceContinuationToken,
+                int numPagesDrainedFromGroupingTable)
             {
                 this.GroupingTableContinuationToken = groupingTableContinuationToken;
                 this.SourceContinuationToken = sourceContinuationToken;
+                this.NumPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
             }
 
             public string GroupingTableContinuationToken { get; }
 
             public string SourceContinuationToken { get; }
 
+            public int NumPagesDrainedFromGroupingTable { get; }
+
             public override string ToString()
             {
                 return CosmosObject.Create(new Dictionary<string, CosmosElement>()
                 {
-                    {nameof(this.GroupingTableContinuationToken), CosmosString.Create(this.GroupingTableContinuationToken)},
-                    {nameof(this.SourceContinuationToken), CosmosString.Create(this.SourceContinuationToken)},
+                    { nameof(this.GroupingTableContinuationToken), CosmosString.Create(this.GroupingTableContinuationToken) },
+                    { nameof(this.SourceContinuationToken), CosmosString.Create(this.SourceContinuationToken) },
+                    { nameof(this.NumPagesDrainedFromGroupingTable), CosmosNumber64.Create(this.NumPagesDrainedFromGroupingTable) }
                 }).ToString();
             }
 
@@ -282,9 +347,18 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     return false;
                 }
 
+                if (!groupByContinuationTokenObject.TryGetValue<CosmosNumber64>(
+                    nameof(GroupByContinuationToken.NumPagesDrainedFromGroupingTable),
+                    out CosmosNumber64 numPagesDrainedFromGroupingTable))
+                {
+                    groupByContinuationToken = default(GroupByContinuationToken);
+                    return false;
+                }
+
                 groupByContinuationToken = new GroupByContinuationToken(
                     groupingTableContinuationToken.Value,
-                    sourceContinuationToken.Value);
+                    sourceContinuationToken.Value,
+                    (int)numPagesDrainedFromGroupingTable.AsInteger().Value);
                 return true;
             }
         }
@@ -349,6 +423,37 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
                     return cosmosElement;
                 }
+            }
+        }
+
+        private sealed class DoneDocumentQueryExecutionComponent : IDocumentQueryExecutionComponent
+        {
+            public static readonly DoneDocumentQueryExecutionComponent Value = new DoneDocumentQueryExecutionComponent();
+
+            private DoneDocumentQueryExecutionComponent()
+            {
+            }
+
+            public bool IsDone => true;
+
+            public void Dispose()
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<QueryResponseCore> DrainAsync(int maxElements, CancellationToken token)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Stop()
+            {
+                throw new NotImplementedException();
             }
         }
     }
