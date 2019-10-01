@@ -145,7 +145,8 @@ stages:
              ]
           SessionTimeout: 20
 
-      - task: PublishBuildArtifacts@1
-        displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
-        inputs:
-          artifactName: Microsoft.Azure.Cosmos
+#      - task: PublishBuildArtifacts@1
+#        displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
+#        inputs:
+#          artifactName: Microsoft.Azure.Cosmos
+#
