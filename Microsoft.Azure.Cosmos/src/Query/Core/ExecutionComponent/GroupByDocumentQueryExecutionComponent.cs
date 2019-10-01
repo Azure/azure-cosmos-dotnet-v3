@@ -76,6 +76,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             this.cosmosQueryClient = cosmosQueryClient;
             this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
+
+            // Using an ordered distinct map to get hashes.
+            this.distinctMap = DistinctMap.Create(DistinctQueryType.Ordered, null);
+            this.groupByAliasToAggregateType = groupByAliasToAggregateType;
+            this.hasSelectValue = hasSelectValue;
+            this.numPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
+
             if (groupingTableContinuationToken != null)
             {
                 if (!CosmosElement.TryParse<CosmosObject>(
@@ -106,13 +113,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     this.groupingTable[groupByKey] = singleGroupAggregator;
                 }
             }
-
-            // Using an ordered distinct map to get hashes.
-            this.distinctMap = DistinctMap.Create(DistinctQueryType.Ordered, null);
-            this.groupByAliasToAggregateType = groupByAliasToAggregateType;
-            this.hasSelectValue = hasSelectValue;
-            this.numPagesDrainedFromGroupingTable = numPagesDrainedFromGroupingTable;
-
         }
 
         public override bool IsDone => this.isDone;

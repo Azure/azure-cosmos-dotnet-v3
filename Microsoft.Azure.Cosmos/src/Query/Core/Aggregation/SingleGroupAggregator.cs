@@ -6,9 +6,10 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Aggregation;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Aggregates all the projections for a single grouping.
@@ -41,17 +42,24 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (aggregates != null && aggregates.Any())
                 {
                     // SELECT VALUE <AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(aggregates[0], continuationToken);
+                    aggregateValues = SelectValueAggregateValues.Create(
+                        aggregates[0],
+                        continuationToken);
                 }
                 else
                 {
                     // SELECT VALUE <NON AGGREGATE>
-                    aggregateValues = SelectValueAggregateValues.Create(aggregateOperator: null, continuationToken: null);
+                    aggregateValues = SelectValueAggregateValues.Create(
+                        aggregateOperator: null,
+                        continuationToken: continuationToken);
                 }
             }
             else
             {
-                aggregateValues = SelectListAggregateValues.Create(queryClient, aggregateAliasToAggregateType, continuationToken);
+                aggregateValues = SelectListAggregateValues.Create(
+                    queryClient,
+                    aggregateAliasToAggregateType,
+                    continuationToken);
             }
 
             return aggregateValues;
@@ -149,22 +157,18 @@ namespace Microsoft.Azure.Cosmos.Query
                 IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
                 string continuationToken)
             {
-                if (!CosmosElement.TryParse(continuationToken, out CosmosElement parsedContinuationToken))
+                CosmosObject aliasContinuationTokens;
+                if (continuationToken != null)
                 {
-                    throw cosmosQueryClient.CreateBadRequestException(
-                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}.");
+                    if (!CosmosElement.TryParse<CosmosObject>(continuationToken, out aliasContinuationTokens))
+                    {
+                        throw cosmosQueryClient.CreateBadRequestException(
+                            $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}.");
+                    }
                 }
-
-                if (parsedContinuationToken == null)
+                else
                 {
-                    throw cosmosQueryClient.CreateBadRequestException(
-                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}.");
-                }
-
-                if (!(parsedContinuationToken is CosmosObject aliasContinuationTokens))
-                {
-                    throw cosmosQueryClient.CreateBadRequestException(
-                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}. Expected an object instead.");
+                    aliasContinuationTokens = null;
                 }
 
                 Dictionary<string, AggregateValue> groupingTable = new Dictionary<string, AggregateValue>();
@@ -172,14 +176,25 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     string alias = aliasToAggregate.Key;
                     AggregateOperator? aggregateOperator = aliasToAggregate.Value;
-                    CosmosElement aliasContinuationToken = aliasContinuationTokens[alias];
-                    if (aliasContinuationToken == null)
+                    string aggregateValueContinuationToken;
+                    if (continuationToken != null)
                     {
-                        throw cosmosQueryClient.CreateBadRequestException(
-                            $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}. Expected key: {alias}.");
+                        CosmosElement aliasContinuationToken = aliasContinuationTokens[alias];
+                        if (!(aliasContinuationToken is CosmosString aliasContinuationTokenString))
+                        {
+                            throw cosmosQueryClient.CreateBadRequestException(
+                                $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}.");
+                        }
+                        aggregateValueContinuationToken = aliasContinuationTokenString.Value;
+                    }
+                    else
+                    {
+                        aggregateValueContinuationToken = null;
                     }
 
-                    groupingTable[alias] = AggregateValue.Create(aggregateOperator, aliasContinuationToken.ToString());
+                    groupingTable[alias] = AggregateValue.Create(
+                        aggregateOperator,
+                        aggregateValueContinuationToken);
                 }
 
                 return new SelectListAggregateValues(groupingTable);
@@ -202,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             public override string ToString()
             {
-                return JsonConvert.SerializeObject(this.aliasToValue);
+                return Newtonsoft.Json.JsonConvert.SerializeObject(this.aliasToValue);
             }
         }
 
@@ -327,28 +342,51 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 public override string GetContinuationToken()
                 {
-                    return this.value.ToString();
+                    IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+                    jsonWriter.WriteObjectStart();
+                    jsonWriter.WriteFieldName(nameof(this.initialized));
+                    jsonWriter.WriteBoolValue(this.initialized);
+                    if (this.value != null)
+                    {
+                        jsonWriter.WriteFieldName(nameof(this.value));
+                        this.value.WriteTo(jsonWriter);
+                    }
+                    jsonWriter.WriteObjectEnd();
+
+                    string continuationToken = Encoding.UTF8.GetString(jsonWriter.GetResult());
+                    return continuationToken;
                 }
 
                 public static ScalarAggregateValue Create(string continuationToken)
                 {
-                    CosmosElement initialValue;
+                    CosmosElement value;
                     bool initialized;
                     if (continuationToken != null)
                     {
-                        if (!CosmosElement.TryParse(continuationToken, out initialValue))
+                        if (!CosmosElement.TryParse<CosmosObject>(
+                            continuationToken,
+                            out CosmosObject rawContinuationToken))
                         {
                             throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
                         }
-                        initialized = true;
+
+                        if (!rawContinuationToken.TryGetValue<CosmosBoolean>(
+                            nameof(ScalarAggregateValue.initialized),
+                            out CosmosBoolean rawInitialized))
+                        {
+                            throw new ArgumentException($"Invalid {nameof(ScalarAggregateValue)}: {continuationToken}");
+                        }
+
+                        value = rawContinuationToken[nameof(ScalarAggregateValue.value)];
+                        initialized = rawInitialized.Value;
                     }
                     else
                     {
-                        initialValue = null;
+                        value = null;
                         initialized = false;
                     }
 
-                    return new ScalarAggregateValue(initialValue, initialized);
+                    return new ScalarAggregateValue(value, initialized);
                 }
 
                 public override void AddValue(CosmosElement aggregateValue)
