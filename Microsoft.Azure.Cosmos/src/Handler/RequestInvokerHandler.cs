@@ -21,8 +21,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
     {
         private static (bool, ResponseMessage) clientIsValid = (false, null);
         private readonly CosmosDriverContext clientPipelineBuilderContext;
-        private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
-        private Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
+        private Documents.ConsistencyLevel? AccountConsistencyLevel = null;
+        private Documents.ConsistencyLevel? RequestedClientConsistencyLevel;
 
         public RequestInvokerHandler(CosmosDriverContext clientPipelineBuilderContext)
         {
@@ -210,11 +210,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             // Validate the request consistency compatibility with account consistency
             // Type based access context for requested consistency preferred for performance
-            Cosmos.ConsistencyLevel? consistencyLevel = null;
+            Documents.ConsistencyLevel? consistencyLevel = null;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
             if (promotedRequestOptions != null && promotedRequestOptions.BaseConsistencyLevel.HasValue)
             {
-                consistencyLevel = promotedRequestOptions.BaseConsistencyLevel;
+                consistencyLevel = (Documents.ConsistencyLevel)promotedRequestOptions.BaseConsistencyLevel;
             }
             else if (this.RequestedClientConsistencyLevel.HasValue)
             {
