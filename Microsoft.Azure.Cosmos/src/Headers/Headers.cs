@@ -17,12 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <seealso cref="ResponseMessage"/>
     /// <seealso cref="RequestMessage"/>
-#if AZUREDATA
-    internal
-#else
-    public
-#endif
-    class Headers : IEnumerable
+    public class Headers : IEnumerable
     {
         private static KeyValuePair<string, PropertyInfo>[] knownHeaderProperties = CosmosMessageHeadersInternal.GetHeaderAttributes<Headers>();
 
