@@ -4230,7 +4230,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 foreach (int maxItemCount in new int[] { 1, 5, 10 })
                 {
-                    List<JToken> actual = await CrossPartitionQueryTests.RunQuery<JToken>(
+                    List<JToken> actual = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
                         container,
                         query,
                         new QueryRequestOptions()

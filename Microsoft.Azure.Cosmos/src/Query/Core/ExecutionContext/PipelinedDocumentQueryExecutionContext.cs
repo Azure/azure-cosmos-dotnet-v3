@@ -146,19 +146,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
-            int actualPageSize = initParams.InitialPageSize;
             int initialPageSize = initParams.InitialPageSize;
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams parameters = initParams;
             if (queryInfo.HasGroupBy)
             {
-                initialPageSize = int.MaxValue;
+                // The query will block until all groupings are gathered so we might as well speed up the process.
                 initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                     sqlQuerySpec: initParams.SqlQuerySpec,
                     collectionRid: initParams.CollectionRid,
                     partitionedQueryExecutionInfo: initParams.PartitionedQueryExecutionInfo,
                     partitionKeyRanges: initParams.PartitionKeyRanges,
-                    initialPageSize: initialPageSize,
-                    maxConcurrency: initParams.MaxConcurrency,
+                    initialPageSize: int.MaxValue,
+                    maxConcurrency: int.MaxValue,
                     maxItemCount: int.MaxValue,
                     maxBufferedItemCount: initParams.MaxBufferedItemCount);
             }
