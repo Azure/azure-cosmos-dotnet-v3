@@ -52,9 +52,6 @@
 
   <!--SDK V3 dependencies-->
   <ItemGroup>
-    <Compile Include="..\src\RequestOptions\*.cs">
-      <Link>RequestOptions\%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\Resource\Settings\Enums\*.cs">
       <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
     </Compile>
@@ -67,14 +64,14 @@
     <Compile Include="..\src\Diagnostics\CosmosDiagnosticsAggregate.cs">
       <Link>Diagnostics\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Headers\*.cs">
-      <Link>Headers\%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\Routing\*.cs">
       <Link>Routing\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\SqlObjects\**\*.cs">
       <Link>SqlObjects\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Json\**\*.cs">
+      <Link>Json\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Util\Extensions.cs">
       <Link>Util\%(Filename)%(Extension)</Link>
@@ -83,6 +80,9 @@
       <Link>Policies\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
+      <Link>Serializer\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Serializer\CosmosSerializationFormatOptions.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Serializer\CosmosPropertyNamingPolicy.cs">
