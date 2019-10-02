@@ -99,8 +99,6 @@ namespace Microsoft.Azure.Cosmos
 
         private bool disposed;
 
-        private Stream content;
-
         /// <summary>
         /// Disposes the current <see cref="RequestMessage"/>.
         /// </summary>

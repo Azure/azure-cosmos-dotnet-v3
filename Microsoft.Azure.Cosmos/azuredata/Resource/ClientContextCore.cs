@@ -39,7 +39,7 @@ namespace Azure.Data.Cosmos
             this.RequestHandler = requestHandler;
             this.DocumentClient = documentClient;
 
-            this.ClientOptions.Transport = new CosmosPipelineTransport(requestHandler);
+            this.ClientOptions.Transport = new ClientPipelineTransport(requestHandler);
             this.pipeline = HttpPipelineBuilder.Build(this.ClientOptions);
         }
 
@@ -92,7 +92,7 @@ namespace Azure.Data.Cosmos
             }
             catch (DocumentClientException ex)
             {
-                throw new CosmosException(ex.ToResponse(null), ex.Message, ex.Error);
+                throw new CosmosException(ex.ToCosmosResponseMessage(null), ex.Message, ex.Error);
             }
         }
 

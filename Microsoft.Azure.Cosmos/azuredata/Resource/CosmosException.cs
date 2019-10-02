@@ -19,7 +19,7 @@ namespace Azure.Data.Cosmos
             HttpStatusCode statusCode,
             string message,
             Error error = null)
-            : base((int) statusCode, message)
+            : base((int)statusCode, message)
         {
             this.StatusCode = statusCode;
             this.Error = error;
@@ -120,10 +120,12 @@ namespace Azure.Data.Cosmos
         /// </summary>
         public virtual ResponseHeaders Headers { get; }
 
+        /*
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        //public virtual CosmosDiagnostics Diagnostics { get; }
+        public virtual CosmosDiagnostics Diagnostics { get; }
+        */
 
         /// <summary>
         /// Gets the internal error object

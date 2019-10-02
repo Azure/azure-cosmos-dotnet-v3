@@ -15,7 +15,7 @@ namespace Azure.Data.Cosmos
     {
         private readonly RequestInvokerHandler requestInvokerHandler;
 
-        public CosmosPipelineTransport(RequestInvokerHandler requestInvokerHandler)
+        public ClientPipelineTransport(RequestInvokerHandler requestInvokerHandler)
         {
             this.requestInvokerHandler = requestInvokerHandler;
         }
