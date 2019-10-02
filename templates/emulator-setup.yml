@@ -3,13 +3,13 @@
 steps:
   - pwsh:  |
         If ($env:Preview -eq 1) {
+          Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
+          Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
+          Write-Host "Finished Downloading Cosmos Emulator nightly build - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green
+        } else {
           Write-Host "Downloading Cosmos Emulator - https://aka.ms/cosmosdb-emulator" -ForegroundColor green 
           Invoke-WebRequest "https://aka.ms/cosmosdb-emulator" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
           Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
-        } else {
-          Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
-          Invoke-WebRequest "$env:EMULATORMSIURL" -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
-          Write-Host "Finished Downloading Cosmos Emulator nightly build - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
         }
         dir "$env:temp" 
         choco install lessmsi
