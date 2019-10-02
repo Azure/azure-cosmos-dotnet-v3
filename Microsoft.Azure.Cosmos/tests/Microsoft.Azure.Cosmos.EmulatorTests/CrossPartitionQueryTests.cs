@@ -4285,6 +4285,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container,
             IEnumerable<Document> documents)
         {
+            ContainerCore conatinerCore = (ContainerCore)container;
             foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
             {
                 foreach (int maxItemCount in new int[] { 10, 100 })
@@ -4299,7 +4300,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string continuationToken = null;
                         do
                         {
-                            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, (bool canSupportActual, FeedIterator queryIterator)) = await container.TryExecuteQueryAsync(
+                            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
                                 supportedQueryFeatures: queryFeatures,
                                 queryDefinition: new QueryDefinition(query),
                                 requestOptions: new QueryRequestOptions()

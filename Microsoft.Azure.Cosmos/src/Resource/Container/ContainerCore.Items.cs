@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions);
         }
 
-        internal override async Task<(PartitionedQueryExecutionInfo, (bool, QueryIterator))> TryExecuteQueryAsync(
+        internal async Task<(PartitionedQueryExecutionInfo, (bool, QueryIterator))> TryExecuteQueryAsync(
             QueryFeatures supportedQueryFeatures,
             QueryDefinition queryDefinition,
             string continuationToken,

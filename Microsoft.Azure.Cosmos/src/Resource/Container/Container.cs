@@ -800,13 +800,6 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
-        internal abstract Task<(PartitionedQueryExecutionInfo, (bool, QueryIterator))> TryExecuteQueryAsync(
-            QueryFeatures supportedQueryFeatures,
-            QueryDefinition queryDefinition,
-            string continuationToken,
-            QueryRequestOptions requestOptions,
-            CancellationToken cancellationToken = default(CancellationToken));
-
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
