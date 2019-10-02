@@ -1683,7 +1683,6 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             };
 
             this.VerifyReader(input, expectedTokens, new JsonUnexpectedTokenException());
-            this.VerifyReader(binaryInput, expectedTokens, null, new JsonUnexpectedTokenException());
         }
 
         [TestMethod]
