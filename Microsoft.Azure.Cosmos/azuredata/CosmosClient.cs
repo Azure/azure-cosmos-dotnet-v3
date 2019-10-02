@@ -5,6 +5,7 @@
 namespace Azure.Data.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Net;
@@ -12,6 +13,7 @@ namespace Azure.Data.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
@@ -298,7 +300,7 @@ namespace Azure.Data.Cosmos
         internal CosmosClientContext ClientContext { get; private set; }
 
         /// <summary>
-        /// Read Azure Cosmos DB account properties <see cref="Microsoft.Azure.Cosmos.AccountProperties"/>
+        /// Read Azure Cosmos DB account properties <see cref="AccountProperties"/>
         /// </summary>
         /// <returns>
         /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
@@ -314,8 +316,7 @@ namespace Azure.Data.Cosmos
         /// <param name="id">The cosmos database id</param>
         /// <remarks>
         /// <see cref="Database"/> proxy reference doesn't guarantee existence.
-        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/> 
-        /// or <see cref="CosmosClient.CreateDatabaseIfNotExistsAsync(string, int?, RequestOptions, CancellationToken)"/>, before
+        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/>, before
         /// operating on it.
         /// </remarks>
         /// <example>
@@ -337,8 +338,7 @@ namespace Azure.Data.Cosmos
         /// </summary>
         /// <remarks>
         /// <see cref="Container"/> proxy reference doesn't guarantee existence.
-        /// Please ensure container exists through <see cref="Database.CreateContainerAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/> 
-        /// or <see cref="Database.CreateContainerIfNotExistsAsync(ContainerProperties, int?, RequestOptions, CancellationToken)"/>, before
+        /// Please ensure container exists, before
         /// operating on it.
         /// </remarks>
         /// <param name="databaseId">cosmos database name</param>
@@ -461,7 +461,7 @@ namespace Azure.Data.Cosmos
             //Request pipeline 
             ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                 new CosmosClientDriverContext(this),
-                this.ClientOptions.CustomHandlers);
+                new List<RequestHandler>());
 
             this.RequestHandler = clientPipelineBuilder.Build();
 
@@ -511,13 +511,13 @@ namespace Azure.Data.Cosmos
             return databaseProperties;
         }
 
-        internal Task<DatabaseResponse> CreateDatabaseAsync(
+        internal Task<Response<DatabaseProperties>> CreateDatabaseAsync(
                     DatabaseProperties databaseProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task<ResponseMessage> response = this.CreateDatabaseStreamInternalAsync(
+            Task<Response> response = this.CreateDatabaseStreamInternalAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,

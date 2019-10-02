@@ -10,9 +10,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Http;
+    using global::Azure.Core.Pipeline;
+    using global::Azure.Data.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -23,9 +25,9 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// It is expected that direct property access is used for properties that will be read and used within the Azure Cosmos SDK pipeline, for example <see cref="RequestMessage.OperationType"/>.
     /// <see cref="RequestMessage.Properties"/> should be used for any other property that needs to be sent to the backend but will not be read nor used within the Azure Cosmos DB SDK pipeline.
-    /// <see cref="RequestMessage.Headers"/> should be used for HTTP headers that need to be passed down and sent to the backend.
+    /// <see cref="RequestMessage.CosmosHeaders"/> should be used for HTTP headers that need to be passed down and sent to the backend.
     /// </remarks>
-    public class RequestMessage : IDisposable
+    internal class RequestMessage : Request
     {
         /// <summary>
         /// Create a <see cref="RequestMessage"/>
@@ -39,16 +41,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="method">The http method</param>
         /// <param name="requestUri">The requested URI</param>
-        public RequestMessage(HttpMethod method, Uri requestUri)
+        public RequestMessage(RequestMethod method, Uri requestUri)
         {
             this.Method = method;
             this.RequestUri = requestUri;
         }
-
-        /// <summary>
-        /// Gets the <see cref="HttpMethod"/> for the current request.
-        /// </summary>
-        public virtual HttpMethod Method { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="Uri"/> for the current request.
@@ -58,20 +55,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the current <see cref="RequestMessage"/> HTTP headers.
         /// </summary>
-        public virtual Headers Headers => this.headers.Value;
+        public virtual Headers CosmosHeaders => this.headers.Value;
 
-        /// <summary>
-        /// Gets or sets the current <see cref="RequestMessage"/> payload.
-        /// </summary>
-        public virtual Stream Content
-        {
-            get => this.content;
-            set
-            {
-                this.CheckDisposed();
-                this.content = value;
-            }
-        }
+        public override string ClientRequestId { get; set; }
 
         internal RequestOptions RequestOptions { get; set; }
 
@@ -99,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed &&
             (this.ResourceType == ResourceType.Document || this.ResourceType == ResourceType.Conflict) &&
-            this.PartitionKeyRangeId == null && this.Headers.PartitionKey == null;
+            this.PartitionKeyRangeId == null && this.CosmosHeaders.PartitionKey == null;
 
         /// <summary>
         /// Request properties Per request context available to handlers. 
@@ -118,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Disposes the current <see cref="RequestMessage"/>.
         /// </summary>
-        public void Dispose()
+        public override void Dispose()
         {
             this.Dispose(true);
             GC.SuppressFinalize(this);
@@ -146,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (throughputValue.HasValue)
             {
-                this.Headers.OfferThroughput = throughputValue.Value.ToString(CultureInfo.InvariantCulture);
+                this.CosmosHeaders.OfferThroughput = throughputValue.Value.ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -188,14 +174,14 @@ namespace Microsoft.Azure.Cosmos
                         operationType: this.OperationType,
                         resourceIdOrFullName: null,
                         resourceType: this.ResourceType,
-                        body: this.Content,
-                        headers: this.Headers.CosmosMessageHeaders,
+                        body: this.Content?.GetStream(),
+                        headers: this.CosmosHeaders.CosmosMessageHeaders,
                         isNameBased: false,
                         authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUri?.ToString(), this.Content?.GetStream(), AuthorizationTokenType.PrimaryMasterKey, this.CosmosHeaders.CosmosMessageHeaders);
                 }
 
                 if (this.UseGatewayMode.HasValue)
@@ -219,6 +205,52 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentServiceRequest;
         }
 
+        /// <inheritdoc />
+        protected override void AddHeader(string name, string value)
+        {
+            this.CosmosHeaders.Add(name, value);
+        }
+
+        /// <inheritdoc />
+        protected override bool TryGetHeader(string name, out string value)
+        {
+            return this.CosmosHeaders.TryGetValue(name, out value);
+        }
+
+        /// <inheritdoc />
+        protected override bool TryGetHeaderValues(string name, out IEnumerable<string> values)
+        {
+            values = null;
+            string singleValue;
+            bool retValue = this.CosmosHeaders.TryGetValue(name, out singleValue);
+            if (retValue)
+            {
+                values = new List<string>() { singleValue };
+            }
+
+            return retValue;
+        }
+
+        /// <inheritdoc />
+        protected override bool ContainsHeader(string name)
+        {
+            string singleValue;
+            return this.CosmosHeaders.TryGetValue(name, out singleValue);
+        }
+
+        /// <inheritdoc />
+        protected override bool RemoveHeader(string name)
+        {
+            this.CosmosHeaders.Remove(name);
+            return true;
+        }
+
+        /// <inheritdoc />
+        protected override IEnumerable<HttpHeader> EnumerateHeaders()
+        {
+            throw new NotImplementedException();
+        }
+
         private static Dictionary<string, object> CreateDictionary()
         {
             return new Dictionary<string, object>();
@@ -240,7 +272,7 @@ namespace Microsoft.Azure.Cosmos
         private bool AssertPartitioningPropertiesAndHeaders()
         {
             // Either PK/key-range-id is assumed
-            bool pkExists = !string.IsNullOrEmpty(this.Headers.PartitionKey);
+            bool pkExists = !string.IsNullOrEmpty(this.CosmosHeaders.PartitionKey);
             bool epkExists = this.Properties.ContainsKey(WFConstants.BackendHeaders.EffectivePartitionKeyString);
             if (pkExists && epkExists)
             {
@@ -253,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(RMResources.MissingPartitionKeyValue);
             }
 
-            bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.Headers.PartitionKeyRangeId);
+            bool partitionKeyRangeIdExists = !string.IsNullOrEmpty(this.CosmosHeaders.PartitionKeyRangeId);
             if (partitionKeyRangeIdExists)
             {
                 // Assert operation type is not write

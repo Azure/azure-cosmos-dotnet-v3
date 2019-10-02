@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = null;
-            string originalContinuation = request.Headers.ContinuationToken;
+            string originalContinuation = request.CosmosHeaders.ContinuationToken;
             try
             {
                 RntdbEnumerationDirection rntdbEnumerationDirection = RntdbEnumerationDirection.Forward;
@@ -56,8 +56,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     rntdbEnumerationDirection = (byte)direction == (byte)RntdbEnumerationDirection.Reverse ? RntdbEnumerationDirection.Reverse : RntdbEnumerationDirection.Forward;
                 }
 
-                request.Headers.Remove(HttpConstants.HttpHeaders.IsContinuationExpected);
-                request.Headers.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.TrueString);
+                request.CosmosHeaders.Remove(HttpConstants.HttpHeaders.IsContinuationExpected);
+                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.IsContinuationExpected, bool.TrueString);
 
                 if (!request.Properties.TryGetValue(HandlerConstants.StartEpkString, out object startEpk))
                 {
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private void SetOriginalContinuationToken(RequestMessage request, ResponseMessage response, string originalContinuation)
         {
-            request.Headers.ContinuationToken = originalContinuation;
+            request.CosmosHeaders.ContinuationToken = originalContinuation;
             if (response != null)
             {
                 response.Headers.ContinuationToken = originalContinuation;

@@ -8,12 +8,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using global::Azure;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Represents a response from the Azure Cosmos DB service.
     /// </summary>
-    public class ResponseMessage : IDisposable
+    internal class ResponseMessage : Response, IDisposable
     {
         /// <summary>
         /// Create a <see cref="ResponseMessage"/>

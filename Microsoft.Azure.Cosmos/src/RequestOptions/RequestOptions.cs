@@ -71,12 +71,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.IfMatchEtag != null)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.IfMatch, this.IfMatchEtag);
+                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.IfMatch, this.IfMatchEtag);
             }
 
             if (this.IfNoneMatchEtag != null)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
+                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
             }
         }
 
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrWhiteSpace(sessionToken))
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
+                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
             }
         }
     }

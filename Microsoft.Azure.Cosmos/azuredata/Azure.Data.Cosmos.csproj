@@ -58,10 +58,13 @@
     <Compile Include="..\src\Resource\Settings\Enums\*.cs">
       <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Handler\*.cs">
+    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs">
       <Link>Handler\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Diagnostics\CosmosDiagnostics.cs">
+      <Link>Diagnostics\%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Diagnostics\CosmosDiagnosticsAggregate.cs">
       <Link>Diagnostics\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Headers\*.cs">
@@ -94,8 +97,17 @@
     <Compile Include="..\src\Regions.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\*DocumentClient*.cs">
+    <Compile Include="..\src\DocumentClient*.cs" Exclude="..\src\DocumentClientInternal.cs">
       <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\IDocumentClient.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ClientExtensions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Linq\**\*.cs">
+      <Link>Linq\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Query\v2Query\IDocumentQueryClient.cs">
       <Link>Query\v2Query\%(Filename)%(Extension)</Link>

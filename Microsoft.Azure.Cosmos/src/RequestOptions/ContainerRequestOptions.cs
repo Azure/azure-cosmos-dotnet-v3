@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.PopulateQuotaInfo)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.PopulateQuotaInfo, bool.TrueString);
+                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PopulateQuotaInfo, bool.TrueString);
             }
 
             base.PopulateRequestOptions(request);
