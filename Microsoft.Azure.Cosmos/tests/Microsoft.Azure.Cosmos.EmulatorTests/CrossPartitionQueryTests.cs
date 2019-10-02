@@ -1273,6 +1273,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [TestCategory("Preview")]
         public async Task TestQueryPlanGatewayAndServiceInterop()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -4004,6 +4005,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [TestCategory("Preview")]
+
         public async Task TestGroupByQuery()
         {
             string[] documents = new string[]
