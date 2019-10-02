@@ -581,8 +581,8 @@ namespace Microsoft.Azure.Cosmos
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <remarks>
-        /// The item id and partition key value are immutable. 
-        /// To change an item id or partition key value you must delete the original item and insert a new item.
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
         /// </remarks>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="id">The cosmos item id</param>
@@ -632,8 +632,8 @@ namespace Microsoft.Azure.Cosmos
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
         /// <remarks>
-        /// The item id and partition key value are immutable. 
-        /// To change an item id or partition key value you must delete the original item and insert a new item.
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
         /// </remarks>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
         /// <param name="id">The cosmos item id, which is expected to match the value within T.</param>

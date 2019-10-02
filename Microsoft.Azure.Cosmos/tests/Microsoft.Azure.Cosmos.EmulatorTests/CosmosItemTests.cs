@@ -1250,6 +1250,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task ItemReplaceAsyncTest()
+        {
+            // Create an item
+            ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
+
+            string originalId = testItem.id;
+            testItem.id = Guid.NewGuid().ToString();
+
+            ItemResponse<ToDoActivity> response = await this.Container.ReplaceItemAsync<ToDoActivity>(
+                id: originalId,
+                item: testItem);
+
+            Assert.AreEqual(testItem.id, response.Resource.id);
+            Assert.AreNotEqual(originalId, response.Resource.id);
+
+            string originalStatus = testItem.status;
+            testItem.status = Guid.NewGuid().ToString();
+
+            try
+            {
+                response = await this.Container.ReplaceItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(originalStatus),
+                item: testItem);
+                Assert.Fail("Replace changing partition key is not supported.");
+            }catch(CosmosException ce)
+            {
+                Assert.AreEqual((HttpStatusCode)400, ce.StatusCode);
+            }
+        }
+
         // Read write non partition Container item.
         [TestMethod]
         public async Task ReadNonPartitionItemAsync()
