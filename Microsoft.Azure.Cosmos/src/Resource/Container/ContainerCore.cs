@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -30,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
         internal ContainerCore(
             CosmosClientContext clientContext,
             DatabaseCore database,
-            string containerId)
+            string containerId,
+            CosmosQueryClient cosmosQueryClient = null)
         {
             this.Id = containerId;
             this.ClientContext = clientContext;
@@ -43,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Conflicts = new ConflictsCore(this.ClientContext, this);
             this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
-            this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
+            this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
             this.BatchExecutor = this.InitializeBatchExecutorForContainer();
         }
 
