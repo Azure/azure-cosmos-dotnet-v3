@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.IO;
     using System.Linq;
     using System.Text;
-    using Microsoft.Azure.Documents;
+    using RMResources = Documents.RMResources;
 
     /// <summary>
     /// Base abstract class for JSON writers.

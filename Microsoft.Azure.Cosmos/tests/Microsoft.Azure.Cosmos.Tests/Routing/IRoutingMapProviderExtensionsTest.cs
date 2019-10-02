@@ -37,11 +37,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 return Task.FromResult(this.routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
             }
-
-            public Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(string collectionResourceId, string effectivePartitionKey)
-            {
-                return Task.FromResult(this.routingMap.GetOverlappingRanges(Range<string>.GetPointRange(effectivePartitionKey)).Single());
-            }
         }
 
         private readonly MockRoutingMapProvider routingMapProvider =
@@ -61,18 +56,21 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Tests case when input is not sorted.
         /// </summary>
         [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
+        [Owner("padmaa")]
         public async Task TestNonSortedRanges()
         {
-            await this.routingMapProvider.TryGetOverlappingRangesAsync(
+            IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
                 "dbs/db1/colls/coll1",
                 new[] { new Range<string>("0B", "0B", true, true), new Range<string>("0A", "0A", true, true) });
+
+            Assert.AreEqual("6", string.Join(",", ranges.Select(r => r.Id)));
         }
 
         /// <summary>
         /// Tests case when input contains overlapping ranges.
         /// </summary>
         [TestMethod]
+        [Owner("padmaa")]
         [ExpectedException(typeof(ArgumentException))]
         public async Task TestOverlappingRanges1()
         {
@@ -85,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Tests case when input contains overlapping ranges.
         /// </summary>
         [TestMethod]
+        [Owner("padmaa")]
         [ExpectedException(typeof(ArgumentException))]
         public async Task TestOverlappingRanges2()
         {
@@ -97,6 +96,44 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Tests case with various overlapping options.
         /// </summary>
         [TestMethod]
+        [Owner("padmaa")]
+        public async Task TestDuplicates()
+        {
+            {
+                // Deep Copy Duplicate
+                IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+                "dbs/db1/colls/coll1",
+                new[]
+                {
+                    new Range<string>("", "FF", true, false),
+                    // Duplicate
+                    new Range<string>("", "FF", true, false),
+                });
+
+                Assert.AreEqual("0,1,2,3,4,5,6", string.Join(",", ranges.Select(r => r.Id)));
+            }
+
+            {
+                // Shallow Copy Duplicate
+                List<Range<string>> queryRanges = new List<Range<string>>()
+                {
+                    new Range<string>("", "FF", true, false),
+                };
+                queryRanges.Add(queryRanges.Last());
+
+                IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(
+                    "dbs/db1/colls/coll1",
+                    queryRanges);
+
+                Assert.AreEqual("0,1,2,3,4,5,6", string.Join(",", ranges.Select(r => r.Id)));
+            }
+        }
+
+        /// <summary>
+        /// Tests case with various overlapping options.
+        /// </summary>
+        [TestMethod]
+        [Owner("padmaa")]
         public async Task TestGetOverlappingRanges()
         {
             IList<PartitionKeyRange> ranges = await this.routingMapProvider.TryGetOverlappingRangesAsync(

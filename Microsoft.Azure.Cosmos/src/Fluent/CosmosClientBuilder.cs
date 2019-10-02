@@ -125,7 +125,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Set the preferred geo-replicated region to be used in the Azure Cosmos DB service. 
         /// </summary>
         /// <param name="applicationRegion">Azure region where application is running. <see cref="Regions"/> lists valid Cosmos DB regions.</param>
-        /// <param name="useAnyAccountRegion">When the value of this property is true, the SDK will automatically discover the current write and read regions to ensure requests are sent to the correct region based on the region specified in the ApplicationRegion property. When setting the value to false, availability is reduced to that of a single region account to the region specified in ApplicationRegion, see https://docs.microsoft.com/azure/cosmos-db/high-availability. </param>
         /// <example>
         /// The example below creates a new <see cref="CosmosClientBuilder"/> with a of preferred region.
         /// <code language="c#">
@@ -140,12 +139,39 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </example>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ApplicationRegion"/>
-        public CosmosClientBuilder WithApplicationRegion(
-            string applicationRegion,
-            bool useAnyAccountRegion = true)
+        public CosmosClientBuilder WithApplicationRegion(string applicationRegion)
         {
             this.clientOptions.ApplicationRegion = applicationRegion;
-            this.clientOptions.UseAnyAccountRegion = useAnyAccountRegion;
+            return this;
+        }
+
+        /// <summary>
+        /// Limits the operations to the provided endpoint on the CosmosClientBuilder constructor.
+        /// </summary>
+        /// <param name="limitToEndpoint">Whether operations are limited to the endpoint or not.</param>
+        /// <value>Default value is false.</value>
+        /// <remarks>
+        /// When the value of <paramref name="limitToEndpoint"/> is false, the SDK will automatically discover all account write and read regions, and use them when the configured application region is not available.
+        /// When set to true, availability is limited to the endpoint specified on the CosmosClientBuilder constructor.
+        /// Using <see cref="WithApplicationRegion(string)"/> is not allowed when the value is true. </remarks>
+        /// <example>
+        /// The example below creates a new <see cref="CosmosClientBuilder"/> to limit the endpoint to East US.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+        ///     accountEndpoint: "https://testcosmos-eastus.documents.azure.com:443/",
+        ///     authKeyOrResourceToken: "SuperSecretKey")
+        /// .WithLimitToEndpoint(true);
+        /// CosmosClient client = cosmosClientBuilder.Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability"/>
+        /// <seealso cref="CosmosClientOptions.LimitToEndpoint"/>
+        public CosmosClientBuilder WithLimitToEndpoint(bool limitToEndpoint)
+        {
+            this.clientOptions.LimitToEndpoint = limitToEndpoint;
             return this;
         }
 

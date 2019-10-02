@@ -209,6 +209,9 @@
                 partitionKey: new PartitionKey("Account1"),
                 id: "SalesOrder1");
 
+            // Log the diagnostics
+            Console.WriteLine($"Diagnostics for ReadItemAsync: {response.Diagnostics.ToString()}");
+
             // You can measure the throughput consumed by any operation by inspecting the RequestCharge property
             Console.WriteLine("Item read by Id {0}", response.Resource);
             Console.WriteLine("Request Units Charge for reading a Item by Id {0}", response.RequestCharge);
@@ -224,7 +227,10 @@
                 if (responseMessage.IsSuccessStatusCode)
                 {
                     SalesOrder streamResponse = FromStream<SalesOrder>(responseMessage.Content);
-                    Console.WriteLine($"\n1.2.2 - Item created {streamResponse.Id}");
+                    Console.WriteLine($"\n1.2.2 - Item Read {streamResponse.Id}");
+
+                    // Log the diagnostics
+                    Console.WriteLine($"\n1.2.2 - Item Read Diagnostics: {responseMessage.Diagnostics.ToString()}");
                 }
                 else
                 {
@@ -261,8 +267,14 @@
             List<SalesOrder> allSalesForAccount1 = new List<SalesOrder>();
             while (resultSet.HasMoreResults)
             {
-                SalesOrder sale = (await resultSet.ReadNextAsync()).First();
-                Console.WriteLine($"\n1.4.1 Account Number: {sale.AccountNumber}; Id: {sale.Id} ");
+                FeedResponse<SalesOrder> response = await resultSet.ReadNextAsync();
+                SalesOrder sale = response.First();
+                Console.WriteLine($"\n1.4.1 Account Number: {sale.AccountNumber}; Id: {sale.Id};");
+                if(response.Diagnostics != null)
+                {
+                    Console.WriteLine($" Diagnostics {response.Diagnostics.ToString()}");
+                }
+
                 allSalesForAccount1.Add(sale);
             }
 
