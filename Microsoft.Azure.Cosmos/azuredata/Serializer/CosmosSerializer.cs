@@ -36,6 +36,6 @@ namespace Azure.Data.Cosmos
         /// <returns>A readable Stream containing JSON of the serialized object</returns>
         public abstract Task<Stream> ToStreamAsync<T>(
             T input,
-            CancellationToken cancellationToken;
+            CancellationToken cancellationToken);
     }
 }
