@@ -4,7 +4,8 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System.Net;
-    using Microsoft.Azure.Documents;
+    using DocumentClientException = Documents.DocumentClientException;
+    using RMResources = Documents.RMResources;
 
     /// <summary>
     /// Abstract class that all JsonParseExceptions will derive from.

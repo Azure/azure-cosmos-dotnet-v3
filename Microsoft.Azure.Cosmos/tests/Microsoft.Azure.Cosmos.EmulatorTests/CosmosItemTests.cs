@@ -1533,6 +1533,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(sessionToken, readResponse.Headers.Session);
         }
 
+        [TestMethod]
+        public async Task VerifySessionNotFoundStatistics()
+        {
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
+            DatabaseResponse database = await cosmosClient.CreateDatabaseIfNotExistsAsync("NoSession");
+            Container container = await database.Database.CreateContainerIfNotExistsAsync("NoSession", "/status");
+
+            try
+            {
+                ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
+
+                ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(temp.status), item: temp);
+
+                string invalidSessionToken = this.GetDifferentLSNToken(responseAstype.Headers.Session, 2000);
+
+                try
+                {
+                    ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(temp.id, new Cosmos.PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = invalidSessionToken });
+                    Assert.Fail("Should had thrown ReadSessionNotAvailable");
+                }
+                catch (CosmosException cosmosException)
+                {
+                    Assert.IsTrue(cosmosException.Message.Contains("ContactedReplicas"), cosmosException.Message);
+                }
+            }
+            finally
+            {
+                await database.Database.DeleteAsync();
+            }
+        }
+
+        private string GetDifferentLSNToken(string token, long lsnDifferent)
+        {
+            string[] tokenParts = token.Split(':');
+            ISessionToken sessionToken = SessionTokenHelper.Parse(tokenParts[1]);
+            ISessionToken differentSessionToken = TestCommon.CreateSessionToken(sessionToken, sessionToken.LSN + lsnDifferent);
+            return string.Format(CultureInfo.InvariantCulture, "{0}:{1}", tokenParts[0], differentSessionToken.ConvertToString());
+        }
+
         /// <summary>
         /// Stateless container re-create test. 
         /// Create two client instances and do meta data operations through a single client

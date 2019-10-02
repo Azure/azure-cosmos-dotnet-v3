@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
@@ -17,30 +18,6 @@ namespace Microsoft.Azure.Cosmos
         private static string Max(string left, string right)
         {
             return StringComparer.Ordinal.Compare(left, right) < 0 ? right : left;
-        }
-
-        private static bool IsSortedAndNonOverlapping<T>(IList<Range<T>> list)
-            where T : IComparable<T>
-        {
-            IComparer<T> comparer = typeof(T) == typeof(string) ? (IComparer<T>)StringComparer.Ordinal : Comparer<T>.Default;
-
-            for (int i = 1; i < list.Count; i++)
-            {
-                Range<T> previousRange = list[i - 1];
-                Range<T> currentRange = list[i];
-
-                int compareResult = comparer.Compare(previousRange.Max, currentRange.Min);
-                if (compareResult > 0)
-                {
-                    return false;
-                }
-                else if (compareResult == 0 && previousRange.IsMaxInclusive && currentRange.IsMinInclusive)
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         public static async Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKeyAsync(
@@ -60,65 +37,113 @@ namespace Microsoft.Azure.Cosmos
             return ranges.Single();
         }
 
+        private static bool IsNonOverlapping<T>(SortedSet<Range<T>> sortedSet)
+            where T : IComparable<T>
+        {
+            IComparer<T> comparer = typeof(T) == typeof(string) ? (IComparer<T>)StringComparer.Ordinal : Comparer<T>.Default;
+
+            IEnumerable<Range<T>> withoutLast = sortedSet.Take(sortedSet.Count - 1);
+            IEnumerable<Range<T>> withoutFirst = sortedSet.Skip(1);
+
+            IEnumerable<Tuple<Range<T>, Range<T>>> currentAndNexts = withoutLast.Zip(withoutFirst, (current, next) => new Tuple<Range<T>, Range<T>>(current, next));
+            foreach (Tuple<Range<T>, Range<T>> currentAndNext in currentAndNexts)
+            {
+                Range<T> current = currentAndNext.Item1;
+                Range<T> next = currentAndNext.Item2;
+
+                int compareResult = comparer.Compare(current.Max, next.Min);
+                if (compareResult > 0)
+                {
+                    return false;
+                }
+                else if (compareResult == 0 && current.IsMaxInclusive && next.IsMinInclusive)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public static async Task<List<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             this IRoutingMapProvider routingMapProvider,
             string collectionResourceId,
-            IList<Range<string>> sortedRanges,
+            IEnumerable<Range<string>> sortedRanges,
             bool forceRefresh = false)
         {
-            if (!IsSortedAndNonOverlapping(sortedRanges))
+            if (sortedRanges == null)
             {
-                throw new ArgumentException("sortedRanges");
+                throw new ArgumentNullException(nameof(sortedRanges));
             }
 
-            List<PartitionKeyRange> targetRanges = new List<PartitionKeyRange>();
-            int currentProvidedRange = 0;
-            while (currentProvidedRange < sortedRanges.Count)
+            // Remove the duplicates
+            SortedSet<Range<string>> distinctSortedRanges = new SortedSet<Range<string>>(sortedRanges, Range<string>.MinComparer.Instance);
+
+            // Make sure there is no overlap
+            if (!IRoutingMapProviderExtensions.IsNonOverlapping(distinctSortedRanges))
             {
-                if (sortedRanges[currentProvidedRange].IsEmpty)
+                throw new ArgumentException($"{nameof(sortedRanges)} had overlaps.");
+            }
+
+            // For each range try to figure out what PartitionKeyRanges it spans.
+            List<PartitionKeyRange> targetRanges = new List<PartitionKeyRange>();
+            foreach (Range<string> range in sortedRanges)
+            {
+                // if the range is empty then it by definition does not span any ranges.
+                if (range.IsEmpty)
                 {
-                    currentProvidedRange++;
                     continue;
                 }
 
-                Range<string> queryRange;
-                if (targetRanges.Count > 0)
+                // If current range already is covered by the most recently added PartitionKeyRange, then we can skip it
+                // (to avoid duplicates).
+                if ((targetRanges.Count != 0) && (Range<string>.MaxComparer.Instance.Compare(range, targetRanges.Last().ToRange()) <= 0))
                 {
-                    string left = Max(
-                        targetRanges[targetRanges.Count - 1].MaxExclusive,
-                        sortedRanges[currentProvidedRange].Min);
+                    continue;
+                }
 
-                    bool leftInclusive = string.CompareOrdinal(left, sortedRanges[currentProvidedRange].Min) == 0
-                                             ? sortedRanges[currentProvidedRange].IsMinInclusive
-                                             : false;
-
-                    queryRange = new Range<string>(
-                        left,
-                        sortedRanges[currentProvidedRange].Max,
-                        leftInclusive,
-                        sortedRanges[currentProvidedRange].IsMaxInclusive);
+                // Calculate what range to look up.
+                Range<string> queryRange;
+                if (targetRanges.Count == 0)
+                {
+                    // If there are no existing partition key ranges,
+                    // then we take the first to get the ball rolling.
+                    queryRange = range;
                 }
                 else
                 {
-                    queryRange = sortedRanges[currentProvidedRange];
+                    // We don't want to double count a partition key range
+                    // So we form a new range where 
+                    // * left of the range is Max(lastPartitionKeyRange.Right(), currentRange.Left())
+                    // * right is just the right of the currentRange.
+                    // That way if the current range overlaps with the partition key range it won't double count it when doing:
+                    //  routingMapProvider.TryGetOverlappingRangesAsync
+                    string left = IRoutingMapProviderExtensions.Max(targetRanges.Last().MaxExclusive, range.Min);
+                    bool leftInclusive = string.CompareOrdinal(left, range.Min) == 0 ? range.IsMinInclusive : false;
+                    queryRange = new Range<string>(
+                        left,
+                        range.Max,
+                        leftInclusive,
+                        range.IsMaxInclusive);
                 }
 
-                IReadOnlyList<PartitionKeyRange> overlappingRanges =
-                    await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, queryRange, forceRefresh);
+                IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                    collectionResourceId,
+                    queryRange,
+                    forceRefresh);
 
                 if (overlappingRanges == null)
                 {
+                    // null means we weren't able to find the overlapping ranges.
+                    // This is due to a stale cache.
+                    // It is the caller's responsiblity to recall this method with forceRefresh = true
                     return null;
+
+                    // Design note: It would be better if this method just returned a bool and followed the standard TryGet Pattern.
+                    // It would be even better to remove the forceRefresh flag just replace it with a non TryGet method call.
                 }
 
                 targetRanges.AddRange(overlappingRanges);
-
-                Range<string> lastKnownTargetRange = targetRanges[targetRanges.Count - 1].ToRange();
-                while (currentProvidedRange < sortedRanges.Count &&
-                    Range<string>.MaxComparer.Instance.Compare(sortedRanges[currentProvidedRange], lastKnownTargetRange) <= 0)
-                {
-                    currentProvidedRange++;
-                }
             }
 
             return targetRanges;
