@@ -2,16 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if AZUREDATA
-namespace Azure.Data.Cosmos
-#else
 namespace Microsoft.Azure.Cosmos
-#endif
 {
     using System;
     using System.Diagnostics;
     using System.Globalization;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -36,19 +31,19 @@ namespace Microsoft.Azure.Cosmos
         internal override void PopulateRequestOptions(RequestMessage request)
         {
             // Check if no Continuation Token is present
-            if (string.IsNullOrEmpty(request.CosmosHeaders.IfNoneMatch))
+            if (string.IsNullOrEmpty(request.Headers.IfNoneMatch))
             {
                 if (this.StartTime == null)
                 {
-                    request.CosmosHeaders.IfNoneMatch = ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue;
+                    request.Headers.IfNoneMatch = ChangeFeedRequestOptions.IfNoneMatchAllHeaderValue;
                 }
                 else if (this.StartTime != null)
                 {
-                    request.CosmosHeaders.Add(HttpConstants.HttpHeaders.IfModifiedSince, this.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
+                    request.Headers.Add(HttpConstants.HttpHeaders.IfModifiedSince, this.StartTime.Value.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture));
                 }
             }
 
-            request.CosmosHeaders.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
+            request.Headers.Add(HttpConstants.HttpHeaders.A_IM, HttpConstants.A_IMHeaderValues.IncrementalFeed);
 
             base.PopulateRequestOptions(request);
         }
@@ -70,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
                 // On REST level, change feed is using IfNoneMatch/ETag instead of continuation
-                request.CosmosHeaders.IfNoneMatch = continuationToken;
+                request.Headers.IfNoneMatch = continuationToken;
             }
         }
 
@@ -80,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (maxItemCount.HasValue)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
+                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
     }

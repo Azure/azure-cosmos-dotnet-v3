@@ -2,11 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if AZUREDATA
-namespace Azure.Data.Cosmos
-#else
 namespace Microsoft.Azure.Cosmos
-#endif
 {
     using System;
     using System.Collections.Generic;
@@ -71,12 +67,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.IfMatchEtag != null)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.IfMatch, this.IfMatchEtag);
+                request.Headers.Add(HttpConstants.HttpHeaders.IfMatch, this.IfMatchEtag);
             }
 
             if (this.IfNoneMatchEtag != null)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
+                request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
             }
         }
 
@@ -112,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrWhiteSpace(sessionToken))
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
+                request.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
             }
         }
     }

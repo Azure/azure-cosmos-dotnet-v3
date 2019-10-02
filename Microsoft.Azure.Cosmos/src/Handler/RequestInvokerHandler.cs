@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     try
                     {
                         PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(cancellationToken);
-                        request.CosmosHeaders.PartitionKey = partitionKeyInternal.ToJsonString();
+                        request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
                     }
                     catch (DocumentClientException dce)
                     {
@@ -139,13 +139,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 else
                 {
-                    request.CosmosHeaders.PartitionKey = partitionKey.ToString();
+                    request.Headers.PartitionKey = partitionKey.ToString();
                 }
             }
 
             if (operationType == OperationType.Upsert)
             {
-                request.CosmosHeaders.IsUpsert = bool.TrueString;
+                request.Headers.IsUpsert = bool.TrueString;
             }
 
             requestEnricher?.Invoke(request);
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             if (this.clientPipelineBuilderContext.UseMultipleWriteLocations)
             {
-                request.CosmosHeaders.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
+                request.Headers.Set(HttpConstants.HttpHeaders.AllowTentativeWrites, bool.TrueString);
             }
         }
 
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 if (ValidationHelpers.IsValidConsistencyLevelOverwrite(this.AccountConsistencyLevel.Value, consistencyLevel.Value))
                 {
                     // ConsistencyLevel compatibility with back-end configuration will be done by RequestInvokeHandler
-                    requestMessage.CosmosHeaders.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.Value.ToString());
+                    requestMessage.Headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, consistencyLevel.Value.ToString());
                 }
                 else
                 {

@@ -2,15 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if AZUREDATA
-namespace Azure.Data.Cosmos
-#else
 namespace Microsoft.Azure.Cosmos
-#endif
 {
     using System;
     using System.Globalization;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -160,7 +155,7 @@ namespace Microsoft.Azure.Cosmos
             // Cross partition is only applicable to item operations.
             if (this.PartitionKey == null && !this.IsEffectivePartitionKeyRouting && request.ResourceType == ResourceType.Document)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableCrossPartitionQuery, bool.TrueString);
             }
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
@@ -168,35 +163,35 @@ namespace Microsoft.Azure.Cosmos
             // Flow the pageSize only when we are not doing client eval
             if (this.MaxItemCount.HasValue)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
+                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, this.MaxItemCount.ToString());
             }
 
             if (this.MaxConcurrency.HasValue && this.MaxConcurrency > 0)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery, bool.TrueString);
+                request.Headers.Add(HttpConstants.HttpHeaders.ParallelizeCrossPartitionQuery, bool.TrueString);
             }
 
             if (this.EnableScanInQuery.HasValue && this.EnableScanInQuery.Value)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, bool.TrueString);
             }
 
             if (this.EnableLowPrecisionOrderBy != null)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, this.EnableLowPrecisionOrderBy.ToString());
+                request.Headers.Add(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, this.EnableLowPrecisionOrderBy.ToString());
             }
 
             if (this.ResponseContinuationTokenLimitInKb != null)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
+                request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
 
             if (this.CosmosSerializationFormatOptions != null)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
+                request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, this.CosmosSerializationFormatOptions.ContentSerializationFormat);
             }
 
-            request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
+            request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 
             base.PopulateRequestOptions(request);
         }
@@ -230,7 +225,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrWhiteSpace(continuationToken))
             {
-                request.CosmosHeaders.ContinuationToken = continuationToken;
+                request.Headers.ContinuationToken = continuationToken;
             }
         }
 
@@ -240,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (maxItemCount != null && maxItemCount.HasValue)
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
+                request.Headers.Add(HttpConstants.HttpHeaders.PageSize, maxItemCount.Value.ToString(CultureInfo.InvariantCulture));
             }
         }
     }

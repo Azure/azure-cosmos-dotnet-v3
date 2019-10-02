@@ -2,15 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if AZUREDATA
-namespace Azure.Data.Cosmos
-#else
 namespace Microsoft.Azure.Cosmos
-#endif
 {
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -110,17 +105,17 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.PreTriggers != null && this.PreTriggers.Any())
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PreTriggerInclude, this.PreTriggers);
+                request.Headers.Add(HttpConstants.HttpHeaders.PreTriggerInclude, this.PreTriggers);
             }
 
             if (this.PostTriggers != null && this.PostTriggers.Any())
             {
-                request.CosmosHeaders.Add(HttpConstants.HttpHeaders.PostTriggerInclude, this.PostTriggers);
+                request.Headers.Add(HttpConstants.HttpHeaders.PostTriggerInclude, this.PostTriggers);
             }
 
             if (this.IndexingDirective != null && this.IndexingDirective.HasValue)
             {
-                request.CosmosHeaders.Add(
+                request.Headers.Add(
                     HttpConstants.HttpHeaders.IndexingDirective,
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }
