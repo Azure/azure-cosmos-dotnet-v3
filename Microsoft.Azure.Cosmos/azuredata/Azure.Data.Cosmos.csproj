@@ -109,6 +109,9 @@
     <Compile Include="..\src\Linq\**\*.cs">
       <Link>Linq\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="..\src\CosmosElements\**\*.cs">
+      <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
     <Compile Include="..\src\Query\v2Query\IDocumentQueryClient.cs">
       <Link>Query\v2Query\%(Filename)%(Extension)</Link>
     </Compile>
