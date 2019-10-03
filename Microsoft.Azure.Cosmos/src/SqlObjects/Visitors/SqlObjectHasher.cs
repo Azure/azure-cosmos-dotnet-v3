@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlIdentifier sqlIdentifier)
         {
             int hashCode = SqlIdentifierHashCode;
-            hashCode = CombineHashes(hashCode, sqlIdentifier.Value.GetHashCode());
+            hashCode = CombineHashes(hashCode, SqlObjectHasher.Djb2(sqlIdentifier.Value));
             return hashCode;
         }
 
@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlParameter sqlObject)
         {
             int hashCode = SqlParameterHashCode;
-            hashCode = CombineHashes(hashCode, sqlObject.Name.GetHashCode());
+            hashCode = CombineHashes(hashCode, SqlObjectHasher.Djb2(sqlObject.Name));
             return hashCode;
         }
 
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlPropertyName sqlPropertyName)
         {
             int hashCode = SqlPropertyNameHashCode;
-            hashCode = CombineHashes(hashCode, sqlPropertyName.Value.GetHashCode());
+            hashCode = CombineHashes(hashCode, SqlObjectHasher.Djb2(sqlPropertyName.Value));
             return hashCode;
         }
 
@@ -553,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlStringLiteral sqlStringLiteral)
         {
             int hashCode = SqlStringLiteralHashCode;
-            hashCode = CombineHashes(hashCode, sqlStringLiteral.Value.GetHashCode());
+            hashCode = CombineHashes(hashCode, SqlObjectHasher.Djb2(sqlStringLiteral.Value));
             return hashCode;
         }
 
@@ -682,6 +682,19 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
             return (int)lhs;
+        }
+
+        private static int Djb2(string value)
+        {
+            ulong hash = 5381;
+            ulong c;
+            for (int i = 0; i < value.Length; i++)
+            {
+                c = value[i];
+                hash = (hash << 5) + hash + c; /* hash * 33 + c */
+            }
+
+            return (int)hash;
         }
 
         public override int Visit(SqlConversionScalarExpression sqlConversionScalarExpression)

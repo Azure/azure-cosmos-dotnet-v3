@@ -35,7 +35,7 @@ _COMPARE_BSON_BINARYDATA(
     1337
 )
 ]]></PrettyPrint>
-      <HashCode>1092178743</HashCode>
+      <HashCode>-1302450251</HashCode>
       <ObfusctedQuery><![CDATA[_COMPARE_BSON_BINARYDATA(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -75,7 +75,7 @@ _COMPARE_OBJECTS(
     1337
 )
 ]]></PrettyPrint>
-      <HashCode>-1787098241</HashCode>
+      <HashCode>1834671385</HashCode>
       <ObfusctedQuery><![CDATA[_COMPARE_OBJECTS(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -104,7 +104,7 @@ _COMPARE_OBJECTS(
       <PrettyPrint><![CDATA[
 _ObjectToArray(null)
 ]]></PrettyPrint>
-      <HashCode>-235898465</HashCode>
+      <HashCode>-236268680</HashCode>
       <ObfusctedQuery><![CDATA[_ObjectToArray(null)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -152,7 +152,7 @@ _PROXY_PROJECTION(
     1234
 )
 ]]></PrettyPrint>
-      <HashCode>-2021827374</HashCode>
+      <HashCode>610013180</HashCode>
       <ObfusctedQuery><![CDATA[_PROXY_PROJECTION(42, 1337.1, 1234.2)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -192,7 +192,7 @@ _REGEX_MATCH(
     1337
 )
 ]]></PrettyPrint>
-      <HashCode>2032684564</HashCode>
+      <HashCode>-962904190</HashCode>
       <ObfusctedQuery><![CDATA[_REGEX_MATCH(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -232,7 +232,7 @@ _ST_DISTANCE(
     1337
 )
 ]]></PrettyPrint>
-      <HashCode>-2057920447</HashCode>
+      <HashCode>-1605852852</HashCode>
       <ObfusctedQuery><![CDATA[_ST_DISTANCE(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -272,7 +272,7 @@ _ST_INTERSECTS(
     1337
 )
 ]]></PrettyPrint>
-      <HashCode>2053408965</HashCode>
+      <HashCode>-652359528</HashCode>
       <ObfusctedQuery><![CDATA[_ST_INTERSECTS(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -312,7 +312,7 @@ _ST_WITHIN(
     1337
 )
 ]]></PrettyPrint>
-      <HashCode>24551922</HashCode>
+      <HashCode>172593400</HashCode>
       <ObfusctedQuery><![CDATA[_ST_WITHIN(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -352,7 +352,7 @@ _TRY_ARRAY_CONTAINS(
     1337
 )
 ]]></PrettyPrint>
-      <HashCode>1856844678</HashCode>
+      <HashCode>1151335009</HashCode>
       <ObfusctedQuery><![CDATA[_TRY_ARRAY_CONTAINS(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -382,7 +382,7 @@ _TRY_ARRAY_CONTAINS(
       <PrettyPrint><![CDATA[
 ABS(42)
 ]]></PrettyPrint>
-      <HashCode>-1876425543</HashCode>
+      <HashCode>948101022</HashCode>
       <ObfusctedQuery><![CDATA[ABS(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -412,7 +412,7 @@ ABS(42)
       <PrettyPrint><![CDATA[
 ACOS(42)
 ]]></PrettyPrint>
-      <HashCode>1867082532</HashCode>
+      <HashCode>1660875890</HashCode>
       <ObfusctedQuery><![CDATA[ACOS(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -442,7 +442,7 @@ ACOS(42)
       <PrettyPrint><![CDATA[
 ALL(42)
 ]]></PrettyPrint>
-      <HashCode>-1016440826</HashCode>
+      <HashCode>948025334</HashCode>
       <ObfusctedQuery><![CDATA[ALL(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -472,7 +472,7 @@ ALL(42)
       <PrettyPrint><![CDATA[
 ANY(42)
 ]]></PrettyPrint>
-      <HashCode>-1913421568</HashCode>
+      <HashCode>948017723</HashCode>
       <ObfusctedQuery><![CDATA[ANY(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -502,7 +502,7 @@ ANY(42)
       <PrettyPrint><![CDATA[
 ARRAY(42)
 ]]></PrettyPrint>
-      <HashCode>711673924</HashCode>
+      <HashCode>1424287333</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -588,7 +588,7 @@ ARRAY_CONCAT(
     ]
 )
 ]]></PrettyPrint>
-      <HashCode>-1175786970</HashCode>
+      <HashCode>-1615943767</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY_CONCAT([1, 2, 3], [4, 5, 6])]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -659,7 +659,7 @@ ARRAY_CONTAINS(
     true
 )
 ]]></PrettyPrint>
-      <HashCode>-598132673</HashCode>
+      <HashCode>-854810616</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY_CONTAINS([1, 2, 3], 42, true)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -712,7 +712,7 @@ ARRAY_LENGTH([
     3
 ])
 ]]></PrettyPrint>
-      <HashCode>-751578656</HashCode>
+      <HashCode>-2104916661</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY_LENGTH([1, 2, 3])]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -783,7 +783,7 @@ ARRAY_SLICE(
     5
 )
 ]]></PrettyPrint>
-      <HashCode>1646059873</HashCode>
+      <HashCode>-1823352982</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY_SLICE([1, 2, 3], 4, 5)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -813,7 +813,7 @@ ARRAY_SLICE(
       <PrettyPrint><![CDATA[
 ASIN(42)
 ]]></PrettyPrint>
-      <HashCode>-183785</HashCode>
+      <HashCode>1734029734</HashCode>
       <ObfusctedQuery><![CDATA[ASIN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -843,7 +843,7 @@ ASIN(42)
       <PrettyPrint><![CDATA[
 ATAN(42)
 ]]></PrettyPrint>
-      <HashCode>-1168279570</HashCode>
+      <HashCode>1730393998</HashCode>
       <ObfusctedQuery><![CDATA[ATAN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -873,7 +873,7 @@ ATAN(42)
       <PrettyPrint><![CDATA[
 ATN2(42)
 ]]></PrettyPrint>
-      <HashCode>-712520448</HashCode>
+      <HashCode>1730444475</HashCode>
       <ObfusctedQuery><![CDATA[ATN2(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -903,7 +903,7 @@ ATN2(42)
       <PrettyPrint><![CDATA[
 AVG(42)
 ]]></PrettyPrint>
-      <HashCode>1472359088</HashCode>
+      <HashCode>950772724</HashCode>
       <ObfusctedQuery><![CDATA[AVG(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -933,7 +933,7 @@ AVG(42)
       <PrettyPrint><![CDATA[
 CEILING(42)
 ]]></PrettyPrint>
-      <HashCode>10411306</HashCode>
+      <HashCode>326203514</HashCode>
       <ObfusctedQuery><![CDATA[CEILING(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -973,7 +973,7 @@ CONCAT(
     "World"
 )
 ]]></PrettyPrint>
-      <HashCode>1199969307</HashCode>
+      <HashCode>-551258348</HashCode>
       <ObfusctedQuery><![CDATA[CONCAT("str1", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1013,7 +1013,7 @@ CONTAINS(
     "str"
 )
 ]]></PrettyPrint>
-      <HashCode>-1933880985</HashCode>
+      <HashCode>-1074519824</HashCode>
       <ObfusctedQuery><![CDATA[CONTAINS("str1", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1043,7 +1043,7 @@ CONTAINS(
       <PrettyPrint><![CDATA[
 COS(42)
 ]]></PrettyPrint>
-      <HashCode>-380968967</HashCode>
+      <HashCode>950901151</HashCode>
       <ObfusctedQuery><![CDATA[COS(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1073,7 +1073,7 @@ COS(42)
       <PrettyPrint><![CDATA[
 COT(42)
 ]]></PrettyPrint>
-      <HashCode>-267913246</HashCode>
+      <HashCode>950887618</HashCode>
       <ObfusctedQuery><![CDATA[COT(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1103,7 +1103,7 @@ COT(42)
       <PrettyPrint><![CDATA[
 COUNT(42)
 ]]></PrettyPrint>
-      <HashCode>580004515</HashCode>
+      <HashCode>1275248890</HashCode>
       <ObfusctedQuery><![CDATA[COUNT(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1133,7 +1133,7 @@ COUNT(42)
       <PrettyPrint><![CDATA[
 DEGREES(42)
 ]]></PrettyPrint>
-      <HashCode>1270291630</HashCode>
+      <HashCode>-1010818131</HashCode>
       <ObfusctedQuery><![CDATA[DEGREES(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1163,7 +1163,7 @@ DEGREES(42)
       <PrettyPrint><![CDATA[
 DOCUMENTID(42)
 ]]></PrettyPrint>
-      <HashCode>-124728308</HashCode>
+      <HashCode>-1119491048</HashCode>
       <ObfusctedQuery><![CDATA[DOCUMENTID(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1203,7 +1203,7 @@ ENDSWITH(
     "endswith"
 )
 ]]></PrettyPrint>
-      <HashCode>941142183</HashCode>
+      <HashCode>1310545128</HashCode>
       <ObfusctedQuery><![CDATA[ENDSWITH("str1__34", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1233,7 +1233,7 @@ ENDSWITH(
       <PrettyPrint><![CDATA[
 EXP(42)
 ]]></PrettyPrint>
-      <HashCode>982819220</HashCode>
+      <HashCode>1188489945</HashCode>
       <ObfusctedQuery><![CDATA[EXP(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1263,7 +1263,7 @@ EXP(42)
       <PrettyPrint><![CDATA[
 FLOOR(42)
 ]]></PrettyPrint>
-      <HashCode>-722061402</HashCode>
+      <HashCode>1595010801</HashCode>
       <ObfusctedQuery><![CDATA[FLOOR(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1303,7 +1303,7 @@ INDEX_OF(
     "ana"
 )
 ]]></PrettyPrint>
-      <HashCode>-302782918</HashCode>
+      <HashCode>-490611053</HashCode>
       <ObfusctedQuery><![CDATA[INDEX_OF("str1", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1333,7 +1333,7 @@ INDEX_OF(
       <PrettyPrint><![CDATA[
 IS_ARRAY(42)
 ]]></PrettyPrint>
-      <HashCode>-1533068510</HashCode>
+      <HashCode>-605857869</HashCode>
       <ObfusctedQuery><![CDATA[IS_ARRAY(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1363,7 +1363,7 @@ IS_ARRAY(42)
       <PrettyPrint><![CDATA[
 IS_BOOL(true)
 ]]></PrettyPrint>
-      <HashCode>-63795940</HashCode>
+      <HashCode>-1031205701</HashCode>
       <ObfusctedQuery><![CDATA[IS_BOOL(true)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1393,7 +1393,7 @@ IS_BOOL(true)
       <PrettyPrint><![CDATA[
 IS_DEFINED(42)
 ]]></PrettyPrint>
-      <HashCode>-1251710105</HashCode>
+      <HashCode>-673974177</HashCode>
       <ObfusctedQuery><![CDATA[IS_DEFINED(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1423,7 +1423,7 @@ IS_DEFINED(42)
       <PrettyPrint><![CDATA[
 IS_FINITE_NUMBER(42)
 ]]></PrettyPrint>
-      <HashCode>-924474904</HashCode>
+      <HashCode>1858549009</HashCode>
       <ObfusctedQuery><![CDATA[IS_FINITE_NUMBER(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1452,7 +1452,7 @@ IS_FINITE_NUMBER(42)
       <PrettyPrint><![CDATA[
 IS_NULL(null)
 ]]></PrettyPrint>
-      <HashCode>-1089780642</HashCode>
+      <HashCode>1695544283</HashCode>
       <ObfusctedQuery><![CDATA[IS_NULL(null)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1482,7 +1482,7 @@ IS_NULL(null)
       <PrettyPrint><![CDATA[
 IS_NUMBER(42)
 ]]></PrettyPrint>
-      <HashCode>-496419701</HashCode>
+      <HashCode>499272998</HashCode>
       <ObfusctedQuery><![CDATA[IS_NUMBER(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1512,7 +1512,7 @@ IS_NUMBER(42)
       <PrettyPrint><![CDATA[
 IS_OBJECT(42)
 ]]></PrettyPrint>
-      <HashCode>959388871</HashCode>
+      <HashCode>1190524845</HashCode>
       <ObfusctedQuery><![CDATA[IS_OBJECT(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1542,7 +1542,7 @@ IS_OBJECT(42)
       <PrettyPrint><![CDATA[
 IS_PRIMITIVE(42)
 ]]></PrettyPrint>
-      <HashCode>303473017</HashCode>
+      <HashCode>-25700510</HashCode>
       <ObfusctedQuery><![CDATA[IS_PRIMITIVE(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1572,7 +1572,7 @@ IS_PRIMITIVE(42)
       <PrettyPrint><![CDATA[
 IS_STRING("hello")
 ]]></PrettyPrint>
-      <HashCode>1423750326</HashCode>
+      <HashCode>197369964</HashCode>
       <ObfusctedQuery><![CDATA[IS_STRING("str1")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1612,7 +1612,7 @@ LEFT(
     42
 )
 ]]></PrettyPrint>
-      <HashCode>-2088140971</HashCode>
+      <HashCode>677167842</HashCode>
       <ObfusctedQuery><![CDATA[LEFT("str1", 42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1642,7 +1642,7 @@ LEFT(
       <PrettyPrint><![CDATA[
 LENGTH(42)
 ]]></PrettyPrint>
-      <HashCode>285685408</HashCode>
+      <HashCode>189371521</HashCode>
       <ObfusctedQuery><![CDATA[LENGTH(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1690,7 +1690,7 @@ LIKE(
     "blah"
 )
 ]]></PrettyPrint>
-      <HashCode>-688493095</HashCode>
+      <HashCode>-535385742</HashCode>
       <ObfusctedQuery><![CDATA[LIKE("str1", "str1", "str1")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1720,7 +1720,7 @@ LIKE(
       <PrettyPrint><![CDATA[
 LOG(42)
 ]]></PrettyPrint>
-      <HashCode>-2023713812</HashCode>
+      <HashCode>951983273</HashCode>
       <ObfusctedQuery><![CDATA[LOG(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1750,7 +1750,7 @@ LOG(42)
       <PrettyPrint><![CDATA[
 LOG10(42)
 ]]></PrettyPrint>
-      <HashCode>-363653274</HashCode>
+      <HashCode>-1007856584</HashCode>
       <ObfusctedQuery><![CDATA[LOG10(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1780,7 +1780,7 @@ LOG10(42)
       <PrettyPrint><![CDATA[
 LOWER(42)
 ]]></PrettyPrint>
-      <HashCode>423694432</HashCode>
+      <HashCode>-1008756110</HashCode>
       <ObfusctedQuery><![CDATA[LOWER(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1810,7 +1810,7 @@ LOWER(42)
       <PrettyPrint><![CDATA[
 LTRIM(42)
 ]]></PrettyPrint>
-      <HashCode>-194388813</HashCode>
+      <HashCode>-1298153349</HashCode>
       <ObfusctedQuery><![CDATA[LTRIM(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1840,7 +1840,7 @@ LTRIM(42)
       <PrettyPrint><![CDATA[
 MAX(42)
 ]]></PrettyPrint>
-      <HashCode>765267232</HashCode>
+      <HashCode>951557458</HashCode>
       <ObfusctedQuery><![CDATA[MAX(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1870,7 +1870,7 @@ MAX(42)
       <PrettyPrint><![CDATA[
 MIN(42)
 ]]></PrettyPrint>
-      <HashCode>1343590425</HashCode>
+      <HashCode>951572494</HashCode>
       <ObfusctedQuery><![CDATA[MIN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1892,7 +1892,7 @@ MIN(42)
       <PrettyPrint><![CDATA[
 PI()
 ]]></PrettyPrint>
-      <HashCode>-1534602303</HashCode>
+      <HashCode>759877112</HashCode>
       <ObfusctedQuery><![CDATA[PI()]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1932,7 +1932,7 @@ POWER(
     1337
 )
 ]]></PrettyPrint>
-      <HashCode>-1052558749</HashCode>
+      <HashCode>-2065410283</HashCode>
       <ObfusctedQuery><![CDATA[POWER(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1962,7 +1962,7 @@ POWER(
       <PrettyPrint><![CDATA[
 RADIANS(42)
 ]]></PrettyPrint>
-      <HashCode>905461546</HashCode>
+      <HashCode>2096097273</HashCode>
       <ObfusctedQuery><![CDATA[RADIANS(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1984,7 +1984,7 @@ RADIANS(42)
       <PrettyPrint><![CDATA[
 RAND()
 ]]></PrettyPrint>
-      <HashCode>-355043562</HashCode>
+      <HashCode>-1422123156</HashCode>
       <ObfusctedQuery><![CDATA[RAND()]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2032,7 +2032,7 @@ REPLACE(
     "banana"
 )
 ]]></PrettyPrint>
-      <HashCode>-1993814058</HashCode>
+      <HashCode>611232669</HashCode>
       <ObfusctedQuery><![CDATA[REPLACE("str1", "str2", "str1")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2072,7 +2072,7 @@ REPLICATE(
     5
 )
 ]]></PrettyPrint>
-      <HashCode>-1226076802</HashCode>
+      <HashCode>-1759231678</HashCode>
       <ObfusctedQuery><![CDATA[REPLICATE("str1", 5)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2102,7 +2102,7 @@ REPLICATE(
       <PrettyPrint><![CDATA[
 REVERSE(42)
 ]]></PrettyPrint>
-      <HashCode>-2133922675</HashCode>
+      <HashCode>-716026956</HashCode>
       <ObfusctedQuery><![CDATA[REVERSE(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2142,7 +2142,7 @@ RIGHT(
     2
 )
 ]]></PrettyPrint>
-      <HashCode>905979334</HashCode>
+      <HashCode>891700551</HashCode>
       <ObfusctedQuery><![CDATA[RIGHT("str1", 2)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2172,7 +2172,7 @@ RIGHT(
       <PrettyPrint><![CDATA[
 ROUND(42)
 ]]></PrettyPrint>
-      <HashCode>-690518358</HashCode>
+      <HashCode>1845634331</HashCode>
       <ObfusctedQuery><![CDATA[ROUND(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2202,7 +2202,7 @@ ROUND(42)
       <PrettyPrint><![CDATA[
 RTRIM(42)
 ]]></PrettyPrint>
-      <HashCode>1899008455</HashCode>
+      <HashCode>-1534507744</HashCode>
       <ObfusctedQuery><![CDATA[RTRIM(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2232,7 +2232,7 @@ RTRIM(42)
       <PrettyPrint><![CDATA[
 SIGN(42)
 ]]></PrettyPrint>
-      <HashCode>1527446738</HashCode>
+      <HashCode>1835961124</HashCode>
       <ObfusctedQuery><![CDATA[SIGN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2262,7 +2262,7 @@ SIGN(42)
       <PrettyPrint><![CDATA[
 SIN(42)
 ]]></PrettyPrint>
-      <HashCode>1903011650</HashCode>
+      <HashCode>951887607</HashCode>
       <ObfusctedQuery><![CDATA[SIN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2292,7 +2292,7 @@ SIN(42)
       <PrettyPrint><![CDATA[
 SQRT(42)
 ]]></PrettyPrint>
-      <HashCode>1962514832</HashCode>
+      <HashCode>2142163143</HashCode>
       <ObfusctedQuery><![CDATA[SQRT(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2322,7 +2322,7 @@ SQRT(42)
       <PrettyPrint><![CDATA[
 SQUARE(42)
 ]]></PrettyPrint>
-      <HashCode>230796817</HashCode>
+      <HashCode>-67058548</HashCode>
       <ObfusctedQuery><![CDATA[SQUARE(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2362,7 +2362,7 @@ STARTSWITH(
     "does"
 )
 ]]></PrettyPrint>
-      <HashCode>1728609164</HashCode>
+      <HashCode>820442350</HashCode>
       <ObfusctedQuery><![CDATA[STARTSWITH("str1__32", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2402,7 +2402,7 @@ ST_DISTANCE(
     42
 )
 ]]></PrettyPrint>
-      <HashCode>1926965281</HashCode>
+      <HashCode>1233749487</HashCode>
       <ObfusctedQuery><![CDATA[ST_DISTANCE(42, 42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2442,7 +2442,7 @@ ST_INTERSECTS(
     42
 )
 ]]></PrettyPrint>
-      <HashCode>149016804</HashCode>
+      <HashCode>1992127418</HashCode>
       <ObfusctedQuery><![CDATA[ST_INTERSECTS(42, 42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2472,7 +2472,7 @@ ST_INTERSECTS(
       <PrettyPrint><![CDATA[
 ST_ISVALID(42)
 ]]></PrettyPrint>
-      <HashCode>46667569</HashCode>
+      <HashCode>-488760339</HashCode>
       <ObfusctedQuery><![CDATA[ST_ISVALID(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2502,7 +2502,7 @@ ST_ISVALID(42)
       <PrettyPrint><![CDATA[
 ST_ISVALIDDETAILED(42)
 ]]></PrettyPrint>
-      <HashCode>-1873329530</HashCode>
+      <HashCode>202371336</HashCode>
       <ObfusctedQuery><![CDATA[ST_ISVALIDDETAILED(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2542,7 +2542,7 @@ ST_WITHIN(
     42
 )
 ]]></PrettyPrint>
-      <HashCode>1260825894</HashCode>
+      <HashCode>1288817159</HashCode>
       <ObfusctedQuery><![CDATA[ST_WITHIN(42, 42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2590,7 +2590,7 @@ SUBSTRING(
     2
 )
 ]]></PrettyPrint>
-      <HashCode>-1227365345</HashCode>
+      <HashCode>-1893316890</HashCode>
       <ObfusctedQuery><![CDATA[SUBSTRING("str1", 1, 2)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2620,7 +2620,7 @@ SUBSTRING(
       <PrettyPrint><![CDATA[
 SUM(42)
 ]]></PrettyPrint>
-      <HashCode>1209216574</HashCode>
+      <HashCode>1189519259</HashCode>
       <ObfusctedQuery><![CDATA[SUM(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2650,7 +2650,7 @@ SUM(42)
       <PrettyPrint><![CDATA[
 TAN(42)
 ]]></PrettyPrint>
-      <HashCode>317432403</HashCode>
+      <HashCode>1189160248</HashCode>
       <ObfusctedQuery><![CDATA[TAN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2680,7 +2680,7 @@ TAN(42)
       <PrettyPrint><![CDATA[
 TRUNC(42)
 ]]></PrettyPrint>
-      <HashCode>-56354412</HashCode>
+      <HashCode>-1614924416</HashCode>
       <ObfusctedQuery><![CDATA[TRUNC(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2710,7 +2710,7 @@ TRUNC(42)
       <PrettyPrint><![CDATA[
 UPPER(42)
 ]]></PrettyPrint>
-      <HashCode>182834477</HashCode>
+      <HashCode>2018810216</HashCode>
       <ObfusctedQuery><![CDATA[UPPER(42)]]></ObfusctedQuery>
     </Output>
   </Result>

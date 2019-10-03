@@ -144,7 +144,7 @@
       <PrettyPrint><![CDATA[
 ("some"["random"]["path"][42] BETWEEN 42 AND 1337)
 ]]></PrettyPrint>
-      <HashCode>1039109602</HashCode>
+      <HashCode>1906236414</HashCode>
       <ObfusctedQuery><![CDATA[("str1"["str2"]["str3"][42] BETWEEN 42 AND 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -205,7 +205,7 @@
       <PrettyPrint><![CDATA[
 ("if this is null" ?? "then return this")
 ]]></PrettyPrint>
-      <HashCode>-787004234</HashCode>
+      <HashCode>1756680122</HashCode>
       <ObfusctedQuery><![CDATA[("str1__15" ?? "str2__16")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -242,7 +242,7 @@
       <PrettyPrint><![CDATA[
 ("if true" ? "then this" : "else this")
 ]]></PrettyPrint>
-      <HashCode>-821877318</HashCode>
+      <HashCode>1077584788</HashCode>
       <ObfusctedQuery><![CDATA[("str1" ? "str2" : "str3")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -301,7 +301,7 @@
     "values"
 ))
 ]]></PrettyPrint>
-      <HashCode>-1294771757</HashCode>
+      <HashCode>147301321</HashCode>
       <ObfusctedQuery><![CDATA[("str5" NOT IN ("str1", "str2", "str3", "str4"))]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -360,7 +360,7 @@
     "values"
 ))
 ]]></PrettyPrint>
-      <HashCode>-1431315926</HashCode>
+      <HashCode>-328882539</HashCode>
       <ObfusctedQuery><![CDATA[("str5" IN ("str1", "str2", "str3", "str4"))]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -409,7 +409,7 @@
       <PrettyPrint><![CDATA[
 {"Hello": "World"}
 ]]></PrettyPrint>
-      <HashCode>578013531</HashCode>
+      <HashCode>-494089085</HashCode>
       <ObfusctedQuery><![CDATA[{"p1": "str1"}]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -473,7 +473,7 @@
     "Hello": "World"
 }
 ]]></PrettyPrint>
-      <HashCode>1422537287</HashCode>
+      <HashCode>-522844854</HashCode>
       <ObfusctedQuery><![CDATA[{"p1": "str1", "p1": "str1", "p1": "str1"}]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -500,7 +500,7 @@
       <PrettyPrint><![CDATA[
 "some".path
 ]]></PrettyPrint>
-      <HashCode>-2073195224</HashCode>
+      <HashCode>-1027122709</HashCode>
       <ObfusctedQuery><![CDATA["str1".ident1]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -554,7 +554,7 @@
       <PrettyPrint><![CDATA[
 ABS(-42)
 ]]></PrettyPrint>
-      <HashCode>271058105</HashCode>
+      <HashCode>-1199382626</HashCode>
       <ObfusctedQuery><![CDATA[ABS(-42)]]></ObfusctedQuery>
     </Output>
   </Result>
