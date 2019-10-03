@@ -8,6 +8,7 @@ namespace Azure.Data.Cosmos
     using System.IO;
     using System.Net;
     using Azure.Core.Http;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -154,14 +155,14 @@ namespace Azure.Data.Cosmos
             return $"{nameof(CosmosException)};StatusCode={this.StatusCode};SubStatusCode={this.SubStatusCode};ActivityId={this.ActivityId ?? string.Empty};RequestCharge={this.RequestCharge};Message={this.Message};Diagnostics{diagnostics}";
         }
 
-        //internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
-        //{
-        //    return new ResponseMessage(
-        //         headers: this.Headers,
-        //         requestMessage: request,
-        //         errorMessage: this.Message,
-        //         statusCode: this.StatusCode,
-        //         error: this.Error);
-        //}
+        internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
+        {
+            return new ResponseMessage(
+                 headers: this.Headers,
+                 requestMessage: request,
+                 errorMessage: this.Message,
+                 statusCode: this.StatusCode,
+                 error: this.Error);
+        }
     }
 }

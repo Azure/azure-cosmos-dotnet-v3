@@ -55,7 +55,7 @@
     <Compile Include="..\src\Resource\Settings\Enums\*.cs">
       <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs">
+    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs">
       <Link>Handler\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Diagnostics\CosmosDiagnostics.cs">
@@ -167,6 +167,9 @@
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\PartitionKey.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ValidationHelpers.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
