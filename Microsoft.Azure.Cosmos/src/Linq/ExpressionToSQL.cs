@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
 
     // ReSharper disable UnusedParameter.Local
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 case ExpressionType.Call:
                     MethodCallExpression methodCallExpression = (MethodCallExpression)inputExpression;
-                    bool shouldConvertToScalarAnyCollection = ((context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(LinqMethods.Any));
+                    bool shouldConvertToScalarAnyCollection = (context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(LinqMethods.Any);
                     collection = ExpressionToSql.VisitMethodCall(methodCallExpression, context);
                     if (shouldConvertToScalarAnyCollection) collection = ExpressionToSql.ConvertToScalarAnyCollection(context);
 
@@ -527,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // Enum
                     if (memberType.IsEnum())
                     {
-                        Number64 number64 = ((SqlNumberLiteral)(right.Literal)).Value;
+                        Number64 number64 = ((SqlNumberLiteral)right.Literal).Value;
                         if (number64.IsDouble)
                         {
                             value = Enum.ToObject(memberType, Number64.ToDouble(number64));
@@ -541,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // DateTime
                     else if (memberType == typeof(DateTime))
                     {
-                        value = ((SqlObjectLiteral)right.Literal).Value;
+                        value = DateTime.Parse(right.ToString());
                     }
 
                     if (value != default(object))
@@ -557,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             serializedValue = JsonConvert.SerializeObject(value);
                         }
 
-                        return SqlLiteralScalarExpression.Create(SqlObjectLiteral.Create(serializedValue, true));
+                        return ConvertJTokenToSqlScalarExpression(JToken.Parse(serializedValue));
                     }
                 }
             }
@@ -584,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 // the constant value should be zero, otherwise we can't determine how to translate the expression
                 // it could be either integer or nullable integer
-                if (!(right.Type == typeof(int) && (int)(right.Value) == 0) &&
+                if (!(right.Type == typeof(int) && (int)right.Value == 0) &&
                     !(right.Type == typeof(int?) && ((int?)right.Value).HasValue && ((int?)right.Value).Value == 0))
                 {
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidConstant));
@@ -755,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 List<SqlScalarExpression> arrayItems = new List<SqlScalarExpression>();
 
-                foreach (object item in ((IEnumerable)(inputExpression.Value)))
+                foreach (object item in (IEnumerable)inputExpression.Value)
                 {
                     arrayItems.Add(ExpressionToSql.VisitConstant(Expression.Constant(item)));
                 }
@@ -763,7 +764,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToArray());
             }
 
-            return SqlLiteralScalarExpression.Create(SqlObjectLiteral.Create(inputExpression.Value, false));
+            return ConvertJTokenToSqlScalarExpression(JToken.FromObject(inputExpression.Value));
         }
 
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)
@@ -1556,7 +1557,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 methodCall = methodCall.Arguments[0] as MethodCallExpression)
             {
                 string methodName = methodCall.Method.Name;
-                requireLocalExecution |= (methodName.Equals(LinqMethods.Distinct) || methodName.Equals(LinqMethods.Take) || methodName.Equals(LinqMethods.OrderBy) || methodName.Equals(LinqMethods.OrderByDescending));
+                requireLocalExecution |= methodName.Equals(LinqMethods.Distinct) || methodName.Equals(LinqMethods.Take) || methodName.Equals(LinqMethods.OrderBy) || methodName.Equals(LinqMethods.OrderByDescending);
             }
 
             Collection collection;
@@ -1865,5 +1866,66 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         #endregion LINQ Specific Visitors
+
+        private static SqlScalarExpression ConvertJTokenToSqlScalarExpression(JToken token)
+        {
+            SqlScalarExpression sqlScalarExpression;
+            switch (token.Type)
+            {
+                case JTokenType.Object:
+                    List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
+                    foreach (JProperty prop in token)
+                    {
+                        SqlPropertyName name = SqlPropertyName.Create(prop.Name);
+                        JToken value = prop.Value;
+                        SqlScalarExpression expression = ConvertJTokenToSqlScalarExpression(value);
+                        SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
+                        properties.Add(property);
+                    }
+
+                    sqlScalarExpression = SqlObjectCreateScalarExpression.Create(properties.ToArray());
+                    break;
+
+                case JTokenType.Array:
+                    List<SqlScalarExpression> items = new List<SqlScalarExpression>();
+                    foreach (JToken element in token)
+                    {
+                        items.Add(ConvertJTokenToSqlScalarExpression(element));
+                    }
+
+                    sqlScalarExpression = SqlArrayCreateScalarExpression.Create(items.ToArray());
+                    break;
+
+                case JTokenType.Integer:
+                case JTokenType.Float:
+                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(token.Value<double>()));
+                    break;
+
+                case JTokenType.Boolean:
+                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(token.Value<bool>()));
+                    break;
+
+                case JTokenType.Null:
+                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
+                    break;
+
+                case JTokenType.String:
+                case JTokenType.Date:
+                case JTokenType.Guid:
+                case JTokenType.Uri:
+                case JTokenType.TimeSpan:
+                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(token.Value<string>()));
+                    break;
+
+                case JTokenType.Undefined:
+                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown {nameof(JTokenType)}: {token.Type}");
+            }
+
+            return sqlScalarExpression;
+        }
     }
 }
