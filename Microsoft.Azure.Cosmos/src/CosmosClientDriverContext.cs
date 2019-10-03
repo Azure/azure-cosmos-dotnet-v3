@@ -33,7 +33,18 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool UseMultipleWriteLocations => this.cosmosClient.DocumentClient.UseMultipleWriteLocations;
 
-        public override Documents.ConsistencyLevel ConsistencyLevel => (Documents.ConsistencyLevel)this.cosmosClient.ClientOptions.ConsistencyLevel;
+        public override Documents.ConsistencyLevel? ConsistencyLevel
+        {
+            get
+            {
+                if (this.cosmosClient.ClientOptions.ConsistencyLevel.HasValue)
+                {
+                    return (Documents.ConsistencyLevel)this.cosmosClient.ClientOptions.ConsistencyLevel;
+                }
+
+                return null;
+            }
+        }
 
         public override void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
         {
