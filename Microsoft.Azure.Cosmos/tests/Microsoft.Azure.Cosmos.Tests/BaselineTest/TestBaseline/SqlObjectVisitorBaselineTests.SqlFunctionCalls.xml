@@ -10,14 +10,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -28,8 +28,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[_COMPARE_BSON_BINARYDATA(42, 1337)]]></ToString>
-      <GetHashCode>-1080916950</GetHashCode>
+      <TextOutput><![CDATA[_COMPARE_BSON_BINARYDATA(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_COMPARE_BSON_BINARYDATA(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>1092178743</HashCode>
       <ObfusctedQuery><![CDATA[_COMPARE_BSON_BINARYDATA(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -44,14 +50,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -62,9 +68,44 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[_COMPARE_OBJECTS(42, 1337)]]></ToString>
-      <GetHashCode>-1748259042</GetHashCode>
+      <TextOutput><![CDATA[_COMPARE_OBJECTS(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_COMPARE_OBJECTS(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>-1787098241</HashCode>
       <ObfusctedQuery><![CDATA[_COMPARE_OBJECTS(42, 1337.1)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>_ObjectToArray</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "_ObjectToArray",
+    "Kind": "Identifier"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Kind": "NullLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    }
+  ],
+  "IsUdf": false,
+  "Kind": "FunctionCallScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[_ObjectToArray(null)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_ObjectToArray(null)
+]]></PrettyPrint>
+      <HashCode>-235898465</HashCode>
+      <ObfusctedQuery><![CDATA[_ObjectToArray(null)]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -78,21 +119,21 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1234.0,
+        "Value": 1234,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -103,8 +144,15 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[_PROXY_PROJECTION(42, 1337, 1234)]]></ToString>
-      <GetHashCode>1092110642</GetHashCode>
+      <TextOutput><![CDATA[_PROXY_PROJECTION(42, 1337, 1234)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_PROXY_PROJECTION(
+    42, 
+    1337, 
+    1234
+)
+]]></PrettyPrint>
+      <HashCode>-2021827374</HashCode>
       <ObfusctedQuery><![CDATA[_PROXY_PROJECTION(42, 1337.1, 1234.2)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -119,14 +167,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -137,8 +185,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[_REGEX_MATCH(42, 1337)]]></ToString>
-      <GetHashCode>-1072659040</GetHashCode>
+      <TextOutput><![CDATA[_REGEX_MATCH(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_REGEX_MATCH(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>2032684564</HashCode>
       <ObfusctedQuery><![CDATA[_REGEX_MATCH(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -153,14 +207,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -171,8 +225,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[_ST_DISTANCE(42, 1337)]]></ToString>
-      <GetHashCode>-88573717</GetHashCode>
+      <TextOutput><![CDATA[_ST_DISTANCE(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_ST_DISTANCE(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>-2057920447</HashCode>
       <ObfusctedQuery><![CDATA[_ST_DISTANCE(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -187,14 +247,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -205,8 +265,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[_ST_INTERSECTS(42, 1337)]]></ToString>
-      <GetHashCode>-1044327868</GetHashCode>
+      <TextOutput><![CDATA[_ST_INTERSECTS(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_ST_INTERSECTS(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>2053408965</HashCode>
       <ObfusctedQuery><![CDATA[_ST_INTERSECTS(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -221,14 +287,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -239,8 +305,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[_ST_WITHIN(42, 1337)]]></ToString>
-      <GetHashCode>871528570</GetHashCode>
+      <TextOutput><![CDATA[_ST_WITHIN(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_ST_WITHIN(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>24551922</HashCode>
       <ObfusctedQuery><![CDATA[_ST_WITHIN(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -255,14 +327,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -273,8 +345,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[_TRY_ARRAY_CONTAINS(42, 1337)]]></ToString>
-      <GetHashCode>64270065</GetHashCode>
+      <TextOutput><![CDATA[_TRY_ARRAY_CONTAINS(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+_TRY_ARRAY_CONTAINS(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>1856844678</HashCode>
       <ObfusctedQuery><![CDATA[_TRY_ARRAY_CONTAINS(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -289,7 +367,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -300,8 +378,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ABS(42)]]></ToString>
-      <GetHashCode>-1370290941</GetHashCode>
+      <TextOutput><![CDATA[ABS(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ABS(42)
+]]></PrettyPrint>
+      <HashCode>-1876425543</HashCode>
       <ObfusctedQuery><![CDATA[ABS(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -316,7 +397,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -327,8 +408,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ACOS(42)]]></ToString>
-      <GetHashCode>1796907233</GetHashCode>
+      <TextOutput><![CDATA[ACOS(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ACOS(42)
+]]></PrettyPrint>
+      <HashCode>1867082532</HashCode>
       <ObfusctedQuery><![CDATA[ACOS(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -343,7 +427,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -354,8 +438,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ALL(42)]]></ToString>
-      <GetHashCode>1999817245</GetHashCode>
+      <TextOutput><![CDATA[ALL(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ALL(42)
+]]></PrettyPrint>
+      <HashCode>-1016440826</HashCode>
       <ObfusctedQuery><![CDATA[ALL(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -370,7 +457,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -381,8 +468,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ANY(42)]]></ToString>
-      <GetHashCode>1469701161</GetHashCode>
+      <TextOutput><![CDATA[ANY(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ANY(42)
+]]></PrettyPrint>
+      <HashCode>-1913421568</HashCode>
       <ObfusctedQuery><![CDATA[ANY(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -397,7 +487,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -408,8 +498,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ARRAY(42)]]></ToString>
-      <GetHashCode>-926845905</GetHashCode>
+      <TextOutput><![CDATA[ARRAY(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY(42)
+]]></PrettyPrint>
+      <HashCode>711673924</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -426,21 +519,21 @@
       "Items": [
         {
           "Literal": {
-            "Value": 1.0,
+            "Value": 1,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 2.0,
+            "Value": 2,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 3.0,
+            "Value": 3,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
@@ -452,21 +545,21 @@
       "Items": [
         {
           "Literal": {
-            "Value": 4.0,
+            "Value": 4,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 5.0,
+            "Value": 5,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 6.0,
+            "Value": 6,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
@@ -480,8 +573,22 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ARRAY_CONCAT([1, 2, 3], [4, 5, 6])]]></ToString>
-      <GetHashCode>-1021584626</GetHashCode>
+      <TextOutput><![CDATA[ARRAY_CONCAT([1, 2, 3], [4, 5, 6])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_CONCAT(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    [
+        4, 
+        5, 
+        6
+    ]
+)
+]]></PrettyPrint>
+      <HashCode>-1175786970</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY_CONCAT([1, 2, 3], [4, 5, 6])]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -498,21 +605,21 @@
       "Items": [
         {
           "Literal": {
-            "Value": 1.0,
+            "Value": 1,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 2.0,
+            "Value": 2,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 3.0,
+            "Value": 3,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
@@ -522,7 +629,7 @@
     },
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -540,8 +647,19 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ARRAY_CONTAINS([1, 2, 3], 42, true)]]></ToString>
-      <GetHashCode>1964924083</GetHashCode>
+      <TextOutput><![CDATA[ARRAY_CONTAINS([1, 2, 3], 42, true)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_CONTAINS(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    42, 
+    true
+)
+]]></PrettyPrint>
+      <HashCode>-598132673</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY_CONTAINS([1, 2, 3], 42, true)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -558,21 +676,21 @@
       "Items": [
         {
           "Literal": {
-            "Value": 1.0,
+            "Value": 1,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 2.0,
+            "Value": 2,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 3.0,
+            "Value": 3,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
@@ -586,8 +704,15 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ARRAY_LENGTH([1, 2, 3])]]></ToString>
-      <GetHashCode>-1924854050</GetHashCode>
+      <TextOutput><![CDATA[ARRAY_LENGTH([1, 2, 3])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_LENGTH([
+    1, 
+    2, 
+    3
+])
+]]></PrettyPrint>
+      <HashCode>-751578656</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY_LENGTH([1, 2, 3])]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -604,21 +729,21 @@
       "Items": [
         {
           "Literal": {
-            "Value": 1.0,
+            "Value": 1,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 2.0,
+            "Value": 2,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
         },
         {
           "Literal": {
-            "Value": 3.0,
+            "Value": 3,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
@@ -628,14 +753,14 @@
     },
     {
       "Literal": {
-        "Value": 4.0,
+        "Value": 4,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 5.0,
+        "Value": 5,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -646,8 +771,19 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ARRAY_SLICE([1, 2, 3], 4, 5)]]></ToString>
-      <GetHashCode>-1404072423</GetHashCode>
+      <TextOutput><![CDATA[ARRAY_SLICE([1, 2, 3], 4, 5)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_SLICE(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    4, 
+    5
+)
+]]></PrettyPrint>
+      <HashCode>1646059873</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY_SLICE([1, 2, 3], 4, 5)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -662,7 +798,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -673,8 +809,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ASIN(42)]]></ToString>
-      <GetHashCode>-367013239</GetHashCode>
+      <TextOutput><![CDATA[ASIN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ASIN(42)
+]]></PrettyPrint>
+      <HashCode>-183785</HashCode>
       <ObfusctedQuery><![CDATA[ASIN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -689,7 +828,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -700,8 +839,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ATAN(42)]]></ToString>
-      <GetHashCode>-782459038</GetHashCode>
+      <TextOutput><![CDATA[ATAN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ATAN(42)
+]]></PrettyPrint>
+      <HashCode>-1168279570</HashCode>
       <ObfusctedQuery><![CDATA[ATAN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -716,7 +858,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -727,8 +869,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ATN2(42)]]></ToString>
-      <GetHashCode>1745384810</GetHashCode>
+      <TextOutput><![CDATA[ATN2(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ATN2(42)
+]]></PrettyPrint>
+      <HashCode>-712520448</HashCode>
       <ObfusctedQuery><![CDATA[ATN2(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -743,7 +888,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -754,8 +899,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[AVG(42)]]></ToString>
-      <GetHashCode>1153135821</GetHashCode>
+      <TextOutput><![CDATA[AVG(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+AVG(42)
+]]></PrettyPrint>
+      <HashCode>1472359088</HashCode>
       <ObfusctedQuery><![CDATA[AVG(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -770,7 +918,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -781,8 +929,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[CEILING(42)]]></ToString>
-      <GetHashCode>-553756238</GetHashCode>
+      <TextOutput><![CDATA[CEILING(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+CEILING(42)
+]]></PrettyPrint>
+      <HashCode>10411306</HashCode>
       <ObfusctedQuery><![CDATA[CEILING(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -815,8 +966,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[CONCAT("Hello", "World")]]></ToString>
-      <GetHashCode>-1281786769</GetHashCode>
+      <TextOutput><![CDATA[CONCAT("Hello", "World")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+CONCAT(
+    "Hello", 
+    "World"
+)
+]]></PrettyPrint>
+      <HashCode>1199969307</HashCode>
       <ObfusctedQuery><![CDATA[CONCAT("str1", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -849,8 +1006,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[CONTAINS("strstr", "str")]]></ToString>
-      <GetHashCode>1241141248</GetHashCode>
+      <TextOutput><![CDATA[CONTAINS("strstr", "str")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+CONTAINS(
+    "strstr", 
+    "str"
+)
+]]></PrettyPrint>
+      <HashCode>-1933880985</HashCode>
       <ObfusctedQuery><![CDATA[CONTAINS("str1", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -865,7 +1028,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -876,8 +1039,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[COS(42)]]></ToString>
-      <GetHashCode>-953159151</GetHashCode>
+      <TextOutput><![CDATA[COS(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+COS(42)
+]]></PrettyPrint>
+      <HashCode>-380968967</HashCode>
       <ObfusctedQuery><![CDATA[COS(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -892,7 +1058,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -903,8 +1069,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[COT(42)]]></ToString>
-      <GetHashCode>-953158955</GetHashCode>
+      <TextOutput><![CDATA[COT(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+COT(42)
+]]></PrettyPrint>
+      <HashCode>-267913246</HashCode>
       <ObfusctedQuery><![CDATA[COT(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -919,7 +1088,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -930,8 +1099,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[COUNT(42)]]></ToString>
-      <GetHashCode>1665318830</GetHashCode>
+      <TextOutput><![CDATA[COUNT(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+COUNT(42)
+]]></PrettyPrint>
+      <HashCode>580004515</HashCode>
       <ObfusctedQuery><![CDATA[COUNT(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -946,7 +1118,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -957,8 +1129,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[DEGREES(42)]]></ToString>
-      <GetHashCode>-1246425460</GetHashCode>
+      <TextOutput><![CDATA[DEGREES(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+DEGREES(42)
+]]></PrettyPrint>
+      <HashCode>1270291630</HashCode>
       <ObfusctedQuery><![CDATA[DEGREES(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -973,7 +1148,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -984,8 +1159,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[DOCUMENTID(42)]]></ToString>
-      <GetHashCode>-1240118533</GetHashCode>
+      <TextOutput><![CDATA[DOCUMENTID(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+DOCUMENTID(42)
+]]></PrettyPrint>
+      <HashCode>-124728308</HashCode>
       <ObfusctedQuery><![CDATA[DOCUMENTID(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1018,8 +1196,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ENDSWITH("Does this string endswith endswith", "endswith")]]></ToString>
-      <GetHashCode>-1909790955</GetHashCode>
+      <TextOutput><![CDATA[ENDSWITH("Does this string endswith endswith", "endswith")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ENDSWITH(
+    "Does this string endswith endswith", 
+    "endswith"
+)
+]]></PrettyPrint>
+      <HashCode>941142183</HashCode>
       <ObfusctedQuery><![CDATA[ENDSWITH("str1__34", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1034,7 +1218,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1045,8 +1229,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[EXP(42)]]></ToString>
-      <GetHashCode>-1532992596</GetHashCode>
+      <TextOutput><![CDATA[EXP(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+EXP(42)
+]]></PrettyPrint>
+      <HashCode>982819220</HashCode>
       <ObfusctedQuery><![CDATA[EXP(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1061,7 +1248,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1072,8 +1259,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[FLOOR(42)]]></ToString>
-      <GetHashCode>-1756187217</GetHashCode>
+      <TextOutput><![CDATA[FLOOR(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+FLOOR(42)
+]]></PrettyPrint>
+      <HashCode>-722061402</HashCode>
       <ObfusctedQuery><![CDATA[FLOOR(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1106,8 +1296,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[INDEX_OF("banana", "ana")]]></ToString>
-      <GetHashCode>759023340</GetHashCode>
+      <TextOutput><![CDATA[INDEX_OF("banana", "ana")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+INDEX_OF(
+    "banana", 
+    "ana"
+)
+]]></PrettyPrint>
+      <HashCode>-302782918</HashCode>
       <ObfusctedQuery><![CDATA[INDEX_OF("str1", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1122,7 +1318,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1133,8 +1329,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_ARRAY(42)]]></ToString>
-      <GetHashCode>-475516869</GetHashCode>
+      <TextOutput><![CDATA[IS_ARRAY(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_ARRAY(42)
+]]></PrettyPrint>
+      <HashCode>-1533068510</HashCode>
       <ObfusctedQuery><![CDATA[IS_ARRAY(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1160,8 +1359,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_BOOL(true)]]></ToString>
-      <GetHashCode>-261642523</GetHashCode>
+      <TextOutput><![CDATA[IS_BOOL(true)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_BOOL(true)
+]]></PrettyPrint>
+      <HashCode>-63795940</HashCode>
       <ObfusctedQuery><![CDATA[IS_BOOL(true)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1176,7 +1378,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1187,8 +1389,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_DEFINED(42)]]></ToString>
-      <GetHashCode>-511537434</GetHashCode>
+      <TextOutput><![CDATA[IS_DEFINED(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_DEFINED(42)
+]]></PrettyPrint>
+      <HashCode>-1251710105</HashCode>
       <ObfusctedQuery><![CDATA[IS_DEFINED(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1203,7 +1408,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1214,8 +1419,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_FINITE_NUMBER(42)]]></ToString>
-      <GetHashCode>648419234</GetHashCode>
+      <TextOutput><![CDATA[IS_FINITE_NUMBER(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_FINITE_NUMBER(42)
+]]></PrettyPrint>
+      <HashCode>-924474904</HashCode>
       <ObfusctedQuery><![CDATA[IS_FINITE_NUMBER(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1240,8 +1448,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_NULL(null)]]></ToString>
-      <GetHashCode>95207069</GetHashCode>
+      <TextOutput><![CDATA[IS_NULL(null)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_NULL(null)
+]]></PrettyPrint>
+      <HashCode>-1089780642</HashCode>
       <ObfusctedQuery><![CDATA[IS_NULL(null)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1256,7 +1467,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1267,8 +1478,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_NUMBER(42)]]></ToString>
-      <GetHashCode>-600367024</GetHashCode>
+      <TextOutput><![CDATA[IS_NUMBER(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_NUMBER(42)
+]]></PrettyPrint>
+      <HashCode>-496419701</HashCode>
       <ObfusctedQuery><![CDATA[IS_NUMBER(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1283,7 +1497,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1294,8 +1508,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_OBJECT(42)]]></ToString>
-      <GetHashCode>1697056158</GetHashCode>
+      <TextOutput><![CDATA[IS_OBJECT(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_OBJECT(42)
+]]></PrettyPrint>
+      <HashCode>959388871</HashCode>
       <ObfusctedQuery><![CDATA[IS_OBJECT(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1310,7 +1527,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1321,8 +1538,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_PRIMITIVE(42)]]></ToString>
-      <GetHashCode>-1826010278</GetHashCode>
+      <TextOutput><![CDATA[IS_PRIMITIVE(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_PRIMITIVE(42)
+]]></PrettyPrint>
+      <HashCode>303473017</HashCode>
       <ObfusctedQuery><![CDATA[IS_PRIMITIVE(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1348,8 +1568,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[IS_STRING("hello")]]></ToString>
-      <GetHashCode>-2118257602</GetHashCode>
+      <TextOutput><![CDATA[IS_STRING("hello")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_STRING("hello")
+]]></PrettyPrint>
+      <HashCode>1423750326</HashCode>
       <ObfusctedQuery><![CDATA[IS_STRING("str1")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1371,7 +1594,7 @@
     },
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1382,8 +1605,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[LEFT("Hello", 42)]]></ToString>
-      <GetHashCode>-1973490798</GetHashCode>
+      <TextOutput><![CDATA[LEFT("Hello", 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LEFT(
+    "Hello", 
+    42
+)
+]]></PrettyPrint>
+      <HashCode>-2088140971</HashCode>
       <ObfusctedQuery><![CDATA[LEFT("str1", 42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1398,7 +1627,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1409,8 +1638,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[LENGTH(42)]]></ToString>
-      <GetHashCode>-689775330</GetHashCode>
+      <TextOutput><![CDATA[LENGTH(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LENGTH(42)
+]]></PrettyPrint>
+      <HashCode>285685408</HashCode>
       <ObfusctedQuery><![CDATA[LENGTH(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1450,8 +1682,15 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[LIKE("blah", "blah", "blah")]]></ToString>
-      <GetHashCode>-766966449</GetHashCode>
+      <TextOutput><![CDATA[LIKE("blah", "blah", "blah")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LIKE(
+    "blah", 
+    "blah", 
+    "blah"
+)
+]]></PrettyPrint>
+      <HashCode>-688493095</HashCode>
       <ObfusctedQuery><![CDATA[LIKE("str1", "str1", "str1")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1466,7 +1705,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1477,8 +1716,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[LOG(42)]]></ToString>
-      <GetHashCode>-953579550</GetHashCode>
+      <TextOutput><![CDATA[LOG(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LOG(42)
+]]></PrettyPrint>
+      <HashCode>-2023713812</HashCode>
       <ObfusctedQuery><![CDATA[LOG(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1493,7 +1735,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1504,8 +1746,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[LOG10(42)]]></ToString>
-      <GetHashCode>-1105572175</GetHashCode>
+      <TextOutput><![CDATA[LOG10(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LOG10(42)
+]]></PrettyPrint>
+      <HashCode>-363653274</HashCode>
       <ObfusctedQuery><![CDATA[LOG10(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1520,7 +1765,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1531,8 +1776,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[LOWER(42)]]></ToString>
-      <GetHashCode>1209715541</GetHashCode>
+      <TextOutput><![CDATA[LOWER(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LOWER(42)
+]]></PrettyPrint>
+      <HashCode>423694432</HashCode>
       <ObfusctedQuery><![CDATA[LOWER(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1547,7 +1795,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1558,8 +1806,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[LTRIM(42)]]></ToString>
-      <GetHashCode>1262743538</GetHashCode>
+      <TextOutput><![CDATA[LTRIM(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LTRIM(42)
+]]></PrettyPrint>
+      <HashCode>-194388813</HashCode>
       <ObfusctedQuery><![CDATA[LTRIM(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1574,7 +1825,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1585,8 +1836,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[MAX(42)]]></ToString>
-      <GetHashCode>-371925843</GetHashCode>
+      <TextOutput><![CDATA[MAX(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+MAX(42)
+]]></PrettyPrint>
+      <HashCode>765267232</HashCode>
       <ObfusctedQuery><![CDATA[MAX(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1601,7 +1855,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1612,8 +1866,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[MIN(42)]]></ToString>
-      <GetHashCode>1112981949</GetHashCode>
+      <TextOutput><![CDATA[MIN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+MIN(42)
+]]></PrettyPrint>
+      <HashCode>1343590425</HashCode>
       <ObfusctedQuery><![CDATA[MIN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1631,8 +1888,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[PI()]]></ToString>
-      <GetHashCode>-443318059</GetHashCode>
+      <TextOutput><![CDATA[PI()]]></TextOutput>
+      <PrettyPrint><![CDATA[
+PI()
+]]></PrettyPrint>
+      <HashCode>-1534602303</HashCode>
       <ObfusctedQuery><![CDATA[PI()]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1647,14 +1907,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 1337.0,
+        "Value": 1337,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1665,8 +1925,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[POWER(42, 1337)]]></ToString>
-      <GetHashCode>1733402639</GetHashCode>
+      <TextOutput><![CDATA[POWER(42, 1337)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+POWER(
+    42, 
+    1337
+)
+]]></PrettyPrint>
+      <HashCode>-1052558749</HashCode>
       <ObfusctedQuery><![CDATA[POWER(42, 1337.1)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1681,7 +1947,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1692,8 +1958,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[RADIANS(42)]]></ToString>
-      <GetHashCode>554482638</GetHashCode>
+      <TextOutput><![CDATA[RADIANS(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RADIANS(42)
+]]></PrettyPrint>
+      <HashCode>905461546</HashCode>
       <ObfusctedQuery><![CDATA[RADIANS(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1711,8 +1980,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[RAND()]]></ToString>
-      <GetHashCode>-63773891</GetHashCode>
+      <TextOutput><![CDATA[RAND()]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RAND()
+]]></PrettyPrint>
+      <HashCode>-355043562</HashCode>
       <ObfusctedQuery><![CDATA[RAND()]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1752,8 +2024,15 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[REPLACE("banana", "ana", "banana")]]></ToString>
-      <GetHashCode>-274286478</GetHashCode>
+      <TextOutput><![CDATA[REPLACE("banana", "ana", "banana")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+REPLACE(
+    "banana", 
+    "ana", 
+    "banana"
+)
+]]></PrettyPrint>
+      <HashCode>-1993814058</HashCode>
       <ObfusctedQuery><![CDATA[REPLACE("str1", "str2", "str1")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1775,7 +2054,7 @@
     },
     {
       "Literal": {
-        "Value": 5.0,
+        "Value": 5,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1786,8 +2065,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[REPLICATE("hello", 5)]]></ToString>
-      <GetHashCode>1833778063</GetHashCode>
+      <TextOutput><![CDATA[REPLICATE("hello", 5)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+REPLICATE(
+    "hello", 
+    5
+)
+]]></PrettyPrint>
+      <HashCode>-1226076802</HashCode>
       <ObfusctedQuery><![CDATA[REPLICATE("str1", 5)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1802,7 +2087,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1813,8 +2098,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[REVERSE(42)]]></ToString>
-      <GetHashCode>986288885</GetHashCode>
+      <TextOutput><![CDATA[REVERSE(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+REVERSE(42)
+]]></PrettyPrint>
+      <HashCode>-2133922675</HashCode>
       <ObfusctedQuery><![CDATA[REVERSE(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1836,7 +2124,7 @@
     },
     {
       "Literal": {
-        "Value": 2.0,
+        "Value": 2,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1847,8 +2135,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[RIGHT("hello", 2)]]></ToString>
-      <GetHashCode>-1761244115</GetHashCode>
+      <TextOutput><![CDATA[RIGHT("hello", 2)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RIGHT(
+    "hello", 
+    2
+)
+]]></PrettyPrint>
+      <HashCode>905979334</HashCode>
       <ObfusctedQuery><![CDATA[RIGHT("str1", 2)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1863,7 +2157,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1874,8 +2168,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ROUND(42)]]></ToString>
-      <GetHashCode>1666450731</GetHashCode>
+      <TextOutput><![CDATA[ROUND(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ROUND(42)
+]]></PrettyPrint>
+      <HashCode>-690518358</HashCode>
       <ObfusctedQuery><![CDATA[ROUND(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1890,7 +2187,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1901,8 +2198,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[RTRIM(42)]]></ToString>
-      <GetHashCode>1253873986</GetHashCode>
+      <TextOutput><![CDATA[RTRIM(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+RTRIM(42)
+]]></PrettyPrint>
+      <HashCode>1899008455</HashCode>
       <ObfusctedQuery><![CDATA[RTRIM(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1917,7 +2217,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1928,8 +2228,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SIGN(42)]]></ToString>
-      <GetHashCode>-1225411434</GetHashCode>
+      <TextOutput><![CDATA[SIGN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SIGN(42)
+]]></PrettyPrint>
+      <HashCode>1527446738</HashCode>
       <ObfusctedQuery><![CDATA[SIGN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1944,7 +2247,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1955,8 +2258,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SIN(42)]]></ToString>
-      <GetHashCode>1115129489</GetHashCode>
+      <TextOutput><![CDATA[SIN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SIN(42)
+]]></PrettyPrint>
+      <HashCode>1903011650</HashCode>
       <ObfusctedQuery><![CDATA[SIN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1971,7 +2277,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -1982,8 +2288,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SQRT(42)]]></ToString>
-      <GetHashCode>1889548901</GetHashCode>
+      <TextOutput><![CDATA[SQRT(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SQRT(42)
+]]></PrettyPrint>
+      <HashCode>1962514832</HashCode>
       <ObfusctedQuery><![CDATA[SQRT(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1998,7 +2307,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2009,8 +2318,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SQUARE(42)]]></ToString>
-      <GetHashCode>-2094225228</GetHashCode>
+      <TextOutput><![CDATA[SQUARE(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SQUARE(42)
+]]></PrettyPrint>
+      <HashCode>230796817</HashCode>
       <ObfusctedQuery><![CDATA[SQUARE(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2043,8 +2355,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[STARTSWITH("does this string startswith does", "does")]]></ToString>
-      <GetHashCode>1923917315</GetHashCode>
+      <TextOutput><![CDATA[STARTSWITH("does this string startswith does", "does")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+STARTSWITH(
+    "does this string startswith does", 
+    "does"
+)
+]]></PrettyPrint>
+      <HashCode>1728609164</HashCode>
       <ObfusctedQuery><![CDATA[STARTSWITH("str1__32", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2059,14 +2377,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2077,8 +2395,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ST_DISTANCE(42, 42)]]></ToString>
-      <GetHashCode>-674568010</GetHashCode>
+      <TextOutput><![CDATA[ST_DISTANCE(42, 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_DISTANCE(
+    42, 
+    42
+)
+]]></PrettyPrint>
+      <HashCode>1926965281</HashCode>
       <ObfusctedQuery><![CDATA[ST_DISTANCE(42, 42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2093,14 +2417,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2111,8 +2435,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ST_INTERSECTS(42, 42)]]></ToString>
-      <GetHashCode>-1052883059</GetHashCode>
+      <TextOutput><![CDATA[ST_INTERSECTS(42, 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_INTERSECTS(
+    42, 
+    42
+)
+]]></PrettyPrint>
+      <HashCode>149016804</HashCode>
       <ObfusctedQuery><![CDATA[ST_INTERSECTS(42, 42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2127,7 +2457,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2138,8 +2468,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ST_ISVALID(42)]]></ToString>
-      <GetHashCode>-989477682</GetHashCode>
+      <TextOutput><![CDATA[ST_ISVALID(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_ISVALID(42)
+]]></PrettyPrint>
+      <HashCode>46667569</HashCode>
       <ObfusctedQuery><![CDATA[ST_ISVALID(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2154,7 +2487,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2165,8 +2498,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ST_ISVALIDDETAILED(42)]]></ToString>
-      <GetHashCode>716294434</GetHashCode>
+      <TextOutput><![CDATA[ST_ISVALIDDETAILED(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_ISVALIDDETAILED(42)
+]]></PrettyPrint>
+      <HashCode>-1873329530</HashCode>
       <ObfusctedQuery><![CDATA[ST_ISVALIDDETAILED(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2181,14 +2517,14 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2199,8 +2535,14 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ST_WITHIN(42, 42)]]></ToString>
-      <GetHashCode>447048279</GetHashCode>
+      <TextOutput><![CDATA[ST_WITHIN(42, 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ST_WITHIN(
+    42, 
+    42
+)
+]]></PrettyPrint>
+      <HashCode>1260825894</HashCode>
       <ObfusctedQuery><![CDATA[ST_WITHIN(42, 42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2222,14 +2564,14 @@
     },
     {
       "Literal": {
-        "Value": 1.0,
+        "Value": 1,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
     },
     {
       "Literal": {
-        "Value": 2.0,
+        "Value": 2,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2240,8 +2582,15 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SUBSTRING("Hello", 1, 2)]]></ToString>
-      <GetHashCode>891430498</GetHashCode>
+      <TextOutput><![CDATA[SUBSTRING("Hello", 1, 2)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SUBSTRING(
+    "Hello", 
+    1, 
+    2
+)
+]]></PrettyPrint>
+      <HashCode>-1227365345</HashCode>
       <ObfusctedQuery><![CDATA[SUBSTRING("str1", 1, 2)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2256,7 +2605,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2267,8 +2616,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SUM(42)]]></ToString>
-      <GetHashCode>2135756978</GetHashCode>
+      <TextOutput><![CDATA[SUM(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SUM(42)
+]]></PrettyPrint>
+      <HashCode>1209216574</HashCode>
       <ObfusctedQuery><![CDATA[SUM(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2283,7 +2635,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2294,8 +2646,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[TAN(42)]]></ToString>
-      <GetHashCode>-372400704</GetHashCode>
+      <TextOutput><![CDATA[TAN(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+TAN(42)
+]]></PrettyPrint>
+      <HashCode>317432403</HashCode>
       <ObfusctedQuery><![CDATA[TAN(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2310,7 +2665,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2321,8 +2676,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[TRUNC(42)]]></ToString>
-      <GetHashCode>-1474664067</GetHashCode>
+      <TextOutput><![CDATA[TRUNC(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+TRUNC(42)
+]]></PrettyPrint>
+      <HashCode>-56354412</HashCode>
       <ObfusctedQuery><![CDATA[TRUNC(42)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -2337,7 +2695,7 @@
   "Arguments": [
     {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -2348,8 +2706,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[UPPER(42)]]></ToString>
-      <GetHashCode>1600874061</GetHashCode>
+      <TextOutput><![CDATA[UPPER(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+UPPER(42)
+]]></PrettyPrint>
+      <HashCode>182834477</HashCode>
       <ObfusctedQuery><![CDATA[UPPER(42)]]></ObfusctedQuery>
     </Output>
   </Result>

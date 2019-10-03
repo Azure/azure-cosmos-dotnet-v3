@@ -15,8 +15,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT DISTINCT TOP 42 *]]></ToString>
-      <GetHashCode>685617500</GetHashCode>
+      <TextOutput><![CDATA[SELECT DISTINCT TOP 42 *]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT DISTINCT TOP 42 *
+]]></PrettyPrint>
+      <HashCode>685617500</HashCode>
       <ObfusctedQuery><![CDATA[SELECT DISTINCT TOP 0 *]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -36,8 +39,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT TOP 42 *]]></ToString>
-      <GetHashCode>1588628460</GetHashCode>
+      <TextOutput><![CDATA[SELECT TOP 42 *]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT TOP 42 *
+]]></PrettyPrint>
+      <HashCode>1588628460</HashCode>
       <ObfusctedQuery><![CDATA[SELECT TOP 0 *]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -54,8 +60,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT DISTINCT *]]></ToString>
-      <GetHashCode>-963590009</GetHashCode>
+      <TextOutput><![CDATA[SELECT DISTINCT *]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT DISTINCT *
+]]></PrettyPrint>
+      <HashCode>-963590009</HashCode>
       <ObfusctedQuery><![CDATA[SELECT DISTINCT *]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -72,8 +81,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT *]]></ToString>
-      <GetHashCode>-1484669806</GetHashCode>
+      <TextOutput><![CDATA[SELECT *]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT *
+]]></PrettyPrint>
+      <HashCode>-1484669806</HashCode>
       <ObfusctedQuery><![CDATA[SELECT *]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -114,7 +126,7 @@
           },
           "IndexExpression": {
             "Literal": {
-              "Value": 42.0,
+              "Value": 42,
               "Kind": "NumberLiteral"
             },
             "Kind": "LiteralScalarExpression"
@@ -139,8 +151,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT DISTINCT TOP 42 "some"["random"]["path"][42] AS some alias]]></ToString>
-      <GetHashCode>-1143156746</GetHashCode>
+      <TextOutput><![CDATA[SELECT DISTINCT TOP 42 "some"["random"]["path"][42] AS some alias]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT DISTINCT TOP 42 "some"["random"]["path"][42] AS some alias
+]]></PrettyPrint>
+      <HashCode>-880031423</HashCode>
       <ObfusctedQuery><![CDATA[SELECT DISTINCT TOP 0 "str1"["str2"]["str3"][42] AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -181,7 +196,7 @@
           },
           "IndexExpression": {
             "Literal": {
-              "Value": 42.0,
+              "Value": 42,
               "Kind": "NumberLiteral"
             },
             "Kind": "LiteralScalarExpression"
@@ -206,8 +221,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT TOP 42 "some"["random"]["path"][42] AS some alias]]></ToString>
-      <GetHashCode>-271682122</GetHashCode>
+      <TextOutput><![CDATA[SELECT TOP 42 "some"["random"]["path"][42] AS some alias]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT TOP 42 "some"["random"]["path"][42] AS some alias
+]]></PrettyPrint>
+      <HashCode>1065579279</HashCode>
       <ObfusctedQuery><![CDATA[SELECT TOP 0 "str1"["str2"]["str3"][42] AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -248,7 +266,7 @@
           },
           "IndexExpression": {
             "Literal": {
-              "Value": 42.0,
+              "Value": 42,
               "Kind": "NumberLiteral"
             },
             "Kind": "LiteralScalarExpression"
@@ -270,8 +288,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT DISTINCT "some"["random"]["path"][42] AS some alias]]></ToString>
-      <GetHashCode>1483725549</GetHashCode>
+      <TextOutput><![CDATA[SELECT DISTINCT "some"["random"]["path"][42] AS some alias]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT DISTINCT "some"["random"]["path"][42] AS some alias
+]]></PrettyPrint>
+      <HashCode>664985444</HashCode>
       <ObfusctedQuery><![CDATA[SELECT DISTINCT "str1"["str2"]["str3"][42] AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -312,7 +333,7 @@
           },
           "IndexExpression": {
             "Literal": {
-              "Value": 42.0,
+              "Value": 42,
               "Kind": "NumberLiteral"
             },
             "Kind": "LiteralScalarExpression"
@@ -334,8 +355,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT "some"["random"]["path"][42] AS some alias]]></ToString>
-      <GetHashCode>914403064</GetHashCode>
+      <TextOutput><![CDATA[SELECT "some"["random"]["path"][42] AS some alias]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT "some"["random"]["path"][42] AS some alias
+]]></PrettyPrint>
+      <HashCode>-2041064079</HashCode>
       <ObfusctedQuery><![CDATA[SELECT "str1"["str2"]["str3"][42] AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -366,8 +390,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[inputPathCollection["somePath"] AS some alias]]></ToString>
-      <GetHashCode>-1709390567</GetHashCode>
+      <TextOutput><![CDATA[inputPathCollection["somePath"] AS some alias]]></TextOutput>
+      <PrettyPrint><![CDATA[
+inputPathCollection["somePath"] AS some alias
+]]></PrettyPrint>
+      <HashCode>-1960708644</HashCode>
       <ObfusctedQuery><![CDATA[ident1__19["str1"] AS ident2__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -398,8 +425,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[some alias IN inputPathCollection["somePath"]]]></ToString>
-      <GetHashCode>1517424152</GetHashCode>
+      <TextOutput><![CDATA[some alias IN inputPathCollection["somePath"]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+some alias IN inputPathCollection["somePath"]
+]]></PrettyPrint>
+      <HashCode>-1822805962</HashCode>
       <ObfusctedQuery><![CDATA[ident1__10 IN ident2__19["str1"]]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -455,8 +485,12 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[inputPathCollection["somePath"] AS some alias JOIN some alias IN inputPathCollection["somePath"]]]></ToString>
-      <GetHashCode>1002635734</GetHashCode>
+      <TextOutput><![CDATA[inputPathCollection["somePath"] AS some alias JOIN some alias IN inputPathCollection["somePath"]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+inputPathCollection["somePath"] AS some alias
+ JOIN some alias IN inputPathCollection["somePath"]
+]]></PrettyPrint>
+      <HashCode>826050858</HashCode>
       <ObfusctedQuery><![CDATA[ident1__19["str1"] AS ident2__10 JOIN ident2__10 IN ident1__19["str1"]]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -498,8 +532,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[["some", "SqlLiteralArrayCollection", "items"] AS some alias]]></ToString>
-      <GetHashCode>-774997606</GetHashCode>
+      <TextOutput><![CDATA[["some", "SqlLiteralArrayCollection", "items"] AS some alias]]></TextOutput>
+      <PrettyPrint><![CDATA[
+["some", "SqlLiteralArrayCollection", "items"] AS some alias
+]]></PrettyPrint>
+      <HashCode>1200641184</HashCode>
       <ObfusctedQuery><![CDATA[["str1", "str2__25", "str3"] AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -541,8 +578,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[some alias IN ["some", "SqlLiteralArrayCollection", "items"]]]></ToString>
-      <GetHashCode>763374003</GetHashCode>
+      <TextOutput><![CDATA[some alias IN ["some", "SqlLiteralArrayCollection", "items"]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+some alias IN ["some", "SqlLiteralArrayCollection", "items"]
+]]></PrettyPrint>
+      <HashCode>-2107876781</HashCode>
       <ObfusctedQuery><![CDATA[ident1__10 IN ["str1", "str2__25", "str3"]]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -620,8 +660,12 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[["some", "SqlLiteralArrayCollection", "items"] AS some alias JOIN some alias IN ["some", "SqlLiteralArrayCollection", "items"]]]></ToString>
-      <GetHashCode>1283478600</GetHashCode>
+      <TextOutput><![CDATA[["some", "SqlLiteralArrayCollection", "items"] AS some alias JOIN some alias IN ["some", "SqlLiteralArrayCollection", "items"]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+["some", "SqlLiteralArrayCollection", "items"] AS some alias
+ JOIN some alias IN ["some", "SqlLiteralArrayCollection", "items"]
+]]></PrettyPrint>
+      <HashCode>525083808</HashCode>
       <ObfusctedQuery><![CDATA[["str1", "str2__25", "str3"] AS ident1__10 JOIN ident1__10 IN ["str1", "str2__25", "str3"]]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -641,6 +685,7 @@
       },
       "FromClause": null,
       "WhereClause": null,
+      "GroupByClause": null,
       "OrderbyClause": null,
       "OffsetLimitClause": null,
       "Kind": "Query"
@@ -655,8 +700,13 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(SELECT * ) AS some alias]]></ToString>
-      <GetHashCode>-1130454792</GetHashCode>
+      <TextOutput><![CDATA[(SELECT * ) AS some alias]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(
+    SELECT * 
+) AS some alias
+]]></PrettyPrint>
+      <HashCode>1769508155</HashCode>
       <ObfusctedQuery><![CDATA[(SELECT * ) AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -680,6 +730,7 @@
       },
       "FromClause": null,
       "WhereClause": null,
+      "GroupByClause": null,
       "OrderbyClause": null,
       "OffsetLimitClause": null,
       "Kind": "Query"
@@ -690,8 +741,13 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[some alias IN (SELECT * )]]></ToString>
-      <GetHashCode>1983810865</GetHashCode>
+      <TextOutput><![CDATA[some alias IN (SELECT * )]]></TextOutput>
+      <PrettyPrint><![CDATA[
+some alias IN (
+    SELECT * 
+)
+]]></PrettyPrint>
+      <HashCode>-2109092347</HashCode>
       <ObfusctedQuery><![CDATA[ident1__10 IN (SELECT * )]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -712,6 +768,7 @@
         },
         "FromClause": null,
         "WhereClause": null,
+        "GroupByClause": null,
         "OrderbyClause": null,
         "OffsetLimitClause": null,
         "Kind": "Query"
@@ -741,6 +798,7 @@
         },
         "FromClause": null,
         "WhereClause": null,
+        "GroupByClause": null,
         "OrderbyClause": null,
         "OffsetLimitClause": null,
         "Kind": "Query"
@@ -753,8 +811,16 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(SELECT * ) AS some alias JOIN some alias IN (SELECT * )]]></ToString>
-      <GetHashCode>-1427587388</GetHashCode>
+      <TextOutput><![CDATA[(SELECT * ) AS some alias JOIN some alias IN (SELECT * )]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(
+    SELECT * 
+) AS some alias
+ JOIN some alias IN (
+    SELECT * 
+)
+]]></PrettyPrint>
+      <HashCode>-1665449630</HashCode>
       <ObfusctedQuery><![CDATA[(SELECT * ) AS ident1__10 JOIN ident1__10 IN (SELECT * )]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -773,7 +839,7 @@
     },
     "RightExpression": {
       "Literal": {
-        "Value": 42.0,
+        "Value": 42,
         "Kind": "NumberLiteral"
       },
       "Kind": "LiteralScalarExpression"
@@ -784,9 +850,159 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[WHERE ("this path" < 42)]]></ToString>
-      <GetHashCode>-1042610762</GetHashCode>
+      <TextOutput><![CDATA[WHERE ("this path" < 42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+WHERE ("this path" < 42)
+]]></PrettyPrint>
+      <HashCode>2042126815</HashCode>
       <ObfusctedQuery><![CDATA[WHERE ("str1" < 42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlGroupByClause Single</Description>
+      <SqlObject><![CDATA[{
+  "Expressions": [
+    {
+      "MemberExpression": {
+        "MemberExpression": {
+          "MemberExpression": {
+            "Literal": {
+              "Value": "some",
+              "Kind": "StringLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "IndexExpression": {
+            "Literal": {
+              "Value": "random",
+              "Kind": "StringLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "Kind": "MemberIndexerScalarExpression"
+        },
+        "IndexExpression": {
+          "Literal": {
+            "Value": "path",
+            "Kind": "StringLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "Kind": "MemberIndexerScalarExpression"
+      },
+      "IndexExpression": {
+        "Literal": {
+          "Value": 42,
+          "Kind": "NumberLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
+      "Kind": "MemberIndexerScalarExpression"
+    }
+  ],
+  "Kind": "GroupByClause"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[GROUP BY "some"["random"]["path"][42]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+GROUP BY "some"["random"]["path"][42]
+]]></PrettyPrint>
+      <HashCode>847744696</HashCode>
+      <ObfusctedQuery><![CDATA[GROUP BY "str1"["str2"]["str3"][42]]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlGroupByClause Multi</Description>
+      <SqlObject><![CDATA[{
+  "Expressions": [
+    {
+      "MemberExpression": {
+        "MemberExpression": {
+          "MemberExpression": {
+            "Literal": {
+              "Value": "some",
+              "Kind": "StringLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "IndexExpression": {
+            "Literal": {
+              "Value": "random",
+              "Kind": "StringLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "Kind": "MemberIndexerScalarExpression"
+        },
+        "IndexExpression": {
+          "Literal": {
+            "Value": "path",
+            "Kind": "StringLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "Kind": "MemberIndexerScalarExpression"
+      },
+      "IndexExpression": {
+        "Literal": {
+          "Value": 42,
+          "Kind": "NumberLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
+      "Kind": "MemberIndexerScalarExpression"
+    },
+    {
+      "MemberExpression": {
+        "MemberExpression": {
+          "MemberExpression": {
+            "Literal": {
+              "Value": "some",
+              "Kind": "StringLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "IndexExpression": {
+            "Literal": {
+              "Value": "random",
+              "Kind": "StringLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "Kind": "MemberIndexerScalarExpression"
+        },
+        "IndexExpression": {
+          "Literal": {
+            "Value": "path",
+            "Kind": "StringLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "Kind": "MemberIndexerScalarExpression"
+      },
+      "IndexExpression": {
+        "Literal": {
+          "Value": 42,
+          "Kind": "NumberLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
+      "Kind": "MemberIndexerScalarExpression"
+    }
+  ],
+  "Kind": "GroupByClause"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[GROUP BY "some"["random"]["path"][42], "some"["random"]["path"][42]]]></TextOutput>
+      <PrettyPrint><![CDATA[
+GROUP BY "some"["random"]["path"][42], "some"["random"]["path"][42]
+]]></PrettyPrint>
+      <HashCode>-1024598340</HashCode>
+      <ObfusctedQuery><![CDATA[GROUP BY "str1"["str2"]["str3"][42], "str1"["str2"]["str3"][42]]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -825,7 +1041,7 @@
         },
         "IndexExpression": {
           "Literal": {
-            "Value": 42.0,
+            "Value": 42,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
@@ -840,8 +1056,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ORDER BY "some"["random"]["path"][42] ASC]]></ToString>
-      <GetHashCode>1596760398</GetHashCode>
+      <TextOutput><![CDATA[ORDER BY "some"["random"]["path"][42] ASC]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ORDER BY "some"["random"]["path"][42] ASC
+]]></PrettyPrint>
+      <HashCode>1027551396</HashCode>
       <ObfusctedQuery><![CDATA[ORDER BY "str1"["str2"]["str3"][42] ASC]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -881,7 +1100,7 @@
         },
         "IndexExpression": {
           "Literal": {
-            "Value": 42.0,
+            "Value": 42,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
@@ -922,7 +1141,7 @@
         },
         "IndexExpression": {
           "Literal": {
-            "Value": 42.0,
+            "Value": 42,
             "Kind": "NumberLiteral"
           },
           "Kind": "LiteralScalarExpression"
@@ -937,8 +1156,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[ORDER BY "some"["random"]["path"][42] ASC, "some"["random"]["path"][42] DESC]]></ToString>
-      <GetHashCode>-436098900</GetHashCode>
+      <TextOutput><![CDATA[ORDER BY "some"["random"]["path"][42] ASC, "some"["random"]["path"][42] DESC]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ORDER BY "some"["random"]["path"][42] ASC, "some"["random"]["path"][42] DESC
+]]></PrettyPrint>
+      <HashCode>777823978</HashCode>
       <ObfusctedQuery><![CDATA[ORDER BY "str1"["str2"]["str3"][42] ASC, "str1"["str2"]["str3"][42] DESC]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -951,8 +1173,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[OFFSET 0]]></ToString>
-      <GetHashCode>962689188</GetHashCode>
+      <TextOutput><![CDATA[OFFSET 0]]></TextOutput>
+      <PrettyPrint><![CDATA[
+OFFSET 0
+]]></PrettyPrint>
+      <HashCode>962689188</HashCode>
       <ObfusctedQuery><![CDATA[OFFSET 0]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -965,8 +1190,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[LIMIT 0]]></ToString>
-      <GetHashCode>89344598</GetHashCode>
+      <TextOutput><![CDATA[LIMIT 0]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LIMIT 0
+]]></PrettyPrint>
+      <HashCode>89344598</HashCode>
       <ObfusctedQuery><![CDATA[LIMIT 0]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -986,8 +1214,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[OFFSET 0 LIMIT 0]]></ToString>
-      <GetHashCode>569474856</GetHashCode>
+      <TextOutput><![CDATA[OFFSET 0 LIMIT 0]]></TextOutput>
+      <PrettyPrint><![CDATA[
+OFFSET 0 LIMIT 0
+]]></PrettyPrint>
+      <HashCode>569474856</HashCode>
       <ObfusctedQuery><![CDATA[OFFSET 0 LIMIT 0]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1040,7 +1271,7 @@
       },
       "RightExpression": {
         "Literal": {
-          "Value": 42.0,
+          "Value": 42,
           "Kind": "NumberLiteral"
         },
         "Kind": "LiteralScalarExpression"
@@ -1048,6 +1279,48 @@
       "Kind": "BinaryScalarExpression"
     },
     "Kind": "WhereClause"
+  },
+  "GroupByClause": {
+    "Expressions": [
+      {
+        "MemberExpression": {
+          "MemberExpression": {
+            "MemberExpression": {
+              "Literal": {
+                "Value": "some",
+                "Kind": "StringLiteral"
+              },
+              "Kind": "LiteralScalarExpression"
+            },
+            "IndexExpression": {
+              "Literal": {
+                "Value": "random",
+                "Kind": "StringLiteral"
+              },
+              "Kind": "LiteralScalarExpression"
+            },
+            "Kind": "MemberIndexerScalarExpression"
+          },
+          "IndexExpression": {
+            "Literal": {
+              "Value": "path",
+              "Kind": "StringLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "Kind": "MemberIndexerScalarExpression"
+        },
+        "IndexExpression": {
+          "Literal": {
+            "Value": 42,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "Kind": "MemberIndexerScalarExpression"
+      }
+    ],
+    "Kind": "GroupByClause"
   },
   "OrderbyClause": {
     "OrderbyItems": [
@@ -1082,7 +1355,7 @@
           },
           "IndexExpression": {
             "Literal": {
-              "Value": 42.0,
+              "Value": 42,
               "Kind": "NumberLiteral"
             },
             "Kind": "LiteralScalarExpression"
@@ -1110,9 +1383,550 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42) ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 ]]></ToString>
-      <GetHashCode>1954220831</GetHashCode>
-      <ObfusctedQuery><![CDATA[SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42) ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 ]]></ObfusctedQuery>
+      <TextOutput><![CDATA[SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 ]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SELECT * 
+FROM inputPathCollection["somePath"] AS some alias 
+WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
+ORDER BY "some"["random"]["path"][42] ASC 
+OFFSET 0 LIMIT 0 
+]]></PrettyPrint>
+      <HashCode>-999515135</HashCode>
+      <ObfusctedQuery><![CDATA[SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 ]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlSubqueryScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "Query": {
+    "SelectClause": {
+      "SelectSpec": {
+        "Kind": "SelectStarSpec"
+      },
+      "TopSpec": null,
+      "HasDistinct": false,
+      "Kind": "SelectClause"
+    },
+    "FromClause": {
+      "Expression": {
+        "Collection": {
+          "Input": {
+            "Value": "inputPathCollection",
+            "Kind": "Identifier"
+          },
+          "RelativePath": {
+            "Value": {
+              "Value": "somePath",
+              "Kind": "StringLiteral"
+            },
+            "ParentPath": null,
+            "Kind": "StringPathExpression"
+          },
+          "Kind": "InputPathCollection"
+        },
+        "Alias": {
+          "Value": "some alias",
+          "Kind": "Identifier"
+        },
+        "Kind": "AliasedCollectionExpression"
+      },
+      "Kind": "FromClause"
+    },
+    "WhereClause": {
+      "FilterExpression": {
+        "OperatorKind": "LessThan",
+        "LeftExpression": {
+          "Literal": {
+            "Value": "this path",
+            "Kind": "StringLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "RightExpression": {
+          "Literal": {
+            "Value": 42,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "Kind": "BinaryScalarExpression"
+      },
+      "Kind": "WhereClause"
+    },
+    "GroupByClause": {
+      "Expressions": [
+        {
+          "MemberExpression": {
+            "MemberExpression": {
+              "MemberExpression": {
+                "Literal": {
+                  "Value": "some",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "IndexExpression": {
+                "Literal": {
+                  "Value": "random",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "Kind": "MemberIndexerScalarExpression"
+            },
+            "IndexExpression": {
+              "Literal": {
+                "Value": "path",
+                "Kind": "StringLiteral"
+              },
+              "Kind": "LiteralScalarExpression"
+            },
+            "Kind": "MemberIndexerScalarExpression"
+          },
+          "IndexExpression": {
+            "Literal": {
+              "Value": 42,
+              "Kind": "NumberLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "Kind": "MemberIndexerScalarExpression"
+        }
+      ],
+      "Kind": "GroupByClause"
+    },
+    "OrderbyClause": {
+      "OrderbyItems": [
+        {
+          "Expression": {
+            "MemberExpression": {
+              "MemberExpression": {
+                "MemberExpression": {
+                  "Literal": {
+                    "Value": "some",
+                    "Kind": "StringLiteral"
+                  },
+                  "Kind": "LiteralScalarExpression"
+                },
+                "IndexExpression": {
+                  "Literal": {
+                    "Value": "random",
+                    "Kind": "StringLiteral"
+                  },
+                  "Kind": "LiteralScalarExpression"
+                },
+                "Kind": "MemberIndexerScalarExpression"
+              },
+              "IndexExpression": {
+                "Literal": {
+                  "Value": "path",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "Kind": "MemberIndexerScalarExpression"
+            },
+            "IndexExpression": {
+              "Literal": {
+                "Value": 42,
+                "Kind": "NumberLiteral"
+              },
+              "Kind": "LiteralScalarExpression"
+            },
+            "Kind": "MemberIndexerScalarExpression"
+          },
+          "IsDescending": false,
+          "Kind": "OrderByItem"
+        }
+      ],
+      "Kind": "OrderByClause"
+    },
+    "OffsetLimitClause": {
+      "OffsetSpec": {
+        "Offset": 0,
+        "Kind": "OffsetSpec"
+      },
+      "LimitSpec": {
+        "Limit": 0,
+        "Kind": "LimitSpec"
+      },
+      "Kind": "OffsetLimitClause"
+    },
+    "Kind": "Query"
+  },
+  "Kind": "SubqueryScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 )]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(
+    SELECT * 
+    FROM inputPathCollection["somePath"] AS some alias 
+    WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
+    ORDER BY "some"["random"]["path"][42] ASC 
+    OFFSET 0 LIMIT 0 
+)
+]]></PrettyPrint>
+      <HashCode>937611258</HashCode>
+      <ObfusctedQuery><![CDATA[(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlArrayScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "SqlQuery": {
+    "SelectClause": {
+      "SelectSpec": {
+        "Kind": "SelectStarSpec"
+      },
+      "TopSpec": null,
+      "HasDistinct": false,
+      "Kind": "SelectClause"
+    },
+    "FromClause": {
+      "Expression": {
+        "Collection": {
+          "Input": {
+            "Value": "inputPathCollection",
+            "Kind": "Identifier"
+          },
+          "RelativePath": {
+            "Value": {
+              "Value": "somePath",
+              "Kind": "StringLiteral"
+            },
+            "ParentPath": null,
+            "Kind": "StringPathExpression"
+          },
+          "Kind": "InputPathCollection"
+        },
+        "Alias": {
+          "Value": "some alias",
+          "Kind": "Identifier"
+        },
+        "Kind": "AliasedCollectionExpression"
+      },
+      "Kind": "FromClause"
+    },
+    "WhereClause": {
+      "FilterExpression": {
+        "OperatorKind": "LessThan",
+        "LeftExpression": {
+          "Literal": {
+            "Value": "this path",
+            "Kind": "StringLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "RightExpression": {
+          "Literal": {
+            "Value": 42,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "Kind": "BinaryScalarExpression"
+      },
+      "Kind": "WhereClause"
+    },
+    "GroupByClause": {
+      "Expressions": [
+        {
+          "MemberExpression": {
+            "MemberExpression": {
+              "MemberExpression": {
+                "Literal": {
+                  "Value": "some",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "IndexExpression": {
+                "Literal": {
+                  "Value": "random",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "Kind": "MemberIndexerScalarExpression"
+            },
+            "IndexExpression": {
+              "Literal": {
+                "Value": "path",
+                "Kind": "StringLiteral"
+              },
+              "Kind": "LiteralScalarExpression"
+            },
+            "Kind": "MemberIndexerScalarExpression"
+          },
+          "IndexExpression": {
+            "Literal": {
+              "Value": 42,
+              "Kind": "NumberLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "Kind": "MemberIndexerScalarExpression"
+        }
+      ],
+      "Kind": "GroupByClause"
+    },
+    "OrderbyClause": {
+      "OrderbyItems": [
+        {
+          "Expression": {
+            "MemberExpression": {
+              "MemberExpression": {
+                "MemberExpression": {
+                  "Literal": {
+                    "Value": "some",
+                    "Kind": "StringLiteral"
+                  },
+                  "Kind": "LiteralScalarExpression"
+                },
+                "IndexExpression": {
+                  "Literal": {
+                    "Value": "random",
+                    "Kind": "StringLiteral"
+                  },
+                  "Kind": "LiteralScalarExpression"
+                },
+                "Kind": "MemberIndexerScalarExpression"
+              },
+              "IndexExpression": {
+                "Literal": {
+                  "Value": "path",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "Kind": "MemberIndexerScalarExpression"
+            },
+            "IndexExpression": {
+              "Literal": {
+                "Value": 42,
+                "Kind": "NumberLiteral"
+              },
+              "Kind": "LiteralScalarExpression"
+            },
+            "Kind": "MemberIndexerScalarExpression"
+          },
+          "IsDescending": false,
+          "Kind": "OrderByItem"
+        }
+      ],
+      "Kind": "OrderByClause"
+    },
+    "OffsetLimitClause": {
+      "OffsetSpec": {
+        "Offset": 0,
+        "Kind": "OffsetSpec"
+      },
+      "LimitSpec": {
+        "Limit": 0,
+        "Kind": "LimitSpec"
+      },
+      "Kind": "OffsetLimitClause"
+    },
+    "Kind": "Query"
+  },
+  "Kind": "ArrayScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ARRAY(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 )]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY(
+    SELECT * 
+    FROM inputPathCollection["somePath"] AS some alias 
+    WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
+    ORDER BY "some"["random"]["path"][42] ASC 
+    OFFSET 0 LIMIT 0 
+)
+]]></PrettyPrint>
+      <HashCode>-1206588379</HashCode>
+      <ObfusctedQuery><![CDATA[ARRAY(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SqlExistsScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "SqlQuery": {
+    "SelectClause": {
+      "SelectSpec": {
+        "Kind": "SelectStarSpec"
+      },
+      "TopSpec": null,
+      "HasDistinct": false,
+      "Kind": "SelectClause"
+    },
+    "FromClause": {
+      "Expression": {
+        "Collection": {
+          "Input": {
+            "Value": "inputPathCollection",
+            "Kind": "Identifier"
+          },
+          "RelativePath": {
+            "Value": {
+              "Value": "somePath",
+              "Kind": "StringLiteral"
+            },
+            "ParentPath": null,
+            "Kind": "StringPathExpression"
+          },
+          "Kind": "InputPathCollection"
+        },
+        "Alias": {
+          "Value": "some alias",
+          "Kind": "Identifier"
+        },
+        "Kind": "AliasedCollectionExpression"
+      },
+      "Kind": "FromClause"
+    },
+    "WhereClause": {
+      "FilterExpression": {
+        "OperatorKind": "LessThan",
+        "LeftExpression": {
+          "Literal": {
+            "Value": "this path",
+            "Kind": "StringLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "RightExpression": {
+          "Literal": {
+            "Value": 42,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
+        "Kind": "BinaryScalarExpression"
+      },
+      "Kind": "WhereClause"
+    },
+    "GroupByClause": {
+      "Expressions": [
+        {
+          "MemberExpression": {
+            "MemberExpression": {
+              "MemberExpression": {
+                "Literal": {
+                  "Value": "some",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "IndexExpression": {
+                "Literal": {
+                  "Value": "random",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "Kind": "MemberIndexerScalarExpression"
+            },
+            "IndexExpression": {
+              "Literal": {
+                "Value": "path",
+                "Kind": "StringLiteral"
+              },
+              "Kind": "LiteralScalarExpression"
+            },
+            "Kind": "MemberIndexerScalarExpression"
+          },
+          "IndexExpression": {
+            "Literal": {
+              "Value": 42,
+              "Kind": "NumberLiteral"
+            },
+            "Kind": "LiteralScalarExpression"
+          },
+          "Kind": "MemberIndexerScalarExpression"
+        }
+      ],
+      "Kind": "GroupByClause"
+    },
+    "OrderbyClause": {
+      "OrderbyItems": [
+        {
+          "Expression": {
+            "MemberExpression": {
+              "MemberExpression": {
+                "MemberExpression": {
+                  "Literal": {
+                    "Value": "some",
+                    "Kind": "StringLiteral"
+                  },
+                  "Kind": "LiteralScalarExpression"
+                },
+                "IndexExpression": {
+                  "Literal": {
+                    "Value": "random",
+                    "Kind": "StringLiteral"
+                  },
+                  "Kind": "LiteralScalarExpression"
+                },
+                "Kind": "MemberIndexerScalarExpression"
+              },
+              "IndexExpression": {
+                "Literal": {
+                  "Value": "path",
+                  "Kind": "StringLiteral"
+                },
+                "Kind": "LiteralScalarExpression"
+              },
+              "Kind": "MemberIndexerScalarExpression"
+            },
+            "IndexExpression": {
+              "Literal": {
+                "Value": 42,
+                "Kind": "NumberLiteral"
+              },
+              "Kind": "LiteralScalarExpression"
+            },
+            "Kind": "MemberIndexerScalarExpression"
+          },
+          "IsDescending": false,
+          "Kind": "OrderByItem"
+        }
+      ],
+      "Kind": "OrderByClause"
+    },
+    "OffsetLimitClause": {
+      "OffsetSpec": {
+        "Offset": 0,
+        "Kind": "OffsetSpec"
+      },
+      "LimitSpec": {
+        "Limit": 0,
+        "Kind": "LimitSpec"
+      },
+      "Kind": "OffsetLimitClause"
+    },
+    "Kind": "Query"
+  },
+  "Kind": "ExistsScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[EXISTS(SELECT * FROM inputPathCollection["somePath"] AS some alias WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  ORDER BY "some"["random"]["path"][42] ASC OFFSET 0 LIMIT 0 )]]></TextOutput>
+      <PrettyPrint><![CDATA[
+EXISTS(
+    SELECT * 
+    FROM inputPathCollection["somePath"] AS some alias 
+    WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]  
+    ORDER BY "some"["random"]["path"][42] ASC 
+    OFFSET 0 LIMIT 0 
+)
+]]></PrettyPrint>
+      <HashCode>-1684379591</HashCode>
+      <ObfusctedQuery><![CDATA[EXISTS(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
     </Output>
   </Result>
 </Results>
