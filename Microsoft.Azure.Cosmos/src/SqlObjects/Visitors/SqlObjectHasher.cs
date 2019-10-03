@@ -667,20 +667,5 @@ namespace Microsoft.Azure.Cosmos.Sql
             lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
             return (int)lhs;
         }
-
-        public override int Visit(SqlConversionScalarExpression sqlConversionScalarExpression)
-        {
-            throw new NotImplementedException("This DOM element is being removed.");
-        }
-
-        public override int Visit(SqlGeoNearCallScalarExpression sqlGeoNearCallScalarExpression)
-        {
-            throw new NotImplementedException("This DOM element is being removed.");
-        }
-
-        public override int Visit(SqlObjectLiteral sqlObjectLiteral)
-        {
-            throw new NotImplementedException("This DOM element is being removed.");
-        }
     }
 }

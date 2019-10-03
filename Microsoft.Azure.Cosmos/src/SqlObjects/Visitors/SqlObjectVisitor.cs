@@ -14,11 +14,9 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract void Visit(SqlBooleanLiteral sqlObject);
         public abstract void Visit(SqlCoalesceScalarExpression sqlObject);
         public abstract void Visit(SqlConditionalScalarExpression sqlObject);
-        public abstract void Visit(SqlConversionScalarExpression sqlObject);
         public abstract void Visit(SqlExistsScalarExpression sqlObject);
         public abstract void Visit(SqlFromClause sqlObject);
         public abstract void Visit(SqlFunctionCallScalarExpression sqlObject);
-        public abstract void Visit(SqlGeoNearCallScalarExpression sqlObject);
         public abstract void Visit(SqlGroupByClause sqlObject);
         public abstract void Visit(SqlIdentifier sqlObject);
         public abstract void Visit(SqlIdentifierPathExpression sqlObject);
@@ -33,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract void Visit(SqlNumberLiteral sqlObject);
         public abstract void Visit(SqlNumberPathExpression sqlObject);
         public abstract void Visit(SqlObjectCreateScalarExpression sqlObject);
-        public abstract void Visit(SqlObjectLiteral sqlObject);
         public abstract void Visit(SqlObjectProperty sqlObject);
         public abstract void Visit(SqlOffsetLimitClause sqlObject);
         public abstract void Visit(SqlOffsetSpec sqlObject);
@@ -69,11 +66,9 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlBooleanLiteral sqlObject);
         public abstract TResult Visit(SqlCoalesceScalarExpression sqlObject);
         public abstract TResult Visit(SqlConditionalScalarExpression sqlObject);
-        public abstract TResult Visit(SqlConversionScalarExpression sqlObject);
         public abstract TResult Visit(SqlExistsScalarExpression sqlObject);
         public abstract TResult Visit(SqlFromClause sqlObject);
         public abstract TResult Visit(SqlFunctionCallScalarExpression sqlObject);
-        public abstract TResult Visit(SqlGeoNearCallScalarExpression sqlObject);
         public abstract TResult Visit(SqlGroupByClause sqlObject);
         public abstract TResult Visit(SqlIdentifier sqlObject);
         public abstract TResult Visit(SqlIdentifierPathExpression sqlObject);
@@ -88,7 +83,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlNumberLiteral sqlObject);
         public abstract TResult Visit(SqlNumberPathExpression sqlObject);
         public abstract TResult Visit(SqlObjectCreateScalarExpression sqlObject);
-        public abstract TResult Visit(SqlObjectLiteral sqlObject);
         public abstract TResult Visit(SqlObjectProperty sqlObject);
         public abstract TResult Visit(SqlOffsetLimitClause sqlObject);
         public abstract TResult Visit(SqlOffsetSpec sqlObject);
@@ -124,11 +118,9 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TOutput Visit(SqlBooleanLiteral sqlObject, TInput input);
         public abstract TOutput Visit(SqlCoalesceScalarExpression sqlObject, TInput input);
         public abstract TOutput Visit(SqlConditionalScalarExpression sqlObject, TInput input);
-        public abstract TOutput Visit(SqlConversionScalarExpression sqlObject, TInput input);
         public abstract TOutput Visit(SqlExistsScalarExpression sqlObject, TInput input);
         public abstract TOutput Visit(SqlFromClause sqlObject, TInput input);
         public abstract TOutput Visit(SqlFunctionCallScalarExpression sqlObject, TInput input);
-        public abstract TOutput Visit(SqlGeoNearCallScalarExpression sqlObject, TInput input);
         public abstract TOutput Visit(SqlGroupByClause sqlObject, TInput input);
         public abstract TOutput Visit(SqlIdentifier sqlObject, TInput input);
         public abstract TOutput Visit(SqlIdentifierPathExpression sqlObject, TInput input);
@@ -143,7 +135,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TOutput Visit(SqlNumberLiteral sqlObject, TInput input);
         public abstract TOutput Visit(SqlNumberPathExpression sqlObject, TInput input);
         public abstract TOutput Visit(SqlObjectCreateScalarExpression sqlObject, TInput input);
-        public abstract TOutput Visit(SqlObjectLiteral sqlObject, TInput input);
         public abstract TOutput Visit(SqlObjectProperty sqlObject, TInput input);
         public abstract TOutput Visit(SqlOffsetLimitClause sqlObject, TInput input);
         public abstract TOutput Visit(SqlOffsetSpec sqlObject, TInput input);
