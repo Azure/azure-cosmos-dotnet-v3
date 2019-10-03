@@ -479,6 +479,26 @@
   </Result>
   <Result>
     <Input>
+      <Description>SqlParameterRefScalarExpression</Description>
+      <SqlObject><![CDATA[{
+  "Parameter": {
+    "Name": "@param0",
+    "Kind": "Parameter"
+  },
+  "Kind": "ParameterRefScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[@param0]]></TextOutput>
+      <PrettyPrint><![CDATA[
+@param0
+]]></PrettyPrint>
+      <HashCode>-1212109403</HashCode>
+      <ObfusctedQuery><![CDATA[param1]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>SqlPropertyRefScalarExpression</Description>
       <SqlObject><![CDATA[{
   "PropertyIdentifier": {

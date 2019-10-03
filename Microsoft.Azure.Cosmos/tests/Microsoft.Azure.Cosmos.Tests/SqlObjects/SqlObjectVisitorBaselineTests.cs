@@ -196,6 +196,11 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                         SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("World"))))));
 
             inputs.Add(new SqlObjectVisitorInput(
+                nameof(SqlParameterRefScalarExpression),
+                SqlParameterRefScalarExpression.Create(
+                    SqlParameter.Create("@param0"))));
+
+            inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlPropertyRefScalarExpression),
                 SqlPropertyRefScalarExpression.Create(
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("some")),
