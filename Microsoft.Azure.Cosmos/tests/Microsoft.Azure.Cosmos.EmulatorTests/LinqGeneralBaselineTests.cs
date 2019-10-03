@@ -32,9 +32,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             cosmosClient = TestCommon.CreateCosmosClient(true);
             DocumentClientSwitchLinkExtension.Reset("LinqTests");
-            await CleanUp();
 
-            testDb = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            string dbName = $"{nameof(LinqGeneralBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await cosmosClient.CreateDatabaseAsync(dbName);
+
             getQuery = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out testContainer);
         }
 

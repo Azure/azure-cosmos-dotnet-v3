@@ -46,8 +46,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         NullValueHandling = NullValueHandling.Ignore
                     })).WithConnectionModeGateway();
             });
-            await CleanUp();
-            testDb = await cosmosClient.CreateDatabaseAsync(id: nameof(LinqTranslationBaselineTests));
+
+            string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await cosmosClient.CreateDatabaseAsync(dbName);
         }
 
         [ClassCleanup]

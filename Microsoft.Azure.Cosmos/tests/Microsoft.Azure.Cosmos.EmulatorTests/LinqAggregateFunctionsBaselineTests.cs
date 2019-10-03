@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
     {
         private static CosmosClient client;
-        private static Cosmos.Database cosmosDatabase;
+        private static Cosmos.Database testDb;
         private static Func<bool, IQueryable<Data>> getQuery;
         private static Func<bool, IQueryable<Family>> getQueryFamily;
         private static IQueryable lastExecutedScalarQuery;
@@ -32,55 +32,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
-            try
-            {
-                await Initialize();
-            }
-            catch (ServiceUnavailableException serviceUnavailableException)
-            {
-                if (serviceUnavailableException.Message == ClientResources.AllServicePoolsEmpty)
-                {
-                    throw new AssertInconclusiveException("Test was inconclusive since all serive pools were empty.");
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
-
-        private async static Task Initialize()
-        {
             client = TestCommon.CreateCosmosClient(true);
-            CleanUp();
 
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
             // to verify the translated LINQ directly as other queries type.
             client.DocumentClient.OnExecuteScalarQueryCallback = q => LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = q;
 
-            string databaseName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            string dbName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await client.CreateDatabaseAsync(dbName);
 
-            Container container;
-            cosmosDatabase = await client.CreateDatabaseAsync(databaseName);
-            getQuery = LinqTestsCommon.GenerateSimpleCosmosData(cosmosDatabase);
-            getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(cosmosDatabase, out container);
+            getQuery = LinqTestsCommon.GenerateSimpleCosmosData(testDb);
+            getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out _);
         }
 
         [ClassCleanup]
-        public static void CleanUp()
+        public async static Task CleanUp()
         {
-            try
+            if (testDb != null)
             {
-                List<Database> dbs = client.DocumentClient.CreateDatabaseQuery().ToList();
-                foreach (Database db in dbs)
-                {
-                    client.DocumentClient.DeleteDatabaseAsync(db.SelfLink).Wait();
-                }
-            }
-            catch (DocumentClientException e)
-            {
-                throw new AssertInconclusiveException("Test was inconclusive due to exception in CleanUp task", e);
+                await testDb.DeleteStreamAsync();
             }
         }
 

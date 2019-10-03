@@ -40,16 +40,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 })).WithConnectionModeGateway();
             });
 
-            try
-            {
-                await cosmosClient.GetDatabase(id: nameof(LinqSQLTranslationBaselineTest)).DeleteAsync();
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                //swallow
-            }
-
-            testDb = await cosmosClient.CreateDatabaseAsync(nameof(LinqSQLTranslationBaselineTest));
+            string dbName = $"{nameof(LinqSQLTranslationBaselineTest)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await cosmosClient.CreateDatabaseAsync(dbName);
         }
 
         [TestInitialize]

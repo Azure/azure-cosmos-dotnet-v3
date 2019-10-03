@@ -34,13 +34,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             client = TestCommon.CreateCosmosClient(true);
 
-            var db = new Database() { Id = nameof(LinqTranslationBaselineTests) };
-            try
-            {
-                var response = await client.DocumentClient.DeleteDatabaseAsync(UriFactory.CreateDatabaseUri(db.Id));
-            }
-            catch { }
-            testDb = await client.CreateDatabaseAsync(nameof(LinqTranslationBaselineTests));
+            string dbName = $"{nameof(LinqAttributeContractBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await client.CreateDatabaseAsync(dbName);
         }
 
         [ClassCleanup]
