@@ -39,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract void Visit(SqlOffsetSpec sqlObject);
         public abstract void Visit(SqlOrderbyClause sqlObject);
         public abstract void Visit(SqlOrderByItem sqlObject);
+        public abstract void Visit(SqlParameter sqlObject);
+        public abstract void Visit(SqlParameterRefScalarExpression sqlObject);
         public abstract void Visit(SqlProgram sqlObject);
         public abstract void Visit(SqlPropertyName sqlObject);
         public abstract void Visit(SqlPropertyRefScalarExpression sqlObject);
@@ -94,6 +96,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlOffsetSpec sqlObject);
         public abstract TResult Visit(SqlOrderbyClause sqlObject);
         public abstract TResult Visit(SqlOrderByItem sqlObject);
+        public abstract TResult Visit(SqlParameter sqlObject);
+        public abstract TResult Visit(SqlParameterRefScalarExpression sqlObject);
         public abstract TResult Visit(SqlProgram sqlObject);
         public abstract TResult Visit(SqlPropertyName sqlObject);
         public abstract TResult Visit(SqlPropertyRefScalarExpression sqlObject);
@@ -149,6 +153,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TOutput Visit(SqlOffsetSpec sqlObject, TInput input);
         public abstract TOutput Visit(SqlOrderbyClause sqlObject, TInput input);
         public abstract TOutput Visit(SqlOrderByItem sqlObject, TInput input);
+        public abstract TOutput Visit(SqlParameter sqlObject, TInput input);
+        public abstract TOutput Visit(SqlParameterRefScalarExpression sqlObject, TInput input);
         public abstract TOutput Visit(SqlProgram sqlObject, TInput input);
         public abstract TOutput Visit(SqlPropertyName sqlObject, TInput input);
         public abstract TOutput Visit(SqlPropertyRefScalarExpression sqlObject, TInput input);
