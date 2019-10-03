@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private int? defaultTimeToLive;
         private IndexingPolicy indexingPolicy;
         private string timeToLivePropertyPath;
+        private PartitionKeyDefinitionVersion? partitionKeyDefinitionVersion = null;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -31,6 +32,25 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             this.containerName = name;
             this.partitionKeyPath = partitionKeyPath;
+        }
+
+        /// <summary>
+        /// Sets the <see cref="Cosmos.PartitionKeyDefinitionVersion"/>
+        ///
+        /// The partition key definition version 1 uses a hash function that computes
+        /// hash based on the first 100 bytes of the partition key. This can cause
+        /// conflicts for documents with partition keys greater than 100 bytes.
+        /// 
+        /// The partition key definition version 2 uses a hash function that computes
+        /// hash based on the first 2 KB of the partition key.
+        /// </summary>
+        /// <param name="partitionKeyDefinitionVersion">The partition key definition version</param>
+        /// <returns>An instance of the current Fluent builder.</returns>
+        /// <seealso cref="ContainerProperties.PartitionKeyDefinitionVersion"/>
+        public T WithPartitionKeyDefinitionVersion(PartitionKeyDefinitionVersion partitionKeyDefinitionVersion)
+        {
+            this.partitionKeyDefinitionVersion = partitionKeyDefinitionVersion;
+            return (T)this;
         }
 
         /// <summary>
@@ -125,6 +145,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #pragma warning disable 0612
                 containerProperties.TimeToLivePropertyPath = this.timeToLivePropertyPath;
 #pragma warning restore 0612
+            }
+
+            if (this.partitionKeyDefinitionVersion.HasValue)
+            {
+                containerProperties.PartitionKeyDefinitionVersion = this.partitionKeyDefinitionVersion.Value;
             }
 
             containerProperties.ValidateRequiredProperties();

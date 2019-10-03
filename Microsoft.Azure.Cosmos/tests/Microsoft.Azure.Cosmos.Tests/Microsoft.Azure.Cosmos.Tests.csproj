@@ -224,9 +224,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Batch\" />
-  </ItemGroup>
 
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
