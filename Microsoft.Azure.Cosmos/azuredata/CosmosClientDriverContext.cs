@@ -34,7 +34,18 @@ namespace Azure.Data.Cosmos
 
         public override bool UseMultipleWriteLocations => this.cosmosClient.DocumentClient.UseMultipleWriteLocations;
 
-        public override ConsistencyLevel? ConsistencyLevel => this.cosmosClient.ClientOptions.ConsistencyLevel;
+        public override Microsoft.Azure.Documents.ConsistencyLevel? ConsistencyLevel
+        {
+            get
+            {
+                if (this.cosmosClient.ClientOptions.ConsistencyLevel.HasValue)
+                {
+                    return (Microsoft.Azure.Documents.ConsistencyLevel)this.cosmosClient.ClientOptions.ConsistencyLevel;
+                }
+
+                return null;
+            }
+        }
 
         public override void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
         {
@@ -43,7 +54,7 @@ namespace Azure.Data.Cosmos
 
         public override Task EnsureClientIsValidAsync() => this.cosmosClient.DocumentClient.EnsureValidClientAsync();
 
-        public override Task<ConsistencyLevel> GetAccountConsistencyLevelAsync() => this.cosmosClient.GetAccountConsistencyLevelAsync();
+        public override async Task<Microsoft.Azure.Documents.ConsistencyLevel> GetAccountConsistencyLevelAsync() => (Microsoft.Azure.Documents.ConsistencyLevel)await this.cosmosClient.GetAccountConsistencyLevelAsync();
 
         public override Task<ClientCollectionCache> GetCollectionCacheAsync() => this.cosmosClient.DocumentClient.GetCollectionCacheAsync();
 
