@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
 {
+    using System;
     using System.Collections.Generic;
 
     /// <summary>
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets the next JSON token from the JsonReader as a double.
         /// </summary>
         /// <returns>The next JSON token from the JsonReader as a double.</returns>
-        double GetNumberValue();
+        Number64 GetNumberValue();
 
         /// <summary>
         /// Gets the next JSON token from the JsonReader as a string.
@@ -53,5 +54,59 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <returns>The current JSON token from the JsonReader as a raw series of bytes that is buffered.</returns>
         IReadOnlyList<byte> GetBufferedRawJsonToken();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a 1 byte signed integer.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a 1 byte signed integer.</returns>
+        sbyte GetInt8Value();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a 2 byte signed integer.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a 2 byte signed integer.</returns>
+        short GetInt16Value();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a 4 byte signed integer.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a 4 byte signed integer.</returns>
+        int GetInt32Value();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a 8 byte signed integer.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a 8 byte signed integer.</returns>
+        long GetInt64Value();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a 4 byte unsigned integer.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a 4 byte unsigned integer.</returns>
+        uint GetUInt32Value();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a single precision floating point.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a single precision floating point.</returns>
+        float GetFloat32Value();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a double precision floating point.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a double precision floating point.</returns>
+        double GetFloat64Value();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a GUID.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a GUID.</returns>
+        Guid GetGuidValue();
+
+        /// <summary>
+        /// Gets the next JSON token from the JsonReader as a binary list.
+        /// </summary>
+        /// <returns>The next JSON token from the JsonReader as a binary list.</returns>
+        IReadOnlyList<byte> GetBinaryValue();
     }
 }

@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             return ((NewtonsoftNode)node).JsonNodeType;
         }
 
-        public double GetNumberValue(IJsonNavigatorNode numberNode)
+        public Number64 GetNumberValue(IJsonNavigatorNode numberNode)
         {
             return (double)((NewtonsoftNode)numberNode).JToken;
         }

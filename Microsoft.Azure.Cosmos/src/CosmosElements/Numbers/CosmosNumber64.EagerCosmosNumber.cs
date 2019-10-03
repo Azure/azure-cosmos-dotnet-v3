@@ -24,32 +24,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 this.number = number;
             }
 
-            public override bool IsFloatingPoint
-            {
-                get
-                {
-                    return this.number.IsDouble;
-                }
-            }
-
-            public override bool IsInteger
-            {
-                get
-                {
-                    return this.number.IsInteger;
-                }
-            }
-
-            public override double? AsFloatingPoint()
-            {
-                return Number64.ToDouble(this.number);
-            }
-
-            public override long? AsInteger()
-            {
-                return Number64.ToLong(this.number);
-            }
-
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 if (jsonWriter == null)
@@ -57,7 +31,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
-                jsonWriter.WriteNumberValue(this.AsFloatingPoint().Value);
+                jsonWriter.WriteNumberValue(this.number);
+            }
+
+            protected override Number64 GetValue()
+            {
+                return this.number;
             }
         }
     }

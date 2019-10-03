@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ETag = "1234",
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
-                Diagnostics = new PointOperationStatistics(new CosmosClientSideRequestStatistics())
+                Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics())
             };
 
             ResponseMessage response = result.ToResponseMessage();

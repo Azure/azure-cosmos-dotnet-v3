@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class PartitionRoutingHelper
     {
         public static IReadOnlyList<Range<string>> GetProvidedPartitionKeyRanges(
+            Func<string, Exception> createBadRequestException,
             SqlQuerySpec querySpec,
             bool enableCrossPartitionQuery,
             bool parallelizeCrossPartitionQuery,
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             PartitionedQueryExecutionInfo queryExecutionInfo = null;
             queryExecutionInfo = queryPartitionProvider.GetPartitionedQueryExecutionInfo(
+                createBadRequestException: createBadRequestException,
                 querySpec: querySpec,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.Versions.v2016_11_14),

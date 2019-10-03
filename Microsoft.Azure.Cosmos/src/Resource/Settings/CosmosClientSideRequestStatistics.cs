@@ -13,6 +13,11 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics
     {
+        private static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+            Formatting = Formatting.None
+        };
         internal const int MaxSupplementalRequestsForToString = 10;
 
         internal DateTime requestStartTime;
@@ -20,15 +25,12 @@ namespace Microsoft.Azure.Cosmos
 
         private object lockObject = new object();
 
-        internal List<StoreResponseStatistics> responseStatisticsList;
-        internal List<StoreResponseStatistics> supplementalResponseStatisticsList;
-        internal Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics;
+        public List<StoreResponseStatistics> responseStatisticsList { get; private set; }
+        public List<StoreResponseStatistics> supplementalResponseStatisticsList { get; internal set; }
+        public Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics { get; private set; }
 
-        [JsonIgnoreAttribute]
         public List<Uri> ContactedReplicas { get; set; }
-        [JsonIgnoreAttribute]
         public HashSet<Uri> FailedReplicas { get; private set; }
-        [JsonIgnoreAttribute]
         public HashSet<Uri> RegionsContacted { get; private set; }
 
         public CosmosClientSideRequestStatistics()
@@ -148,6 +150,20 @@ namespace Microsoft.Azure.Cosmos
 
                 this.addressResolutionStatistics[identifier].EndTime = responseTime;
             }
+        }
+
+        public override string ToString()
+        {
+            if (this.supplementalResponseStatisticsList != null)
+            {
+                int supplementalResponseStatisticsListCount = this.supplementalResponseStatisticsList.Count;
+                int countToRemove = Math.Max(supplementalResponseStatisticsListCount - CosmosClientSideRequestStatistics.MaxSupplementalRequestsForToString, 0);
+                if (countToRemove > 0)
+                {
+                    this.supplementalResponseStatisticsList.RemoveRange(0, countToRemove);
+                }
+            }
+            return JsonConvert.SerializeObject(this, CosmosClientSideRequestStatistics.SerializerSettings);
         }
 
         internal struct StoreResponseStatistics

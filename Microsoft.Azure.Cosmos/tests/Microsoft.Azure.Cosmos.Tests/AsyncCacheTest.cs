@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -240,12 +241,23 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [Timeout(500)]
+        [Timeout(60000)]
         public async Task TestAsyncDeadlock()
         {
             AsyncCache<int, int> cache = new AsyncCache<int, int>();
+            Stopwatch stopwatch = new Stopwatch();
 
-            await Task.Factory.StartNew(() => cache.Set(0, 42), CancellationToken.None, TaskCreationOptions.None, new SingleTaskScheduler());
+            stopwatch.Start();
+            await Task.Factory.StartNew(() =>
+            {
+                stopwatch.Stop();
+                Logger.LogLine($"TestAsyncDeadlock Factory started in {stopwatch.ElapsedMilliseconds} ms");
+                cache.Set(0, 42);
+            },
+            CancellationToken.None,
+            TaskCreationOptions.None,
+            new SingleTaskScheduler()
+            );
         }
 
         private int GenerateIntFuncThatThrows()

@@ -24,7 +24,12 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomSerialization", "CustomSerialization\CustomSerialization.csproj", "{61EA3F61-F2ED-4FD4-89EC-06342C5AE3C9}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PowerShellRestApi", "PowerShellRestApi\PowerShellRestApi.csproj", "{A67B259B-9E3F-4689-9691-B250A88593BB}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChangeFeed", "ChangeFeed\ChangeFeed.csproj", "{D4959F3F-14FD-4AEA-851F-EEF944393603}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BulkSupport", "BulkSupport\BulkSupport.csproj", "{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IndexManagement", "IndexManagement\IndexManagement.csproj", "{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -80,6 +85,14 @@ Global
 		{D4959F3F-14FD-4AEA-851F-EEF944393603}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D4959F3F-14FD-4AEA-851F-EEF944393603}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D4959F3F-14FD-4AEA-851F-EEF944393603}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71ADD826-17CB-4095-B4F7-C5CDEDC731EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDAA451B-C9C8-4D29-AF1E-1748B8720BEC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
