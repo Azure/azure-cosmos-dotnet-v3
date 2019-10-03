@@ -182,24 +182,6 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestTypeCheckFunctions.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlBinaryScalarOperators.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlFunctionCalls.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlLiteral.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlQueries.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlScalarExpression.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

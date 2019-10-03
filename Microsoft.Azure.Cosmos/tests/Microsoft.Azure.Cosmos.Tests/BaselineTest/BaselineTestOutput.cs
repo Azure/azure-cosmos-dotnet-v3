@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Documents.Services.Management.Tests.BaselineTest
+namespace Microsoft.Azure.Cosmos.Test.BaselineTest
 {
     using System.Xml;
 
@@ -17,6 +17,6 @@ namespace Microsoft.Azure.Documents.Services.Management.Tests.BaselineTest
         /// The derived class will have to override this, since every output is serialized a little differently.
         /// </summary>
         /// <param name="xmlWriter">The writer to use.</param>
-        public abstract void SerializeAsXML(XmlWriter xmlWriter);
+        public abstract void SerializeAsXml(XmlWriter xmlWriter);
     }
 }
