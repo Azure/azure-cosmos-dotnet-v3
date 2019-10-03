@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract bool UseMultipleWriteLocations { get; }
 
-        public abstract Documents.ConsistencyLevel ConsistencyLevel { get; }
+        public abstract Documents.ConsistencyLevel? ConsistencyLevel { get; }
 
         public abstract IStoreModel GetStoreModel(DocumentServiceRequest request);
 
