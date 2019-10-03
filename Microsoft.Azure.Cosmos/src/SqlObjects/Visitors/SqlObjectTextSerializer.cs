@@ -472,6 +472,16 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
+        public override void Visit(SqlParameter sqlParameter)
+        {
+            this.writer.Write(sqlParameter.Name);
+        }
+
+        public override void Visit(SqlParameterRefScalarExpression sqlParameterRefScalarExpression)
+        {
+            sqlParameterRefScalarExpression.Parameter.Accept(this);
+        }
+
         public override void Visit(SqlProgram sqlProgram)
         {
             sqlProgram.Query.Accept(this);
@@ -707,7 +717,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             if (this.prettyPrint)
             {
-                for (int i = 0; i < indentLevel; i++)
+                for (int i = 0; i < this.indentLevel; i++)
                 {
                     this.writer.Write(Tab);
                 }

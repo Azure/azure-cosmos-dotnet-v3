@@ -48,6 +48,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         private const int SqlOrderbyItemHashCode = 846566057;
         private const int SqlOrderbyItemAscendingHashCode = -1123129997;
         private const int SqlOrderbyItemDescendingHashCode = -703648622;
+        private const int SqlParameterHashCode = -1853999792;
+        private const int SqlParameterRefScalarExpressionHashCode = 1446117758;
         private const int SqlProgramHashCode = -492711050;
         private const int SqlPropertyNameHashCode = 1262661966;
         private const int SqlPropertyRefScalarExpressionHashCode = -1586896865;
@@ -411,6 +413,20 @@ namespace Microsoft.Azure.Cosmos.Sql
                 hashCode = CombineHashes(hashCode, SqlOrderbyItemAscendingHashCode);
             }
 
+            return hashCode;
+        }
+
+        public override int Visit(SqlParameter sqlObject)
+        {
+            int hashCode = SqlParameterHashCode;
+            hashCode = CombineHashes(hashCode, sqlObject.Name.GetHashCode());
+            return hashCode;
+        }
+
+        public override int Visit(SqlParameterRefScalarExpression sqlObject)
+        {
+            int hashCode = SqlParameterRefScalarExpressionHashCode;
+            hashCode = CombineHashes(hashCode, sqlObject.Parameter.Accept(this));
             return hashCode;
         }
 
