@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     partitionedQueryExecutionInfo: initParams.PartitionedQueryExecutionInfo,
                     partitionKeyRanges: initParams.PartitionKeyRanges,
                     initialPageSize: int.MaxValue,
-                    maxConcurrency: int.MaxValue,
+                    maxConcurrency: initParams.MaxConcurrency,
                     maxItemCount: int.MaxValue,
                     maxBufferedItemCount: initParams.MaxBufferedItemCount);
             }
