@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -269,11 +270,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<Document> insertedDocuments = new List<Document>();
-
             foreach (string document in documents)
             {
                 JObject documentObject = JsonConvert.DeserializeObject<JObject>(document);
-
                 // Add an id
                 if (documentObject["id"] == null)
                 {
@@ -281,19 +280,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 // Get partition key value.
-                object pkValue;
+                Cosmos.PartitionKey pkValue;
                 if (partitionKey != null)
                 {
                     string jObjectPartitionKey = partitionKey.Remove(0, 1);
                     JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                    pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
+                    switch (pkToken.Type)
+                    {
+                        case JTokenType.Integer:
+                        case JTokenType.Float:
+                            pkValue = new Cosmos.PartitionKey(pkToken.Value<double>());
+                            break;
+                        case JTokenType.String:
+                            pkValue = new Cosmos.PartitionKey(pkToken.Value<string>());
+                            break;
+                        case JTokenType.Boolean:
+                            pkValue = new Cosmos.PartitionKey(pkToken.Value<bool>());
+                            break;
+                        case JTokenType.Null:
+                            pkValue = Cosmos.PartitionKey.Null;
+                            break;
+                        default:
+                            throw new ArgumentException("Unknown partition key type");
+                    }
                 }
                 else
                 {
                     pkValue = Cosmos.PartitionKey.None;
                 }
 
-                insertedDocuments.Add((await container.CreateItemAsync<JObject>(documentObject)).Resource.ToObject<Document>());
+                JObject createdDocument = await container.CreateItemAsync<JObject>(documentObject, pkValue);
+                Document insertedDocument = Document.FromObject(createdDocument);
+                insertedDocuments.Add(insertedDocument);
             }
 
             return new Tuple<Container, List<Document>>(container, insertedDocuments);
@@ -1124,7 +1142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return true;
             }
 
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
                 if (reader.TokenType == JsonToken.None || reader.TokenType == JsonToken.Null)
                 {
@@ -1145,7 +1163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return new DateTime(1970, 1, 1).AddSeconds(seconds);
             }
 
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, JsonSerializer serializer)
             {
                 int seconds;
                 if (value is DateTime)
@@ -2649,7 +2667,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MixedTypedDocument mixedTypeDocument = CrossPartitionQueryTests.GenerateMixedTypeDocument(random);
                 for (int j = 0; j < numberOfDuplicates; j++)
                 {
-                    documents.Add(JsonConvert.SerializeObject(mixedTypeDocument));
+                    if (mixedTypeDocument.MixedTypeField != null)
+                    {
+                        documents.Add(JsonConvert.SerializeObject(mixedTypeDocument));
+                    }
+                    else
+                    {
+                        documents.Add("{}");
+                    }
                 }
             }
 
@@ -2788,7 +2813,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private sealed class MixedTypedDocument
         {
-            public object MixedTypeField { get; set; }
+            public CosmosElement MixedTypeField { get; set; }
         }
 
         private static MixedTypedDocument GenerateMixedTypeDocument(Random random)
@@ -2799,28 +2824,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
         }
 
-        private static object GenerateRandomJsonValue(Random random)
+        private static CosmosElement GenerateRandomJsonValue(Random random)
         {
-            switch (random.Next(0, 6))
+            switch (random.Next(0, 7))
             {
                 // Number
                 case 0:
-                    return random.Next();
+                    return CosmosNumber64.Create(random.Next());
                 // String
                 case 1:
-                    return new string('a', random.Next(0, 100));
+                    return CosmosString.Create(new string('a', random.Next(0, 100)));
                 // Null
                 case 2:
-                    return null;
+                    return CosmosNull.Create();
                 // Bool
                 case 3:
-                    return (random.Next() % 2) == 0;
+                    return CosmosBoolean.Create((random.Next() % 2) == 0);
                 // Object
                 case 4:
-                    return new object();
+                    return CosmosObject.Create(new Dictionary<string, CosmosElement>());
                 // Array
                 case 5:
-                    return new List<object>();
+                    return CosmosArray.Create(new List<CosmosElement>());
+                // Undefined
+                case 6:
+                    return null;
                 default:
                     throw new ArgumentException();
             }
@@ -2950,7 +2978,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #endif
 
                         IEnumerable<CosmosElement> insertedDocs = documents
-                            .Select(document => document.GetPropertyValue<CosmosElement>(nameof(MixedTypedDocument.MixedTypeField)));
+                            .Select(document => (CosmosElement.Create(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)[nameof(MixedTypedDocument.MixedTypeField)])
+                            .Where(document => document != null);
 
                         // Build the expected results using LINQ
                         IEnumerable<CosmosElement> expected = new List<CosmosElement>();
@@ -2984,11 +3013,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         if (orderByTypes.HasFlag(OrderByTypes.String))
                         {
                             expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.String));
-                        }
-
-                        if (orderByTypes.HasFlag(OrderByTypes.Undefined))
-                        {
-                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == null));
                         }
 
                         // Order using the mock order by comparer
