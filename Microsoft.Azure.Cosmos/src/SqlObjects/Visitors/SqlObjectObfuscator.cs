@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         private int stringSequenceNumber;
         private int identifierSequenceNumber;
         private int fieldNameSequenceNumber;
+        private int paramaterSequenceNumber;
 
         public override SqlObject Visit(SqlAliasedCollectionExpression sqlAliasedCollectionExpression)
         {
@@ -278,6 +279,20 @@ namespace Microsoft.Azure.Cosmos.Sql
                 sqlOrderByItem.IsDescending);
         }
 
+        public override SqlObject Visit(SqlParameter sqlParameter)
+        {
+            return SqlParameter.Create(
+                this.GetObfuscatedString(
+                    sqlParameter.Name,
+                    "param",
+                    ref this.paramaterSequenceNumber));
+        }
+
+        public override SqlObject Visit(SqlParameterRefScalarExpression sqlObject)
+        {
+            return SqlParameterRefScalarExpression.Create(sqlObject.Parameter.Accept(this) as SqlParameter);
+        }
+
         public override SqlObject Visit(SqlProgram sqlProgram)
         {
             return SqlProgram.Create(sqlProgram.Query.Accept(this) as SqlQuery);
@@ -416,9 +431,9 @@ namespace Microsoft.Azure.Cosmos.Sql
             Number64 obfuscatedNumber;
             // Leave NaN, Infinity, numbers in epsilon range, and small integers unchanged
             if (value.IsInfinity
-                || value.IsInteger && Number64.ToLong(value) == long.MinValue
+                || (value.IsInteger && (Number64.ToLong(value) == long.MinValue))
                 || (value.IsInteger && (Math.Abs(Number64.ToLong(value)) < 100))
-                || ((value.IsDouble && (Math.Abs(Number64.ToDouble(value)) < 100)) && ((long)Number64.ToDouble(value) == Number64.ToDouble(value)))
+                || (value.IsDouble && (Math.Abs(Number64.ToDouble(value)) < 100) && ((long)Number64.ToDouble(value) == Number64.ToDouble(value)))
                 || (value.IsDouble && (Math.Abs(Number64.ToDouble(value)) <= Double.Epsilon)))
             {
                 obfuscatedNumber = value;
@@ -432,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Sql
                     int sequenceNumber = ++this.numberSequenceNumber;
 
                     double log10 = Math.Floor(Math.Log10(Math.Abs(doubleValue)));
-                    double adjustedSequence = (Math.Pow(10, log10) * sequenceNumber) / 1e4;
+                    double adjustedSequence = Math.Pow(10, log10) * sequenceNumber / 1e4;
 
                     obfuscatedNumber = Math.Round(doubleValue, 2) + adjustedSequence;
                     this.obfuscatedNumbers.Add(value, obfuscatedNumber);

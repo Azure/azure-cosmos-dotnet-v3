@@ -6,14 +6,14 @@
   "OperatorKind": "Add",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -22,8 +22,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 + 3131746989)]]></ToString>
-      <GetHashCode>-1513211202</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 + 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 + 3131746989)
+]]></PrettyPrint>
+      <HashCode>-1513211202</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 + 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -34,14 +37,14 @@
   "OperatorKind": "And",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -50,8 +53,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 AND 3131746989)]]></ToString>
-      <GetHashCode>219032258</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 AND 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 AND 3131746989)
+]]></PrettyPrint>
+      <HashCode>219032258</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 AND 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -62,14 +68,14 @@
   "OperatorKind": "BitwiseAnd",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -78,8 +84,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 & 3131746989)]]></ToString>
-      <GetHashCode>-782092719</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 & 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 & 3131746989)
+]]></PrettyPrint>
+      <HashCode>-782092719</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 & 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -90,14 +99,14 @@
   "OperatorKind": "BitwiseOr",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -106,8 +115,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 | 3131746989)]]></ToString>
-      <GetHashCode>1262497898</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 | 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 | 3131746989)
+]]></PrettyPrint>
+      <HashCode>1262497898</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 | 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -118,14 +130,14 @@
   "OperatorKind": "BitwiseXor",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -134,8 +146,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 ^ 3131746989)]]></ToString>
-      <GetHashCode>677697988</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 ^ 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 ^ 3131746989)
+]]></PrettyPrint>
+      <HashCode>677697988</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 ^ 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -146,14 +161,14 @@
   "OperatorKind": "Coalesce",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -162,8 +177,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 ?? 3131746989)]]></ToString>
-      <GetHashCode>2140340594</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 ?? 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 ?? 3131746989)
+]]></PrettyPrint>
+      <HashCode>2140340594</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 ?? 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -174,14 +192,14 @@
   "OperatorKind": "Divide",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -190,8 +208,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 / 3131746989)]]></ToString>
-      <GetHashCode>2088446905</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 / 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 / 3131746989)
+]]></PrettyPrint>
+      <HashCode>2088446905</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 / 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -202,14 +223,14 @@
   "OperatorKind": "Equal",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -218,8 +239,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 = 3131746989)]]></ToString>
-      <GetHashCode>534234658</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 = 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 = 3131746989)
+]]></PrettyPrint>
+      <HashCode>534234658</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 = 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -230,14 +254,14 @@
   "OperatorKind": "GreaterThan",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -246,8 +270,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 > 3131746989)]]></ToString>
-      <GetHashCode>2047165966</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 > 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 > 3131746989)
+]]></PrettyPrint>
+      <HashCode>2047165966</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 > 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -258,14 +285,14 @@
   "OperatorKind": "GreaterThanOrEqual",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -274,8 +301,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 >= 3131746989)]]></ToString>
-      <GetHashCode>-72978441</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 >= 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 >= 3131746989)
+]]></PrettyPrint>
+      <HashCode>-72978441</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 >= 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -286,14 +316,14 @@
   "OperatorKind": "LessThan",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -302,8 +332,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 < 3131746989)]]></ToString>
-      <GetHashCode>-321223196</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 < 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 < 3131746989)
+]]></PrettyPrint>
+      <HashCode>-321223196</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 < 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -314,14 +347,14 @@
   "OperatorKind": "LessThanOrEqual",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -330,8 +363,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 <= 3131746989)]]></ToString>
-      <GetHashCode>-1196366853</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 <= 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 <= 3131746989)
+]]></PrettyPrint>
+      <HashCode>-1196366853</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 <= 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -342,14 +378,14 @@
   "OperatorKind": "Modulo",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -358,8 +394,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 % 3131746989)]]></ToString>
-      <GetHashCode>-1984500696</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 % 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 % 3131746989)
+]]></PrettyPrint>
+      <HashCode>-1984500696</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 % 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -370,14 +409,14 @@
   "OperatorKind": "Multiply",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -386,8 +425,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 * 3131746989)]]></ToString>
-      <GetHashCode>40793665</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 * 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 * 3131746989)
+]]></PrettyPrint>
+      <HashCode>40793665</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 * 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -398,14 +440,14 @@
   "OperatorKind": "NotEqual",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -414,8 +456,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 != 3131746989)]]></ToString>
-      <GetHashCode>276497669</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 != 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 != 3131746989)
+]]></PrettyPrint>
+      <HashCode>276497669</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 != 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -426,14 +471,14 @@
   "OperatorKind": "Or",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -442,8 +487,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 OR 3131746989)]]></ToString>
-      <GetHashCode>599209539</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 OR 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 OR 3131746989)
+]]></PrettyPrint>
+      <HashCode>599209539</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 OR 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -454,14 +502,14 @@
   "OperatorKind": "StringConcat",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -470,8 +518,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 || 3131746989)]]></ToString>
-      <GetHashCode>761130323</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 || 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 || 3131746989)
+]]></PrettyPrint>
+      <HashCode>761130323</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 || 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -482,14 +533,14 @@
   "OperatorKind": "Subtract",
   "LeftExpression": {
     "Literal": {
-      "Value": 3735928559.0,
+      "Value": 3735928559,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
   },
   "RightExpression": {
     "Literal": {
-      "Value": 3131746989.0,
+      "Value": 3131746989,
       "Kind": "NumberLiteral"
     },
     "Kind": "LiteralScalarExpression"
@@ -498,8 +549,11 @@
 }]]></SqlObject>
     </Input>
     <Output>
-      <ToString><![CDATA[(3735928559 - 3131746989)]]></ToString>
-      <GetHashCode>771216722</GetHashCode>
+      <TextOutput><![CDATA[(3735928559 - 3131746989)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(3735928559 - 3131746989)
+]]></PrettyPrint>
+      <HashCode>771216722</HashCode>
       <ObfusctedQuery><![CDATA[(3736028559 - 3131946989)]]></ObfusctedQuery>
     </Output>
   </Result>
