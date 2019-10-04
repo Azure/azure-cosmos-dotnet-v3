@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override SqlObject Visit(SqlLimitSpec sqlObject)
         {
-            return SqlLimitSpec.Create(0);
+            return SqlLimitSpec.Create(SqlNumberLiteral.Create(0));
         }
 
         public override SqlObject Visit(SqlLiteralArrayCollection sqlLiteralArrayCollection)
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override SqlObject Visit(SqlOffsetSpec sqlObject)
         {
-            return SqlOffsetSpec.Create(0);
+            return SqlOffsetSpec.Create(SqlNumberLiteral.Create(0));
         }
 
         public override SqlObject Visit(SqlOrderbyClause sqlOrderByClause)
@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 
         public override SqlObject Visit(SqlTopSpec sqlTopSpec)
         {
-            return SqlTopSpec.Create(0);
+            return SqlTopSpec.Create(SqlNumberLiteral.Create(0));
         }
 
         public override SqlObject Visit(SqlUnaryScalarExpression sqlUnaryScalarExpression)
