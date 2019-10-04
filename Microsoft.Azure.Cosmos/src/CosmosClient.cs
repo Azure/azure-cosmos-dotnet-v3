@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
@@ -296,6 +297,7 @@ namespace Microsoft.Azure.Cosmos
         internal RequestInvokerHandler RequestHandler { get; private set; }
         internal CosmosResponseFactory ResponseFactory { get; private set; }
         internal CosmosClientContext ClientContext { get; private set; }
+        internal BatchAsyncContainerExecutorCache BatchExecutorCache { get; private set; } = new BatchAsyncContainerExecutorCache();
 
         /// <summary>
         /// Read Azure Cosmos DB account properties <see cref="Microsoft.Azure.Cosmos.AccountProperties"/>
@@ -742,6 +744,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.DocumentClient.Dispose();
                 this.DocumentClient = null;
+            }
+
+            if (this.BatchExecutorCache != null)
+            {
+                this.BatchExecutorCache.Dispose();
+                this.BatchExecutorCache = null;
             }
         }
     }
