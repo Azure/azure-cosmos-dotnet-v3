@@ -7,7 +7,13 @@
     "Kind": "SelectStarSpec"
   },
   "TopSpec": {
-    "Count": 42,
+    "TopExpresion": {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
     "Kind": "TopSpec"
   },
   "HasDistinct": true,
@@ -19,7 +25,7 @@
       <PrettyPrint><![CDATA[
 SELECT DISTINCT TOP 42 *
 ]]></PrettyPrint>
-      <HashCode>685617500</HashCode>
+      <HashCode>372798874</HashCode>
       <ObfusctedQuery><![CDATA[SELECT DISTINCT TOP 0 *]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -31,7 +37,13 @@ SELECT DISTINCT TOP 42 *
     "Kind": "SelectStarSpec"
   },
   "TopSpec": {
-    "Count": 42,
+    "TopExpresion": {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
     "Kind": "TopSpec"
   },
   "HasDistinct": false,
@@ -43,7 +55,7 @@ SELECT DISTINCT TOP 42 *
       <PrettyPrint><![CDATA[
 SELECT TOP 42 *
 ]]></PrettyPrint>
-      <HashCode>1588628460</HashCode>
+      <HashCode>580462256</HashCode>
       <ObfusctedQuery><![CDATA[SELECT TOP 0 *]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -143,7 +155,13 @@ SELECT *
     "Kind": "SelectListSpec"
   },
   "TopSpec": {
-    "Count": 42,
+    "TopExpresion": {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
     "Kind": "TopSpec"
   },
   "HasDistinct": true,
@@ -155,7 +173,7 @@ SELECT *
       <PrettyPrint><![CDATA[
 SELECT DISTINCT TOP 42 "some"["random"]["path"][42] AS some alias
 ]]></PrettyPrint>
-      <HashCode>1047907389</HashCode>
+      <HashCode>12611449</HashCode>
       <ObfusctedQuery><![CDATA[SELECT DISTINCT TOP 0 "str1"["str2"]["str3"][42] AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -213,7 +231,13 @@ SELECT DISTINCT TOP 42 "some"["random"]["path"][42] AS some alias
     "Kind": "SelectListSpec"
   },
   "TopSpec": {
-    "Count": 42,
+    "TopExpresion": {
+      "Literal": {
+        "Value": 42,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
     "Kind": "TopSpec"
   },
   "HasDistinct": false,
@@ -225,7 +249,7 @@ SELECT DISTINCT TOP 42 "some"["random"]["path"][42] AS some alias
       <PrettyPrint><![CDATA[
 SELECT TOP 42 "some"["random"]["path"][42] AS some alias
 ]]></PrettyPrint>
-      <HashCode>1953068787</HashCode>
+      <HashCode>221367697</HashCode>
       <ObfusctedQuery><![CDATA[SELECT TOP 0 "str1"["str2"]["str3"][42] AS ident1__10]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1168,7 +1192,13 @@ ORDER BY "some"["random"]["path"][42] ASC, "some"["random"]["path"][42] DESC
     <Input>
       <Description>SqlOffsetSpec</Description>
       <SqlObject><![CDATA[{
-  "Offset": 0,
+  "OffsetExpression": {
+    "Literal": {
+      "Value": 0,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
   "Kind": "OffsetSpec"
 }]]></SqlObject>
     </Input>
@@ -1177,7 +1207,7 @@ ORDER BY "some"["random"]["path"][42] ASC, "some"["random"]["path"][42] DESC
       <PrettyPrint><![CDATA[
 OFFSET 0
 ]]></PrettyPrint>
-      <HashCode>962689188</HashCode>
+      <HashCode>-75208571</HashCode>
       <ObfusctedQuery><![CDATA[OFFSET 0]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1185,7 +1215,13 @@ OFFSET 0
     <Input>
       <Description>SqlLimitSpec</Description>
       <SqlObject><![CDATA[{
-  "Limit": 0,
+  "LimitExpression": {
+    "Literal": {
+      "Value": 0,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
   "Kind": "LimitSpec"
 }]]></SqlObject>
     </Input>
@@ -1194,7 +1230,7 @@ OFFSET 0
       <PrettyPrint><![CDATA[
 LIMIT 0
 ]]></PrettyPrint>
-      <HashCode>89344598</HashCode>
+      <HashCode>-1199678923</HashCode>
       <ObfusctedQuery><![CDATA[LIMIT 0]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1203,11 +1239,23 @@ LIMIT 0
       <Description>SqlOffsetLimitClause</Description>
       <SqlObject><![CDATA[{
   "OffsetSpec": {
-    "Offset": 0,
+    "OffsetExpression": {
+      "Literal": {
+        "Value": 0,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
     "Kind": "OffsetSpec"
   },
   "LimitSpec": {
-    "Limit": 0,
+    "LimitExpression": {
+      "Literal": {
+        "Value": 0,
+        "Kind": "NumberLiteral"
+      },
+      "Kind": "LiteralScalarExpression"
+    },
     "Kind": "LimitSpec"
   },
   "Kind": "OffsetLimitClause"
@@ -1218,7 +1266,7 @@ LIMIT 0
       <PrettyPrint><![CDATA[
 OFFSET 0 LIMIT 0
 ]]></PrettyPrint>
-      <HashCode>569474856</HashCode>
+      <HashCode>-2001423568</HashCode>
       <ObfusctedQuery><![CDATA[OFFSET 0 LIMIT 0]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1370,11 +1418,23 @@ OFFSET 0 LIMIT 0
   },
   "OffsetLimitClause": {
     "OffsetSpec": {
-      "Offset": 0,
+      "OffsetExpression": {
+        "Literal": {
+          "Value": 0,
+          "Kind": "NumberLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
       "Kind": "OffsetSpec"
     },
     "LimitSpec": {
-      "Limit": 0,
+      "LimitExpression": {
+        "Literal": {
+          "Value": 0,
+          "Kind": "NumberLiteral"
+        },
+        "Kind": "LiteralScalarExpression"
+      },
       "Kind": "LimitSpec"
     },
     "Kind": "OffsetLimitClause"
@@ -1391,7 +1451,7 @@ WHERE ("this path" < 42)GROUP BY "some"["random"]["path"][42]
 ORDER BY "some"["random"]["path"][42] ASC 
 OFFSET 0 LIMIT 0 
 ]]></PrettyPrint>
-      <HashCode>1478695443</HashCode>
+      <HashCode>-245344741</HashCode>
       <ObfusctedQuery><![CDATA[SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 ]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1544,11 +1604,23 @@ OFFSET 0 LIMIT 0
     },
     "OffsetLimitClause": {
       "OffsetSpec": {
-        "Offset": 0,
+        "OffsetExpression": {
+          "Literal": {
+            "Value": 0,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
         "Kind": "OffsetSpec"
       },
       "LimitSpec": {
-        "Limit": 0,
+        "LimitExpression": {
+          "Literal": {
+            "Value": 0,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
         "Kind": "LimitSpec"
       },
       "Kind": "OffsetLimitClause"
@@ -1569,7 +1641,7 @@ OFFSET 0 LIMIT 0
     OFFSET 0 LIMIT 0 
 )
 ]]></PrettyPrint>
-      <HashCode>-1437053496</HashCode>
+      <HashCode>51808704</HashCode>
       <ObfusctedQuery><![CDATA[(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1722,11 +1794,23 @@ OFFSET 0 LIMIT 0
     },
     "OffsetLimitClause": {
       "OffsetSpec": {
-        "Offset": 0,
+        "OffsetExpression": {
+          "Literal": {
+            "Value": 0,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
         "Kind": "OffsetSpec"
       },
       "LimitSpec": {
-        "Limit": 0,
+        "LimitExpression": {
+          "Literal": {
+            "Value": 0,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
         "Kind": "LimitSpec"
       },
       "Kind": "OffsetLimitClause"
@@ -1747,7 +1831,7 @@ ARRAY(
     OFFSET 0 LIMIT 0 
 )
 ]]></PrettyPrint>
-      <HashCode>615149083</HashCode>
+      <HashCode>-1922520573</HashCode>
       <ObfusctedQuery><![CDATA[ARRAY(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
     </Output>
   </Result>
@@ -1900,11 +1984,23 @@ ARRAY(
     },
     "OffsetLimitClause": {
       "OffsetSpec": {
-        "Offset": 0,
+        "OffsetExpression": {
+          "Literal": {
+            "Value": 0,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
         "Kind": "OffsetSpec"
       },
       "LimitSpec": {
-        "Limit": 0,
+        "LimitExpression": {
+          "Literal": {
+            "Value": 0,
+            "Kind": "NumberLiteral"
+          },
+          "Kind": "LiteralScalarExpression"
+        },
         "Kind": "LimitSpec"
       },
       "Kind": "OffsetLimitClause"
@@ -1925,7 +2021,7 @@ EXISTS(
     OFFSET 0 LIMIT 0 
 )
 ]]></PrettyPrint>
-      <HashCode>876735055</HashCode>
+      <HashCode>1317938775</HashCode>
       <ObfusctedQuery><![CDATA[EXISTS(SELECT * FROM ident1__19["str1"] AS ident2__10 WHERE ("str2" < 42)GROUP BY "str3"["str4"]["str5"][42]  ORDER BY "str3"["str4"]["str5"][42] ASC OFFSET 0 LIMIT 0 )]]></ObfusctedQuery>
     </Output>
   </Result>

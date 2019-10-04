@@ -803,7 +803,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                                     SqlIdentifier.Create("some alias")));
                         }
 
-                        SqlTopSpec topSpec = useTop ? topSpec = SqlTopSpec.Create(42) : null;
+                        SqlTopSpec topSpec = useTop ? topSpec = SqlTopSpec.Create(
+                            SqlNumberLiteral.Create(42)) : null;
 
                         inputs.Add(new SqlObjectVisitorInput(
                             nameof(SqlSelectClause) + $" useStar: {useStar}, useTop: {useTop}, hasDistinct: {hasDistinct}",
@@ -888,17 +889,17 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             // OFFSET LIMIT
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlOffsetSpec),
-                SqlOffsetSpec.Create(0)));
+                SqlOffsetSpec.Create(SqlNumberLiteral.Create(0))));
 
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlLimitSpec),
-                SqlLimitSpec.Create(0)));
+                SqlLimitSpec.Create(SqlNumberLiteral.Create(0))));
 
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlOffsetLimitClause),
                 SqlOffsetLimitClause.Create(
-                    SqlOffsetSpec.Create(0),
-                    SqlLimitSpec.Create(0))));
+                    SqlOffsetSpec.Create(SqlNumberLiteral.Create(0)),
+                    SqlLimitSpec.Create(SqlNumberLiteral.Create(0)))));
 
             // Query
             SqlQuery query = SqlQuery.Create(
@@ -916,8 +917,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlOrderbyClause.Create(
                     SqlOrderByItem.Create(somePath, false)),
                 SqlOffsetLimitClause.Create(
-                    SqlOffsetSpec.Create(0),
-                    SqlLimitSpec.Create(0)));
+                    SqlOffsetSpec.Create(SqlNumberLiteral.Create(0)),
+                    SqlLimitSpec.Create(SqlNumberLiteral.Create(0))));
             inputs.Add(new SqlObjectVisitorInput(
                 nameof(SqlQuery),
                 query));

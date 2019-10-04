@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlLimitSpec sqlObject)
         {
             int hashCode = SqlLimitSpecHashCode;
-            hashCode = CombineHashes(hashCode, sqlObject.Limit);
+            hashCode = CombineHashes(hashCode, sqlObject.LimitExpression.Accept(this));
             return hashCode;
         }
 
@@ -385,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlOffsetSpec sqlObject)
         {
             int hashCode = SqlOffsetSpecHashCode;
-            hashCode = CombineHashes(hashCode, sqlObject.Offset);
+            hashCode = CombineHashes(hashCode, sqlObject.OffsetExpression.Accept(this));
             return hashCode;
         }
 
@@ -586,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override int Visit(SqlTopSpec sqlTopSpec)
         {
             int hashCode = SqlTopSpecHashCode;
-            hashCode = CombineHashes(hashCode, sqlTopSpec.Count.GetHashCode());
+            hashCode = CombineHashes(hashCode, sqlTopSpec.TopExpresion.Accept(this));
             return hashCode;
         }
 
