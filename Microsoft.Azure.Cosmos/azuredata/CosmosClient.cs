@@ -316,8 +316,6 @@ namespace Azure.Data.Cosmos
         /// <param name="id">The cosmos database id</param>
         /// <remarks>
         /// <see cref="Database"/> proxy reference doesn't guarantee existence.
-        /// Please ensure database exists through <see cref="CosmosClient.CreateDatabaseAsync(DatabaseProperties, int?, RequestOptions, CancellationToken)"/>, before
-        /// operating on it.
         /// </remarks>
         /// <example>
         /// <code language="c#">
@@ -359,52 +357,52 @@ namespace Azure.Data.Cosmos
             return this.GetDatabase(databaseId).GetContainer(containerId);
         }
 
-        /// <summary>
-        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
-        /// </summary>
-        /// <param name="queryDefinition">The cosmos SQL query definition.</param>
-        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
-        /// <returns>An iterator to go through the databases</returns>
-        public virtual FeedIterator GetDatabaseQueryStreamIterator(
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            return new FeedIteratorCore(
-               this.ClientContext,
-               this.DatabaseRootUri,
-               ResourceType.Database,
-               queryDefinition,
-               continuationToken,
-               requestOptions);
-        }
+        ///// <summary>
+        ///// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
+        ///// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        ///// </summary>
+        ///// <param name="queryDefinition">The cosmos SQL query definition.</param>
+        ///// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        ///// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
+        ///// <returns>An iterator to go through the databases</returns>
+        //public virtual FeedIterator GetDatabaseQueryStreamIterator(
+        //    QueryDefinition queryDefinition,
+        //    string continuationToken = null,
+        //    QueryRequestOptions requestOptions = null)
+        //{
+        //    return new FeedIteratorCore(
+        //       this.ClientContext,
+        //       this.DatabaseRootUri,
+        //       ResourceType.Database,
+        //       queryDefinition,
+        //       continuationToken,
+        //       requestOptions);
+        //}
 
-        /// <summary>
-        /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
-        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
-        /// </summary>
-        /// <param name="queryText">The cosmos SQL query text.</param>
-        /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
-        /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
-        /// <returns>An iterator to go through the databases</returns>
-        public virtual FeedIterator GetDatabaseQueryStreamIterator(
-            string queryText = null,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            QueryDefinition queryDefinition = null;
-            if (queryText != null)
-            {
-                queryDefinition = new QueryDefinition(queryText);
-            }
+        ///// <summary>
+        ///// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
+        ///// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/> overload.
+        ///// </summary>
+        ///// <param name="queryText">The cosmos SQL query text.</param>
+        ///// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
+        ///// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
+        ///// <returns>An iterator to go through the databases</returns>
+        //public virtual FeedIterator GetDatabaseQueryStreamIterator(
+        //    string queryText = null,
+        //    string continuationToken = null,
+        //    QueryRequestOptions requestOptions = null)
+        //{
+        //    QueryDefinition queryDefinition = null;
+        //    if (queryText != null)
+        //    {
+        //        queryDefinition = new QueryDefinition(queryText);
+        //    }
 
-            return this.GetDatabaseQueryStreamIterator(
-                queryDefinition,
-                continuationToken,
-                requestOptions);
-        }
+        //    return this.GetDatabaseQueryStreamIterator(
+        //        queryDefinition,
+        //        continuationToken,
+        //        requestOptions);
+        //}
 
         /// <summary>
         /// Send a request for creating a database.
@@ -425,7 +423,7 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual Task<Response> CreateDatabaseStreamAsync(
+        public virtual async Task<Response> CreateDatabaseStreamAsync(
                 DatabaseProperties databaseProperties,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
@@ -437,9 +435,9 @@ namespace Azure.Data.Cosmos
             }
 
             this.ClientContext.ValidateResource(databaseProperties.Id);
-            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties);
+            Stream streamPayload = await this.ClientContext.PropertiesSerializer.ToStreamAsync<DatabaseProperties>(databaseProperties, cancellationToken);
 
-            return this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
+            return await this.CreateDatabaseStreamInternalAsync(streamPayload, throughput, requestOptions, cancellationToken);
         }
 
         /// <summary>
@@ -470,16 +468,17 @@ namespace Azure.Data.Cosmos
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: userSerializer);
 
-            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
-                cosmosSerializer: userSerializer,
-                propertiesSerializer: this.ClientOptions.PropertiesSerializer);
+            //CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+            //    cosmosSerializer: userSerializer,
+            //    propertiesSerializer: this.ClientOptions.PropertiesSerializer);
 
             this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: userSerializer,
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
-                sqlQuerySpecSerializer: sqlQuerySpecSerializer,
+                //sqlQuerySpecSerializer: sqlQuerySpecSerializer,
+                sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient);
@@ -489,7 +488,7 @@ namespace Azure.Data.Cosmos
         {
             if (!this.accountConsistencyLevel.HasValue)
             {
-                this.accountConsistencyLevel = await this.DocumentClient.GetDefaultConsistencyLevelAsync();
+                this.accountConsistencyLevel = (ConsistencyLevel)await this.DocumentClient.GetDefaultConsistencyLevelAsync();
             }
 
             return this.accountConsistencyLevel.Value;
@@ -511,21 +510,6 @@ namespace Azure.Data.Cosmos
             return databaseProperties;
         }
 
-        internal Task<Response<DatabaseProperties>> CreateDatabaseAsync(
-                    DatabaseProperties databaseProperties,
-                    int? throughput = null,
-                    RequestOptions requestOptions = null,
-                    CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Task<Response> response = this.CreateDatabaseStreamInternalAsync(
-                streamPayload: this.ClientContext.PropertiesSerializer.ToStream<DatabaseProperties>(databaseProperties),
-                throughput: throughput,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken);
-
-            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response);
-        }
-
         private Task<Response> CreateDatabaseStreamInternalAsync(
                 Stream streamPayload,
                 int? throughput = null,
@@ -544,31 +528,31 @@ namespace Azure.Data.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        private Task<Response<DatabaseProperties>> DatabaseFeedRequestExecutorAsync(
-            int? maxItemCount,
-            string continuationToken,
-            RequestOptions options,
-            object state,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(state == null);
+        //private Task<Response<DatabaseProperties>> DatabaseFeedRequestExecutorAsync(
+        //    int? maxItemCount,
+        //    string continuationToken,
+        //    RequestOptions options,
+        //    object state,
+        //    CancellationToken cancellationToken)
+        //{
+        //    Debug.Assert(state == null);
 
-            return this.ClientContext.ProcessResourceOperationAsync<Response<DatabaseProperties>>(
-                resourceUri: this.DatabaseRootUri,
-                resourceType: ResourceType.Database,
-                operationType: OperationType.ReadFeed,
-                requestOptions: options,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                streamPayload: null,
-                requestEnricher: request =>
-                {
-                    QueryRequestOptions.FillContinuationToken(request, continuationToken);
-                    QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
-                },
-                responseCreator: response => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DatabaseProperties>(response),
-                cancellationToken: cancellationToken);
-        }
+        //    return this.ClientContext.ProcessResourceOperationAsync<Response<DatabaseProperties>>(
+        //        resourceUri: this.DatabaseRootUri,
+        //        resourceType: ResourceType.Database,
+        //        operationType: OperationType.ReadFeed,
+        //        requestOptions: options,
+        //        cosmosContainerCore: null,
+        //        partitionKey: null,
+        //        streamPayload: null,
+        //        requestEnricher: request =>
+        //        {
+        //            QueryRequestOptions.FillContinuationToken(request, continuationToken);
+        //            QueryRequestOptions.FillMaxItemCount(request, maxItemCount);
+        //        },
+        //        responseCreator: response => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<DatabaseProperties>(response),
+        //        cancellationToken: cancellationToken);
+        //}
 
         private HttpClientHandler CreateHttpClientHandler(CosmosClientOptions clientOptions)
         {

@@ -6,6 +6,7 @@ namespace Azure.Data.Cosmos
 {
     using System;
     using System.Globalization;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -33,14 +34,14 @@ namespace Azure.Data.Cosmos
             if (indexToken.Type != JTokenType.Object)
             {
                 throw new JsonSerializationException(
-                    string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexSpecFormat));
+                    string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
             }
 
-            JToken indexKindToken = indexToken[Documents.Constants.Properties.IndexKind];
+            JToken indexKindToken = indexToken[Constants.Properties.IndexKind];
             if (indexKindToken == null || indexKindToken.Type != JTokenType.String)
             {
                 throw new JsonSerializationException(
-                    string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexSpecFormat));
+                    string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
             }
 
             IndexKind indexKind = IndexKind.Hash;
@@ -60,7 +61,7 @@ namespace Azure.Data.Cosmos
                         break;
                     default:
                         throw new JsonSerializationException(
-                            string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexKindValue, indexKind));
+                            string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, indexKind));
                 }
 
                 serializer.Populate(indexToken.CreateReader(), index);
@@ -69,7 +70,7 @@ namespace Azure.Data.Cosmos
             else
             {
                 throw new JsonSerializationException(
-                    string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexKindValue, indexKindToken.Value<string>()));
+                    string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, indexKindToken.Value<string>()));
             }
         }
 

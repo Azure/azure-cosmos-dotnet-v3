@@ -115,7 +115,13 @@ namespace Azure.Data.Cosmos
                 }
 
                 scope.Start();
-                using (RequestMessage requestMessage = this.RequestHandler.CreateRequestMessage(resourceUri, resourceType, operationType, requestOptions, cosmosContainerCore, partitionKey, streamPayload, requestEnricher))
+                (RequestMessage requestMessage, ResponseMessage errorResponse) = await this.RequestHandler.TryCreateRequestMessageAsync(resourceUri, resourceType, operationType, requestOptions, cosmosContainerCore, partitionKey, streamPayload, requestEnricher, cancellationToken);
+                if (errorResponse != null)
+                {
+                    return errorResponse;
+                }
+
+                using (requestMessage)
                 {
                     // Should populate/generate in some smart way
                     requestMessage.ClientRequestId = Guid.NewGuid().ToString();

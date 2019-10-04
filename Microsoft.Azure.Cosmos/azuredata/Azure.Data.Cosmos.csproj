@@ -55,7 +55,7 @@
     <Compile Include="..\src\Resource\Settings\Enums\*.cs">
       <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs">
+    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;..\src\Handler\TransportHandler.cs;..\src\Handler\AbstractRetryHandler.cs">
       <Link>Handler\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Diagnostics\CosmosDiagnostics.cs">
@@ -64,7 +64,7 @@
     <Compile Include="..\src\Diagnostics\CosmosDiagnosticsAggregate.cs">
       <Link>Diagnostics\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Routing\*.cs">
+    <Compile Include="..\src\Routing\*.cs" Exclude="..\src\Routing\ClientCollectionCache.cs;..\src\Routing\CollectionCache.cs;..\src\Routing\AddressResolver.cs;..\src\Routing\LocationCache.cs;..\src\Routing\GatewayAddressCache.cs;..\src\Routing\GlobalEndpointManager.cs;..\src\Routing\GlobalAddressResolver.cs">
       <Link>Routing\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\SqlObjects\**\*.cs">
@@ -72,12 +72,6 @@
     </Compile>
     <Compile Include="..\src\Json\**\*.cs">
       <Link>Json\%(RecursiveDir)\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Util\Extensions.cs">
-      <Link>Util\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Policies\*.cs">
-      <Link>Policies\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
@@ -88,44 +82,35 @@
     <Compile Include="..\src\Serializer\CosmosPropertyNamingPolicy.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ConnectionPolicy.cs">
+    <Compile Include="..\src\MediaReadMode.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ConnectionMode.cs">
+    <Compile Include="..\src\RetryOptions.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Regions.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\DocumentClient*.cs" Exclude="..\src\DocumentClientInternal.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\IDocumentClient.cs">
+    <Compile Include="..\src\DocumentClientEventSource.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\ClientExtensions.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Linq\**\*.cs">
-      <Link>Linq\%(RecursiveDir)\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\CosmosElements\**\*.cs">
+    <Compile Include="..\src\CosmosElements\**\*.cs" Exclude="..\src\CosmosElements\CosmosElementSerializer.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Query\v2Query\IDocumentQueryClient.cs">
+    <!--<Compile Include="..\src\Query\v2Query\*.cs">
       <Link>Query\v2Query\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Query\v2Query\DocumentFeedResponse.cs">
-      <Link>Query\v2Query\%(Filename)%(Extension)</Link>
+    </Compile>-->
+    <Compile Include="..\src\Query\Core\**\*.cs" Exclude="..\src\Query\Core\ExecutionContext\CosmosQueryExecutionContextFactory.cs;..\src\Query\Core\QueryClient\CosmosQueryClient.cs">
+      <Link>Query\Core\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\RetryPolicy.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\IComputeHash.cs">
       <Link>%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Resource\Settings\CosmosAccountServiceConfiguration.cs">
-      <Link>Resource\Settings\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\AuthorizationHelper.cs">
       <Link>%(Filename)%(Extension)</Link>
@@ -148,9 +133,6 @@
     <Compile Include="..\src\SessionContainer.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\GatewayStoreModel.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\GatewayStoreClient.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
@@ -166,13 +148,40 @@
     <Compile Include="..\src\RestoreState.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ResourceFeedReader*.cs">
+    <!--<Compile Include="..\src\ResourceFeedReader*.cs">
       <Link>%(Filename)%(Extension)</Link>
-    </Compile>
+    </Compile>-->
     <Compile Include="..\src\PartitionKey.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ValidationHelpers.cs">
+    <Compile Include="..\src\StoredProcedureResponse.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\IStoredProcedureResponse.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ChangeFeedOptions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\IRequestSigner.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\NullRequestSigner.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\FeedResponseBinder.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\MediaStream.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\UserAgentContainer.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\SecureStringUtility.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\Base64Helper.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
@@ -185,17 +194,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="..\src\ClientResources.Designer.cs">
+    <Compile Update="ClientResources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>..\src\ClientResources.resx</DependentUpon>
+      <DependentUpon>ClientResources.resx</DependentUpon>
     </Compile>
   </ItemGroup>
   
   <ItemGroup>
-    <EmbeddedResource Update="..\src\ClientResources.resx">
+    <EmbeddedResource Update="ClientResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>..\src\ClientResources.Designer.cs</LastGenOutput>
+      <LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
   

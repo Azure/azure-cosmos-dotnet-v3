@@ -70,7 +70,7 @@ namespace Azure.Data.Cosmos
         /// </summary>
         public CosmosClientOptions()
         {
-            this.UserAgentContainer = new Cosmos.UserAgentContainer();
+            this.UserAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer();
             this.GatewayModeMaxConnectionLimit = ConnectionPolicy.Default.MaxConnectionLimit;
             this.RequestTimeout = ConnectionPolicy.Default.RequestTimeout;
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
@@ -397,7 +397,7 @@ namespace Azure.Data.Cosmos
             }
         }
 
-        internal UserAgentContainer UserAgentContainer { get; private set; }
+        internal Microsoft.Azure.Cosmos.UserAgentContainer UserAgentContainer { get; private set; }
 
         /// <summary>
         /// The event handler to be invoked before the request is sent.

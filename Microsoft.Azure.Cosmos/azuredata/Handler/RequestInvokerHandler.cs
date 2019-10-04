@@ -60,38 +60,40 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return await base.SendAsync(request, cancellationToken);
         }
 
-        public virtual async Task<T> SendAsync<T>(
-            Uri resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            RequestOptions requestOptions,
-            ContainerCore cosmosContainerCore,
-            global::Azure.Data.Cosmos.PartitionKey? partitionKey,
-            Stream streamPayload,
-            Action<RequestMessage> requestEnricher,
-            Func<ResponseMessage, T> responseCreator,
-            CancellationToken cancellationToken = default(CancellationToken))
+        internal static RequestMethod GetHttpMethod(
+            OperationType operationType)
         {
-            if (responseCreator == null)
+            HttpMethod httpMethod = HttpMethod.Head;
+            if (operationType == OperationType.Create ||
+                operationType == OperationType.Upsert ||
+                operationType == OperationType.Query ||
+                operationType == OperationType.SqlQuery ||
+                operationType == OperationType.QueryPlan ||
+                operationType == OperationType.Batch ||
+                operationType == OperationType.ExecuteJavaScript)
             {
-                throw new ArgumentNullException(nameof(responseCreator));
+                return RequestMethod.Post;
             }
-
-            ResponseMessage responseMessage = await this.SendAsync(
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                cosmosContainerCore: cosmosContainerCore,
-                partitionKey: partitionKey,
-                streamPayload: streamPayload,
-                requestEnricher: requestEnricher,
-                cancellationToken: cancellationToken);
-
-            return responseCreator(responseMessage);
+            else if (operationType == OperationType.Read ||
+                operationType == OperationType.ReadFeed)
+            {
+                return RequestMethod.Get;
+            }
+            else if (operationType == OperationType.Replace)
+            {
+                return RequestMethod.Put;
+            }
+            else if (operationType == OperationType.Delete)
+            {
+                return RequestMethod.Delete;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
-        public virtual async Task<ResponseMessage> SendAsync(
+        public async Task<(RequestMessage, ResponseMessage)> TryCreateRequestMessageAsync(
             Uri resourceUri,
             ResourceType resourceType,
             OperationType operationType,
@@ -100,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             global::Azure.Data.Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CancellationToken cancellationToken = default(CancellationToken))
+            CancellationToken cancellationToken)
         {
             if (resourceUri == null)
             {
@@ -136,11 +138,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     }
                     catch (DocumentClientException dce)
                     {
-                        return dce.ToCosmosResponseMessage(request);
+                        return (null, dce.ToCosmosResponseMessage(request));
                     }
                     catch (CosmosException ce)
                     {
-                        return ce.ToCosmosResponseMessage(request);
+                        return (null, ce.ToCosmosResponseMessage(request));
                     }
                 }
                 else
@@ -155,40 +157,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             requestEnricher?.Invoke(request);
-            return await this.SendAsync(request, cancellationToken);
-        }
-
-        internal static RequestMethod GetHttpMethod(
-            OperationType operationType)
-        {
-            HttpMethod httpMethod = HttpMethod.Head;
-            if (operationType == OperationType.Create ||
-                operationType == OperationType.Upsert ||
-                operationType == OperationType.Query ||
-                operationType == OperationType.SqlQuery ||
-                operationType == OperationType.QueryPlan ||
-                operationType == OperationType.Batch ||
-                operationType == OperationType.ExecuteJavaScript)
-            {
-                return RequestMethod.Post;
-            }
-            else if (operationType == OperationType.Read ||
-                operationType == OperationType.ReadFeed)
-            {
-                return RequestMethod.Get;
-            }
-            else if (operationType == OperationType.Replace)
-            {
-                return RequestMethod.Put;
-            }
-            else if (operationType == OperationType.Delete)
-            {
-                return RequestMethod.Delete;
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            return (request, null);
         }
 
         private async Task<(bool, ResponseMessage)> EnsureValidClientAsync(RequestMessage request)

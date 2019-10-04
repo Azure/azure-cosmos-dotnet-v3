@@ -22,7 +22,7 @@ namespace Azure.Data.Cosmos
 
         public override Request CreateRequest()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public override void Process(HttpPipelineMessage message)

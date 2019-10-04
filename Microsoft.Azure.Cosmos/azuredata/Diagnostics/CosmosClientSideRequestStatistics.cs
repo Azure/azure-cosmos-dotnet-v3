@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
                     this.supplementalResponseStatisticsList.RemoveRange(0, countToRemove);
                 }
             }
-            return JsonSerializer.SerializeObject(this, CosmosClientSideRequestStatistics.SerializerSettings);
+            return JsonSerializer.Serialize(this, CosmosClientSideRequestStatistics.SerializerSettings);
         }
 
         internal struct StoreResponseStatistics

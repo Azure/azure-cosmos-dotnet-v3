@@ -186,27 +186,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the <see cref="Microsoft.Azure.Documents.PartitionKey"/> for the current request in the Azure Cosmos DB service.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Partition key is required when read documents or attachments feed in a partitioned collection. 
-        /// Specifically Partition key is required for :
-        ///     <see cref="DocumentClient.ReadConflictFeedAsync(string, FeedOptions)"/>.  
-        /// Only documents in partitions containing the <see cref="Microsoft.Azure.Documents.PartitionKey"/> is returned in the result.
-        /// </para>
-        /// </remarks>
-        /// <example>
-        /// The following example shows how to read a document feed in a partitioned collection using <see cref="Microsoft.Azure.Documents.PartitionKey"/>.
-        /// The example assumes the collection is created with a <see cref="PartitionKeyDefinition"/> on the 'country' property in all the documents.
-        /// <code language="c#">
-        /// <![CDATA[
-        /// await client.ReadDocumentFeedAsync(
-        ///     collection.SelfLink, 
-        ///     new RequestOptions { PartitionKey = new PartitionKey("USA") } );
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <seealso cref="ContainerProperties"/>
-        /// <seealso cref="Microsoft.Azure.Documents.PartitionKeyDefinition"/>
         public Documents.PartitionKey PartitionKey { get; set; }
 
         /// <summary>
@@ -228,7 +207,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="ContainerProperties"/>
         public string PartitionKeyRangeId { get; set; }
 
         /// <summary>

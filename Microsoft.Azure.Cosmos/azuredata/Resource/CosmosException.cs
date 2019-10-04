@@ -7,7 +7,6 @@ namespace Azure.Data.Cosmos
     using System;
     using System.IO;
     using System.Net;
-    using Azure.Core.Http;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
@@ -24,25 +23,25 @@ namespace Azure.Data.Cosmos
         {
             this.StatusCode = statusCode;
             this.Error = error;
-            this.Headers = new ResponseHeaders();
+            this.CosmosHeaders = new Headers();
         }
 
         internal CosmosException(
             Response response,
             string message,
             Error error = null)
-            //CosmosDiagnostics diagnostics = null)
             : base(response.Status, message)
         {
             if (response != null)
             {
                 this.StatusCode = (HttpStatusCode)response.Status;
-                this.Headers = response.Headers;
-                //this.ActivityId = this.Headers.ActivityId;
-                //this.RequestCharge = this.Headers.RequestCharge;
-                //this.RetryAfter = this.Headers.RetryAfter;
-                //this.SubStatusCode = (int)this.Headers.SubStatusCode;
-                //this.Diagnostics = diagnostics;
+                ResponseMessage responseMessage = response as ResponseMessage;
+                this.CosmosHeaders = responseMessage?.CosmosHeaders ?? new Headers();
+                this.Diagnostics = responseMessage?.Diagnostics;
+                this.ActivityId = this.CosmosHeaders.ActivityId;
+                this.RequestCharge = this.CosmosHeaders.RequestCharge;
+                this.RetryAfter = this.CosmosHeaders.RetryAfter;
+                this.SubStatusCode = (int)this.CosmosHeaders.SubStatusCode;
                 if (response.ContentStream != null && response.ContentStream.Length > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(response.ContentStream))
@@ -75,7 +74,7 @@ namespace Azure.Data.Cosmos
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
-            this.Headers = new ResponseHeaders();
+            this.CosmosHeaders = new Headers();
         }
 
         /// <summary>
@@ -119,14 +118,12 @@ namespace Azure.Data.Cosmos
         /// <summary>
         /// Gets the response headers
         /// </summary>
-        public virtual ResponseHeaders Headers { get; }
+        internal virtual Headers CosmosHeaders { get; }
 
-        /*
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics { get; }
-        */
+        internal virtual CosmosDiagnostics Diagnostics { get; }
 
         /// <summary>
         /// Gets the internal error object
@@ -141,7 +138,7 @@ namespace Azure.Data.Cosmos
         /// <returns>A value indicating if the header was read.</returns>
         public virtual bool TryGetHeader(string headerName, out string value)
         {
-            return this.Headers.TryGetValue(headerName, out value);
+            return this.CosmosHeaders.TryGetValue(headerName, out value);
         }
 
         /// <summary>
@@ -158,7 +155,7 @@ namespace Azure.Data.Cosmos
         internal ResponseMessage ToCosmosResponseMessage(RequestMessage request)
         {
             return new ResponseMessage(
-                 headers: this.Headers,
+                 headers: this.CosmosHeaders,
                  requestMessage: request,
                  errorMessage: this.Message,
                  statusCode: this.StatusCode,
