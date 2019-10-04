@@ -5,14 +5,17 @@
 namespace Azure.Data.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -44,6 +47,28 @@ namespace Azure.Data.Cosmos
                 requestOptions,
                 extractPartitionKeyIfNeeded: false,
                 cancellationToken: cancellationToken);
+        }
+
+        public override async Task<Response<T>> CreateItemAsync<T>(
+            T item,
+            PartitionKey? partitionKey = null,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            Task<Response> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+                partitionKey: partitionKey,
+                itemId: null,
+                streamPayload: await this.ClientContext.CosmosSerializer.ToStreamAsync<T>(item, cancellationToken),
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
         public override Task<Response> ReadItemStreamAsync(
@@ -91,6 +116,28 @@ namespace Azure.Data.Cosmos
                 requestOptions,
                 extractPartitionKeyIfNeeded: false,
                 cancellationToken: cancellationToken);
+        }
+
+        public override async Task<Response<T>> UpsertItemAsync<T>(
+            T item,
+            PartitionKey? partitionKey = null,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (item == null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            Task<Response> response = this.ExtractPartitionKeyAndProcessItemStreamAsync(
+                partitionKey: partitionKey,
+                itemId: null,
+                streamPayload: await this.ClientContext.CosmosSerializer.ToStreamAsync<T>(item, cancellationToken),
+                operationType: OperationType.Upsert,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
         public override Task<Response> ReplaceItemStreamAsync(
@@ -154,12 +201,229 @@ namespace Azure.Data.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+        public override Task<Response<T>> DeleteItemAsync<T>(
+            string id,
+            PartitionKey partitionKey,
+            ItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Task<Response> response = this.DeleteItemStreamAsync(
+               partitionKey: partitionKey,
+               id: id,
+               requestOptions: requestOptions,
+               cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
+        }
+
+        //public override FeedIterator GetItemQueryStreamIterator(
+        //   string queryText = null,
+        //   string continuationToken = null,
+        //   QueryRequestOptions requestOptions = null)
+        //{
+        //    QueryDefinition queryDefinition = null;
+        //    if (queryText != null)
+        //    {
+        //        queryDefinition = new QueryDefinition(queryText);
+        //    }
+
+        //    return this.GetItemQueryStreamIterator(
+        //        queryDefinition,
+        //        continuationToken,
+        //        requestOptions);
+        //}
+
+        //public override FeedIterator GetItemQueryStreamIterator(
+        //    QueryDefinition queryDefinition,
+        //    string continuationToken = null,
+        //    QueryRequestOptions requestOptions = null)
+        //{
+        //    return this.GetItemQueryStreamIteratorInternal(
+        //        sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
+        //        isContinuationExcpected: true,
+        //        continuationToken: continuationToken,
+        //        requestOptions: requestOptions);
+        //}
+
+        //public override FeedIterator<T> GetItemQueryIterator<T>(
+        //   string queryText = null,
+        //   string continuationToken = null,
+        //   QueryRequestOptions requestOptions = null)
+        //{
+        //    QueryDefinition queryDefinition = null;
+        //    if (queryText != null)
+        //    {
+        //        queryDefinition = new QueryDefinition(queryText);
+        //    }
+
+        //    return this.GetItemQueryIterator<T>(
+        //        queryDefinition,
+        //        continuationToken,
+        //        requestOptions);
+        //}
+
+        //public override FeedIterator<T> GetItemQueryIterator<T>(
+        //    QueryDefinition queryDefinition,
+        //    string continuationToken = null,
+        //    QueryRequestOptions requestOptions = null)
+        //{
+        //    requestOptions = requestOptions ?? new QueryRequestOptions();
+
+        //    if (requestOptions.IsEffectivePartitionKeyRouting)
+        //    {
+        //        requestOptions.PartitionKey = null;
+        //    }
+
+        //    FeedIterator feedIterator = this.GetItemQueryStreamIterator(
+        //        queryDefinition,
+        //        continuationToken,
+        //        requestOptions);
+
+        //    return new FeedIteratorCore<T>(
+        //        feedIterator: feedIterator,
+        //        responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+        //}
+
+        //public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
+        //    bool allowSynchronousQueryExecution = false,
+        //    string continuationToken = null,
+        //    QueryRequestOptions requestOptions = null)
+        //{
+        //    requestOptions = requestOptions != null ? requestOptions : new QueryRequestOptions();
+
+        //    return new CosmosLinqQuery<T>(
+        //        this,
+        //        this.ClientContext.ResponseFactory,
+        //        (CosmosQueryClientCore)this.queryClient,
+        //        continuationToken,
+        //        requestOptions,
+        //        allowSynchronousQueryExecution,
+        //        this.ClientContext.ClientOptions.SerializerOptions);
+        //}
+
+        //public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+        //    string processorName,
+        //    ChangesHandler<T> onChangesDelegate)
+        //{
+        //    if (processorName == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(processorName));
+        //    }
+
+        //    if (onChangesDelegate == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(onChangesDelegate));
+        //    }
+
+        //    ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
+        //    ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
+        //    return new ChangeFeedProcessorBuilder(
+        //        processorName: processorName,
+        //        container: this,
+        //        changeFeedProcessor: changeFeedProcessor,
+        //        applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+        //}
+
+        //public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
+        //    string processorName,
+        //    ChangesEstimationHandler estimationDelegate,
+        //    TimeSpan? estimationPeriod = null)
+        //{
+        //    if (processorName == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(processorName));
+        //    }
+
+        //    if (estimationDelegate == null)
+        //    {
+        //        throw new ArgumentNullException(nameof(estimationDelegate));
+        //    }
+
+        //    ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+        //    return new ChangeFeedProcessorBuilder(
+        //        processorName: processorName,
+        //        container: this,
+        //        changeFeedProcessor: changeFeedEstimatorCore,
+        //        applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
+        //}
+
 #if PREVIEW
         public override Batch CreateBatch(PartitionKey partitionKey)
         {
             return new BatchCore(this, partitionKey);
         }
 #endif
+
+        //internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+        //    string containerRid = await this.GetRIDAsync(cancellationToken);
+        //    IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(
+        //                containerRid,
+        //                new Documents.Routing.Range<string>(
+        //                    Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+        //                    Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+        //                    isMinInclusive: true,
+        //                    isMaxInclusive: false),
+        //                true);
+
+        //    return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
+        //}
+
+        //internal FeedIterator GetStandByFeedIterator(
+        //    string continuationToken = null,
+        //    int? maxItemCount = null,
+        //    ChangeFeedRequestOptions requestOptions = null,
+        //    CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
+
+        //    return new ChangeFeedResultSetIteratorCore(
+        //        clientContext: this.ClientContext,
+        //        continuationToken: continuationToken,
+        //        maxItemCount: maxItemCount,
+        //        container: this,
+        //        options: cosmosQueryRequestOptions);
+        //}
+
+        ///// <summary>
+        ///// Helper method to create a stream feed iterator.
+        ///// It decides if it is a query or read feed and create
+        ///// the correct instance.
+        ///// </summary>
+        //internal FeedIterator GetItemQueryStreamIteratorInternal(
+        //    SqlQuerySpec sqlQuerySpec,
+        //    bool isContinuationExcpected,
+        //    string continuationToken,
+        //    QueryRequestOptions requestOptions)
+        //{
+        //    requestOptions = requestOptions ?? new QueryRequestOptions();
+
+        //    if (requestOptions.IsEffectivePartitionKeyRouting)
+        //    {
+        //        requestOptions.PartitionKey = null;
+        //    }
+
+        //    if (sqlQuerySpec == null)
+        //    {
+        //        return new FeedIteratorCore(
+        //            this.ClientContext,
+        //            this.LinkUri,
+        //            resourceType: ResourceType.Document,
+        //            queryDefinition: null,
+        //            continuationToken: continuationToken,
+        //            options: requestOptions);
+        //    }
+
+        //    return new QueryIterator(
+        //        client: this.queryClient,
+        //        sqlQuerySpec: sqlQuerySpec,
+        //        continuationToken: continuationToken,
+        //        queryRequestOptions: requestOptions,
+        //        resourceLink: this.LinkUri,
+        //        isContinuationExpected: isContinuationExcpected,
+        //        allowNonValueAggregateQuery: true);
+        //}
 
         // Extracted partition key might be invalid as CollectionCache might be stale.
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy
@@ -188,7 +452,7 @@ namespace Azure.Data.Cosmos
 
                 if (responseMessage.IsSuccessStatusCode)
                 {
-                    return response;
+                    return responseMessage;
                 }
 
                 if (requestRetryPolicy == null)

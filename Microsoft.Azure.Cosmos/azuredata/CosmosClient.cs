@@ -357,6 +357,107 @@ namespace Azure.Data.Cosmos
             return this.GetDatabase(databaseId).GetContainer(containerId);
         }
 
+        /// <summary>
+        /// Send a request for creating a database.
+        ///
+        /// A database manages users, permissions and a set of containers.
+        /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
+        /// with the database being the logical container for data.
+        ///
+        /// Each Database consists of one or more containers, each of which in turn contain one or more
+        /// documents. Since databases are an administrative resource, the Service Master Key will be
+        /// required in order to access and successfully complete any action using the User APIs.
+        /// </summary>
+        /// <param name="id">The database id.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) A set of options that can be set.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="Response"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
+        public virtual Task<Response<DatabaseProperties>> CreateDatabaseAsync(
+                string id,
+                int? throughput = null,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+            return this.CreateDatabaseAsync(
+                databaseProperties: databaseProperties,
+                throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// <para>Check if a database exists, and if it doesn't, create it.
+        /// Only the database id is used to verify if there is an existing database. Other database properties 
+        /// such as throughput are not validated and can be different then the passed properties.</para>
+        /// 
+        /// <para>A database manages users, permissions and a set of containers.
+        /// Each Azure Cosmos DB Database Account is able to support multiple independent named databases,
+        /// with the database being the logical container for data.</para>
+        ///
+        /// <para>Each Database consists of one or more containers, each of which in turn contain one or more
+        /// documents. Since databases are an administrative resource, the Service Master Key will be
+        /// required in order to access and successfully complete any action using the User APIs.</para>
+        /// </summary>
+        /// <param name="id">The database id.</param>
+        /// <param name="throughput">(Optional) The throughput provisioned for a database in measurement of Request Units per second in the Azure Cosmos DB service.</param>
+        /// <param name="requestOptions">(Optional) A set of additional options that can be set.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="Response"/> which wraps a <see cref="DatabaseProperties"/> containing the resource record.</returns>
+        /// <list>
+        ///     <listheader>
+        ///         <term>StatusCode</term><description>Common success StatusCodes for the CreateDatabaseIfNotExistsAsync operation</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>201</term><description>Created - New database is created.</description>
+        ///     </item>
+        ///     <item>
+        ///         <term>200</term><description>Accepted - This means the database already exists.</description>
+        ///     </item>
+        /// </list>
+        /// <remarks>
+        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
+        /// </remarks>
+        public virtual async Task<Response<DatabaseProperties>> CreateDatabaseIfNotExistsAsync(
+            string id,
+            int? throughput = null,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            // Doing a Read before Create will give us better latency for existing databases
+            DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+            Database database = this.GetDatabase(id);
+            Response response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
+            if (response.Status != (int)HttpStatusCode.NotFound)
+            {
+                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<DatabaseProperties>(Task.FromResult(response), cancellationToken);
+            }
+
+            response = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
+            if (response.Status != (int)HttpStatusCode.Conflict)
+            {
+                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<DatabaseProperties>(Task.FromResult(response), cancellationToken);
+            }
+
+            // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
+            // so for the remaining ones we should do a Read instead of throwing Conflict exception
+            return await database.ReadAsync(cancellationToken: cancellationToken);
+        }
+
         ///// <summary>
         ///// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
         ///// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
@@ -508,6 +609,21 @@ namespace Azure.Data.Cosmos
 
             this.ClientContext.ValidateResource(databaseProperties.Id);
             return databaseProperties;
+        }
+
+        internal async Task<Response<DatabaseProperties>> CreateDatabaseAsync(
+                    DatabaseProperties databaseProperties,
+                    int? throughput = null,
+                    RequestOptions requestOptions = null,
+                    CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Task<Response> response = this.CreateDatabaseStreamInternalAsync(
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync<DatabaseProperties>(databaseProperties, cancellationToken),
+                throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<DatabaseProperties>(response, cancellationToken);
         }
 
         private Task<Response> CreateDatabaseStreamInternalAsync(

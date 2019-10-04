@@ -16,7 +16,7 @@ namespace Azure.Data.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container by id.
     /// 
-    /// <see cref="Cosmos.Database"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="Database"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     internal partial class ContainerCore : Container
     {
@@ -55,11 +55,107 @@ namespace Azure.Data.Cosmos
 
         internal virtual CosmosClientContext ClientContext { get; }
 
-        //internal virtual BatchAsyncContainerExecutor BatchExecutor { get; } 
+        //internal virtual BatchAsyncContainerExecutor BatchExecutor { get; }
 
         //public override Conflicts Conflicts { get; }
 
         //public override Scripts.Scripts Scripts { get; }
+
+        public override async Task<Response<ContainerProperties>> ReadContainerAsync(
+            ContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Task<Response> response = this.ReadContainerStreamAsync(
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(response, cancellationToken);
+        }
+
+        public override async Task<Response<ContainerProperties>> ReplaceContainerAsync(
+            ContainerProperties containerProperties,
+            ContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (containerProperties == null)
+            {
+                throw new ArgumentNullException(nameof(containerProperties));
+            }
+
+            this.ClientContext.ValidateResource(containerProperties.Id);
+            Task<Response> response = this.ReplaceStreamInternalAsync(
+                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(response, cancellationToken);
+        }
+
+        public override Task<Response<ContainerProperties>> DeleteContainerAsync(
+            ContainerRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Task<Response> response = this.DeleteContainerStreamAsync(
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(response, cancellationToken);
+        }
+
+        //public async override Task<int?> ReadThroughputAsync(
+        //    CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
+        //    return response.Resource?.Throughput;
+        //}
+
+        //public async override Task<ThroughputResponse> ReadThroughputAsync(
+        //    RequestOptions requestOptions,
+        //    CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    string rid = await this.GetRIDAsync(cancellationToken);
+        //    CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+        //    return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
+        //}
+
+        //internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+        //    RequestOptions requestOptions,
+        //    CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    string rid = await this.GetRIDAsync(cancellationToken);
+        //    CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+        //    return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
+        //}
+
+        //public async override Task<ThroughputResponse> ReplaceThroughputAsync(
+        //    int throughput,
+        //    RequestOptions requestOptions = null,
+        //    CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    string rid = await this.GetRIDAsync(cancellationToken);
+
+        //    CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+        //    return await cosmosOffers.ReplaceThroughputAsync(
+        //        targetRID: rid,
+        //        throughput: throughput,
+        //        requestOptions: requestOptions,
+        //        cancellationToken: cancellationToken);
+        //}
+
+        //internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+        //    int throughput,
+        //    RequestOptions requestOptions = null,
+        //    CancellationToken cancellationToken = default(CancellationToken))
+        //{
+        //    string rid = await this.GetRIDAsync(cancellationToken);
+
+        //    CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+        //    return await cosmosOffers.ReplaceThroughputIfExistsAsync(
+        //        targetRID: rid,
+        //        throughput: throughput,
+        //        requestOptions: requestOptions,
+        //        cancellationToken: cancellationToken);
+        //}
 
         public override Task<Response> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
@@ -190,6 +286,20 @@ namespace Azure.Data.Cosmos
                 })
                 .Unwrap();
         }
+
+        //internal virtual BatchAsyncContainerExecutor InitializeBatchExecutorForContainer()
+        //{
+        //    if (!this.ClientContext.ClientOptions.AllowBulkExecution)
+        //    {
+        //        return null;
+        //    }
+
+        //    return new BatchAsyncContainerExecutor(
+        //        this,
+        //        this.ClientContext,
+        //        Constants.MaxOperationsInDirectModeBatchRequest,
+        //        Constants.MaxDirectModeBatchRequestBodySizeInBytes);
+        //}
 
         private Task<Response> ReplaceStreamInternalAsync(
             Stream streamPayload,
