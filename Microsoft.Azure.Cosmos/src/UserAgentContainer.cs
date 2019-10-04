@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     internal class UserAgentContainer : Documents.UserAgentContainer
     {
         internal const string Delimiter = " ";
-        internal new static readonly string baseUserAgent;
+        internal static readonly string baseUserAgent;
         private const int maxSuffixLength = 64;
         private string suffix;
 
