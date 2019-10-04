@@ -61,12 +61,12 @@ stages:
       - task: AzureFileCopy@2
         displayName: ' Copy Artifacts to Azure SDK Release blob storage'
         inputs:
-        SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-        azureSubscription: azuresdkpartnerdrops
-        Destination: AzureBlob
-        storage: azuresdkpartnerdrops
-        ContainerName: 'https://azuresdkpartnerdrops.blob.core.windows.net/drops'
-        BlobPrefix: 'cosmosdb/cshar/$(Version)'
+          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
+          azureSubscription: azuresdkpartnerdrops
+          Destination: AzureBlob
+          storage: azuresdkpartnerdrops
+          ContainerName: 'https://azuresdkpartnerdrops.blob.core.windows.net/drops'
+          BlobPrefix: 'cosmosdb/cshar/$(Version)'
 
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
