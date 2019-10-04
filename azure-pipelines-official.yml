@@ -65,8 +65,8 @@ stages:
           azureSubscription: azuresdkpartnerdrops
           Destination: AzureBlob
           storage: azuresdkpartnerdrops
-          ContainerName: 'https://azuresdkpartnerdrops.blob.core.windows.net/drops'
-          BlobPrefix: 'cosmosdb/cshar/$(Version)'
+          ContainerName: 'drops'
+          BlobPrefix: 'cosmosdb/csharp/$(Version)'
 
       - task: PublishBuildArtifacts@1
         displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
