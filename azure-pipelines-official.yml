@@ -53,6 +53,7 @@ stages:
         inputs: 
           command: custom
           projects: 'Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj'
+          custom: pack
           arguments: '-v detailed -c $(BuildConfiguration) --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "$(Build.ArtifactStagingDirectory)\bin\AnyCPU\$(BuildConfiguration)\Microsoft.Azure.Cosmos"'
 
       - task: AzureFileCopy@2
