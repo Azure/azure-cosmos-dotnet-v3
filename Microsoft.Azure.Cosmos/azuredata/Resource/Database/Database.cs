@@ -32,7 +32,7 @@ namespace Azure.Data.Cosmos
         /// <param name="requestOptions">(Optional) The options for the container request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="Response"/> which wraps a <see cref="DatabaseProperties"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="DatabaseResponse"/> which wraps a <see cref="DatabaseProperties"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list>
@@ -62,7 +62,7 @@ namespace Azure.Data.Cosmos
         /// Doing a read of a resource is the most efficient way to get a resource from the Database. If you know the resource's ID, do a read instead of a query by ID.
         /// </para>
         /// </remarks>
-        public abstract Task<Response<DatabaseProperties>> ReadAsync(
+        public abstract Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -91,7 +91,7 @@ namespace Azure.Data.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<Response<DatabaseProperties>> DeleteAsync(
+        public abstract Task<DatabaseResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
 
@@ -300,7 +300,7 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<Response<ContainerProperties>> CreateContainerAsync(
+        public abstract Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -344,7 +344,7 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<Response<ContainerProperties>> CreateContainerAsync(
+        public abstract Task<ContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -411,7 +411,7 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<Response<ContainerProperties>> CreateContainerIfNotExistsAsync(
+        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -456,7 +456,7 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public abstract Task<Response<ContainerProperties>> CreateContainerIfNotExistsAsync(
+        public abstract Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,

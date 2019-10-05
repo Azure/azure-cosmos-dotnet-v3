@@ -28,6 +28,46 @@ namespace Azure.Data.Cosmos
             this.cosmosSerializer = userJsonSerializer;
         }
 
+        internal Task<ContainerResponse> CreateContainerResponseAsync(
+            Container container,
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            {
+                ContainerProperties containerProperties = await CosmosResponseFactory.ToObjectInternalAsync<ContainerProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer,
+                    cancellationToken);
+
+                return new ContainerResponse(
+                    cosmosResponseMessage.Status,
+                    cosmosResponseMessage.Headers,
+                    containerProperties,
+                    container);
+            });
+        }
+
+        internal Task<DatabaseResponse> CreateDatabaseResponseAsync(
+            Database database,
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            {
+                DatabaseProperties databaseProperties = await CosmosResponseFactory.ToObjectInternalAsync<DatabaseProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer,
+                    cancellationToken);
+
+                return new DatabaseResponse(
+                    cosmosResponseMessage.Status,
+                    cosmosResponseMessage.Headers,
+                    databaseProperties,
+                    database);
+            });
+        }
+
         internal Task<Response<T>> CreateItemResponseAsync<T>(
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)

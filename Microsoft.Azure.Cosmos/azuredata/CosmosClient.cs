@@ -376,7 +376,7 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual Task<Response<DatabaseProperties>> CreateDatabaseAsync(
+        public virtual Task<DatabaseResponse> CreateDatabaseAsync(
                 string id,
                 int? throughput = null,
                 RequestOptions requestOptions = null,
@@ -427,7 +427,7 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units"/> for details on provision throughput.
         /// </remarks>
-        public virtual async Task<Response<DatabaseProperties>> CreateDatabaseIfNotExistsAsync(
+        public virtual async Task<DatabaseResponse> CreateDatabaseIfNotExistsAsync(
             string id,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -444,13 +444,13 @@ namespace Azure.Data.Cosmos
             Response response = await database.ReadStreamAsync(requestOptions: requestOptions, cancellationToken: cancellationToken);
             if (response.Status != (int)HttpStatusCode.NotFound)
             {
-                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<DatabaseProperties>(Task.FromResult(response), cancellationToken);
+                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response), cancellationToken);
             }
 
             response = await this.CreateDatabaseStreamAsync(databaseProperties, throughput, requestOptions, cancellationToken);
             if (response.Status != (int)HttpStatusCode.Conflict)
             {
-                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<DatabaseProperties>(Task.FromResult(response), cancellationToken);
+                return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), Task.FromResult(response), cancellationToken);
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -611,7 +611,7 @@ namespace Azure.Data.Cosmos
             return databaseProperties;
         }
 
-        internal async Task<Response<DatabaseProperties>> CreateDatabaseAsync(
+        internal async Task<DatabaseResponse> CreateDatabaseAsync(
                     DatabaseProperties databaseProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -623,7 +623,7 @@ namespace Azure.Data.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<DatabaseProperties>(response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this.GetDatabase(databaseProperties.Id), response, cancellationToken);
         }
 
         private Task<Response> CreateDatabaseStreamInternalAsync(

@@ -61,7 +61,7 @@ namespace Azure.Data.Cosmos
 
         //public override Scripts.Scripts Scripts { get; }
 
-        public override async Task<Response<ContainerProperties>> ReadContainerAsync(
+        public override async Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -69,10 +69,10 @@ namespace Azure.Data.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
-        public override async Task<Response<ContainerProperties>> ReplaceContainerAsync(
+        public override async Task<ContainerResponse> ReplaceContainerAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -88,10 +88,10 @@ namespace Azure.Data.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
-        public override Task<Response<ContainerProperties>> DeleteContainerAsync(
+        public override Task<ContainerResponse> DeleteContainerAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -99,7 +99,7 @@ namespace Azure.Data.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(response, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
         //public async override Task<int?> ReadThroughputAsync(

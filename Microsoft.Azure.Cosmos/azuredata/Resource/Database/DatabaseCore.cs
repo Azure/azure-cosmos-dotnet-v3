@@ -44,7 +44,7 @@ namespace Azure.Data.Cosmos
 
         internal CosmosClientContext ClientContext { get; }
 
-        public override Task<Response<DatabaseProperties>> ReadAsync(
+        public override Task<DatabaseResponse> ReadAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -52,10 +52,10 @@ namespace Azure.Data.Cosmos
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<DatabaseProperties>(response, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response, cancellationToken);
         }
 
-        public override Task<Response<DatabaseProperties>> DeleteAsync(
+        public override Task<DatabaseResponse> DeleteAsync(
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -63,7 +63,7 @@ namespace Azure.Data.Cosmos
                         requestOptions: requestOptions,
                         cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateItemResponseAsync<DatabaseProperties>(response, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateDatabaseResponseAsync(this, response, cancellationToken);
         }
 
         //public async override Task<int?> ReadThroughputAsync(
@@ -142,7 +142,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken);
         }
 
-        public override async Task<Response<ContainerProperties>> CreateContainerAsync(
+        public override async Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -161,10 +161,10 @@ namespace Azure.Data.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(response, cancellationToken);
+            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response, cancellationToken);
         }
 
-        public override Task<Response<ContainerProperties>> CreateContainerAsync(
+        public override Task<ContainerResponse> CreateContainerAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -190,7 +190,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken);
         }
 
-        public override async Task<Response<ContainerProperties>> CreateContainerIfNotExistsAsync(
+        public override async Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -207,15 +207,15 @@ namespace Azure.Data.Cosmos
             Response response = await container.ReadContainerStreamAsync(cancellationToken: cancellationToken);
             if (response.Status != (int)HttpStatusCode.NotFound)
             {
-                Response<ContainerProperties> retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(Task.FromResult(response), cancellationToken);
-                if (!retrivedContainerResponse.Value.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), Task.FromResult(response), cancellationToken);
+                if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
                 {
                     throw new ArgumentException(
                         string.Format(
                             ClientResources.PartitionKeyPathConflict,
                             containerProperties.PartitionKeyPath,
                             containerProperties.Id,
-                            retrivedContainerResponse.Value.PartitionKeyPath),
+                            retrivedContainerResponse.Resource.PartitionKeyPath),
                         nameof(containerProperties.PartitionKey));
                 }
 
@@ -226,7 +226,7 @@ namespace Azure.Data.Cosmos
             response = await this.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, cancellationToken);
             if (response.Status != (int)HttpStatusCode.Conflict)
             {
-                return await this.ClientContext.ResponseFactory.CreateItemResponseAsync<ContainerProperties>(Task.FromResult(response), cancellationToken);
+                return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), Task.FromResult(response), cancellationToken);
             }
 
             // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
@@ -234,7 +234,7 @@ namespace Azure.Data.Cosmos
             return await container.ReadContainerAsync(cancellationToken: cancellationToken);
         }
 
-        public override Task<Response<ContainerProperties>> CreateContainerIfNotExistsAsync(
+        public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
             string id,
             string partitionKeyPath,
             int? throughput = null,
@@ -558,8 +558,8 @@ namespace Azure.Data.Cosmos
 
         internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Response<DatabaseProperties> databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
-            return databaseResponse.Value?.ResourceId;
+            DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
+            return databaseResponse.Resource?.ResourceId;
         }
 
         private Task<Response> CreateContainerStreamInternalAsync(
