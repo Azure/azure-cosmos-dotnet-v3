@@ -241,8 +241,7 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.Append("StoreResult: ");
                 if (this.StoreResult != null)
                 {
-                    //Requrires another deploy of microsoft.azure.cosmos.direct
-                    //this.StoreResult.AppendToBuilder(stringBuilder);
+                    this.StoreResult.AppendToBuilder(stringBuilder);
                 }
 
                 stringBuilder.AppendFormat(
