@@ -4,21 +4,23 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections;
     using System.Collections.Generic;
     using Newtonsoft.Json;
 
-    internal sealed class QueryOperationStatistics : CosmosDiagnostics
+    internal sealed class QueryAggregateDiagnostics : CosmosDiagnostics
     {
-        public QueryOperationStatistics(IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
+        public QueryAggregateDiagnostics(
+            IReadOnlyCollection<QueryPageDiagnostics> pages)
         {
-            this.queryMetrics = queryMetrics;
+            this.Pages = pages;
         }
 
-        public IReadOnlyDictionary<string, QueryMetrics> queryMetrics { get; set; }
+        private IReadOnlyCollection<QueryPageDiagnostics> Pages { get; }
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.SerializeObject(this.Pages);
         }
     }
 }

@@ -153,7 +153,8 @@ namespace Microsoft.Azure.Cosmos
             return this.GetCosmosElementResponse(
                 queryRequestOptions,
                 resourceType,
-                message);
+                message,
+                partitionKeyRange);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -258,10 +259,17 @@ namespace Microsoft.Azure.Cosmos
         private QueryResponseCore GetCosmosElementResponse(
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
-            ResponseMessage cosmosResponseMessage)
+            ResponseMessage cosmosResponseMessage,
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity)
         {
             using (cosmosResponseMessage)
             {
+                QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                    partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
+                    queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
+                    indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
+                    requestDiagnostics: (PointOperationStatistics)cosmosResponseMessage.Diagnostics);
+                IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
                     return QueryResponseCore.CreateFailure(
@@ -270,8 +278,7 @@ namespace Microsoft.Azure.Cosmos
                         errorMessage: cosmosResponseMessage.ErrorMessage,
                         requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                         activityId: cosmosResponseMessage.Headers.ActivityId,
-                        queryMetricsText: cosmosResponseMessage.Headers.QueryMetricsText,
-                        queryMetrics: null);
+                        diagnostics: pageDiagnostics);
                 }
 
                 MemoryStream memoryStream = cosmosResponseMessage.Content as MemoryStream;
@@ -292,9 +299,7 @@ namespace Microsoft.Azure.Cosmos
                     result: cosmosArray,
                     requestCharge: cosmosResponseMessage.Headers.RequestCharge,
                     activityId: cosmosResponseMessage.Headers.ActivityId,
-                    queryMetricsText: cosmosResponseMessage.Headers.QueryMetricsText,
-                    queryMetrics: null,
-                    requestStatistics: null,
+                    diagnostics: pageDiagnostics,
                     responseLengthBytes: cosmosResponseMessage.Headers.ContentLengthAsLong,
                     disallowContinuationTokenMessage: null,
                     continuationToken: cosmosResponseMessage.Headers.ContinuationToken);

@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 results.AddRange(response);
                 if (response.Diagnostics != null)
                 {
-                    totalOutDocumentCount += ((QueryOperationStatistics)response.Diagnostics).queryMetrics.Values.First().OutputDocumentCount;
+                   // totalOutDocumentCount += ((QueryPageDiagnostics)response.Diagnostics).queryMetrics.Values.First().OutputDocumentCount;
                 }
             }
 
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (response.Diagnostics != null)
                 {
-                    streamTotalOutDocumentCount += ((QueryOperationStatistics)response.Diagnostics).queryMetrics.Values.First().OutputDocumentCount;
+                   // streamTotalOutDocumentCount += ((QueryPageDiagnostics)response.Diagnostics).queryMetrics.Values.First().OutputDocumentCount;
                 }
             }
 

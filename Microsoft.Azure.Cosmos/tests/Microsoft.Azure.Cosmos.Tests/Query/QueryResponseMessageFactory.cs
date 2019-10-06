@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -44,15 +45,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
 
+            double requestCharge = 42;
+            string activityId = Guid.NewGuid().ToString();
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                new PointOperationStatistics(
+                    HttpStatusCode.OK,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: requestCharge,
+                    errorMessage: null,
+                    method: HttpMethod.Post,
+                    requestUri: new Uri("http://localhost.com"),
+                    clientSideRequestStatistics: null))
+            };
+
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
                     continuationToken: continuationToken,
                     disallowContinuationTokenMessage: null,
-                    activityId: Guid.NewGuid().ToString(),
-                    requestCharge: 42,
-                    queryMetricsText: null,
-                    queryMetrics: new Dictionary<string, QueryMetrics>(),
-                    requestStatistics: null,
+                    activityId: activityId,
+                    requestCharge: requestCharge,
+                    diagnostics: diagnostics,
                     responseLengthBytes: responseLengthBytes);
 
             return (message, items);
@@ -84,14 +100,26 @@ namespace Microsoft.Azure.Cosmos.Tests
             IJsonNavigator jsonNavigator = JsonNavigator.Create(memoryStream.ToArray());
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
             CosmosArray cosmosArray = CosmosArray.Create(jsonNavigator, jsonNavigatorNode);
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                new PointOperationStatistics(
+                    HttpStatusCode.OK,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    requestCharge: 4,
+                    errorMessage: null,
+                    method: HttpMethod.Post,
+                    requestUri: new Uri("http://localhost.com"),
+                    clientSideRequestStatistics: null))
+            };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
                     requestCharge: 4,
                     activityId: Guid.NewGuid().ToString(),
-                    queryMetricsText: null,
-                    queryMetrics: null,
-                    requestStatistics: null,
+                    diagnostics: diagnostics,
                     responseLengthBytes: responseLengthBytes,
                     disallowContinuationTokenMessage: null,
                     continuationToken: continuationToken);
@@ -107,8 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                errorMessage: "Partition split error",
                requestCharge: 10.4,
                activityId: Guid.NewGuid().ToString(),
-               queryMetricsText: null,
-               queryMetrics: null);
+               diagnostics: null);
 
             return splitResponse;
         }

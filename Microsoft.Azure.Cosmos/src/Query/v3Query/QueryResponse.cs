@@ -29,9 +29,9 @@ namespace Microsoft.Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            IReadOnlyDictionary<string, QueryMetrics> queryMetrics,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
+            CosmosDiagnostics diagnostics,
             string errorMessage,
             Error error)
             : base(
@@ -39,12 +39,12 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage: requestMessage,
                 errorMessage: errorMessage,
                 error: error,
-                headers: responseHeaders)
+                headers: responseHeaders,
+                diagnostics: diagnostics)
         {
             this.CosmosElements = result;
             this.Count = count;
             this.ResponseLengthBytes = responseLengthBytes;
-            this.queryMetrics = queryMetrics;
         }
 
         public int Count { get; }
@@ -67,16 +67,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal long ResponseLengthBytes { get; }
 
-        /// <summary>
-        /// Get the client side request statistics for the current request.
-        /// </summary>
-        /// <remarks>
-        /// This value is currently used for tracking replica Uris.
-        /// </remarks>
-        internal ClientSideRequestStatistics RequestStatistics { get; }
-
-        internal IReadOnlyDictionary<string, QueryMetrics> queryMetrics { get; set; }
-
         internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
 
         internal bool GetHasMoreResults()
@@ -89,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
+            CosmosDiagnostics diagnostics)
         {
             if (count < 0)
             {
@@ -106,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
                count: count,
                responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
-               queryMetrics: queryMetrics,
+               diagnostics: diagnostics,
                statusCode: HttpStatusCode.OK,
                errorMessage: null,
                error: null,
@@ -120,14 +110,15 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             string errorMessage,
-            Error error)
+            Error error,
+            CosmosDiagnostics diagnostics)
         {
             QueryResponse cosmosQueryResponse = new QueryResponse(
                 result: Enumerable.Empty<CosmosElement>(),
                 count: 0,
                 responseLengthBytes: 0,
                 responseHeaders: responseHeaders,
-                queryMetrics: null,
+                diagnostics: diagnostics,
                 statusCode: statusCode,
                 errorMessage: errorMessage,
                 error: error,
