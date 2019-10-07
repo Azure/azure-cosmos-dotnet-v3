@@ -131,6 +131,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(diagnostics.Contains("Method"));
         }
 
+        public static void VerifyQueryDiagnostics(CosmosDiagnostics diagnostics)
+        {
+            string info = diagnostics.ToString();
+            Assert.IsNotNull(info);
+            JArray jArray = JArray.Parse(info);
+            foreach (JToken jObject in jArray)
+            {
+                string queryMetrics = jObject["QueryMetricText"].ToString();
+                Assert.IsNotNull(queryMetrics);
+                Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
+                Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
+                JObject requestDiagnostics = jObject["RequestDiagnostics"].Value<JObject>();
+                Assert.IsNotNull(requestDiagnostics);
+                Assert.IsNotNull(requestDiagnostics["ActivityId"].ToString());
+            }
+        }
+
         private async Task<long> ExecuteQueryAndReturnOutputDocumentCount(string queryText, int expectedItemCount)
         {
             QueryDefinition sql = new QueryDefinition(queryText);
@@ -152,19 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                string info = response.Diagnostics.ToString();
-                Assert.IsNotNull(info);
-                JArray jArray = JArray.Parse(info);
-                foreach (JToken jObject in jArray)
-                {
-                    string queryMetrics = jObject["QueryMetricText"].ToString();
-                    Assert.IsNotNull(queryMetrics);
-                    Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
-                    Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
-                    JObject diagnostics = jObject["RequestDiagnostics"].Value<JObject>();
-                    Assert.IsNotNull(diagnostics);
-                    Assert.IsNotNull(diagnostics["ActivityId"].ToString());
-                }
+                VerifyQueryDiagnostics(response.Diagnostics);
             }
 
             Assert.AreEqual(expectedItemCount, results.Count);
@@ -181,20 +186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await streamIterator.ReadNextAsync();
                 Collection<ToDoActivity> result = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
-
-                string info = response.Diagnostics.ToString();
-                Assert.IsNotNull(info);
-                JArray jArray = JArray.Parse(info);
-                foreach (JToken jObject in jArray)
-                {
-                    string queryMetrics = jObject["QueryMetricText"].ToString();
-                    Assert.IsNotNull(queryMetrics);
-                    Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
-                    Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
-                    JObject diagnostics = jObject["RequestDiagnostics"].Value<JObject>();
-                    Assert.IsNotNull(diagnostics);
-                    Assert.IsNotNull(diagnostics["ActivityId"].ToString());
-                }
+                VerifyQueryDiagnostics(response.Diagnostics);
             }
 
             Assert.AreEqual(expectedItemCount, streamResults.Count);

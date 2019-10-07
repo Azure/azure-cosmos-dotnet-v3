@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                    disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
                    activityId: null,
                    requestCharge: 0,
-                   diagnostics: null,
+                   diagnostics: QueryResponseCore.EmptyDiagnostics,
                    responseLengthBytes: 0);
 
                 this.numPagesDrainedFromGroupingTable++;

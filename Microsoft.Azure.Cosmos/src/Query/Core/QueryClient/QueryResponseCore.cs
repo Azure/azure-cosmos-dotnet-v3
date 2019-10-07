@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     internal struct QueryResponseCore
     {
         private static readonly IReadOnlyList<CosmosElement> EmptyList = new List<CosmosElement>();
+        internal static readonly IReadOnlyCollection<QueryPageDiagnostics> EmptyDiagnostics = new List<QueryPageDiagnostics>();
 
         private QueryResponseCore(
             IReadOnlyList<CosmosElement> result,
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.CosmosElements = result;
             this.StatusCode = statusCode;
             this.ActivityId = activityId;
-            this.diagnostics = diagnostics;
+            this.diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
             this.ResponseLengthBytes = responseLengthBytes;
             this.RequestCharge = requestCharge;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
