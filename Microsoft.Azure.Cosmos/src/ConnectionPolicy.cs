@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ConnectionPolicy
     {
         internal UserAgentContainer UserAgentContainer;
-        private const int defaultRequestTimeout = 60;
+        private const int defaultRequestTimeout = 10;
         // defaultMediaRequestTimeout is based upon the blob client timeout and the retry policy.
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the request timeout in seconds when connecting to the Azure Cosmos DB service.
         /// The number specifies the time to wait for response to come back from network peer.
         /// </summary>
-        /// <value>Default value is 60 seconds.</value>
+        /// <value>Default value is 10 seconds.</value>
         public TimeSpan RequestTimeout
         {
             get;
