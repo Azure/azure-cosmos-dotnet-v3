@@ -6,6 +6,7 @@
 namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 {
     using System.IO;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("countries.json");
+                this.PerformanceBenchmarkCuratedJson("countries");
             }
         }
 
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("lastfm.json");
+                this.PerformanceBenchmarkCuratedJson("lastfm");
             }
         }
 
@@ -102,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("NutritionData.json");
+                this.PerformanceBenchmarkCuratedJson("NutritionData");
             }
         }
 
@@ -112,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("runsCollection.json");
+                this.PerformanceBenchmarkCuratedJson("runsCollection");
             }
         }
 
@@ -132,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("states_legislators.json");
+                this.PerformanceBenchmarkCuratedJson("states_legislators");
             }
         }
 
@@ -152,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("TicinoErrorBuckets.json");
+                this.PerformanceBenchmarkCuratedJson("TicinoErrorBuckets");
             }
         }
 
@@ -162,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("twitter_data.json");
+                this.PerformanceBenchmarkCuratedJson("twitter_data");
             }
         }
 
@@ -172,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("ups1.json");
+                this.PerformanceBenchmarkCuratedJson("ups1");
             }
         }
 
@@ -182,17 +183,18 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         {
             if (runPerformanceTests)
             {
-                this.PerformanceBenchmarkCuratedJson("XpertEvents.json");
+                this.PerformanceBenchmarkCuratedJson("XpertEvents");
             }
         }
 
-        private void PerformanceBenchmarkCuratedJson(string filename)
+        private void PerformanceBenchmarkCuratedJson(string path)
         {
-            string path = string.Format("TestJsons/{0}", filename);
-            string json = File.ReadAllText(path);
+            path = string.Format("TestJsons/{0}", path);
+            FileAttributes attr = File.GetAttributes(path);
+            string json = attr.HasFlag(FileAttributes.Directory) ? TextFileConcatenation.Execute(path) : File.ReadAllText(path);
             const int numberOfIterations = 1;
 
-            JsonPerfMeasurement.MeasurePerf(json, filename, numberOfIterations);
+            JsonPerfMeasurement.MeasurePerf(json, path, numberOfIterations);
         }
     }
 }
