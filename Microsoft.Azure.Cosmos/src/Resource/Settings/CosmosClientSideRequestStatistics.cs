@@ -13,6 +13,11 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class CosmosClientSideRequestStatistics : IClientSideRequestStatistics
     {
+        private static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings()
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+            Formatting = Formatting.None
+        };
         internal const int MaxSupplementalRequestsForToString = 10;
 
         internal DateTime requestStartTime;
@@ -20,9 +25,9 @@ namespace Microsoft.Azure.Cosmos
 
         private object lockObject = new object();
 
-        internal List<StoreResponseStatistics> responseStatisticsList;
-        internal List<StoreResponseStatistics> supplementalResponseStatisticsList;
-        internal Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics;
+        public List<StoreResponseStatistics> responseStatisticsList { get; private set; }
+        public List<StoreResponseStatistics> supplementalResponseStatisticsList { get; internal set; }
+        public Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics { get; private set; }
 
         public CosmosClientSideRequestStatistics()
         {

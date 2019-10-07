@@ -1192,7 +1192,7 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__37))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__41))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
@@ -2329,6 +2329,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "T WithDefaultTimeToLive(System.TimeSpan)"
+        },
+        "T WithPartitionKeyDefinitionVersion(Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "T WithPartitionKeyDefinitionVersion(Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion)"
         },
         "T WithTimeToLivePropertyPath(System.String)": {
           "Type": "Method",
