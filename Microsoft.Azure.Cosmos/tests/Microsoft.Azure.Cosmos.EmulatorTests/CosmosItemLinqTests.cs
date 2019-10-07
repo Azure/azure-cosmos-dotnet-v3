@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -223,6 +224,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> filteredList = itemList.Where(item => item.taskNum < 100).ToList();
             int filteredDocumentCount = filteredList.Count();
 
+            Console.WriteLine($"Filtered List: {JsonConvert.SerializeObject(filteredList)}.");
+
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
             queryRequestOptions.MaxConcurrency = 1;
             queryRequestOptions.MaxItemCount = 5;
@@ -237,6 +240,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync();
                 firstItemSet = feedResponse.Count();
                 continuationToken = feedResponse.ContinuationToken;
+                Console.WriteLine($"First page: {JsonConvert.SerializeObject(feedResponse.Resource)}.");
                 if (firstItemSet > 0)
                 {
                     break;
@@ -255,6 +259,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync();
                 secondItemSet += feedResponse.Count();
+                Console.WriteLine($"Second Async page: {JsonConvert.SerializeObject(feedResponse.Resource)}.");
             }
 
             Assert.AreEqual(
@@ -267,7 +272,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 allowSynchronousQueryExecution: true,
                 continuationToken: continuationToken,
                 requestOptions: queryRequestOptions);
-            int linqExecutionItemCount = linqQueryable.Where(item => item.taskNum < 100).Count();
+            List<ToDoActivity> secondSyncPage = linqQueryable.Where(item => item.taskNum < 100).ToList();
+            Console.WriteLine($"Second Sync page: {JsonConvert.SerializeObject(secondSyncPage)}.");
+            int linqExecutionItemCount = secondSyncPage.Count();
             Assert.AreEqual(
                 filteredDocumentCount - firstItemSet,
                 linqExecutionItemCount,
