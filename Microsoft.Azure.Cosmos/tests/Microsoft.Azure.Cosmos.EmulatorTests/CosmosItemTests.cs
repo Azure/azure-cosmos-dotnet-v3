@@ -1041,14 +1041,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
                 Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
-                QueryRequestOptions options = new QueryRequestOptions()
-                {
-                    Properties = new Dictionary<string, object>()
-                    {
-                        {"x-ms-effective-partition-key-string", "AA" }
-                    }
-                };
-
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
                     null,
@@ -1060,7 +1052,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     resourceLink: container.LinkUri.OriginalString,
                     partitionedQueryExecutionInfo: null,
                     containerQueryProperties: containerQueryProperties,
-                    queryRequestOptions: options);
+                    properties: new Dictionary<string, object>()
+                    {
+                        {"x-ms-effective-partition-key-string", "AA" }
+                    });
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
             }
@@ -1252,6 +1247,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
                 Assert.IsNotNull(deleteResponse);
+            }
+        }
+
+        [TestMethod]
+        public async Task ItemReplaceAsyncTest()
+        {
+            // Create an item
+            ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
+
+            string originalId = testItem.id;
+            testItem.id = Guid.NewGuid().ToString();
+
+            ItemResponse<ToDoActivity> response = await this.Container.ReplaceItemAsync<ToDoActivity>(
+                id: originalId,
+                item: testItem);
+
+            Assert.AreEqual(testItem.id, response.Resource.id);
+            Assert.AreNotEqual(originalId, response.Resource.id);
+
+            string originalStatus = testItem.status;
+            testItem.status = Guid.NewGuid().ToString();
+
+            try
+            {
+                response = await this.Container.ReplaceItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(originalStatus),
+                item: testItem);
+                Assert.Fail("Replace changing partition key is not supported.");
+            }catch(CosmosException ce)
+            {
+                Assert.AreEqual((HttpStatusCode)400, ce.StatusCode);
             }
         }
 
@@ -1538,6 +1565,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(sessionToken, readResponse.Headers.Session);
         }
 
+        [TestMethod]
+        public async Task VerifySessionNotFoundStatistics()
+        {
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
+            DatabaseResponse database = await cosmosClient.CreateDatabaseIfNotExistsAsync("NoSession");
+            Container container = await database.Database.CreateContainerIfNotExistsAsync("NoSession", "/status");
+
+            try
+            {
+                ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
+
+                ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(temp.status), item: temp);
+
+                string invalidSessionToken = this.GetDifferentLSNToken(responseAstype.Headers.Session, 2000);
+
+                try
+                {
+                    ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(temp.id, new Cosmos.PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = invalidSessionToken });
+                    Assert.Fail("Should had thrown ReadSessionNotAvailable");
+                }
+                catch (CosmosException cosmosException)
+                {
+                    Assert.IsTrue(cosmosException.Message.Contains("ContactedReplicas"), cosmosException.Message);
+                }
+            }
+            finally
+            {
+                await database.Database.DeleteAsync();
+            }
+        }
+
+        private string GetDifferentLSNToken(string token, long lsnDifferent)
+        {
+            string[] tokenParts = token.Split(':');
+            ISessionToken sessionToken = SessionTokenHelper.Parse(tokenParts[1]);
+            ISessionToken differentSessionToken = TestCommon.CreateSessionToken(sessionToken, sessionToken.LSN + lsnDifferent);
+            return string.Format(CultureInfo.InvariantCulture, "{0}:{1}", tokenParts[0], differentSessionToken.ConvertToString());
+        }
+
         /// <summary>
         /// Stateless container re-create test. 
         /// Create two client instances and do meta data operations through a single client
@@ -1604,6 +1670,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cc1.Dispose();
                 cc2.Dispose();
             }
+        }
+
+        [TestMethod]
+        public async Task NoAutoGenerateIdTest()
+        {
+            try
+            {
+                ToDoActivity t = new ToDoActivity();
+                t.status = "AutoID";
+                ItemResponse<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(
+                    partitionKey: new Cosmos.PartitionKey(t.status), item: t);
+
+                Assert.Fail("Unexpected ID auto-generation");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+            {
+            }
+        }
+
+        [TestMethod]
+        public async Task AutoGenerateIdPatternTest()
+        {
+            ToDoActivity itemWithoutId = new ToDoActivity();
+            itemWithoutId.status = "AutoID";
+
+            ToDoActivity createdItem = await this.AutoGenerateIdPatternTest<ToDoActivity>(
+                new Cosmos.PartitionKey(itemWithoutId.status), itemWithoutId);
+
+            Assert.IsNotNull(createdItem.id);
+            Assert.AreEqual(itemWithoutId.status, createdItem.status);
+        }
+
+        private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
+        {
+            string autoId = Guid.NewGuid().ToString();
+
+            JObject tmpJObject = JObject.FromObject(itemWithoutId);
+            tmpJObject["id"] = autoId;
+
+            ItemResponse<JObject> response = await this.Container.CreateItemAsync<JObject>(
+                partitionKey: pk, item: tmpJObject);
+
+            return response.Resource.ToObject<T>();
         }
 
         private static async Task VerifyQueryToManyExceptionAsync(

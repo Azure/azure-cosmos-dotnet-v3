@@ -142,13 +142,6 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         /// <summary>
-        /// Gets or sets the flag that enables skip take across partitions.
-        /// </summary>
-        internal bool EnableCrossPartitionSkipTake { get; set; }
-
-        internal bool EnableGroupBy { get; set; }
-
-        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
@@ -219,8 +212,6 @@ namespace Microsoft.Azure.Cosmos
                 MaxConcurrency = this.MaxConcurrency,
                 PartitionKey = this.PartitionKey,
                 CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
-                EnableCrossPartitionSkipTake = this.EnableCrossPartitionSkipTake,
-                EnableGroupBy = this.EnableGroupBy,
                 Properties = this.Properties,
                 IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting,
             };

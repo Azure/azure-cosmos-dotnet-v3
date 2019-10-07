@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets container throughput in measurement of request units per second in the Azure Cosmos service.
         /// </summary>
-        /// <param name="requestOptions">(Optional) The options for the throughput request.<see cref="RequestOptions"/></param>
+        /// <param name="requestOptions">The options for the throughput request.<see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The throughput response</returns>
         /// <value>
@@ -246,7 +246,8 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get the throughput
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputProperties throughputProperties = await container.ReadThroughputAsync();
+        /// RequestOptions requestOptions = new RequestOptions();
+        /// ThroughputProperties throughputProperties = await container.ReadThroughputAsync(requestOptions);
         /// Console.WriteLine($"Throughput: {throughputProperties?.Throughput}");
         /// ]]>
         /// </code>
@@ -255,7 +256,8 @@ namespace Microsoft.Azure.Cosmos
         /// The following example shows how to get throughput, MinThroughput and is replace in progress
         /// <code language="c#">
         /// <![CDATA[
-        /// ThroughputResponse response = await container.ReadThroughputAsync();
+        /// RequestOptions requestOptions = new RequestOptions();
+        /// ThroughputResponse response = await container.ReadThroughputAsync(requestOptions);
         /// Console.WriteLine($"Throughput: {response.Resource?.Throughput}");
         /// Console.WriteLine($"MinThroughput: {response.MinThroughput}");
         /// Console.WriteLine($"IsReplacePending: {response.IsReplacePending}");
@@ -578,6 +580,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
+        /// <remarks>
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// </remarks>
         /// <param name="streamPayload">A <see cref="Stream"/> containing the payload.</param>
         /// <param name="id">The cosmos item id</param>
         /// <param name="partitionKey">The partition key for the item. <see cref="PartitionKey"/></param>
@@ -624,7 +630,11 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Replaces a item in the Azure Cosmos service as an asynchronous operation.
-        /// </summary>        
+        /// </summary>
+        /// <remarks>
+        /// The item's partition key value is immutable. 
+        /// To change an item's partition key value you must delete the original item and insert a new item.
+        /// </remarks>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
         /// <param name="id">The cosmos item id, which is expected to match the value within T.</param>
         /// <param name="partitionKey">Partition key for the item. If not specified will be populated by extracting from {T}</param>
