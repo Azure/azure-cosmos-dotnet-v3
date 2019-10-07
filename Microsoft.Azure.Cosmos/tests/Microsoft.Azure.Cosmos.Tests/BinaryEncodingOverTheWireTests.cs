@@ -3,11 +3,10 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Services.Management.Tests
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Configuration;
     using System.IO;
     using System.Linq;
