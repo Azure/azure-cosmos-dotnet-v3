@@ -80,23 +80,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 // Payload is string dictionary encode so we have to decode using the string dictionary.
                 IJsonNavigatorNode stringDictionaryNode = stringDictionaryProperty.ValueNode;
-                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(jsonNavigator.GetArrayItemCount(stringDictionaryNode));
-                int index = 0;
-                foreach (IJsonNavigatorNode item in jsonNavigator.GetArrayItems(stringDictionaryNode))
-                {
-                    string stringDictionaryElement = jsonNavigator.GetStringValue(item);
-                    if (!jsonStringDictionary.TryAddString(stringDictionaryElement, out int insertedIndex))
-                    {
-                        throw new InvalidOperationException($"Failed to insert {stringDictionaryElement} into {nameof(JsonStringDictionary)} at index: {index}");
-                    }
-
-                    if (insertedIndex != index)
-                    {
-                        throw new InvalidOperationException($"Inserted {stringDictionaryElement} into index {insertedIndex} instead of {index}");
-                    }
-
-                    index++;
-                }
+                JsonStringDictionary jsonStringDictionary = JsonStringDictionary.CreateFromStringArray(
+                    jsonNavigator
+                        .GetArrayItems(stringDictionaryNode)
+                        .Select(item => jsonNavigator.GetStringValue(item))
+                        .ToList());
 
                 if (!jsonNavigator.TryGetObjectProperty(
                     jsonNavigator.GetRootNode(),
