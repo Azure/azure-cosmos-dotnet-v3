@@ -53,7 +53,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
                 new PointOperationStatistics(
-                    HttpStatusCode.OK,
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: HttpStatusCode.OK,
                     subStatusCode: SubStatusCodes.Unknown,
                     requestCharge: requestCharge,
                     errorMessage: null,
@@ -106,7 +107,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
                 new PointOperationStatistics(
-                    HttpStatusCode.OK,
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: HttpStatusCode.OK,
                     subStatusCode: SubStatusCodes.Unknown,
                     requestCharge: 4,
                     errorMessage: null,

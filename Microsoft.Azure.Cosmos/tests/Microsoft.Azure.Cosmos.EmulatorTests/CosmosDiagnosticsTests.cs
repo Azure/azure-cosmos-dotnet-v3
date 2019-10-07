@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(deleteResponse.Diagnostics);
 
             //Checking point operation diagnostics on stream operations
-            ResponseMessage createStreamResponse =  await this.Container.CreateItemStreamAsync(
+            ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
                 partitionKey: new PartitionKey(testItem.status),
                 streamPayload: TestCommon.Serializer.ToStream<ToDoActivity>(testItem));
             Assert.IsNotNull(createStreamResponse.Diagnostics);
@@ -151,9 +152,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 results.AddRange(response);
-                if (response.Diagnostics != null)
+                string info = response.Diagnostics.ToString();
+                Assert.IsNotNull(info);
+                JArray jArray = JArray.Parse(info);
+                foreach (JToken jObject in jArray)
                 {
-                   // totalOutDocumentCount += ((QueryPageDiagnostics)response.Diagnostics).queryMetrics.Values.First().OutputDocumentCount;
+                    string queryMetrics = jObject["QueryMetricText"].ToString();
+                    Assert.IsNotNull(queryMetrics);
+                    Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
+                    Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
+                    JObject diagnostics = jObject["RequestDiagnostics"].Value<JObject>();
+                    Assert.IsNotNull(diagnostics);
+                    Assert.IsNotNull(diagnostics["ActivityId"].ToString());
                 }
             }
 
@@ -172,16 +182,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Collection<ToDoActivity> result = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(response.Content).Data;
                 streamResults.AddRange(result);
 
-                if (response.Diagnostics != null)
+                string info = response.Diagnostics.ToString();
+                Assert.IsNotNull(info);
+                JArray jArray = JArray.Parse(info);
+                foreach (JToken jObject in jArray)
                 {
-                   // streamTotalOutDocumentCount += ((QueryPageDiagnostics)response.Diagnostics).queryMetrics.Values.First().OutputDocumentCount;
+                    string queryMetrics = jObject["QueryMetricText"].ToString();
+                    Assert.IsNotNull(queryMetrics);
+                    Assert.IsNotNull(jObject["IndexUtilizationText"].ToString());
+                    Assert.IsNotNull(jObject["PartitionKeyRangeId"].ToString());
+                    JObject diagnostics = jObject["RequestDiagnostics"].Value<JObject>();
+                    Assert.IsNotNull(diagnostics);
+                    Assert.IsNotNull(diagnostics["ActivityId"].ToString());
                 }
             }
 
             Assert.AreEqual(expectedItemCount, streamResults.Count);
             Assert.AreEqual(totalOutDocumentCount, streamTotalOutDocumentCount);
 
-            return totalOutDocumentCount;
+            return results.Count;
         }
     }
 }

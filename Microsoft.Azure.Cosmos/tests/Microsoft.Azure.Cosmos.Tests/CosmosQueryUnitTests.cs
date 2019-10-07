@@ -169,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "SomeQueryMetricText",
                 "SomeIndexUtilText",
                 new PointOperationStatistics(
+                    Guid.NewGuid().ToString(),
                     System.Net.HttpStatusCode.Unauthorized,
                     subStatusCode: SubStatusCodes.PartitionKeyMismatch,
                     requestCharge: 4,
