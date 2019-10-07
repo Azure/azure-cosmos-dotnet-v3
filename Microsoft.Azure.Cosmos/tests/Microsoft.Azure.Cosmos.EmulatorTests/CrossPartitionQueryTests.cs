@@ -285,23 +285,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     string jObjectPartitionKey = partitionKey.Remove(0, 1);
                     JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                    switch (pkToken.Type)
+                    if (pkToken == null)
                     {
-                        case JTokenType.Integer:
-                        case JTokenType.Float:
-                            pkValue = new Cosmos.PartitionKey(pkToken.Value<double>());
-                            break;
-                        case JTokenType.String:
-                            pkValue = new Cosmos.PartitionKey(pkToken.Value<string>());
-                            break;
-                        case JTokenType.Boolean:
-                            pkValue = new Cosmos.PartitionKey(pkToken.Value<bool>());
-                            break;
-                        case JTokenType.Null:
-                            pkValue = Cosmos.PartitionKey.Null;
-                            break;
-                        default:
-                            throw new ArgumentException("Unknown partition key type");
+                        pkValue = Cosmos.PartitionKey.None;
+                    }
+                    else
+                    {
+                        switch (pkToken.Type)
+                        {
+                            case JTokenType.Integer:
+                            case JTokenType.Float:
+                                pkValue = new Cosmos.PartitionKey(pkToken.Value<double>());
+                                break;
+                            case JTokenType.String:
+                                pkValue = new Cosmos.PartitionKey(pkToken.Value<string>());
+                                break;
+                            case JTokenType.Boolean:
+                                pkValue = new Cosmos.PartitionKey(pkToken.Value<bool>());
+                                break;
+                            case JTokenType.Null:
+                                pkValue = Cosmos.PartitionKey.Null;
+                                break;
+                            default:
+                                throw new ArgumentException("Unknown partition key type");
+                        }
                     }
                 }
                 else
