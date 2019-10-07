@@ -36,9 +36,20 @@ namespace Microsoft.Azure.Cosmos.Query
             bool hasLogicalPartitionKey,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Contract.Requires<ArgumentNullException>(queryClient != null, nameof(queryClient));
-            Contract.Requires<ArgumentNullException>(sqlQuerySpec != null, nameof(sqlQuerySpec));
-            Contract.Requires<ArgumentNullException>(partitionKeyDefinition != null, nameof(partitionKeyDefinition));
+            if (queryClient == null)
+            {
+                throw new ArgumentNullException(nameof(queryClient));
+            }
+
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (partitionKeyDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyDefinition));
+            }
 
             cancellationToken.ThrowIfCancellationRequested();
             QueryPlanHandler queryPlanHandler = new QueryPlanHandler(queryClient);
@@ -57,9 +68,20 @@ namespace Microsoft.Azure.Cosmos.Query
             Uri resourceLink,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            Contract.Requires<ArgumentNullException>(client != null, nameof(client));
-            Contract.Requires<ArgumentNullException>(sqlQuerySpec != null, nameof(sqlQuerySpec));
-            Contract.Requires<ArgumentNullException>(resourceLink != null, nameof(resourceLink));
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (resourceLink == null)
+            {
+                throw new ArgumentNullException(nameof(resourceLink));
+            }
 
             cancellationToken.ThrowIfCancellationRequested();
 
