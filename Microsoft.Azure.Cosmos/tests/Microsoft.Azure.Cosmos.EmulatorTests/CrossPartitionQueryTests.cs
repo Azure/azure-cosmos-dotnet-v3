@@ -1324,10 +1324,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             MaxItemCount = maxItemCount,
                         };
 
-                    List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
-                        container,
-                        "SELECT * FROM c ORDER BY c._ts",
-                        feedOptions);
+                        List<JToken> queryResults = await CrossPartitionQueryTests.RunQuery<JToken>(
+                            containerWithForcedPlan,
+                            "SELECT * FROM c ORDER BY c._ts",
+                            feedOptions);
 
                         Assert.AreEqual(documents.Count(), queryResults.Count);
                     }
