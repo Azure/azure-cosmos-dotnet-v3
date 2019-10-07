@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
@@ -155,7 +156,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             jsonWriter.WriteObjectEnd();
 
-            return new MemoryStream(jsonWriter.GetResult().ToArray());
+            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+            if (!MemoryMarshal.TryGetArray(result, out ArraySegment<byte> resultAsArray))
+            {
+                resultAsArray = new ArraySegment<byte>(result.ToArray());
+            }
+
+            return new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count);
         }
 
         /// <summary>

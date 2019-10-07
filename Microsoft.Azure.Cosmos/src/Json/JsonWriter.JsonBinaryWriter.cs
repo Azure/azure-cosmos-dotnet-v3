@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.binaryWriter = new JsonBinaryMemoryWriter();
                 this.bufferedContexts = new Stack<BeginOffsetAndCount>();
                 this.serializeCount = serializeCount;
-                this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.TwoByteLength + (this.serializeCount ? JsonBinaryEncoding.TwoByteCount : 0);
+                this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
 
                 // Write the serialization format as the very first byte
                 byte binaryTypeMarker = (byte)JsonSerializationFormat.Binary;
@@ -355,13 +355,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Save the start index
                 this.bufferedContexts.Push(new BeginOffsetAndCount(this.CurrentLength));
 
-                // Assume 2-byte value length; as such, we need to reserve upto 5 bytes (1 byte type marker, 2 byte length, 2 byte count).
+                // Assume 1-byte value length; as such, we need to reserve up 3 bytes (1 byte type marker, 1 byte length, 1 byte count).
                 // We'll adjust this as needed when writing the end of the array/object.
                 this.binaryWriter.Write((byte)0);
-                this.binaryWriter.Write((ushort)0);
+                this.binaryWriter.Write((byte)0);
                 if (this.serializeCount)
                 {
-                    this.binaryWriter.Write((ushort)0);
+                    this.binaryWriter.Write((byte)0);
                 }
             }
 
@@ -412,14 +412,10 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Need to figure out how many bytes to encode the length and the count
                     if (payloadLength <= byte.MaxValue)
                     {
-                        // Move the buffer back but leave some space for the typemarker and length
-                        Memory<byte> buffer = this.binaryWriter.Buffer;
+                        // 1 byte length - don't need to move the buffer
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.OneByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
-                        Memory<byte> payload = buffer.Slice(payloadIndex, payloadLength);
-                        Memory<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
-                        payload.CopyTo(newPayloadStart);
 
                         // Move the cursor back
                         this.binaryWriter.Position = typeMarkerIndex;
@@ -428,14 +424,14 @@ namespace Microsoft.Azure.Cosmos.Json
                         if (this.serializeCount)
                         {
                             this.binaryWriter.Write(
-                                 isArray ? JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount : JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount);
+                                isArray ? JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount : JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount);
                             this.binaryWriter.Write((byte)payloadLength);
                             this.binaryWriter.Write((byte)count);
                         }
                         else
                         {
                             this.binaryWriter.Write(
-                                 isArray ? JsonBinaryEncoding.TypeMarker.Array1ByteLength : JsonBinaryEncoding.TypeMarker.Object1ByteLength);
+                                isArray ? JsonBinaryEncoding.TypeMarker.Array1ByteLength : JsonBinaryEncoding.TypeMarker.Object1ByteLength);
                             this.binaryWriter.Write((byte)payloadLength);
                         }
 
@@ -444,10 +440,21 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                     else if (payloadLength <= ushort.MaxValue)
                     {
-                        // 2 byte length - don't need to move the buffer
+                        // 2 byte length - make space for the extra byte length (and extra byte count)
+                        this.binaryWriter.Write((byte)0);
+                        if (this.serializeCount)
+                        {
+                            this.binaryWriter.Write((byte)0);
+                        }
+
+                        // Move the buffer forward
+                        Memory<byte> buffer = this.binaryWriter.Buffer;
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.TwoByteLength
                             + (this.serializeCount ? JsonBinaryEncoding.TwoByteCount : 0);
+                        Memory<byte> payload = buffer.Slice(payloadIndex, payloadLength);
+                        Memory<byte> newPayloadStart = buffer.Slice(typeMarkerIndex + bytesToWrite);
+                        payload.CopyTo(newPayloadStart);
 
                         // Move the cursor back
                         this.binaryWriter.Position = typeMarkerIndex;

@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.IsTrue(jsonResult.Length > 0, "IJsonWriter result data is empty.");
 
             // Navigate into the serialized edge document using lazy CosmosElements
-            CosmosElement rootLazyElement = CosmosElement.Create(jsonResult);
+            CosmosElement rootLazyElement = CosmosElement.CreateFromBuffer(jsonResult);
 
             // Validate the expected edge document structure/values
 
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.IsTrue(jsonResult.Length > 0, "IJsonWriter result data is empty.");
 
             // Navigate into the serialized vertex document using lazy CosmosElements
-            CosmosElement rootLazyElement = CosmosElement.Create(jsonResult);
+            CosmosElement rootLazyElement = CosmosElement.CreateFromBuffer(jsonResult);
 
             // Validate the expected vertex document structure/values
 
@@ -457,7 +457,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             Assert.IsTrue(initialJsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
 
             // Navigate into the serialized vertex document using lazy CosmosElements
-            CosmosElement rootLazyElement = CosmosElement.Create(initialJsonWriterResult);
+            CosmosElement rootLazyElement = CosmosElement.CreateFromBuffer(initialJsonWriterResult);
 
             // Root vertex document object
             CosmosObject vertexLazyObject = rootLazyElement as CosmosObject;

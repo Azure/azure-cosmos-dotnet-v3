@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             private readonly ReadOnlyMemory<byte> buffer;
             private readonly JsonStringDictionary jsonStringDictionary;
+            private readonly BinaryNavigatorNode rootNode;
 
             /// <summary>
             /// Initializes a new instance of the JsonBinaryNavigator class
@@ -61,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 this.buffer = buffer;
                 this.jsonStringDictionary = jsonStringDictionary;
+                this.rootNode = new BinaryNavigatorNode(this.buffer, NodeTypes.GetNodeType(this.buffer.Span[0]));
             }
 
             /// <inheritdoc />
@@ -75,9 +77,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override IJsonNavigatorNode GetRootNode()
             {
-                return new BinaryNavigatorNode(
-                    this.buffer,
-                    NodeTypes.GetNodeType(this.buffer.Span[0]));
+                return this.rootNode;
             }
 
             /// <inheritdoc />

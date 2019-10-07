@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Buffers.Text;
-    using System.Runtime.CompilerServices;
     using System.Text;
 
     /// <summary>

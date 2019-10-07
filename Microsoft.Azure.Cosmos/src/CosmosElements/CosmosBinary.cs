@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosBinary(jsonNavigator, jsonNavigatorNode);
         }
 
-        public new static CosmosBinary Create(ReadOnlyMemory<byte> value)
+        public static CosmosBinary Create(ReadOnlyMemory<byte> value)
         {
             return new EagerCosmosBinary(value);
         }

@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void TestQuickNavigation()
         {
-            CosmosArray lazilyDeserializedPeople = CosmosElement.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
             LazilyDeserializedPerson lazilyDeserializedFirstPerson = new LazilyDeserializedPerson(lazilyDeserializedPeople[0] as CosmosObject);
 
             Assert.AreEqual(people.First().Name, lazilyDeserializedFirstPerson.Name);
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void WriteToWriter()
         {
-            CosmosArray lazilyDeserializedPeople = CosmosElement.Create(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
+            CosmosArray lazilyDeserializedPeople = CosmosElement.CreateFromBuffer(LazyCosmosElementTests.bufferedSerializedPeople) as CosmosArray;
             IJsonWriter jsonWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
             lazilyDeserializedPeople.WriteTo(jsonWriter);
             byte[] bufferedResult = jsonWriter.GetResult().ToArray();
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         {
             ReadOnlyMemory<byte> payload = LazyCosmosElementTests.GetPayload(filename);
 
-            CosmosElement cosmosElement = CosmosElement.Create(payload);
+            CosmosElement cosmosElement = CosmosElement.CreateFromBuffer(payload);
 
             IJsonWriter jsonWriterIndexer = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);
             IJsonWriter jsonWriterEnumerable = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Binary);
