@@ -20,17 +20,17 @@
 
             string text = string.Empty;
 
-            using( Stream dest = new MemoryStream())
+            
+            using(MemoryStream dest = new MemoryStream())
             {
                 foreach (FileInfo file in files)
                 {
-                    new FileStream(file.FullName, FileMode.Open).CopyTo(dest);
-                    dest.Position = 0;
+
+                    FileStream fileStream = File.OpenRead(file.FullName);
+                    fileStream.CopyTo(dest);
                 }
-                using(StreamReader reader = new StreamReader(dest))
-                {
-                    text = reader.ReadToEnd();
-                }
+
+                text = Encoding.UTF8.GetString(dest.ToArray());
             }
 
             return text;
