@@ -6,7 +6,7 @@
 
     public static class TextFileConcatenation
     {
-        public static string Execute(string path)
+        public static string ReadMultipartFile(string path)
         {
             FileAttributes attr = File.GetAttributes(path);
             if (!attr.HasFlag(FileAttributes.Directory))

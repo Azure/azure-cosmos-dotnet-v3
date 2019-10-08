@@ -811,8 +811,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         private void RoundTripTestCuratedJson(string path)
         {
             path = string.Format("TestJsons/{0}", path);
-            FileAttributes attr = File.GetAttributes(path);
-            string json = TextFileConcatenation.Execute(path);
+            string json = TextFileConcatenation.ReadMultipartFile(path);
 #if true
             json = JsonTestUtils.RandomSampleJson(json);
 #endif
