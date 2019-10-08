@@ -60,7 +60,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             public const string Max = "Max";
             public const string Min = "Min";
             public const string OrderBy = "OrderBy";
+            public const string ThenBy = "ThenBy";
             public const string OrderByDescending = "OrderByDescending";
+            public const string ThenByDescending = "ThenByDescending";
             public const string Select = "Select";
             public const string SelectMany = "SelectMany";
             public const string Sum = "Sum";
@@ -1192,6 +1194,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                         context.currentQuery = context.currentQuery.AddOrderByClause(orderBy, context);
                         break;
                     }
+                case LinqMethods.ThenBy:
+                    {
+                        SqlOrderbyClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
+                        context.currentQuery = context.currentQuery.UpdateOrderByClause(thenBy, context);
+                        break;
+                    }
+                case LinqMethods.ThenByDescending:
+                    {
+                        SqlOrderbyClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
+                        context.currentQuery = context.currentQuery.UpdateOrderByClause(thenBy, context);
+                        break;
+                    }
                 case LinqMethods.Skip:
                     {
                         SqlOffsetSpec offsetSpec = ExpressionToSql.VisitSkip(inputExpression.Arguments, context);
@@ -1344,6 +1358,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Where:
                 case LinqMethods.OrderBy:
                 case LinqMethods.OrderByDescending:
+                case LinqMethods.ThenBy:
+                case LinqMethods.ThenByDescending:
                 case LinqMethods.Skip:
                 case LinqMethods.Take:
                 case LinqMethods.Distinct:
