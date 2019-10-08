@@ -33,7 +33,7 @@ namespace Azure.Data.Cosmos
         {
             //this.StatusCode = httpStatusCode;
             //this.Headers = headers;
-            //this.Resource = containerProperties;
+            this.Resource = containerProperties;
             this.Container = container;
         }
 

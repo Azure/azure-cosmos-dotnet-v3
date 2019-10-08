@@ -101,7 +101,16 @@ namespace Azure.Data.Cosmos
             throw new NotImplementedException();
         }
 
-        internal override async Task<Response> ProcessResourceOperationStreamAsync(Uri resourceUri, ResourceType resourceType, OperationType operationType, RequestOptions requestOptions, ContainerCore cosmosContainerCore, PartitionKey? partitionKey, Stream streamPayload, Action<RequestMessage> requestEnricher, CancellationToken cancellationToken)
+        internal override async Task<Response> ProcessResourceOperationStreamAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
         {
             DiagnosticScope scope = this.pipeline.Diagnostics.CreateScope($"{resourceType}-{operationType}");
             try
@@ -139,9 +148,48 @@ namespace Azure.Data.Cosmos
             }
         }
 
-        internal override Task<Response> ProcessResourceOperationStreamAsync(Uri resourceUri, ResourceType resourceType, OperationType operationType, RequestOptions requestOptions, ContainerCore cosmosContainerCore, PartitionKey? partitionKey, string itemId, Stream streamPayload, Action<RequestMessage> requestEnricher, CancellationToken cancellationToken)
+        internal override Task<Response> ProcessResourceOperationStreamAsync(
+            Uri resourceUri,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
+            string itemId,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            //if (this.IsBulkOperationSupported(resourceType, operationType))
+            //{
+            //    if (!partitionKey.HasValue)
+            //    {
+            //        throw new ArgumentOutOfRangeException(nameof(partitionKey));
+            //    }
+
+            //    return this.ProcessResourceOperationAsBulkStreamAsync(
+            //        resourceUri: resourceUri,
+            //        resourceType: resourceType,
+            //        operationType: operationType,
+            //        requestOptions: requestOptions,
+            //        cosmosContainerCore: cosmosContainerCore,
+            //        partitionKey: partitionKey.Value,
+            //        itemId: itemId,
+            //        streamPayload: streamPayload,
+            //        requestEnricher: requestEnricher,
+            //        cancellationToken: cancellationToken);
+            //}
+
+            return this.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: resourceType,
+                operationType: operationType,
+                requestOptions: requestOptions,
+                cosmosContainerCore: cosmosContainerCore,
+                partitionKey: partitionKey,
+                streamPayload: streamPayload,
+                requestEnricher: requestEnricher,
+                cancellationToken: cancellationToken);
         }
 
         internal override void ValidateResource(string id)
