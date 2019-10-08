@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosQueryExecutionContextFactory cosmosQueryExecutionContext;
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
 
-        internal QueryIterator(
+        private QueryIterator(
             CosmosQueryExecutionContextFactory cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions)
         {

@@ -76,6 +76,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(partitionKeyDefinition));
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await this.GetQueryInfoAsync(
                 sqlQuerySpec,
                 partitionKeyDefinition,
