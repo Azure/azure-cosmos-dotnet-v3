@@ -76,6 +76,22 @@ namespace Azure.Data.Cosmos
             });
         }
 
+        internal Task<ThroughputResponse> CreateThroughputResponseAsync(
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                ThroughputProperties throughputProperties = CosmosResponseFactory.ToObjectInternal<ThroughputProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer);
+
+                return new ThroughputResponse(
+                    cosmosResponseMessage,
+                    throughputProperties);
+            });
+        }
+
         internal async Task<T> ProcessMessageAsync<T>(Task<Response> cosmosResponseTask, Func<Response, T> createResponse)
         {
             using (Response message = await cosmosResponseTask)

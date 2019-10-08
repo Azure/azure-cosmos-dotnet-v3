@@ -102,60 +102,60 @@ namespace Azure.Data.Cosmos
             return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
-        //public async override Task<int?> ReadThroughputAsync(
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
-        //    return response.Resource?.Throughput;
-        //}
+        public async override Task<int?> ReadThroughputAsync(
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
+            return response.Value?.Throughput;
+        }
 
-        //public async override Task<ThroughputResponse> ReadThroughputAsync(
-        //    RequestOptions requestOptions,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    string rid = await this.GetRIDAsync(cancellationToken);
-        //    CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-        //    return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
-        //}
+        public async override Task<ThroughputResponse> ReadThroughputAsync(
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReadThroughputAsync(rid, requestOptions, cancellationToken);
+        }
 
-        //internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
-        //    RequestOptions requestOptions,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    string rid = await this.GetRIDAsync(cancellationToken);
-        //    CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-        //    return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
-        //}
+        internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken);
+        }
 
-        //public async override Task<ThroughputResponse> ReplaceThroughputAsync(
-        //    int throughput,
-        //    RequestOptions requestOptions = null,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    string rid = await this.GetRIDAsync(cancellationToken);
+        public async override Task<ThroughputResponse> ReplaceThroughputAsync(
+            int throughput,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
 
-        //    CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-        //    return await cosmosOffers.ReplaceThroughputAsync(
-        //        targetRID: rid,
-        //        throughput: throughput,
-        //        requestOptions: requestOptions,
-        //        cancellationToken: cancellationToken);
-        //}
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputAsync(
+                targetRID: rid,
+                throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
 
-        //internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
-        //    int throughput,
-        //    RequestOptions requestOptions = null,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    string rid = await this.GetRIDAsync(cancellationToken);
+        internal async Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
+            int throughput,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            string rid = await this.GetRIDAsync(cancellationToken);
 
-        //    CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-        //    return await cosmosOffers.ReplaceThroughputIfExistsAsync(
-        //        targetRID: rid,
-        //        throughput: throughput,
-        //        requestOptions: requestOptions,
-        //        cancellationToken: cancellationToken);
-        //}
+            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+            return await cosmosOffers.ReplaceThroughputIfExistsAsync(
+                targetRID: rid,
+                throughput: throughput,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
 
         public override async Task<Response> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
