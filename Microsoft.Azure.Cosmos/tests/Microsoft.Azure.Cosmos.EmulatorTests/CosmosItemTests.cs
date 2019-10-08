@@ -1587,7 +1587,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException cosmosException)
                 {
-                    Assert.IsTrue(cosmosException.Message.Contains("ContactedReplicas"), cosmosException.Message);
+                    Assert.IsTrue(cosmosException.Message.Contains("StorePhysicalAddress"), cosmosException.Message);
                 }
             }
             finally
