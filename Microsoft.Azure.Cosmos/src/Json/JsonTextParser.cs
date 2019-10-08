@@ -44,7 +44,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static sbyte GetInt8Value(ReadOnlySpan<byte> intToken)
         {
-            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(1, intToken.Length - 1);
+            const string prefix = "B";
+            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(
+                prefix.Length,
+                intToken.Length - prefix.Length);
             long value = JsonTextParser.GetIntegerValue(intTokenWithoutPrefix);
             if (value > sbyte.MaxValue || value < sbyte.MinValue)
             {
@@ -56,7 +59,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static short GetInt16Value(ReadOnlySpan<byte> intToken)
         {
-            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(1, intToken.Length - 1);
+            const string prefix = "H";
+            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(
+                prefix.Length,
+                intToken.Length - prefix.Length);
             long value = JsonTextParser.GetIntegerValue(intTokenWithoutPrefix);
             if (value > short.MaxValue || value < short.MinValue)
             {
@@ -68,7 +74,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static int GetInt32Value(ReadOnlySpan<byte> intToken)
         {
-            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(1, intToken.Length - 1);
+            const string prefix = "L";
+            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(
+                prefix.Length,
+                intToken.Length - prefix.Length);
             long value = JsonTextParser.GetIntegerValue(intTokenWithoutPrefix);
             if (value > int.MaxValue || value < int.MinValue)
             {
@@ -80,7 +89,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static long GetInt64Value(ReadOnlySpan<byte> intToken)
         {
-            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(2, intToken.Length - 2);
+            const string prefix = "LL";
+            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(
+                prefix.Length,
+                intToken.Length - prefix.Length);
             long value = JsonTextParser.GetIntegerValue(intTokenWithoutPrefix);
             if (value > long.MaxValue || value < long.MinValue)
             {
@@ -92,7 +104,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static uint GetUInt32Value(ReadOnlySpan<byte> intToken)
         {
-            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(2, intToken.Length - 2);
+            const string prefix = "UL";
+            ReadOnlySpan<byte> intTokenWithoutPrefix = intToken.Slice(
+                prefix.Length,
+                intToken.Length - prefix.Length);
             long value = JsonTextParser.GetIntegerValue(intTokenWithoutPrefix);
             if (value > uint.MaxValue || value < uint.MinValue)
             {
@@ -104,7 +119,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static float GetFloat32Value(ReadOnlySpan<byte> floatToken)
         {
-            ReadOnlySpan<byte> floatTokenWithoutPrefix = floatToken.Slice(1, floatToken.Length - 1);
+            const string prefix = "F";
+            ReadOnlySpan<byte> floatTokenWithoutPrefix = floatToken.Slice(
+                prefix.Length,
+                floatToken.Length - prefix.Length);
             float value = JsonTextParser.GetFloatValue(floatTokenWithoutPrefix);
             if (value > float.MaxValue || value < float.MinValue)
             {
@@ -116,7 +134,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static double GetFloat64Value(ReadOnlySpan<byte> floatToken)
         {
-            ReadOnlySpan<byte> floatTokenWithoutPrefix = floatToken.Slice(1, floatToken.Length - 1);
+            const string prefix = "D";
+            ReadOnlySpan<byte> floatTokenWithoutPrefix = floatToken.Slice(
+                prefix.Length,
+                floatToken.Length - prefix.Length);
             double value = JsonTextParser.GetDoubleValue(floatTokenWithoutPrefix);
             if (value > double.MaxValue || value < double.MinValue)
             {
@@ -128,7 +149,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static Guid GetGuidValue(ReadOnlySpan<byte> guidToken)
         {
-            ReadOnlySpan<byte> guidTokenWithoutPrefix = guidToken.Slice(1, guidToken.Length - 1);
+            const string prefix = "G";
+            ReadOnlySpan<byte> guidTokenWithoutPrefix = guidToken.Slice(
+                prefix.Length,
+                guidToken.Length - prefix.Length);
             if (!Utf8Parser.TryParse(guidTokenWithoutPrefix, out Guid value, out int bytesConsumed))
             {
                 throw new JsonInvalidTokenException();
@@ -139,7 +163,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static ReadOnlyMemory<byte> GetBinaryValue(ReadOnlySpan<byte> binaryToken)
         {
-            ReadOnlySpan<byte> binaryTokenWithoutPrefix = binaryToken.Slice(1, binaryToken.Length - 1);
+            const string prefix = "B";
+            ReadOnlySpan<byte> binaryTokenWithoutPrefix = binaryToken.Slice(
+                prefix.Length,
+                binaryToken.Length - prefix.Length);
             string encodedString = Encoding.UTF8.GetString(binaryTokenWithoutPrefix.ToArray());
             return Convert.FromBase64String(encodedString);
         }
