@@ -5,8 +5,8 @@
 namespace Azure.Data.Cosmos
 {
     using System;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a database in the Azure Cosmos DB account.
@@ -20,18 +20,38 @@ namespace Azure.Data.Cosmos
     /// The example below creates a new Database with an Id property of 'MyDatabase'.
     /// <code language="c#">
     /// <![CDATA[ 
-    /// using (CosmosClient client = new CosmosClient(new Uri("service endpoint"), "auth key"))
+    /// using (DocumentClient client = new DocumentClient(new Uri("service endpoint"), "auth key"))
     /// {
-    ///     Database db = await client.CreateDatabaseAsync("MyDatabase");
+    ///     Database db = await client.CreateDatabaseAsync(new Database { Id = "MyDatabase" });
     /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <example> 
+    /// The example below creates a collection within this database with OfferThroughput set to 10000.
+    /// <code language="c#">
+    /// <![CDATA[
+    /// DocumentCollection coll = await client.CreateDocumentCollectionAsync(db.SelfLink,
+    ///     new DocumentCollection { Id = "MyCollection" }, 
+    ///     10000);
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <example>
+    /// The example below queries for a Database by Id to retrieve the SelfLink.
+    /// <code language="c#">
+    /// <![CDATA[
+    /// using Microsoft.Azure.Cosmos.Linq;
+    /// Database database = client.CreateDatabaseQuery().Where(d => d.Id == "MyDatabase").AsEnumerable().FirstOrDefault();
+    /// string databaseLink = database.SelfLink;
     /// ]]>
     /// </code>
     /// </example>    
     /// <example>
-    /// The example below deletes the database.
+    /// The example below deletes the database using its SelfLink property.
     /// <code language="c#">
     /// <![CDATA[
-    /// await db.DeleteAsync();
+    /// await client.DeleteDatabaseAsync(db.SelfLink);
     /// ]]>
     /// </code>
     /// </example>
@@ -65,11 +85,18 @@ namespace Azure.Data.Cosmos
         /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
         /// </para>
         /// <para>
+        /// When working with document resources, they too have this settable Id property. 
+        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
+        /// persisting the document in the database. 
+        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
+        /// This will prevent the SDK from generating new Ids. 
+        /// </para>
+        /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.Id)]
+        [JsonProperty(PropertyName = Constants.Properties.Id)]
         public string Id
         {
             get => this.id;
@@ -85,16 +112,16 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.ETag)]
-        public string ETag { get; /*private*/ set; }
+        [JsonProperty(PropertyName = Constants.Properties.ETag)]
+        public string ETag { get; private set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonPropertyName(Constants.Properties.LastModified)]
-        public DateTime? LastModified { get; /*private*/ set; }
+        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        public DateTime? LastModified { get; private set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -107,7 +134,7 @@ namespace Azure.Data.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.RId)]
-        /*internal*/ public string ResourceId { get; /*private*/ set; }
+        [JsonProperty(PropertyName = Constants.Properties.RId)]
+        internal string ResourceId { get; private set; }
     }
 }

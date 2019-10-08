@@ -10,7 +10,7 @@ namespace Azure.Data.Cosmos
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
-    internal class UnixDateTimeConverter : JsonConverter<DateTime?>
+    internal class TextJsonUnixDateTimeConverter : JsonConverter<DateTime?>
     {
         private static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
@@ -31,12 +31,12 @@ namespace Azure.Data.Cosmos
                 throw new JsonException(RMResources.DateTimeConveterInvalidReaderDoubleValue);
             }
 
-            return UnixDateTimeConverter.UnixStartTime.AddSeconds(totalSeconds);
+            return TextJsonUnixDateTimeConverter.UnixStartTime.AddSeconds(totalSeconds);
         }
 
         public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
         {
-            Int64 totalSeconds = (Int64)((DateTime)value - UnixDateTimeConverter.UnixStartTime).TotalSeconds;
+            Int64 totalSeconds = (Int64)((DateTime)value - TextJsonUnixDateTimeConverter.UnixStartTime).TotalSeconds;
             writer.WriteNumberValue(totalSeconds);
         }
     }

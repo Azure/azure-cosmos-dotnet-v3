@@ -4,8 +4,10 @@
 
 namespace Azure.Data.Cosmos
 {
-    using System.Text.Json.Serialization;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Base class for IndexingPolicy Indexes in the Azure Cosmos DB service, you should use a concrete Index like HashIndex or RangeIndex.
@@ -27,8 +29,8 @@ namespace Azure.Data.Cosmos
         /// <value>
         /// One of the values of the <see cref="T:Microsoft.Azure.Documents.IndexKind"/> enumeration.
         /// </value>
-        [JsonPropertyName(Constants.Properties.IndexKind)]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.IndexKind)]
+        [JsonConverter(typeof(StringEnumConverter))]
         public IndexKind Kind { get; set; }
 
         /// <summary>

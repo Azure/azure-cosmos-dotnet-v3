@@ -3,8 +3,9 @@
 //------------------------------------------------------------
 namespace Azure.Data.Cosmos
 {
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// DOM for a composite path.
@@ -18,7 +19,7 @@ namespace Azure.Data.Cosmos
         /// Gets or sets the full path in a document used for composite indexing.
         /// We do not support wild cards in the path.
         /// </summary>
-        [JsonPropertyName(Constants.Properties.Path)]
+        [JsonProperty(PropertyName = Constants.Properties.Path)]
         public string Path { get; set; }
 
         /// <summary>
@@ -26,8 +27,8 @@ namespace Azure.Data.Cosmos
         /// For example if you want to run the query "SELECT * FROM c ORDER BY c.age asc, c.height desc",
         /// then you need to make the order for "/age" "ascending" and the order for "/height" "descending".
         /// </summary>
-        [JsonPropertyName(Constants.Properties.Order)]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.Order)]
+        [JsonConverter(typeof(StringEnumConverter))]
         public CompositePathSortOrder Order { get; set; }
     }
 }

@@ -142,7 +142,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken);
         }
 
-        public override async Task<ContainerResponse> CreateContainerAsync(
+        public override Task<ContainerResponse> CreateContainerAsync(
                     ContainerProperties containerProperties,
                     int? throughput = null,
                     RequestOptions requestOptions = null,
@@ -156,12 +156,12 @@ namespace Azure.Data.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             Task<Response> response = this.CreateContainerStreamInternalAsync(
-                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken),
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), response, cancellationToken);
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -268,7 +268,7 @@ namespace Azure.Data.Cosmos
                     id);
         }
 
-        public override async Task<Response> CreateContainerStreamAsync(
+        public override Task<Response> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             int? throughput = null,
             RequestOptions requestOptions = null,
@@ -281,8 +281,8 @@ namespace Azure.Data.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            Stream streamPayload = await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken);
-            return await this.CreateContainerStreamInternalAsync(streamPayload,
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(containerProperties);
+            return this.CreateContainerStreamInternalAsync(streamPayload,
                 throughput,
                 requestOptions,
                 cancellationToken);

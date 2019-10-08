@@ -58,10 +58,7 @@
     <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;..\src\Handler\TransportHandler.cs;..\src\Handler\AbstractRetryHandler.cs">
       <Link>Handler\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Diagnostics\CosmosDiagnostics.cs">
-      <Link>Diagnostics\%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\Diagnostics\CosmosDiagnosticsAggregate.cs">
+    <Compile Include="..\src\Diagnostics\*.cs">
       <Link>Diagnostics\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Routing\*.cs" Exclude="..\src\Routing\ClientCollectionCache.cs;..\src\Routing\CollectionCache.cs;..\src\Routing\AddressResolver.cs;..\src\Routing\LocationCache.cs;..\src\Routing\GatewayAddressCache.cs;..\src\Routing\GlobalEndpointManager.cs;..\src\Routing\GlobalAddressResolver.cs">
@@ -215,6 +212,7 @@
   
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.0.0-preview.8" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="System.Text.Json" Version="4.6.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />

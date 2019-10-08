@@ -5,8 +5,9 @@ namespace Azure.Data.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Spatial index specification
@@ -18,14 +19,13 @@ namespace Azure.Data.Cosmos
         /// <summary>
         /// Path in JSON document to index
         /// </summary>
-        [JsonPropertyName(Constants.Properties.Path)]
+        [JsonProperty(PropertyName = Constants.Properties.Path)]
         public string Path { get; set; }
 
         /// <summary>
         /// Path's spatial type
         /// </summary>
-        [JsonPropertyName(Constants.Properties.Types)]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.Types, ItemConverterType = typeof(StringEnumConverter))]
         public Collection<SpatialType> SpatialTypes
         {
             get

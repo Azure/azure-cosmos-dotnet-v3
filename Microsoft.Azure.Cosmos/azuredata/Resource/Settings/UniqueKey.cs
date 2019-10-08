@@ -4,8 +4,8 @@
 namespace Azure.Data.Cosmos
 {
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a unique key on that enforces uniqueness constraint on documents in the collection in the Azure Cosmos DB service.
@@ -29,7 +29,7 @@ namespace Azure.Data.Cosmos
         /// uniqueKey.Paths = new Collection<string> { "/name/first", "/name/last" };
         /// ]]>
         /// </example>
-        [JsonPropertyName(Constants.Properties.Paths)]
-        public Collection<string> Paths { get; /*internal*/ set; } = new Collection<string>();
+        [JsonProperty(PropertyName = Constants.Properties.Paths)]
+        public Collection<string> Paths { get; internal set; } = new Collection<string>();
     }
 }

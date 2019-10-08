@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     using (DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request))
                     {
-                        return await CosmosResource.FromStreamAsync<ContainerProperties>(response, cancellationToken);
+                        return CosmosResource.FromStream<ContainerProperties>(response);
                     }
                 }
             }

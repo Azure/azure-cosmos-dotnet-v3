@@ -5,8 +5,9 @@
 namespace Azure.Data.Cosmos
 {
     using System;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Specifies an instance of the <see cref="RangeIndex"/> class in the Azure Cosmos DB service.
@@ -67,8 +68,8 @@ namespace Azure.Data.Cosmos
         /// The data type for which this index should be applied.
         /// </value>
         /// <remarks>Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for valid ranges of values.</remarks>
-        [JsonPropertyName(Constants.Properties.DataType)]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.DataType)]
+        [JsonConverter(typeof(StringEnumConverter))]
         public DataType DataType { get; set; }
 
         /// <summary>
@@ -78,7 +79,8 @@ namespace Azure.Data.Cosmos
         /// The precision for this particular index. Returns null, if not set.
         /// </value>
         /// <remarks>Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for valid ranges of values.</remarks>
-        [JsonPropertyName(Constants.Properties.Precision)]
+        [JsonProperty(PropertyName = Constants.Properties.Precision,
+            NullValueHandling = NullValueHandling.Ignore)]
         public short? Precision { get; set; }
 
         /// <summary>

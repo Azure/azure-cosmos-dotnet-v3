@@ -2,13 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Azure.Data.Cosmos
 {
     using System;
     using System.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using global::Azure.Data.Cosmos;
     using Microsoft.Azure.Documents;
 
     /// <summary> 
@@ -17,9 +14,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class CosmosResource
     {
-        private static CosmosTextJsonSerializer cosmosDefaultJsonSerializer = new CosmosTextJsonSerializer();
+        private static CosmosJsonDotNetSerializer cosmosDefaultJsonSerializer = new CosmosJsonDotNetSerializer();
 
-        internal static ValueTask<T> FromStreamAsync<T>(DocumentServiceResponse response, CancellationToken cancellationToken)
+        internal static T FromStream<T>(DocumentServiceResponse response)
         {
             if (response == null)
             {
@@ -28,20 +25,20 @@ namespace Microsoft.Azure.Cosmos
 
             if (response.ResponseBody != null && (!response.ResponseBody.CanSeek || response.ResponseBody.Length > 0))
             {
-                return CosmosResource.FromStreamAsync<T>(response.ResponseBody, cancellationToken);
+                return CosmosResource.FromStream<T>(response.ResponseBody);
             }
 
-            return new ValueTask<T>(default(T));
+            return default(T);
         }
 
-        internal static Task<Stream> ToStreamAsync<T>(T input, CancellationToken cancellationToken)
+        internal static Stream ToStream<T>(T input)
         {
-            return CosmosResource.cosmosDefaultJsonSerializer.ToStreamAsync(input, cancellationToken);
+            return CosmosResource.cosmosDefaultJsonSerializer.ToStream(input);
         }
 
-        internal static ValueTask<T> FromStreamAsync<T>(Stream stream, CancellationToken cancellationToken)
+        internal static T FromStream<T>(Stream stream)
         {
-            return CosmosResource.cosmosDefaultJsonSerializer.FromStreamAsync<T>(stream, cancellationToken);
+            return CosmosResource.cosmosDefaultJsonSerializer.FromStream<T>(stream);
         }
     }
 }

@@ -5,8 +5,6 @@
 namespace Azure.Data.Cosmos
 {
     using System.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// This is an interface to allow a custom serializer to be used by the CosmosClient
@@ -20,11 +18,8 @@ namespace Azure.Data.Cosmos
         /// </summary>
         /// <typeparam name="T">Any typed passed to <see cref="Container"/></typeparam>
         /// <param name="stream">The Stream response containing JSON from Cosmos</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The object deserialized from the stream.</returns>
-        public abstract ValueTask<T> FromStreamAsync<T>(
-            Stream stream,
-            CancellationToken cancellationToken);
+        public abstract T FromStream<T>(Stream stream);
 
         /// <summary>
         /// Convert the object to a Stream. 
@@ -32,10 +27,7 @@ namespace Azure.Data.Cosmos
         /// Stream.CanRead must be true https://docs.microsoft.com/dotnet/api/system.io.stream.canread?view=netcore-2.0
         /// </summary>
         /// <param name="input">Any typed passed to <see cref="Container"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A readable Stream containing JSON of the serialized object</returns>
-        public abstract Task<Stream> ToStreamAsync<T>(
-            T input,
-            CancellationToken cancellationToken);
+        public abstract Stream ToStream<T>(T input);
     }
 }

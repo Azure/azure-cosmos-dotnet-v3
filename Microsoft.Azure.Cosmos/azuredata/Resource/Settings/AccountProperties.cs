@@ -7,9 +7,8 @@ namespace Azure.Data.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     /// <summary> 
     /// Represents a <see cref="AccountProperties"/>. A AccountProperties is the container for databases in the Azure Cosmos DB service.
@@ -24,9 +23,9 @@ namespace Azure.Data.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="AccountProperties"/> class.
         /// </summary>
-        public AccountProperties()
+        internal AccountProperties()
         {
-            this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
+            this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => QueryStringToDictConverter());
         }
 
         /// <summary>
@@ -64,8 +63,8 @@ namespace Azure.Data.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.Id)]
-        public string Id { get; /*internal*/ set; }
+        [JsonProperty(PropertyName = Constants.Properties.Id)]
+        public string Id { get; internal set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -76,8 +75,8 @@ namespace Azure.Data.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.ETag)]
-        public string ETag { get; /*internal*/ set; }
+        [JsonProperty(PropertyName = Constants.Properties.ETag)]
+        public string ETag { get; internal set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -90,14 +89,11 @@ namespace Azure.Data.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.RId)]
-        /*internal*/ public string ResourceId { get; set; }
+        [JsonProperty(PropertyName = Constants.Properties.RId)]
+        internal string ResourceId { get; set; }
 
-        /// <summary>
-        /// Placeholder.
-        /// </summary>
-        [JsonPropertyName(Constants.Properties.WritableLocations)]
-        /*internal*/ public Collection<AccountRegion> WriteLocationsInternal
+        [JsonProperty(PropertyName = Constants.Properties.WritableLocations)]
+        internal Collection<AccountRegion> WriteLocationsInternal
         {
             get
             {
@@ -110,11 +106,8 @@ namespace Azure.Data.Cosmos
             set => this.writeRegions = value;
         }
 
-        /// <summary>
-        /// Placehlder
-        /// </summary>
-        [JsonPropertyName(Constants.Properties.ReadableLocations)]
-        /*internal*/ public Collection<AccountRegion> ReadLocationsInternal
+        [JsonProperty(PropertyName = Constants.Properties.ReadableLocations)]
+        internal Collection<AccountRegion> ReadLocationsInternal
         {
             get
             {
@@ -197,46 +190,43 @@ namespace Azure.Data.Cosmos
         /// <value>
         /// The ConsistencySetting.
         /// </value>
-        [JsonPropertyName(Constants.Properties.UserConsistencyPolicy)]
-        public AccountConsistency Consistency { get; /*internal*/ set; }
+        [JsonProperty(PropertyName = Constants.Properties.UserConsistencyPolicy)]
+        public AccountConsistency Consistency { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount
         /// </summary>
-        [JsonPropertyName(Constants.Properties.AddressesLink)]
-        /*internal*/ public string AddressesLink { get; set; }
+        [JsonProperty(PropertyName = Constants.Properties.AddressesLink)]
+        internal string AddressesLink { get; set; }
 
         /// <summary>
         /// Gets the ReplicationPolicy properties
         /// </summary>
-        [JsonPropertyName(Constants.Properties.UserReplicationPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.UserReplicationPolicy)]
         internal ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
         /// Gets the SystemReplicationPolicy 
         /// </summary>
-        [JsonPropertyName(Constants.Properties.SystemReplicationPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.SystemReplicationPolicy)]
         internal ReplicationPolicy SystemReplicationPolicy { get; set; }
 
-        [JsonPropertyName(Constants.Properties.ReadPolicy)]
+        [JsonProperty(PropertyName = Constants.Properties.ReadPolicy)]
         internal ReadPolicy ReadPolicy { get; set; }
 
         internal IDictionary<string, object> QueryEngineConfiguration => this.QueryEngineConfigurationInternal.Value;
 
-        [JsonPropertyName(Constants.Properties.QueryEngineConfiguration)]
+        [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
         internal string QueryEngineConfigurationString { get; set; }
 
-        /// <summary>
-        /// Placeholder
-        /// </summary>
-        [JsonPropertyName(Constants.Properties.EnableMultipleWriteLocations)]
-        /*internal*/ public bool EnableMultipleWriteLocations { get; set; }
+        [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
+        internal bool EnableMultipleWriteLocations { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
             {
-                return JsonSerializer.Deserialize<Dictionary<string, object>>(this.QueryEngineConfigurationString);
+                return JsonConvert.DeserializeObject<Dictionary<string, object>>(this.QueryEngineConfigurationString);
             }
             else
             {

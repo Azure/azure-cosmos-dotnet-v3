@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
-                    return await CosmosResource.FromStreamAsync<AccountProperties>(documentServiceResponse, default(CancellationToken));
+                    return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
                 }
             }
         }

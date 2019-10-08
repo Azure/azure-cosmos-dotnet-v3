@@ -33,12 +33,11 @@ namespace Azure.Data.Cosmos
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                ContainerProperties containerProperties = await CosmosResponseFactory.ToObjectInternalAsync<ContainerProperties>(
+                ContainerProperties containerProperties = CosmosResponseFactory.ToObjectInternal<ContainerProperties>(
                     cosmosResponseMessage,
-                    this.propertiesSerializer,
-                    cancellationToken);
+                    this.propertiesSerializer);
 
                 return new ContainerResponse(
                     cosmosResponseMessage.Status,
@@ -53,12 +52,11 @@ namespace Azure.Data.Cosmos
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                DatabaseProperties databaseProperties = await CosmosResponseFactory.ToObjectInternalAsync<DatabaseProperties>(
+                DatabaseProperties databaseProperties = CosmosResponseFactory.ToObjectInternal<DatabaseProperties>(
                     cosmosResponseMessage,
-                    this.propertiesSerializer,
-                    cancellationToken);
+                    this.propertiesSerializer);
 
                 return new DatabaseResponse(
                     cosmosResponseMessage.Status,
@@ -72,22 +70,22 @@ namespace Azure.Data.Cosmos
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
-            return this.ProcessMessageAsync(cosmosResponseMessageTask, async (cosmosResponseMessage) =>
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                T item = await CosmosResponseFactory.ToObjectInternalAsync<T>(cosmosResponseMessage, this.cosmosSerializer, cancellationToken);
+                T item = CosmosResponseFactory.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
                 return new Response<T>(cosmosResponseMessage, item);
             });
         }
 
-        internal async Task<T> ProcessMessageAsync<T>(Task<Response> cosmosResponseTask, Func<Response, Task<T>> createResponse)
+        internal async Task<T> ProcessMessageAsync<T>(Task<Response> cosmosResponseTask, Func<Response, T> createResponse)
         {
             using (Response message = await cosmosResponseTask)
             {
-                return await createResponse(message);
+                return createResponse(message);
             }
         }
 
-        internal static ValueTask<T> ToObjectInternalAsync<T>(Response response, CosmosSerializer jsonSerializer, CancellationToken cancellationToken)
+        internal static T ToObjectInternal<T>(Response response, CosmosSerializer jsonSerializer)
         {
             //Throw the exception
             // helper?
@@ -101,10 +99,10 @@ namespace Azure.Data.Cosmos
             }
             if (response.ContentStream == null)
             {
-                return new ValueTask<T>(Task.FromResult(default(T)));
+                return default(T);
             }
 
-            return jsonSerializer.FromStreamAsync<T>(response.ContentStream, cancellationToken);
+            return jsonSerializer.FromStream<T>(response.ContentStream);
         }
     }
 }

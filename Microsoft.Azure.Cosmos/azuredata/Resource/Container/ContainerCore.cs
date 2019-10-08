@@ -72,7 +72,7 @@ namespace Azure.Data.Cosmos
             return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
-        public override async Task<ContainerResponse> ReplaceContainerAsync(
+        public override Task<ContainerResponse> ReplaceContainerAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -84,11 +84,11 @@ namespace Azure.Data.Cosmos
 
             this.ClientContext.ValidateResource(containerProperties.Id);
             Task<Response> response = this.ReplaceStreamInternalAsync(
-                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken),
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
 
-            return await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
+            return this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this, response, cancellationToken);
         }
 
         public override Task<ContainerResponse> DeleteContainerAsync(
@@ -179,7 +179,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override async Task<Response> ReplaceContainerStreamAsync(
+        public override Task<Response> ReplaceContainerStreamAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -190,8 +190,8 @@ namespace Azure.Data.Cosmos
             }
 
             this.ClientContext.ValidateResource(containerProperties.Id);
-            return await this.ReplaceStreamInternalAsync(
-                streamPayload: await this.ClientContext.PropertiesSerializer.ToStreamAsync(containerProperties, cancellationToken),
+            return this.ReplaceStreamInternalAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }

@@ -4,9 +4,9 @@
 
 namespace Azure.Data.Cosmos
 {
-    using System.Text.Json.Serialization;
-    using Azure.Data.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
@@ -29,8 +29,8 @@ namespace Azure.Data.Cosmos
         /// <value>
         /// One of the values of the <see cref="ConflictResolutionMode"/> enumeration.
         /// </value>
-        [JsonPropertyName(Constants.Properties.Mode)]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty(PropertyName = Constants.Properties.Mode, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(StringEnumConverter))]
         public ConflictResolutionMode Mode { get; set; }
 
         /// <summary>
@@ -50,11 +50,11 @@ namespace Azure.Data.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionPath = "/name/first";
         /// ]]>
         /// </example>
-        [JsonPropertyName(Constants.Properties.ConflictResolutionPath)]
+        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPath, NullValueHandling = NullValueHandling.Ignore)]
         public string ResolutionPath { get; set; }
 
         /// <summary>
-        /// Gets or sets the stored procedure path which is used for conflict resolution in the Azure Cosmos DB service.
+        /// Gets or sets the Stored Procedure which is used for conflict resolution in the Azure Cosmos DB service.
         /// This stored procedure may be created after the <see cref="Container"/> is created and can be changed as required. 
         /// </summary>
         /// <remarks>
@@ -70,7 +70,7 @@ namespace Azure.Data.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionProcedure = "dbs/databaseName/colls/containerName/sprocs/storedProcedureName";
         /// ]]>
         /// </example>
-        [JsonPropertyName(Constants.Properties.ConflictResolutionProcedure)]
+        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
         public string ResolutionProcedure { get; set; }
     }
 }

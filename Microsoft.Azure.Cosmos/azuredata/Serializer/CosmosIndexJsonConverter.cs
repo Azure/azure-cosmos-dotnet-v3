@@ -6,61 +6,85 @@ namespace Azure.Data.Cosmos
 {
     using System;
     using System.Globalization;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
-    internal sealed class CosmosIndexJsonConverter : JsonConverter<Index>
+    internal sealed class CosmosIndexJsonConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {
             return typeof(Index).IsAssignableFrom(objectType);
         }
 
-        public override Index Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            if (reader.TokenType == JsonTokenType.Null)
+            if (objectType != typeof(Index))
             {
                 return null;
             }
 
-            if (reader.TokenType != JsonTokenType.StartObject)
+            JToken indexToken = JToken.Load(reader);
+
+            if (indexToken.Type == JTokenType.Null)
             {
-                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
+                return null;
             }
 
-            string raw = reader.GetString();
-            JsonDocument document = JsonDocument.Parse(raw);
-            if (!document.RootElement.TryGetProperty(Constants.Properties.IndexKind, out JsonElement indexKindElement)
-                || indexKindElement.ValueKind != JsonValueKind.String)
+            if (indexToken.Type != JTokenType.Object)
             {
-                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
+                throw new JsonSerializationException(
+                    string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
             }
 
-            string indexKindString = indexKindElement.GetString();
-            if (Enum.TryParse(indexKindString, out IndexKind indexKind))
+            JToken indexKindToken = indexToken[Constants.Properties.IndexKind];
+            if (indexKindToken == null || indexKindToken.Type != JTokenType.String)
             {
+                throw new JsonSerializationException(
+                    string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexSpecFormat));
+            }
+
+            IndexKind indexKind = IndexKind.Hash;
+            if (Enum.TryParse(indexKindToken.Value<string>(), out indexKind))
+            {
+                object index = null;
                 switch (indexKind)
                 {
                     case IndexKind.Hash:
-                        return JsonSerializer.Deserialize<HashIndex>(ref reader, options);
+                        index = new HashIndex();
+                        break;
                     case IndexKind.Range:
-                        return JsonSerializer.Deserialize<RangeIndex>(ref reader, options);
+                        index = new RangeIndex();
+                        break;
                     case IndexKind.Spatial:
-                        return JsonSerializer.Deserialize<SpatialIndex>(ref reader, options);
+                        index = new SpatialIndex();
+                        break;
                     default:
-                        throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, indexKind));
+                        throw new JsonSerializationException(
+                            string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, indexKind));
                 }
+
+                serializer.Populate(indexToken.CreateReader(), index);
+                return index;
             }
             else
             {
-                throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, indexKindString));
+                throw new JsonSerializationException(
+                    string.Format(CultureInfo.CurrentCulture, RMResources.InvalidIndexKindValue, indexKindToken.Value<string>()));
             }
         }
 
-        public override void Write(Utf8JsonWriter writer, Index value, JsonSerializerOptions options)
+        public override bool CanWrite
         {
-            JsonSerializer.Serialize(writer, value, options);
+            get
+            {
+                return false;
+            }
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -9,13 +9,12 @@ namespace Azure.Data.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
     using Azure.Core.Pipeline;
     using Azure.Data.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos;    
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
@@ -52,7 +51,7 @@ namespace Azure.Data.Cosmos
         /// <summary>
         /// Default request timeout
         /// </summary>
-        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosTextJsonSerializer());
+        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
 
         private int gatewayModeMaxConnectionLimit;
         private CosmosSerializationOptions serializerOptions;
@@ -490,7 +489,7 @@ namespace Azure.Data.Cosmos
         {
             if (this.SerializerOptions != null)
             {
-                CosmosTextJsonSerializer cosmosJsonDotNetSerializer = new CosmosTextJsonSerializer(this.SerializerOptions);
+                CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer(this.SerializerOptions);
                 return new CosmosJsonSerializerWrapper(cosmosJsonDotNetSerializer);
             }
             else
@@ -663,37 +662,46 @@ namespace Azure.Data.Cosmos
         /// <returns>Returns a JSON string of the current configuration.</returns>
         internal string GetSerializedConfiguration()
         {
-            return JsonSerializer.Serialize(this);
+            return JsonConvert.SerializeObject(this);
         }
 
         /// <summary>
         /// The complex object passed in by the user can contain objects that can not be serialized. Instead just log the types.
         /// </summary>
-        private class ClientOptionJsonConverter : JsonConverter<CosmosSerializer>
+        private class ClientOptionJsonConverter : JsonConverter
         {
-            public override bool CanConvert(Type objectType)
+            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                return objectType == typeof(CosmosSerializer);
-            }
+                Collection<RequestHandler> handlers = value as Collection<RequestHandler>;
+                if (handlers != null)
+                {
+                    writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));
+                    return;
+                }
 
-            public override CosmosSerializer Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                return JsonSerializer.Deserialize<CosmosSerializer>(ref reader, options);
-            }
-
-            public override void Write(Utf8JsonWriter writer, CosmosSerializer value, JsonSerializerOptions options)
-            {
                 CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = value as CosmosJsonSerializerWrapper;
                 if (value is CosmosJsonSerializerWrapper)
                 {
-                    writer.WriteString("CosmosSerializer", cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
                 }
 
                 CosmosSerializer cosmosSerializer = value as CosmosSerializer;
                 if (cosmosSerializer is CosmosSerializer)
                 {
-                    writer.WriteString("CosmosSerializer", cosmosSerializer.GetType().ToString());
+                    writer.WriteValue(cosmosSerializer.GetType().ToString());
                 }
+            }
+
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            {
+                throw new NotImplementedException("Unnecessary because CanRead is false. The type will skip the converter.");
+            }
+
+            public override bool CanRead => false;
+
+            public override bool CanConvert(Type objectType)
+            {
+                return objectType == typeof(DateTime);
             }
         }
     }

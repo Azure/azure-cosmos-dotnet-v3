@@ -5,8 +5,8 @@
 namespace Azure.Data.Cosmos
 {
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     /// <summary> 
     /// Specifies a path within a JSON document to be included in the Azure Cosmos DB service.
@@ -23,7 +23,7 @@ namespace Azure.Data.Cosmos
         /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-indexing-policies/#ConfigPolicy for how to specify paths.
         /// Some valid examples: /"prop"/?, /"prop"/**, /"prop"/"subprop"/?, /"prop"/[]/?
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.Path)]
+        [JsonProperty(PropertyName = Constants.Properties.Path)]
         public string Path { get; set; }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace Azure.Data.Cosmos
         /// <value>
         /// The collection of the <see cref="Index"/> objects to be applied for this included path.
         /// </value>
-        [JsonPropertyName(Constants.Properties.Indexes)]
+        [JsonProperty(PropertyName = Constants.Properties.Indexes)]
         internal Collection<Index> Indexes { get; set; } = new Collection<Index>();
     }
 }

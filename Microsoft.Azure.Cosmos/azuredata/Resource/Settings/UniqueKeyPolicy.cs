@@ -4,8 +4,8 @@
 namespace Azure.Data.Cosmos
 {
     using System.Collections.ObjectModel;
-    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents the unique key policy configuration for specifying uniqueness constraints on documents in the collection in the Azure Cosmos DB service.
@@ -63,7 +63,7 @@ namespace Azure.Data.Cosmos
         /// <summary>
         /// Gets collection of <see cref="UniqueKey"/> that guarantee uniqueness of documents in collection in the Azure Cosmos DB service.
         /// </summary>
-        [JsonPropertyName(Constants.Properties.UniqueKeys)]
-        public Collection<UniqueKey> UniqueKeys { get; /*internal*/ set; } = new Collection<UniqueKey>();
+        [JsonProperty(PropertyName = Constants.Properties.UniqueKeys)]
+        public Collection<UniqueKey> UniqueKeys { get; internal set; } = new Collection<UniqueKey>();
     }
 }
