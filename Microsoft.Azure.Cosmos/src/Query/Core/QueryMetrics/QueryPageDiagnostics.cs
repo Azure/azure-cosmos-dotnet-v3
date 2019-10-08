@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query
             PointOperationStatistics requestDiagnostics)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
-            this.QueryMetricText = queryMetricText ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
+            this.QueryMetricText = queryMetricText;
             this.IndexUtilizationText = indexUtilizationText;
             this.RequestDiagnostics = requestDiagnostics ?? throw new ArgumentNullException(nameof(requestDiagnostics));
         }

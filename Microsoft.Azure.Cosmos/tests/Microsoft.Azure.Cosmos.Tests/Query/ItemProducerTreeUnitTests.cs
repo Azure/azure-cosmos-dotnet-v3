@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -149,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ItemProducerTree producer,
                 int itemsBuffered,
                 double resourceUnitUsage,
-                IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
+                IReadOnlyCollection<QueryPageDiagnostics> queryPageDiagnostics,
                 long responseLengthBytes,
                 CancellationToken token) =>
             { callBackCount++; };
@@ -163,6 +164,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Mock<CosmosElement>(CosmosElementType.Object).Object
             };
 
+            QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                   partitionKeyRangeId: "0",
+                   queryMetricText: "SomeRandomQueryMetricText",
+                   indexUtilizationText: null,
+                   requestDiagnostics: new PointOperationStatistics(
+                        Guid.NewGuid().ToString(),
+                        System.Net.HttpStatusCode.OK,
+                        subStatusCode: SubStatusCodes.Unknown,
+                        requestCharge: 42,
+                        errorMessage: null,
+                        method: HttpMethod.Post,
+                        requestUri: new Uri("http://localhost.com"),
+                        clientSideRequestStatistics: null));
+            IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
+
             mockQueryContext.Setup(x => x.ContainerResourceId).Returns("MockCollectionRid");
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(
                 sqlQuerySpec,
@@ -175,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: cosmosElements,
                     requestCharge: 42,
                     activityId: "AA470D71-6DEF-4D61-9A08-272D8C9ABCFE",
-                    diagnostics: null,
+                    diagnostics: pageDiagnostics,
                     responseLengthBytes: 500,
                     disallowContinuationTokenMessage: null,
                     continuationToken: "TestToken")));
@@ -196,6 +212,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
+            diagnostics = new QueryPageDiagnostics(
+                   partitionKeyRangeId: "0",
+                   queryMetricText: null,
+                   indexUtilizationText: null,
+                   requestDiagnostics: new PointOperationStatistics(
+                        Guid.NewGuid().ToString(),
+                        System.Net.HttpStatusCode.InternalServerError,
+                        subStatusCode: SubStatusCodes.Unknown,
+                        requestCharge: 10.2,
+                        errorMessage: "Error message",
+                        method: HttpMethod.Post,
+                        requestUri: new Uri("http://localhost.com"),
+                        clientSideRequestStatistics: null));
+            pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
+
             // Buffer a failure
             mockQueryContext.Setup(x => x.ExecuteQueryAsync(
                 sqlQuerySpec,
@@ -210,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: "Error message",
                     requestCharge: 10.2,
                     activityId: Guid.NewGuid().ToString(),
-                    diagnostics: null)));
+                    diagnostics: pageDiagnostics)));
 
             await itemProducerTree.BufferMoreDocumentsAsync(cancellationTokenSource.Token);
 
