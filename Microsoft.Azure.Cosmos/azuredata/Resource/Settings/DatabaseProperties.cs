@@ -86,7 +86,7 @@ namespace Azure.Data.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonPropertyName(Constants.Properties.ETag)]
-        public string ETag { get; private set; }
+        public string ETag { get; /*private*/ set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
@@ -94,7 +94,7 @@ namespace Azure.Data.Cosmos
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonPropertyName(Constants.Properties.LastModified)]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; /*private*/ set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -108,6 +108,6 @@ namespace Azure.Data.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonPropertyName(Constants.Properties.RId)]
-        internal string ResourceId { get; private set; }
+        /*internal*/ public string ResourceId { get; /*private*/ set; }
     }
 }

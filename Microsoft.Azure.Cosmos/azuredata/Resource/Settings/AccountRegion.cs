@@ -16,7 +16,7 @@ namespace Azure.Data.Cosmos
         /// "West US" as the name of the database account location in the West US region.
         /// </summary>
         [JsonPropertyName(Constants.Properties.Name)]
-        public string Name { get; internal set; }
+        public string Name { get; /*internal*/ set; }
 
         /// <summary>
         /// Gets the URL of the database account location in the Azure Cosmos DB service. For example,
@@ -24,6 +24,6 @@ namespace Azure.Data.Cosmos
         /// database account location in the West US region.
         /// </summary>
         [JsonPropertyName(Constants.Properties.DatabaseAccountEndpoint)]
-        public string Endpoint { get; internal set; }
+        public string Endpoint { get; /*internal*/ set; }
     }
 }

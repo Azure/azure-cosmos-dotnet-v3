@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using System.Text.Json;
     using global::Azure;
     using global::Azure.Core.Http;
     using global::Azure.Data.Cosmos;
@@ -254,9 +255,9 @@ namespace Microsoft.Azure.Cosmos
             if (this.content != null
                 && this.content.CanRead)
             {
-                try
+try
                 {
-                    Error error = Resource.LoadFrom<Error>(this.content);
+                    Error error = JsonSerializer.Deserialize<Error>(this.ErrorMessage);
                     if (error != null)
                     {
                         // Error format is not consistent across modes
@@ -270,14 +271,9 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
                 }
-                catch (Newtonsoft.Json.JsonReaderException)
+                catch (JsonException)
                 {
                     // Content is not Json
-                    this.content.Position = 0;
-                    using (StreamReader streamReader = new StreamReader(this.content))
-                    {
-                        this.ErrorMessage = streamReader.ReadToEnd();
-                    }
                 }
             }
         }

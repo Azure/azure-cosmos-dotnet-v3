@@ -36,7 +36,7 @@ namespace Azure.Data.Cosmos
         /// ETags are used for concurrency checking when updating resources.
         /// </remarks>
         [JsonPropertyName(Constants.Properties.ETag)]
-        public string ETag { get; private set; }
+        public string ETag { get; /*private*/ set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
@@ -44,7 +44,7 @@ namespace Azure.Data.Cosmos
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
         [JsonPropertyName(Constants.Properties.LastModified)]
-        public DateTime LastModified { get; private set; }
+        public DateTime LastModified { get; /*private*/ set; }
 
         /// <summary>
         /// Gets the provisioned throughput for a resource in measurement of request units per second in the Azure Cosmos service.
@@ -59,13 +59,13 @@ namespace Azure.Data.Cosmos
         /// Gets the offer rid.
         /// </summary>
         [JsonPropertyName(Constants.Properties.RId)]
-        internal string OfferRID { get; private set; }
+        /*internal*/ public string OfferRID { get; /*private*/ set; }
 
         /// <summary>
         /// Gets the resource rid.
         /// </summary>
         [JsonPropertyName(Constants.Properties.OfferResourceId)]
-        internal string ResourceRID { get; private set; }
+        /*internal*/ public string ResourceRID { get; /*private*/ set; }
 
         [JsonPropertyName("content")]
         private OfferContentV2 Content { get; set; }

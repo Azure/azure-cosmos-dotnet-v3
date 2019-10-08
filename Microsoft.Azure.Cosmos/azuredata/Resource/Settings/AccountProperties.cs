@@ -24,7 +24,7 @@ namespace Azure.Data.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="AccountProperties"/> class.
         /// </summary>
-        internal AccountProperties()
+        public AccountProperties()
         {
             this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }
@@ -65,7 +65,7 @@ namespace Azure.Data.Cosmos
         /// </para>
         /// </remarks>
         [JsonPropertyName(Constants.Properties.Id)]
-        public string Id { get; internal set; }
+        public string Id { get; /*internal*/ set; }
 
         /// <summary>
         /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
@@ -77,7 +77,7 @@ namespace Azure.Data.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [JsonPropertyName(Constants.Properties.ETag)]
-        public string ETag { get; internal set; }
+        public string ETag { get; /*internal*/ set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -91,10 +91,13 @@ namespace Azure.Data.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonPropertyName(Constants.Properties.RId)]
-        internal string ResourceId { get; set; }
+        /*internal*/ public string ResourceId { get; set; }
 
+        /// <summary>
+        /// Placeholder.
+        /// </summary>
         [JsonPropertyName(Constants.Properties.WritableLocations)]
-        internal Collection<AccountRegion> WriteLocationsInternal
+        /*internal*/ public Collection<AccountRegion> WriteLocationsInternal
         {
             get
             {
@@ -107,8 +110,11 @@ namespace Azure.Data.Cosmos
             set => this.writeRegions = value;
         }
 
+        /// <summary>
+        /// Placehlder
+        /// </summary>
         [JsonPropertyName(Constants.Properties.ReadableLocations)]
-        internal Collection<AccountRegion> ReadLocationsInternal
+        /*internal*/ public Collection<AccountRegion> ReadLocationsInternal
         {
             get
             {
@@ -192,13 +198,13 @@ namespace Azure.Data.Cosmos
         /// The ConsistencySetting.
         /// </value>
         [JsonPropertyName(Constants.Properties.UserConsistencyPolicy)]
-        public AccountConsistency Consistency { get; internal set; }
+        public AccountConsistency Consistency { get; /*internal*/ set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount
         /// </summary>
         [JsonPropertyName(Constants.Properties.AddressesLink)]
-        internal string AddressesLink { get; set; }
+        /*internal*/ public string AddressesLink { get; set; }
 
         /// <summary>
         /// Gets the ReplicationPolicy properties
@@ -220,8 +226,11 @@ namespace Azure.Data.Cosmos
         [JsonPropertyName(Constants.Properties.QueryEngineConfiguration)]
         internal string QueryEngineConfigurationString { get; set; }
 
+        /// <summary>
+        /// Placeholder
+        /// </summary>
         [JsonPropertyName(Constants.Properties.EnableMultipleWriteLocations)]
-        internal bool EnableMultipleWriteLocations { get; set; }
+        /*internal*/ public bool EnableMultipleWriteLocations { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()
         {

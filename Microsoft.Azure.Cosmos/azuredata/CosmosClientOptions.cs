@@ -9,12 +9,13 @@ namespace Azure.Data.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Azure.Core.Pipeline;
     using Azure.Data.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos;    
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
@@ -662,46 +663,37 @@ namespace Azure.Data.Cosmos
         /// <returns>Returns a JSON string of the current configuration.</returns>
         internal string GetSerializedConfiguration()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this);
         }
 
         /// <summary>
         /// The complex object passed in by the user can contain objects that can not be serialized. Instead just log the types.
         /// </summary>
-        private class ClientOptionJsonConverter : JsonConverter
+        private class ClientOptionJsonConverter : JsonConverter<CosmosSerializer>
         {
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            public override bool CanConvert(Type objectType)
             {
-                Collection<RequestHandler> handlers = value as Collection<RequestHandler>;
-                if (handlers != null)
-                {
-                    writer.WriteValue(string.Join(":", handlers.Select(x => x.GetType())));
-                    return;
-                }
+                return objectType == typeof(CosmosSerializer);
+            }
 
+            public override CosmosSerializer Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return JsonSerializer.Deserialize<CosmosSerializer>(ref reader, options);
+            }
+
+            public override void Write(Utf8JsonWriter writer, CosmosSerializer value, JsonSerializerOptions options)
+            {
                 CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper = value as CosmosJsonSerializerWrapper;
                 if (value is CosmosJsonSerializerWrapper)
                 {
-                    writer.WriteValue(cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
+                    writer.WriteString("CosmosSerializer", cosmosJsonSerializerWrapper.InternalJsonSerializer.GetType().ToString());
                 }
 
                 CosmosSerializer cosmosSerializer = value as CosmosSerializer;
                 if (cosmosSerializer is CosmosSerializer)
                 {
-                    writer.WriteValue(cosmosSerializer.GetType().ToString());
+                    writer.WriteString("CosmosSerializer", cosmosSerializer.GetType().ToString());
                 }
-            }
-
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-            {
-                throw new NotImplementedException("Unnecessary because CanRead is false. The type will skip the converter.");
-            }
-
-            public override bool CanRead => false;
-
-            public override bool CanConvert(Type objectType)
-            {
-                return objectType == typeof(DateTime);
             }
         }
     }

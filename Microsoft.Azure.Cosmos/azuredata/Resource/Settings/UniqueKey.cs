@@ -30,6 +30,6 @@ namespace Azure.Data.Cosmos
         /// ]]>
         /// </example>
         [JsonPropertyName(Constants.Properties.Paths)]
-        public Collection<string> Paths { get; internal set; } = new Collection<string>();
+        public Collection<string> Paths { get; /*internal*/ set; } = new Collection<string>();
     }
 }

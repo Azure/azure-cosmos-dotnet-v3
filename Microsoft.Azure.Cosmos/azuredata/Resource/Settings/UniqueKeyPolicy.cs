@@ -64,6 +64,6 @@ namespace Azure.Data.Cosmos
         /// Gets collection of <see cref="UniqueKey"/> that guarantee uniqueness of documents in collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.UniqueKeys)]
-        public Collection<UniqueKey> UniqueKeys { get; internal set; } = new Collection<UniqueKey>();
+        public Collection<UniqueKey> UniqueKeys { get; /*internal*/ set; } = new Collection<UniqueKey>();
     }
 }

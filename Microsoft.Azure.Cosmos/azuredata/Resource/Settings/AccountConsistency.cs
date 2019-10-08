@@ -27,21 +27,21 @@ namespace Azure.Data.Cosmos
         /// </summary>
         [JsonConverter(typeof(JsonStringEnumConverter))]
         [JsonPropertyName(Constants.Properties.DefaultConsistencyLevel)]
-        public ConsistencyLevel DefaultConsistencyLevel { get; internal set; }
+        public ConsistencyLevel DefaultConsistencyLevel { get; /*internal*/ set; }
 
         /// <summary>
         /// For bounded staleness consistency, the maximum allowed staleness
         /// in terms difference in sequence numbers (aka version) in the Azure Cosmos DB service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.MaxStalenessPrefix)]
-        public int MaxStalenessPrefix { get; internal set; }
+        public int MaxStalenessPrefix { get; /*internal*/ set; }
 
         /// <summary>
         /// For bounded staleness consistency, the maximum allowed staleness
         /// in terms time interval in the Azure Cosmos DB service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.MaxStalenessIntervalInSeconds)]
-        public int MaxStalenessIntervalInSeconds { get; internal set; }
+        public int MaxStalenessIntervalInSeconds { get; /*internal*/ set; }
 
         internal Microsoft.Azure.Documents.ConsistencyLevel ToDirectConsistencyLevel()
         {

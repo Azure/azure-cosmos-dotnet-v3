@@ -6,6 +6,7 @@ namespace Azure.Data.Cosmos
 {
     using System.IO;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -14,7 +15,7 @@ namespace Azure.Data.Cosmos
     /// </summary>
     internal sealed class CosmosTextJsonSerializer : CosmosSerializer
     {
-        private static JsonSerializerOptions DefaultSerializationOptions = new JsonSerializerOptions() { WriteIndented = false };
+        private static JsonSerializerOptions DefaultSerializationOptions = new JsonSerializerOptions() { WriteIndented = false, DefaultBufferSize = 1024 };
         private readonly JsonSerializerOptions jsonSerializerSettings;
 
         /// <summary>
@@ -36,16 +37,9 @@ namespace Azure.Data.Cosmos
         /// This is internal to reduce exposure of JSON.net types so
         /// it is easier to convert to System.Text.Json
         /// </remarks>
-        internal CosmosTextJsonSerializer(CosmosSerializationOptions cosmosSerializerOptions)
+        internal CosmosTextJsonSerializer(JsonSerializerOptions jsonSerializerSettings)
         {
-            this.jsonSerializerSettings = new JsonSerializerOptions()
-            {
-                IgnoreNullValues = cosmosSerializerOptions.IgnoreNullValues,
-                WriteIndented = cosmosSerializerOptions.Indented,
-                //ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase
-                //    ? new CamelCasePropertyNamesContractResolver()
-                //    : null
-            };
+            this.jsonSerializerSettings = jsonSerializerSettings;
         }
 
         /// <summary>
@@ -55,9 +49,15 @@ namespace Azure.Data.Cosmos
         /// This is internal to reduce exposure of JSON.net types so
         /// it is easier to convert to System.Text.Json
         /// </remarks>
-        internal CosmosTextJsonSerializer(JsonSerializerOptions jsonSerializerSettings)
+        internal CosmosTextJsonSerializer(CosmosSerializationOptions cosmosSerializerOptions)
         {
-            this.jsonSerializerSettings = jsonSerializerSettings;
+            this.jsonSerializerSettings = new JsonSerializerOptions()
+            {
+                IgnoreNullValues = cosmosSerializerOptions.IgnoreNullValues,
+                WriteIndented = cosmosSerializerOptions.Indented,
+                PropertyNamingPolicy = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase ?
+                        JsonNamingPolicy.CamelCase : null
+            };
         }
 
         /// <summary>

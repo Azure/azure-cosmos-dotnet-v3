@@ -68,7 +68,7 @@ namespace Azure.Data.Cosmos
         /// The collection containing <see cref="IncludedPath"/> objects.
         /// </value>
         [JsonPropertyName(Constants.Properties.IncludedPaths)]
-        public Collection<IncludedPath> IncludedPaths { get; internal set; } = new Collection<IncludedPath>();
+        public Collection<IncludedPath> IncludedPaths { get; /*internal*/ set; } = new Collection<IncludedPath>();
 
         /// <summary>
         /// Gets the collection containing <see cref="ExcludedPath"/> objects in the Azure Cosmos DB service.
@@ -77,7 +77,7 @@ namespace Azure.Data.Cosmos
         /// The collection containing <see cref="ExcludedPath"/> objects.
         /// </value>
         [JsonPropertyName(Constants.Properties.ExcludedPaths)]
-        public Collection<ExcludedPath> ExcludedPaths { get; internal set; } = new Collection<ExcludedPath>();
+        public Collection<ExcludedPath> ExcludedPaths { get; /*internal*/ set; } = new Collection<ExcludedPath>();
 
         /// <summary>
         /// Gets the composite indexes for additional indexes
@@ -107,13 +107,13 @@ namespace Azure.Data.Cosmos
         /// ]]>
         /// </example>
         [JsonPropertyName(Constants.Properties.CompositeIndexes)]
-        public Collection<Collection<CompositePath>> CompositeIndexes { get; internal set; } = new Collection<Collection<CompositePath>>();
+        public Collection<Collection<CompositePath>> CompositeIndexes { get; /*internal*/ set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
         /// Collection of spatial index definitions to be used
         /// </summary>
         [JsonPropertyName(Constants.Properties.SpatialIndexes)]
-        public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
+        public Collection<SpatialPath> SpatialIndexes { get; /*internal*/ set; } = new Collection<SpatialPath>();
 
         #region EqualityComparers
         internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
