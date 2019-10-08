@@ -134,7 +134,14 @@ namespace Azure.Data.Cosmos
                 {
                     // Should populate/generate in some smart way
                     requestMessage.ClientRequestId = Guid.NewGuid().ToString();
-                    return await this.pipeline.SendRequestAsync(requestMessage, cancellationToken);
+                    Response response = await this.pipeline.SendRequestAsync(requestMessage, cancellationToken);
+                    ResponseMessage responseMessage = response as ResponseMessage;
+                    if (responseMessage != null)
+                    {
+                        scope.AddAttribute("diagnostics", responseMessage.Diagnostics);
+                    }
+
+                    return response;
                 }
             }
             catch (Exception exception)
