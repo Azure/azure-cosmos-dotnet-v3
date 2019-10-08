@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal sealed class QueryAggregateDiagnostics : CosmosDiagnostics
     {
+        private const string EmptyJsonArray = "[]";
+
         public QueryAggregateDiagnostics(
             IReadOnlyCollection<QueryPageDiagnostics> pages)
         {
@@ -30,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             if (this.Pages.Count == 0)
             {
-                return "[]";
+                return QueryAggregateDiagnostics.EmptyJsonArray;
             }
 
             StringBuilder stringBuilder = new StringBuilder();
@@ -40,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             foreach (QueryPageDiagnostics queryPage in this.Pages)
             {
-                queryPage.AppendString(stringBuilder);
+                queryPage.AppendToBuilder(stringBuilder);
 
                 // JSON seperate objects
                 stringBuilder.Append(",");

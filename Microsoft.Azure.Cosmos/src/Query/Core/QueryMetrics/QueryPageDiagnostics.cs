@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query
 {
+    using System;
     using System.Text;
 
     internal sealed class QueryPageDiagnostics
@@ -14,10 +15,10 @@ namespace Microsoft.Azure.Cosmos.Query
             string indexUtilizationText,
             PointOperationStatistics requestDiagnostics)
         {
-            this.PartitionKeyRangeId = partitionKeyRangeId;
-            this.QueryMetricText = queryMetricText;
+            this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
+            this.QueryMetricText = queryMetricText ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.IndexUtilizationText = indexUtilizationText;
-            this.RequestDiagnostics = requestDiagnostics;
+            this.RequestDiagnostics = requestDiagnostics ?? throw new ArgumentNullException(nameof(requestDiagnostics));
         }
 
         internal string PartitionKeyRangeId { get; }
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         internal PointOperationStatistics RequestDiagnostics { get; }
 
-        public void AppendString(StringBuilder stringBuilder)
+        public void AppendToBuilder(StringBuilder stringBuilder)
         {
             stringBuilder.Append("{\"PartitionKeyRangeId\":\"");
             stringBuilder.Append(this.PartitionKeyRangeId);
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
-            this.AppendString(stringBuilder);
+            this.AppendToBuilder(stringBuilder);
             return stringBuilder.ToString();
         }
     }

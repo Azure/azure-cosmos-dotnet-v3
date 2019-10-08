@@ -131,13 +131,29 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static QueryResponseCore CreateSplitResponse(string collectionRid)
         {
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                new PointOperationStatistics(
+                    Guid.NewGuid().ToString(),
+                    System.Net.HttpStatusCode.Gone,
+                    subStatusCode: SubStatusCodes.PartitionKeyRangeGone,
+                    requestCharge: 10.4,
+                    errorMessage: null,
+                    method: HttpMethod.Post,
+                    requestUri: new Uri("http://localhost.com"),
+                    clientSideRequestStatistics: null))
+            };
+
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
                statusCode: HttpStatusCode.Gone,
                subStatusCodes: SubStatusCodes.PartitionKeyRangeGone,
                errorMessage: "Partition split error",
                requestCharge: 10.4,
                activityId: Guid.NewGuid().ToString(),
-               diagnostics: null);
+               diagnostics: diagnostics);
 
             return splitResponse;
         }

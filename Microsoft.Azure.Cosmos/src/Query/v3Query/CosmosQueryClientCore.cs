@@ -264,11 +264,17 @@ namespace Microsoft.Azure.Cosmos
         {
             using (cosmosResponseMessage)
             {
+                PointOperationStatistics pointOperationStatistics = cosmosResponseMessage.Diagnostics as PointOperationStatistics;
+                if (pointOperationStatistics == null)
+                {
+                    throw new ArgumentException("cosmosResponseMessage.Diagnostics is not the supported PointOperationStatistics");
+                }
+
                 QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                    requestDiagnostics: (PointOperationStatistics)cosmosResponseMessage.Diagnostics);
+                    requestDiagnostics: pointOperationStatistics);
                 IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
