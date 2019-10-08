@@ -312,8 +312,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         private static byte[] GetPayload(string path)
         {
             path = string.Format("TestJsons/{0}", path);
-            FileAttributes attr = File.GetAttributes(path);
-            string json = attr.HasFlag(FileAttributes.Directory) ? TextFileConcatenation.Execute(path) : File.ReadAllText(path);
+            string json = TextFileConcatenation.Execute(path);
 
             IEnumerable<object> documents = null;
             try

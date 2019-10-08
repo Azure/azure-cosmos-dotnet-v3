@@ -190,8 +190,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         private void PerformanceBenchmarkCuratedJson(string path)
         {
             path = string.Format("TestJsons/{0}", path);
-            FileAttributes attr = File.GetAttributes(path);
-            string json = attr.HasFlag(FileAttributes.Directory) ? TextFileConcatenation.Execute(path) : File.ReadAllText(path);
+            string json = TextFileConcatenation.Execute(path);
             const int numberOfIterations = 1;
 
             JsonPerfMeasurement.MeasurePerf(json, path, numberOfIterations);

@@ -474,8 +474,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         private void VerifyNavigatorWithCurratedDoc(string path, bool performExtraChecks = true)
         {
             path = string.Format("TestJsons/{0}", path);
-            FileAttributes attr = File.GetAttributes(path);
-            string json = attr.HasFlag(FileAttributes.Directory) ? TextFileConcatenation.Execute(path) : File.ReadAllText(path);
+            string json = TextFileConcatenation.Execute(path);
 #if true
             json = JsonTestUtils.RandomSampleJson(json);
 #endif
