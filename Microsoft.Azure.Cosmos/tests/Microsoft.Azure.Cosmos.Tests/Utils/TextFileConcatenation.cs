@@ -3,6 +3,7 @@
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Text;
 
     public static class TextFileConcatenation
     {
@@ -19,9 +20,17 @@
 
             string text = string.Empty;
 
-            foreach(FileInfo file in files)
+            using( Stream dest = new MemoryStream())
             {
-                text = text + File.ReadAllText(file.FullName);
+                foreach (FileInfo file in files)
+                {
+                    new FileStream(file.FullName, FileMode.Open).CopyTo(dest);
+                    dest.Position = 0;
+                }
+                using(StreamReader reader = new StreamReader(dest))
+                {
+                    text = reader.ReadToEnd();
+                }
             }
 
             return text;
