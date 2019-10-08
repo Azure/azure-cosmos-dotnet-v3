@@ -9,8 +9,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Text.Json;
-    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
@@ -19,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -1689,7 +1688,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             public int taskNum { get; set; }
             public double cost { get; set; }
             public string description { get; set; }
-            [JsonPropertyName("_partitionKey")]
+            [JsonProperty("_partitionKey")]
             public string status { get; set; }
         }
 
