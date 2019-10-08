@@ -144,7 +144,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .Count(), $"One the {nameof(BinaryEncodingOverTheWireTests)} is not being run.");
         }
 
-        [Ignore]
         [TestMethod]
         public async Task CombinedBingDocsTest()
         {
