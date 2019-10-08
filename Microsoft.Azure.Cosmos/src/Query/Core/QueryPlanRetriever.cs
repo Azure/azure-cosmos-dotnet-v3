@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private static readonly QueryFeatures SupportedQueryFeatures =
             QueryFeatures.Aggregate
             | QueryFeatures.Distinct
+            | QueryFeatures.GroupBy
             | QueryFeatures.MultipleOrderBy
             | QueryFeatures.MultipleAggregates
             | QueryFeatures.OffsetAndLimit
