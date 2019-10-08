@@ -582,7 +582,8 @@ namespace Azure.Data.Cosmos
                 sqlQuerySpecSerializer: null,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
-                documentClient: this.DocumentClient);
+                documentClient: this.DocumentClient,
+                diagnosticsPrefix: "Azure.Data.Cosmos");
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()

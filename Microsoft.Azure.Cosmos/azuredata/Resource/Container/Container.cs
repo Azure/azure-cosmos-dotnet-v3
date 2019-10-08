@@ -385,7 +385,7 @@ namespace Azure.Data.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<Response<T>> CreateItemAsync<T>(
+        public abstract Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
@@ -474,7 +474,7 @@ namespace Azure.Data.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<Response<T>> ReadItemAsync<T>(
+        public abstract Task<ItemResponse<T>> ReadItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
@@ -571,7 +571,7 @@ namespace Azure.Data.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<Response<T>> UpsertItemAsync<T>(
+        public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
@@ -674,7 +674,7 @@ namespace Azure.Data.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<Response<T>> ReplaceItemAsync<T>(
+        public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(
             T item,
             string id,
             PartitionKey? partitionKey = null,
@@ -746,7 +746,7 @@ namespace Azure.Data.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<Response<T>> DeleteItemAsync<T>(
+        public abstract Task<ItemResponse<T>> DeleteItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,

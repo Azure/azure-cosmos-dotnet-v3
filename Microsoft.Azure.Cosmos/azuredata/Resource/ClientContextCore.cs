@@ -5,6 +5,7 @@
 namespace Azure.Data.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Text;
     using System.Threading;
@@ -18,7 +19,14 @@ namespace Azure.Data.Cosmos
 
     internal class ClientContextCore : CosmosClientContext
     {
+        private const string DiagnosticScopeResourceUri = "resourceUri";
+        private const string DiagnosticScopeOperationType = "operationType";
+        private const string DiagnosticScopeResourceType = "resourceType";
+        private const string DiagnosticScopeContainer = "resourceType";
+        private const string DiagnosticScopeDiagnostics = "diagnostics";
+
         private readonly HttpPipeline pipeline;
+        private readonly string diagnosticsPrefix;
 
         internal ClientContextCore(
             CosmosClient client,
@@ -28,7 +36,8 @@ namespace Azure.Data.Cosmos
             CosmosSerializer sqlQuerySpecSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
-            DocumentClient documentClient)
+            DocumentClient documentClient,
+            string diagnosticsPrefix)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -41,6 +50,7 @@ namespace Azure.Data.Cosmos
 
             this.ClientOptions.Transport = new ClientPipelineTransport(requestHandler);
             this.pipeline = HttpPipelineBuilder.Build(this.ClientOptions);
+            this.diagnosticsPrefix = diagnosticsPrefix;
         }
 
         internal override CosmosClient Client { get; }
@@ -96,7 +106,18 @@ namespace Azure.Data.Cosmos
             }
         }
 
-        internal override Task<T> ProcessResourceOperationAsync<T>(Uri resourceUri, ResourceType resourceType, OperationType operationType, RequestOptions requestOptions, ContainerCore cosmosContainerCore, PartitionKey? partitionKey, Stream streamPayload, Action<RequestMessage> requestEnricher, Func<ResponseMessage, T> responseCreator, CancellationToken cancellationToken)
+        internal override Task<T> ProcessResourceOperationAsync<T>(
+            Uri resourceUri,
+            ResourceType
+            resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerCore cosmosContainerCore,
+            PartitionKey? partitionKey,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            Func<ResponseMessage, T> responseCreator,
+            CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
@@ -112,15 +133,15 @@ namespace Azure.Data.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            DiagnosticScope scope = this.pipeline.Diagnostics.CreateScope($"{resourceType}-{operationType}");
+            DiagnosticScope scope = this.pipeline.Diagnostics.CreateScope($"{this.diagnosticsPrefix}.{resourceType}-{operationType}");
             try
             {
-                scope.AddAttribute("resourceUri", resourceUri);
-                scope.AddAttribute("resourceType", resourceType);
-                scope.AddAttribute("operationType", operationType);
+                scope.AddAttribute(ClientContextCore.DiagnosticScopeResourceUri, resourceUri);
+                scope.AddAttribute(ClientContextCore.DiagnosticScopeResourceType, resourceType);
+                scope.AddAttribute(ClientContextCore.DiagnosticScopeOperationType, operationType);
                 if (cosmosContainerCore != null)
                 {
-                    scope.AddAttribute("container", cosmosContainerCore.LinkUri);
+                    scope.AddAttribute(ClientContextCore.DiagnosticScopeContainer, cosmosContainerCore.LinkUri);
                 }
 
                 scope.Start();
@@ -136,12 +157,13 @@ namespace Azure.Data.Cosmos
                     requestMessage.ClientRequestId = Guid.NewGuid().ToString();
                     Response response = await this.pipeline.SendRequestAsync(requestMessage, cancellationToken);
                     ResponseMessage responseMessage = response as ResponseMessage;
-                    if (responseMessage != null)
+                    Debug.Assert(responseMessage != null, "Pipeline did not deliver a ResponseMessage");
+                    if (scope.IsEnabled && responseMessage != null)
                     {
-                        scope.AddAttribute("diagnostics", responseMessage.Diagnostics);
+                        scope.AddAttribute(ClientContextCore.DiagnosticScopeDiagnostics, responseMessage.Diagnostics);
                     }
 
-                    return response;
+                    return responseMessage;
                 }
             }
             catch (Exception exception)

@@ -4,15 +4,17 @@
 
 namespace Azure.Data.Cosmos
 {
-    using System.Net;
-    using Azure.Core.Http;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The cosmos database response
     /// </summary>
-    public class DatabaseResponse// : Response<DatabaseProperties>
+    public class DatabaseResponse : Response<DatabaseProperties>
     {
+        private readonly Response rawResponse;
+        private readonly Headers cosmosHeaders;
+
         /// <summary>
         /// Create a <see cref="DatabaseResponse"/> as a no-op for mock testing
         /// </summary>
@@ -26,15 +28,18 @@ namespace Azure.Data.Cosmos
         /// This will prevent memory leaks when handling the HttpResponseMessage
         /// </summary>
         internal DatabaseResponse(
-            int httpStatusCode,
-            ResponseHeaders headers,
+            Response response,
             DatabaseProperties databaseProperties,
             Database database)
         {
-            //this.StatusCode = httpStatusCode;
-            //this.Headers = headers;
-            //this.Resource = databaseProperties;
+            this.rawResponse = response;
+            this.Value = databaseProperties;
             this.Database = database;
+            ResponseMessage responseMessage = response as ResponseMessage;
+            if (responseMessage != null)
+            {
+                this.cosmosHeaders = responseMessage.CosmosHeaders;
+            }
         }
 
         /// <summary>
@@ -43,31 +48,42 @@ namespace Azure.Data.Cosmos
         /// </summary>
         public virtual Database Database { get; }
 
-        ///// <inheritdoc/>
-        //public override ResponseHeaders Headers { get; }
+        /// <inheritdoc/>
+        public override DatabaseProperties Value { get; }
+
+        /// <inheritdoc/>
+        public override Response GetRawResponse() => this.rawResponse;
 
         /// <summary>
-        /// The resource.
+        /// Gets the request charge for this request from the Azure Cosmos DB service.
         /// </summary>
-        public virtual DatabaseProperties Resource { get; }
+        /// <value>
+        /// The request charge measured in request units.
+        /// </value>
+        public virtual double RequestCharge => this.cosmosHeaders?.RequestCharge ?? 0;
 
-        ///// <inheritdoc/>
-        //public override int StatusCode { get; }
+        /// <summary>
+        /// Gets the activity ID for the request from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The activity ID for the request.
+        /// </value>
+        public virtual string ActivityId => this.cosmosHeaders?.ActivityId;
 
-        ////// <inheritdoc/>
-        //public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
+        /// <summary>
+        /// Gets the entity tag associated with the resource from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The entity tag associated with the resource.
+        /// </value>
+        /// <remarks>
+        /// ETags are used for concurrency checking when updating resources. 
+        /// </remarks>
+        public virtual string ETag => this.cosmosHeaders?.ETag;
 
-        ///// <inheritdoc/>
-        //public override string ActivityId => this.Headers?.ActivityId;
+        internal virtual string MaxResourceQuota => this.cosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
 
-        ///// <inheritdoc/>
-        //public override string ETag => this.Headers?.ETag;
-
-        ///// <inheritdoc/>
-        //internal override string MaxResourceQuota => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.MaxResourceQuota);
-
-        ///// <inheritdoc/>
-        //internal override string CurrentResourceQuotaUsage => this.Headers?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
+        internal virtual string CurrentResourceQuotaUsage => this.cosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
         /// <summary>
         /// Get <see cref="Cosmos.Database"/> implicitly from <see cref="DatabaseResponse"/>

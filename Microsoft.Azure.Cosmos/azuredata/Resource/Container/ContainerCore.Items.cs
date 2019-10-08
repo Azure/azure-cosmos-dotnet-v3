@@ -33,13 +33,13 @@ namespace Azure.Data.Cosmos
 
         //private readonly CosmosQueryClient queryClient;
 
-        public override Task<Response> CreateItemStreamAsync(
+        public override async Task<Response> CreateItemStreamAsync(
                     Stream streamPayload,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return await this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
                 streamPayload,
@@ -49,7 +49,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<Response<T>> CreateItemAsync<T>(
+        public override Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
@@ -71,13 +71,13 @@ namespace Azure.Data.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
-        public override Task<Response> ReadItemStreamAsync(
+        public override async Task<Response> ReadItemStreamAsync(
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return await this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 null,
@@ -87,7 +87,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<Response<T>> ReadItemAsync<T>(
+        public override Task<ItemResponse<T>> ReadItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
@@ -102,13 +102,13 @@ namespace Azure.Data.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
-        public override Task<Response> UpsertItemStreamAsync(
+        public override async Task<Response> UpsertItemStreamAsync(
                     Stream streamPayload,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return await this.ProcessItemStreamAsync(
                 partitionKey,
                 null,
                 streamPayload,
@@ -118,7 +118,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<Response<T>> UpsertItemAsync<T>(
+        public override Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
@@ -140,14 +140,14 @@ namespace Azure.Data.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
-        public override Task<Response> ReplaceItemStreamAsync(
+        public override async Task<Response> ReplaceItemStreamAsync(
                     Stream streamPayload,
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return await this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 streamPayload,
@@ -157,7 +157,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<Response<T>> ReplaceItemAsync<T>(
+        public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
             T item,
             string id,
             PartitionKey? partitionKey = null,
@@ -185,13 +185,13 @@ namespace Azure.Data.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
-        public override Task<Response> DeleteItemStreamAsync(
+        public override async Task<Response> DeleteItemStreamAsync(
                     string id,
                     PartitionKey partitionKey,
                     ItemRequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessItemStreamAsync(
+            return await this.ProcessItemStreamAsync(
                 partitionKey,
                 id,
                 null,
@@ -201,7 +201,7 @@ namespace Azure.Data.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<Response<T>> DeleteItemAsync<T>(
+        public override Task<ItemResponse<T>> DeleteItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,

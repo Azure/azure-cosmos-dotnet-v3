@@ -1,6 +1,6 @@
-//------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+// ------------------------------------------------------------
 
 namespace Azure.Data.Cosmos
 {
@@ -8,33 +8,31 @@ namespace Azure.Data.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// The cosmos container response
+    /// The cosmos item response
     /// </summary>
-    public class ContainerResponse : Response<ContainerProperties>
+    public class ItemResponse<T> : Response<T>
     {
         private readonly Response rawResponse;
         private readonly Headers cosmosHeaders;
 
         /// <summary>
-        /// Create a <see cref="ContainerResponse"/> as a no-op for mock testing
+        /// Create a <see cref="ItemResponse{T}"/> as a no-op for mock testing
         /// </summary>
-        protected ContainerResponse()
+        protected ItemResponse()
             : base()
         {
         }
 
         /// <summary>
         /// A private constructor to ensure the factory is used to create the object.
-        /// This will prevent memory leaks when handling the HttpResponseMessage
+        /// This will prevent memory leaks when handling the CosmosResponseMessage
         /// </summary>
-        internal ContainerResponse(
+        internal ItemResponse(
             Response response,
-            ContainerProperties containerProperties,
-            Container container)
+            T item)
         {
             this.rawResponse = response;
-            this.Value = containerProperties;
-            this.Container = container;
+            this.Value = item;
             ResponseMessage responseMessage = response as ResponseMessage;
             if (responseMessage != null)
             {
@@ -42,17 +40,19 @@ namespace Azure.Data.Cosmos
             }
         }
 
-        /// <summary>
-        /// The reference to the cosmos container. This allows additional operations on the container
-        /// or for easy access to other references like Items, StoredProcedures, etc..
-        /// </summary>
-        public virtual Container Container { get; private set; }
-
-        /// <inheritdoc/>
-        public override ContainerProperties Value { get; }
-
         /// <inheritdoc/>
         public override Response GetRawResponse() => this.rawResponse;
+
+        /// <inheritdoc/>
+        public override T Value { get; }
+
+        /// <summary>
+        /// Gets the session token for the current request.
+        /// </summary>
+        /// <value>
+        /// The session token is used in Session consistency.
+        /// </value>
+        public virtual string Session => this.cosmosHeaders?.Session;
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
@@ -85,13 +85,5 @@ namespace Azure.Data.Cosmos
 
         internal virtual string CurrentResourceQuotaUsage => this.cosmosHeaders?.GetHeaderValue<string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage);
 
-        /// <summary>
-        /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="ContainerResponse"/>
-        /// </summary>
-        /// <param name="response">ContainerResponse</param>
-        public static implicit operator Container(ContainerResponse response)
-        {
-            return response.Container;
-        }
     }
 }

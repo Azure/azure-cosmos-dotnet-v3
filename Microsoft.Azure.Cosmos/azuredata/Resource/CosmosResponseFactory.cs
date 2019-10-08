@@ -7,6 +7,7 @@ namespace Azure.Data.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
 
     internal class CosmosResponseFactory
     {
@@ -40,8 +41,7 @@ namespace Azure.Data.Cosmos
                     this.propertiesSerializer);
 
                 return new ContainerResponse(
-                    cosmosResponseMessage.Status,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage,
                     containerProperties,
                     container);
             });
@@ -59,21 +59,20 @@ namespace Azure.Data.Cosmos
                     this.propertiesSerializer);
 
                 return new DatabaseResponse(
-                    cosmosResponseMessage.Status,
-                    cosmosResponseMessage.Headers,
+                    cosmosResponseMessage,
                     databaseProperties,
                     database);
             });
         }
 
-        internal Task<Response<T>> CreateItemResponseAsync<T>(
+        internal Task<ItemResponse<T>> CreateItemResponseAsync<T>(
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
                 T item = CosmosResponseFactory.ToObjectInternal<T>(cosmosResponseMessage, this.cosmosSerializer);
-                return new Response<T>(cosmosResponseMessage, item);
+                return new ItemResponse<T>(cosmosResponseMessage, item);
             });
         }
 
@@ -97,6 +96,7 @@ namespace Azure.Data.Cosmos
                         response,
                         message);
             }
+
             if (response.ContentStream == null)
             {
                 return default(T);

@@ -32,7 +32,7 @@ namespace Azure.Data.Cosmos
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
         }
 
-        public override async Task ProcessAsync(HttpPipelineMessage message)
+        public override async ValueTask ProcessAsync(HttpPipelineMessage message)
         {
             RequestMessage requestMessage = message.Request as RequestMessage;
             if (requestMessage == null)

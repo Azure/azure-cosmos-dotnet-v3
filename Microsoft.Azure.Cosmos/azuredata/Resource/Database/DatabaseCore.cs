@@ -208,14 +208,14 @@ namespace Azure.Data.Cosmos
             if (response.Status != (int)HttpStatusCode.NotFound)
             {
                 ContainerResponse retrivedContainerResponse = await this.ClientContext.ResponseFactory.CreateContainerResponseAsync(this.GetContainer(containerProperties.Id), Task.FromResult(response), cancellationToken);
-                if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
+                if (!retrivedContainerResponse.Value.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
                 {
                     throw new ArgumentException(
                         string.Format(
                             ClientResources.PartitionKeyPathConflict,
                             containerProperties.PartitionKeyPath,
                             containerProperties.Id,
-                            retrivedContainerResponse.Resource.PartitionKeyPath),
+                            retrivedContainerResponse.Value.PartitionKeyPath),
                         nameof(containerProperties.PartitionKey));
                 }
 
@@ -559,7 +559,7 @@ namespace Azure.Data.Cosmos
         internal virtual async Task<string> GetRIDAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
-            return databaseResponse.Resource?.ResourceId;
+            return databaseResponse.Value?.ResourceId;
         }
 
         private Task<Response> CreateContainerStreamInternalAsync(

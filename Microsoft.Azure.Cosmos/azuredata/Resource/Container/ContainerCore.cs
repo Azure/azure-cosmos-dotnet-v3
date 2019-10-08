@@ -157,29 +157,29 @@ namespace Azure.Data.Cosmos
         //        cancellationToken: cancellationToken);
         //}
 
-        public override Task<Response> DeleteContainerStreamAsync(
+        public override async Task<Response> DeleteContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessStreamAsync(
+            return await this.ProcessStreamAsync(
                streamPayload: null,
                operationType: OperationType.Delete,
                requestOptions: requestOptions,
                cancellationToken: cancellationToken);
         }
 
-        public override Task<Response> ReadContainerStreamAsync(
+        public override async Task<Response> ReadContainerStreamAsync(
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessStreamAsync(
+            return await this.ProcessStreamAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<Response> ReplaceContainerStreamAsync(
+        public override async Task<Response> ReplaceContainerStreamAsync(
             ContainerProperties containerProperties,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -190,7 +190,7 @@ namespace Azure.Data.Cosmos
             }
 
             this.ClientContext.ValidateResource(containerProperties.Id);
-            return this.ReplaceStreamInternalAsync(
+            return await this.ReplaceStreamInternalAsync(
                 streamPayload: this.ClientContext.PropertiesSerializer.ToStream(containerProperties),
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
