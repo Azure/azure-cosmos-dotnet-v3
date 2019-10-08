@@ -1,0 +1,302 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ko" original="../ClientResources.resx">
+    <body>
+      <trans-unit id="AllServicePoolsEmpty">
+        <source>Sorry, we are currently experiencing high demand in this region, and cannot fulfill your request at this time. We work continuously to bring more and more capacity online, and encourage you to try again shortly. Please do not hesitate to contact us via Azure support at any time or for any reason using this link http://aka.ms/azuresupport.</source>
+        <target state="new">Sorry, we are currently experiencing high demand in this region, and cannot fulfill your request at this time. We work continuously to bring more and more capacity online, and encourage you to try again shortly. Please do not hesitate to contact us via Azure support at any time or for any reason using this link http://aka.ms/azuresupport.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AuthTokenNotFound">
+        <source>The client does not have any valid token for the requested resource {0}.</source>
+        <target state="new">The client does not have any valid token for the requested resource {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_IllegalMemberAccess">
+        <source>Query expression is invalid, member {0} of type {1} is invalid.</source>
+        <target state="new">Query expression is invalid, member {0} of type {1} is invalid.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidArrayIndexExpression">
+        <source>Query expression is invalid, expression {0} is unsupported in this context. Supported expressions are MemberAccess and ArrayIndex.</source>
+        <target state="new">Query expression is invalid, expression {0} is unsupported in this context. Supported expressions are MemberAccess and ArrayIndex.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidArrayIndexType">
+        <source>Type {0} for an array index parameter is invalid. Array index parameter must be int.</source>
+        <target state="new">Type {0} for an array index parameter is invalid. Array index parameter must be int.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidComparison">
+        <source>Query expression is invalid, expression {0} must either have LHS or RHS as constant.</source>
+        <target state="new">Query expression is invalid, expression {0} must either have LHS or RHS as constant.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidComparisonType">
+        <source>Query expression is invalid, expression {0} of type {1} cannot be used in this context.</source>
+        <target state="new">Query expression is invalid, expression {0} of type {1} cannot be used in this context.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidExpression">
+        <source>Query expression is invalid, expression {0} is unsupported. Supported expressions are 'Queryable.Where', 'Queryable.Select' &amp; 'Queryable.SelectMany'</source>
+        <target state="new">Query expression is invalid, expression {0} is unsupported. Supported expressions are 'Queryable.Where', 'Queryable.Select' &amp; 'Queryable.SelectMany'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidLeftExpression">
+        <source>Query expression is invalid, expression {0} is not allowed in this context.</source>
+        <target state="new">Query expression is invalid, expression {0} is not allowed in this context.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidMemberAccessExpression">
+        <source>Query expression is invalid, expression {0} is unsupported in this context. Supported expressions are parameter reference, array index and property reference.</source>
+        <target state="new">Query expression is invalid, expression {0} is unsupported in this context. Supported expressions are parameter reference, array index and property reference.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidMethodCall">
+        <source>Query expression is invalid, method call {0} is not allowed at this context. Allowed methods are {1}.</source>
+        <target state="new">Query expression is invalid, method call {0} is not allowed at this context. Allowed methods are {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidQueryType">
+        <source>QueryType {0} is not supported.</source>
+        <target state="new">QueryType {0} is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_InvalidReturnType">
+        <source>Query expression is invalid, expression return type {0} is unsupported. Query must evaluate to IEnumerable.</source>
+        <target state="new">Query expression is invalid, expression return type {0} is unsupported. Query must evaluate to IEnumerable.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_TooManySelectManyArguments">
+        <source>Query expression is invalid, expression {0} contains too many arguments. </source>
+        <target state="new">Query expression is invalid, expression {0} contains too many arguments. </target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadQuery_TransformQueryException">
+        <source>An error occured while evaluating the transform expression {0}.</source>
+        <target state="new">An error occured while evaluating the transform expression {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BadSession">
+        <source>Session object retrieved from client with endpoint {0} cannot be used on a client initialized to endpoint {1}.</source>
+        <target state="new">Session object retrieved from client with endpoint {0} cannot be used on a client initialized to endpoint {1}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BatchNoOperations">
+        <source>The batch request did not have any operations to be executed.</source>
+        <target state="new">The batch request did not have any operations to be executed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BatchOperationTooLarge">
+        <source>One or more batch operations are larger than the allowed limit.</source>
+        <target state="new">One or more batch operations are larger than the allowed limit.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BatchRequestOptionNotSupported">
+        <source>One or more request options provided on the batch request are not supported.</source>
+        <target state="new">One or more request options provided on the batch request are not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BatchTooLarge">
+        <source>This batch request cannot be executed as it is larger than the allowed limit. Please reduce the number of operations in the batch and try again.</source>
+        <target state="new">This batch request cannot be executed as it is larger than the allowed limit. Please reduce the number of operations in the batch and try again.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BinaryOperatorNotSupported">
+        <source>Binary operator '{0}' is not supported.</source>
+        <target state="new">Binary operator '{0}' is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantTypeIsNotSupported">
+        <source>Constant of type '{0}' is not supported.</source>
+        <target state="new">Constant of type '{0}' is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstructorInvocationNotSupported">
+        <source>Constructor invocation is not supported.</source>
+        <target state="new">Constructor invocation is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EpkPropertiesPairingExpected">
+        <source>Expected valid byte[] value for {0} and string value for {1} when either property is set.</source>
+        <target state="new">Expected valid byte[] value for {0} and string value for {1} when either property is set.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExpectedMethodCallsMethods">
+        <source>Expected a static IQueryable or IEnumerable extension method, received an instance method.</source>
+        <target state="new">Expected a static IQueryable or IEnumerable extension method, received an instance method.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExpressionTypeIsNotSupported">
+        <source>Expression with NodeType '{0}' is not supported.</source>
+        <target state="new">Expression with NodeType '{0}' is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FailedToEvaluateSpatialExpression">
+        <source>Expression tree cannot be processed because evaluation of Spatial expression failed.</source>
+        <target state="new">Expression tree cannot be processed because evaluation of Spatial expression failed.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InputIsNotIDocumentQuery">
+        <source>Input is not of type IDocumentQuery.</source>
+        <target state="new">Input is not of type IDocumentQuery.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidArgumentsCount">
+        <source>Incorrect number of arguments for method '{0}'. Expected '{1}' but received '{2}'.</source>
+        <target state="new">Incorrect number of arguments for method '{0}'. Expected '{1}' but received '{2}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidCallToUserDefinedFunctionProvider">
+        <source>This method should only be called within Linq expression to Invoke a User-defined function.</source>
+        <target state="new">This method should only be called within Linq expression to Invoke a User-defined function.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidRangeError">
+        <source>Range low value must be less than or equal the high value.</source>
+        <target state="new">Range low value must be less than or equal the high value.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidServerResponse">
+        <source>Received an invalid response from the server.</source>
+        <target state="new">Received an invalid response from the server.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSkipValue">
+        <source>The count value provided for a Skip expression must be a non-negative integer.</source>
+        <target state="new">The count value provided for a Skip expression must be a non-negative integer.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidTakeValue">
+        <source>The count value provided for a Take expression must be a non-negative integer.</source>
+        <target state="new">The count value provided for a Take expression must be a non-negative integer.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidTypesForMethod">
+        <source>Method '{0}' can not be invoked for type '{1}'. Supported types are '[{2}]'.</source>
+        <target state="new">Method '{0}' can not be invoked for type '{1}'. Supported types are '[{2}]'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MediaLinkInvalid">
+        <source>MediaLink is invalid</source>
+        <target state="new">MediaLink is invalid</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MemberBindingNotSupported">
+        <source>Member binding is not supported.</source>
+        <target state="new">Member binding is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MethodNotSupported">
+        <source>Method '{0}' is not supported.</source>
+        <target state="new">Method '{0}' is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupported">
+        <source>Not supported.</source>
+        <target state="new">Not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OnlyLINQMethodsAreSupported">
+        <source>Method '{0}' is not supported. Only LINQ Methods are supported.</source>
+        <target state="new">Method '{0}' is not supported. Only LINQ Methods are supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PKAndEpkSetTogether">
+        <source>Partition key and effective partition key may not both be set.</source>
+        <target state="new">Partition key and effective partition key may not both be set.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PartitionKeyExtractError">
+        <source>Unable to extract partition key from document. Ensure that you have provided a valid PartitionKeyValueExtractor function.</source>
+        <target state="new">Unable to extract partition key from document. Ensure that you have provided a valid PartitionKeyValueExtractor function.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PartitionKeyPathConflict">
+        <source>The requested partition key path '{0}' does not match existing Container '{1}' with partition key path '{2}'</source>
+        <target state="new">The requested partition key path '{0}' does not match existing Container '{1}' with partition key path '{2}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PartitionPropertyNotFound">
+        <source>Partition property not found in the document.</source>
+        <target state="new">Partition property not found in the document.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PartitionResolver_DatabaseAlreadyExist">
+        <source>An IPartitionResolver already exists for this database</source>
+        <target state="new">An IPartitionResolver already exists for this database</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PartitionResolver_DatabaseDoesntExist">
+        <source>No IPartitionResolver available for this database</source>
+        <target state="new">No IPartitionResolver available for this database</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PathExpressionsOnly">
+        <source>Only path expressions are supported for SelectMany.</source>
+        <target state="new">Only path expressions are supported for SelectMany.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RangeNotFoundError">
+        <source>A containing range for {0} doesn't exist in the partition map.</source>
+        <target state="new">A containing range for {0} doesn't exist in the partition map.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ServerResponseDeserializationFailure">
+        <source>Failed to deserialize response returned by server.</source>
+        <target state="new">Failed to deserialize response returned by server.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StringCompareToInvalidConstant">
+        <source>The right hand side of string.CompareTo() comparison must be constant '0'</source>
+        <target state="new">The right hand side of string.CompareTo() comparison must be constant '0'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StringCompareToInvalidOperator">
+        <source>Invalid operator for string.CompareTo(). Vaid operators are ('==', '&lt;', '&lt;=', '&gt;' or '&gt;=')</source>
+        <target state="new">Invalid operator for string.CompareTo(). Vaid operators are ('==', '&lt;', '&lt;=', '&gt;' or '&gt;=')</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeCheckExtensionFunctionsNotImplemented">
+        <source>Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.</source>
+        <target state="new">Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UdfNameIsNullOrEmpty">
+        <source>User-defined function name can not be null or empty.</source>
+        <target state="new">User-defined function name can not be null or empty.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnaryOperatorNotSupported">
+        <source>Unary operator '{0}' is not supported.</source>
+        <target state="new">Unary operator '{0}' is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnexpectedAuthTokenType">
+        <source>Unexpected authorization token type '({0})'. Expected '{1}'.</source>
+        <target state="new">Unexpected authorization token type '({0})'. Expected '{1}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnexpectedTokenType">
+        <source>Unexpected token type: {0}</source>
+        <target state="new">Unexpected token type: {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnsupportedBatchRequestOptions">
+        <source>Consistency, Session, and Triggers are not allowed when using the Batch streaming feature.</source>
+        <target state="new">Consistency, Session, and Triggers are not allowed when using the Batch streaming feature.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnsupportedPartitionKey">
+        <source>Unsupported type {0} for partitionKey.</source>
+        <target state="new">Unsupported type {0} for partitionKey.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueAndAnonymousTypesAndGeometryOnly">
+        <source>Instantiation of only value types, anonymous types and spatial types are supported.</source>
+        <target state="new">Instantiation of only value types, anonymous types and spatial types are supported.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
