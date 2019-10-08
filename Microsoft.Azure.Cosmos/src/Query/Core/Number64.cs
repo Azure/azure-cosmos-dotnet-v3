@@ -571,7 +571,9 @@ namespace Microsoft.Azure.Cosmos
             public override int GetHashCode()
             {
                 int hashCode = 0;
-                hashCode ^= this.DoubleValue.GetHashCode();
+                // Need to use bit converter here, since there was a bug in get hash code for NaN
+                // https://github.com/dotnet/coreclr/issues/6237
+                hashCode ^= BitConverter.DoubleToInt64Bits(this.DoubleValue).GetHashCode();
                 hashCode ^= this.ExtraBits.GetHashCode();
                 return hashCode;
             }
