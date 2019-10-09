@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Azure.Data.Cosmos
 {
     using System.Net;
 

@@ -115,83 +115,83 @@ namespace Azure.Data.Cosmos
             }
         }
 
-        //private async Task<OfferV2> GetOfferV2Async(
-        //    string targetRID,
-        //    bool failIfNotConfigured,
-        //    CancellationToken cancellationToken)
-        //{
-        //    if (string.IsNullOrWhiteSpace(targetRID))
-        //    {
-        //        throw new ArgumentNullException(targetRID);
-        //    }
+        private async Task<OfferV2> GetOfferV2Async(
+            string targetRID,
+            bool failIfNotConfigured,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(targetRID))
+            {
+                throw new ArgumentNullException(targetRID);
+            }
 
-        //    QueryDefinition queryDefinition = new QueryDefinition("select * from root r where r.offerResourceId= @targetRID");
-        //    queryDefinition.WithParameter("@targetRID", targetRID);
+            QueryDefinition queryDefinition = new QueryDefinition("select * from root r where r.offerResourceId= @targetRID");
+            queryDefinition.WithParameter("@targetRID", targetRID);
 
-        //    FeedIterator<OfferV2> databaseStreamIterator = this.GetOfferQueryIterator<OfferV2>(
-        //         queryDefinition: queryDefinition,
-        //         continuationToken: null,
-        //         requestOptions: null,
-        //         cancellationToken: cancellationToken);
-        //    OfferV2 offerV2 = await this.SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
+            FeedIterator<OfferV2> databaseStreamIterator = this.GetOfferQueryIterator<OfferV2>(
+                 queryDefinition: queryDefinition,
+                 continuationToken: null,
+                 requestOptions: null,
+                 cancellationToken: cancellationToken);
+            OfferV2 offerV2 = await this.SingleOrDefaultAsync<OfferV2>(databaseStreamIterator);
 
-        //    if (offerV2 == null &&
-        //        failIfNotConfigured)
-        //    {
-        //        throw new CosmosException(HttpStatusCode.NotFound, $"Throughput is not configured for {targetRID}");
-        //    }
+            if (offerV2 == null &&
+                failIfNotConfigured)
+            {
+                throw new CosmosException(HttpStatusCode.NotFound, $"Throughput is not configured for {targetRID}");
+            }
 
-        //    return offerV2;
-        //}
+            return offerV2;
+        }
 
-        //internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
-        //    QueryDefinition queryDefinition,
-        //    string continuationToken,
-        //    QueryRequestOptions requestOptions,
-        //    CancellationToken cancellationToken)
-        //{
-        //    FeedIterator databaseStreamIterator = this.GetOfferQueryStreamIterator(
-        //       queryDefinition,
-        //       continuationToken,
-        //       requestOptions,
-        //       cancellationToken);
+        internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions,
+            CancellationToken cancellationToken)
+        {
+            FeedIterator databaseStreamIterator = this.GetOfferQueryStreamIterator(
+               queryDefinition,
+               continuationToken,
+               requestOptions,
+               cancellationToken);
 
-        //    return new FeedIteratorCore<T>(
-        //        databaseStreamIterator,
-        //        this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
-        //}
+            return new FeedIteratorCore<T>(
+                databaseStreamIterator,
+                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+        }
 
-        //internal virtual FeedIterator GetOfferQueryStreamIterator(
-        //    QueryDefinition queryDefinition,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    return new FeedIteratorCore(
-        //       clientContext: this.ClientContext,
-        //       resourceLink: this.OfferRootUri,
-        //       resourceType: ResourceType.Offer,
-        //       queryDefinition: queryDefinition,
-        //       continuationToken: continuationToken,
-        //       options: requestOptions,
-        //       usePropertySerializer: true);
-        //}
+        internal virtual FeedIterator GetOfferQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return new FeedIteratorCore(
+               clientContext: this.ClientContext,
+               resourceLink: this.OfferRootUri,
+               resourceType: ResourceType.Offer,
+               queryDefinition: queryDefinition,
+               continuationToken: continuationToken,
+               options: requestOptions,
+               usePropertySerializer: true);
+        }
 
-        //private async Task<T> SingleOrDefaultAsync<T>(
-        //    FeedIterator<T> offerQuery,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    while (offerQuery.HasMoreResults)
-        //    {
-        //        FeedResponse<T> offerFeedResponse = await offerQuery.ReadNextAsync(cancellationToken);
-        //        if (offerFeedResponse.Any())
-        //        {
-        //            return offerFeedResponse.Single();
-        //        }
-        //    }
+        private async Task<T> SingleOrDefaultAsync<T>(
+            FeedIterator<T> offerQuery,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            while (offerQuery.HasMoreResults)
+            {
+                FeedResponse<T> offerFeedResponse = await offerQuery.ReadNextAsync(cancellationToken);
+                if (offerFeedResponse.Any())
+                {
+                    return offerFeedResponse.Single();
+                }
+            }
 
-        //    return default(T);
-        //}
+            return default(T);
+        }
 
         private async Task<ThroughputResponse> GetThroughputResponseAsync(
            Stream streamPayload,

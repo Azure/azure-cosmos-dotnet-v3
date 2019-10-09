@@ -103,16 +103,7 @@ namespace Azure.Data.Cosmos
         internal static T ToObjectInternal<T>(Response response, CosmosSerializer jsonSerializer)
         {
             //Throw the exception
-            // helper?
-            if (response.Status < 200 || response.Status >= 300)
-            {
-                string message = $"Response status code does not indicate success: {response.Status} Reason: ({response.ReasonPhrase}).";
-
-                throw new CosmosException(
-                        response,
-                        message);
-            }
-
+            response.EnsureSuccessStatusCode();
             if (response.ContentStream == null)
             {
                 return default(T);

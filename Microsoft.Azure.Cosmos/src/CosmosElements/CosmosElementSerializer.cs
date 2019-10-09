@@ -10,6 +10,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
+#if AZUREDATA
+    using global::Azure.Data.Cosmos;
+#endif
+
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented

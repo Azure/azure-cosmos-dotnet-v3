@@ -2,12 +2,15 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Azure.Data.Cosmos
 {
     using System;
     using System.IO;
-    using global::Azure.Core.Pipeline;
-    using global::Azure.Data.Cosmos;
+    using Azure;
+    using Azure.Core.Http;
+    using Azure.Core.Pipeline;
+    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
 
     internal static class CoreExtensions
     {
@@ -26,6 +29,43 @@ namespace Microsoft.Azure.Cosmos
 
             // Return stream
             throw new NotImplementedException();
+        }
+
+        internal static Response EnsureSuccessStatusCode(this Response response)
+        {
+            if (response.Status < 200 || response.Status >= 300)
+            {
+                ResponseMessage responseMessage = response as ResponseMessage;
+                if (responseMessage != null)
+                {
+                    return responseMessage.EnsureSuccessStatusCode();
+                }
+
+                string message = $"Response status code does not indicate success: {response.Status} Reason: ({response.ReasonPhrase}).";
+                throw new CosmosException(
+                        response,
+                        message);
+            }
+
+            return response;
+        }
+
+        internal static bool IsSuccessStatusCode(this Response response) => response.Status >= 200 && response.Status <= 299;
+
+        internal static SubStatusCodes GetSubStatusCode(this ResponseHeaders httpHeaders)
+        {
+            if (httpHeaders.TryGetValue(WFConstants.BackendHeaders.SubStatus, out string subStatusCodeString))
+            {
+                return Headers.GetSubStatusCodes(subStatusCodeString);
+            }
+
+            return SubStatusCodes.Unknown;
+        }
+
+        internal static string GetContinuationToken(this ResponseHeaders httpHeaders)
+        {
+            httpHeaders.TryGetValue(HttpConstants.HttpHeaders.Continuation, out string continuationToken);
+            return continuationToken;
         }
     }
 }

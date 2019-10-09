@@ -94,7 +94,7 @@
     <Compile Include="..\src\ClientExtensions.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\CosmosElements\**\*.cs" Exclude="..\src\CosmosElements\CosmosElementSerializer.cs">
+    <Compile Include="..\src\CosmosElements\**\*.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <!--<Compile Include="..\src\Query\v2Query\*.cs">
