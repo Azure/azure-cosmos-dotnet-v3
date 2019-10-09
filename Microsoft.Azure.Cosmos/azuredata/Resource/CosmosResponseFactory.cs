@@ -5,6 +5,7 @@
 namespace Azure.Data.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -90,6 +91,24 @@ namespace Azure.Data.Cosmos
                     cosmosResponseMessage,
                     throughputProperties);
             });
+        }
+
+        internal IReadOnlyList<T> CreateQueryPageResponse<T>(Response cosmosResponseMessage)
+        {
+            //Throw the exception
+            cosmosResponseMessage.EnsureSuccessStatusCode();
+
+            using (cosmosResponseMessage)
+            {
+                IReadOnlyList<T> resources = default(IReadOnlyList<T>);
+                if (cosmosResponseMessage.ContentStream != null)
+                {
+                    CosmosFeedResponseUtil<T> response = this.cosmosSerializer.FromStream<CosmosFeedResponseUtil<T>>(cosmosResponseMessage.ContentStream);
+                    resources = response.Data;
+                }
+
+                return resources;
+            }
         }
 
         internal async Task<T> ProcessMessageAsync<T>(Task<Response> cosmosResponseTask, Func<Response, T> createResponse)

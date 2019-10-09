@@ -128,7 +128,7 @@ namespace Azure.Data.Cosmos
             QueryDefinition queryDefinition = new QueryDefinition("select * from root r where r.offerResourceId= @targetRID");
             queryDefinition.WithParameter("@targetRID", targetRID);
 
-            FeedIterator<OfferV2> databaseStreamIterator = this.GetOfferQueryIterator<OfferV2>(
+            AsyncPageable<OfferV2> databaseStreamIterator = this.GetOfferQueryIterator<OfferV2>(
                  queryDefinition: queryDefinition,
                  continuationToken: null,
                  requestOptions: null,
@@ -144,21 +144,21 @@ namespace Azure.Data.Cosmos
             return offerV2;
         }
 
-        internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
+        internal virtual AsyncPageable<T> GetOfferQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken,
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            FeedIterator databaseStreamIterator = this.GetOfferQueryStreamIterator(
-               queryDefinition,
-               continuationToken,
-               requestOptions,
-               cancellationToken);
+            PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
+                this.ClientContext,
+                this.OfferRootUri,
+                resourceType: ResourceType.Offer,
+                queryDefinition: queryDefinition,
+                options: requestOptions,
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponse<T>);
 
-            return new FeedIteratorCore<T>(
-                databaseStreamIterator,
-                this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
+            return PageResponseEnumerator.CreateAsyncEnumerable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
 
         internal virtual FeedIterator GetOfferQueryStreamIterator(
@@ -177,17 +177,11 @@ namespace Azure.Data.Cosmos
                usePropertySerializer: true);
         }
 
-        private async Task<T> SingleOrDefaultAsync<T>(
-            FeedIterator<T> offerQuery,
-            CancellationToken cancellationToken = default(CancellationToken))
+        private async Task<T> SingleOrDefaultAsync<T>(AsyncPageable<T> offerQuery)
         {
-            while (offerQuery.HasMoreResults)
+            await foreach (T offer in offerQuery)
             {
-                FeedResponse<T> offerFeedResponse = await offerQuery.ReadNextAsync(cancellationToken);
-                if (offerFeedResponse.Any())
-                {
-                    return offerFeedResponse.Single();
-                }
+                return offer;
             }
 
             return default(T);
