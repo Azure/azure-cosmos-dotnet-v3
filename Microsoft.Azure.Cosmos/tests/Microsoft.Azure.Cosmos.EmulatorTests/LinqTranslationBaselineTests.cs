@@ -46,8 +46,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         NullValueHandling = NullValueHandling.Ignore
                     })).WithConnectionModeGateway();
             });
-            await cosmosClient.GetDatabase(id : nameof(LinqTranslationBaselineTests)).DeleteAsync();
-            testDb = await cosmosClient.CreateDatabaseAsync(id: nameof(LinqTranslationBaselineTests));
+
+            string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await cosmosClient.CreateDatabaseAsync(dbName);
         }
 
         [ClassCleanup]
@@ -810,13 +811,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Projected CompareTo > reverse operands", b => getQuery(b).Select(doc => 0 > doc.StringField.CompareTo(doc.StringField2))));
             inputs.Add(new LinqTestInput("Projected CompareTo >= reverse operands", b => getQuery(b).Select(doc => 0 >= doc.StringField.CompareTo(doc.StringField2))));
             // errors Invalid compare value
-            inputs.Add(new LinqTestInput("CompareTo > 1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") > 1), ClientResources.StringCompareToInvalidConstant));
-            inputs.Add(new LinqTestInput("CompareTo == 1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == 1), ClientResources.StringCompareToInvalidConstant));
-            inputs.Add(new LinqTestInput("CompareTo == -1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == -1), ClientResources.StringCompareToInvalidConstant));
+            inputs.Add(new LinqTestInput("CompareTo > 1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") > 1)));
+            inputs.Add(new LinqTestInput("CompareTo == 1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == 1)));
+            inputs.Add(new LinqTestInput("CompareTo == -1", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") == -1)));
             // errors Invalid operator
-            inputs.Add(new LinqTestInput("CompareTo | 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") | 0), ClientResources.StringCompareToInvalidOperator));
-            inputs.Add(new LinqTestInput("CompareTo & 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") & 0), ClientResources.StringCompareToInvalidOperator));
-            inputs.Add(new LinqTestInput("CompareTo ^ 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") ^ 0), ClientResources.StringCompareToInvalidOperator));
+            inputs.Add(new LinqTestInput("CompareTo | 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") | 0)));
+            inputs.Add(new LinqTestInput("CompareTo & 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") & 0)));
+            inputs.Add(new LinqTestInput("CompareTo ^ 0", b => getQuery(b).Select(doc => doc.StringField.CompareTo("str") ^ 0)));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -849,8 +850,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // regression (different type parameters including objects)
             inputs.Add(new LinqTestInput("different type parameters including objects", b => getQuery(b).Where(doc => (bool)UserDefinedFunctionProvider.Invoke("MultiParamterUDF2", doc.Point, "str", 1))));
             // errors
-            inputs.Add(new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke(null)), ClientResources.UdfNameIsNullOrEmpty));
-            inputs.Add(new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke("")), ClientResources.UdfNameIsNullOrEmpty));
+            inputs.Add(new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke(null))));
+            inputs.Add(new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => UserDefinedFunctionProvider.Invoke(""))));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -918,20 +919,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Select -> Filter -> Take", b => getQuery(b).Select(doc => doc.NumericField).Where(number => number > 100).Take(7)));
             inputs.Add(new LinqTestInput("Filter -> Select -> Take", b => getQuery(b).Where(doc => doc.NumericField > 100).Select(doc => doc.NumericField).Take(8)));
             inputs.Add(new LinqTestInput("Fitler -> OrderBy -> Select -> Take", b => getQuery(b).Where(doc => doc.NumericField > 100).OrderBy(doc => doc.NumericField).Select(doc => doc.NumericField).Take(9)));
-            inputs.Add(new LinqTestInput("Take -> Filter", b => getQuery(b).Take(3).Where(doc => doc.NumericField > 100), ErrorMessages.TopInSubqueryNotSupported));
-            inputs.Add(new LinqTestInput("Take -> Filter -> Select", b => getQuery(b).Take(4).Where(doc => doc.NumericField > 100).Select(doc => doc.NumericField), ErrorMessages.TopInSubqueryNotSupported));
-            inputs.Add(new LinqTestInput("Take -> Select -> Filter", b => getQuery(b).Take(5).Select(doc => doc.NumericField).Where(number => number > 100), ErrorMessages.TopInSubqueryNotSupported));
-            inputs.Add(new LinqTestInput("Select -> Take -> Filter", b => getQuery(b).Select(doc => doc.NumericField).Take(6).Where(number => number > 100), ErrorMessages.TopInSubqueryNotSupported));
-            inputs.Add(new LinqTestInput("Take -> Filter -> OrderBy -> Select", b => getQuery(b).Take(10).Where(doc => doc.NumericField > 100).OrderByDescending(doc => doc.NumericField).Select(doc => doc.NumericField), ErrorMessages.TopInSubqueryNotSupported));
+            inputs.Add(new LinqTestInput("Take -> Filter", b => getQuery(b).Take(3).Where(doc => doc.NumericField > 100)));
+            inputs.Add(new LinqTestInput("Take -> Filter -> Select", b => getQuery(b).Take(4).Where(doc => doc.NumericField > 100).Select(doc => doc.NumericField)));
+            inputs.Add(new LinqTestInput("Take -> Select -> Filter", b => getQuery(b).Take(5).Select(doc => doc.NumericField).Where(number => number > 100)));
+            inputs.Add(new LinqTestInput("Select -> Take -> Filter", b => getQuery(b).Select(doc => doc.NumericField).Take(6).Where(number => number > 100)));
+            inputs.Add(new LinqTestInput("Take -> Filter -> OrderBy -> Select", b => getQuery(b).Take(10).Where(doc => doc.NumericField > 100).OrderByDescending(doc => doc.NumericField).Select(doc => doc.NumericField)));
             // multiple takes
             inputs.Add(new LinqTestInput("Take 10 -> Take 5", b => getQuery(b).Take(10).Take(5)));
             inputs.Add(new LinqTestInput("Take 5 -> Take 10", b => getQuery(b).Take(5).Take(10)));
             inputs.Add(new LinqTestInput("Take 10 -> Select -> Take 1", b => getQuery(b).Take(10).Select(doc => doc.NumericField).Take(1)));
-            inputs.Add(new LinqTestInput("Take 10 -> Filter -> Take 2", b => getQuery(b).Take(10).Where(doc => doc.NumericField > 100).Take(2), ErrorMessages.TopInSubqueryNotSupported));
+            inputs.Add(new LinqTestInput("Take 10 -> Filter -> Take 2", b => getQuery(b).Take(10).Where(doc => doc.NumericField > 100).Take(2)));
             // negative value
-            inputs.Add(new LinqTestInput("Take -1 -> Take 5", b => getQuery(b).Take(-1).Take(5), ErrorMessages.ExpressionMustBeNonNegativeInteger));
-            inputs.Add(new LinqTestInput("Take -2 -> Select", b => getQuery(b).Take(-2).Select(doc => doc.NumericField), ErrorMessages.ExpressionMustBeNonNegativeInteger));
-            inputs.Add(new LinqTestInput("Filter -> Take -3", b => getQuery(b).Where(doc => doc.NumericField > 100).Take(-3), ErrorMessages.ExpressionMustBeNonNegativeInteger));
+            inputs.Add(new LinqTestInput("Take -1 -> Take 5", b => getQuery(b).Take(-1).Take(5)));
+            inputs.Add(new LinqTestInput("Take -2 -> Select", b => getQuery(b).Take(-2).Select(doc => doc.NumericField)));
+            inputs.Add(new LinqTestInput("Filter -> Take -3", b => getQuery(b).Where(doc => doc.NumericField > 100).Take(-3)));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -1031,7 +1032,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 .Take(10)
                 .SelectMany(doc => doc.EnumerableField
                     .Where(number => number > 10)
-                    .Select(number => number)), ErrorMessages.OrderByInSubqueryNotSuppported));
+                    .Select(number => number))));
             this.ExecuteTestSuite(inputs);
         }
 
