@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 case ExpressionType.Call:
                     MethodCallExpression methodCallExpression = (MethodCallExpression)inputExpression;
-                    bool shouldConvertToScalarAnyCollection = ((context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(LinqMethods.Any));
+                    bool shouldConvertToScalarAnyCollection = (context.PeekMethod() == null) && methodCallExpression.Method.Name.Equals(LinqMethods.Any);
                     collection = ExpressionToSql.VisitMethodCall(methodCallExpression, context);
                     if (shouldConvertToScalarAnyCollection) collection = ExpressionToSql.ConvertToScalarAnyCollection(context);
 
@@ -529,7 +529,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // Enum
                     if (memberType.IsEnum())
                     {
-                        Number64 number64 = ((SqlNumberLiteral)(right.Literal)).Value;
+                        Number64 number64 = ((SqlNumberLiteral)right.Literal).Value;
                         if (number64.IsDouble)
                         {
                             value = Enum.ToObject(memberType, Number64.ToDouble(number64));
@@ -586,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 // the constant value should be zero, otherwise we can't determine how to translate the expression
                 // it could be either integer or nullable integer
-                if (!(right.Type == typeof(int) && (int)(right.Value) == 0) &&
+                if (!(right.Type == typeof(int) && (int)right.Value == 0) &&
                     !(right.Type == typeof(int?) && ((int?)right.Value).HasValue && ((int?)right.Value).Value == 0))
                 {
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidConstant));
@@ -757,7 +757,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 List<SqlScalarExpression> arrayItems = new List<SqlScalarExpression>();
 
-                foreach (object item in ((IEnumerable)(inputExpression.Value)))
+                foreach (object item in (IEnumerable)inputExpression.Value)
                 {
                     arrayItems.Add(ExpressionToSql.VisitConstant(Expression.Constant(item)));
                 }
@@ -1572,7 +1572,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 methodCall = methodCall.Arguments[0] as MethodCallExpression)
             {
                 string methodName = methodCall.Method.Name;
-                requireLocalExecution |= (methodName.Equals(LinqMethods.Distinct) || methodName.Equals(LinqMethods.Take) || methodName.Equals(LinqMethods.OrderBy) || methodName.Equals(LinqMethods.OrderByDescending));
+                requireLocalExecution |= methodName.Equals(LinqMethods.Distinct) || methodName.Equals(LinqMethods.Take) || methodName.Equals(LinqMethods.OrderBy) || methodName.Equals(LinqMethods.OrderByDescending);
             }
 
             Collection collection;
@@ -1653,7 +1653,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // skipExpression must be number literal
             if (TryGetTopSkipTakeLiteral(arguments[1], context, out offsetNumberLiteral))
             {
-                offsetSpec = SqlOffsetSpec.Create(Number64.ToLong(offsetNumberLiteral.Value));
+                offsetSpec = SqlOffsetSpec.Create(offsetNumberLiteral);
             }
             else
             {
@@ -1679,7 +1679,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // takeExpression must be number literal
             if (TryGetTopSkipTakeLiteral(arguments[1], context, out takeNumberLiteral))
             {
-                limitSpec = SqlLimitSpec.Create(Number64.ToLong(takeNumberLiteral.Value));
+                limitSpec = SqlLimitSpec.Create(takeNumberLiteral);
             }
             else
             {
@@ -1705,7 +1705,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // takeExpression must be number literal
             if (TryGetTopSkipTakeLiteral(arguments[1], context, out takeNumberLiteral))
             {
-                topSpec = SqlTopSpec.Create(Number64.ToLong(takeNumberLiteral.Value));
+                topSpec = SqlTopSpec.Create(takeNumberLiteral);
             }
             else
             {
