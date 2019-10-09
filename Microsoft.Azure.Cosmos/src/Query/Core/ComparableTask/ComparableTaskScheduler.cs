@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class ComparableTaskScheduler : IDisposable
     {
         private const int MinimumBatchSize = 1;
-        private readonly AsyncCollection<IComparableTask> taskQueue;
+        private readonly AsyncPriorityQueue<IComparableTask> taskQueue;
         private readonly ConcurrentDictionary<IComparableTask, Task> delayedTasks;
         private readonly CancellationTokenSource tokenSource;
         private readonly SemaphoreSlim canRunTaskSemaphoreSlim;
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         public ComparableTaskScheduler(IEnumerable<IComparableTask> tasks, int maximumConcurrencyLevel)
         {
-            this.taskQueue = new AsyncCollection<IComparableTask>(new PriorityQueue<IComparableTask>(tasks, true));
+            this.taskQueue = new AsyncPriorityQueue<IComparableTask>(new PriorityQueue<IComparableTask>(tasks, true));
             this.delayedTasks = new ConcurrentDictionary<IComparableTask, Task>();
             this.maximumConcurrencyLevel = maximumConcurrencyLevel;
             this.tokenSource = new CancellationTokenSource();

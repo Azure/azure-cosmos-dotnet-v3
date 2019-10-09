@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         {
             var queue = new ConcurrentQueue<int>();
             queue.Enqueue(0);
-            var asyncCollection = new AsyncCollection<int>(queue, 1);
+            var asyncCollection = new AsyncConcurrentQueue<int>(queue, 1);
             int item = 1;
             Task task = asyncCollection.AddAsync(item);
             await Task.Delay(DelayInMilliSeconds);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public async Task TestAddRangeAsync()
         {
-            var asyncCollection = new AsyncCollection<int>(2);
+            var asyncCollection = new AsyncConcurrentQueue<int>(2);
             Task task = asyncCollection.AddRangeAsync(new[] { 0, 1, 2 });
             await Task.Delay(DelayInMilliSeconds);
             Assert.AreEqual(false, task.IsCompleted);
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public async Task TestTakeAsync()
         {
-            var asyncCollection = new AsyncCollection<int>();
+            var asyncCollection = new AsyncConcurrentQueue<int>();
             Task<int> task = asyncCollection.TakeAsync();
             await Task.Delay(DelayInMilliSeconds);
             Assert.AreEqual(false, task.IsCompleted);
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         [TestMethod]
         public async Task TestPeekAsync()
         {
-            var asyncCollection = new AsyncCollection<int>();
+            var asyncCollection = new AsyncConcurrentQueue<int>();
             Task<int> task = asyncCollection.PeekAsync();
             await Task.Delay(DelayInMilliSeconds);
             Assert.AreEqual(false, task.IsCompleted);
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         public async Task SimpleTest()
         {
             int size = 100;
-            var asyncCollection = new AsyncCollection<int>();
+            var asyncCollection = new AsyncConcurrentQueue<int>();
             Assert.AreEqual(0, asyncCollection.Count);
             List<int> list = new List<int>();
             for (int i = 0; i < size; ++i)
@@ -130,69 +130,6 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
                             string.Join(",", await asyncCollection.DrainAsync()));
                     }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Test for AsyncCollection.PeekAsync NotImplementedException
-        /// </summary>
-        [TestMethod]
-        [ExpectedException(typeof(NotImplementedException))]
-        public async Task TestNotImplmenetedPeekAsync()
-        {
-            await new AsyncCollection<int>(new TestProducerConsumerCollection<int>()).PeekAsync();
-        }
-
-        private class TestProducerConsumerCollection<T> : IProducerConsumerCollection<T>
-        {
-            public void CopyTo(T[] array, int index)
-            {
-                throw new NotImplementedException();
-            }
-
-            public T[] ToArray()
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool TryAdd(T item)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool TryTake(out T item)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IEnumerator<T> GetEnumerator()
-            {
-                throw new NotImplementedException();
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                throw new NotImplementedException();
-            }
-
-            public void CopyTo(Array array, int index)
-            {
-                throw new NotImplementedException();
-            }
-
-            public int Count
-            {
-                get { throw new NotImplementedException(); }
-            }
-
-            public bool IsSynchronized
-            {
-                get { throw new NotImplementedException(); }
-            }
-
-            public object SyncRoot
-            {
-                get { throw new NotImplementedException(); }
             }
         }
     }

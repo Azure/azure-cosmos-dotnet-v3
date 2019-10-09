@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// We buffer TryMonad of DoucmentFeedResponse of T, since we want to buffer exceptions,
         /// so that the exception is thrown on the consumer thread (instead of the background producer thread), thus observing the exception.
         /// </summary>
-        private readonly AsyncCollection<QueryResponseCore> bufferedPages;
+        private readonly AsyncConcurrentQueue<QueryResponseCore> bufferedPages;
 
         /// <summary>
         /// The document producer can only be fetching one page at a time.
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Query
             long initialPageSize = 50,
             string initialContinuationToken = null)
         {
-            this.bufferedPages = new AsyncCollection<QueryResponseCore>();
+            this.bufferedPages = new AsyncConcurrentQueue<QueryResponseCore>();
 
             // We use a binary semaphore to get the behavior of a mutex,
             // since fetching documents from the backend using a continuation token is a critical section.

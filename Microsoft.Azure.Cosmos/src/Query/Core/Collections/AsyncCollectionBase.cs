@@ -14,68 +14,27 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
     /// <summary> 
     /// Provides awaitable and bounding capabilities for thread-safe collections that implement IProducerConsumerCollection&lt;T&gt;.
     /// </summary>
-    internal sealed class AsyncCollection<T>
+    internal abstract class AsyncCollectionBase<T>
     {
-        private delegate bool TryPeekDelegate(out T item);
-        private readonly IProducerConsumerCollection<T> collection;
+        protected IProducerConsumerCollection<T> collection;
         private readonly int boundingCapacity;
         private readonly SemaphoreSlim notFull;
         private readonly SemaphoreSlim notEmpty;
-        private readonly TryPeekDelegate tryPeekDelegate;
 
-        public AsyncCollection()
-            : this(new ConcurrentQueue<T>(), int.MaxValue)
+        public AsyncCollectionBase(int count, int boundingCapacity)
         {
-        }
-
-        public AsyncCollection(int boundingCapacity)
-            : this(new ConcurrentQueue<T>(), boundingCapacity)
-        {
-        }
-
-        public AsyncCollection(IProducerConsumerCollection<T> collection)
-            : this(collection, int.MaxValue)
-        {
-        }
-
-        public AsyncCollection(IProducerConsumerCollection<T> collection, int boundingCapacity)
-        {
-            if (collection == null)
-            {
-                throw new ArgumentNullException("collection");
-            }
-
             if (boundingCapacity < 1)
             {
                 throw new ArgumentOutOfRangeException("boundedCapacity is not a positive value.");
             }
-
-            int count = collection.Count;
-
             if (boundingCapacity < count)
             {
                 throw new ArgumentOutOfRangeException("boundedCapacity is less than the size of collection.");
             }
 
-            this.collection = collection;
             this.boundingCapacity = boundingCapacity;
             this.notFull = this.IsUnbounded ? null : new SemaphoreSlim(boundingCapacity - count, boundingCapacity);
             this.notEmpty = new SemaphoreSlim(count);
-            ConcurrentQueue<T> concurrentQueue = collection as ConcurrentQueue<T>;
-            if (concurrentQueue != null)
-            {
-                this.tryPeekDelegate = concurrentQueue.TryPeek;
-                return;
-            }
-
-            PriorityQueue<T> priorityQueue = collection as PriorityQueue<T>;
-            if (priorityQueue != null)
-            {
-                this.tryPeekDelegate = priorityQueue.TryPeek;
-                return;
-            }
-
-            throw new NotSupportedException($"The IProducerConsumerCollection type of {typeof(T)} is not supported.");
         }
 
         public int Count
@@ -151,29 +110,16 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
 
         public async Task<T> PeekAsync(CancellationToken token = default(CancellationToken))
         {
-            if (this.tryPeekDelegate == null)
-            {
-                throw new NotImplementedException();
-            }
-
             T item;
             await this.notEmpty.WaitAsync(token);
             // Do nothing if tryPeekFunc returns false
-            this.tryPeekDelegate(out item);
+            this.TryPeek(out item);
             this.notEmpty.Release();
 
             return item;
         }
 
-        public bool TryPeek(out T item)
-        {
-            if (this.tryPeekDelegate == null)
-            {
-                throw new NotImplementedException();
-            }
-
-            return this.tryPeekDelegate(out item);
-        }
+        public abstract bool TryPeek(out T item);
 
         public async Task<IReadOnlyList<T>> DrainAsync(
             int maxElements = int.MaxValue,
