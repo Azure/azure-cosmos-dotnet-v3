@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Azure.Cosmos.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -11,8 +11,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
-    using global::Azure.Data.Cosmos;
+    using Azure;
+    using Azure.Data.Cosmos;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
-            Assert.IsNotNull(response.Resource);
+            Assert.IsNotNull(response.Value);
             this.Container = response;
         }
 
@@ -54,10 +54,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task CreateDropItemTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            Response<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
+            ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
             Assert.IsNotNull(response);
-            //Assert.IsNotNull(response.MaxResourceQuota);
-            //Assert.IsNotNull(response.CurrentResourceQuotaUsage);
             Response<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
         }
@@ -116,13 +114,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 id = Guid.NewGuid().ToString()
             };
 
-            Response<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem, partitionKey: new PartitionKey(Documents.Undefined.Value));
+            Response<dynamic> response = await this.Container.CreateItemAsync<dynamic>(item: testItem, partitionKey: new PartitionKey(Microsoft.Azure.Documents.Undefined.Value));
             Assert.IsNotNull(response);
             Assert.AreEqual((int)HttpStatusCode.Created, response.GetRawResponse().Status);
             //Assert.IsNotNull(response.MaxResourceQuota);
             //Assert.IsNotNull(response.CurrentResourceQuotaUsage);
 
-            Response<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: new PartitionKey(Documents.Undefined.Value));
+            Response<dynamic> deleteResponse = await this.Container.DeleteItemAsync<dynamic>(id: testItem.id, partitionKey: new PartitionKey(Microsoft.Azure.Documents.Undefined.Value));
             Assert.IsNotNull(deleteResponse);
             Assert.AreEqual((int)HttpStatusCode.NoContent, deleteResponse.GetRawResponse().Status);
         }
@@ -1260,8 +1258,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await NonPartitionedContainerHelper.CreateUndefinedPartitionItem((ContainerCore)this.Container, undefinedPartitionItemId);
 
                 ContainerResponse containerResponse = await fixedContainer.ReadContainerAsync();
-                Assert.IsTrue(containerResponse.Resource.PartitionKey.Paths.Count > 0);
-                Assert.AreEqual(PartitionKey.SystemKeyPath, containerResponse.Resource.PartitionKey.Paths[0]);
+                Assert.IsTrue(containerResponse.Value.PartitionKey.Paths.Count > 0);
+                Assert.AreEqual(PartitionKey.SystemKeyPath, containerResponse.Value.PartitionKey.Paths[0]);
 
                 //Reading item from fixed container with CosmosContainerSettings.NonePartitionKeyValue.
                 Response<ToDoActivity> response = await fixedContainer.ReadItemAsync<ToDoActivity>(
@@ -1516,15 +1514,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
 
-            Response<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(partitionKey: new PartitionKey(temp.status), item: temp);
+            ItemResponse<ToDoActivity> responseAstype = await this.Container.CreateItemAsync<ToDoActivity>(partitionKey: new PartitionKey(temp.status), item: temp);
 
-            Assert.IsTrue(responseAstype.GetRawResponse().Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.SessionToken, out string sessionToken));
+            string sessionToken = responseAstype.Session;
             Assert.IsNotNull(sessionToken);
 
             Response readResponse = await this.Container.ReadItemStreamAsync(temp.id, new PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = sessionToken });
 
             Assert.AreEqual((int)HttpStatusCode.OK, readResponse.Status);
-            Assert.IsTrue(readResponse.Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.SessionToken, out string readSessionToken));
+            Assert.IsTrue(readResponse.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.SessionToken, out string readSessionToken));
             Assert.AreEqual(sessionToken, readSessionToken);
         }
 
@@ -1717,7 +1715,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Stream implementation should not throw
             Response response = await container.ReadItemStreamAsync("id1", PartitionKey.None);
             Assert.AreEqual((int)HttpStatusCode.NotFound, response.Status);
-            Assert.IsTrue(response.Headers.TryGetValue(Documents.HttpConstants.HttpHeaders.ActivityId, out string activityId));
+            Assert.IsTrue(response.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.ActivityId, out string activityId));
             Assert.IsNotNull(activityId);
             //Assert.IsNotNull(response.ErrorMessage);
             // For typed, it will throw 

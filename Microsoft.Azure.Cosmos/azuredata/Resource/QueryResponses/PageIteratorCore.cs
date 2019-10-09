@@ -19,6 +19,7 @@ namespace Azure.Data.Cosmos
         private readonly Uri resourceLink;
         private readonly ResourceType resourceType;
         private readonly SqlQuerySpec querySpec;
+        private readonly bool usePropertySerializer;
         private readonly Func<Response, IReadOnlyList<T>> responseCreator;
 
         internal PageIteratorCore(
@@ -27,7 +28,8 @@ namespace Azure.Data.Cosmos
             ResourceType resourceType,
             QueryDefinition queryDefinition,
             QueryRequestOptions options,
-            Func<Response, IReadOnlyList<T>> responseCreator)
+            Func<Response, IReadOnlyList<T>> responseCreator,
+            bool usePropertySerializer = false)
         {
             this.resourceLink = resourceLink;
             this.clientContext = clientContext;
@@ -35,6 +37,7 @@ namespace Azure.Data.Cosmos
             this.querySpec = queryDefinition?.ToSqlQuerySpec();
             this.requestOptions = options;
             this.responseCreator = responseCreator;
+            this.usePropertySerializer = usePropertySerializer;
         }
 
         /// <summary>
@@ -48,7 +51,13 @@ namespace Azure.Data.Cosmos
             OperationType operation = OperationType.ReadFeed;
             if (this.querySpec != null)
             {
-                stream = this.clientContext.SqlQuerySpecSerializer.ToStream(this.querySpec);
+                // Use property serializer is for internal query operations like throughput
+                // that should not use custom serializer
+                CosmosSerializer serializer = this.usePropertySerializer ?
+                    this.clientContext.PropertiesSerializer :
+                    this.clientContext.SqlQuerySpecSerializer;
+
+                stream = serializer.ToStream(this.querySpec);
                 operation = OperationType.Query;
             }
 

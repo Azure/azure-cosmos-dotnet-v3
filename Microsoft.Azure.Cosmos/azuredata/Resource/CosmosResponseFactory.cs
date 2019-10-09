@@ -93,22 +93,14 @@ namespace Azure.Data.Cosmos
             });
         }
 
+        internal IReadOnlyList<T> CreateQueryPageResponseWithPropertySerializer<T>(Response cosmosResponseMessage)
+        {
+            return CosmosResponseFactory.CreateQueryPageResponse<T>(cosmosResponseMessage, this.propertiesSerializer);
+        }
+
         internal IReadOnlyList<T> CreateQueryPageResponse<T>(Response cosmosResponseMessage)
         {
-            //Throw the exception
-            cosmosResponseMessage.EnsureSuccessStatusCode();
-
-            using (cosmosResponseMessage)
-            {
-                IReadOnlyList<T> resources = default(IReadOnlyList<T>);
-                if (cosmosResponseMessage.ContentStream != null)
-                {
-                    CosmosFeedResponseUtil<T> response = this.cosmosSerializer.FromStream<CosmosFeedResponseUtil<T>>(cosmosResponseMessage.ContentStream);
-                    resources = response.Data;
-                }
-
-                return resources;
-            }
+            return CosmosResponseFactory.CreateQueryPageResponse<T>(cosmosResponseMessage, this.cosmosSerializer);
         }
 
         internal async Task<T> ProcessMessageAsync<T>(Task<Response> cosmosResponseTask, Func<Response, T> createResponse)
@@ -129,6 +121,24 @@ namespace Azure.Data.Cosmos
             }
 
             return jsonSerializer.FromStream<T>(response.ContentStream);
+        }
+
+        private static IReadOnlyList<T> CreateQueryPageResponse<T>(Response cosmosResponseMessage, CosmosSerializer serializer)
+        {
+            //Throw the exception
+            cosmosResponseMessage.EnsureSuccessStatusCode();
+
+            using (cosmosResponseMessage)
+            {
+                IReadOnlyList<T> resources = default(IReadOnlyList<T>);
+                if (cosmosResponseMessage.ContentStream != null)
+                {
+                    CosmosFeedResponseUtil<T> response = serializer.FromStream<CosmosFeedResponseUtil<T>>(cosmosResponseMessage.ContentStream);
+                    resources = response.Data;
+                }
+
+                return resources;
+            }
         }
     }
 }

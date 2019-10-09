@@ -156,7 +156,8 @@ namespace Azure.Data.Cosmos
                 resourceType: ResourceType.Offer,
                 queryDefinition: queryDefinition,
                 options: requestOptions,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponseWithPropertySerializer<T>,
+                usePropertySerializer: true);
 
             return PageResponseEnumerator.CreateAsyncEnumerable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }

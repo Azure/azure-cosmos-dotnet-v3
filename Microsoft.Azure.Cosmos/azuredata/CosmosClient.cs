@@ -569,17 +569,16 @@ namespace Azure.Data.Cosmos
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
                 userJsonSerializer: userSerializer);
 
-            //CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
-            //    cosmosSerializer: userSerializer,
-            //    propertiesSerializer: this.ClientOptions.PropertiesSerializer);
+            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                cosmosSerializer: userSerializer,
+                propertiesSerializer: this.ClientOptions.PropertiesSerializer);
 
             this.ClientContext = new ClientContextCore(
                 client: this,
                 clientOptions: this.ClientOptions,
                 userJsonSerializer: userSerializer,
                 defaultJsonSerializer: this.ClientOptions.PropertiesSerializer,
-                //sqlQuerySpecSerializer: sqlQuerySpecSerializer,
-                sqlQuerySpecSerializer: null,
+                sqlQuerySpecSerializer: sqlQuerySpecSerializer,
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
