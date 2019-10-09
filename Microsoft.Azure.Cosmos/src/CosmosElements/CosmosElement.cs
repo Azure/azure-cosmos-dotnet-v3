@@ -123,6 +123,38 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             return item;
         }
+
+        public static bool TryParse(string serializedCosmosElement, out CosmosElement cosmosElement)
+        {
+            cosmosElement = default(CosmosElement);
+            if (serializedCosmosElement == null)
+            {
+                throw new ArgumentNullException(nameof(serializedCosmosElement));
+            }
+
+            byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
+            cosmosElement = CosmosElement.Create(buffer);
+            return true;
+        }
+
+        public static bool TryParse<TCosmosElement>(string serializedCosmosElement, out TCosmosElement cosmosElement)
+            where TCosmosElement : CosmosElement
+        {
+            if (!CosmosElement.TryParse(serializedCosmosElement, out CosmosElement rawCosmosElement))
+            {
+                cosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            if (!(rawCosmosElement is TCosmosElement typedCosmosElement))
+            {
+                cosmosElement = default(TCosmosElement);
+                return false;
+            }
+
+            cosmosElement = typedCosmosElement;
+            return true;
+        }
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented
