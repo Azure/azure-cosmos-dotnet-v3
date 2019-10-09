@@ -79,7 +79,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
-        [TestCategory("Quarantine")]
         public async Task TestWithFixedLeaseContainer()
         {
             await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
