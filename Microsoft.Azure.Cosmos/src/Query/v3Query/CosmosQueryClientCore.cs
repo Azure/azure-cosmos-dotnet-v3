@@ -265,10 +265,6 @@ namespace Microsoft.Azure.Cosmos
             using (cosmosResponseMessage)
             {
                 PointOperationStatistics pointOperationStatistics = cosmosResponseMessage.Diagnostics as PointOperationStatistics;
-                if (pointOperationStatistics == null)
-                {
-                    throw new ArgumentException("cosmosResponseMessage.Diagnostics is not the supported PointOperationStatistics");
-                }
 
                 QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,

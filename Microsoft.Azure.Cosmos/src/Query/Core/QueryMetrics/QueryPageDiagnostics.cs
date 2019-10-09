@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.QueryMetricText = queryMetricText ?? string.Empty;
             this.IndexUtilizationText = indexUtilizationText ?? string.Empty;
-            this.RequestDiagnostics = requestDiagnostics ?? throw new ArgumentNullException(nameof(requestDiagnostics));
+            this.RequestDiagnostics = requestDiagnostics;
         }
 
         internal string PartitionKeyRangeId { get; }
@@ -31,6 +31,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
+            string requestDiagnosticsString = string.Empty;
+            if (this.RequestDiagnostics != null)
+            {
+                requestDiagnosticsString = this.RequestDiagnostics.ToString();
+            }
+
             stringBuilder.Append("{\"PartitionKeyRangeId\":\"");
             stringBuilder.Append(this.PartitionKeyRangeId);
             stringBuilder.Append("\",\"QueryMetricText\":\"");
@@ -38,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query
             stringBuilder.Append("\",\"IndexUtilizationText\":\"");
             stringBuilder.Append(this.IndexUtilizationText);
             stringBuilder.Append("\",\"RequestDiagnostics\":");
-            stringBuilder.Append(this.RequestDiagnostics);
+            stringBuilder.Append(requestDiagnosticsString);
             stringBuilder.Append("}");
         }
 
