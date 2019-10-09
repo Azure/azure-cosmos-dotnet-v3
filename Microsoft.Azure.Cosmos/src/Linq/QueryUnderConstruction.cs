@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             selectClause = SqlSelectClause.Create(selectClause.SelectSpec, selectClause.TopSpec ?? this.topSpec, selectClause.HasDistinct);
             SqlOffsetLimitClause offsetLimitClause = (this.offsetSpec != null) ?
-                SqlOffsetLimitClause.Create(this.offsetSpec, this.limitSpec ?? SqlLimitSpec.Create(int.MaxValue)) :
+                SqlOffsetLimitClause.Create(this.offsetSpec, this.limitSpec ?? SqlLimitSpec.Create(SqlNumberLiteral.Create(int.MaxValue))) :
                 offsetLimitClause = default(SqlOffsetLimitClause);
             SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, /*GroupBy*/ null, this.orderByClause, offsetLimitClause);
             return result;
@@ -248,14 +248,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
                 }
 
-                seenSelect = seenSelect || ((query.selectClause != null) && !(query.selectClause.HasDistinct));
+                seenSelect = seenSelect || ((query.selectClause != null) && !query.selectClause.HasDistinct);
                 seenAnyNonSelectOp |=
                     (query.whereClause != null) ||
                     (query.orderByClause != null) ||
                     (query.topSpec != null) ||
                     (query.offsetSpec != null) ||
-                    (query.fromParameters.GetBindings().Any(b => b.ParameterDefinition != null)) ||
-                    ((query.selectClause != null) && ((query.selectClause.HasDistinct) || (this.HasSelectAggregate())));
+                    query.fromParameters.GetBindings().Any(b => b.ParameterDefinition != null) ||
+                    ((query.selectClause != null) && (query.selectClause.HasDistinct || this.HasSelectAggregate()));
                 parentQuery = query;
             }
 
@@ -315,9 +315,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             SqlIdentifier replacement = SqlIdentifier.Create(paramName);
-            SqlSelectClause composedSelect = Substitute(inputSelect, inputSelect.TopSpec ?? this.topSpec, replacement, this.selectClause);
-            SqlWhereClause composedWhere = Substitute(inputSelect.SelectSpec, replacement, this.whereClause);
-            SqlOrderbyClause composedOrderBy = Substitute(inputSelect.SelectSpec, replacement, this.orderByClause);
+            SqlSelectClause composedSelect = this.Substitute(inputSelect, inputSelect.TopSpec ?? this.topSpec, replacement, this.selectClause);
+            SqlWhereClause composedWhere = this.Substitute(inputSelect.SelectSpec, replacement, this.whereClause);
+            SqlOrderbyClause composedOrderBy = this.Substitute(inputSelect.SelectSpec, replacement, this.orderByClause);
             SqlWhereClause and = QueryUnderConstruction.CombineWithConjunction(inputwhere, composedWhere);
             FromParameterBindings fromParams = QueryUnderConstruction.CombineInputParameters(flatInput.fromParameters, this.fromParameters);
             SqlOffsetSpec offsetSpec;
@@ -535,7 +535,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             // If result SelectClause is not null, or both result selectClause and select has Distinct
             // then it is unexpected since the SelectClause will be overwritten.
-            if (!((this.selectClause != null && this.selectClause.HasDistinct && selectClause.HasDistinct) ||
+            if (!((this.selectClause != null && this.selectClause.HasDistinct && this.selectClause.HasDistinct) ||
                 this.selectClause == null))
             {
                 throw new DocumentQueryException("Internal error: attempting to overwrite SELECT clause");
@@ -558,7 +558,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             // If result SelectClause is not null, or both result selectClause and select has Distinct
             // then it is unexpected since the SelectClause will be overwritten.
-            if (!((result.selectClause != null && result.selectClause.HasDistinct && selectClause.HasDistinct) ||
+            if (!((result.selectClause != null && result.selectClause.HasDistinct && this.selectClause.HasDistinct) ||
                 result.selectClause == null))
             {
                 throw new DocumentQueryException("Internal error: attempting to overwrite SELECT clause");
@@ -594,11 +594,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         public QueryUnderConstruction AddOffsetSpec(SqlOffsetSpec offsetSpec, TranslationContext context)
         {
             QueryUnderConstruction result = context.PackageCurrentQueryIfNeccessary();
-
             if (result.offsetSpec != null)
             {
                 // Skip(A).Skip(B) => Skip(A + B)
-                result.offsetSpec = SqlOffsetSpec.Create(result.offsetSpec.Offset + offsetSpec.Offset);
+                long offsetA = QueryUnderConstruction.GetOffsetCount(result.offsetSpec);
+                long offsetB = QueryUnderConstruction.GetOffsetCount(offsetSpec);
+                result.offsetSpec = SqlOffsetSpec.Create(SqlNumberLiteral.Create(offsetA + offsetB));
             }
             else
             {
@@ -608,13 +609,45 @@ namespace Microsoft.Azure.Cosmos.Linq
             return result;
         }
 
+        private static long GetOffsetCount(SqlOffsetSpec offsetSpec)
+        {
+            if (offsetSpec == null)
+            {
+                throw new ArgumentNullException(nameof(offsetSpec));
+            }
+
+            SqlScalarExpression offsetExpression = offsetSpec.OffsetExpression;
+            if (!(offsetExpression is SqlLiteralScalarExpression offsetLiteralExpression))
+            {
+                throw new ArgumentException($"Expected number literal scalar expression.");
+            }
+
+            SqlLiteral sqlLiteral = offsetLiteralExpression.Literal;
+            if (!(sqlLiteral is SqlNumberLiteral sqlNumberLiteral))
+            {
+                throw new ArgumentException($"Expected number literal.");
+            }
+
+            if (!sqlNumberLiteral.Value.IsInteger)
+            {
+                throw new ArgumentException($"Expected integer literal.");
+            }
+
+            long value = Number64.ToLong(sqlNumberLiteral.Value);
+            return value;
+        }
+
         public QueryUnderConstruction AddLimitSpec(SqlLimitSpec limitSpec, TranslationContext context)
         {
             QueryUnderConstruction result = this;
-
             if (result.limitSpec != null)
             {
-                result.limitSpec = (result.limitSpec.Limit < limitSpec.Limit) ? result.limitSpec : limitSpec;
+                long accumulatedLimitCount = QueryUnderConstruction.GetLimitCount(result.limitSpec);
+                long currentLimitCount = QueryUnderConstruction.GetLimitCount(limitSpec);
+                if (currentLimitCount < accumulatedLimitCount)
+                {
+                    result.limitSpec = limitSpec;
+                }
             }
             else
             {
@@ -624,14 +657,46 @@ namespace Microsoft.Azure.Cosmos.Linq
             return result;
         }
 
+        private static long GetLimitCount(SqlLimitSpec limitSpec)
+        {
+            if (limitSpec == null)
+            {
+                throw new ArgumentNullException(nameof(limitSpec));
+            }
+
+            SqlScalarExpression limitExpression = limitSpec.LimitExpression;
+            if (!(limitExpression is SqlLiteralScalarExpression limitLiteralExpression))
+            {
+                throw new ArgumentException($"Expected number literal scalar expression.");
+            }
+
+            SqlLiteral sqlLiteral = limitLiteralExpression.Literal;
+            if (!(sqlLiteral is SqlNumberLiteral sqlNumberLiteral))
+            {
+                throw new ArgumentException($"Expected number literal.");
+            }
+
+            if (!sqlNumberLiteral.Value.IsInteger)
+            {
+                throw new ArgumentException($"Expected integer literal.");
+            }
+
+            long value = Number64.ToLong(sqlNumberLiteral.Value);
+            return value;
+        }
+
         public QueryUnderConstruction AddTopSpec(SqlTopSpec topSpec)
         {
             QueryUnderConstruction result = this;
 
             if (result.topSpec != null)
             {
-                // Set the topSpec to the one with minimum Count value
-                result.topSpec = (result.topSpec.Count < topSpec.Count) ? result.topSpec : topSpec;
+                long accumulatedTopCount = QueryUnderConstruction.GetTopCount(result.topSpec);
+                long currentTopCount = QueryUnderConstruction.GetTopCount(topSpec);
+                if (currentTopCount < accumulatedTopCount)
+                {
+                    result.topSpec = topSpec;
+                }
             }
             else
             {
@@ -639,6 +704,34 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             return result;
+        }
+
+        private static long GetTopCount(SqlTopSpec sqlTopSpec)
+        {
+            if (sqlTopSpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlTopSpec));
+            }
+
+            SqlScalarExpression topExpression = sqlTopSpec.TopExpresion;
+            if (!(topExpression is SqlLiteralScalarExpression topLiteralExpression))
+            {
+                throw new ArgumentException($"Expected number literal scalar expression.");
+            }
+
+            SqlLiteral sqlLiteral = topLiteralExpression.Literal;
+            if (!(sqlLiteral is SqlNumberLiteral sqlNumberLiteral))
+            {
+                throw new ArgumentException($"Expected number literal.");
+            }
+
+            if (!sqlNumberLiteral.Value.IsInteger)
+            {
+                throw new ArgumentException($"Expected integer literal.");
+            }
+
+            long value = Number64.ToLong(sqlNumberLiteral.Value);
+            return value;
         }
 
         private static SqlWhereClause CombineWithConjunction(SqlWhereClause first, SqlWhereClause second)
