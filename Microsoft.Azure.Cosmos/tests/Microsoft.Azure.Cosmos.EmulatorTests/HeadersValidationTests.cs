@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
@@ -448,6 +450,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             byte[] expectedUserAgentUTF8 = Encoding.UTF8.GetBytes(expectedUserAgent);
             CollectionAssert.AreEqual(expectedUserAgentUTF8, policy.UserAgentContainer.UserAgentUTF8);
+        }
+
+        [TestMethod]
+        public async Task ValidateUserAgentHeaderWithCustomOs()
+        {
+            const string suffix = " MyCustomUserAgent/1.0";
+            //                            "Microsoft Windows 10.0.18362 /X64 3.3.0/3.3.0-.NET Core 4.6.28008.01 91413 MyCustomUserAgent/1.0"
+            const string invalidOsField = "xnu-4903.271.2~2|RELEASE_X86_64|X64 3.3.0|3.3.0-.NET Core 4.6.27817.03 89710|";
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix)))
+            {
+                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
+                FieldInfo fieldInfo = typeof(Cosmos.UserAgentContainer).GetField("cosmosBaseUserAgent", BindingFlags.Static | BindingFlags.NonPublic);
+                fieldInfo.SetValue(userAgentContainer, invalidOsField);
+                userAgentContainer.Suffix = suffix;
+
+                string userAgentString = userAgentContainer.UserAgent;
+                Assert.IsTrue(userAgentString.Contains(suffix));
+                Assert.IsTrue(userAgentString.Contains(invalidOsField));
+                Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+                Assert.IsNotNull(db);
+                await db.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public void ValidateUserAgent()
+        {
+            // Invalid user agent string "A/AA/A";
+            //  "Microsoft Windows 10.0.18362 /X64 3.3.0/3.3.0-.NET Core 4.6.28008.01 91413 MyCustomUserAgent/1.0"
+            string invalidOsField = "||AAA/A|Test|CB-A-23 Test|";
+            HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.UserAgent, invalidOsField);
         }
 
         [TestMethod]

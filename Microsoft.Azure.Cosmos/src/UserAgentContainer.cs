@@ -14,7 +14,10 @@ namespace Microsoft.Azure.Cosmos
         static UserAgentContainer()
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            UserAgentContainer.cosmosBaseUserAgent = environmentInformation.ToString();
+            string infoString = environmentInformation.ToString();
+
+            // Two Backslashes in the same string without a space will cause the HTTP to throw a format exception 
+            UserAgentContainer.cosmosBaseUserAgent = infoString.Replace("/", "-");
         }
 
         public UserAgentContainer()

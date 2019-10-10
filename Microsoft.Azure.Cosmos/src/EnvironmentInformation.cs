@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return $"{this.OperatingSystem}/{this.ProcessArchitecture} {this.ClientVersion}/{this.DirectVersion}-{this.RuntimeFramework} {this.ClientId}";
+            return $"{this.OperatingSystem}|{this.ProcessArchitecture} {this.ClientVersion}|{this.DirectVersion}|{this.RuntimeFramework} {this.ClientId}|";
         }
     }
 }
