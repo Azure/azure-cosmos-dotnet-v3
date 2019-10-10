@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     /// </summary>
     internal sealed class PipelineContinuationTokenV2 : PipelineContinuationToken
     {
-        public static readonly Version Version2 = new Version(major: 1, minor: 0);
+        public static readonly Version Version2 = new Version(major: 2, minor: 0);
 
         private static readonly string SourceContinuationTokenPropertyName = "SourceContinuationToken";
         private static readonly string QueryPlanPropertyName = "QueryPlan";

@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             return true;
         }
 
-        private static bool TryConvertToLatest(
+        public static bool TryConvertToLatest(
             PipelineContinuationToken pipelinedContinuationToken,
             out PipelineContinuationTokenV2 pipelineContinuationTokenV2)
         {
