@@ -11,17 +11,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     /// <summary>
     /// Pipelined continuation where we start versioning.
     /// </summary>
-    internal sealed class PipelineContinuationTokenV2 : PipelineContinuationToken
+    internal sealed class PipelineContinuationTokenV1_1 : PipelineContinuationToken
     {
-        public static readonly Version Version2 = new Version(major: 2, minor: 0);
+        public static readonly Version VersionNumber = new Version(major: 1, minor: 1);
 
         private static readonly string SourceContinuationTokenPropertyName = "SourceContinuationToken";
         private static readonly string QueryPlanPropertyName = "QueryPlan";
 
-        public PipelineContinuationTokenV2(
+        public PipelineContinuationTokenV1_1(
             PartitionedQueryExecutionInfo queryPlan,
             string sourceContinuationToken)
-            : base(PipelineContinuationTokenV2.Version2)
+            : base(PipelineContinuationTokenV1_1.VersionNumber)
         {
             // Query Plan is allowed to be null.
             if (sourceContinuationToken == null)
@@ -42,15 +42,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             return CosmosObject.Create(new Dictionary<string, CosmosElement>()
             {
                 {
-                    PipelineContinuationTokenV2.QueryPlanPropertyName,
-                    this.QueryPlan == null ? (CosmosElement)CosmosNull.Create() : (CosmosElement)CosmosString.Create(this.QueryPlan.ToString())
-                },
-                {
                     PipelineContinuationToken.VersionPropertyName,
                     CosmosString.Create(this.Version.ToString())
                 },
                 {
-                    PipelineContinuationTokenV2.SourceContinuationTokenPropertyName,
+                    PipelineContinuationTokenV1_1.QueryPlanPropertyName,
+                    this.QueryPlan == null ? (CosmosElement)CosmosNull.Create() : (CosmosElement)CosmosString.Create(this.QueryPlan.ToString())
+                },
+                {
+                    PipelineContinuationTokenV1_1.SourceContinuationTokenPropertyName,
                     CosmosString.Create(this.SourceContinuationToken)
                 },
             }).ToString();
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public static bool TryParse(
             CosmosObject parsedContinuationToken,
-            out PipelineContinuationTokenV2 pipelinedContinuationTokenV2)
+            out PipelineContinuationTokenV1_1 pipelinedContinuationTokenV2)
         {
             if (parsedContinuationToken == null)
             {
@@ -69,33 +69,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 parsedContinuationToken,
                 out Version version))
             {
-                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV2);
+                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
                 return false;
             }
 
-            if (version != PipelineContinuationTokenV2.Version2)
+            if (version != PipelineContinuationTokenV1_1.VersionNumber)
             {
-                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV2);
+                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
                 return false;
             }
 
-            if (!PipelineContinuationTokenV2.TryParseQueryPlan(
+            if (!PipelineContinuationTokenV1_1.TryParseQueryPlan(
                 parsedContinuationToken,
                 out PartitionedQueryExecutionInfo queryPlan))
             {
-                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV2);
+                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
                 return false;
             }
 
-            if (!PipelineContinuationTokenV2.TryParseSourceContinuationToken(
+            if (!PipelineContinuationTokenV1_1.TryParseSourceContinuationToken(
                 parsedContinuationToken,
                 out string sourceContinuationToken))
             {
-                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV2);
+                pipelinedContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
                 return false;
             }
 
-            pipelinedContinuationTokenV2 = new PipelineContinuationTokenV2(queryPlan, sourceContinuationToken);
+            pipelinedContinuationTokenV2 = new PipelineContinuationTokenV1_1(queryPlan, sourceContinuationToken);
             return true;
         }
 
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             if (!parsedContinuationToken.TryGetValue(
-                PipelineContinuationTokenV2.QueryPlanPropertyName,
+                PipelineContinuationTokenV1_1.QueryPlanPropertyName,
                 out CosmosElement parsedQueryPlan))
             {
                 queryPlan = default(PartitionedQueryExecutionInfo);
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
 
             if (!parsedContinuationToken.TryGetValue<CosmosString>(
-                PipelineContinuationTokenV2.SourceContinuationTokenPropertyName,
+                PipelineContinuationTokenV1_1.SourceContinuationTokenPropertyName,
                 out CosmosString parsedSourceContinuationToken))
             {
                 sourceContinuationToken = default(string);

@@ -17,40 +17,77 @@ namespace Microsoft.Azure.Cosmos.Query
         [Owner("brchon")]
         public void Tests()
         {
+            List<PipelineContinuationTokenTests.PipelineContinuationTokenTestsInput> pipelineContinuationTokenTestsInputs = new List<PipelineContinuationTokenTestsInput>
             {
-                string versionZeroContinuation = @"{""asdf"" : ""asdf""}";
-                Assert.IsTrue(PipelineContinuationToken.TryParse(
-                    versionZeroContinuation,
-                    out PipelineContinuationToken pipelinedContinuationTokenVersionZero));
-                Assert.AreEqual(
-                    PipelineContinuationTokenV0.Version0,
-                    pipelinedContinuationTokenVersionZero.Version);
-                PipelineContinuationTokenV0 pipelinedContinuationTokenVersionZeroCasted = (PipelineContinuationTokenV0)pipelinedContinuationTokenVersionZero;
-                Assert.AreEqual(
-                    versionZeroContinuation,
-                    pipelinedContinuationTokenVersionZeroCasted.SourceContinuationToken);
-                Assert.IsTrue(PipelineContinuationToken.TryConvertToLatest(
-                    pipelinedContinuationTokenVersionZero,
-                    out PipelineContinuationTokenV2 converted));
-                Assert.AreEqual(null, converted.QueryPlan);
-                Assert.AreEqual(versionZeroContinuation, converted.SourceContinuationToken);
-            }
+                // Positive Tests
+                new PipelineContinuationTokenTestsInput(
+                    description: "V0 Continuation Token",
+                    continuationToken: @"{""asdf"": ""asdf""}"),
+                new PipelineContinuationTokenTestsInput(
+                    description: "V1 Continuation Token",
+                    continuationToken: "{\"Version\":\"1.0\",\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
+                new PipelineContinuationTokenTestsInput(
+                    description: "V1.1 Continuation Token",
+                    continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\":null,\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
+
+                // Negative Tests
+                new PipelineContinuationTokenTestsInput(
+                    description: "Invalid JSON",
+                    continuationToken: @"{""asdf"": ..."),
+                new PipelineContinuationTokenTestsInput(
+                    description: "Valid JSON but not an object",
+                    continuationToken: @"42"),
+                new PipelineContinuationTokenTestsInput(
+                    description: "Invalid Version Number.",
+                    continuationToken: @"{""Version"": ""42.1337""}"),
+
+                // Version 1 Negative Tests
+                new PipelineContinuationTokenTestsInput(
+                    description: "V1 No Source Continuation Token",
+                    continuationToken: "{\"Version\":\"1.0\"}"),
+                new PipelineContinuationTokenTestsInput(
+                    description: "V1 Source Continuation Token Is Not A String",
+                    continuationToken: "{\"Version\":\"1.0\"}, \"SourceContinuationToken\": 42"),
+
+                // Version 1.1 Negative Tests
+                new PipelineContinuationTokenTestsInput(
+                    description: "V1.1 No Query Plan",
+                    continuationToken: "{\"Version\":\"1.1\"},\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
+                new PipelineContinuationTokenTestsInput(
+                    description: "V1.1 Query Plan Malformed",
+                    continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\": 42,\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
+                new PipelineContinuationTokenTestsInput(
+                    description: "V1.1 No Source Continuation",
+                    continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\": null}"),
+                new PipelineContinuationTokenTestsInput(
+                    description: "V1.1 Source Continuation Is Not A String",
+                    continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\": null,\"SourceContinuationToken\": 42}"),
+            };
+
+            this.ExecuteTestSuite(pipelineContinuationTokenTestsInputs);
         }
 
         public override PipelineContinuationTokenTestsOutput ExecuteTest(
             PipelineContinuationTokenTestsInput input)
         {
-            Assert.IsTrue(PipelineContinuationToken.TryParse(
+            if (!PipelineContinuationToken.TryParse(
                 input.ContinuationToken,
-                out PipelineContinuationToken pipelineContinuationToken));
-            Assert.IsTrue(PipelineContinuationToken.TryConvertToLatest(
+                out PipelineContinuationToken pipelineContinuationToken))
+            {
+                return new PipelineContinuationTokenTestsOutputNegative("Failed to parse token.");
+            }
+
+
+            if (!PipelineContinuationToken.TryConvertToLatest(
                 pipelineContinuationToken,
-                out PipelineContinuationTokenV2 latestPipelineContinuationToken));
-            PipelineContinuationTokenTestsOutput output = new PipelineContinuationTokenTestsOutput(
+                out PipelineContinuationTokenV1_1 latestPipelineContinuationToken))
+            {
+                return new PipelineContinuationTokenTestsOutputNegative("Failed to convert to latest");
+            }
+
+            return new PipelineContinuationTokenTestsOutputPositive(
                 pipelineContinuationToken,
                 latestPipelineContinuationToken);
-
-            return output;
         }
 
         public sealed class PipelineContinuationTokenTestsInput : BaselineTestInput
@@ -68,12 +105,20 @@ namespace Microsoft.Azure.Cosmos.Query
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
                 xmlWriter.WriteElementString(nameof(this.Description), this.Description);
+                xmlWriter.WriteStartElement(nameof(this.ContinuationToken));
+                xmlWriter.WriteCData(this.ContinuationToken.ToString());
+                xmlWriter.WriteEndElement();
             }
         }
 
-        public sealed class PipelineContinuationTokenTestsOutput : BaselineTestOutput
+        public abstract class PipelineContinuationTokenTestsOutput : BaselineTestOutput
         {
-            internal PipelineContinuationTokenTestsOutput(
+
+        }
+
+        public sealed class PipelineContinuationTokenTestsOutputPositive : PipelineContinuationTokenTestsOutput
+        {
+            internal PipelineContinuationTokenTestsOutputPositive(
                 PipelineContinuationToken parsedToken,
                 PipelineContinuationToken latestToken)
             {
@@ -86,8 +131,30 @@ namespace Microsoft.Azure.Cosmos.Query
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
-                xmlWriter.WriteElementString(nameof(this.ParsedToken), this.ParsedToken.ToString());
-                xmlWriter.WriteElementString(nameof(this.LatestToken), this.ParsedToken.ToString());
+                xmlWriter.WriteStartElement(nameof(this.ParsedToken));
+                xmlWriter.WriteCData(this.ParsedToken.ToString());
+                xmlWriter.WriteEndElement();
+
+                xmlWriter.WriteStartElement(nameof(this.LatestToken));
+                xmlWriter.WriteCData(this.LatestToken.ToString());
+                xmlWriter.WriteEndElement();
+            }
+        }
+
+        public sealed class PipelineContinuationTokenTestsOutputNegative : PipelineContinuationTokenTestsOutput
+        {
+            public PipelineContinuationTokenTestsOutputNegative(string reason)
+            {
+                this.Reason = reason;
+            }
+
+            public string Reason { get; }
+
+            public override void SerializeAsXml(XmlWriter xmlWriter)
+            {
+                xmlWriter.WriteStartElement(nameof(this.Reason));
+                xmlWriter.WriteCData(this.Reason.ToString());
+                xmlWriter.WriteEndElement();
             }
         }
     }

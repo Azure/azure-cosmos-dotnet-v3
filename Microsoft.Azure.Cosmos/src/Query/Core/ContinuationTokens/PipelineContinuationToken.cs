@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 return false;
             }
 
-            if (version == PipelineContinuationTokenV0.Version0)
+            if (version == PipelineContinuationTokenV0.VersionNumber)
             {
                 if (!PipelineContinuationTokenV0.TryParse(
                     rawContinuationToken,
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
                 pipelineContinuationToken = pipelineContinuationTokenV0;
             }
-            else if (version == PipelineContinuationTokenV1.Version1)
+            else if (version == PipelineContinuationTokenV1.VersionNumber)
             {
                 if (!PipelineContinuationTokenV1.TryParse(
                     parsedContinuationToken,
@@ -67,6 +67,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 }
 
                 pipelineContinuationToken = pipelineContinuationTokenV1;
+            }
+            else if (version == PipelineContinuationTokenV1_1.VersionNumber)
+            {
+                if (!PipelineContinuationTokenV1_1.TryParse(
+                    parsedContinuationToken,
+                    out PipelineContinuationTokenV1_1 pipelineContinuationTokenV1_1))
+                {
+                    pipelineContinuationToken = default(PipelineContinuationToken);
+                    return false;
+                }
+
+                pipelineContinuationToken = pipelineContinuationTokenV1_1;
             }
             else
             {
@@ -79,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
         public static bool TryConvertToLatest(
             PipelineContinuationToken pipelinedContinuationToken,
-            out PipelineContinuationTokenV2 pipelineContinuationTokenV2)
+            out PipelineContinuationTokenV1_1 pipelineContinuationTokenV2)
         {
             if (pipelinedContinuationToken == null)
             {
@@ -93,14 +105,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
 
             if (pipelinedContinuationToken is PipelineContinuationTokenV1 pipelineContinuationTokenV1)
             {
-                pipelinedContinuationToken = new PipelineContinuationTokenV2(
+                pipelinedContinuationToken = new PipelineContinuationTokenV1_1(
                     queryPlan: null,
                     sourceContinuationToken: pipelineContinuationTokenV1.SourceContinuationToken);
             }
 
-            if (!(pipelinedContinuationToken is PipelineContinuationTokenV2 convertedPipelineContinuationTokenV2))
+            if (!(pipelinedContinuationToken is PipelineContinuationTokenV1_1 convertedPipelineContinuationTokenV2))
             {
-                pipelineContinuationTokenV2 = default(PipelineContinuationTokenV2);
+                pipelineContinuationTokenV2 = default(PipelineContinuationTokenV1_1);
                 return false;
             }
             else
@@ -132,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 // If there is no version string,
                 // then the token was generated before we started versioning.
                 // If that is the case, then just use the default version.
-                version = PipelineContinuationTokenV0.Version0;
+                version = PipelineContinuationTokenV0.VersionNumber;
             }
             else
             {

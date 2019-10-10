@@ -133,8 +133,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
 
             byte[] buffer = Encoding.UTF8.GetBytes(serializedCosmosElement);
-            cosmosElement = CosmosElement.Create(buffer);
-            return true;
+            try
+            {
+                cosmosElement = CosmosElement.Create(buffer);
+                return true;
+            }
+            catch (JsonParseException)
+            {
+                cosmosElement = default(CosmosElement);
+                return false;
+            }
         }
 
         public static bool TryParse<TCosmosElement>(string serializedCosmosElement, out TCosmosElement cosmosElement)

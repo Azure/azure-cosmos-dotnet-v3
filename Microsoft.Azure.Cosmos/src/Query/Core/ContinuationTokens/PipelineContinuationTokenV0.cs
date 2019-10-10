@@ -11,10 +11,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     /// </summary>
     internal sealed class PipelineContinuationTokenV0 : PipelineContinuationToken
     {
-        public static readonly Version Version0 = new Version(major: 0, minor: 0);
+        public static readonly Version VersionNumber = new Version(major: 0, minor: 0);
 
         public PipelineContinuationTokenV0(string sourceContinuationToken)
-            : base(PipelineContinuationTokenV0.Version0)
+            : base(PipelineContinuationTokenV0.VersionNumber)
         {
             if (sourceContinuationToken == null)
             {

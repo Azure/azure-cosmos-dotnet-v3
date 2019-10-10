@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
     /// </summary>
     internal sealed class PipelineContinuationTokenV1 : PipelineContinuationToken
     {
-        public static readonly Version Version1 = new Version(major: 1, minor: 0);
+        public static readonly Version VersionNumber = new Version(major: 1, minor: 0);
 
         private static readonly string SourceContinuationTokenPropertyName = "SourceContinuationToken";
 
         public PipelineContinuationTokenV1(string sourceContinuationToken)
-            : base(PipelineContinuationTokenV1.Version1)
+            : base(PipelineContinuationTokenV1.VersionNumber)
         {
             if (sourceContinuationToken == null)
             {
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 return false;
             }
 
-            if (version != PipelineContinuationTokenV1.Version1)
+            if (version != PipelineContinuationTokenV1.VersionNumber)
             {
                 pipelinedContinuationTokenV1 = default(PipelineContinuationTokenV1);
                 return false;
