@@ -1,14 +1,14 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Azure.Cosmos.EmulatorTests
 {
     using System;
     using System.Net;
     using System.Net.Http;
     using System.Text.Json;
     using System.Threading.Tasks;
-    using global::Azure.Data.Cosmos;
+    using Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly string utc_date = DateTime.UtcNow.ToString("r");
 
         internal static async Task<ContainerCore> CreateNonPartitionedContainer(
-            global::Azure.Data.Cosmos.Database database,
+            Cosmos.Database database,
             string containerId,
             string indexingPolicy = null)
         {
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (indexingPolicy != null)
             {
-                documentCollection.IndexingPolicy = JsonSerializer.Deserialize<Documents.IndexingPolicy>(indexingPolicy);
+                documentCollection.IndexingPolicy = JsonSerializer.Deserialize<Microsoft.Azure.Documents.IndexingPolicy>(indexingPolicy);
             }
 
             await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static async Task<DocumentCollection> CreateNonPartitionedContainer(
-            global::Azure.Data.Cosmos.Database database,
+            Cosmos.Database database,
             DocumentCollection documentCollection)
         {
             (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();

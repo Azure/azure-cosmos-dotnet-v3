@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;

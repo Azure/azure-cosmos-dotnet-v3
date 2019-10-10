@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Data.Cosmos
+namespace Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
@@ -31,7 +31,7 @@ namespace Azure.Data.Cosmos
     /// The CosmosClient is created with the connection string and configured to use "East US 2" region.
     /// <code language="c#">
     /// <![CDATA[
-    /// using Azure.Data.Cosmos;
+    /// using Azure.Cosmos;
     /// 
     /// CosmosClient cosmosClient = new CosmosClient(
     ///             "connection-string-from-portal", 
@@ -52,7 +52,7 @@ namespace Azure.Data.Cosmos
     /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
     /// <code language="c#">
     /// <![CDATA[
-    /// using Azure.Data.Cosmos;
+    /// using Azure.Cosmos;
     /// 
     /// CosmosClient cosmosClient = new CosmosClient(
     ///             "account-endpoint-from-portal", 
@@ -74,8 +74,8 @@ namespace Azure.Data.Cosmos
     /// The CosmosClient is created through builder pattern <see cref="Fluent.CosmosClientBuilder"/>.
     /// <code language="c#">
     /// <![CDATA[
-    /// using Azure.Data.Cosmos;
-    /// using Azure.Data.Cosmos.Fluent;
+    /// using Azure.Cosmos;
+    /// using Azure.Cosmos.Fluent;
     /// 
     /// CosmosClient cosmosClient = new CosmosClientBuilder("connection-string-from-portal")
     ///     .WithApplicationRegion("East US 2")
@@ -582,7 +582,7 @@ namespace Azure.Data.Cosmos
                 cosmosResponseFactory: this.ResponseFactory,
                 requestHandler: this.RequestHandler,
                 documentClient: this.DocumentClient,
-                diagnosticsPrefix: "Azure.Data.Cosmos");
+                diagnosticsPrefix: "Azure.Cosmos");
         }
 
         internal virtual async Task<ConsistencyLevel> GetAccountConsistencyLevelAsync()

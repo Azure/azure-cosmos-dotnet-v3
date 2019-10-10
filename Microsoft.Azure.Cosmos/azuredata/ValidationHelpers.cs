@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class ValidationHelpers
     {
-        public static bool IsValidConsistencyLevelOverwrite(global::Azure.Data.Cosmos.ConsistencyLevel backendConsistency, global::Azure.Data.Cosmos.ConsistencyLevel desiredConsistency)
+        public static bool IsValidConsistencyLevelOverwrite(global::Azure.Cosmos.ConsistencyLevel backendConsistency, global::Azure.Cosmos.ConsistencyLevel desiredConsistency)
         {
             return ValidationHelpers.IsValidConsistencyLevelOverwrite((Documents.ConsistencyLevel)backendConsistency, (Documents.ConsistencyLevel)desiredConsistency);
         }

@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
-#if AZUREDATA
-    using global::Azure.Data.Cosmos;
+#if AZURECORE
+    using global::Azure.Cosmos;
 #endif
 
 #if INTERNAL

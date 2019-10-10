@@ -1,11 +1,11 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Azure.Data.Cosmos
+namespace Azure.Cosmos
 {
     using System.Collections;
     using System.Collections.Generic;
-    using global::Azure;
+    using Azure;
     using Microsoft.Azure.Documents;
 
     /// <summary>

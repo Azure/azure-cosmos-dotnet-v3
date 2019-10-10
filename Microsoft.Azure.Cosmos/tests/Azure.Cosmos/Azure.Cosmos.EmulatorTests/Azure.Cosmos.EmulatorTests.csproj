@@ -36,11 +36,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  
   <ItemGroup>
-    
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\azuredata\Azure.Data.Cosmos.csproj" />
+    <ProjectReference Include="..\..\..\azuredata\Azure.Cosmos.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

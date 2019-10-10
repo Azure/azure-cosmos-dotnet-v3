@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Data.Cosmos
+namespace Azure.Cosmos
 {
     /// <summary>
     /// Specifies the supported conflict resolution modes, as specified in <see cref="ConflictResolutionPolicy"/>

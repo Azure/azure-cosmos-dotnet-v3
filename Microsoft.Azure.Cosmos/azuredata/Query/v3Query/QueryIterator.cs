@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Data.Cosmos.Query
+namespace Azure.Cosmos.Query
 {
     using System;
     using System.Threading;

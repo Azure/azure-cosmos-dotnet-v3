@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;

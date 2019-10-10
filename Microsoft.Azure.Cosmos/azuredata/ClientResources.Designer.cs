@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos {
+namespace Azure.Cosmos {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.ClientResources", typeof(ClientResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Azure.Cosmos.ClientResources", typeof(ClientResources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

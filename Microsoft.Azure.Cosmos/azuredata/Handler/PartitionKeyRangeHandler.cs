@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;

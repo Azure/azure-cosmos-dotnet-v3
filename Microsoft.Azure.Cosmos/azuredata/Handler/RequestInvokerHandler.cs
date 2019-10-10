@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core.Pipeline;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerCore cosmosContainerCore,
-            global::Azure.Data.Cosmos.PartitionKey? partitionKey,
+            global::Azure.Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             if (partitionKey != null)
             {
-                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, global::Azure.Data.Cosmos.PartitionKey.None))
+                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, global::Azure.Cosmos.PartitionKey.None))
                 {
                     throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
                 }

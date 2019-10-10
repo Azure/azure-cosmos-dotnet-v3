@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     internal abstract class AbstractRetryHandler : RequestHandler

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
 
     internal abstract class CosmosQueryClient
     {

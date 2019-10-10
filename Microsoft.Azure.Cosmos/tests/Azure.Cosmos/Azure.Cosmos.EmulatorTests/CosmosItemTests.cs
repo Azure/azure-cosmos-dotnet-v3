@@ -12,9 +12,8 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Azure;
-    using Azure.Data.Cosmos;
+    using Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;

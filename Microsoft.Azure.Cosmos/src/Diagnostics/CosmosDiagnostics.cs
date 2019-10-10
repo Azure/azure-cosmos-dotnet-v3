@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     ///  Contains the cosmos diagnostic information for the current request to Azure Cosmos DB service.
     /// </summary>
-#if AZUREDATA
+#if AZURECORE
     internal
 #else
     public

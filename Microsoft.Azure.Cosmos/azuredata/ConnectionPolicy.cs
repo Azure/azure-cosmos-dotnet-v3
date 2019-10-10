@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 

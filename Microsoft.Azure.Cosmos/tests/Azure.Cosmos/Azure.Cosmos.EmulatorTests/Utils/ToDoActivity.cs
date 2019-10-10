@@ -2,14 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using Azure.Data.Cosmos;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Azure.Cosmos.EmulatorTests
 {
+    using Azure.Cosmos;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
     public class ToDoActivity
     {
         public string id { get; set; }

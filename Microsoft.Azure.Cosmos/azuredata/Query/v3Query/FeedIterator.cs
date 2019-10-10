@@ -2,11 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Data.Cosmos
+namespace Azure.Cosmos
 {
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
+    using Azure;
 
     /// <summary>
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.

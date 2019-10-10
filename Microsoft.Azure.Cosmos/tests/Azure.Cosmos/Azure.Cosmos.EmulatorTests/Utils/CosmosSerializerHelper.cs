@@ -2,12 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Azure.Cosmos.EmulatorTests
 {
     using System;
     using System.Globalization;
     using System.IO;
-    using global::Azure.Data.Cosmos;
+    using Azure.Cosmos;
     using Newtonsoft.Json;
 
     /// <summary>

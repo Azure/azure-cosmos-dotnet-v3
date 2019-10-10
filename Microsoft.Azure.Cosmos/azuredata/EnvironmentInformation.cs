@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Reflection;
     using System.Runtime.InteropServices;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
 
     internal sealed class EnvironmentInformation
     {
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return $"{this.OperatingSystem}/{this.ProcessArchitecture} {this.ClientVersion}/{this.DirectVersion}-{this.RuntimeFramework} {this.ClientId}";
+            return $"{this.OperatingSystem}|{this.ProcessArchitecture} {this.ClientVersion}|{this.DirectVersion}|{this.RuntimeFramework} {this.ClientId}|";
         }
     }
 }

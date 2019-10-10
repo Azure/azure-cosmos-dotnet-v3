@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Azure.Data.Cosmos
+namespace Azure.Cosmos
 {
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;

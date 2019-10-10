@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Security;
     using System.Threading.Tasks;
-    using global::Azure.Data.Cosmos;
+    using global::Azure.Cosmos;
 
     /// <summary>
     /// The IDocumentClient interface captures the API signatures of the Azure Cosmos DB service .NET SDK.

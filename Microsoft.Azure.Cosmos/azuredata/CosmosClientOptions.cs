@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Data.Cosmos
+namespace Azure.Cosmos
 {
     using System;
     using System.Collections.ObjectModel;
@@ -10,7 +10,7 @@ namespace Azure.Data.Cosmos
     using System.Linq;
     using System.Net;
     using Azure.Core.Pipeline;
-    using Azure.Data.Cosmos.Fluent;
+    using Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos;    
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;

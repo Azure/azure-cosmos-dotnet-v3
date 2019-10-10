@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Azure.Data.Cosmos
+namespace Azure.Cosmos
 {
     /// <summary>
     /// Represents the connection mode to be used by the client when connecting to the Azure Cosmos DB service.

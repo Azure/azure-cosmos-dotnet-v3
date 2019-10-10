@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <remarks>
     /// Custom implementations are required to be stateless.
     /// </remarks>
-#if AZUREDATA
+#if AZURECORE
     internal
 #else
     public
