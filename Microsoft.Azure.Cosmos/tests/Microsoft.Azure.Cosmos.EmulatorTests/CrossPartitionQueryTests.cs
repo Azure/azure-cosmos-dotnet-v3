@@ -4293,6 +4293,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task TestMalformedPipelinedContinuationToken()
+        {
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                NoDocuments,
+                this.TestMalformedPipelinedContinuationTokenHelper);
+        }
+
+        private async Task TestMalformedPipelinedContinuationTokenHelper(
+            Container container,
+            IEnumerable<Document> documents)
+        {
+            string query = "SELECT * FROM c";
+
+            // Malformed continuation token
+            try
+            {
+                FeedIterator itemQuery = container.GetItemQueryStreamIterator(
+                    queryText: query,
+                    continuationToken: "is not the continuation token you are looking for");
+                ResponseMessage cosmosQueryResponse = await itemQuery.ReadNextAsync();
+
+                Assert.Fail("Expected bad request");
+            }
+            catch (Exception)
+            {
+            }
+
+            // Continuation Token From The Future
+            try
+            {
+                FeedIterator itemQuery = container.GetItemQueryStreamIterator(
+                    queryText: query,
+                    continuationToken: "is not the continuation token you are looking for");
+                ResponseMessage cosmosQueryResponse = await itemQuery.ReadNextAsync();
+
+                Assert.Fail("Expected bad request");
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         private sealed class Headers
         {
             public double TotalRUs { get; set; }
