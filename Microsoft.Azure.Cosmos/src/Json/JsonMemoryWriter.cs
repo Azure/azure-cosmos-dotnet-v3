@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos.Json
     {
         protected byte[] buffer;
 
-        public JsonMemoryWriter(int initialCapacity = 256)
+        protected JsonMemoryWriter(int initialCapacity = 256)
         {
-            this.buffer = new byte[256];
+            this.buffer = new byte[initialCapacity];
         }
 
         public int Position { get; set; }

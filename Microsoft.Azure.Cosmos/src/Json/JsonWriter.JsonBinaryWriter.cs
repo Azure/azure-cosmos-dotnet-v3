@@ -667,7 +667,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private sealed class JsonBinaryMemoryWriter : JsonMemoryWriter
             {
-                public JsonBinaryMemoryWriter()
+                public JsonBinaryMemoryWriter(int initialCapacity = 256)
+                    : base(initialCapacity)
                 {
                 }
 

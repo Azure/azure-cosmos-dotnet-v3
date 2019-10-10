@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
@@ -75,13 +76,21 @@ namespace Microsoft.Azure.Cosmos
 
             jsonWriter.WriteArrayEnd();
 
+            ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
             string jsonText;
-            unsafe
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> bufferSegment))
             {
-                ReadOnlySpan<byte> result = jsonWriter.GetResult().Span;
-                fixed (byte* buffer = result)
+                jsonText = Encoding.UTF8.GetString(bufferSegment.Array, bufferSegment.Offset, buffer.Length);
+            }
+            else
+            {
+                unsafe
                 {
-                    jsonText = Encoding.UTF8.GetString(buffer, result.Length);
+                    ReadOnlySpan<byte> result = jsonWriter.GetResult().Span;
+                    fixed (byte* bytePointer = result)
+                    {
+                        jsonText = Encoding.UTF8.GetString(bytePointer, result.Length);
+                    }
                 }
             }
 
