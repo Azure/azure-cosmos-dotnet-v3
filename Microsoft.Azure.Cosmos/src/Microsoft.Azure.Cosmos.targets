@@ -13,9 +13,13 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    
+  <PropertyGroup>
+    <NETFX Condition="$(TargetFramework.StartsWith(net4))">true</NETFX>
+    <NETCORE20 Condition="$(TargetFramework.StartsWith(netcoreapp2))">true</NETCORE20>
+    <NETSTD20 Condition="$(TargetFramework.StartsWith(netstandard2))">true</NETSTD20>
+  </PropertyGroup>
   <ItemGroup>
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
+    <ContentWithTargetPath Condition="'$(NETSTD20)' == 'true' or '$(NETCORE20)' == 'true' or '$(NETFX)' == 'true'" Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Microsoft.Azure.Cosmos.ServiceInterop.dll</TargetPath>
       <Visible>False</Visible>
@@ -23,7 +27,7 @@ Copyright (C) Microsoft Corporation. All rights reserved.
   </ItemGroup>
   
   <ItemGroup>
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll">
+    <ContentWithTargetPath Condition="'$(NETSTD20)' == 'true' or '$(NETCORE20)' == 'true' or '$(NETFX)' == 'true'" Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>Cosmos.CRTCompat.dll</TargetPath>
       <Visible>False</Visible>
