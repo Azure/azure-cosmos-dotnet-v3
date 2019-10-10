@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents.Collections;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -143,6 +144,31 @@ namespace Microsoft.Azure.Cosmos.Query
                     "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
                     DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                     queryContext.CorrelatedActivityId));
+
+            if (requestContinuationToken != null)
+            {
+                if (!PipelineContinuationToken.TryParse(
+                    requestContinuationToken,
+                    out PipelineContinuationToken pipelineContinuationToken))
+                {
+                    throw queryContext.QueryClient.CreateBadRequestException(
+                        $"Malformed {nameof(PipelineContinuationToken)}: {requestContinuationToken}.");
+                }
+
+                if (PipelineContinuationToken.IsTokenFromTheFuture(pipelineContinuationToken))
+                {
+                    throw queryContext.QueryClient.CreateBadRequestException(
+                        $"{nameof(PipelineContinuationToken)} Continuation token is from a newer version of the SDK. Upgrade the SDK to avoid this issue.\n {requestContinuationToken}.");
+                }
+
+                if (!PipelineContinuationToken.TryConvertToLatest(
+                    pipelineContinuationToken,
+                    out PipelineContinuationTokenV1_1 latestVersionPipelineContinuationToken))
+                {
+                    throw queryContext.QueryClient.CreateBadRequestException(
+                        $"Failed to convert {nameof(PipelineContinuationToken)}: {requestContinuationToken}.");
+                }
+            }
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
@@ -331,7 +357,33 @@ namespace Microsoft.Azure.Cosmos.Query
                     this.component.Stop();
                 }
 
-                return queryResponse;
+                string updatedContinuationToken;
+                if (queryResponse.DisallowContinuationTokenMessage == null)
+                {
+                    if (queryResponse.ContinuationToken != null)
+                    {
+                        updatedContinuationToken = new PipelineContinuationTokenV1(queryResponse.ContinuationToken).ToString();
+                    }
+                    else
+                    {
+                        updatedContinuationToken = null;
+                    }
+                }
+                else
+                {
+                    updatedContinuationToken = null;
+                }
+
+                return QueryResponseCore.CreateSuccess(
+                    result: queryResponse.CosmosElements,
+                    continuationToken: updatedContinuationToken,
+                    disallowContinuationTokenMessage: queryResponse.DisallowContinuationTokenMessage,
+                    activityId: queryResponse.ActivityId,
+                    requestCharge: queryResponse.RequestCharge,
+                    queryMetricsText: queryResponse.QueryMetricsText,
+                    queryMetrics: queryResponse.QueryMetrics,
+                    requestStatistics: queryResponse.RequestStatistics,
+                    responseLengthBytes: queryResponse.ResponseLengthBytes);
             }
             catch (Exception)
             {
