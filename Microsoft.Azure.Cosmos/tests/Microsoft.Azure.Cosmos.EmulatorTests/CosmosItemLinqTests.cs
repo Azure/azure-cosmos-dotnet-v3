@@ -575,37 +575,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryDefinition.WithParameter("@param1", camelCase);
             Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
-            string queryText = "SELECT VALUE root FROM root WHERE (root[\"children\"] = " +
-                "[{\"id\":\"child1\",\"taskNum\":30,\"cost\":0.0,\"description\":null,\"status\":null,\"CamelCase\":null,\"valid\":false,\"children\":null}," +
-                " {\"id\":\"child2\",\"taskNum\":40,\"cost\":0.0,\"description\":null,\"status\":null,\"CamelCase\":null,\"valid\":false,\"children\":null}]) ";
-            //Test array value, array will not change into parametrized value
+            string queryText = "SELECT VALUE root FROM root WHERE (root[\"children\"] = [@param1, @param2]) ";
+            //Test array in query, array items will be parametrized
+            ToDoActivity child1 = new ToDoActivity { id = "child1", taskNum = 30 };
+            ToDoActivity child2 = new ToDoActivity { id = "child2", taskNum = 40 };
             ToDoActivity[] children = new ToDoActivity[]
-                { new ToDoActivity { id = "child1", taskNum = 30 },
-                  new ToDoActivity { id = "child2", taskNum = 40}
+                { child1,
+                  child2
                 };
             queriable = linqQueryable
                .Where(item => item.children == children);
             parameters = new Dictionary<object, string>();
+            parameters.Add(child1, "@param1");
+            parameters.Add(child2, "@param2");
             queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
-            int f = 90;
-            sbyte s = (sbyte)f;
-            //no change in result, after changing parameter in queryDefinition
-            children = new ToDoActivity[]
-                { new ToDoActivity { id = "child1", taskNum = 30 },
-                  new ToDoActivity { id = "child2", taskNum = 40},
-                  new ToDoActivity { id = "child3", taskNum = 50}
-                };
-            queryDefinition.WithParameter("@param1", children);
-            Assert.AreEqual(10, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
-                        queriable = linqQueryable
-               .Where(item => item.children == children);
+            //updating child to wrong value, result in query returning 0 results
+            child1.taskNum = 50;
+            queryDefinition.WithParameter("@param1", child1);
+            Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
+            Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             //Test orderby, skip, take, distinct, these will not get parameterized.
-            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] = \"camelCase\")" +
-                " ORDER BY root[\"taskNum\"] ASC OFFSET 5 LIMIT 4 ";
+            queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] = @param1) ORDER BY" +
+                " root[\"taskNum\"] ASC OFFSET @param2 LIMIT @param3 ";
             queriable = linqQueryable
                 .Where(item => item.CamelCase == camelCase)
                 .OrderBy(item => item.taskNum)
@@ -615,13 +610,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             parameters.Add(camelCase, "@param1");
             parameters.Add(5, "@param2");
             parameters.Add(4, "@param3");
-            queryDefinition = queriable.ToQueryDefinition();
+            queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
             Assert.AreEqual(4, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
             queryDefinition.WithParameter("@param2", 10);
             queryDefinition.WithParameter("@param3", 0);
-            Assert.AreEqual(4, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
+            Assert.AreEqual(0, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
 
 
             queryText = "SELECT VALUE root FROM root WHERE (root[\"CamelCase\"] != @param1) ";
@@ -640,8 +635,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task LinqParameterisedTest3()
         {
             string queryText = "SELECT VALUE item0 FROM root JOIN item0 IN root[\"children\"]" +
-                " WHERE (((((((((((((root[\"id\"] = @param1)" +
-                " AND (root[\"stringValue\"] = @Param2))" +
+                " WHERE ((((((((((((((root[\"id\"] = @param1) AND (root[\"stringValue\"] = @Param2))" +
                 " AND (root[\"sbyteValue\"] = @param3))" +
                 " AND (root[\"byteValue\"] = @param4))" +
                 " AND (root[\"shortValue\"] = @param5))" +
@@ -651,6 +645,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 " AND (root[\"floatValue\"] = @param9))" +
                 " AND (root[\"doubleValue\"] = @param10))" +
                 " AND (root[\"decimaleValue\"] = @param11))" +
+                " AND (root[\"ushortValue\"] = @param15))" +
                 " AND (root[\"booleanValue\"] = @param12))" +
                 " AND (item0 = @param13)) ";
 
@@ -667,15 +662,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             float floatValue = 12;
             double doubleValue = 13;
             decimal decimaleValue = 14;
+            ushort ushortValue = 15;
             bool booleanValue = true;
-            ParametrizedLinqItem child = new ParametrizedLinqItem { id = "childId" };
-            ParametrizedLinqItem[] children = new ParametrizedLinqItem[]
+            NumberLinqItem child = new NumberLinqItem { id = "childId" };
+            NumberLinqItem[] children = new NumberLinqItem[]
             {
                 child
             };
 
 
-            ParametrizedLinqItem parametrizedLinqItem = new ParametrizedLinqItem
+            NumberLinqItem parametrizedLinqItem = new NumberLinqItem
             {
                 id = id,
                 status = pk,
@@ -690,14 +686,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 floatValue = floatValue,
                 doubleValue = doubleValue,
                 decimaleValue = decimaleValue,
+                ushortValue = ushortValue,
                 booleanValue = booleanValue,
                 children = children
             };
 
             await this.Container.CreateItemAsync(parametrizedLinqItem, new PartitionKey(pk));
 
-            IOrderedQueryable<ParametrizedLinqItem> linqQueryable = this.Container.GetItemLinqQueryable<ParametrizedLinqItem>(true);
-            IQueryable<ParametrizedLinqItem> queriable = linqQueryable
+            IOrderedQueryable<NumberLinqItem> linqQueryable = this.Container.GetItemLinqQueryable<NumberLinqItem>(true);
+            IQueryable<NumberLinqItem> queriable = linqQueryable
                .Where(item => item.id == id)
                .Where(item => item.stringValue == stringValue)
                .Where(item => item.sbyteValue == sbyteValue)
@@ -709,15 +706,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                .Where(item => item.floatValue == floatValue)
                .Where(item => item.doubleValue == doubleValue)
                .Where(item => item.decimaleValue == decimaleValue)
+               .Where(item => item.ushortValue == ushortValue)
                .Where(item => item.booleanValue == booleanValue)
                .SelectMany(item => item.children)
                .Where(ch => ch == child);
             Dictionary<object, string> parameters = new Dictionary<object, string>();
             parameters.Add(id, "@param1");
             parameters.Add(stringValue, "@Param2");
-            parameters.Add(sbyteValue, "@param3");
-            parameters.Add(byteValue, "@param4");
-            parameters.Add(shortValue, "@param5");
+            parameters.Add((int)sbyteValue, "@param3"); // Linq converts sbyte to int32, therefore adding int in cast
+            parameters.Add((int)byteValue, "@param4");  // Linq converts byte to int32, therefore adding int in cast
+            parameters.Add((int)shortValue, "@param5"); // Linq converts short to int32, therefore adding int in cast
             parameters.Add(uintValue, "@param6");
             parameters.Add(longValue, "@param7");
             parameters.Add(ulongValue, "@Param8");
@@ -726,6 +724,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             parameters.Add(decimaleValue, "@param11");
             parameters.Add(booleanValue, "@param12");
             parameters.Add(child, "@param13");
+            parameters.Add((int)ushortValue, "@param15"); // Linq converts ushort to int32, therefore adding int in cast
 
             QueryDefinition queryDefinition = queriable.ToQueryDefinition(parameters);
             Assert.AreEqual(queryText, queryDefinition.ToSqlQuerySpec().QueryText);
@@ -736,7 +735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-        private class ParametrizedLinqItem
+        private class NumberLinqItem
         {
             public string id;
             public string status;
@@ -744,6 +743,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public sbyte sbyteValue;
             public byte byteValue;
             public short shortValue;
+            public ushort ushortValue;
             public int intValue;
             public uint uintValue;
             public long longValue;
@@ -752,7 +752,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public double doubleValue;
             public decimal decimaleValue;
             public bool booleanValue;
-            public ParametrizedLinqItem[] children;
+            public NumberLinqItem[] children;
 
         }
 

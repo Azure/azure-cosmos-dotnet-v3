@@ -499,6 +499,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Any:
                 case LinqMethods.OrderBy:
                 case LinqMethods.OrderByDescending:
+                case LinqMethods.ThenBy:
+                case LinqMethods.ThenByDescending:
                 case LinqMethods.Distinct:
                     // New query is needed when there is already a Take or a non-distinct Select
                     shouldPackage = (this.topSpec != null) ||
@@ -576,6 +578,17 @@ namespace Microsoft.Azure.Cosmos.Linq
             foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) result.AddBinding(binding);
 
             return result;
+        }
+
+        public QueryUnderConstruction UpdateOrderByClause(SqlOrderbyClause thenBy, TranslationContext context)
+        {
+            List<SqlOrderByItem> items = new List<SqlOrderByItem>(context.currentQuery.orderByClause.OrderbyItems);
+            items.AddRange(thenBy.OrderbyItems);
+            context.currentQuery.orderByClause = SqlOrderbyClause.Create(items);
+
+            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.currentQuery.AddBinding(binding);
+
+            return context.currentQuery;
         }
 
         public QueryUnderConstruction AddOffsetSpec(SqlOffsetSpec offsetSpec, TranslationContext context)

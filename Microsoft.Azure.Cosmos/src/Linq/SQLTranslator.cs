@@ -46,21 +46,17 @@ namespace Microsoft.Azure.Cosmos.Linq
             IDictionary<object, string> parameters = null)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression);
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters);
             string queryText = null;
             SqlParameterCollection sqlParameters = new SqlParameterCollection();
             if (parameters != null && parameters.Count > 0)
             {
-                queryText = query.ToParamterizedString(parameters);
                 foreach (KeyValuePair<object, string> keyValuePair in parameters)
                 {
-                    sqlParameters.Add(new SqlParameter(keyValuePair.Value, keyValuePair.Key));
+                    sqlParameters.Add(new Microsoft.Azure.Cosmos.SqlParameter(keyValuePair.Value, keyValuePair.Key));
                 }
             }
-            else
-            {
-                queryText = query.ToString();
-            }
+            queryText = query.ToString();
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText, sqlParameters);
             return sqlQuerySpec;

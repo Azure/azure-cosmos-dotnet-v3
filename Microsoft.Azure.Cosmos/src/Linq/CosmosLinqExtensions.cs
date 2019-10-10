@@ -104,14 +104,18 @@ namespace Microsoft.Azure.Cosmos.Linq
 #endif
         static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> namedParameters)
         {
-            CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
-
-            if (linqQuery == null)
+            if (namedParameters == null || namedParameters.Count() < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToQueryDefinition is only supported on cosmos LINQ query operations");
+                throw new ArgumentException("namedParameters dictionary cannot be empty for this overload, please use ToQueryDefinition<T>(IQueryable<T> query) instead", nameof(namedParameters));
             }
 
-            return linqQuery.ToQueryDefinition(namedParameters);
+            if (query is CosmosLinqQuery<T> linqQuery)
+            {
+                return linqQuery.ToQueryDefinition(namedParameters);
+                
+            }
+
+            throw new ArgumentException("ToQueryDefinition is only supported on Cosmos LINQ query operations", nameof(query));
         }
 
         /// <summary>
@@ -133,14 +137,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query)
         {
-            CosmosLinqQuery<T> linqQuery = query as CosmosLinqQuery<T>;
-
-            if (linqQuery == null)
+            if (query is CosmosLinqQuery<T> linqQuery)
             {
-                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToQueryDefinition is only supported on Cosmos LINQ query operations");
+                return linqQuery.ToQueryDefinition();
+
             }
 
-            return linqQuery.ToQueryDefinition();
+            throw new ArgumentException("ToQueryDefinition is only supported on Cosmos LINQ query operations", nameof(query));
         }
 
         /// <summary>
@@ -166,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (linqQuery == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToFeedIterator is only supported on cosmos LINQ query operations");
+                throw new ArgumentOutOfRangeException(nameof(linqQuery), "ToFeedIterator is only supported on Cosmos LINQ query operations");
             }
 
             return linqQuery.ToFeedIterator();

@@ -10,14 +10,14 @@ namespace Microsoft.Azure.Cosmos.Sql
     using System.Text;
     using Newtonsoft.Json;
 
-    internal class SqlObjectTextSerializer : SqlObjectVisitor
+    internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
         // Mongo's query translation tests do not use baseline files,
         // so changing whitespaces involve manually updating the expected output for each test.
         // When the tests are converted over to baseline files we can just bulk update them and remove this flag.
         private const bool MongoDoesNotUseBaselineFiles = true;
         private static readonly string Tab = "    ";
-        protected readonly StringWriter writer;
+        private readonly StringWriter writer;
         private readonly bool prettyPrint;
         private int indentLevel;
 
