@@ -4322,20 +4322,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception)
             {
             }
-
-            // Continuation Token From The Future
-            try
-            {
-                FeedIterator itemQuery = container.GetItemQueryStreamIterator(
-                    queryText: query,
-                    continuationToken: "is not the continuation token you are looking for");
-                ResponseMessage cosmosQueryResponse = await itemQuery.ReadNextAsync();
-
-                Assert.Fail("Expected bad request");
-            }
-            catch (Exception)
-            {
-            }
         }
 
         private sealed class Headers
