@@ -4,11 +4,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
-    using System.Text.RegularExpressions;
 
     internal sealed class EnvironmentInformation
     {
