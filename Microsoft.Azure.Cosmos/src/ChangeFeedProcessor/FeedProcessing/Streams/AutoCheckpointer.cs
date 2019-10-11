@@ -15,8 +15,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing.Streams
     {
         private readonly CheckpointFrequency checkpointFrequency;
         private readonly ChangeFeedObserver observer;
-        private int processedDocCount;
-        private DateTime lastCheckpointTime = DateTime.UtcNow;
+        private long processedDocCount;
+        private DateTime lastCheckpointTime;
 
         public AutoCheckpointer(CheckpointFrequency checkpointFrequency, ChangeFeedObserver observer)
         {
@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing.Streams
             if (observer == null)
                 throw new ArgumentNullException(nameof(observer));
 
+            this.lastCheckpointTime = DateTime.UtcNow;
             this.checkpointFrequency = checkpointFrequency;
             this.observer = observer;
         }

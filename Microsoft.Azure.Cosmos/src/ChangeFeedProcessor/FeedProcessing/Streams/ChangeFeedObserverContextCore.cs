@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing.Streams
         private readonly PartitionCheckpointer checkpointer;
 
         internal ChangeFeedObserverContextCore(string leaseToken)
+            : this(leaseToken, null, null)
         {
-            this.LeaseToken = leaseToken;
         }
 
         internal ChangeFeedObserverContextCore(string leaseToken, ResponseMessage feedResponse, PartitionCheckpointer checkpointer)

@@ -40,9 +40,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement.Streams
             if (lease == null)
                 throw new ArgumentNullException(nameof(lease));
 
-            var changeFeedObserver = this.observerFactory.CreateObserver();
-            var processor = this.partitionProcessorFactory.Create(lease, changeFeedObserver);
-            var renewer = new LeaseRenewerCore(lease, this.leaseManager, this.changeFeedLeaseOptions.LeaseRenewInterval);
+            FeedProcessing.Streams.ChangeFeedObserver changeFeedObserver = this.observerFactory.CreateObserver();
+            FeedProcessing.FeedProcessor processor = this.partitionProcessorFactory.Create(lease, changeFeedObserver);
+            LeaseRenewerCore renewer = new LeaseRenewerCore(lease, this.leaseManager, this.changeFeedLeaseOptions.LeaseRenewInterval);
 
             return new PartitionSupervisorStreamCore(lease, changeFeedObserver, processor, renewer);
         }

@@ -33,11 +33,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing.Streams
             PartitionCheckpointer checkpointer,
             CosmosSerializer cosmosJsonSerializer)
         {
-            this.observer = observer;
-            this.options = options;
-            this.checkpointer = checkpointer;
-            this.resultSetIterator = resultSetIterator;
-            this.cosmosJsonSerializer = cosmosJsonSerializer;
+            this.observer = observer ?? throw new ArgumentNullException(nameof(observer));
+            this.options = options ?? throw new ArgumentNullException(nameof(options));
+            this.checkpointer = checkpointer ?? throw new ArgumentNullException(nameof(checkpointer));
+            this.resultSetIterator = resultSetIterator ?? throw new ArgumentNullException(nameof(resultSetIterator));
+            this.cosmosJsonSerializer = cosmosJsonSerializer ?? throw new ArgumentNullException(nameof(cosmosJsonSerializer));
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)
