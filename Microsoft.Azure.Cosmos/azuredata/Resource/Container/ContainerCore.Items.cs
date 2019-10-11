@@ -9,9 +9,11 @@ namespace Azure.Cosmos
     using System.Globalization;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
@@ -31,7 +33,7 @@ namespace Azure.Cosmos
         /// </summary>
         private string cachedUriSegmentWithoutId { get; }
 
-        //private readonly CosmosQueryClient queryClient;
+        private readonly CosmosQueryClient queryClient;
 
         public override async Task<Response> CreateItemStreamAsync(
                     Stream streamPayload,
@@ -216,73 +218,87 @@ namespace Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateItemResponseAsync<T>(response, cancellationToken);
         }
 
-        //public override FeedIterator GetItemQueryStreamIterator(
-        //   string queryText = null,
-        //   string continuationToken = null,
-        //   QueryRequestOptions requestOptions = null)
-        //{
-        //    QueryDefinition queryDefinition = null;
-        //    if (queryText != null)
-        //    {
-        //        queryDefinition = new QueryDefinition(queryText);
-        //    }
+        public override IAsyncEnumerable<Response> GetItemQueryStreamIterator(
+           string queryText = null,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null,
+           CancellationToken cancellationToken = default(CancellationToken))
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
 
-        //    return this.GetItemQueryStreamIterator(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
-        //}
+            return this.GetItemQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions,
+                cancellationToken);
+        }
 
-        //public override FeedIterator GetItemQueryStreamIterator(
-        //    QueryDefinition queryDefinition,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    return this.GetItemQueryStreamIteratorInternal(
-        //        sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
-        //        isContinuationExcpected: true,
-        //        continuationToken: continuationToken,
-        //        requestOptions: requestOptions);
-        //}
+        public override async IAsyncEnumerable<Response> GetItemQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default(CancellationToken))
+        {
+            FeedIterator feedIterator = this.GetItemQueryStreamIteratorInternal(
+                sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
+                isContinuationExcpected: true,
+                continuationToken: continuationToken,
+                requestOptions: requestOptions);
 
-        //public override FeedIterator<T> GetItemQueryIterator<T>(
-        //   string queryText = null,
-        //   string continuationToken = null,
-        //   QueryRequestOptions requestOptions = null)
-        //{
-        //    QueryDefinition queryDefinition = null;
-        //    if (queryText != null)
-        //    {
-        //        queryDefinition = new QueryDefinition(queryText);
-        //    }
+            while (feedIterator.HasMoreResults)
+            {
+                yield return await feedIterator.ReadNextAsync(cancellationToken);
+            }
+        }
 
-        //    return this.GetItemQueryIterator<T>(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
-        //}
+        public override AsyncPageable<T> GetItemQueryIterator<T>(
+           string queryText = null,
+           string continuationToken = null,
+           QueryRequestOptions requestOptions = null,
+           CancellationToken cancellationToken = default(CancellationToken))
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
 
-        //public override FeedIterator<T> GetItemQueryIterator<T>(
-        //    QueryDefinition queryDefinition,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    requestOptions = requestOptions ?? new QueryRequestOptions();
+            return this.GetItemQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions,
+                cancellationToken);
+        }
 
-        //    if (requestOptions.IsEffectivePartitionKeyRouting)
-        //    {
-        //        requestOptions.PartitionKey = null;
-        //    }
+        public override AsyncPageable<T> GetItemQueryIterator<T>(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            requestOptions = requestOptions ?? new QueryRequestOptions();
 
-        //    FeedIterator feedIterator = this.GetItemQueryStreamIterator(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
 
-        //    return new FeedIteratorCore<T>(
-        //        feedIterator: feedIterator,
-        //        responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
-        //}
+            FeedIterator feedIterator = this.GetItemQueryStreamIteratorInternal(
+                sqlQuerySpec: queryDefinition?.ToSqlQuerySpec(),
+                isContinuationExcpected: true,
+                continuationToken: continuationToken,
+                requestOptions: requestOptions);
+
+            PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
+                feedIterator: feedIterator,
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponse<T>);
+
+            return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
+        }
 
         //public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
         //    bool allowSynchronousQueryExecution = false,
@@ -386,44 +402,44 @@ namespace Azure.Cosmos
         //        options: cosmosQueryRequestOptions);
         //}
 
-        ///// <summary>
-        ///// Helper method to create a stream feed iterator.
-        ///// It decides if it is a query or read feed and create
-        ///// the correct instance.
-        ///// </summary>
-        //internal FeedIterator GetItemQueryStreamIteratorInternal(
-        //    SqlQuerySpec sqlQuerySpec,
-        //    bool isContinuationExcpected,
-        //    string continuationToken,
-        //    QueryRequestOptions requestOptions)
-        //{
-        //    requestOptions = requestOptions ?? new QueryRequestOptions();
+        /// <summary>
+        /// Helper method to create a stream feed iterator.
+        /// It decides if it is a query or read feed and create
+        /// the correct instance.
+        /// </summary>
+        internal FeedIterator GetItemQueryStreamIteratorInternal(
+            SqlQuerySpec sqlQuerySpec,
+            bool isContinuationExcpected,
+            string continuationToken,
+            QueryRequestOptions requestOptions)
+        {
+            requestOptions = requestOptions ?? new QueryRequestOptions();
 
-        //    if (requestOptions.IsEffectivePartitionKeyRouting)
-        //    {
-        //        requestOptions.PartitionKey = null;
-        //    }
+            if (requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                requestOptions.PartitionKey = null;
+            }
 
-        //    if (sqlQuerySpec == null)
-        //    {
-        //        return new FeedIteratorCore(
-        //            this.ClientContext,
-        //            this.LinkUri,
-        //            resourceType: ResourceType.Document,
-        //            queryDefinition: null,
-        //            continuationToken: continuationToken,
-        //            options: requestOptions);
-        //    }
+            if (sqlQuerySpec == null)
+            {
+                return new FeedIteratorCore(
+                    this.ClientContext,
+                    this.LinkUri,
+                    resourceType: ResourceType.Document,
+                    queryDefinition: null,
+                    continuationToken: continuationToken,
+                    options: requestOptions);
+            }
 
-        //    return new QueryIterator(
-        //        client: this.queryClient,
-        //        sqlQuerySpec: sqlQuerySpec,
-        //        continuationToken: continuationToken,
-        //        queryRequestOptions: requestOptions,
-        //        resourceLink: this.LinkUri,
-        //        isContinuationExpected: isContinuationExcpected,
-        //        allowNonValueAggregateQuery: true);
-        //}
+            return new QueryIterator(
+                client: this.queryClient,
+                sqlQuerySpec: sqlQuerySpec,
+                continuationToken: continuationToken,
+                queryRequestOptions: requestOptions,
+                resourceLink: this.LinkUri,
+                isContinuationExpected: isContinuationExcpected,
+                allowNonValueAggregateQuery: true);
+        }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.
         // Stale collection cache is refreshed through PartitionKeyMismatchRetryPolicy

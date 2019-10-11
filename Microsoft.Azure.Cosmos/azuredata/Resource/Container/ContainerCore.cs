@@ -8,6 +8,7 @@ namespace Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -16,7 +17,7 @@ namespace Azure.Cosmos
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container by id.
     /// 
-    /// <see cref="Database"/> for creating new containers, and reading/querying all containers;
+    /// <see cref="Azure.Cosmos.Database"/> for creating new containers, and reading/querying all containers;
     /// </summary>
     internal partial class ContainerCore : Container
     {
@@ -43,7 +44,7 @@ namespace Azure.Cosmos
             //this.Conflicts = new ConflictsCore(this.ClientContext, this);
             //this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
-            //this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
+            this.queryClient = this.queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
             //this.BatchExecutor = this.InitializeBatchExecutorForContainer();
         }
 

@@ -216,7 +216,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
     <PackageReference Include="System.Text.Json" Version="4.6.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.4.16" PrivateAssets="All" />
 
     <!--Direct Dependencies-->
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />

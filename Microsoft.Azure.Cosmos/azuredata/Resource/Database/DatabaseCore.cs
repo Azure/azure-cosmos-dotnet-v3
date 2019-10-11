@@ -5,8 +5,10 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -359,68 +361,71 @@ namespace Azure.Cosmos
         //    return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response);
         //}
 
-        //public override FeedIterator GetContainerQueryStreamIterator(
-        //    string queryText = null,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    QueryDefinition queryDefinition = null;
-        //    if (queryText != null)
-        //    {
-        //        queryDefinition = new QueryDefinition(queryText);
-        //    }
+        public override IAsyncEnumerable<Response> GetContainerQueryStreamIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
 
-        //    return this.GetContainerQueryStreamIterator(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
-        //}
+            return this.GetContainerQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions,
+                cancellationToken);
+        }
 
-        //public override FeedIterator<T> GetContainerQueryIterator<T>(
-        //    string queryText = null,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    QueryDefinition queryDefinition = null;
-        //    if (queryText != null)
-        //    {
-        //        queryDefinition = new QueryDefinition(queryText);
-        //    }
+        public override AsyncPageable<ContainerProperties> GetContainerQueryIterator(
+            string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
 
-        //    return this.GetContainerQueryIterator<T>(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
-        //}
+            return this.GetContainerQueryIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions,
+                cancellationToken);
+        }
 
-        //public override FeedIterator GetContainerQueryStreamIterator(
-        //    QueryDefinition queryDefinition,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    return new FeedIteratorCore(
-        //       this.ClientContext,
-        //       this.LinkUri,
-        //       ResourceType.Collection,
-        //       queryDefinition,
-        //       continuationToken,
-        //       requestOptions);
-        //}
+        public override AsyncPageable<ContainerProperties> GetContainerQueryIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            FeedIterator feedIterator = this.GetContainerQueryFeedIterator(queryDefinition, continuationToken, requestOptions);
+            PageIteratorCore<ContainerProperties> pageIterator = new PageIteratorCore<ContainerProperties>(
+                feedIterator: feedIterator,
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponseWithPropertySerializer<ContainerProperties>);
 
-        //public override FeedIterator<T> GetContainerQueryIterator<T>(
-        //    QueryDefinition queryDefinition,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    FeedIterator containerStreamIterator = this.GetContainerQueryStreamIterator(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
+            return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
+        }
 
-        //    return new FeedIteratorCore<T>(
-        //        containerStreamIterator,
-        //        this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
-        //}
+        public override async IAsyncEnumerable<Response> GetContainerQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default(CancellationToken))
+        {
+            FeedIterator feedIterator = this.GetContainerQueryFeedIterator(queryDefinition, continuationToken, requestOptions);
+
+            while (feedIterator.HasMoreResults)
+            {
+                yield return await feedIterator.ReadNextAsync(cancellationToken);
+            }
+        }
 
         //public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition,
         //    string continuationToken = null,
@@ -560,6 +565,20 @@ namespace Azure.Cosmos
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
             return databaseResponse.Value?.ResourceId;
+        }
+
+        private FeedIterator GetContainerQueryFeedIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+               this.ClientContext,
+               this.LinkUri,
+               ResourceType.Collection,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
         }
 
         private Task<Response> CreateContainerStreamInternalAsync(

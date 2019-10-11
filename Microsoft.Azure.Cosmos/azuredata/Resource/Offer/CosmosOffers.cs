@@ -150,16 +150,12 @@ namespace Azure.Cosmos
             QueryRequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
+            FeedIterator feedIterator = this.GetOfferQueryStreamIterator(queryDefinition, continuationToken, requestOptions, cancellationToken);
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
-                this.ClientContext,
-                this.OfferRootUri,
-                resourceType: ResourceType.Offer,
-                queryDefinition: queryDefinition,
-                options: requestOptions,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponseWithPropertySerializer<T>,
-                usePropertySerializer: true);
+                feedIterator: feedIterator,
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponseWithPropertySerializer<T>);
 
-            return PageResponseEnumerator.CreateAsyncEnumerable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
+            return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
 
         internal virtual FeedIterator GetOfferQueryStreamIterator(

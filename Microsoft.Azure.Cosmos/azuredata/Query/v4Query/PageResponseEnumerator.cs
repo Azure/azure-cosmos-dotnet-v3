@@ -20,14 +20,14 @@ namespace Azure.Cosmos
             return new FuncPageable<T>(pageFunc);
         }
 
-        public static AsyncPageable<T> CreateAsyncEnumerable<T>(Func<string, Task<Page<T>>> pageFunc)
+        public static AsyncPageable<T> CreateAsyncPageable<T>(Func<string, Task<Page<T>>> pageCreator)
         {
-            return new FuncAsyncPageable<T>((continuationToken, pageSizeHint) => pageFunc(continuationToken));
+            return new FuncAsyncPageable<T>((continuationToken, pageSizeHint) => pageCreator(continuationToken));
         }
 
-        public static AsyncPageable<T> CreateAsyncEnumerable<T>(Func<string, int?, Task<Page<T>>> pageFunc)
+        public static AsyncPageable<T> CreateAsyncPageable<T>(Func<string, int?, Task<Page<T>>> pageCreator)
         {
-            return new FuncAsyncPageable<T>(pageFunc);
+            return new FuncAsyncPageable<T>(pageCreator);
         }
 
         internal class FuncAsyncPageable<T> : AsyncPageable<T>
