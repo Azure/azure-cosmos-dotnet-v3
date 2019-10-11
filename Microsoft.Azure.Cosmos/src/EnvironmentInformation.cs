@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class EnvironmentInformation
     {
-        private const int MaxOperatingSystemString = 50;
         private static readonly string clientSDKVersion;
         private static readonly string directPackageVersion;
         private static readonly string framework;
