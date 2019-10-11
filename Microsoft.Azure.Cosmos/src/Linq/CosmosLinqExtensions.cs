@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 #endif
         static QueryDefinition ToQueryDefinition<T>(this IQueryable<T> query, IDictionary<object, string> namedParameters)
         {
-            if (namedParameters == null || namedParameters.Count() < 1)
+            if (namedParameters == null)
             {
                 throw new ArgumentException("namedParameters dictionary cannot be empty for this overload, please use ToQueryDefinition<T>(IQueryable<T> query) instead", nameof(namedParameters));
             }
@@ -112,7 +112,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (query is CosmosLinqQuery<T> linqQuery)
             {
                 return linqQuery.ToQueryDefinition(namedParameters);
-                
             }
 
             throw new ArgumentException("ToQueryDefinition is only supported on Cosmos LINQ query operations", nameof(query));
