@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
     using System;
 
     /// <summary>
-    /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore{T}"/> instance.
+    /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore"/> instance.
     /// </summary>
     internal class ChangeFeedLeaseOptions
     {
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         }
 
         /// <summary>
-        /// Gets or sets renew interval for all leases currently held by <see cref="ChangeFeedProcessorCore{T}"/> instance.
+        /// Gets or sets renew interval for all leases currently held by <see cref="ChangeFeedProcessorCore"/> instance.
         /// </summary>
         public TimeSpan LeaseRenewInterval { get; set; }
 
@@ -35,12 +35,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
 
         /// <summary>
         /// Gets or sets the interval for which the lease is taken. If the lease is not renewed within this
-        /// interval, it will cause it to expire and ownership of the lease will move to another <see cref="ChangeFeedProcessorCore{T}"/> instance.
+        /// interval, it will cause it to expire and ownership of the lease will move to another <see cref="ChangeFeedProcessorCore"/> instance.
         /// </summary>
         public TimeSpan LeaseExpirationInterval { get; set; }
 
         /// <summary>
-        /// Gets or sets a prefix to be used as part of the lease id. This can be used to support multiple instances of <see cref="ChangeFeedProcessorCore{T}"/>
+        /// Gets or sets a prefix to be used as part of the lease id. This can be used to support multiple instances of <see cref="ChangeFeedProcessorCore"/>
         /// instances pointing at the same feed while using the same auxiliary collection.
         /// </summary>
         public string LeasePrefix { get; set; }

@@ -4,14 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
-    using System.Collections.Generic;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
 
-    /// <summary>
-    /// This interface is used to deliver change events to document feed observers.
-    /// </summary>
-    internal abstract class ChangeFeedObserver<T>
+    internal abstract class ChangeFeedObserver
     {
         /// <summary>
         /// This is called when change feed observer is opened.
@@ -32,9 +30,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// This is called when document changes are available on change feed.
         /// </summary>
         /// <param name="context">The context specifying partition for this change event, etc.</param>
-        /// <param name="docs">The documents changed.</param>
+        /// <param name="stream">The document streams changed.</param>
         /// <param name="cancellationToken">Token to signal that the parition processing is going to finish.</param>
-        /// <returns>A Task to allow asynchronous execution.</returns>
-        public abstract Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken);
+        /// <returns>The number of documents processed</returns>
+        public abstract Task ProcessChangesAsync(ChangeFeedObserverContext context, Stream stream, CancellationToken cancellationToken);
     }
 }

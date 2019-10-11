@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing.Streams;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -318,8 +317,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(onChangesDelegate));
             }
 
-            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
-            ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
+            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.CosmosSerializer);
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,
@@ -341,7 +340,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ChangeFeedObserverFactoryCore observerFactory = new ChangeFeedObserverFactoryCore(onChangesDelegate);
-            ChangeFeedProcessorStream changeFeedProcessor = new ChangeFeedProcessorStream(observerFactory);
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,

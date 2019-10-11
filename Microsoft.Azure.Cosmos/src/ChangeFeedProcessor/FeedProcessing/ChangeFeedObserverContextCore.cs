@@ -9,15 +9,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
 
     /// <summary>
-    /// The context passed to <see cref="ChangeFeedObserver{T}"/> events.
+    /// The context passed to <see cref="ChangeFeedObserver"/> events.
     /// </summary>
-    internal sealed class ChangeFeedObserverContextCore<T> : ChangeFeedObserverContext
+    internal sealed class ChangeFeedObserverContextCore : ChangeFeedObserverContext
     {
         private readonly PartitionCheckpointer checkpointer;
 
         internal ChangeFeedObserverContextCore(string leaseToken)
+            : this(leaseToken, null, null)
         {
-            this.LeaseToken = leaseToken;
         }
 
         internal ChangeFeedObserverContextCore(string leaseToken, ResponseMessage feedResponse, PartitionCheckpointer checkpointer)
