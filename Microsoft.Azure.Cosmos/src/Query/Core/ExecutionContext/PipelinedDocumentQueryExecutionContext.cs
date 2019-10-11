@@ -168,6 +168,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw queryContext.QueryClient.CreateBadRequestException(
                         $"Failed to convert {nameof(PipelineContinuationToken)}: {requestContinuationToken}.");
                 }
+
+                requestContinuationToken = latestVersionPipelineContinuationToken.SourceContinuationToken;
             }
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
