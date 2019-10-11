@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     {
         private readonly CheckpointFrequency checkpointFrequency;
         private readonly ChangeFeedObserver observer;
-        private long processedDocCount;
+        private long processedBatchCount;
         private DateTime lastCheckpointTime;
 
         public AutoCheckpointer(CheckpointFrequency checkpointFrequency, ChangeFeedObserver observer)
@@ -42,11 +42,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, Stream stream, CancellationToken cancellationToken)
         {
             await this.observer.ProcessChangesAsync(context, stream, cancellationToken).ConfigureAwait(false);
-            this.processedDocCount++;
+            this.processedBatchCount++;
             if (this.IsCheckpointNeeded())
             {
                 await context.CheckpointAsync().ConfigureAwait(false);
-                this.processedDocCount = 0;
+                this.processedBatchCount = 0;
                 this.lastCheckpointTime = DateTime.UtcNow;
             }
         }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 return true;
             }
 
-            if (this.processedDocCount >= this.checkpointFrequency.ProcessedDocumentCount)
+            if (this.processedBatchCount >= this.checkpointFrequency.ProcessedDocumentCount)
                 return true;
 
             TimeSpan delta = DateTime.UtcNow - this.lastCheckpointTime;
