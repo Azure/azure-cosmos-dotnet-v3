@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void UserAgentContainsEnvironmentInformation()
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            string expectedValue = "cosmos-net|" + environmentInformation.ClientVersion;
+            string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             string userAgentSuffix = "testSuffix";
             cosmosClientOptions.ApplicationName = userAgentSuffix;
