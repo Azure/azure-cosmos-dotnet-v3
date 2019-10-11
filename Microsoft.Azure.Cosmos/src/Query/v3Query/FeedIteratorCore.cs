@@ -100,6 +100,12 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
+        internal override bool TryGetState(out string state)
+        {
+            state = this.continuationToken;
+            return true;
+        }
+
         internal static string GetContinuationToken(ResponseMessage httpResponseMessage)
         {
             return httpResponseMessage.Headers.ContinuationToken;
@@ -144,6 +150,11 @@ namespace Microsoft.Azure.Cosmos
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
             return this.responseCreator(response);
+        }
+
+        internal override bool TryGetState(out string state)
+        {
+            return this.feedIterator.TryGetState(out state);
         }
     }
 }

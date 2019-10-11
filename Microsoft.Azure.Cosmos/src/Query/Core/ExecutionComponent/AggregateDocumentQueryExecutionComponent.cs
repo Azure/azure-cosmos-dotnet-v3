@@ -153,6 +153,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 responseLengthBytes: responseLengthBytes);
         }
 
+        public override bool TryGetState(out string state)
+        {
+            state = null;
+            return false;
+        }
+
         /// <summary>
         /// Struct for getting the payload out of the rewritten projection.
         /// </summary>

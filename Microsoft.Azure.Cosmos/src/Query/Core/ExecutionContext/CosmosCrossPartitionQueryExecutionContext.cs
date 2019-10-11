@@ -680,26 +680,10 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        /// <summary>
-        /// Gets the formatting for a trace.
-        /// </summary>
-        /// <param name="message">The message to format</param>
-        /// <returns>The formatted message ready for a trace.</returns>
-        private string GetTrace(string message)
+        public bool TryGetState(out string state)
         {
-            const string TracePrefixFormat = "{0}, CorrelatedActivityId: {1}, ActivityId: {2} | {3}";
-            return string.Format(
-                CultureInfo.InvariantCulture,
-                TracePrefixFormat,
-                DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                this.queryContext.CorrelatedActivityId,
-                this.itemProducerForest.Count != 0 ? this.CurrentItemProducerTree().ActivityId : Guid.Empty,
-                message);
-        }
-
-        private static bool IsMaxBufferedItemCountSet(int maxBufferedItemCount)
-        {
-            return maxBufferedItemCount != default(int);
+            state = this.ContinuationToken;
+            return true;
         }
 
         /// <summary>

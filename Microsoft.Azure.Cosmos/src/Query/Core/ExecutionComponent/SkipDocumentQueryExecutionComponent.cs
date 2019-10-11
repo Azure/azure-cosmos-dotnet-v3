@@ -75,11 +75,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (sourcePage.DisallowContinuationTokenMessage == null)
             {
-                if (!this.IsDone)
+                if (!this.Source.TryGetState(out updatedContinuationToken))
                 {
-                    updatedContinuationToken = new OffsetContinuationToken(
-                        this.skipCount,
-                        sourcePage.ContinuationToken).ToString();
+                    throw new InvalidOperationException($"Failed to get state for {nameof(SkipDocumentQueryExecutionComponent)}.");
                 }
             }
 
@@ -93,6 +91,30 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     queryMetrics: sourcePage.QueryMetrics,
                     requestStatistics: sourcePage.RequestStatistics,
                     responseLengthBytes: sourcePage.ResponseLengthBytes);
+        }
+
+        public override bool TryGetState(out string state)
+        {
+            if (this.Source.TryGetState(out string sourceState))
+            {
+                if (!this.IsDone)
+                {
+                    state = new OffsetContinuationToken(
+                        this.skipCount,
+                        sourceState).ToString();
+                    return true;
+                }
+                else
+                {
+                    state = null;
+                    return true;
+                }
+            }
+            else
+            {
+                state = null;
+                return false;
+            }
         }
 
         /// <summary>

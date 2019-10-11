@@ -118,35 +118,17 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             List<CosmosElement> takedDocuments = results.CosmosElements.Take(this.takeCount).ToList();
-
             this.takeCount -= takedDocuments.Count;
-            string updatedContinuationToken = null;
 
+            string updatedContinuationToken = null;
             if (results.DisallowContinuationTokenMessage == null)
             {
                 if (!this.IsDone)
                 {
-                    string sourceContinuation = results.ContinuationToken;
-                    TakeContinuationToken takeContinuationToken;
-                    switch (this.takeEnum)
+                    if (!this.TryGetState(out updatedContinuationToken))
                     {
-                        case TakeEnum.Limit:
-                            takeContinuationToken = new LimitContinuationToken(
-                                this.takeCount,
-                                sourceContinuation);
-                            break;
-
-                        case TakeEnum.Top:
-                            takeContinuationToken = new TopContinuationToken(
-                                this.takeCount,
-                                sourceContinuation);
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
+                        throw new InvalidOperationException($"Failed to get state for {nameof(TakeDocumentQueryExecutionComponent)}.");
                     }
-
-                    updatedContinuationToken = takeContinuationToken.ToString();
                 }
             }
 
@@ -160,6 +142,39 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     queryMetrics: results.QueryMetrics,
                     requestStatistics: results.RequestStatistics,
                     responseLengthBytes: results.ResponseLengthBytes);
+        }
+
+        public override bool TryGetState(out string state)
+        {
+            if (this.Source.TryGetState(out string sourceState))
+            {
+                TakeContinuationToken takeContinuationToken;
+                switch (this.takeEnum)
+                {
+                    case TakeEnum.Limit:
+                        takeContinuationToken = new LimitContinuationToken(
+                            this.takeCount,
+                            sourceState);
+                        break;
+
+                    case TakeEnum.Top:
+                        takeContinuationToken = new TopContinuationToken(
+                            this.takeCount,
+                            sourceState);
+                        break;
+
+                    default:
+                        throw new ArgumentException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}");
+                }
+
+                state = takeContinuationToken.ToString();
+            }
+            else
+            {
+                state = default(string);
+            }
+
+            return state != default(string);
         }
 
         private enum TakeEnum

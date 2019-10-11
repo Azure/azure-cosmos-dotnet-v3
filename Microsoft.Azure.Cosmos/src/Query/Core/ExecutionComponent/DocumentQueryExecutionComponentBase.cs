@@ -80,5 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         {
             return this.Source.GetQueryMetrics();
         }
+
+        public abstract bool TryGetState(out string state);
     }
 }

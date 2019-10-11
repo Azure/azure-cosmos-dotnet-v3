@@ -63,5 +63,11 @@ namespace Microsoft.Azure.Cosmos.Query
                            pageSize: pageSize,
                            cancellationToken: cancellationToken);
         }
+
+        internal override bool TryGetState(out string state)
+        {
+            state = null;
+            return true;
+        }
     }
 }

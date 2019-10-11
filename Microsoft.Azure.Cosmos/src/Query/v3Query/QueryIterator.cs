@@ -130,5 +130,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
             return response;
         }
+
+        internal override bool TryGetState(out string state)
+        {
+            return this.cosmosQueryExecutionContext.TryGetState(out state);
+        }
     }
 }

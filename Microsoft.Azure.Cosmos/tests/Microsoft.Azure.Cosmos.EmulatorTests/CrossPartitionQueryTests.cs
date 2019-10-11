@@ -581,7 +581,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryRequestOptions = new QueryRequestOptions();
             }
 
-            List<T> results = new List<T>();
+            List<T> resultsFromContinuationToken = new List<T>();
             string continuationToken = null;
             do
             {
@@ -598,11 +598,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         "Max Item Count is not being honored");
                 }
 
-                results.AddRange(cosmosQueryResponse);
+                resultsFromContinuationToken.AddRange(cosmosQueryResponse);
                 continuationToken = cosmosQueryResponse.ContinuationToken;
             } while (continuationToken != null);
 
-            return results;
+            List<T> resultsFromState = new List<T>();
+            string state = null;
+            do
+            {
+                FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
+                   queryText: query,
+                   requestOptions: queryRequestOptions,
+                   continuationToken: state);
+
+                FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                if (queryRequestOptions.MaxItemCount.HasValue)
+                {
+                    Assert.IsTrue(
+                        cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                        "Max Item Count is not being honored");
+                }
+
+                resultsFromState.AddRange(cosmosQueryResponse);
+                Assert.IsTrue(itemQuery.TryGetState(out state));
+            } while (state != null);
+
+            List<JToken> resultsFromContinuationTokenAsJTokens = resultsFromContinuationToken
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+
+            List<JToken> resultsFromStateAsJTokens = resultsFromState
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+
+            Assert.IsTrue(
+                resultsFromContinuationTokenAsJTokens
+                    .SequenceEqual(resultsFromStateAsJTokens, JsonTokenEqualityComparer.Value),
+                $"{query} returned different results with continuation tokens vs state.");
+
+            return resultsFromContinuationToken;
         }
 
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(

@@ -75,6 +75,12 @@ namespace Microsoft.Azure.Cosmos
                 }, cancellationToken);
         }
 
+        internal override bool TryGetState(out string state)
+        {
+            state = this.continuationToken;
+            return true;
+        }
+
         private Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,

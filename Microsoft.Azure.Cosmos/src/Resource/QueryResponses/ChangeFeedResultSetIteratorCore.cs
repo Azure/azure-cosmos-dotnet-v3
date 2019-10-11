@@ -90,6 +90,12 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
+        internal override bool TryGetState(out string state)
+        {
+            state = this.continuationToken;
+            return true;
+        }
+
         internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

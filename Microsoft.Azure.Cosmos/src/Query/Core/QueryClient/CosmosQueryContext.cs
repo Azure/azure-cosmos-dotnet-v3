@@ -70,5 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             int pageSize,
             CancellationToken cancellationToken);
+
+        internal abstract bool TryGetState(out string state);
     }
 }
