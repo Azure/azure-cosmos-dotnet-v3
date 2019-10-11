@@ -77,22 +77,7 @@ namespace Microsoft.Azure.Cosmos
             jsonWriter.WriteArrayEnd();
 
             ReadOnlyMemory<byte> buffer = jsonWriter.GetResult();
-            string jsonText;
-            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> bufferSegment))
-            {
-                jsonText = Encoding.UTF8.GetString(bufferSegment.Array, bufferSegment.Offset, buffer.Length);
-            }
-            else
-            {
-                unsafe
-                {
-                    ReadOnlySpan<byte> result = jsonWriter.GetResult().Span;
-                    fixed (byte* bytePointer = result)
-                    {
-                        jsonText = Encoding.UTF8.GetString(bytePointer, result.Length);
-                    }
-                }
-            }
+            string jsonText = Utf8StringHelpers.ToString(buffer);
 
             IEnumerable<T> typedResults;
 
