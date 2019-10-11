@@ -24,21 +24,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class UserAgentTests
     {
-
-        [TestInitialize]
-        public void Startup()
-        {
-            //This changes the runtime information to simulate a max os x response. Windows user agent are tested by every other emulator test.
-            const string invalidOsField = "Darwin 18.0.0: Darwin/Kernel/Version 18.0.0: Wed Aug 22 20:13:40 PDT 2018; root:xnu-4903.201.2~1/RELEASE_X86_64";
-            FieldInfo fieldInfo = typeof(RuntimeInformation).GetField("s_osDescription", BindingFlags.Static | BindingFlags.NonPublic);
-            fieldInfo.SetValue(null, invalidOsField);
-            string updatedRuntime = RuntimeInformation.OSDescription;
-            Assert.AreEqual(invalidOsField, updatedRuntime);
-        }
-
         [TestMethod]
-        public async Task ValidateUserAgentHeaderWithCustomOs()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task ValidateUserAgentHeaderWithMacOs(bool useMacOs)
         {
+            if (useMacOs)
+            {
+                this.SetEnvironmentInformationToMacOS();
+            }
+
             const string suffix = " MyCustomUserAgent/1.0";
 
             using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix)))
@@ -47,7 +42,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string userAgentString = userAgentContainer.UserAgent;
                 Assert.IsTrue(userAgentString.Contains(suffix));
-                Assert.IsTrue(userAgentString.Contains("Darwin 18.0.0"));
+                if (useMacOs)
+                {
+                    Assert.IsTrue(userAgentString.Contains("Darwin 18.0.0"));
+                }
+
                 Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
                 Assert.IsNotNull(db);
                 await db.DeleteAsync();
@@ -81,11 +80,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void VerifyUserAgentContent(bool useMacOs)
+        {
+            if (useMacOs)
+            {
+                this.SetEnvironmentInformationToMacOS();
+            }
+
+            EnvironmentInformation envInfo = new EnvironmentInformation();
+            Cosmos.UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer();
+            string serialization = userAgentContainer.UserAgent;
+
+            Assert.IsTrue(serialization.Contains(envInfo.ProcessArchitecture));
+            string[] values = serialization.Split('|');
+            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion} ", values[0]);
+            Assert.AreEqual(envInfo.DirectVersion, values[1]);
+            Assert.AreEqual(envInfo.ClientId.Length, values[2].Length);
+            Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
+            Assert.IsTrue(!string.IsNullOrWhiteSpace(values[4]));
+            if (useMacOs)
+            {
+                Assert.AreEqual("Darwin 18.0.0 Darwin Kernel V", values[4]);
+            }
+        }
+
+        private void SetEnvironmentInformationToMacOS()
+        {
+            //This changes the runtime information to simulate a max os x response. Windows user agent are tested by every other emulator test.
+            const string invalidOsField = "Darwin 18.0.0: Darwin/Kernel/Version 18.0.0: Wed Aug 22 20:13:40 PDT 2018; root:xnu-4903.201.2~1/RELEASE_X86_64";
+            FieldInfo fieldInfo = typeof(EnvironmentInformation).GetField("os", BindingFlags.Static | BindingFlags.NonPublic);
+            fieldInfo.SetValue(null, invalidOsField);
+        }
+
         private string GetClientIdFromCosmosClient(CosmosClient client)
         {
             Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
             string userAgentString = userAgentContainer.UserAgent;
-            string clientId = userAgentString.Split('|')[3];
+            string clientId = userAgentString.Split('|')[2];
             Assert.AreEqual(5, clientId.Length);
             return clientId;
         }
