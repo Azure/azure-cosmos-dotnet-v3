@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Regex replaces all special characters with empty space except . - | since they do not cause format exception for the user agent string.
             // Do not change the cosmos-netstandard-sdk as it is required for reporting
-            return $"cosmos-netstandard-sdk/{environmentInformation.ClientVersion} " + Regex.Replace($"|{environmentInformation.DirectVersion}|{environmentInformation.ClientId}|{environmentInformation.ProcessArchitecture}|{operatingSystem}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
+            return $"cosmos-netstandard-sdk/{environmentInformation.ClientVersion}" + Regex.Replace($"|{environmentInformation.DirectVersion}|{environmentInformation.ClientId}|{environmentInformation.ProcessArchitecture}|{operatingSystem}|{environmentInformation.RuntimeFramework}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
         }
     }
 }

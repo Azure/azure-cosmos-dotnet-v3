@@ -29,12 +29,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task ValidateUserAgentHeaderWithMacOs(bool useMacOs)
         {
-            if (useMacOs)
-            {
-                this.SetEnvironmentInformationToMacOS();
-            }
+            this.SetEnvironmentInformation(useMacOs);
 
-            const string suffix = " MyCustomUserAgent/1.0";
+            const string suffix = " UserApplicationName/1.0";
 
             using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix)))
             {
@@ -85,10 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public void VerifyUserAgentContent(bool useMacOs)
         {
-            if (useMacOs)
-            {
-                this.SetEnvironmentInformationToMacOS();
-            }
+            this.SetEnvironmentInformation(useMacOs);
 
             EnvironmentInformation envInfo = new EnvironmentInformation();
             Cosmos.UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer();
@@ -96,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsTrue(serialization.Contains(envInfo.ProcessArchitecture));
             string[] values = serialization.Split('|');
-            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion} ", values[0]);
+            Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}", values[0]);
             Assert.AreEqual(envInfo.DirectVersion, values[1]);
             Assert.AreEqual(envInfo.ClientId.Length, values[2].Length);
             Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
@@ -105,14 +99,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual("Darwin 18.0.0 Darwin Kernel V", values[4]);
             }
+            Assert.AreEqual(envInfo.RuntimeFramework, values[5]);
         }
 
-        private void SetEnvironmentInformationToMacOS()
+        private void SetEnvironmentInformation(bool useMacOs)
         {
             //This changes the runtime information to simulate a max os x response. Windows user agent are tested by every other emulator test.
             const string invalidOsField = "Darwin 18.0.0: Darwin/Kernel/Version 18.0.0: Wed Aug 22 20:13:40 PDT 2018; root:xnu-4903.201.2~1/RELEASE_X86_64";
+
             FieldInfo fieldInfo = typeof(EnvironmentInformation).GetField("os", BindingFlags.Static | BindingFlags.NonPublic);
-            fieldInfo.SetValue(null, invalidOsField);
+            fieldInfo.SetValue(null, useMacOs ? invalidOsField : RuntimeInformation.OSDescription);
         }
 
         private string GetClientIdFromCosmosClient(CosmosClient client)
