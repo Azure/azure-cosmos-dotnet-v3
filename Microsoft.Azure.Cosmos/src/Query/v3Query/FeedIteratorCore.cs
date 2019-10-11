@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal override bool TryGetState(out string state)
+        internal override bool TryGetContinuationToken(out string state)
         {
             state = this.continuationToken;
             return true;
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal override bool TryGetState(out string state)
         {
-            return this.feedIterator.TryGetState(out state);
+            return this.feedIterator.TryGetContinuationToken(out state);
         }
     }
 }

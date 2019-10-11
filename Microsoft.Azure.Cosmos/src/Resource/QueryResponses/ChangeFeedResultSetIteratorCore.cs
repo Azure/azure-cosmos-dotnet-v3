@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        internal override bool TryGetState(out string state)
+        internal override bool TryGetContinuationToken(out string state)
         {
             state = this.continuationToken;
             return true;

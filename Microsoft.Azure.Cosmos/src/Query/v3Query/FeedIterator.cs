@@ -24,6 +24,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken));
 
-        internal abstract bool TryGetState(out string state);
+        /// <summary>
+        /// Tries to get the continuation token for the feed iterator.
+        /// Useful to avoid exceptions.
+        /// Useful to avoid the cost serialization until needed.
+        /// </summary>
+        /// <param name="continuationToken">The continuation to resume from.</param>
+        /// <returns>Whether or not we can get the continuaiton token.</returns>
+        internal abstract bool TryGetContinuationToken(out string continuationToken);
     }
 }
