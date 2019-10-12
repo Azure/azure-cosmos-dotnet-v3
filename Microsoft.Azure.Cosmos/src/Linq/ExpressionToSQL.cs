@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Sql;
     using Microsoft.Azure.Documents;
@@ -546,7 +547,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // DateTime
                     else if (memberType == typeof(DateTime))
                     {
-                        value = DateTime.Parse(right.ToString());
+                        SqlLiteralScalarExpression sqlLiteralScalarExpression = right;
+                        SqlStringLiteral serializedDateTime = (SqlStringLiteral)sqlLiteralScalarExpression.Literal;
+                        value = serializedDateTime.Value;
                     }
 
                     if (value != default(object))
@@ -562,7 +565,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             serializedValue = JsonConvert.SerializeObject(value);
                         }
 
-                        return ConvertJTokenToSqlScalarExpression(JToken.Parse(serializedValue));
+                        return ConvertCosmosElementToSqlScalarExpression(CosmosElement.Parse(serializedValue));
                     }
                 }
             }
@@ -707,7 +710,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToArray());
             }
 
-            return ConvertJTokenToSqlScalarExpression(JToken.FromObject(inputExpression.Value));
+            return ConvertCosmosElementToSqlScalarExpression(CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)));
         }
 
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)
@@ -1364,7 +1367,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (value is decimal decimalValue)
             {
-                sqlNumberLiteral = SqlNumberLiteral.Create(decimalValue);
+                if ((decimalValue >= long.MinValue) && (decimalValue <= long.MaxValue) && (decimalValue % 1 == 0))
+                {
+                    sqlNumberLiteral = SqlNumberLiteral.Create(Convert.ToInt64(decimalValue));
+                }
+                else
+                {
+                    sqlNumberLiteral = SqlNumberLiteral.Create(Convert.ToDouble(decimalValue));
+                }
             }
             else if (value is double doubleValue)
             {
@@ -1388,7 +1398,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (value is ulong ulongValue)
             {
-                sqlNumberLiteral = SqlNumberLiteral.Create((decimal)ulongValue);
+                if (ulongValue <= long.MaxValue)
+                {
+                    sqlNumberLiteral = SqlNumberLiteral.Create(Convert.ToInt64(ulongValue));
+                }
+                else
+                {
+                    sqlNumberLiteral = SqlNumberLiteral.Create(Convert.ToDouble(ulongValue));
+                }
             }
             else if (value is short shortValue)
             {
@@ -1814,7 +1831,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             TranslationContext context)
         {
             SqlScalarExpression countExpression;
-            countExpression = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1));
+            countExpression = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create((Number64)1));
 
             if (arguments.Count == 2)
             {
@@ -1921,62 +1938,52 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         #endregion LINQ Specific Visitors
 
-        private static SqlScalarExpression ConvertJTokenToSqlScalarExpression(JToken token)
+        private static SqlScalarExpression ConvertCosmosElementToSqlScalarExpression(CosmosElement element)
         {
             SqlScalarExpression sqlScalarExpression;
-            switch (token.Type)
+            if (element is CosmosObject cosmosObject)
             {
-                case JTokenType.Object:
-                    List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
-                    foreach (JProperty prop in token)
-                    {
-                        SqlPropertyName name = SqlPropertyName.Create(prop.Name);
-                        JToken value = prop.Value;
-                        SqlScalarExpression expression = ConvertJTokenToSqlScalarExpression(value);
-                        SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
-                        properties.Add(property);
-                    }
+                List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
+                foreach (KeyValuePair<string, CosmosElement> prop in cosmosObject)
+                {
+                    SqlPropertyName name = SqlPropertyName.Create(prop.Key);
+                    CosmosElement value = prop.Value;
+                    SqlScalarExpression expression = ConvertCosmosElementToSqlScalarExpression(value);
+                    SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
+                    properties.Add(property);
+                }
 
-                    sqlScalarExpression = SqlObjectCreateScalarExpression.Create(properties.ToArray());
-                    break;
+                sqlScalarExpression = SqlObjectCreateScalarExpression.Create(properties.ToArray());
+            }
+            else if (element is CosmosArray cosmosArray)
+            {
+                List<SqlScalarExpression> items = new List<SqlScalarExpression>();
+                foreach (CosmosElement item in cosmosArray)
+                {
+                    items.Add(ConvertCosmosElementToSqlScalarExpression(item));
+                }
 
-                case JTokenType.Array:
-                    List<SqlScalarExpression> items = new List<SqlScalarExpression>();
-                    foreach (JToken element in token)
-                    {
-                        items.Add(ConvertJTokenToSqlScalarExpression(element));
-                    }
-
-                    sqlScalarExpression = SqlArrayCreateScalarExpression.Create(items.ToArray());
-                    break;
-
-                case JTokenType.Integer:
-                case JTokenType.Float:
-                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(token.Value<double>()));
-                    break;
-
-                case JTokenType.Boolean:
-                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(token.Value<bool>()));
-                    break;
-
-                case JTokenType.Null:
-                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
-                    break;
-
-                case JTokenType.String:
-                case JTokenType.Date:
-                case JTokenType.Guid:
-                case JTokenType.Uri:
-                case JTokenType.TimeSpan:
-                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(token.Value<string>()));
-                    break;
-
-                case JTokenType.Undefined:
-                    sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
-                    break;
-
-                default:
-                    throw new ArgumentException($"Unknown {nameof(JTokenType)}: {token.Type}");
+                sqlScalarExpression = SqlArrayCreateScalarExpression.Create(items.ToArray());
+            }
+            else if (element is CosmosNumber64 cosmosNumber)
+            {
+                sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(cosmosNumber.GetValue()));
+            }
+            else if (element is CosmosBoolean cosmosBoolean)
+            {
+                sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(cosmosBoolean.Value));
+            }
+            else if (element is CosmosString cosmosString)
+            {
+                sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
+            }
+            else if (element is CosmosNull)
+            {
+                sqlScalarExpression = SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
+            }
+            else
+            {
+                throw new ArgumentException($"Unknown {nameof(CosmosElementType)}: {element.Type}");
             }
 
             return sqlScalarExpression;
