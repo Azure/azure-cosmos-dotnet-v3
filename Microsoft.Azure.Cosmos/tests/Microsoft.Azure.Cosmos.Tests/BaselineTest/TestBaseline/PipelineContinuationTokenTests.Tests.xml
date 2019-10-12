@@ -2,11 +2,11 @@
   <Result>
     <Input>
       <Description>V0 Continuation Token</Description>
-      <ContinuationToken><![CDATA[{"asdf": "asdf"}]]></ContinuationToken>
+      <ContinuationToken><![CDATA[[{"asdf": "asdf"}]]]></ContinuationToken>
     </Input>
     <Output>
-      <ParsedToken><![CDATA[{"asdf": "asdf"}]]></ParsedToken>
-      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":"{\"asdf\": \"asdf\"}"}]]></LatestToken>
+      <ParsedToken><![CDATA[[{"asdf": "asdf"}]]]></ParsedToken>
+      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":"[{\"asdf\": \"asdf\"}]"}]]></LatestToken>
     </Output>
   </Result>
   <Result>
@@ -31,20 +31,22 @@
   </Result>
   <Result>
     <Input>
-      <Description>Invalid JSON</Description>
+      <Description>V0 Invalid JSON</Description>
       <ContinuationToken><![CDATA[{"asdf": ...]]></ContinuationToken>
     </Input>
     <Output>
-      <Reason><![CDATA[Failed to parse token.]]></Reason>
+      <ParsedToken><![CDATA[{"asdf": ...]]></ParsedToken>
+      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":"{\"asdf\": ..."}]]></LatestToken>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description>Valid JSON but not an object</Description>
+      <Description>V0 Valid JSON but not an object</Description>
       <ContinuationToken><![CDATA[42]]></ContinuationToken>
     </Input>
     <Output>
-      <Reason><![CDATA[Failed to parse token.]]></Reason>
+      <ParsedToken><![CDATA[42]]></ParsedToken>
+      <LatestToken><![CDATA[{"Version":"1.1","QueryPlan":null,"SourceContinuationToken":"42"}]]></LatestToken>
     </Output>
   </Result>
   <Result>
@@ -68,7 +70,7 @@
   <Result>
     <Input>
       <Description>V1 Source Continuation Token Is Not A String</Description>
-      <ContinuationToken><![CDATA[{"Version":"1.0"}, "SourceContinuationToken": 42]]></ContinuationToken>
+      <ContinuationToken><![CDATA[{"Version":"1.0", "SourceContinuationToken": 42}]]></ContinuationToken>
     </Input>
     <Output>
       <Reason><![CDATA[Failed to parse token.]]></Reason>
@@ -77,7 +79,7 @@
   <Result>
     <Input>
       <Description>V1.1 No Query Plan</Description>
-      <ContinuationToken><![CDATA[{"Version":"1.1"},"SourceContinuationToken":"{\"asdf\": \"asdf\"}"}]]></ContinuationToken>
+      <ContinuationToken><![CDATA[{"Version":"1.1","SourceContinuationToken":"{\"asdf\": \"asdf\"}"}]]></ContinuationToken>
     </Input>
     <Output>
       <Reason><![CDATA[Failed to parse token.]]></Reason>

@@ -357,6 +357,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (!queryResponse.IsSuccess)
                 {
                     this.component.Stop();
+                    return queryResponse;
                 }
 
                 string updatedContinuationToken;

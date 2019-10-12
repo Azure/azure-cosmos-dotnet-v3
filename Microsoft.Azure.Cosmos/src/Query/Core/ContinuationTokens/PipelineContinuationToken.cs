@@ -32,8 +32,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
                 rawContinuationToken,
                 out CosmosObject parsedContinuationToken))
             {
-                pipelineContinuationToken = default(PipelineContinuationToken);
-                return false;
+                // Failed to parse so we need to assume it's a V0 token
+                if (!PipelineContinuationTokenV0.TryParse(
+                    rawContinuationToken,
+                    out PipelineContinuationTokenV0 pipelineContinuationTokenV0))
+                {
+                    pipelineContinuationToken = default(PipelineContinuationToken);
+                    return false;
+                }
+
+                pipelineContinuationToken = pipelineContinuationTokenV0;
+                return true;
             }
 
             if (!PipelineContinuationToken.TryParseVersion(
@@ -82,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ContinuationTokens
             }
             else
             {
-                pipelineContinuationToken = default(PipelineContinuationTokenV1);
+                pipelineContinuationToken = default(PipelineContinuationToken);
                 return false;
             }
 

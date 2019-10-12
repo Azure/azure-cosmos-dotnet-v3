@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Positive Tests
                 new PipelineContinuationTokenTestsInput(
                     description: "V0 Continuation Token",
-                    continuationToken: @"{""asdf"": ""asdf""}"),
+                    continuationToken: @"[{""asdf"": ""asdf""}]"),
                 new PipelineContinuationTokenTestsInput(
                     description: "V1 Continuation Token",
                     continuationToken: "{\"Version\":\"1.0\",\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
@@ -30,13 +30,15 @@ namespace Microsoft.Azure.Cosmos.Query
                     description: "V1.1 Continuation Token",
                     continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\":null,\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
 
-                // Negative Tests
+                // V0 by default
                 new PipelineContinuationTokenTestsInput(
-                    description: "Invalid JSON",
+                    description: "V0 Invalid JSON",
                     continuationToken: @"{""asdf"": ..."),
                 new PipelineContinuationTokenTestsInput(
-                    description: "Valid JSON but not an object",
+                    description: "V0 Valid JSON but not an object",
                     continuationToken: @"42"),
+
+                // Negative Tests
                 new PipelineContinuationTokenTestsInput(
                     description: "Invalid Version Number.",
                     continuationToken: @"{""Version"": ""42.1337""}"),
@@ -47,12 +49,12 @@ namespace Microsoft.Azure.Cosmos.Query
                     continuationToken: "{\"Version\":\"1.0\"}"),
                 new PipelineContinuationTokenTestsInput(
                     description: "V1 Source Continuation Token Is Not A String",
-                    continuationToken: "{\"Version\":\"1.0\"}, \"SourceContinuationToken\": 42"),
+                    continuationToken: "{\"Version\":\"1.0\", \"SourceContinuationToken\": 42}"),
 
                 // Version 1.1 Negative Tests
                 new PipelineContinuationTokenTestsInput(
                     description: "V1.1 No Query Plan",
-                    continuationToken: "{\"Version\":\"1.1\"},\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
+                    continuationToken: "{\"Version\":\"1.1\",\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
                 new PipelineContinuationTokenTestsInput(
                     description: "V1.1 Query Plan Malformed",
                     continuationToken: "{\"Version\":\"1.1\",\"QueryPlan\": 42,\"SourceContinuationToken\":\"{\\\"asdf\\\": \\\"asdf\\\"}\"}"),
