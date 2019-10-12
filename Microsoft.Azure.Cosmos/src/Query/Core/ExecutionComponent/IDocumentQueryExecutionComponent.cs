@@ -38,6 +38,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// <returns>The QueryMetrics from this component.</returns>
         IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics();
 
-        bool TryGetState(out string state);
+        bool TryGetContinuationToken(out string state);
     }
 }

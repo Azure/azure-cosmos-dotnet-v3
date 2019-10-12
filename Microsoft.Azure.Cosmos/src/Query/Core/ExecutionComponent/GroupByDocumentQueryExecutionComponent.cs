@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             return response;
         }
 
-        public override bool TryGetState(out string state)
+        public override bool TryGetContinuationToken(out string state)
         {
             state = default(string);
             return false;

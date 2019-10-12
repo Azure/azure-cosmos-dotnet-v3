@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 if (!this.IsDone)
                 {
-                    if (!this.TryGetState(out updatedContinuationToken))
+                    if (!this.TryGetContinuationToken(out updatedContinuationToken))
                     {
                         throw new InvalidOperationException($"Failed to get state for {nameof(TakeDocumentQueryExecutionComponent)}.");
                     }
@@ -144,9 +144,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     responseLengthBytes: results.ResponseLengthBytes);
         }
 
-        public override bool TryGetState(out string state)
+        public override bool TryGetContinuationToken(out string state)
         {
-            if (this.Source.TryGetState(out string sourceState))
+            if (this.Source.TryGetContinuationToken(out string sourceState))
             {
                 TakeContinuationToken takeContinuationToken;
                 switch (this.takeEnum)

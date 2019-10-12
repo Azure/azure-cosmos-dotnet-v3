@@ -620,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 resultsFromState.AddRange(cosmosQueryResponse);
-                Assert.IsTrue(itemQuery.TryGetState(out state));
+                Assert.IsTrue(itemQuery.TryGetContinuationToken(out state));
             } while (state != null);
 
             List<JToken> resultsFromContinuationTokenAsJTokens = resultsFromContinuationToken

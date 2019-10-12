@@ -680,7 +680,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public bool TryGetState(out string state)
+        public bool TryGetContinuationToken(out string state)
         {
             state = this.ContinuationToken;
             return true;

@@ -142,9 +142,9 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override bool TryGetState(out string state)
+        public override bool TryGetContinuationToken(out string state)
         {
-            return this.innerExecutionContext.TryGetState(out state);
+            return this.innerExecutionContext.TryGetContinuationToken(out state);
         }
 
         private async Task<CosmosQueryExecutionContext> CreateItemQueryExecutionContextAsync(

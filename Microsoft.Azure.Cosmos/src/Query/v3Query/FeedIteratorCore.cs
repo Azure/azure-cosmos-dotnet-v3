@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
             return this.responseCreator(response);
         }
 
-        internal override bool TryGetState(out string state)
+        internal override bool TryGetContinuationToken(out string state)
         {
             return this.feedIterator.TryGetContinuationToken(out state);
         }

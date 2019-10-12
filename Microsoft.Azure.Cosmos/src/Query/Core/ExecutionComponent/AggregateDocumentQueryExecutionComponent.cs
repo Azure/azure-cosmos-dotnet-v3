@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 responseLengthBytes: responseLengthBytes);
         }
 
-        public override bool TryGetState(out string state)
+        public override bool TryGetContinuationToken(out string state)
         {
             state = null;
             return false;

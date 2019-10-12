@@ -30,6 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <returns>A task to await on, which in return provides a DoucmentFeedResponse of documents.</returns>
         public abstract Task<QueryResponseCore> ExecuteNextAsync(CancellationToken token);
 
-        public abstract bool TryGetState(out string state);
+        public abstract bool TryGetContinuationToken(out string state);
     }
 }

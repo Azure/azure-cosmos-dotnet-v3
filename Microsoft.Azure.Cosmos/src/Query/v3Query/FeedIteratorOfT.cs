@@ -26,6 +26,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken));
 
-        internal abstract bool TryGetState(out string state);
+        internal abstract bool TryGetContinuationToken(out string state);
     }
 }

@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         internal override bool TryGetContinuationToken(out string state)
         {
-            return this.cosmosQueryExecutionContext.TryGetState(out state);
+            return this.cosmosQueryExecutionContext.TryGetContinuationToken(out state);
         }
     }
 }

@@ -123,9 +123,9 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public override bool TryGetState(out string state)
+        public override bool TryGetContinuationToken(out string state)
         {
-            return this.component.TryGetState(out state);
+            return this.component.TryGetContinuationToken(out state);
         }
 
         /// <summary>
