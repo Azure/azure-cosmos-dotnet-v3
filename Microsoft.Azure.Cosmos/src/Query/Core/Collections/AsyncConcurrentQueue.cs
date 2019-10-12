@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Collections.Generic
 {
+    using System;
     using System.Collections.Concurrent;
 
     internal sealed class AsyncConcurrentQueue<T> : AsyncCollectionBase<T>
@@ -26,8 +27,13 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         }
 
         public AsyncConcurrentQueue(ConcurrentQueue<T> initialCollection, int boundingCapacity)
-            : base(initialCollection.Count, boundingCapacity)
+            : base(initialCollection?.Count ?? 0, boundingCapacity)
         {
+            if (initialCollection == null)
+            {
+                throw new ArgumentNullException("initialCollection");
+            }
+
             this.concurrentQueue = initialCollection;
             base.collection = this.concurrentQueue;
         }

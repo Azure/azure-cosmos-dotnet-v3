@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Collections.Generic
 {
+    using System;
+
     internal sealed class AsyncPriorityQueue<T> : AsyncCollectionBase<T>
     {
         private readonly PriorityQueue<T> priorityQueue;
@@ -24,8 +26,13 @@ namespace Microsoft.Azure.Cosmos.Collections.Generic
         }
 
         public AsyncPriorityQueue(PriorityQueue<T> initialCollection, int boundingCapacity)
-            : base(initialCollection.Count, boundingCapacity)
+            : base(initialCollection?.Count ?? 0, boundingCapacity)
         {
+            if (initialCollection == null)
+            {
+                throw new ArgumentNullException("initialCollection");
+            }
+
             this.priorityQueue = initialCollection;
             base.collection = this.priorityQueue;
         }
