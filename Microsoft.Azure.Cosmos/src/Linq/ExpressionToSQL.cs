@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         SqlLiteralScalarExpression sqlLiteralScalarExpression = right;
                         SqlStringLiteral serializedDateTime = (SqlStringLiteral)sqlLiteralScalarExpression.Literal;
-                        value = serializedDateTime.Value;
+                        value = DateTime.Parse(serializedDateTime.Value);
                     }
 
                     if (value != default(object))
@@ -710,7 +710,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToArray());
             }
 
-            return ConvertCosmosElementToSqlScalarExpression(CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)));
+            return ConvertCosmosElementToSqlScalarExpression(
+                CosmosElement.Parse(
+                    JsonConvert.SerializeObject(
+                        inputExpression.Value)));
         }
 
         private static SqlScalarExpression VisitConditional(ConditionalExpression inputExpression, TranslationContext context)

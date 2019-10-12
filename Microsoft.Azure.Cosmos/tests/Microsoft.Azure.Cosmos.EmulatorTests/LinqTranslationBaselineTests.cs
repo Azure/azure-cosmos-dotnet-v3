@@ -311,9 +311,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
-            //inputs.Add(new LinqTestInput("IsoDateTimeConverter = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0))));
-            //inputs.Add(new LinqTestInput("IsoDateTimeConverter > filter", b => getQuery(b).Where(doc => doc.IsoTime > new DateTime(2016, 9, 13, 0, 0, 0))));
-            //inputs.Add(new LinqTestInput("IsoDateTimeConverter < filter", b => getQuery(b).Where(doc => doc.IsoTime < new DateTime(2016, 9, 13, 0, 0, 0))));
+            inputs.Add(new LinqTestInput("IsoDateTimeConverter = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0))));
+            inputs.Add(new LinqTestInput("IsoDateTimeConverter > filter", b => getQuery(b).Where(doc => doc.IsoTime > new DateTime(2016, 9, 13, 0, 0, 0))));
+            inputs.Add(new LinqTestInput("IsoDateTimeConverter < filter", b => getQuery(b).Where(doc => doc.IsoTime < new DateTime(2016, 9, 13, 0, 0, 0))));
             inputs.Add(new LinqTestInput("UnixDateTimeConverter = filter", b => getQuery(b).Where(doc => doc.UnixTime == new DateTime(2016, 9, 13, 0, 0, 0))));
             inputs.Add(new LinqTestInput("UnixDateTimeConverter > filter", b => getQuery(b).Where(doc => doc.UnixTime > new DateTime(2016, 9, 13, 0, 0, 0))));
             inputs.Add(new LinqTestInput("UnixDateTimeConverter < filter", b => getQuery(b).Where(doc => doc.UnixTime < new DateTime(2016, 9, 13, 0, 0, 0))));
