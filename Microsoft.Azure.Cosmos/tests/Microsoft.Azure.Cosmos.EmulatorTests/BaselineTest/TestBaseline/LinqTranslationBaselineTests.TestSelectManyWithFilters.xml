@@ -94,7 +94,6 @@ WHERE ((root["NumericField"] > 0) AND (number0 > 10)) ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Where -> OrderBy -> Take -> SelectMany(Where -> Select)]]></Description>
       <Expression><![CDATA[query.Where(doc => (doc.NumericField > 0)).OrderBy(doc => doc.StringField).Take(10).SelectMany(doc => doc.EnumerableField.Where(number => (number > 10)).Select(number => number))]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -108,6 +107,7 @@ FROM (
 JOIN number0 IN r0["EnumerableField"] 
 WHERE (number0 > 10) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":95,"end":127},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":34,"end":40},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

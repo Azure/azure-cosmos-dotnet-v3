@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlLimitSpec sqlObject)
         {
             this.writer.Write("LIMIT ");
-            this.writer.Write(sqlObject.Limit);
+            sqlObject.LimitExpression.Accept(this);
         }
 
         public override void Visit(SqlLiteralArrayCollection sqlLiteralArrayCollection)
@@ -400,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlOffsetSpec sqlObject)
         {
             this.writer.Write("OFFSET ");
-            this.writer.Write(sqlObject.Offset);
+            sqlObject.OffsetExpression.Accept(this);
         }
 
         public override void Visit(SqlOrderbyClause sqlOrderByClause)
@@ -426,6 +426,16 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 this.writer.Write(" ASC");
             }
+        }
+
+        public override void Visit(SqlParameter sqlParameter)
+        {
+            this.writer.Write(sqlParameter.Name);
+        }
+
+        public override void Visit(SqlParameterRefScalarExpression sqlParameterRefScalarExpression)
+        {
+            sqlParameterRefScalarExpression.Parameter.Accept(this);
         }
 
         public override void Visit(SqlProgram sqlProgram)
@@ -599,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlTopSpec sqlTopSpec)
         {
             this.writer.Write("TOP ");
-            this.writer.Write(sqlTopSpec.Count);
+            sqlTopSpec.TopExpresion.Accept(this);
         }
 
         public override void Visit(SqlUnaryScalarExpression sqlUnaryScalarExpression)

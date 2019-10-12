@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract void Visit(SqlLiteralScalarExpression scalarExpression);
         public abstract void Visit(SqlMemberIndexerScalarExpression scalarExpression);
         public abstract void Visit(SqlObjectCreateScalarExpression scalarExpression);
+        public abstract void Visit(SqlParameterRefScalarExpression scalarExpression);
         public abstract void Visit(SqlPropertyRefScalarExpression scalarExpression);
         public abstract void Visit(SqlSubqueryScalarExpression scalarExpression);
         public abstract void Visit(SqlUnaryScalarExpression scalarExpression);
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlLiteralScalarExpression scalarExpression);
         public abstract TResult Visit(SqlMemberIndexerScalarExpression scalarExpression);
         public abstract TResult Visit(SqlObjectCreateScalarExpression scalarExpression);
+        public abstract TResult Visit(SqlParameterRefScalarExpression scalarExpression);
         public abstract TResult Visit(SqlPropertyRefScalarExpression scalarExpression);
         public abstract TResult Visit(SqlSubqueryScalarExpression scalarExpression);
         public abstract TResult Visit(SqlUnaryScalarExpression scalarExpression);
@@ -55,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TOutput Visit(SqlLiteralScalarExpression scalarExpression, TInput input);
         public abstract TOutput Visit(SqlMemberIndexerScalarExpression scalarExpression, TInput input);
         public abstract TOutput Visit(SqlObjectCreateScalarExpression scalarExpression, TInput input);
+        public abstract TOutput Visit(SqlParameterRefScalarExpression scalarExpression, TInput input);
         public abstract TOutput Visit(SqlPropertyRefScalarExpression scalarExpression, TInput input);
         public abstract TOutput Visit(SqlSubqueryScalarExpression scalarExpression, TInput input);
         public abstract TOutput Visit(SqlUnaryScalarExpression scalarExpression, TInput input);

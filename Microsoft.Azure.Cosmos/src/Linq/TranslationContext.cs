@@ -24,6 +24,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Query that is being assembled.
         /// </summary>
         public QueryUnderConstruction currentQuery;
+
+        /// <summary>
+        /// Dictionary for parameter name and value
+        /// </summary>
+        public IDictionary<object, string> parameters;
+
         /// <summary>
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
         /// the lambda expressions for the WHERE and SELECT clauses.
@@ -57,10 +63,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
         }
 
-        public TranslationContext(CosmosSerializationOptions serializationOptions)
+        public TranslationContext(CosmosSerializationOptions serializationOptions, IDictionary<object, string> parameters = null)
             : this()
         {
             this.serializationOptions = serializationOptions;
+            this.parameters = parameters;
         }
 
         public CosmosSerializationOptions serializationOptions;
