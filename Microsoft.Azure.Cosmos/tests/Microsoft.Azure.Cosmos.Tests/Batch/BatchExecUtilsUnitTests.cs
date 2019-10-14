@@ -82,9 +82,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 try
                 {
                     Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 9, cancellationToken: CancellationToken.None);
-                    Assert.Fail("Expected " + nameof(RequestEntityTooLargeException));
+                    Assert.Fail("Expected " + nameof(CosmosException));
                 }
-                catch (RequestEntityTooLargeException)
+                catch (CosmosException)
                 {
                 }
             }
@@ -114,9 +114,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 try
                 {
                     Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 9, cancellationToken: CancellationToken.None);
-                    Assert.Fail("Expected " + nameof(RequestEntityTooLargeException));
+                    Assert.Fail("Expected " + nameof(CosmosException));
                 }
-                catch (RequestEntityTooLargeException)
+                catch (CosmosException)
                 {
                 }
             }
