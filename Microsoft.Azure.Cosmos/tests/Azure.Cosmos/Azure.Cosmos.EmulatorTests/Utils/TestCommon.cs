@@ -16,6 +16,7 @@ namespace Azure.Cosmos.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos;
+    using Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
@@ -57,10 +58,28 @@ namespace Azure.Cosmos.EmulatorTests
             return (endpoint, authKey);
         }
 
-        internal static CosmosClient CreateCosmosClient(CosmosClientOptions options = null)
+        internal static CosmosClientBuilder GetDefaultConfiguration()
+        {
+            (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
+
+            return new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
+        }
+
+        internal static CosmosClient CreateCosmosClient(CosmosClientOptions options)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             return new CosmosClient(endpoint, authKey, options);
+        }
+
+        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        {
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+            if (customizeClientBuilder != null)
+            {
+                customizeClientBuilder(cosmosClientBuilder);
+            }
+
+            return cosmosClientBuilder.Build();
         }
     }
 }

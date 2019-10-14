@@ -272,8 +272,8 @@ namespace Azure.Cosmos.Query
                         statusCode: (HttpStatusCode)cosmosResponseMessage.Status,
                         subStatusCodes: cosmosResponseMessage.Headers.GetSubStatusCode(),
                         errorMessage: cosmosResponseMessage.ReasonPhrase,
-                        requestCharge: 0, //cosmosResponseMessage.CosmosHeaders.RequestCharge,
-                        activityId: null, //cosmosResponseMessage.CosmosHeaders.ActivityId,
+                        requestCharge: cosmosResponseMessage.Headers.GetRequestCharge(),
+                        activityId: cosmosResponseMessage.Headers.GetActivityId(),
                         queryMetricsText: null, //cosmosResponseMessage.CosmosHeaders.QueryMetricsText,
                         queryMetrics: null);
                 }
@@ -294,8 +294,8 @@ namespace Azure.Cosmos.Query
                 int itemCount = cosmosArray.Count;
                 return QueryResponseCore.CreateSuccess(
                     result: cosmosArray,
-                    requestCharge: 0, //cosmosResponseMessage.CosmosHeaders.RequestCharge,
-                    activityId: null, //cosmosResponseMessage.CosmosHeaders.ActivityId,
+                    requestCharge: cosmosResponseMessage.Headers.GetRequestCharge(),
+                    activityId: cosmosResponseMessage.Headers.GetActivityId(),
                     queryMetricsText: null, //cosmosResponseMessage.CosmosHeaders.QueryMetricsText,
                     queryMetrics: null,
                     requestStatistics: null,

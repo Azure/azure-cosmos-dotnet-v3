@@ -400,85 +400,76 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
         }
 
-        //[TestMethod]
-        //public async Task IteratorTest()
-        //{
-        //    string containerName = Guid.NewGuid().ToString();
-        //    string partitionKeyPath = "/users";
+        [TestMethod]
+        public async Task IteratorTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
 
-        //    ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
-        //    Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
-        //    Assert.AreEqual(containerName, containerResponse.Value.Id);
-        //    Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
+            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
+            Assert.AreEqual(containerName, containerResponse.Value.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
 
-        //    HashSet<string> containerIds = new HashSet<string>();
-        //    FeedIterator<ContainerProperties> resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>();
-        //    while (resultSet.HasMoreResults)
-        //    {
-        //        foreach (ContainerProperties setting in await resultSet.ReadNextAsync())
-        //        {
-        //            if (!containerIds.Contains(setting.Id))
-        //            {
-        //                containerIds.Add(setting.Id);
-        //            }
-        //        }
-        //    }
+            HashSet<string> containerIds = new HashSet<string>();
+            await foreach (ContainerProperties setting in this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>())
+            {
+                if (!containerIds.Contains(setting.Id))
+                {
+                    containerIds.Add(setting.Id);
+                }
+            }
 
-        //    Assert.IsTrue(containerIds.Count > 0, "The iterator did not find any containers.");
-        //    Assert.IsTrue(containerIds.Contains(containerName), "The iterator did not find the created container");
+            Assert.IsTrue(containerIds.Count > 0, "The iterator did not find any containers.");
+            Assert.IsTrue(containerIds.Contains(containerName), "The iterator did not find the created container");
 
-        //    resultSet = this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>($"select * from c where c.id = \"{containerName}\"");
-        //    FeedResponse<ContainerProperties> queryProperties = await resultSet.ReadNextAsync();
+            await foreach (Page<ContainerProperties> page in this.cosmosDatabase.GetContainerQueryIterator<ContainerProperties>($"select * from c where c.id = \"{containerName}\"").AsPages())
+            {
+                Assert.AreEqual(1, page.Values.Count);
+                Assert.AreEqual(containerName, page.Values.First().Id);
+            }
 
-        //    Assert.AreEqual(1, queryProperties.Resource.Count());
-        //    Assert.AreEqual(containerName, queryProperties.First().Id);
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
+        }
 
-        //    containerResponse = await containerResponse.Container.DeleteContainerAsync();
-        //    Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-        //}
+        [TestMethod]
+        public async Task StreamIteratorTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
 
-        //[TestMethod]
-        //public async Task StreamIteratorTest()
-        //{
-        //    string containerName = Guid.NewGuid().ToString();
-        //    string partitionKeyPath = "/users";
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
+            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
+            Assert.AreEqual(containerName, containerResponse.Value.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
 
-        //    ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
-        //    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-        //    Assert.AreEqual(containerName, containerResponse.Value.Id);
-        //    Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
+            containerName = Guid.NewGuid().ToString();
+            containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
+            Assert.AreEqual((int)HttpStatusCode.Created, containerResponse.GetRawResponse().Status);
+            Assert.AreEqual(containerName, containerResponse.Value.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
 
-        //    containerName = Guid.NewGuid().ToString();
-        //    containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerName, partitionKeyPath);
-        //    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-        //    Assert.AreEqual(containerName, containerResponse.Value.Id);
-        //    Assert.AreEqual(partitionKeyPath, containerResponse.Value.PartitionKey.Paths.First());
+            HashSet<string> containerIds = new HashSet<string>();
+            await foreach(Response message in this.cosmosDatabase.GetContainerQueryStreamIterator(
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }))
+             {
+                Assert.AreEqual((int)HttpStatusCode.OK, message.Status);
+                CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
+                dynamic containers = defaultJsonSerializer.FromStream<dynamic>(message.ContentStream).DocumentCollections;
+                foreach (dynamic container in containers)
+                {
+                    string id = container.id.ToString();
+                    containerIds.Add(id);
+                }
+            }
 
-        //    HashSet<string> containerIds = new HashSet<string>();
-        //    FeedIterator resultSet = this.cosmosDatabase.GetContainerQueryStreamIterator(
-        //            requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            Assert.IsTrue(containerIds.Count > 0, "The iterator did not find any containers.");
+            Assert.IsTrue(containerIds.Contains(containerName), "The iterator did not find the created container");
 
-        //    while (resultSet.HasMoreResults)
-        //    {
-        //        using (ResponseMessage message = await resultSet.ReadNextAsync())
-        //        {
-        //            Assert.AreEqual(HttpStatusCode.OK, message.StatusCode);
-        //            CosmosJsonDotNetSerializer defaultJsonSerializer = new CosmosJsonDotNetSerializer();
-        //            dynamic containers = defaultJsonSerializer.FromStream<dynamic>(message.Content).DocumentCollections;
-        //            foreach (dynamic container in containers)
-        //            {
-        //                string id = container.id.ToString();
-        //                containerIds.Add(id);
-        //            }
-        //        }
-        //    }
-
-        //    Assert.IsTrue(containerIds.Count > 0, "The iterator did not find any containers.");
-        //    Assert.IsTrue(containerIds.Contains(containerName), "The iterator did not find the created container");
-
-        //    containerResponse = await containerResponse.Container.DeleteContainerAsync();
-        //    Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-        //}
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual((int)HttpStatusCode.NoContent, containerResponse.GetRawResponse().Status);
+        }
 
         [TestMethod]
         public async Task DeleteNonExistingContainer()

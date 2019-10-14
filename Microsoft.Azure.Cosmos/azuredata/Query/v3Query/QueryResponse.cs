@@ -50,7 +50,7 @@ namespace Azure.Cosmos
 
         public int Count { get; }
 
-        public override Stream Content => CosmosElementSerializer.ToStream(
+        public override Stream ContentStream => CosmosElementSerializer.ToStream(
             this.QueryHeaders.ContainerRid,
             this.CosmosElements,
             this.QueryHeaders.ResourceType,

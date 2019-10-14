@@ -8,6 +8,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Azure.Cosmos.EmulatorTests</RootNamespace>
     <AssemblyName>Microsoft.Azure.Cosmos.EmulatorTests</AssemblyName>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">

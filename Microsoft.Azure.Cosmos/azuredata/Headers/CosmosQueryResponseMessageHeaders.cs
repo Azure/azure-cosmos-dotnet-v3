@@ -58,11 +58,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal CosmosQueryResponseMessageHeaders CloneKnownProperties(
-            string continauationToken,
+            string continuetionToken,
             string disallowContinuationTokenMessage)
         {
             return new CosmosQueryResponseMessageHeaders(
-                continauationToken,
+                continuetionToken,
                 disallowContinuationTokenMessage,
                 this.ResourceType,
                 this.ContainerRid)

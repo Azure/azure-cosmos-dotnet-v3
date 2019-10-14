@@ -5,6 +5,7 @@
 namespace Azure.Cosmos
 {
     using System;
+    using System.Globalization;
     using System.IO;
     using Azure;
     using Azure.Core.Http;
@@ -66,6 +67,22 @@ namespace Azure.Cosmos
         {
             httpHeaders.TryGetValue(HttpConstants.HttpHeaders.Continuation, out string continuationToken);
             return continuationToken;
+        }
+
+        internal static string GetActivityId(this ResponseHeaders httpHeaders)
+        {
+            httpHeaders.TryGetValue(HttpConstants.HttpHeaders.ActivityId, out string continuationToken);
+            return continuationToken;
+        }
+
+        internal static double GetRequestCharge(this ResponseHeaders httpHeaders)
+        {
+            if (httpHeaders.TryGetValue(HttpConstants.HttpHeaders.RequestCharge, out string requestChargeString))
+            {
+                return double.Parse(requestChargeString, CultureInfo.InvariantCulture);
+            }
+
+            return 0;
         }
     }
 }

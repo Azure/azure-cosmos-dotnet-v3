@@ -380,7 +380,7 @@ namespace Azure.Cosmos
                 cancellationToken);
         }
 
-        public override AsyncPageable<ContainerProperties> GetContainerQueryIterator(
+        public override AsyncPageable<T> GetContainerQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -392,23 +392,23 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetContainerQueryIterator(
+            return this.GetContainerQueryIterator<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,
                 cancellationToken);
         }
 
-        public override AsyncPageable<ContainerProperties> GetContainerQueryIterator(
+        public override AsyncPageable<T> GetContainerQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             FeedIterator feedIterator = this.GetContainerQueryFeedIterator(queryDefinition, continuationToken, requestOptions);
-            PageIteratorCore<ContainerProperties> pageIterator = new PageIteratorCore<ContainerProperties>(
+            PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponseWithPropertySerializer<ContainerProperties>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }

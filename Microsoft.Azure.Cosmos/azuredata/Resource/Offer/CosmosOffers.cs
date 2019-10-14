@@ -153,7 +153,7 @@ namespace Azure.Cosmos
             FeedIterator feedIterator = this.GetOfferQueryStreamIterator(queryDefinition, continuationToken, requestOptions, cancellationToken);
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponseWithPropertySerializer<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }

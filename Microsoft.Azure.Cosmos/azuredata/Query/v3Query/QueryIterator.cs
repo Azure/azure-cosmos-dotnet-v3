@@ -64,7 +64,7 @@ namespace Azure.Cosmos.Query
         public override async Task<Response> ReadNextAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             // This catches exception thrown by the pipeline and converts it to QueryResponse
-            ResponseMessage response;
+            Response response;
             try
             {
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);

@@ -295,7 +295,7 @@ namespace Azure.Cosmos
 
             PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }

@@ -468,7 +468,7 @@ namespace Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual AsyncPageable<DatabaseProperties> GetDatabaseQueryIterator(
+        public virtual AsyncPageable<T> GetDatabaseQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -479,9 +479,9 @@ namespace Azure.Cosmos
                continuationToken,
                requestOptions);
 
-            PageIteratorCore<DatabaseProperties> pageIterator = new PageIteratorCore<DatabaseProperties>(
+            PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
                 feedIterator: feedIterator,
-                responseCreator: this.ClientContext.ResponseFactory.CreateQueryPageResponseWithPropertySerializer<DatabaseProperties>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
 
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
@@ -495,7 +495,7 @@ namespace Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An iterator to go through the databases.</returns>
-        public virtual AsyncPageable<DatabaseProperties> GetDatabaseQueryIterator(
+        public virtual AsyncPageable<T> GetDatabaseQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -507,7 +507,7 @@ namespace Azure.Cosmos
                 queryDefinition = new QueryDefinition(queryText);
             }
 
-            return this.GetDatabaseQueryIterator(
+            return this.GetDatabaseQueryIterator<T>(
                 queryDefinition,
                 continuationToken,
                 requestOptions,

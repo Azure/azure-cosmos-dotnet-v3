@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-                return this.RequestCharge == 0 ? null : this.RequestCharge.ToString();
+                return this.RequestCharge.ToString();
             }
             set
             {

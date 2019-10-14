@@ -604,7 +604,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<ContainerProperties> GetContainerQueryIterator(
+        public abstract AsyncPageable<T> GetContainerQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
@@ -674,7 +674,7 @@ namespace Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public abstract AsyncPageable<ContainerProperties> GetContainerQueryIterator(
+        public abstract AsyncPageable<T> GetContainerQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,

@@ -6,6 +6,7 @@ namespace Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -28,6 +29,50 @@ namespace Azure.Cosmos
         {
             this.propertiesSerializer = defaultJsonSerializer;
             this.cosmosSerializer = userJsonSerializer;
+        }
+
+        internal IReadOnlyList<T> CreateQueryFeedResponseWithPropertySerializer<T>(
+            Response cosmosResponseMessage)
+        {
+            FeedResponse<T> feedResponse = this.CreateQueryFeedResponseHelper<T>(
+                cosmosResponseMessage,
+                true);
+
+            return feedResponse.Value.ToList().AsReadOnly();
+        }
+
+        internal IReadOnlyList<T> CreateQueryFeedResponse<T>(
+            Response cosmosResponseMessage)
+        {
+            FeedResponse<T> feedResponse = this.CreateQueryFeedResponseHelper<T>(
+                cosmosResponseMessage,
+                false);
+
+            return feedResponse.Value.ToList().AsReadOnly();
+        }
+
+        private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
+            Response cosmosResponseMessage,
+            bool usePropertySerializer)
+        {
+            //Throw the exception
+            cosmosResponseMessage.EnsureSuccessStatusCode();
+
+            // The property serializer should be used for internal
+            // query operations like throughput since user serializer can break the logic
+            CosmosSerializer serializer = usePropertySerializer ? this.propertiesSerializer : this.cosmosSerializer;
+
+            QueryResponse queryResponse = cosmosResponseMessage as QueryResponse;
+            if (queryResponse != null)
+            {
+                return QueryResponse<T>.CreateResponse<T>(
+                    cosmosQueryResponse: queryResponse,
+                    jsonSerializer: serializer);
+            }
+
+            return ReadFeedResponse<T>.CreateResponse<T>(
+                       cosmosResponseMessage,
+                       serializer);
         }
 
         internal Task<ContainerResponse> CreateContainerResponseAsync(
@@ -93,16 +138,6 @@ namespace Azure.Cosmos
             });
         }
 
-        internal IReadOnlyList<T> CreateQueryPageResponseWithPropertySerializer<T>(Response cosmosResponseMessage)
-        {
-            return CosmosResponseFactory.CreateQueryPageResponse<T>(cosmosResponseMessage, this.propertiesSerializer);
-        }
-
-        internal IReadOnlyList<T> CreateQueryPageResponse<T>(Response cosmosResponseMessage)
-        {
-            return CosmosResponseFactory.CreateQueryPageResponse<T>(cosmosResponseMessage, this.cosmosSerializer);
-        }
-
         internal async Task<T> ProcessMessageAsync<T>(Task<Response> cosmosResponseTask, Func<Response, T> createResponse)
         {
             using (Response message = await cosmosResponseTask)
@@ -121,24 +156,6 @@ namespace Azure.Cosmos
             }
 
             return jsonSerializer.FromStream<T>(response.ContentStream);
-        }
-
-        private static IReadOnlyList<T> CreateQueryPageResponse<T>(Response cosmosResponseMessage, CosmosSerializer serializer)
-        {
-            //Throw the exception
-            cosmosResponseMessage.EnsureSuccessStatusCode();
-
-            using (cosmosResponseMessage)
-            {
-                IReadOnlyList<T> resources = default(IReadOnlyList<T>);
-                if (cosmosResponseMessage.ContentStream != null)
-                {
-                    CosmosFeedResponseUtil<T> response = serializer.FromStream<CosmosFeedResponseUtil<T>>(cosmosResponseMessage.ContentStream);
-                    resources = response.Data;
-                }
-
-                return resources;
-            }
         }
     }
 }
