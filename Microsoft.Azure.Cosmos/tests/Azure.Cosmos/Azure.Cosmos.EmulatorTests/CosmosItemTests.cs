@@ -318,8 +318,11 @@ namespace Azure.Cosmos.EmulatorTests
                 {
                     Assert.IsNotNull(response);
                     Assert.AreEqual((int)HttpStatusCode.Created, response.Status);
-                    //Assert.IsTrue(response.Headers.RequestCharge > 0);
-                    //Assert.IsNotNull(response.Headers.ActivityId);
+                    if (response.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.RequestCharge, out string requestChargeString))
+                    {
+                        Assert.IsTrue(double.Parse(requestChargeString, CultureInfo.InvariantCulture) > 0);
+                    }
+                    Assert.IsNotNull(response.Headers.GetActivityId());
                     //Assert.IsNotNull(response.Headers.ETag);
                 }
             }
@@ -328,8 +331,12 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 Assert.IsNotNull(deleteResponse);
                 Assert.AreEqual((int)HttpStatusCode.NoContent, deleteResponse.Status);
-                //Assert.IsTrue(deleteResponse.Headers.RequestCharge > 0);
-                //Assert.IsNotNull(deleteResponse.Headers.ActivityId);
+                if (deleteResponse.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.RequestCharge, out string requestChargeString))
+                {
+                    Assert.IsTrue(double.Parse(requestChargeString, CultureInfo.InvariantCulture) > 0);
+                }
+
+                Assert.IsNotNull(deleteResponse.Headers.GetActivityId());
             }
         }
 
