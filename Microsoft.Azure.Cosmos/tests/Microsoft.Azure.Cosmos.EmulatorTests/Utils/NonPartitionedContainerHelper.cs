@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     internal static class NonPartitionedContainerHelper
     {
         private static readonly string PreNonPartitionedMigrationApiVersion = "2018-08-31";
-        private static readonly string utc_date = DateTime.UtcNow.ToString("r");
 
         internal static async Task<ContainerCore> CreateNonPartitionedContainer(
             Cosmos.Database database,
@@ -51,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string resourceType = "colls";
             string resourceId = string.Format("dbs/{0}", database.Id);
             string resourceLink = string.Format("dbs/{0}/colls", database.Id);
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-date", NonPartitionedContainerHelper.GetUtcDateTime());
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
 
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
@@ -86,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating undefined partition key  item, rest api used instead of .NET SDK api as it is not supported anymore.
             HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(accountInfo.endpoint);
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-date", NonPartitionedContainerHelper.GetUtcDateTime());
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("x-ms-documentdb-partitionkey", "[{}]");
 
@@ -131,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "master",
                 "1.0");
 
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-date", NonPartitionedContainerHelper.GetUtcDateTime());
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
@@ -158,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     verb.ToLowerInvariant(),
                     resourceType.ToLowerInvariant(),
                     resourceId,
-                    utc_date.ToLowerInvariant(),
+                    NonPartitionedContainerHelper.GetUtcDateTime().ToLowerInvariant(),
                     ""
             );
 
@@ -171,5 +170,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 signature));
         }
 
+        private static string GetUtcDateTime()
+        {
+            return DateTime.UtcNow.ToString("r");
+        }
     }
 }

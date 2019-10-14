@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
     {
         private static CosmosClient client;
-        private static Cosmos.Database cosmosDatabase;
+        private static Cosmos.Database testDb;
         private static Func<bool, IQueryable<Data>> getQuery;
         private static Func<bool, IQueryable<Family>> getQueryFamily;
         private static IQueryable lastExecutedScalarQuery;
@@ -32,55 +32,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
-            try
-            {
-                await Initialize();
-            }
-            catch (ServiceUnavailableException serviceUnavailableException)
-            {
-                if (serviceUnavailableException.Message == ClientResources.AllServicePoolsEmpty)
-                {
-                    throw new AssertInconclusiveException("Test was inconclusive since all serive pools were empty.");
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
-
-        private async static Task Initialize()
-        {
             client = TestCommon.CreateCosmosClient(true);
-            CleanUp();
 
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
             // to verify the translated LINQ directly as other queries type.
             client.DocumentClient.OnExecuteScalarQueryCallback = q => LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = q;
 
-            string databaseName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            string dbName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
+            testDb = await client.CreateDatabaseAsync(dbName);
 
-            Container container;
-            cosmosDatabase = await client.CreateDatabaseAsync(databaseName);
-            getQuery = LinqTestsCommon.GenerateSimpleCosmosData(cosmosDatabase);
-            getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(cosmosDatabase, out container);
+            getQuery = LinqTestsCommon.GenerateSimpleCosmosData(testDb);
+            getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out _);
         }
 
         [ClassCleanup]
-        public static void CleanUp()
+        public async static Task CleanUp()
         {
-            try
+            if (testDb != null)
             {
-                List<Database> dbs = client.DocumentClient.CreateDatabaseQuery().ToList();
-                foreach (Database db in dbs)
-                {
-                    client.DocumentClient.DeleteDatabaseAsync(db.SelfLink).Wait();
-                }
-            }
-            catch (DocumentClientException e)
-            {
-                throw new AssertInconclusiveException("Test was inconclusive due to exception in CleanUp task", e);
+                await testDb.DeleteStreamAsync();
             }
         }
 
@@ -124,23 +95,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Max", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Max(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Max()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Take -> Max", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Take(5).Max(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Take(5).Max()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select number -> Max", b => getQueryFamily(b)
-                .Skip(5).Take(5).Select(f => f.Int).Max(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).Select(f => f.Int).Max()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> SelectMany(Select) -> Skip -> Take -> Max", b => getQueryFamily(b)
-                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Max(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Max()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new() -> Skip -> Take)", b => getQueryFamily(b)
@@ -155,8 +122,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 })
                 .Skip(1).Take(10)
                 .Select(f => f.v0 > f.v1 ? f.v0 : f.v1)
-                .Max(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Max()));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -201,23 +167,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Min", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Min(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Min()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Take -> Min", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Take(5).Min(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Take(5).Min()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select number Min Max", b => getQueryFamily(b)
-                .Skip(5).Take(5).Select(f => f.Int).Min(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).Select(f => f.Int).Min()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> SelectMany(Select) -> Skip -> Take -> Min", b => getQueryFamily(b)
-                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Min(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Min()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new(Skip -> Select -> Min, Skip -> Take -> Select -> Min, Take -> Skip -> Select -> Min) -> Skip -> Take)", b => getQueryFamily(b)
@@ -232,8 +194,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 })
                 .Skip(1).Take(10)
                 .Select(f => f.v0 < f.v1 ? f.v0 : f.v1)
-                .Min(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Min()));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -274,23 +235,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Sum", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Sum(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Sum()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Take -> Sum", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Take(5).Sum(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Take(5).Sum()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select number -> Sum", b => getQueryFamily(b)
-                .Skip(5).Take(5).Select(f => f.Int).Sum(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).Select(f => f.Int).Sum()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> SelectMany(Select) -> Skip -> Take -> Sum", b => getQueryFamily(b)
-                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Sum(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Sum()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new() -> Skip -> Take)", b => getQueryFamily(b)
@@ -305,8 +262,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 })
                 .Skip(1).Take(10)
                 .Select(f => f.v0 + f.v1 + f.v2 + f.v4)
-                .Sum(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Sum()));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -351,23 +307,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Count", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Count(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Count()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Take -> Count", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Take(5).Count(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Take(5).Count()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select number -> Count", b => getQueryFamily(b)
-                .Skip(5).Take(5).Select(f => f.Int).Count(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).Select(f => f.Int).Count()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> SelectMany(Select) -> Skip -> Take -> Count", b => getQueryFamily(b)
-                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Count(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Count()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new(Skip -> Select -> Count, Skip -> Take -> Select -> Count, Take -> Skip -> Select -> Count) -> Skip -> Take)", b => getQueryFamily(b)
@@ -379,8 +331,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     v2 = f.Children.Take(3).Skip(1).Select(c => c.Grade).Count()
                 })
                 .Skip(1).Take(10)
-                .Count(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Count()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new() -> Skip -> Take)", b => getQueryFamily(b)
@@ -394,8 +345,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     v4 = f.Children.Where(c => c.Grade > 20).OrderBy(c => c.Grade).Select(c => c.Grade).Skip(1).Count()
                 })
                 .Skip(1).Take(10)
-                .Count(f => f.v0 + f.v1 > f.v2 + f.v3),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Count(f => f.v0 + f.v1 > f.v2 + f.v3)));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -413,63 +363,51 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Any", b => getQuery(b)
-                .Any(),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Filter true flag -> Any", b => getQuery(b)
-                .Where(doc => doc.Flag).Any(),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Where(doc => doc.Flag).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Filter false flag -> Any", b => getQuery(b)
-                .Where(doc => !doc.Flag).Any(),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Where(doc => !doc.Flag).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Any", b => getQuery(b)
-                .Select(doc => doc.Number).Any(),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Number).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select many -> Filter -> Select -> Any", b => getQuery(b)
-                .SelectMany(doc => doc.Multiples.Where(m => m % 3 == 0).Select(m => m)).Any(),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .SelectMany(doc => doc.Multiples.Where(m => m % 3 == 0).Select(m => m)).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Any w/ boolean filter", b => getQuery(b)
-                .Any(doc => doc.Flag),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any(doc => doc.Flag)));
 
             inputs.Add(new LinqAggregateInput(
                 "Any w/ operator filter", b => getQuery(b)
-                .Any(doc => doc.Number < -7),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Any(doc => doc.Number < -7)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Any w/ operator filter", b => getQuery(b)
-                .Select(doc => doc.Number).Any(num => num < -13),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Number).Any(num => num < -13)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select(Select) -> Any(Sum)", b => getQuery(b)
-                .Select(doc => doc.Multiples).Any(array => array.Sum() > 5),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(doc => doc.Multiples).Any(array => array.Sum() > 5)));
 
             inputs.Add(new LinqAggregateInput(
                 "Select(Where) -> Any(Sum(map))", b => getQueryFamily(b)
-                .Select(f => f.Children.Where(c => c.Pets.Count() > 0)).Any(children => children.Sum(c => c.Grade) > 150),
-                ErrorMessages.CrossPartitionQueriesOnlySupportValueAggregateFunc));
+                .Select(f => f.Children.Where(c => c.Pets.Count() > 0)).Any(children => children.Sum(c => c.Grade) > 150)));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Any", b => getQueryFamily(b)
-                .Skip(20).Take(1).Any(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(20).Take(1).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "SelectMany(Skip) -> Any", b => getQueryFamily(b)
-                .SelectMany(f => f.Children.Skip(4)).Any(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .SelectMany(f => f.Children.Skip(4)).Any()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new()) -> Skip -> Take -> Select -> Any", b => getQueryFamily(b)
@@ -485,8 +423,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 })
                 .Skip(1).Take(10)
                 .Select(f => (f.v0 && f.v1) || (f.v0 && f.v1))
-                .Any(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Any()));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -526,23 +463,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Avg", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Average(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Average()));
 
             inputs.Add(new LinqAggregateInput(
                 "Select number -> Skip -> Take -> Avg", b => getQueryFamily(b)
-                .Select(f => f.Int).Skip(90).Take(5).Average(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Select(f => f.Int).Skip(90).Take(5).Average()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select number -> Avg", b => getQueryFamily(b)
-                .Skip(5).Take(5).Select(f => f.Int).Average(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).Select(f => f.Int).Average()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> SelectMany(Select) -> Skip -> Take -> Avg", b => getQueryFamily(b)
-                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Average(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Skip(5).Take(5).SelectMany(f => f.Children.Select(c => c.Grade)).Skip(10).Take(20).Average()));
 
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new() -> Skip -> Take)", b => getQueryFamily(b)
@@ -558,8 +491,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 })
                 .Skip(1).Take(10)
                 .Select(f => (f.v0 + f.v1 + f.v2 + f.v3 + f.v4) / 5)
-                .Average(),
-                ErrorMessages.OffsetLimitInSubqueryNotSupported));
+                .Average()));
 
             this.ExecuteTestSuite(inputs);
         }
@@ -570,7 +502,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             var compiledQuery = input.expression.Compile();
 
             string errorMessage = null;
-            bool failed = false;
             string query = string.Empty;
             try
             {
@@ -600,12 +531,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     // In this case, the queryResult should be null
                     Assert.AreEqual(null, queryResult);
                 }
-
-                if (input.ErrorMessage != null)
-                {
-                    errorMessage = $"Expecting error message containing [[{input.ErrorMessage}]]. Actual: <no error>";
-                    failed = true;
-                }
             }
             catch (Exception e)
             {
@@ -614,20 +539,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     e = e.InnerException;
                 }
 
-                errorMessage = null;
-                if ((input.ErrorMessage != null && !e.Message.Contains(input.ErrorMessage)))
+                DocumentClientException dce = e as DocumentClientException;
+                if (dce != null)
                 {
-                    errorMessage = $"Expecting error message containing [[{input.ErrorMessage}]]. Actual: {e.Message}";
-                    failed = true;
+                    errorMessage = dce.RawErrorMessage;
                 }
-                else if (input.ErrorMessage == null)
+                else
                 {
                     errorMessage = e.Message;
-                    failed = true;
                 }
             }
 
-            return new LinqAggregateOutput(query, errorMessage, failed);
+            return new LinqAggregateOutput(query, errorMessage);
         }
 
         public sealed class LinqAggregateOutput : BaselineTestOutput
@@ -636,13 +559,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public string ErrorMessage { get; }
 
-            public bool Failed { get; }
-
-            public LinqAggregateOutput(string sqlQuery, string errorMessage = null, bool failed = false)
+            public LinqAggregateOutput(string sqlQuery, string errorMessage = null)
             {
                 this.SqlQuery = sqlQuery;
                 this.ErrorMessage = errorMessage;
-                this.Failed = failed;
             }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
@@ -656,10 +576,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(this.ErrorMessage));
                     xmlWriter.WriteEndElement();
                 }
-                if (this.Failed)
-                {
-                    xmlWriter.WriteElementString(nameof(Failed), this.Failed.ToString());
-                }
             }
         }
 
@@ -667,9 +583,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             internal Expression<Func<bool, object>> expression { get; }
 
-            public string ErrorMessage { get; }
-
-            internal LinqAggregateInput(string description, Expression<Func<bool, object>> expr, string errorMessage = null)
+            internal LinqAggregateInput(string description, Expression<Func<bool, object>> expr)
                 : base(description)
             {
                 if (expr == null)
@@ -678,7 +592,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 }
 
                 this.expression = expr;
-                this.ErrorMessage = errorMessage;
             }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
@@ -696,12 +609,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 xmlWriter.WriteStartElement("Expression");
                 xmlWriter.WriteCData(expressionString);
                 xmlWriter.WriteEndElement();
-                if (this.ErrorMessage != null)
-                {
-                    xmlWriter.WriteStartElement(nameof(ErrorMessage));
-                    xmlWriter.WriteCData(this.ErrorMessage);
-                    xmlWriter.WriteEndElement();
-                }
             }
         }
     }
