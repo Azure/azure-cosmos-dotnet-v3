@@ -1107,6 +1107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MemoryStream memoryStream = new MemoryStream();
                 response.Content.CopyTo(memoryStream);
                 byte[] content = memoryStream.ToArray();
+                response.Content.Position = 0;
 
                 // Examine the first buffer byte to determine the serialization format
                 byte firstByte = content[0];
