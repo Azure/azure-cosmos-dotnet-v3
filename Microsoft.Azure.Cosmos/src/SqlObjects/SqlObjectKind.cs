@@ -39,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Sql
         OffsetSpec,
         OrderByClause,
         OrderByItem,
+        Parameter,
+        ParameterRefScalarExpression,
         Program,
         PropertyName,
         PropertyRefScalarExpression,

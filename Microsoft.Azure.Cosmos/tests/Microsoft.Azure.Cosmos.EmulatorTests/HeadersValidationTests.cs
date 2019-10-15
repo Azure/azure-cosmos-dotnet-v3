@@ -9,6 +9,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Reflection;
+    using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
@@ -435,32 +438,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
             var client = TestCommon.CreateClient(true, Protocol.Tcp);
             ValidateIfNonMatch(client);
-        }
-
-        [TestMethod]
-        public void ValidateCustomUserAgentHeader()
-        {
-            const string suffix = " MyCustomUserAgent/1.0";
-            ConnectionPolicy policy = new ConnectionPolicy();
-            policy.UserAgentSuffix = suffix;
-            var expectedUserAgent = new Cosmos.UserAgentContainer().BaseUserAgent +  suffix;
-            Assert.AreEqual(expectedUserAgent, policy.UserAgentContainer.UserAgent);
-
-            byte[] expectedUserAgentUTF8 = Encoding.UTF8.GetBytes(expectedUserAgent);
-            CollectionAssert.AreEqual(expectedUserAgentUTF8, policy.UserAgentContainer.UserAgentUTF8);
-        }
-
-        [TestMethod]
-        public void ValidateCustomUserAgentContainer()
-        {
-            const string suffix = " MyCustomUserAgent/1.0";
-            UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer();
-            userAgentContainer.Suffix = suffix;
-            string expectedUserAgent = new Cosmos.UserAgentContainer().BaseUserAgent + suffix;
-            Assert.AreEqual(expectedUserAgent, userAgentContainer.UserAgent);
-
-            byte[] expectedUserAgentUTF8 = Encoding.UTF8.GetBytes(expectedUserAgent);
-            CollectionAssert.AreEqual(expectedUserAgentUTF8, userAgentContainer.UserAgentUTF8);
         }
 
         [TestMethod]
