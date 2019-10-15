@@ -42,11 +42,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         internal static SqlQuerySpec TranslateQuery(
             Expression inputExpression,
-            CosmosSerializationOptions serializationOptions = null,
-            IDictionary<object, string> parameters = null)
+            CosmosSerializationOptions serializationOptions,
+            IDictionary<object, string> parameters)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters);
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, serializationOptions);
             string queryText = null;
             SqlParameterCollection sqlParameters = new SqlParameterCollection();
             if (parameters != null && parameters.Count > 0)
