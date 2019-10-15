@@ -5,7 +5,13 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## <a name="3.3.1"/> [3.3.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.1) - 2019-10-11
+## Unreleased
+
+### Fixed
+
+- [#905](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/909) Fixed linq camel case bug
+
+## <a name="3.3.1"/> [3.3.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.1) - 2019-10-11
 
 ### Fixed
 
