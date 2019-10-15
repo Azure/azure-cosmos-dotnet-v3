@@ -11,6 +11,7 @@ namespace Azure.Cosmos
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
@@ -486,22 +487,22 @@ namespace Azure.Cosmos
         //        requestOptions);
         //}
 
-        //public override ContainerBuilder DefineContainer(
-        //    string name,
-        //    string partitionKeyPath)
-        //{
-        //    if (string.IsNullOrEmpty(name))
-        //    {
-        //        throw new ArgumentNullException(nameof(name));
-        //    }
+        public override ContainerBuilder DefineContainer(
+            string name,
+            string partitionKeyPath)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
-        //    if (string.IsNullOrEmpty(partitionKeyPath))
-        //    {
-        //        throw new ArgumentNullException(nameof(partitionKeyPath));
-        //    }
+            if (string.IsNullOrEmpty(partitionKeyPath))
+            {
+                throw new ArgumentNullException(nameof(partitionKeyPath));
+            }
 
-        //    return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
-        //}
+            return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
+        }
 
         internal void ValidateContainerProperties(ContainerProperties containerProperties)
         {

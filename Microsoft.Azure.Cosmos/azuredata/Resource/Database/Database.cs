@@ -8,6 +8,7 @@ namespace Azure.Cosmos
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Fluent;
 
     /// <summary>
     /// Operations for reading or deleting an existing database.
@@ -788,47 +789,47 @@ namespace Azure.Cosmos
         //    string continuationToken = null,
         //    QueryRequestOptions requestOptions = null);
 
-        ///// <summary>
-        ///// Creates a containerBuilder.
-        ///// </summary>
-        ///// <param name="name">Azure Cosmos container name to create.</param>
-        ///// <param name="partitionKeyPath">The path to the partition key. Example: /partitionKey</param>
-        ///// <returns>A fluent definition of an Azure Cosmos container.</returns>
-        ///// <example>
-        /////
-        ///// <code language="c#">
-        ///// <![CDATA[
-        ///// CosmosContainerResponse container = await this.cosmosDatabase.DefineContainer("TestContainer", "/partitionKey")
-        /////     .UniqueKey()
-        /////         .Path("/path1")
-        /////         .Path("/path2")
-        /////         .Attach()
-        /////     .IndexingPolicy()
-        /////         .IndexingMode(IndexingMode.Consistent)
-        /////         .AutomaticIndexing(false)
-        /////         .IncludedPaths()
-        /////             .Path("/includepath1")
-        /////             .Path("/includepath2")
-        /////             .Attach()
-        /////         .ExcludedPaths()
-        /////             .Path("/excludepath1")
-        /////             .Path("/excludepath2")
-        /////             .Attach()
-        /////         .CompositeIndex()
-        /////             .Path("/root/leaf1")
-        /////             .Path("/root/leaf2", CompositePathSortOrder.Descending)
-        /////             .Attach()
-        /////         .CompositeIndex()
-        /////             .Path("/root/leaf3")
-        /////             .Path("/root/leaf4")
-        /////             .Attach()
-        /////         .Attach()
-        /////     .CreateAsync(5000 /* throughput /*); 
-        ///// ]]>
-        ///// </code>
-        ///// </example>
-        //public abstract ContainerBuilder DefineContainer(
-        //    string name,
-        //    string partitionKeyPath);
+        /// <summary>
+        /// Creates a containerBuilder.
+        /// </summary>
+        /// <param name="name">Azure Cosmos container name to create.</param>
+        /// <param name="partitionKeyPath">The path to the partition key. Example: /partitionKey</param>
+        /// <returns>A fluent definition of an Azure Cosmos container.</returns>
+        /// <example>
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ContainerResponse container = await this.cosmosDatabase.DefineContainer("TestContainer", "/partitionKey")
+        ///     .UniqueKey()
+        ///         .Path("/path1")
+        ///         .Path("/path2")
+        ///         .Attach()
+        ///     .IndexingPolicy()
+        ///         .IndexingMode(IndexingMode.Consistent)
+        ///         .AutomaticIndexing(false)
+        ///         .IncludedPaths()
+        ///             .Path("/includepath1")
+        ///             .Path("/includepath2")
+        ///             .Attach()
+        ///         .ExcludedPaths()
+        ///             .Path("/excludepath1")
+        ///             .Path("/excludepath2")
+        ///             .Attach()
+        ///         .CompositeIndex()
+        ///             .Path("/root/leaf1")
+        ///             .Path("/root/leaf2", CompositePathSortOrder.Descending)
+        ///             .Attach()
+        ///         .CompositeIndex()
+        ///             .Path("/root/leaf3")
+        ///             .Path("/root/leaf4")
+        ///             .Attach()
+        ///         .Attach()
+        ///     .CreateAsync(5000 /* throughput /*); 
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract ContainerBuilder DefineContainer(
+            string name,
+            string partitionKeyPath);
     }
 }
