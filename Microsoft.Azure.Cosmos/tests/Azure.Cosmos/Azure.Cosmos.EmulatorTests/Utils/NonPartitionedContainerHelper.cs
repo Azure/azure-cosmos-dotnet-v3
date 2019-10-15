@@ -6,16 +6,14 @@ namespace Azure.Cosmos.EmulatorTests
     using System;
     using System.Net;
     using System.Net.Http;
-    using System.Text.Json;
     using System.Threading.Tasks;
-    using Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     internal static class NonPartitionedContainerHelper
     {
         private static readonly string PreNonPartitionedMigrationApiVersion = "2018-08-31";
-        private static readonly string utc_date = DateTime.UtcNow.ToString("r");
 
         internal static async Task<ContainerCore> CreateNonPartitionedContainer(
             Cosmos.Database database,
@@ -29,7 +27,7 @@ namespace Azure.Cosmos.EmulatorTests
 
             if (indexingPolicy != null)
             {
-                documentCollection.IndexingPolicy = JsonSerializer.Deserialize<Microsoft.Azure.Documents.IndexingPolicy>(indexingPolicy);
+                documentCollection.IndexingPolicy = JsonConvert.DeserializeObject<IndexingPolicy>(indexingPolicy);
             }
 
             await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -48,11 +46,13 @@ namespace Azure.Cosmos.EmulatorTests
             //Creating non partition Container, rest api used instead of .NET SDK api as it is not supported anymore.
             HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(accountInfo.endpoint);
+            string dateTimeUtc = NonPartitionedContainerHelper.GetUtcDateTime();
+
             string verb = "POST";
             string resourceType = "colls";
             string resourceId = string.Format("dbs/{0}", database.Id);
             string resourceLink = string.Format("dbs/{0}/colls", database.Id);
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-date", dateTimeUtc);
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
 
             string authHeader = NonPartitionedContainerHelper.GenerateMasterKeyAuthorizationSignature(
@@ -61,7 +61,8 @@ namespace Azure.Cosmos.EmulatorTests
                 resourceType,
                 accountInfo.authKey,
                 "master",
-                "1.0");
+                "1.0",
+                dateTimeUtc);
 
             client.DefaultRequestHeaders.Add("authorization", authHeader);
             string containerDefinition = documentCollection.ToString();
@@ -73,7 +74,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, response.ToString());
-                responseCollection = JsonSerializer.Deserialize<DocumentCollection>(await response.Content.ReadAsStringAsync());
+                responseCollection = await response.Content.ToResourceAsync<DocumentCollection>();
             }
 
             return responseCollection;
@@ -87,7 +88,9 @@ namespace Azure.Cosmos.EmulatorTests
             //Creating undefined partition key  item, rest api used instead of .NET SDK api as it is not supported anymore.
             HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(accountInfo.endpoint);
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            string dateTimeUtc = NonPartitionedContainerHelper.GetUtcDateTime();
+
+            client.DefaultRequestHeaders.Add("x-ms-date", dateTimeUtc);
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("x-ms-documentdb-partitionkey", "[{}]");
 
@@ -102,13 +105,14 @@ namespace Azure.Cosmos.EmulatorTests
                 resourceType,
                 accountInfo.authKey,
                 "master",
-                "1.0");
+                "1.0",
+                dateTimeUtc);
 
             client.DefaultRequestHeaders.Remove("authorization");
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
             var payload = new { id = itemId, user = itemId };
-            string itemDefinition = JsonSerializer.Serialize(payload);
+            string itemDefinition = JsonConvert.SerializeObject(payload);
             StringContent itemContent = new StringContent(itemDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
             await client.PostAsync(requestUri.ToString(), itemContent);
@@ -122,6 +126,7 @@ namespace Azure.Cosmos.EmulatorTests
             //Creating non partition Container item.
             HttpClient client = new System.Net.Http.HttpClient();
             Uri baseUri = new Uri(accountInfo.endpoint);
+            string dateTimeUtc = NonPartitionedContainerHelper.GetUtcDateTime();
             string verb = "POST";
             string resourceType = "docs";
             string resourceLink = string.Format("dbs/{0}/colls/{1}/docs", container.Database.Id, container.Id);
@@ -130,13 +135,14 @@ namespace Azure.Cosmos.EmulatorTests
                 resourceType,
                 accountInfo.authKey,
                 "master",
-                "1.0");
+                "1.0",
+                dateTimeUtc);
 
-            client.DefaultRequestHeaders.Add("x-ms-date", utc_date);
+            client.DefaultRequestHeaders.Add("x-ms-date", dateTimeUtc);
             client.DefaultRequestHeaders.Add("x-ms-version", NonPartitionedContainerHelper.PreNonPartitionedMigrationApiVersion);
             client.DefaultRequestHeaders.Add("authorization", authHeader);
 
-            string itemDefinition = JsonSerializer.Serialize(ToDoActivity.CreateRandomToDoActivity(id: itemId));
+            string itemDefinition = JsonConvert.SerializeObject(ToDoActivity.CreateRandomToDoActivity(id: itemId));
             {
                 StringContent itemContent = new StringContent(itemDefinition);
                 Uri requestUri = new Uri(baseUri, resourceLink);
@@ -151,7 +157,8 @@ namespace Azure.Cosmos.EmulatorTests
             string resourceType,
             string key,
             string keyType,
-            string tokenVersion)
+            string tokenVersion,
+            string dateTimeUtc)
         {
             System.Security.Cryptography.HMACSHA256 hmacSha256 = new System.Security.Cryptography.HMACSHA256 { Key = Convert.FromBase64String(key) };
 
@@ -159,7 +166,7 @@ namespace Azure.Cosmos.EmulatorTests
                     verb.ToLowerInvariant(),
                     resourceType.ToLowerInvariant(),
                     resourceId,
-                    utc_date.ToLowerInvariant(),
+                    dateTimeUtc.ToLowerInvariant(),
                     ""
             );
 
@@ -172,5 +179,9 @@ namespace Azure.Cosmos.EmulatorTests
                 signature));
         }
 
+        private static string GetUtcDateTime()
+        {
+            return DateTime.UtcNow.ToString("r");
+        }
     }
 }

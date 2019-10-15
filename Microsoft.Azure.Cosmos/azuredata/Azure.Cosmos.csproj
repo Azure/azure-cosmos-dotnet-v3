@@ -185,9 +185,9 @@
     <Compile Include="..\src\Base64Helper.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <!--<Compile Include="..\src\ResourceFeedReaderClientExtensions.cs">
+    <Compile Include="..\src\ConnectionPolicy.cs">
       <Link>%(Filename)%(Extension)</Link>
-    </Compile>-->
+    </Compile>
   </ItemGroup>
   <!--SDK V3 dependencies-->
   

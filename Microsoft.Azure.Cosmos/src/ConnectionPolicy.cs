@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -106,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the connection mode used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// Default value is <see cref="Cosmos.ConnectionMode.Gateway"/>
+        /// Default value is <see cref="ConnectionMode.Gateway"/>
         /// </value>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
@@ -121,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the attachment content (a.k.a. media) download mode when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// Default value is <see cref="Cosmos.MediaReadMode.Buffered"/>.
+        /// Default value is <see cref="MediaReadMode.Buffered"/>.
         /// </value>
         public MediaReadMode MediaReadMode
         {
@@ -136,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is <see cref="Protocol.Https"/>.
         /// </value>
         /// <remarks>
-        /// This setting is not used when <see cref="ConnectionMode"/> is set to <see cref="Cosmos.ConnectionMode.Gateway"/>.
+        /// This setting is not used when <see cref="ConnectionMode"/> is set to <see cref="ConnectionMode.Gateway"/>.
         /// Gateway mode only supports HTTPS.
         /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
         /// </remarks>
