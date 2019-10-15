@@ -37,7 +37,7 @@ namespace Azure.Cosmos.EmulatorTests
             return (ContainerCore)database.GetContainer(containerId);
         }
 
-        internal static async Task<DocumentCollection> CreateNonPartitionedContainer(
+        internal static async Task CreateNonPartitionedContainer(
             Cosmos.Database database,
             DocumentCollection documentCollection)
         {
@@ -69,15 +69,11 @@ namespace Azure.Cosmos.EmulatorTests
             StringContent containerContent = new StringContent(containerDefinition);
             Uri requestUri = new Uri(baseUri, resourceLink);
 
-            DocumentCollection responseCollection = null;
             using (HttpResponseMessage response = await client.PostAsync(requestUri.ToString(), containerContent))
             {
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, response.ToString());
-                responseCollection = await response.Content.ToResourceAsync<DocumentCollection>();
             }
-
-            return responseCollection;
         }
 
         internal static async Task CreateUndefinedPartitionItem(
