@@ -291,76 +291,76 @@ namespace Azure.Cosmos
                 cancellationToken);
         }
 
-        //public override Task<UserResponse> CreateUserAsync(
-        //    string id,
-        //    RequestOptions requestOptions = null,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    if (string.IsNullOrEmpty(id))
-        //    {
-        //        throw new ArgumentNullException(nameof(id));
-        //    }
+        public override Task<UserResponse> CreateUserAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
 
-        //    UserProperties userProperties = new UserProperties(id);
+            UserProperties userProperties = new UserProperties(id);
 
-        //    Task<ResponseMessage> response = this.CreateUserStreamAsync(
-        //        userProperties: userProperties,
-        //        requestOptions: requestOptions,
-        //        cancellationToken: cancellationToken);
+            Task<Response> response = this.CreateUserStreamAsync(
+                userProperties: userProperties,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
 
-        //    return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response);
-        //}
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(userProperties.Id), response, cancellationToken);
+        }
 
-        //public override User GetUser(string id)
-        //{
-        //    if (string.IsNullOrEmpty(id))
-        //    {
-        //        throw new ArgumentNullException(nameof(id));
-        //    }
+        public override User GetUser(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
 
-        //    return new UserCore(
-        //            this.ClientContext,
-        //            this,
-        //            id);
-        //}
+            return new UserCore(
+                    this.ClientContext,
+                    this,
+                    id);
+        }
 
-        //public Task<ResponseMessage> CreateUserStreamAsync(
-        //    UserProperties userProperties,
-        //    RequestOptions requestOptions = null,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    if (userProperties == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(userProperties));
-        //    }
+        public Task<Response> CreateUserStreamAsync(
+            UserProperties userProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (userProperties == null)
+            {
+                throw new ArgumentNullException(nameof(userProperties));
+            }
 
-        //    this.ClientContext.ValidateResource(userProperties.Id);
+            this.ClientContext.ValidateResource(userProperties.Id);
 
-        //    Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(userProperties);
-        //    return this.ProcessUserCreateAsync(
-        //        streamPayload: streamPayload,
-        //        requestOptions: requestOptions,
-        //        cancellationToken: cancellationToken);
-        //}
+            Stream streamPayload = this.ClientContext.PropertiesSerializer.ToStream(userProperties);
+            return this.ProcessUserCreateAsync(
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+        }
 
-        //public override Task<UserResponse> UpsertUserAsync(string id,
-        //    RequestOptions requestOptions,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    if (string.IsNullOrEmpty(id))
-        //    {
-        //        throw new ArgumentNullException(nameof(id));
-        //    }
+        public override Task<UserResponse> UpsertUserAsync(string id,
+            RequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
 
-        //    this.ClientContext.ValidateResource(id);
+            this.ClientContext.ValidateResource(id);
 
-        //    Task<ResponseMessage> response = this.ProcessUserUpsertAsync(
-        //        streamPayload: this.ClientContext.PropertiesSerializer.ToStream(new UserProperties(id)),
-        //        requestOptions: requestOptions,
-        //        cancellationToken: cancellationToken);
+            Task<Response> response = this.ProcessUserUpsertAsync(
+                streamPayload: this.ClientContext.PropertiesSerializer.ToStream(new UserProperties(id)),
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
 
-        //    return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response);
-        //}
+            return this.ClientContext.ResponseFactory.CreateUserResponseAsync(this.GetUser(id), response, cancellationToken);
+        }
 
         public override IAsyncEnumerable<Response> GetContainerQueryStreamIterator(
             string queryText = null,
@@ -428,64 +428,74 @@ namespace Azure.Cosmos
             }
         }
 
-        //public override FeedIterator<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    FeedIterator userStreamIterator = this.GetUserQueryStreamIterator(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
+        public override AsyncPageable<T> GetUserQueryIterator<T>(QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            FeedIterator userStreamIterator = this.GetUserQueryIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
 
-        //    return new FeedIteratorCore<T>(
-        //        userStreamIterator,
-        //        this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>);
-        //}
+            PageIteratorCore<T> pageIterator = new PageIteratorCore<T>(
+                feedIterator: userStreamIterator,
+                responseCreator: this.ClientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
 
-        //public FeedIterator GetUserQueryStreamIterator(QueryDefinition queryDefinition,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    return new FeedIteratorCore(
-        //       this.ClientContext,
-        //       this.LinkUri,
-        //       ResourceType.User,
-        //       queryDefinition,
-        //       continuationToken,
-        //       requestOptions);
-        //}
+            return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
+        }
 
-        //public override FeedIterator<T> GetUserQueryIterator<T>(string queryText = null,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    QueryDefinition queryDefinition = null;
-        //    if (queryText != null)
-        //    {
-        //        queryDefinition = new QueryDefinition(queryText);
-        //    }
+        public async IAsyncEnumerable<Response> GetUserQueryStreamIterator(QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default(CancellationToken))
+        {
+            FeedIterator userStreamIterator = this.GetUserQueryIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions);
 
-        //    return this.GetUserQueryIterator<T>(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
-        //}
+            while (userStreamIterator.HasMoreResults)
+            {
+                yield return await userStreamIterator.ReadNextAsync(cancellationToken);
+            }
+        }
 
-        //public FeedIterator GetUserQueryStreamIterator(string queryText = null,
-        //    string continuationToken = null,
-        //    QueryRequestOptions requestOptions = null)
-        //{
-        //    QueryDefinition queryDefinition = null;
-        //    if (queryText != null)
-        //    {
-        //        queryDefinition = new QueryDefinition(queryText);
-        //    }
+        public override AsyncPageable<T> GetUserQueryIterator<T>(string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
 
-        //    return this.GetUserQueryStreamIterator(
-        //        queryDefinition,
-        //        continuationToken,
-        //        requestOptions);
-        //}
+            return this.GetUserQueryIterator<T>(
+                queryDefinition,
+                continuationToken,
+                requestOptions,
+                cancellationToken);
+        }
+
+        public IAsyncEnumerable<Response> GetUserQueryStreamIterator(string queryText = null,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            QueryDefinition queryDefinition = null;
+            if (queryText != null)
+            {
+                queryDefinition = new QueryDefinition(queryText);
+            }
+
+            return this.GetUserQueryStreamIterator(
+                queryDefinition,
+                continuationToken,
+                requestOptions,
+                cancellationToken);
+        }
 
         public override ContainerBuilder DefineContainer(
             string name,
@@ -626,6 +636,19 @@ namespace Azure.Cosmos
               requestOptions: requestOptions,
               requestEnricher: null,
               cancellationToken: cancellationToken);
+        }
+
+        private FeedIterator GetUserQueryIterator(QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+               this.ClientContext,
+               this.LinkUri,
+               ResourceType.User,
+               queryDefinition,
+               continuationToken,
+               requestOptions);
         }
     }
 }

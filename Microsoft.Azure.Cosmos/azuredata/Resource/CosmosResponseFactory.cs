@@ -138,6 +138,40 @@ namespace Azure.Cosmos
             });
         }
 
+        internal Task<UserResponse> CreateUserResponseAsync(
+            User user,
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                UserProperties userProperties = CosmosResponseFactory.ToObjectInternal<UserProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer);
+                return new UserResponse(
+                    cosmosResponseMessage,
+                    userProperties,
+                    user);
+            });
+        }
+
+        internal Task<PermissionResponse> CreatePermissionResponseAsync(
+            Permission permission,
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                PermissionProperties permissionProperties = CosmosResponseFactory.ToObjectInternal<PermissionProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer);
+                return new PermissionResponse(
+                    cosmosResponseMessage,
+                    permissionProperties,
+                    permission);
+            });
+        }
+
         internal async Task<T> ProcessMessageAsync<T>(Task<Response> cosmosResponseTask, Func<Response, T> createResponse)
         {
             using (Response message = await cosmosResponseTask)
