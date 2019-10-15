@@ -291,7 +291,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     return;
                 }
 
-                this.fetchSchedulingMetrics.Start();
                 int pageSize = (int)Math.Min(this.pageSize, int.MaxValue);
 
                 QueryResponseCore feedResponse = await this.queryContext.ExecuteQueryAsync(
@@ -302,11 +301,10 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.PartitionKeyRange.Id),
                     isContinuationExpected: this.queryContext.IsContinuationExpected,
                     pageSize: pageSize,
+                    schedulingStopwatch: this.fetchSchedulingMetrics,
                     cancellationToken: token);
 
-                this.fetchSchedulingMetrics.Stop();
                 this.hasStartedFetching = true;
-
                 this.ActivityId = Guid.Parse(feedResponse.ActivityId);
                 await this.bufferedPages.AddAsync(feedResponse);
                 if (!feedResponse.IsSuccess)

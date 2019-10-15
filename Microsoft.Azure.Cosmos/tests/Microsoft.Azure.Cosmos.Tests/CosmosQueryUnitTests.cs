@@ -176,7 +176,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: null,
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
-                    clientSideRequestStatistics: null))
+                    clientSideRequestStatistics: null),
+                new SchedulingStopwatch())
             };
 
             QueryResponseCore failure = QueryResponseCore.CreateFailure(

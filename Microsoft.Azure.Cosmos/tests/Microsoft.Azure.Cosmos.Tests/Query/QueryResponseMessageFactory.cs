@@ -60,7 +60,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: null,
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
-                    clientSideRequestStatistics: null))
+                    clientSideRequestStatistics: null),
+                new SchedulingStopwatch())
             };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
@@ -114,7 +115,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: null,
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
-                    clientSideRequestStatistics: null))
+                    clientSideRequestStatistics: null),
+                new SchedulingStopwatch())
             };
 
             QueryResponseCore message = QueryResponseCore.CreateSuccess(
@@ -144,7 +146,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     errorMessage: null,
                     method: HttpMethod.Post,
                     requestUri: new Uri("http://localhost.com"),
-                    clientSideRequestStatistics: null))
+                    clientSideRequestStatistics: null),
+                new SchedulingStopwatch())
             };
 
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(

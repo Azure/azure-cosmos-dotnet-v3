@@ -13,12 +13,14 @@ namespace Microsoft.Azure.Cosmos.Query
             string partitionKeyRangeId,
             string queryMetricText,
             string indexUtilizationText,
-            PointOperationStatistics requestDiagnostics)
+            CosmosDiagnostics requestDiagnostics,
+            SchedulingStopwatch schedulingStopwatch)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
             this.QueryMetricText = queryMetricText ?? string.Empty;
             this.IndexUtilizationText = indexUtilizationText ?? string.Empty;
             this.RequestDiagnostics = requestDiagnostics;
+            this.SchedulingTimeSpan = schedulingStopwatch.Elapsed;
         }
 
         internal string PartitionKeyRangeId { get; }
@@ -27,7 +29,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
         internal string IndexUtilizationText { get; }
 
-        internal PointOperationStatistics RequestDiagnostics { get; }
+        internal CosmosDiagnostics RequestDiagnostics { get; }
+
+        internal SchedulingTimeSpan SchedulingTimeSpan { get; }
 
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
@@ -45,7 +49,9 @@ namespace Microsoft.Azure.Cosmos.Query
             stringBuilder.Append(this.IndexUtilizationText);
             stringBuilder.Append("\",\"RequestDiagnostics\":");
             stringBuilder.Append(requestDiagnosticsString);
-            stringBuilder.Append("}");
+            stringBuilder.Append("\",\"SchedulingTimeSpan\":");
+            stringBuilder.Append(this.SchedulingTimeSpan.ToString());
+            stringBuilder.Append("\"}");
         }
 
         public override string ToString()

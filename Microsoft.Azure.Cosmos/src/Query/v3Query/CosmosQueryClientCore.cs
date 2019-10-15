@@ -118,6 +118,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
             QueryRequestOptions queryRequestOptions = requestOptions as QueryRequestOptions;
@@ -128,6 +129,7 @@ namespace Microsoft.Azure.Cosmos
 
             queryRequestOptions.MaxItemCount = pageSize;
 
+            schedulingStopwatch.Start();
             ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -150,11 +152,14 @@ namespace Microsoft.Azure.Cosmos
                 },
                 cancellationToken: cancellationToken);
 
+            schedulingStopwatch.Stop();
+
             return this.GetCosmosElementResponse(
                 queryRequestOptions,
                 resourceType,
                 message,
-                partitionKeyRange);
+                partitionKeyRange,
+                schedulingStopwatch);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -260,17 +265,18 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity)
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
+            SchedulingStopwatch schedulingStopwatch)
         {
             using (cosmosResponseMessage)
             {
-                PointOperationStatistics pointOperationStatistics = cosmosResponseMessage.Diagnostics as PointOperationStatistics;
-
                 QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
                     partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
                     queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
                     indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                    requestDiagnostics: pointOperationStatistics);
+                    requestDiagnostics: cosmosResponseMessage.Diagnostics,
+                    schedulingStopwatch: schedulingStopwatch);
+
                 IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
                 if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
