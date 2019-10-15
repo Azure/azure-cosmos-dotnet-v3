@@ -71,6 +71,9 @@
     <Compile Include="..\src\Json\**\*.cs">
       <Link>Json\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="..\src\Spatial\**\*.cs">
+      <Link>Spatial\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>
     <Compile Include="..\src\Serializer\CosmosSerializationOptions.cs">
       <Link>Serializer\%(Filename)%(Extension)</Link>
     </Compile>
@@ -98,9 +101,6 @@
     <Compile Include="..\src\CosmosElements\**\*.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <!--<Compile Include="..\src\Query\v2Query\*.cs">
-      <Link>Query\v2Query\%(Filename)%(Extension)</Link>
-    </Compile>-->
     <Compile Include="..\src\Query\Core\**\*.cs" Exclude="..\src\Query\Core\ExecutionContext\CosmosQueryExecutionContextFactory.cs;..\src\Query\Core\QueryClient\CosmosQueryClient.cs">
       <Link>Query\Core\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
@@ -146,7 +146,7 @@
     <Compile Include="..\src\RestoreState.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <!--<Compile Include="..\src\ResourceFeedReader*.cs">
+    <!--<Compile Include="..\src\ResourceFeedReader.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>-->
     <Compile Include="..\src\PartitionKey.cs">
@@ -182,6 +182,9 @@
     <Compile Include="..\src\Base64Helper.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
+    <!--<Compile Include="..\src\ResourceFeedReaderClientExtensions.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>-->
   </ItemGroup>
   <!--SDK V3 dependencies-->
   
