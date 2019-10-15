@@ -1250,6 +1250,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task ItemReplaceAsyncTest()
+        {
+            // Create an item
+            ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(this.Container, 1, randomPartitionKey: true)).First();
+
+            string originalId = testItem.id;
+            testItem.id = Guid.NewGuid().ToString();
+
+            ItemResponse<ToDoActivity> response = await this.Container.ReplaceItemAsync<ToDoActivity>(
+                id: originalId,
+                item: testItem);
+
+            Assert.AreEqual(testItem.id, response.Resource.id);
+            Assert.AreNotEqual(originalId, response.Resource.id);
+
+            string originalStatus = testItem.status;
+            testItem.status = Guid.NewGuid().ToString();
+
+            try
+            {
+                response = await this.Container.ReplaceItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(originalStatus),
+                item: testItem);
+                Assert.Fail("Replace changing partition key is not supported.");
+            }catch(CosmosException ce)
+            {
+                Assert.AreEqual((HttpStatusCode)400, ce.StatusCode);
+            }
+        }
+
         // Read write non partition Container item.
         [TestMethod]
         public async Task ReadNonPartitionItemAsync()
@@ -1531,6 +1563,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.IsNotNull(readResponse.Headers.Session);
             Assert.AreEqual(sessionToken, readResponse.Headers.Session);
+        }
+
+        [TestMethod]
+        public async Task VerifySessionNotFoundStatistics()
+        {
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
+            DatabaseResponse database = await cosmosClient.CreateDatabaseIfNotExistsAsync("NoSession");
+            Container container = await database.Database.CreateContainerIfNotExistsAsync("NoSession", "/status");
+
+            try
+            {
+                ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity("TBD");
+
+                ItemResponse<ToDoActivity> responseAstype = await container.CreateItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(temp.status), item: temp);
+
+                string invalidSessionToken = this.GetDifferentLSNToken(responseAstype.Headers.Session, 2000);
+
+                try
+                {
+                    ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(temp.id, new Cosmos.PartitionKey(temp.status), new ItemRequestOptions() { SessionToken = invalidSessionToken });
+                    Assert.Fail("Should had thrown ReadSessionNotAvailable");
+                }
+                catch (CosmosException cosmosException)
+                {
+                    Assert.IsTrue(cosmosException.Message.Contains("ContactedReplicas"), cosmosException.Message);
+                }
+            }
+            finally
+            {
+                await database.Database.DeleteAsync();
+            }
+        }
+
+        private string GetDifferentLSNToken(string token, long lsnDifferent)
+        {
+            string[] tokenParts = token.Split(':');
+            ISessionToken sessionToken = SessionTokenHelper.Parse(tokenParts[1]);
+            ISessionToken differentSessionToken = TestCommon.CreateSessionToken(sessionToken, sessionToken.LSN + lsnDifferent);
+            return string.Format(CultureInfo.InvariantCulture, "{0}:{1}", tokenParts[0], differentSessionToken.ConvertToString());
         }
 
         /// <summary>

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq.Expressions;
 
@@ -14,7 +15,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlQuerySpec Evaluate(
             Expression expression,
-            CosmosSerializationOptions serializationOptions = null)
+            CosmosSerializationOptions serializationOptions = null,
+            IDictionary<object, string> parameters = null)
         {
             switch (expression.NodeType)
             {
@@ -24,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case ExpressionType.Call:
                     {
-                        return DocumentQueryEvaluator.HandleMethodCallExpression((MethodCallExpression)expression, serializationOptions);
+                        return DocumentQueryEvaluator.HandleMethodCallExpression((MethodCallExpression)expression, parameters, serializationOptions);
                     }
 
                 default:
@@ -38,9 +40,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static bool IsTransformExpression(Expression expression)
         {
             MethodCallExpression methodCallExpression = expression as MethodCallExpression;
-            return (methodCallExpression != null &&
+            return methodCallExpression != null &&
                 methodCallExpression.Method.DeclaringType == typeof(DocumentQueryable) &&
-                (methodCallExpression.Method.Name == DocumentQueryEvaluator.SQLMethod));
+                (methodCallExpression.Method.Name == DocumentQueryEvaluator.SQLMethod);
         }
 
         /// <summary>
@@ -72,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlQuerySpec HandleMethodCallExpression(
             MethodCallExpression expression,
+            IDictionary<object, string> parameters,
             CosmosSerializationOptions serializationOptions = null)
         {
             if (DocumentQueryEvaluator.IsTransformExpression(expression))
@@ -89,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            return SqlTranslator.TranslateQuery(expression, serializationOptions);
+            return SqlTranslator.TranslateQuery(expression, serializationOptions, parameters);
         }
 
         /// <summary>
