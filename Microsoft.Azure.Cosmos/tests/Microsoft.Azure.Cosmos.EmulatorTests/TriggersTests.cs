@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
@@ -231,22 +232,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TriggersIteratorTest()
         {
-            TriggerProperties cosmosTrigger = await CreateRandomTrigger();
-
-            HashSet<string> settings = new HashSet<string>();
-            FeedIterator<TriggerProperties> iter = this.scripts.GetTriggerQueryIterator<TriggerProperties>(); ;
-            while (iter.HasMoreResults)
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
-                foreach (TriggerProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
+                // Should not use the custom serializer for these operations
+                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
+                TriggerProperties cosmosTrigger = await this.CreateRandomTrigger();
+
+                HashSet<string> settings = new HashSet<string>();
+                FeedIterator<TriggerProperties> iter = scripts.GetTriggerQueryIterator<TriggerProperties>(); ;
+                while (iter.HasMoreResults)
                 {
-                    settings.Add(storedProcedureSettingsEntry.Id);
+                    foreach (TriggerProperties storedProcedureSettingsEntry in await iter.ReadNextAsync())
+                    {
+                        settings.Add(storedProcedureSettingsEntry.Id);
+                    }
                 }
+
+                Assert.IsTrue(settings.Contains(cosmosTrigger.Id), "The iterator did not return the user defined function definition.");
+
+                // Delete existing trigger
+                await scripts.DeleteTriggerAsync(cosmosTrigger.Id);
             }
-
-            Assert.IsTrue(settings.Contains(cosmosTrigger.Id), "The iterator did not return the user defined function definition.");
-
-            // Delete existing user defined functions.
-            await this.scripts.DeleteTriggerAsync(cosmosTrigger.Id);
         }
 
         private static string GetTriggerFunction(string taxPercentage)
@@ -313,6 +319,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ValidateTriggerSettings(settings, createResponse);
 
             return createResponse;
+        }
+
+        private class FaultySerializer : CosmosSerializer
+        {
+            public override T FromStream<T>(Stream stream)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
