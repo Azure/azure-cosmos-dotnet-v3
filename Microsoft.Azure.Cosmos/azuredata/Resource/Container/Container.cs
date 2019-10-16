@@ -36,10 +36,10 @@ namespace Azure.Cosmos
         ///// </summary>
         //public abstract Conflicts Conflicts { get; }
 
-        ///// <summary>
-        ///// Returns the scripts
-        ///// </summary>
-        //public abstract Scripts.Scripts Scripts { get; }
+        /// <summary>
+        /// Returns the scripts
+        /// </summary>
+        public abstract Scripts.Scripts Scripts { get; }
 
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.

@@ -9,6 +9,7 @@ namespace Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Query;
+    using Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -42,7 +43,7 @@ namespace Azure.Cosmos
 
             this.Database = database;
             //this.Conflicts = new ConflictsCore(this.ClientContext, this);
-            //this.Scripts = new ScriptsCore(this, this.ClientContext);
+            this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = this.queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
             //this.BatchExecutor = this.InitializeBatchExecutorForContainer();
@@ -60,7 +61,7 @@ namespace Azure.Cosmos
 
         //public override Conflicts Conflicts { get; }
 
-        //public override Scripts.Scripts Scripts { get; }
+        public override Scripts.Scripts Scripts { get; }
 
         public override async Task<ContainerResponse> ReadContainerAsync(
             ContainerRequestOptions requestOptions = null,

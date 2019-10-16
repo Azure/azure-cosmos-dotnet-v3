@@ -10,7 +10,6 @@ namespace Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Cosmos;
 
     internal class CosmosResponseFactory
     {
