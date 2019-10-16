@@ -9,6 +9,7 @@ namespace Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos;
 
     internal class CosmosResponseFactory
@@ -169,6 +170,66 @@ namespace Azure.Cosmos
                     cosmosResponseMessage,
                     permissionProperties,
                     permission);
+            });
+        }
+
+        internal Task<StoredProcedureExecuteResponse<T>> CreateStoredProcedureExecuteResponseAsync<T>(
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                T item = CosmosResponseFactory.ToObjectInternal<T>(
+                    cosmosResponseMessage,
+                    this.cosmosSerializer);
+                return new StoredProcedureExecuteResponse<T>(
+                    cosmosResponseMessage,
+                    item);
+            });
+        }
+
+        internal Task<StoredProcedureResponse> CreateStoredProcedureResponseAsync(
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                StoredProcedureProperties cosmosStoredProcedure = CosmosResponseFactory.ToObjectInternal<StoredProcedureProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer);
+                return new StoredProcedureResponse(
+                    cosmosResponseMessage,
+                    cosmosStoredProcedure);
+            });
+        }
+
+        internal Task<TriggerResponse> CreateTriggerResponseAsync(
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                TriggerProperties triggerProperties = CosmosResponseFactory.ToObjectInternal<TriggerProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer);
+                return new TriggerResponse(
+                    cosmosResponseMessage,
+                    triggerProperties);
+            });
+        }
+
+        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponseAsync(
+            Task<Response> cosmosResponseMessageTask,
+            CancellationToken cancellationToken)
+        {
+            return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
+            {
+                UserDefinedFunctionProperties settings = CosmosResponseFactory.ToObjectInternal<UserDefinedFunctionProperties>(
+                    cosmosResponseMessage,
+                    this.propertiesSerializer);
+                return new UserDefinedFunctionResponse(
+                    cosmosResponseMessage,
+                    settings);
             });
         }
 
