@@ -8,6 +8,7 @@ namespace Azure.Cosmos.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
@@ -148,18 +149,24 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task UserDefinedFunctionsIteratorTest()
         {
-            UserDefinedFunctionProperties cosmosUserDefinedFunction = await this.CreateRandomUdf();
-
-            HashSet<string> settings = new HashSet<string>();
-            await foreach(UserDefinedFunctionProperties iter in this.scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>())
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
-                settings.Add(iter.Id);
+                // Should not use the custom serializer for these operations
+                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
+
+                UserDefinedFunctionProperties cosmosUserDefinedFunction = await this.CreateRandomUdf();
+
+                HashSet<string> settings = new HashSet<string>();
+                await foreach (UserDefinedFunctionProperties iter in scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>())
+                {
+                    settings.Add(iter.Id);
+                }
+
+                Assert.IsTrue(settings.Contains(cosmosUserDefinedFunction.Id), "The iterator did not return the user defined function definition.");
+
+                // Delete existing user defined functions.
+                await scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
             }
-
-            Assert.IsTrue(settings.Contains(cosmosUserDefinedFunction.Id), "The iterator did not return the user defined function definition.");
-
-            // Delete existing user defined functions.
-            await this.scripts.DeleteUserDefinedFunctionAsync(cosmosUserDefinedFunction.Id);
         }
 
         private static void ValidateUserDefinedFunctionSettings(UserDefinedFunctionProperties udfSettings, UserDefinedFunctionResponse cosmosResponse)
@@ -200,6 +207,19 @@ namespace Azure.Cosmos.EmulatorTests
             public double cost { get; set; }
             public string description { get; set; }
             public string status { get; set; }
+        }
+
+        private class FaultySerializer : CosmosSerializer
+        {
+            public override T FromStream<T>(Stream stream)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

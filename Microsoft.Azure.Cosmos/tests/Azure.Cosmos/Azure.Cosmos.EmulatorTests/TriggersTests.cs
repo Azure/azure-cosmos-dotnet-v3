@@ -6,6 +6,7 @@ namespace Azure.Cosmos.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
@@ -240,18 +241,24 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task TriggersIteratorTest()
         {
-            TriggerProperties cosmosTrigger = await this.CreateRandomTrigger();
-
-            HashSet<string> settings = new HashSet<string>();
-            await foreach(TriggerProperties storedProcedureSettingsEntry in this.scripts.GetTriggerQueryIterator<TriggerProperties>())
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
-                settings.Add(storedProcedureSettingsEntry.Id);
+                // Should not use the custom serializer for these operations
+                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
+
+                TriggerProperties cosmosTrigger = await this.CreateRandomTrigger();
+
+                HashSet<string> settings = new HashSet<string>();
+                await foreach (TriggerProperties storedProcedureSettingsEntry in scripts.GetTriggerQueryIterator<TriggerProperties>())
+                {
+                    settings.Add(storedProcedureSettingsEntry.Id);
+                }
+
+                Assert.IsTrue(settings.Contains(cosmosTrigger.Id), "The iterator did not return the user defined function definition.");
+
+                // Delete existing user defined functions.
+                await scripts.DeleteTriggerAsync(cosmosTrigger.Id);
             }
-
-            Assert.IsTrue(settings.Contains(cosmosTrigger.Id), "The iterator did not return the user defined function definition.");
-
-            // Delete existing user defined functions.
-            await this.scripts.DeleteTriggerAsync(cosmosTrigger.Id);
         }
 
         private static string GetTriggerFunction(string taxPercentage)
@@ -316,6 +323,19 @@ namespace Azure.Cosmos.EmulatorTests
             ValidateTriggerSettings(settings, createResponse);
 
             return createResponse;
+        }
+
+        private class FaultySerializer : CosmosSerializer
+        {
+            public override T FromStream<T>(Stream stream)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

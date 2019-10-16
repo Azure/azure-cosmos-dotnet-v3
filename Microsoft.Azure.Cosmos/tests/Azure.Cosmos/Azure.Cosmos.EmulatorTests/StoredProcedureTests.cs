@@ -178,27 +178,33 @@ namespace Azure.Cosmos.EmulatorTests
         [TestMethod]
         public async Task IteratorTest()
         {
-            string sprocBody = "function() { { var x = 42; } }";
-            int numberOfSprocs = 3;
-            string[] sprocIds = new string[numberOfSprocs];
-
-            for (int i = 0; i < numberOfSprocs; i++)
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { Serializer = new FaultySerializer() }))
             {
-                string sprocId = Guid.NewGuid().ToString();
-                sprocIds[i] = sprocId;
+                // Should not use the custom serializer for these operations
+                Scripts scripts = cosmosClient.GetContainer(this.database.Id, this.container.Id).Scripts;
 
-                StoredProcedureResponse storedProcedureResponse =
-                    await this.scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
-                Assert.AreEqual((int)HttpStatusCode.Created, storedProcedureResponse.GetRawResponse().Status);
+                string sprocBody = "function() { { var x = 42; } }";
+                int numberOfSprocs = 3;
+                string[] sprocIds = new string[numberOfSprocs];
+
+                for (int i = 0; i < numberOfSprocs; i++)
+                {
+                    string sprocId = Guid.NewGuid().ToString();
+                    sprocIds[i] = sprocId;
+
+                    StoredProcedureResponse storedProcedureResponse =
+                        await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
+                    Assert.AreEqual((int)HttpStatusCode.Created, storedProcedureResponse.GetRawResponse().Status);
+                }
+
+                List<string> readSprocIds = new List<string>();
+                await foreach (StoredProcedureProperties storedProcedureSettingsEntry in scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>())
+                {
+                    readSprocIds.Add(storedProcedureSettingsEntry.Id);
+                }
+
+                CollectionAssert.AreEquivalent(sprocIds, readSprocIds);
             }
-
-            List<string> readSprocIds = new List<string>();
-            await foreach(StoredProcedureProperties storedProcedureSettingsEntry in this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>())
-            {
-                readSprocIds.Add(storedProcedureSettingsEntry.Id);
-            }
-
-            CollectionAssert.AreEquivalent(sprocIds, readSprocIds);
         }
 
         [TestMethod]
@@ -442,6 +448,19 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.AreEqual(storedProcedureSettings.Id, settings.Id,
                 "Stored Procedure id do not match");
             Assert.IsTrue(cosmosResponse.GetRawResponse().Headers.GetRequestCharge() > 0);
+        }
+
+        private class FaultySerializer : CosmosSerializer
+        {
+            public override T FromStream<T>(Stream stream)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
