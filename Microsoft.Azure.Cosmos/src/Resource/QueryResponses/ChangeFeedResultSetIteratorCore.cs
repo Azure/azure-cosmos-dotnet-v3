@@ -16,9 +16,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ChangeFeedResultSetIteratorCore : FeedIterator
     {
-        private const int DefaultMaxItemCount = 100;
-        private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";
-
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
