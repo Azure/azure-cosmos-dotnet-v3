@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
-        private readonly int? originalMaxItemCount;
         private string containerRid;
         private string continuationToken;
         private int? maxItemCount;
@@ -41,7 +40,6 @@ namespace Microsoft.Azure.Cosmos
             this.container = container;
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
-            this.originalMaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
         }
 
@@ -127,38 +125,12 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage response,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
-            {
-                if (this.maxItemCount != this.originalMaxItemCount)
-                {
-                    this.maxItemCount = this.originalMaxItemCount;   // Reset after successful execution.
-                }
-
-                return false;
-            }
-
             bool partitionSplit = response.StatusCode == HttpStatusCode.Gone
                 && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
                 // Forcing stale refresh of Partition Key Ranges Cache
                 await this.compositeContinuationToken.GetCurrentTokenAsync(forceRefresh: true);
-                return true;
-            }
-
-            bool pageSizeError = response.ErrorMessage.Contains(ChangeFeedResultSetIteratorCore.PageSizeErrorOnChangeFeedText);
-            if (pageSizeError)
-            {
-                if (!this.maxItemCount.HasValue)
-                {
-                    this.maxItemCount = ChangeFeedResultSetIteratorCore.DefaultMaxItemCount;
-                }
-                else if (this.maxItemCount <= 1)
-                {
-                    return false;
-                }
-
-                this.maxItemCount /= 2;
                 return true;
             }
 
