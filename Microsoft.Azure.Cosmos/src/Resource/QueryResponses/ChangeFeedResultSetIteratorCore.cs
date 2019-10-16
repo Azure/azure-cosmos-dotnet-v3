@@ -122,6 +122,11 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage response,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotModified)
+            {
+                return false;
+            }
+
             bool partitionSplit = response.StatusCode == HttpStatusCode.Gone
                 && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
