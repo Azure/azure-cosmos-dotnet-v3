@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -84,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 9, cancellationToken: CancellationToken.None);
                     Assert.Fail("Expected " + nameof(CosmosException));
                 }
-                catch (CosmosException)
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.RequestEntityTooLarge)
                 {
                 }
             }
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Memory<byte> actual = await BatchExecUtils.StreamToMemoryAsync(stream, maximumLength: 9, cancellationToken: CancellationToken.None);
                     Assert.Fail("Expected " + nameof(CosmosException));
                 }
-                catch (CosmosException)
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.RequestEntityTooLarge)
                 {
                 }
             }
