@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private readonly ChangeFeedObserverContext observerContext;
         private readonly CheckpointFrequency checkpointFrequency;
         private readonly AutoCheckpointer sut;
-        private readonly IReadOnlyList<dynamic> documents;
+        private readonly Stream stream;
         private readonly PartitionCheckpointer partitionCheckpointer;
 
         public AutoCheckPointTests()
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             this.checkpointFrequency = new CheckpointFrequency();
             this.sut = new AutoCheckpointer(this.checkpointFrequency, this.changeFeedObserver);
 
-            this.documents = Mock.Of<IReadOnlyList<dynamic>>();
+            this.stream = Mock.Of<Stream>();
 
             this.observerContext = Mock.Of<ChangeFeedObserverContext>();
             Mock.Get(this.observerContext)
@@ -67,10 +68,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task ProcessChanges_WhenCalled_ShouldPassTheBatch()
         {
-            await this.sut.ProcessChangesAsync(this.observerContext, this.documents, CancellationToken.None);
+            await this.sut.ProcessChangesAsync(this.observerContext, this.stream, CancellationToken.None);
 
             Mock.Get(this.changeFeedObserver)
-                .Verify(observer => observer.ProcessChangesAsync(this.observerContext, this.documents, CancellationToken.None), Times.Once);
+                .Verify(observer => observer.ProcessChangesAsync(this.observerContext, this.stream, CancellationToken.None), Times.Once);
         }
 
         [TestMethod]
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedObserverContext observerContext = Mock.Of<ChangeFeedObserverContext>();
             Mock.Get(observerContext).Setup(abs => abs.CheckpointAsync()).Throws(new LeaseLostException());
 
-            await Assert.ThrowsExceptionAsync<LeaseLostException>(() => this.sut.ProcessChangesAsync(observerContext, this.documents, CancellationToken.None));
+            await Assert.ThrowsExceptionAsync<LeaseLostException>(() => this.sut.ProcessChangesAsync(observerContext, this.stream, CancellationToken.None));
         }
 
         [TestMethod]
@@ -89,14 +90,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
             this.checkpointFrequency.TimeInterval = TimeSpan.FromHours(1);
-            await this.sut.ProcessChangesAsync(this.observerContext, this.documents, CancellationToken.None);
+            await this.sut.ProcessChangesAsync(this.observerContext, this.stream, CancellationToken.None);
             Mock.Get(this.observerContext)
                 .Verify(context => context.CheckpointAsync(), Times.Never);
 
             await Task.Delay(TimeSpan.FromSeconds(1));
 
             this.checkpointFrequency.TimeInterval = stopwatch.Elapsed;
-            await this.sut.ProcessChangesAsync(this.observerContext, this.documents, CancellationToken.None);
+            await this.sut.ProcessChangesAsync(this.observerContext, this.stream, CancellationToken.None);
             Mock.Get(this.observerContext)
                 .Verify(context => context.CheckpointAsync(), Times.Once);
         }
@@ -104,25 +105,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task ProcessChanges_WithDocTrigger_ShouldCheckpointWhenAbove()
         {
-            Mock.Get(this.documents)
+            IReadOnlyList<dynamic> documents = Mock.Of<IReadOnlyList<dynamic>>();
+            Mock.Get(documents)
                 .Setup(list => list.Count)
                 .Returns(1);
 
             this.checkpointFrequency.ProcessedDocumentCount = 2;
 
-            await this.sut.ProcessChangesAsync(this.observerContext, this.documents, CancellationToken.None);
+            await this.sut.ProcessChangesAsync(this.observerContext, documents, CancellationToken.None);
             Mock.Get(this.observerContext)
                 .Verify(context => context.CheckpointAsync(), Times.Never);
 
-            await this.sut.ProcessChangesAsync(this.observerContext, this.documents, CancellationToken.None);
+            await this.sut.ProcessChangesAsync(this.observerContext, documents, CancellationToken.None);
             Mock.Get(this.observerContext)
                 .Verify(context => context.CheckpointAsync(), Times.Once);
 
-            await this.sut.ProcessChangesAsync(this.observerContext, this.documents, CancellationToken.None);
+            await this.sut.ProcessChangesAsync(this.observerContext, documents, CancellationToken.None);
             Mock.Get(this.observerContext)
                 .Verify(context => context.CheckpointAsync(), Times.Once);
 
-            await this.sut.ProcessChangesAsync(this.observerContext, this.documents, CancellationToken.None);
+            await this.sut.ProcessChangesAsync(this.observerContext, documents, CancellationToken.None);
             Mock.Get(this.observerContext)
                 .Verify(context => context.CheckpointAsync(), Times.Exactly(2));
         }

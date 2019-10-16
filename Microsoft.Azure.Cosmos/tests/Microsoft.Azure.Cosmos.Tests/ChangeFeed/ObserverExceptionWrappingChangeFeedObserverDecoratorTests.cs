@@ -6,7 +6,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.IO;
     using System.Linq;
+    using System.Linq.Expressions;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -62,10 +65,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             await this.observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, this.documents, this.cancellationTokenSource.Token);
 
+
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
                         .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
-                            It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
+                            It.Is<MemoryStream>(stream => this.ValidateStream(stream)),
                             It.IsAny<CancellationToken>()
                         ),
                     Times.Once);
@@ -76,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
-                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<MyDocument>>(), It.IsAny<CancellationToken>()))
+                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<MemoryStream>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             try
@@ -92,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
                         .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
-                            It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
+                            It.Is<MemoryStream>(stream => this.ValidateStream(stream)),
                             It.IsAny<CancellationToken>()
                         ),
                     Times.Once);
@@ -103,8 +107,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
-                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<IReadOnlyList<MyDocument>>(), It.IsAny<CancellationToken>()))
-                .Throws(new Documents.DocumentClientException("Some message", (HttpStatusCode) 429, Documents.SubStatusCodes.Unknown));
+                    .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Throws(new Documents.DocumentClientException("Some message", (HttpStatusCode)429, Documents.SubStatusCodes.Unknown));
 
             try
             {
@@ -119,15 +123,35 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
                         .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContext>(),
-                            It.Is<IReadOnlyList<MyDocument>>(list => this.documents.SequenceEqual(list)),
+                            It.Is<MemoryStream>(stream => this.ValidateStream(stream)),
                             It.IsAny<CancellationToken>()
                         ),
                     Times.Once);
         }
 
+        private bool ValidateStream(Stream stream)
+        {
+            Collection<MyDocument> documents = new CosmosJsonDotNetSerializer().FromStream<CosmosFeedResponseUtil<MyDocument>>(stream).Data;
+            return this.documents.SequenceEqual(documents, new MyDocument.Comparer());
+        }
+
+
         public class MyDocument
         {
             public string id { get; set; }
+
+            public class Comparer : IEqualityComparer<MyDocument>
+            {
+                public bool Equals(MyDocument x, MyDocument y)
+                {
+                    return x.id?.Equals(y?.id) ?? y.id == null;
+                }
+
+                public int GetHashCode(MyDocument obj)
+                {
+                    return obj.id.GetHashCode();
+                }
+            }
         }
     }
 }
