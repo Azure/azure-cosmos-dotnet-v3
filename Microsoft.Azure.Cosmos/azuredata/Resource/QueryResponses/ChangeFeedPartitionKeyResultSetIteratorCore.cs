@@ -8,6 +8,7 @@ namespace Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -69,9 +70,10 @@ namespace Azure.Cosmos
                 {
                     Response response = task.Result;
                     // Change Feed uses ETAG
-                    this.continuationToken = response.Headers.ETag;
+                    ResponseMessage responseMessage = response as ResponseMessage;
+                    this.continuationToken = responseMessage.CosmosHeaders.ETag;
                     this.hasMoreResultsInternal = response.Status != (int)HttpStatusCode.NotModified;
-                    response.Headers.ContinuationToken = this.continuationToken;
+                    responseMessage.CosmosHeaders.ContinuationToken = this.continuationToken;
                     return response;
                 }, cancellationToken);
         }
@@ -96,7 +98,6 @@ namespace Azure.Cosmos
                     ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
                     ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
-                responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);

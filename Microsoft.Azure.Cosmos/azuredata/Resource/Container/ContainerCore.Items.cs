@@ -18,7 +18,9 @@ namespace Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -370,37 +372,42 @@ namespace Azure.Cosmos
         }
 #endif
 
-        //internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-        //    string containerRid = await this.GetRIDAsync(cancellationToken);
-        //    IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(
-        //                containerRid,
-        //                new Documents.Routing.Range<string>(
-        //                    Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-        //                    Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-        //                    isMinInclusive: true,
-        //                    isMaxInclusive: false),
-        //                true);
+        internal async Task<IEnumerable<string>> GetChangeFeedTokensAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            string containerRid = await this.GetRIDAsync(cancellationToken);
+            IReadOnlyList<PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(
+                        containerRid,
+                        new Range<string>(
+                            PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                            PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: false),
+                        true);
 
-        //    return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
-        //}
+            return allRanges.Select(e => StandByFeedContinuationToken.CreateForRange(containerRid, e.MinInclusive, e.MaxExclusive));
+        }
 
-        //internal FeedIterator GetStandByFeedIterator(
-        //    string continuationToken = null,
-        //    int? maxItemCount = null,
-        //    ChangeFeedRequestOptions requestOptions = null,
-        //    CancellationToken cancellationToken = default(CancellationToken))
-        //{
-        //    ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
+        internal async IAsyncEnumerable<Response> GetStandByFeedIterator(
+            string continuationToken = null,
+            int? maxItemCount = null,
+            ChangeFeedRequestOptions requestOptions = null,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default(CancellationToken))
+        {
+            ChangeFeedRequestOptions cosmosQueryRequestOptions = requestOptions as ChangeFeedRequestOptions ?? new ChangeFeedRequestOptions();
 
-        //    return new ChangeFeedResultSetIteratorCore(
-        //        clientContext: this.ClientContext,
-        //        continuationToken: continuationToken,
-        //        maxItemCount: maxItemCount,
-        //        container: this,
-        //        options: cosmosQueryRequestOptions);
-        //}
+            FeedIterator iterator = new ChangeFeedResultSetIteratorCore(
+                clientContext: this.ClientContext,
+                continuationToken: continuationToken,
+                maxItemCount: maxItemCount,
+                container: this,
+                options: cosmosQueryRequestOptions);
+
+            while (iterator.HasMoreResults)
+            {
+                yield return await iterator.ReadNextAsync(cancellationToken);
+            }
+        }
 
         /// <summary>
         /// Helper method to create a stream feed iterator.

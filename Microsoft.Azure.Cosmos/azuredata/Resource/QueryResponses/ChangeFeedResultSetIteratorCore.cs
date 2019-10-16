@@ -8,22 +8,20 @@ namespace Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Cosmos Stand-By Feed iterator implementing Composite Continuation Token
     /// </summary>
     internal class ChangeFeedResultSetIteratorCore : FeedIterator
     {
-        private const int DefaultMaxItemCount = 100;
-        private const string PageSizeErrorOnChangeFeedText = "Reduce page size and try again.";
-
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
         private readonly ContainerCore container;
-        private readonly int? originalMaxItemCount;
         private string containerRid;
         private string continuationToken;
         private int? maxItemCount;
@@ -41,7 +39,6 @@ namespace Azure.Cosmos
             this.container = container;
             this.changeFeedOptions = options;
             this.maxItemCount = maxItemCount;
-            this.originalMaxItemCount = maxItemCount;
             this.continuationToken = continuationToken;
         }
 
@@ -62,11 +59,11 @@ namespace Azure.Cosmos
             string firstNotModifiedKeyRangeId = null;
             string currentKeyRangeId;
             string nextKeyRangeId;
-            Response response;
+            ResponseMessage response;
             do
             {
                 (currentKeyRangeId, response) = await this.ReadNextInternalAsync(cancellationToken);
-                if (response.StatusCode != HttpStatusCode.NotModified)
+                if (response.Status != (int)HttpStatusCode.NotModified)
                 {
                     break;
                 }
@@ -86,11 +83,11 @@ namespace Azure.Cosmos
             while (!firstNotModifiedKeyRangeId.Equals(nextKeyRangeId, StringComparison.InvariantCultureIgnoreCase));
 
             // Send to the user the composite state for all ranges
-            response.Headers.ContinuationToken = this.compositeContinuationToken.ToString();
+            response.CosmosHeaders.ContinuationToken = this.compositeContinuationToken.ToString();
             return response;
         }
 
-        internal async Task<Tuple<string, Response>> ReadNextInternalAsync(CancellationToken cancellationToken)
+        internal async Task<Tuple<string, ResponseMessage>> ReadNextInternalAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -104,31 +101,31 @@ namespace Azure.Cosmos
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
             string partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
-            Response response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
+            ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, cancellationToken);
             if (await this.ShouldRetryFailureAsync(response, cancellationToken))
             {
                 return await this.ReadNextInternalAsync(cancellationToken);
             }
 
             if (response.IsSuccessStatusCode
-                || response.StatusCode == HttpStatusCode.NotModified)
+                || response.Status == (int)HttpStatusCode.NotModified)
             {
                 // Change Feed read uses Etag for continuation
-                currentRangeToken.Token = response.Headers.ETag;
+                currentRangeToken.Token = response.CosmosHeaders.ETag;
             }
 
-            return new Tuple<string, Response>(partitionKeyRangeId, response);
+            return new Tuple<string, ResponseMessage>(partitionKeyRangeId, response);
         }
 
         /// <summary>
         /// During Feed read, split can happen or Max Item count can go beyond the max response size
         /// </summary>
         internal async Task<bool> ShouldRetryFailureAsync(
-            Response response,
+            ResponseMessage response,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             bool partitionSplit = response.StatusCode == HttpStatusCode.Gone
-                && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
+                && (response.CosmosHeaders.SubStatusCode == SubStatusCodes.PartitionKeyRangeGone || response.CosmosHeaders.SubStatusCode == SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
                 // Forcing stale refresh of Partition Key Ranges Cache
@@ -139,7 +136,7 @@ namespace Azure.Cosmos
             return false;
         }
 
-        internal virtual Task<Response> NextResultSetDelegateAsync(
+        internal virtual async Task<ResponseMessage> NextResultSetDelegateAsync(
             string continuationToken,
             string partitionKeyRangeId,
             int? maxItemCount,
@@ -147,10 +144,10 @@ namespace Azure.Cosmos
             CancellationToken cancellationToken)
         {
             Uri resourceUri = this.container.LinkUri;
-            return this.clientContext.ProcessResourceOperationAsync<Response>(
+            Response response = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
-                resourceType: Documents.ResourceType.Document,
-                operationType: Documents.OperationType.ReadFeed,
+                resourceType: ResourceType.Document,
+                operationType: OperationType.ReadFeed,
                 requestOptions: options,
                 cosmosContainerCore: this.container,
                 requestEnricher: request =>
@@ -159,10 +156,11 @@ namespace Azure.Cosmos
                     ChangeFeedRequestOptions.FillMaxItemCount(request, maxItemCount);
                     ChangeFeedRequestOptions.FillPartitionKeyRangeId(request, partitionKeyRangeId);
                 },
-                responseCreator: response => response,
                 partitionKey: null,
                 streamPayload: null,
                 cancellationToken: cancellationToken);
+
+            return response as ResponseMessage;
         }
     }
 }
