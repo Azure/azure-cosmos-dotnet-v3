@@ -404,6 +404,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataRow(false)]
         [DataRow(true)]
+        [TestMethod]
         public async Task ItemLINQWithCamelCaseSerializerOptions(bool isGatewayMode)
         {
             Action<CosmosClientBuilder> builder = action =>
@@ -411,8 +412,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 action.WithSerializerOptions(new CosmosSerializationOptions()
                 {
                     PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
-                }
-                    );
+                });
                 if (isGatewayMode)
                 {
                     action.WithConnectionModeGateway();
