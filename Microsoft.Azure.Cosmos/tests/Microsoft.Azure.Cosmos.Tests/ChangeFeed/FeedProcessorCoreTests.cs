@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
+            Mock<ChangeFeedObserver> mockObserver = new Mock<ChangeFeedObserver>();
             mockObserver.Setup(o => o.ProcessChangesAsync(
                     It.IsAny<ChangeFeedObserverContext>(),
                     It.Is<IReadOnlyList<MyDocument>>(list => list[0].id.Equals("test")),
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializer serializer = new CustomSerializer();
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, serializer);
+            FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             try
             {
@@ -66,14 +66,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
+            Mock<ChangeFeedObserver> mockObserver = new Mock<ChangeFeedObserver>();
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializerFails serializer = new CustomSerializerFails();
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, serializer);
+            FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             ObserverException caughtException = await Assert.ThrowsExceptionAsync<ObserverException>(() => processor.RunAsync(cancellationTokenSource.Token));
             Assert.IsInstanceOfType(caughtException.InnerException, typeof(CustomException));
@@ -86,14 +86,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
+            Mock<ChangeFeedObserver> mockObserver = new Mock<ChangeFeedObserver>();
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object, new CosmosJsonDotNetSerializer());
+            FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     document
                 };
 
-                message.Content = (new CosmosJsonDotNetSerializer()).ToStream(cosmosFeedResponse);
+                message.Content = new CosmosJsonDotNetSerializer().ToStream(cosmosFeedResponse);
             }
 
             return message;
