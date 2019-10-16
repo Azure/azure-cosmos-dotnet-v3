@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             return new ChangeFeedObserverBase(this.ChangesStreamHandlerAsync);
         }
 
-        private async Task<int> ChangesStreamHandlerAsync(Stream changes, CancellationToken cancellationToken)
+        private async Task ChangesStreamHandlerAsync(Stream changes, CancellationToken cancellationToken)
         {
             Collection<T> asFeedResponse;
             try
@@ -57,16 +57,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 throw new ObserverException(serializationException);
             }
 
-            // When StartFromBeginning is used, the first request returns OK but no content
-            if (asFeedResponse.Count == 0)
-            {
-                return 0;
-            }
-
             List<T> asReadOnlyList = new List<T>(asFeedResponse.Count);
             asReadOnlyList.AddRange(asFeedResponse);
             await this.onChanges(asReadOnlyList.AsReadOnly(), cancellationToken);
-            return asFeedResponse.Count;
         }
     }
 }

@@ -325,6 +325,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
+
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
             string processorName,
             ChangesStreamHandler onChangesDelegate)
