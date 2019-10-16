@@ -86,8 +86,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>The corresponding SQL query.</returns>
         public static SqlQuery TranslateQuery(
             Expression inputExpression,
-            IDictionary<object, string> parameters = null,
-            CosmosSerializationOptions serializationOptions = null)
+            IDictionary<object, string> parameters,
+            CosmosSerializationOptions serializationOptions)
         {
             TranslationContext context = new TranslationContext(serializationOptions, parameters);
             ExpressionToSql.Translate(inputExpression, context); // ignore result here
