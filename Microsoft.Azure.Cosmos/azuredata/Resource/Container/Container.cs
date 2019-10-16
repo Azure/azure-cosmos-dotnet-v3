@@ -31,10 +31,10 @@ namespace Azure.Cosmos
         /// </summary>
         public abstract string Id { get; }
 
-        ///// <summary>
-        ///// Returns the conflicts
-        ///// </summary>
-        //public abstract Conflicts Conflicts { get; }
+        /// <summary>
+        /// Returns the conflicts
+        /// </summary>
+        public abstract Conflicts Conflicts { get; }
 
         /// <summary>
         /// Returns the scripts
