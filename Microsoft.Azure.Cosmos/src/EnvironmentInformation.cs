@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Reflection;
     using System.Runtime.InteropServices;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
 
     internal sealed class EnvironmentInformation
     {

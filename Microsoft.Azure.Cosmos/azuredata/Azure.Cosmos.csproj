@@ -62,7 +62,7 @@
     <Compile Include="..\src\Diagnostics\*.cs">
       <Link>Diagnostics\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Routing\*.cs" Exclude="..\src\Routing\ClientCollectionCache.cs;..\src\Routing\CollectionCache.cs;..\src\Routing\AddressResolver.cs;..\src\Routing\LocationCache.cs;..\src\Routing\GatewayAddressCache.cs;..\src\Routing\GlobalEndpointManager.cs;..\src\Routing\GlobalAddressResolver.cs">
+    <Compile Include="..\src\Routing\*.cs" Exclude="..\src\Routing\ClientCollectionCache.cs;..\src\Routing\CollectionCache.cs;..\src\Routing\LocationCache.cs;..\src\Routing\GatewayAddressCache.cs;..\src\Routing\GlobalEndpointManager.cs;..\src\Routing\GlobalAddressResolver.cs">
       <Link>Routing\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\SqlObjects\**\*.cs">
@@ -104,6 +104,12 @@
     <Compile Include="..\src\CosmosElements\**\*.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
+    <!--<Compile Include="..\src\ChangeFeedProcessor\**\*.cs">
+      <Link>ChangeFeedProcessor\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    </Compile>-->
+    <Compile Include="..\src\Headers\*.cs" Exclude="..\src\Headers\Headers.cs;..\src\Headers\CosmosMessageHeadersInternal.cs">
+      <Link>Headers\%(Filename)%(Extension)</Link>
+    </Compile>
     <Compile Include="..\src\Query\Core\**\*.cs" Exclude="..\src\Query\Core\ExecutionContext\CosmosQueryExecutionContextFactory.cs;..\src\Query\Core\QueryClient\CosmosQueryClient.cs">
       <Link>Query\Core\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
@@ -137,6 +143,12 @@
     <Compile Include="..\src\GatewayStoreClient.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
+    <Compile Include="..\src\GatewayStoreModel.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\GatewayAccountReader.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
     <Compile Include="..\src\ActivityScope.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
@@ -149,9 +161,6 @@
     <Compile Include="..\src\RestoreState.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <!--<Compile Include="..\src\ResourceFeedReader.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>-->
     <Compile Include="..\src\PartitionKey.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
@@ -186,6 +195,15 @@
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\ConnectionPolicy.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\ConnectionMode.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\EnvironmentInformation.cs">
+      <Link>%(Filename)%(Extension)</Link>
+    </Compile>
+    <Compile Include="..\src\IDocumentClientInternal.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
@@ -249,6 +267,7 @@
 
   <ItemGroup>
     <Folder Include="Fluent\" />
+    <Folder Include="Policies\" />
   </ItemGroup>
 
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
