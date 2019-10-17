@@ -28,9 +28,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             return Task.CompletedTask;
         }
 
-        public async override Task ProcessChangesAsync(ChangeFeedObserverContext context, Stream stream, CancellationToken cancellationToken)
+        public override Task ProcessChangesAsync(ChangeFeedObserverContext context, Stream stream, CancellationToken cancellationToken)
         {
-            await this.onChanges(stream, cancellationToken).ConfigureAwait(false);
+            return this.onChanges(stream, cancellationToken);
         }
     }
 }
