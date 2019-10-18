@@ -1,18 +1,14 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
+#if AZURECORE
+namespace Azure.Cosmos.ChangeFeed
+#else
 namespace Microsoft.Azure.Cosmos.ChangeFeed
+#endif
 {
     using System;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class ChangeFeedProcessorCore<T> : ChangeFeedProcessor
@@ -94,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (documentServiceLeaseStoreManager == null)
             {
                 ContainerResponse cosmosContainerResponse = await leaseContainer.ReadContainerAsync().ConfigureAwait(false);
-                ContainerProperties containerProperties = cosmosContainerResponse.Resource;
+                ContainerProperties containerProperties = cosmosContainerResponse;
 
                 bool isPartitioned =
                     containerProperties.PartitionKey != null &&

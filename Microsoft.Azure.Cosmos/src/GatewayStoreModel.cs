@@ -2,7 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos
+#else
 namespace Microsoft.Azure.Cosmos
+#endif
 {
     using System;
     using System.Collections.Generic;
@@ -12,9 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
-#if AZURECORE
-    using global::Azure.Cosmos;
-#endif
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -29,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         private readonly ISessionContainer sessionContainer;
-        private readonly Documents.ConsistencyLevel defaultConsistencyLevel;
+        private readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
         private CookieContainer cookieJar;
@@ -38,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
             GlobalEndpointManager endpointManager,
             ISessionContainer sessionContainer,
             TimeSpan requestTimeout,
-            Documents.ConsistencyLevel defaultConsistencyLevel,
+            ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             UserAgentContainer userAgent,
@@ -232,9 +234,9 @@ namespace Microsoft.Azure.Cosmos
             string requestConsistencyLevel = request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel];
 
             bool sessionConsistency =
-                this.defaultConsistencyLevel == Documents.ConsistencyLevel.Session ||
+                this.defaultConsistencyLevel == ConsistencyLevel.Session ||
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
-                    && string.Equals(requestConsistencyLevel, Documents.ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
+                    && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
             if (!sessionConsistency || ReplicatedResourceClient.IsMasterResource(request.ResourceType))
             {

@@ -2,7 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos.ChangeFeed
+#else
 namespace Microsoft.Azure.Cosmos.ChangeFeed
+#endif
 {
     using System;
     using System.Collections.Concurrent;
@@ -166,14 +170,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             return parsed;
         }
 
-        private static Collection<JObject> GetItemsFromResponse(ResponseMessage response)
+        private static Collection<JObject> GetItemsFromResponse(Response response)
         {
-            if (response.Content == null)
+            if (response.ContentStream == null)
             {
                 return new Collection<JObject>();
             }
 
-            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.Content).Data;
+            return RemainingWorkEstimatorCore.DefaultSerializer.FromStream<CosmosFeedResponseUtil<JObject>>(response.ContentStream).Data;
         }
 
         private async Task<long> GetRemainingWorkAsync(DocumentServiceLease existingLease, CancellationToken cancellationToken)
@@ -187,13 +191,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             try
             {
-                ResponseMessage response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
-                if (response.StatusCode != HttpStatusCode.NotModified)
+                Response response = await iterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                if (response.Status != (int)HttpStatusCode.NotModified)
                 {
                     response.EnsureSuccessStatusCode();
                 }
 
-                long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(response.Headers[HttpConstants.HttpHeaders.SessionToken]));
+                response.Headers.TryGetValue(HttpConstants.HttpHeaders.SessionToken, out string sessionToken);
+                long parsedLSNFromSessionToken = RemainingWorkEstimatorCore.TryConvertToNumber(ExtractLsnFromSessionToken(sessionToken));
                 Collection<JObject> items = RemainingWorkEstimatorCore.GetItemsFromResponse(response);
                 long lastQueryLSN = items.Count > 0
                     ? RemainingWorkEstimatorCore.TryConvertToNumber(RemainingWorkEstimatorCore.GetFirstItemLSN(items)) - 1

@@ -104,9 +104,9 @@
     <Compile Include="..\src\CosmosElements\**\*.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <!--<Compile Include="..\src\ChangeFeedProcessor\**\*.cs">
+    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs">
       <Link>ChangeFeedProcessor\%(RecursiveDir)\%(Filename)%(Extension)</Link>
-    </Compile>-->
+    </Compile>
     <Compile Include="..\src\Headers\*.cs" Exclude="..\src\Headers\Headers.cs;..\src\Headers\CosmosMessageHeadersInternal.cs">
       <Link>Headers\%(Filename)%(Extension)</Link>
     </Compile>

@@ -2,11 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
+#if AZURECORE
+namespace Azure.Cosmos.ChangeFeed
+#else
+namespace Microsoft.Azure.Cosmos.ChangeFeed
+#endif
 {
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
     /// <summary>
     /// A strategy defines which leases should be taken by the current host in a certain moment.
@@ -73,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     {
         /// <summary>
         /// Select leases that should be taken for processing.
-        /// This method will be called periodically with <see cref="ChangeFeedLeaseOptions.LeaseAcquireInterval"/>
+        /// This method will be called periodically with Acquire Interval in <see cref="ChangeFeedProcessorBuilder.WithLeaseConfiguration(System.TimeSpan?, System.TimeSpan?, System.TimeSpan?)"/>
         /// </summary>
         /// <param name="allLeases">All leases</param>
         /// <returns>Leases that should be taken for processing by this host</returns>

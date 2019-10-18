@@ -13,6 +13,7 @@ namespace Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Cosmos.ChangeFeed;
     using Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -319,51 +320,51 @@ namespace Azure.Cosmos
         //        this.ClientContext.ClientOptions.SerializerOptions);
         //}
 
-        //public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
-        //    string processorName,
-        //    ChangesHandler<T> onChangesDelegate)
-        //{
-        //    if (processorName == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(processorName));
-        //    }
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangesHandler<T> onChangesDelegate)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
 
-        //    if (onChangesDelegate == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(onChangesDelegate));
-        //    }
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
 
-        //    ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
-        //    ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
-        //    return new ChangeFeedProcessorBuilder(
-        //        processorName: processorName,
-        //        container: this,
-        //        changeFeedProcessor: changeFeedProcessor,
-        //        applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
-        //}
+            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
+            ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
+            return new ChangeFeedProcessorBuilder(
+                processorName: processorName,
+                container: this,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+        }
 
-        //public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
-        //    string processorName,
-        //    ChangesEstimationHandler estimationDelegate,
-        //    TimeSpan? estimationPeriod = null)
-        //{
-        //    if (processorName == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(processorName));
-        //    }
+        public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
+            string processorName,
+            ChangesEstimationHandler estimationDelegate,
+            TimeSpan? estimationPeriod = null)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
 
-        //    if (estimationDelegate == null)
-        //    {
-        //        throw new ArgumentNullException(nameof(estimationDelegate));
-        //    }
+            if (estimationDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(estimationDelegate));
+            }
 
-        //    ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
-        //    return new ChangeFeedProcessorBuilder(
-        //        processorName: processorName,
-        //        container: this,
-        //        changeFeedProcessor: changeFeedEstimatorCore,
-        //        applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
-        //}
+            ChangeFeedEstimatorCore changeFeedEstimatorCore = new ChangeFeedEstimatorCore(estimationDelegate, estimationPeriod);
+            return new ChangeFeedProcessorBuilder(
+                processorName: processorName,
+                container: this,
+                changeFeedProcessor: changeFeedEstimatorCore,
+                applyBuilderConfiguration: changeFeedEstimatorCore.ApplyBuildConfiguration);
+        }
 
 #if PREVIEW
         public override Batch CreateBatch(PartitionKey partitionKey)

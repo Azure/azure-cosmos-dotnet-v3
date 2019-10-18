@@ -2,10 +2,13 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
+#if AZURECORE
+namespace Azure.Cosmos.ChangeFeed
+#else
+namespace Microsoft.Azure.Cosmos.ChangeFeed
+#endif
 {
     using System;
-    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore{T}"/> instance.
@@ -49,7 +52,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
         /// If this is specified, both StartTime and StartFromBeginning are ignored.
         /// </remarks>
-        /// <seealso cref="ChangeFeedOptions.RequestContinuation"/>
         public string StartContinuation { get; set; }
 
         /// <summary>
@@ -61,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// (2) StartContinuation is not specified.
         /// If this is specified, StartFromBeginning is ignored.
         /// </remarks>
-        /// <seealso cref="ChangeFeedOptions.StartTime"/>
         public DateTime? StartTime
         {
             get
@@ -87,7 +88,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// (2) StartContinuation is not specified.
         /// (3) StartTime is not specified.
         /// </remarks>
-        /// <seealso cref="ChangeFeedOptions.StartFromBeginning"/>
         public bool StartFromBeginning { get; set; }
 
         /// <summary>

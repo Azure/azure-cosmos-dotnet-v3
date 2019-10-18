@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed
+namespace Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
@@ -48,11 +48,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 {
                     do
                     {
-                        ResponseMessage response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
-                        if (response.StatusCode != HttpStatusCode.NotModified && !response.IsSuccessStatusCode)
+                        Response response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
+                        if (response.Status != (int)HttpStatusCode.NotModified && !response.IsSuccessStatusCode())
                         {
-                            DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.StatusCode, response.Headers.SubStatusCode);
-                            this.HandleFailedRequest(response.StatusCode, (int)response.Headers.SubStatusCode, lastContinuation);
+                            Microsoft.Azure.Documents.SubStatusCodes subStatusCode = response.Headers.GetSubStatusCode();
+                            DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.Status, subStatusCode);
+                            this.HandleFailedRequest((HttpStatusCode)response.Status, (int)subStatusCode, lastContinuation);
 
                             if (response.Headers.RetryAfter.HasValue)
                             {
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             break;
                         }
 
-                        lastContinuation = response.Headers.ContinuationToken;
+                        lastContinuation = response.Headers.GetContinuationToken();
                         if (this.resultSetIterator.HasMoreResults)
                         {
                             await this.DispatchChangesAsync(response, cancellationToken).ConfigureAwait(false);
@@ -107,13 +108,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private Task DispatchChangesAsync(ResponseMessage response, CancellationToken cancellationToken)
+        private Task DispatchChangesAsync(Response response, CancellationToken cancellationToken)
         {
             ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.options.LeaseToken, response, this.checkpointer);
             Collection<T> asFeedResponse;
             try
             {
-                asFeedResponse = this.cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.Content).Data;
+                asFeedResponse = this.cosmosJsonSerializer.FromStream<CosmosFeedResponseUtil<T>>(response.ContentStream).Data;
             }
             catch (Exception serializationException)
             {
