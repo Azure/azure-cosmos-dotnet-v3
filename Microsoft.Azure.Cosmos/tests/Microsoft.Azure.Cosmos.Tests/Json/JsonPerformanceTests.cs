@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     [TestCategory("Functional")]
     public class JsonPerformanceTests
     {
-        private static readonly bool runPerformanceTests = true;
+        private static readonly bool runPerformanceTests = false;
 
         [TestInitialize]
         public void TestInitialize()
