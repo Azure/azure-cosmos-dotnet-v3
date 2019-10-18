@@ -20,6 +20,12 @@
   <ItemGroup>
     <None Remove="BaselineTest\TestBaseline\QueryPartitionProviderTest - Copy (2).Top.xml" />
     <None Remove="BaselineTest\TestBaseline\QueryPartitionProviderTest - Copy.Top.xml" />
+    <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlBinaryScalarOperators.xml" />
+    <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlFunctionCalls.xml" />
+    <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlLiteral.xml" />
+    <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlQueries.xml" />
+    <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlScalarExpression.xml" />
+    <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
@@ -223,9 +229,24 @@
     <Content Include="BaselineTest\TestBaseline\QueryPartitionProviderTest.Top.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Batch\" />
+    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlBinaryScalarOperators.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlFunctionCalls.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlLiteral.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlQueries.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlScalarExpression.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <PropertyGroup>

@@ -41,16 +41,5 @@ namespace Microsoft.Azure.Cosmos.Tests
             var envInfo = new EnvironmentInformation();
             Assert.IsNotNull(envInfo.ClientId);
         }
-
-        [TestMethod]
-        public void ToStringContainsAll()
-        {
-            var envInfo = new EnvironmentInformation();
-            var serialization = envInfo.ToString();
-            Assert.IsTrue(serialization.Contains(envInfo.ClientVersion));
-            Assert.IsTrue(serialization.Contains(envInfo.ProcessArchitecture));
-            Assert.IsTrue(serialization.Contains(envInfo.RuntimeFramework));
-            Assert.IsTrue(serialization.Contains(envInfo.ClientId));
-        }
     }
 }
