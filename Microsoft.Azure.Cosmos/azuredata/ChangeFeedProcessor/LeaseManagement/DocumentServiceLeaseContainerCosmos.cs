@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed
+namespace Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<IEnumerable<DocumentServiceLease>> GetOwnedLeasesAsync()
         {
-            var ownedLeases = new List<DocumentServiceLease>();
+            List<DocumentServiceLease> ownedLeases = new List<DocumentServiceLease>();
             foreach (DocumentServiceLease lease in await this.GetAllLeasesAsync().ConfigureAwait(false))
             {
                 if (string.Compare(lease.Owner, this.options.HostName, StringComparison.OrdinalIgnoreCase) == 0)
@@ -46,15 +46,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (string.IsNullOrEmpty(prefix))
                 throw new ArgumentException("Prefix must be non-empty string", nameof(prefix));
 
-            var query = this.container.GetItemQueryIterator<DocumentServiceLeaseCore>(
+            List<DocumentServiceLeaseCore> leases = new List<DocumentServiceLeaseCore>();
+            await foreach (Page<DocumentServiceLeaseCore> page in this.container.GetItemQueryIterator<DocumentServiceLeaseCore>(
                 "SELECT * FROM c WHERE STARTSWITH(c.id, '" + prefix + "')",
                 continuationToken: null,
-                requestOptions: queryRequestOptions);
-
-            var leases = new List<DocumentServiceLeaseCore>();
-            while (query.HasMoreResults)
+                requestOptions: queryRequestOptions).AsPages())
             {
-                leases.AddRange(await query.ReadNextAsync().ConfigureAwait(false));
+                leases.AddRange(page.Values);
             }
 
             return leases;

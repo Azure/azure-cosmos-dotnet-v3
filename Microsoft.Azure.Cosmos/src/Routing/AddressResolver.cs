@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 #if AZURECORE
 namespace Azure.Cosmos
 #else

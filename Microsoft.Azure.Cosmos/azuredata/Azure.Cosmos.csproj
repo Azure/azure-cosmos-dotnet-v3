@@ -56,13 +56,13 @@
     <Compile Include="..\src\Resource\Settings\Enums\*.cs">
       <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;..\src\Handler\TransportHandler.cs;..\src\Handler\AbstractRetryHandler.cs">
+    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;..\src\Handler\TransportHandler.cs;">
       <Link>Handler\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Diagnostics\*.cs">
       <Link>Diagnostics\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Routing\*.cs" Exclude="..\src\Routing\ClientCollectionCache.cs;..\src\Routing\CollectionCache.cs;..\src\Routing\LocationCache.cs;..\src\Routing\GatewayAddressCache.cs;..\src\Routing\GlobalEndpointManager.cs;..\src\Routing\GlobalAddressResolver.cs">
+    <Compile Include="..\src\Routing\*.cs">
       <Link>Routing\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\SqlObjects\**\*.cs">
@@ -104,7 +104,7 @@
     <Compile Include="..\src\CosmosElements\**\*.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs">
+    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseContainerCosmos.cs">
       <Link>ChangeFeedProcessor\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Headers\*.cs" Exclude="..\src\Headers\Headers.cs;..\src\Headers\CosmosMessageHeadersInternal.cs">
@@ -155,19 +155,7 @@
     <Compile Include="..\src\UriFactory.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\DocumentCollectionRestoreStatus.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\RestoreState.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
     <Compile Include="..\src\PartitionKey.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\StoredProcedureResponse.cs">
-      <Link>%(Filename)%(Extension)</Link>
-    </Compile>
-    <Compile Include="..\src\IStoredProcedureResponse.cs">
       <Link>%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\ChangeFeedOptions.cs">
@@ -238,7 +226,6 @@
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.0.0-preview.9" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
-    <PackageReference Include="System.Text.Json" Version="4.6.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
     <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.4.16" PrivateAssets="All" />
 
