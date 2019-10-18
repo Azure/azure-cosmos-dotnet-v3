@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-        CosmosClientBuilder WithBulkexecution(bool enabled)
+        CosmosClientBuilder WithBulkExecution(bool enabled)
         {
             this.clientOptions.AllowBulkExecution = enabled;
             return this;

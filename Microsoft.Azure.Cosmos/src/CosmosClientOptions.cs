@@ -514,6 +514,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
+            this.AddFeaturesToUserAgentContainer();
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -659,6 +660,17 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(settingName))
             {
                 throw new ArgumentException($"{settingName} requires {nameof(this.ConnectionMode)} to be set to {nameof(ConnectionMode.Direct)}");
+            }
+        }
+
+        /// <summary>
+        /// Enrich user agent with optional features.
+        /// </summary>
+        private void AddFeaturesToUserAgentContainer()
+        {
+            if (this.AllowBulkExecution)
+            {
+                this.UserAgentContainer.Suffix += "|bulk";
             }
         }
 
