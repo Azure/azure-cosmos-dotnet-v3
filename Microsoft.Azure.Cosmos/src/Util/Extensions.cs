@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos
 
     internal static class Extensions
     {
-        private static readonly char[] NewLineCharacters = new[] { '\r', '\n' };
-
         internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse response, RequestMessage requestMessage)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
@@ -59,24 +57,7 @@ namespace Microsoft.Azure.Cosmos
 
             // if there is a status code then it came from the backend, return error as http error instead of throwing the exception
             ResponseMessage cosmosResponse = new ResponseMessage(dce.StatusCode ?? HttpStatusCode.InternalServerError, request);
-            string reasonPhraseString = string.Empty;
-            if (!string.IsNullOrEmpty(dce.Message))
-            {
-                if (dce.Message.IndexOfAny(Extensions.NewLineCharacters) >= 0)
-                {
-                    StringBuilder sb = new StringBuilder(dce.Message);
-                    sb = sb.Replace("\r", string.Empty);
-                    sb = sb.Replace("\n", string.Empty);
-                    reasonPhraseString = sb.ToString();
-                }
-                else
-                {
-                    reasonPhraseString = dce.Message;
-                }
-            }
-
-            cosmosResponse.ErrorMessage = reasonPhraseString;
-            cosmosResponse.Error = dce.Error;
+            cosmosResponse.ErrorMessage = dce.ToString();
 
             if (dce.Headers != null)
             {
