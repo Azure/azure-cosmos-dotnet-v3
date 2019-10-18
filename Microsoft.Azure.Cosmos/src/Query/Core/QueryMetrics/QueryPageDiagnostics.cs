@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.Query
             stringBuilder.Append(this.IndexUtilizationText);
             stringBuilder.Append("\",\"RequestDiagnostics\":");
             stringBuilder.Append(requestDiagnosticsString);
-            stringBuilder.Append("\",\"SchedulingTimeSpan\":");
-            stringBuilder.Append(this.SchedulingTimeSpan.ToString());
-            stringBuilder.Append("\"}");
+            stringBuilder.Append(",\"SchedulingTimeSpan\":");
+            this.SchedulingTimeSpan.AppendJsonToBuilder(stringBuilder);
+            stringBuilder.Append("}");
         }
 
         public override string ToString()
