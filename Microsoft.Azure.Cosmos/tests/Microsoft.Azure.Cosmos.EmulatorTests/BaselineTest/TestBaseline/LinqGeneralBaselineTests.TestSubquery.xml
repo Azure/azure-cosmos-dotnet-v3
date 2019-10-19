@@ -22,7 +22,6 @@ JOIN (
     <Input>
       <Description><![CDATA[Select(OrderBy)]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.OrderBy(c => c.Pets.Count()))]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -37,13 +36,13 @@ JOIN (
     )
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":105,"end":142},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select(Take)]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.Take(2))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -57,6 +56,7 @@ JOIN (
     )
 ) AS v2 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -174,7 +174,6 @@ WHERE (v0 > 100)
     <Input>
       <Description><![CDATA[OrderBy(Select)]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.Select(c => c.Pets.Count()))]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -189,13 +188,13 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[OrderBy(Sum)]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.Sum(c => c.Grade))]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -208,13 +207,13 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[OrderBy(Count)]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.Count(c => (c.Grade > 90)))]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -228,6 +227,7 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -271,7 +271,6 @@ JOIN (
     <Input>
       <Description><![CDATA[Select(Select -> OrderBy -> Take)]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.Select(c => c.GivenName).OrderBy(n => n.Length).Take(1))]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -286,6 +285,7 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":124,"end":162},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -330,7 +330,6 @@ JOIN (
     <Input>
       <Description><![CDATA[Select(Where -> OrderBy -> Take)]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 50)).OrderBy(c => c.Pets.Count()).Take(3))]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -346,13 +345,13 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":136,"end":173},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select(Where -> Select -> Take)]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 50)).Select(c => c.Pets.Count()).Take(3))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -367,13 +366,13 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select(Where -> Select(array) -> Take)]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.Where(c => (c.Grade > 50)).Select(c => c.Pets).Take(3))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -388,6 +387,7 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -414,7 +414,6 @@ JOIN (
     <Input>
       <Description><![CDATA[Select(OrderBy -> Take -> Select)]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.OrderBy(c => c.Grade).Take(1).Select(c => c.Gender))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -429,13 +428,13 @@ JOIN (
     )
 ) AS v1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":121,"end":145},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":58,"end":63},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select(OrderBy -> Take -> Select -> Average)]]></Description>
       <Expression><![CDATA[query.Select(f => f.Children.OrderBy(c => c.Pets.Count()).Take(2).Select(c => c.Grade).Average())]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -453,6 +452,7 @@ JOIN (
     )
 ) AS v2 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":150,"end":187},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":88,"end":93},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -515,7 +515,6 @@ WHERE (v0 < 200)
     <Input>
       <Description><![CDATA[Where(Where -> OrderBy -> Take -> Select)]]></Description>
       <Expression><![CDATA[query.Where(f => (f.Children.Where(c => (c.Pets.Count() > 0)).OrderBy(c => c.Grade).Take(1).Where(c => (c.Grade > 80)).Count() > 0))]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -534,13 +533,13 @@ JOIN (
 ) AS v1 
 WHERE (v1 > 0) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":159,"end":183},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":69,"end":74},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[OrderBy(Select -> Where)]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.Select(c => c.Pets.Count()).Where(x => (x > 1)))]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -556,13 +555,13 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[OrderBy(Where -> Count)]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.Where(c => (c.Pets.Count() > 3)).Count())]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -576,13 +575,13 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[OrderBy(Select -> Sum)]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.Select(c => c.Grade).Sum())]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -595,13 +594,13 @@ JOIN (
 ) AS v1 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[OrderBy(OrderBy -> Take -> Sum)]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.OrderBy(c => c.Pets.Count()).Take(2).Sum(c => c.Grade))]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -618,6 +617,7 @@ JOIN (
 ) AS v1 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":130,"end":167},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":77,"end":82},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1002,7 +1002,6 @@ WHERE (v0 >= 2)
     <Input>
       <Description><![CDATA[Where -> Select(array indexer)]]></Description>
       <Expression><![CDATA[query.Where(f => (f.Children.Where(c => (c.Grade > 20)).Count() >= 2)).Select(f => f.Children.Where(c => (c.Grade > 20)).ToArray()[(f.Children.Count() % 2)])]]></Expression>
-      <ErrorMessage><![CDATA[The specified query includes 'member indexer' which is currently not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1024,6 +1023,7 @@ JOIN (
 ) AS v1 
 WHERE (v0 >= 2) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":13,"end":53},"code":"SC2990","message":"The specified query includes 'member indexer' which is currently not supported."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1083,7 +1083,6 @@ JOIN (
     <Input>
       <Description><![CDATA[OrderBy(Log(Where -> Count))]]></Description>
       <Expression><![CDATA[query.OrderBy(f => Log(Convert(f.Children.Where(c => (c.Pets.Count() > 0)).Count(), Double)))]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1097,6 +1096,7 @@ JOIN (
 ) AS v0 
 ORDER BY LOG(v0) ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1126,7 +1126,6 @@ WHERE (ARRAY_LENGTH(r0) > 0)
     <Input>
       <Description><![CDATA[Select(new w/ Where) -> Where -> OrderBy -> Take]]></Description>
       <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenCount = f.Children.Count(), SmartChildren = f.Children.Where(c => (c.Grade > 90)))).Where(f => ((f.FamilyId.CompareTo("ABC") > 0) AndAlso (f.SmartChildren.Count() > 0))).OrderBy(f => f.ChildrenCount).Take(10)]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1146,13 +1145,13 @@ FROM (
 WHERE ((r0["FamilyId"] > "ABC") AND (ARRAY_LENGTH(r0["SmartChildren"]) > 0)) 
 ORDER BY r0["ChildrenCount"] ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select(new { Select(Select), conditional Count Take }) -> Where -> Select(Select(Any))]]></Description>
       <Expression><![CDATA[query.Select(f => new AnonymousType(FamilyId = f.FamilyId, ChildrenPetFirstChars = f.Children.Select(c => c.Pets.Select(p => p.GivenName.Substring(0, 1))), FirstChild = IIF((f.Children.Count() > 0), f.Children.Take(1), null))).Where(f => (f.FirstChild != null)).Select(f => f.ChildrenPetFirstChars.Select(chArray => chArray.Any(a => f.FamilyId.StartsWith(a))))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1199,6 +1198,7 @@ JOIN (
 ) AS v6 
 WHERE (r0["FirstChild"] != null) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":403,"end":408},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1332,7 +1332,6 @@ WHERE (v0 AND root["IsRegistered"])
     <Input>
       <Description><![CDATA[Where(Any binary) -> OrderBy(Count(filter)) -> Select(Sum(map))]]></Description>
       <Expression><![CDATA[query.Where(f => (f.Children.Any(c => (c.Grade > 90)) AndAlso f.IsRegistered)).OrderBy(f => f.Children.Count(c => (c.Things.Count() > 3))).Select(f => f.Children.Sum(c => c.Pets.Count()))]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1360,6 +1359,7 @@ JOIN (
 WHERE (v0 AND root["IsRegistered"]) 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1443,7 +1443,6 @@ JOIN (
     <Input>
       <Description><![CDATA[Where -> Select(conditional ? Take : OrderBy -> Array indexer)]]></Description>
       <Expression><![CDATA[query.Where(f => (f.Children.Count() > 0)).Select(f => IIF((f.Children.Count() == 1), f.Children.Take(1).ToArray()[0], f.Children.OrderBy(c => c.Grade).ToArray()[1]))]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1466,6 +1465,7 @@ JOIN (
 ) AS v3 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":110,"end":115},"code":"SC2203","message":"'TOP' is not supported in subqueries."},{"severity":"Error","location":{"start":252,"end":276},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1790,10 +1790,10 @@ JOIN (
     <Input>
       <Description><![CDATA[Select(Any w const array)]]></Description>
       <Expression><![CDATA[query.Select(f => new [] {1, 2, 3}.Any())]]></Expression>
-      <ErrorMessage><![CDATA[Input is not of type IDocumentQuery.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Input is not of type IDocumentQuery.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -1957,7 +1957,6 @@ WHERE (CONTAINS(root["FamilyId"], "a") AND v0)
     <Input>
       <Description><![CDATA[OrderBy(Any)]]></Description>
       <Expression><![CDATA[query.OrderBy(f => f.Children.Any(c => (c.Pets.Count() > 3)))]]></Expression>
-      <ErrorMessage><![CDATA[ORDER BY item expression could not be mapped to a document path.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1973,13 +1972,13 @@ JOIN (
 ) AS v0 
 ORDER BY v0 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Take)]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Children.Take(2))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -1991,13 +1990,13 @@ JOIN (
     JOIN v0 IN root["Children"]
 ) AS v2 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(OrderBy)]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Children.OrderBy(c => c.Grade))]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -2010,13 +2009,13 @@ JOIN (
     ORDER BY c0["Grade"] ASC
 ) AS v0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":86,"end":110},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Where -> Take)]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Children.Where(c => (c.FamilyName.Count() > 10)).Take(2))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -2029,13 +2028,13 @@ JOIN (
     WHERE (LENGTH(c0["FamilyName"]) > 10)
 ) AS v1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Where -> Take -> Select)]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Children.Where(c => (c.FamilyName.Count() > 10)).Take(2).Select(c => c.Grade))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -2048,6 +2047,7 @@ JOIN (
     WHERE (LENGTH(c0["FamilyName"]) > 10)
 ) AS v1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":39,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

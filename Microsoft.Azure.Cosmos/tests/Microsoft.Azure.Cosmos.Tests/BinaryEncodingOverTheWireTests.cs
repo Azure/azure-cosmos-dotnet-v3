@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Configuration;
-    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CountriesTest()
         {
-            await this.TestCurratedDocs("countries.json");
+            await this.TestCurratedDocs("countries");
         }
 #endif
 
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task LastFMTest()
         {
-            await this.TestCurratedDocs("lastfm.json");
+            await this.TestCurratedDocs("lastfm");
         }
 
         [TestMethod]
@@ -198,13 +198,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task NutritionDataTest()
         {
-            await this.TestCurratedDocs("NutritionData.json");
+            await this.TestCurratedDocs("NutritionData");
         }
 
         [TestMethod]
         public async Task RunsCollectionTest()
         {
-            await this.TestCurratedDocs("runsCollection.json");
+            await this.TestCurratedDocs("runsCollection");
         }
 
         [TestMethod]
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task StatesLegislatorsTest()
         {
-            await this.TestCurratedDocs("states_legislators.json");
+            await this.TestCurratedDocs("states_legislators");
         }
 
         [TestMethod]
@@ -228,30 +228,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TicinoErrorBucketsTest()
         {
-            await this.TestCurratedDocs("TicinoErrorBuckets.json");
+            await this.TestCurratedDocs("TicinoErrorBuckets");
         }
 
         [TestMethod]
         public async Task TwitterDataTest()
         {
-            await this.TestCurratedDocs("twitter_data.json");
+            await this.TestCurratedDocs("twitter_data");
         }
 
         [TestMethod]
         public async Task Ups1Test()
         {
-            await this.TestCurratedDocs("ups1.json");
+            await this.TestCurratedDocs("ups1");
         }
 
         [TestMethod]
         public async Task XpertEventsTest()
         {
-            await this.TestCurratedDocs("XpertEvents.json");
+            await this.TestCurratedDocs("XpertEvents");
         }
 
-        private async Task TestCurratedDocs(string filename)
+        private async Task TestCurratedDocs(string path)
         {
-            IEnumerable<object> documents = BinaryEncodingOverTheWireTests.GetDocumentsFromCurratedDoc(filename);
+            IEnumerable<object> documents = BinaryEncodingOverTheWireTests.GetDocumentsFromCurratedDoc(path);
             await BinaryEncodingOverTheWireTests.CreateIngestQueryDelete(
                 documents.Select(x => x.ToString()),
                 this.TestCurratedDocs);
@@ -298,10 +298,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await AssertQueryDrainsCorrectlyAsync(binaryFeedIterator);
         }
 
-        private static IEnumerable<object> GetDocumentsFromCurratedDoc(string filename)
+        private static IEnumerable<object> GetDocumentsFromCurratedDoc(string path)
         {
-            string path = string.Format("TestJsons/{0}", filename);
-            string json = File.ReadAllText(path);
+            path = string.Format("TestJsons/{0}", path);
+            string json = TextFileConcatenation.ReadMultipartFile(path);
             List<object> documents;
             try
             {
