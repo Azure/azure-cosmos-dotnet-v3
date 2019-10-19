@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
 
             CosmosArray documents;
-            if (jsonNavigator.TryGetObjectProperty(
+            if ((jsonNavigator.SerializationFormat == JsonSerializationFormat.Binary) && jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),
                 "stringDictionary",
                 out ObjectProperty stringDictionaryProperty))
