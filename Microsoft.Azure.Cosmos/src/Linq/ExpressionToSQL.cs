@@ -547,8 +547,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // DateTime
                     else if (memberType == typeof(DateTime))
                     {
-                        SqlLiteralScalarExpression sqlLiteralScalarExpression = right;
-                        SqlStringLiteral serializedDateTime = (SqlStringLiteral)sqlLiteralScalarExpression.Literal;
+                        SqlStringLiteral serializedDateTime = (SqlStringLiteral)right.Literal;
                         value = DateTime.Parse(serializedDateTime.Value);
                     }
 
