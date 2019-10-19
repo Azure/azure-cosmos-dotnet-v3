@@ -1237,6 +1237,18 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
+        "Boolean AllowBulkExecution": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Boolean get_AllowBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_AllowBulkExecution()"
+        },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1431,6 +1443,13 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
+        },
+        "Void set_AllowBulkExecution(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AllowBulkExecution(Boolean)"
         },
         "Void set_ApplicationName(System.String)": {
           "Type": "Method",
@@ -2370,6 +2389,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkexecution(Boolean)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkexecution(Boolean)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()": {
           "Type": "Method",

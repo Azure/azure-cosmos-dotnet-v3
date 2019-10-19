@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/923) Bulk Support is now public
+
+## <a name="3.3.2"/> [3.3.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.2) - 2019-10-16
+
+### Fixed
+
+- [#905](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/909) Fixed linq camel case bug
+
+
+## <a name="3.3.1"/> [3.3.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.1) - 2019-10-11
+
+### Fixed
+
+- [#895](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/895) Fixed user agent bug that caused format exceptions on non-windows platforms
+
+## <a name="3.3.0"/> [3.3.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.3.0) - 2019-10-09
+
+### Added
+
+- [#801](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/801) Enabled LINQ ThenBy operator after OrderBy
 - [#814](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/814) Ability to limit to configured endpoint only
 - [#822](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/822) GROUP BY query support.
 - [#844](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/844) Added PartitionKeyDefinitionVersion to container builder
@@ -20,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#846](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/846) Statistics not getting populated correctly on CosmosException.
 - [#857](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/857) Fixed reusability of the Bulk support across Container instances
 - [#860](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/860) Fixed base user agent string
+- [#876](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/876) Default connection timeout reduced from 60s to 10s
 
 ## <a name="3.2.0"/> [3.2.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.2.0) - 2019-09-17
 
@@ -114,6 +135,9 @@ Any requests to Azure Cosmos DB using a retired SDK are rejected by the service.
 
 | Version | Release Date | Retirement Date |
 | --- | --- | --- |
+| [3.3.2](#3.3.2) |October 16, 2019 |--- |
+| [3.3.1](#3.3.1) |October 11, 2019 |--- |
+| [3.3.0](#3.3.0) |October 8, 2019 |--- |
 | [3.2.0](#3.2.0) |September 18, 2019 |--- |
 | [3.1.1](#3.1.1) |August 12, 2019 |--- |
 | [3.1.0](#3.1.0) |July 29, 2019 |--- |
