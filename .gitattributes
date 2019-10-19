@@ -1,1 +1,0 @@
-Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.NetFramework.Tests/TestJsons/** filter=lfs diff=lfs merge=lfs -text

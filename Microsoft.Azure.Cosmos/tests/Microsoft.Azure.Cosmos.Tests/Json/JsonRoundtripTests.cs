@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -705,7 +706,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("brchon")]
         public void CountriesTest()
         {
-            this.RoundTripTestCuratedJson("countries.json");
+            this.RoundTripTestCuratedJson("countries");
         }
 
         [TestMethod]
@@ -719,7 +720,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("brchon")]
         public void LastFMTest()
         {
-            this.RoundTripTestCuratedJson("lastfm.json");
+            this.RoundTripTestCuratedJson("lastfm");
         }
 
         [TestMethod]
@@ -747,14 +748,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("brchon")]
         public void NutritionDataTest()
         {
-            this.RoundTripTestCuratedJson("NutritionData.json");
+            this.RoundTripTestCuratedJson("NutritionData");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void RunsCollectionTest()
         {
-            this.RoundTripTestCuratedJson("runsCollection.json");
+            this.RoundTripTestCuratedJson("runsCollection");
         }
 
         [TestMethod]
@@ -768,7 +769,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("brchon")]
         public void StatesLegislatorsTest()
         {
-            this.RoundTripTestCuratedJson("states_legislators.json");
+            this.RoundTripTestCuratedJson("states_legislators");
         }
 
         [TestMethod]
@@ -782,35 +783,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("brchon")]
         public void TicinoErrorBucketsTest()
         {
-            this.RoundTripTestCuratedJson("TicinoErrorBuckets.json");
+            this.RoundTripTestCuratedJson("TicinoErrorBuckets");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void TwitterDataTest()
         {
-            this.RoundTripTestCuratedJson("twitter_data.json");
+            this.RoundTripTestCuratedJson("twitter_data");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void Ups1Test()
         {
-            this.RoundTripTestCuratedJson("ups1.json");
+            this.RoundTripTestCuratedJson("ups1");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void XpertEventsTest()
         {
-            this.RoundTripTestCuratedJson("XpertEvents.json");
+            this.RoundTripTestCuratedJson("XpertEvents");
         }
 
         // Checks to see if we can go from a JsonReader to a NewtonsoftWriter and get back the original document and visa versa
-        private void RoundTripTestCuratedJson(string filename)
+        private void RoundTripTestCuratedJson(string path)
         {
-            string path = string.Format("TestJsons/{0}", filename);
-            string json = File.ReadAllText(path);
+            path = string.Format("TestJsons/{0}", path);
+            string json = TextFileConcatenation.ReadMultipartFile(path);
 #if true
             json = JsonTestUtils.RandomSampleJson(json);
 #endif

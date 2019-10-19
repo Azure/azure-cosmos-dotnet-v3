@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -202,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void LastFMTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("lastfm.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("lastfm");
         }
 
         [TestMethod]
@@ -230,14 +231,14 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void NutritionDataTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("NutritionData.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("NutritionData");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void RunsCollectionTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("runsCollection.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("runsCollection");
         }
 
         [TestMethod]
@@ -251,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void StatesLegislatorsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("states_legislators.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("states_legislators");
         }
 
         [TestMethod]
@@ -265,28 +266,28 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         [Owner("brchon")]
         public void TicinoErrorBucketsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("TicinoErrorBuckets.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("TicinoErrorBuckets");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void TwitterDataTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("twitter_data.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("twitter_data");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void Ups1Test()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("ups1.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("ups1");
         }
 
         [TestMethod]
         [Owner("brchon")]
         public void XpertEventsTest()
         {
-            LazyCosmosElementTests.TestCosmosElementVisitability("XpertEvents.json");
+            LazyCosmosElementTests.TestCosmosElementVisitability("XpertEvents");
         }
 
         private static void TestCosmosElementVisitability(string filename)
@@ -311,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
         private static ReadOnlyMemory<byte> GetPayload(string filename)
         {
             string path = string.Format("TestJsons/{0}", filename);
-            string json = File.ReadAllText(path);
+            string json = TextFileConcatenation.ReadMultipartFile(path);
 
             IEnumerable<object> documents = null;
             try
