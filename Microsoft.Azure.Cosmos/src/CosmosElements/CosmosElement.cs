@@ -44,6 +44,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return CosmosElement.Dispatch(jsonNavigator, jsonNavigatorNode);
         }
 
+        public static CosmosElement Parse(string json)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(json);
+            return CosmosElement.Create(buffer);
+        }
+
         public static CosmosElement Dispatch(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
