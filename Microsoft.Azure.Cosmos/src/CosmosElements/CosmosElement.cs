@@ -31,12 +31,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             this.WriteTo(jsonWriter);
-            return Encoding.UTF8.GetString(jsonWriter.GetResult());
+
+            return Utf8StringHelpers.ToString(jsonWriter.GetResult());
         }
 
         public abstract void WriteTo(IJsonWriter jsonWriter);
 
-        public static CosmosElement Create(byte[] buffer)
+        public static CosmosElement CreateFromBuffer(ReadOnlyMemory<byte> buffer)
         {
             IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
             IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();

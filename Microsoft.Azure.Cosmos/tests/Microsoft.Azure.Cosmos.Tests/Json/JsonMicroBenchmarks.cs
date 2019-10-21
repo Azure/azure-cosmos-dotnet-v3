@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System.Collections.Generic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
     [TestCategory("Functional")]
     public class JsonMicroBenchmarks
     {
-        private static readonly bool runPerformanceTests = true;
+        private static readonly bool runPerformanceTests = false;
 
         [TestInitialize]
         public void TestInitialize()
