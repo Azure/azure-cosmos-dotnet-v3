@@ -652,7 +652,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private UserAgentContainer BuildUserAgentContainer()
+        internal UserAgentContainer BuildUserAgentContainer()
         {
             UserAgentContainer userAgent = new UserAgentContainer();
             string features = this.GetUserAgentFeatures();
