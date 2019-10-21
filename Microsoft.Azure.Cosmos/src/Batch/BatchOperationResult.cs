@@ -77,14 +77,14 @@ namespace Microsoft.Azure.Cosmos
         public virtual MemoryStream ResourceStream { get; internal set; }
 
         /// <summary>
-        /// Request charge in request units for the operation.
-        /// </summary>
-        public virtual double RequestCharge { get; internal set; }
-
-        /// <summary>
         /// In case the operation is rate limited, indicates the time post which a retry can be attempted.
         /// </summary>
         public virtual TimeSpan RetryAfter { get; internal set; }
+
+        /// <summary>
+        /// Request charge in request units for the operation.
+        /// </summary>
+        internal virtual double RequestCharge { get; set; }
 
         /// <summary>
         /// Gets detail on the completion status of the operation.
