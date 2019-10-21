@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public static CosmosElement Parse(string json)
         {
             byte[] buffer = Encoding.UTF8.GetBytes(json);
-            return CosmosElement.Create(buffer);
+            return CosmosElement.CreateFromBuffer(buffer);
         }
 
         public static CosmosElement Dispatch(
