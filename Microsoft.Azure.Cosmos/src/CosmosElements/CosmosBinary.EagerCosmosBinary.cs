@@ -18,17 +18,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class EagerCosmosBinary : CosmosBinary
         {
-            public EagerCosmosBinary(IReadOnlyList<byte> value)
+            public EagerCosmosBinary(ReadOnlyMemory<byte> value)
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException($"{nameof(value)}");
-                }
-
                 this.Value = value;
             }
 
-            public override IReadOnlyList<byte> Value { get; }
+            public override ReadOnlyMemory<byte> Value { get; }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {
@@ -37,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                     throw new ArgumentNullException($"{nameof(jsonWriter)}");
                 }
 
-                jsonWriter.WriteBinaryValue(this.Value);
+                jsonWriter.WriteBinaryValue(this.Value.Span);
             }
         }
     }
