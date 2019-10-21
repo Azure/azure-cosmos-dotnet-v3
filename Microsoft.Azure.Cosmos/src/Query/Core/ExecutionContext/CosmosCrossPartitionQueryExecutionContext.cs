@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets a value indicating whether the context still has more results.
         /// </summary>
-        private bool HasMoreResults => this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults;
+        private bool HasMoreResults => this.FailureResponse != null || (this.itemProducerForest.Count != 0 && this.CurrentItemProducerTree().HasMoreResults);
 
         /// <summary>
         /// Gets the number of documents we can still buffer.
@@ -353,7 +353,15 @@ namespace Microsoft.Azure.Cosmos.Query
             if (this.FailureResponse != null)
             {
                 this.Stop();
-                return this.FailureResponse.Value;
+
+                try
+                {
+                    return this.FailureResponse;
+                }
+                finally
+                {
+                    this.FailureResponse = null;
+                }
             }
 
             // Drain the results. If there is no results and a failure then return the failure.
@@ -361,7 +369,15 @@ namespace Microsoft.Azure.Cosmos.Query
             if ((results == null || results.Count == 0) && this.FailureResponse != null)
             {
                 this.Stop();
-                return this.FailureResponse.Value;
+
+                try
+                {
+                    return this.FailureResponse;
+                }
+                finally
+                {
+                    this.FailureResponse = null;
+                }
             }
 
             string continuation = this.ContinuationToken;
