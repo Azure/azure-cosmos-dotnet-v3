@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
@@ -142,12 +142,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .Where(method => method.GetCustomAttributes(typeof(TestMethodAttribute), true).Length != 0)
                 .Where(method => method.GetCustomAttributes(typeof(TestCategoryAttribute), true).Length != 0)
                 .Count(), $"One the {nameof(BinaryEncodingOverTheWireTests)} is not being run.");
-        }
-
-        [TestMethod]
-        public async Task CombinedBingDocsTest()
-        {
-            await this.TestCurratedDocs("CombinedBingDocs.json");
         }
 
         [TestMethod]
