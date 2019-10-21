@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Client.Core.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;

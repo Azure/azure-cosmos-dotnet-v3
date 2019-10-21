@@ -8,8 +8,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json.Linq;
