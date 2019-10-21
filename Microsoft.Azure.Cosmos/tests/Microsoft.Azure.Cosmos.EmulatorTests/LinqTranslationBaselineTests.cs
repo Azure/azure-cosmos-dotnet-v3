@@ -30,9 +30,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
-            var authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
-            var uri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
-            var connectionPolicy = new ConnectionPolicy
+            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+            Uri uri = new Uri(Utils.ConfigurationManager.AppSettings["GatewayEndpoint"]);
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
             {
                 ConnectionMode = ConnectionMode.Gateway,
                 EnableEndpointDiscovery = true,
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestLiteralSerialization()
         {
             List<DataObject> testData = new List<DataObject>();
-            var constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Byte
@@ -215,16 +215,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Partly because IsPrimitive is not trivial to implement.
             // Therefore these methods are verified with baseline only.
             List<DataObject> data = new List<DataObject>();
-            var query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
-            List<LinqTestInput> inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("IsDefined array", b => getQuery(b).Select(doc => doc.ArrayField.IsDefined())));
-            inputs.Add(new LinqTestInput("IsDefined string", b => getQuery(b).Where(doc => doc.StringField.IsDefined())));
-            inputs.Add(new LinqTestInput("IsNull array", b => getQuery(b).Select(doc => doc.ArrayField.IsNull())));
-            inputs.Add(new LinqTestInput("IsNull string", b => getQuery(b).Where(doc => doc.StringField.IsNull())));
-            inputs.Add(new LinqTestInput("IsPrimitive array", b => getQuery(b).Select(doc => doc.ArrayField.IsPrimitive())));
-            inputs.Add(new LinqTestInput("IsPrimitive string", b => getQuery(b).Where(doc => doc.StringField.IsPrimitive())));
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("IsDefined array", b => getQuery(b).Select(doc => doc.ArrayField.IsDefined())),
+                new LinqTestInput("IsDefined string", b => getQuery(b).Where(doc => doc.StringField.IsDefined())),
+                new LinqTestInput("IsNull array", b => getQuery(b).Select(doc => doc.ArrayField.IsNull())),
+                new LinqTestInput("IsNull string", b => getQuery(b).Where(doc => doc.StringField.IsNull())),
+                new LinqTestInput("IsPrimitive array", b => getQuery(b).Select(doc => doc.ArrayField.IsPrimitive())),
+                new LinqTestInput("IsPrimitive string", b => getQuery(b).Where(doc => doc.StringField.IsPrimitive()))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
@@ -234,16 +236,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 100;
             const int NumAbsMax = 500;
             const int MaxStringLength = 100;
-            Func<Random, DataObject> createDataObj = (random) =>
+            DataObject createDataObj(Random random)
             {
-                DataObject obj = new DataObject();
-                obj.NumericField = random.Next(NumAbsMax * 2) - NumAbsMax;
-                obj.StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
-                obj.Id = Guid.NewGuid().ToString();
-                obj.Pk = "Test";
+                DataObject obj = new DataObject
+                {
+                    NumericField = random.Next(NumAbsMax * 2) - NumAbsMax,
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
                 return obj;
-            };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObject() { NumericField = doc.NumericField, StringField = doc.StringField })));
@@ -259,23 +263,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             int testEnum2Count = Enum.GetNames(typeof(TestEnum2)).Length;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                var obj = new DataObject();
-                obj.EnumField1 = (TestEnum)(random.Next(testEnumCount));
-                obj.EnumField2 = (TestEnum)(random.Next(testEnumCount));
+                DataObject obj = new DataObject
+                {
+                    EnumField1 = (TestEnum)random.Next(testEnumCount),
+                    EnumField2 = (TestEnum)random.Next(testEnumCount)
+                };
                 if (random.NextDouble() < 0.5)
                 {
-                    obj.NullableEnum1 = (TestEnum)(random.Next(testEnumCount));
+                    obj.NullableEnum1 = (TestEnum)random.Next(testEnumCount);
                 }
                 if (random.NextDouble() < 0.5)
                 {
-                    obj.NullableEnum2 = (TestEnum)(random.Next(testEnumCount));
+                    obj.NullableEnum2 = (TestEnum)random.Next(testEnumCount);
                 }
-                obj.EnumNumber = (TestEnum2)(random.Next(testEnum2Count));
+                obj.EnumNumber = (TestEnum2)random.Next(testEnum2Count);
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Filter w/ enum field comparison", b => getQuery(b).Where(doc => doc.EnumField1 == TestEnum.One)));
@@ -294,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             DateTime midDateTime = new DateTime(2016, 9, 13, 0, 0, 0);
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.IsoTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
                 obj.UnixTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
                 obj.DefaultTime = LinqTestsCommon.RandomDateTime(random, midDateTime);
@@ -302,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("IsoDateTimeConverter = filter", b => getQuery(b).Where(doc => doc.IsoTime == new DateTime(2016, 9, 13, 0, 0, 0))));
@@ -323,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 5;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 if (random.NextDouble() < 0.5)
                 {
                     if (random.NextDouble() < 0.1)
@@ -339,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Filter", b => getQuery(b).Where(doc => doc.NullableField == 5)));
@@ -363,9 +369,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 20;
             Func<Random, DataObject> createDataObj = (random) => new DataObject()
             {
-                NumericField = 1.0 * random.Next() - random.NextDouble() / 2
+                NumericField = (1.0 * random.Next()) - (random.NextDouble() / 2)
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select", b => getQuery(b).Select(doc => (int)doc.NumericField)));
@@ -407,13 +413,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // therefore, for test data, we just want to have real number with the decimal part < 0.5.
             DataObject createDataObj(Random random) => new DataObject()
             {
-                NumericField = 1.0 * random.Next() + random.NextDouble() / 2,
-                DecimalField = (decimal)(1.0 * random.Next() + random.NextDouble()) / 2,
+                NumericField = (1.0 * random.Next()) + (random.NextDouble() / 2),
+                DecimalField = (decimal)((1.0 * random.Next()) + random.NextDouble()) / 2,
                 IntField = 1.0 * random.Next(),
                 Id = Guid.NewGuid().ToString(),
                 Pk = "Test"
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             // some scenarios below requires input to be within data type range in order to be correct
             // therefore, we filter the right inputs for them accordingly.
@@ -512,11 +518,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStrLength = 100;
             const int MinStrLength = 5;
             Func<Random, DataObject> createDataObj = (random) => {
-                var sb = new StringBuilder(LinqTestsCommon.RandomString(random, random.Next(MaxStrLength - MinStrLength) + MinStrLength));
+                StringBuilder sb = new StringBuilder(LinqTestsCommon.RandomString(random, random.Next(MaxStrLength - MinStrLength) + MinStrLength));
                 if (random.NextDouble() < 0.5)
                 {
                     // make a "str" substring for StartsWith, EndsWith, and IndexOf
-                    var p = random.Next(sb.Length - 3);
+                    int p = random.Next(sb.Length - 3);
                     sb[p] = 's';
                     sb[p] = 't';
                     sb[p] = 'r';
@@ -527,7 +533,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     Pk = "Test"
             };
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
             return getQuery;
         }
 
@@ -537,7 +543,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             // issue when doing string.Reverse()
             List<LinqTestInput> inputs = new List<LinqTestInput>();
-            var getQuery = CreateDataTestStringFunctions();
+            Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestStringFunctions();
             inputs.Add(new LinqTestInput("Reverse", b => getQuery(b).Select(doc => doc.StringField.Reverse())));
             this.ExecuteTestSuite(inputs);
         }
@@ -549,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<string> constantList = new List<string>() { "one", "two", "three" };
             string[] constantArray = new string[] { "one", "two", "three" };
 
-            var getQuery = CreateDataTestStringFunctions();            
+            Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestStringFunctions();            
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Concat
@@ -611,7 +617,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxAbsValue = 10;
             const int MaxArraySize = 50;
             Func<Random, DataObject> createDataObj = (random) => {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.ArrayField = new int[random.Next(MaxArraySize)];
                 for (int i = 0; i < obj.ArrayField.Length; ++i)
                 {
@@ -627,7 +633,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<int> emptyList = new List<int>();
             List<int> constantList = new List<int>() { 1, 2, 3 };
@@ -668,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The spatial functions are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            var query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -697,7 +703,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxStringLength = 20;
             const int MaxArrayLength = 10;
             Func<Random, DataObject> createDataObj = (random) => {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.EnumerableField = new List<int>();
                 for (int i = 0; i < random.Next(MaxArrayLength - 1) + 1; ++i)
@@ -708,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Equals
@@ -728,7 +734,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxArrayLength = 10;
             const int MaxAbsValue = 10;
             Func<Random, DataObject> createDataObj = (random) => {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
                 obj.ArrayField = new int[random.Next(MaxArrayLength)];
@@ -740,7 +746,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Filter w/ ternary conditional ?", b => getQuery(b).Where(doc => doc.NumericField < 3 ? true : false).Select(doc => doc.StringField)));
@@ -755,7 +761,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 100;
             const int MaxStringLength = 20;
             Func<Random, DataObject> createDataObj = (random) => {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.StringField2 = random.NextDouble() < 0.1 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.NumericField = random.Next();
@@ -763,7 +769,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Coalesce", b => getQuery(b).Select(doc => doc.StringField ?? "str")));
@@ -776,20 +782,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestCategory("Ignore")]
         public void TestStringCompareTo()
         {
-            var testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
             
             const int Records = 100;
             const int MaxStringLength = 20;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.StringField2 = random.NextDouble() < 0.5 ? obj.StringField : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // projected compare
@@ -828,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // The UDFs invokation are not supported on the client side.
             // Therefore these methods are verified with baselines only.
             List<DataObject> data = new List<DataObject>();
-            var query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -863,10 +869,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int MaxAbsValue = 5;
             const int MaxCoordinateValue = 200;
             Func<Random, DataObject> createDataObj = (random) => {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.StringField = random.NextDouble() < 0.5 ? "str" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.NumericField = random.Next(MaxAbsValue * 2) - MaxAbsValue;
-                var coordinates = new List<double>();
+                List<double> coordinates = new List<double>();
                 coordinates.Add(random.NextDouble() < 0.5 ? 10 : random.Next(MaxCoordinateValue));
                 coordinates.Add(random.NextDouble() < 0.5 ? 5 : random.Next(MaxCoordinateValue));
                 coordinates.Add(random.NextDouble() < 0.5 ? 20 : random.Next(MaxCoordinateValue));
@@ -875,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Where -> Select",
@@ -904,11 +910,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestSelectTop()
         {
-            var generatedData = CreateDataTestSelectTop();
-            var seed = generatedData.Item1;
-            var data = generatedData.Item2;
+            Tuple<int, List<DataObject>> generatedData = this.CreateDataTestSelectTop();
+            int seed = generatedData.Item1;
+            List<DataObject> data = generatedData.Item2;
 
-            var query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution : true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -945,7 +951,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Random random = new Random(seed);
             for (int i = 0; i < Records; ++i)
             {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.NumericField = random.Next(NumAbsMax * 2) - NumAbsMax;
                 obj.Id = Guid.NewGuid().ToString();
                 obj.Pk = "Test";
@@ -967,7 +973,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int NumAbsMax = 10000;
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                var obj = new DataObject();
+                DataObject obj = new DataObject();
                 obj.EnumerableField = new List<int>();
                 int listSize = random.Next(ListSizeMax);
                 for (int j = 0; j < listSize; ++j)
@@ -981,14 +987,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 return obj;
             };
 
-            var getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
             return getQuery;
         }
 
         [TestMethod]
         public void TestSelectManyWithFilters()
         {
-            var getQuery = CreateDataTestSelectManyWithFilters();
+            Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestSelectManyWithFilters();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             // Filter outer query
