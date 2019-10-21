@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (serverRequest.Operations.Count != this.inputOperations.Count)
             {
-                throw new RequestEntityTooLargeException(ClientResources.BatchTooLarge);
+                throw new CosmosException(HttpStatusCode.RequestEntityTooLarge, ClientResources.BatchTooLarge);
             }
 
             return await this.ExecuteServerRequestAsync(serverRequest, cancellationToken);
