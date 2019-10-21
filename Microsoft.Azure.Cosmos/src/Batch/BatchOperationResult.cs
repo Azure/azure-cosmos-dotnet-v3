@@ -206,6 +206,7 @@ namespace Microsoft.Azure.Cosmos
             responseMessage.Headers.SubStatusCode = this.SubStatusCode;
             responseMessage.Headers.ETag = this.ETag;
             responseMessage.Headers.RetryAfter = this.RetryAfter;
+            responseMessage.Headers.RequestCharge = this.RequestCharge;
             responseMessage.Content = this.ResourceStream;
             responseMessage.Diagnostics = this.Diagnostics;
             return responseMessage;
