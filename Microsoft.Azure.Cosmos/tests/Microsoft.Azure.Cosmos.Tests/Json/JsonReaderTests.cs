@@ -3,12 +3,11 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Text;
@@ -959,7 +958,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             strings.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "Hello".Length) });
             strings.Add(Encoding.UTF8.GetBytes("Hello"));
             strings.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength });
-            strings.Add(new byte[] { (byte)("World".Length) });
+            strings.Add(new byte[] { (byte)"World".Length });
             strings.Add(Encoding.UTF8.GetBytes("World"));
             strings.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "Bye".Length) });
             strings.Add(Encoding.UTF8.GetBytes("Bye"));
@@ -1425,7 +1424,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 binaryInputBuilder.Add(new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength });
 
                 List<byte[]> elements = new List<byte[]>();
-                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin) });
+                elements.Add(new byte[] { (byte)JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin });
                 elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 10 });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 1) });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "example glossary".Length), 101, 120, 97, 109, 112, 108, 101, 32, 103, 108, 111, 115, 115, 97, 114, 121 });
@@ -1541,7 +1540,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.SystemString1ByteLengthMin + 12) });
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "7029d079-4016-4436-b7da-36c0bae54ff6".Length), 55, 48, 50, 57, 100, 48, 55, 57, 45, 52, 48, 49, 54, 45, 52, 52, 51, 54, 45, 98, 55, 100, 97, 45, 51, 54, 99, 48, 98, 97, 101, 53, 52, 102, 102, 54 });
 
-                elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin) });
+                elements.Add(new byte[] { (byte)JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin });
                 elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.NumberDouble, 0x98, 0x8B, 0x30, 0xE3, 0xCB, 0x45, 0xC8, 0x3F });
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 1) });
@@ -1683,7 +1682,6 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             };
 
             this.VerifyReader(input, expectedTokens, new JsonUnexpectedTokenException());
-            this.VerifyReader(binaryInput, expectedTokens, null, new JsonUnexpectedTokenException());
         }
 
         [TestMethod]
@@ -2230,7 +2228,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
                 JsonToken[] expectedTokens =
                 {
-                    JsonToken.Binary(new List<byte>())
+                    JsonToken.Binary(new byte[]{ })
                 };
 
                 this.VerifyReader(input, expectedTokens);
@@ -2239,7 +2237,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
             {
                 // Binary 1 Byte Length
-                IReadOnlyList<byte> binary = Enumerable.Range(0, 25).Select(x => (byte)x).ToList();
+                byte[] binary = Enumerable.Range(0, 25).Select(x => (byte)x).ToArray();
                 string input = $"B{Convert.ToBase64String(binary.ToArray())}";
                 byte[] binaryInput;
                 unchecked
@@ -2248,7 +2246,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                     {
                         BinaryFormat,
                         JsonBinaryEncoding.TypeMarker.Binary1ByteLength,
-                        (byte)binary.Count(),
+                        (byte)binary.Length,
                     };
                     binaryInput = binaryInput.Concat(binary).ToArray();
                 }
@@ -2280,45 +2278,12 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 expectedTokens,
                 expectedException,
                 Encoding.UTF8);
-
-            // Test readers create from the stream API (without buffering).
-            this.VerifyReader(
-                () => JsonReader.Create(new MemoryStream(utf8ByteArray)),
-                expectedTokens,
-                expectedException,
-                Encoding.UTF8);
-
-            //// TODO: have a test where you are reading from a file and over the network.
-
-            // Test readers created with the encoding API
-            Encoding[] encodings =
-            {
-                Encoding.UTF8,
-                Encoding.Unicode,
-                Encoding.UTF32,
-            };
-
-            foreach (Encoding encoding in encodings)
-            {
-                byte[] encodedBytes = encoding.GetBytes(input);
-
-                this.VerifyReader(
-                    () => JsonReader.CreateTextReaderWithEncoding(new MemoryStream(encodedBytes), encoding),
-                    expectedTokens,
-                    expectedException,
-                    encoding);
-            }
         }
 
         private void VerifyReader(byte[] input, JsonToken[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
         {
             // Test binary reader created with the array API
             this.VerifyReader(() => JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
-
-            // Test binary reader created with the stream API
-            this.VerifyReader(() => JsonReader.Create(new MemoryStream(input), jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
-
-            //// TODO: have a test where you are reading from a file and over the network.
         }
 
         /// <summary>
@@ -2506,7 +2471,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
 
                 double valueFromString = double.Parse(stringRawJsonToken, CultureInfo.InvariantCulture);
@@ -2525,7 +2490,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"I{expected}", stringRawJsonToken);
             }
@@ -2542,7 +2507,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"H{expected}", stringRawJsonToken);
             }
@@ -2559,7 +2524,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"L{expected}", stringRawJsonToken);
             }
@@ -2576,7 +2541,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"LL{expected}", stringRawJsonToken);
             }
@@ -2593,7 +2558,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"UL{expected}", stringRawJsonToken);
             }
@@ -2610,7 +2575,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"S{expected.ToString("G9", CultureInfo.InvariantCulture)}", stringRawJsonToken);
             }
@@ -2627,7 +2592,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"D{expected.ToString("G17", CultureInfo.InvariantCulture)}", stringRawJsonToken);
             }
@@ -2644,24 +2609,24 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"G{expected.ToString()}", stringRawJsonToken);
             }
         }
 
-        private void VerifyBinary(IJsonReader jsonReader, IReadOnlyList<byte> expected, Encoding encoding)
+        private void VerifyBinary(IJsonReader jsonReader, ReadOnlyMemory<byte> expected, Encoding encoding)
         {
             JsonTokenType jsonTokenType = jsonReader.CurrentTokenType;
             Assert.AreEqual(JsonTokenType.Binary, jsonTokenType);
 
-            IReadOnlyList<byte> actual = jsonReader.GetBinaryValue();
-            Assert.IsTrue(expected.SequenceEqual(actual));
+            ReadOnlyMemory<byte> actual = jsonReader.GetBinaryValue();
+            Assert.IsTrue(expected.Span.SequenceEqual(actual.Span));
 
             // Additionally check if the text is correct
             if (jsonReader.SerializationFormat == JsonSerializationFormat.Text)
             {
-                IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+                ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
                 string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
                 Assert.AreEqual($"B{Convert.ToBase64String(expected.ToArray())}", stringRawJsonToken);
             }
@@ -2696,7 +2661,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
         private void VerifyFragment(IJsonReader jsonReader, string fragment, Encoding encoding)
         {
-            IReadOnlyList<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
+            ReadOnlyMemory<byte> bufferedRawJsonToken = jsonReader.GetBufferedRawJsonToken();
             string stringRawJsonToken = encoding.GetString(bufferedRawJsonToken.ToArray());
             Assert.AreEqual(fragment, stringRawJsonToken);
         }

@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Linq;
 
     [TestClass]
+    [TestCategory("Query")]
     public class QueryTests
     {
         private DocumentClient client;
