@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Writes a Binary value into the internal buffer.
         /// </summary>
         /// <param name="value">The value of the bytes to write.</param>
-        void WriteBinaryValue(IReadOnlyList<byte> value);
+        void WriteBinaryValue(ReadOnlySpan<byte> value);
 
         /// <summary>
         /// Writes current token from a json reader to the internal buffer.
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Writes a fragment of a json to the internal buffer
         /// </summary>
         /// <param name="jsonFragment">A section of a valid json</param>
-        void WriteJsonFragment(IReadOnlyList<byte> jsonFragment);
+        void WriteJsonFragment(ReadOnlyMemory<byte> jsonFragment);
 
         /// <summary>
         /// Writes a json node to the internal buffer.
@@ -158,6 +158,6 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets the result of the JsonWriter.
         /// </summary>
         /// <returns>The result of the JsonWriter as an array of bytes.</returns>
-        byte[] GetResult();
+        ReadOnlyMemory<byte> GetResult();
     }
 }

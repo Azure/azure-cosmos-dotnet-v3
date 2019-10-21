@@ -6,7 +6,7 @@
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":1} 
+SELECT VALUE {"value": 1} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -17,7 +17,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":0} 
+SELECT VALUE {"value": 0} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -28,7 +28,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":255} 
+SELECT VALUE {"value": 255} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -39,7 +39,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":2} 
+SELECT VALUE {"value": 2} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -50,7 +50,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-128} 
+SELECT VALUE {"value": -128} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -61,7 +61,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":127} 
+SELECT VALUE {"value": 127} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -72,7 +72,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":3} 
+SELECT VALUE {"value": 3} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -83,7 +83,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":0} 
+SELECT VALUE {"value": 0} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -94,7 +94,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":65535} 
+SELECT VALUE {"value": 65535} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -105,7 +105,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":4} 
+SELECT VALUE {"value": 4} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -116,7 +116,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":0} 
+SELECT VALUE {"value": 0} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -127,7 +127,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":4294967295} 
+SELECT VALUE {"value": 4294967295} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -138,7 +138,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":5} 
+SELECT VALUE {"value": 5} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -149,7 +149,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":0} 
+SELECT VALUE {"value": 0} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -160,7 +160,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":18446744073709551615} 
+SELECT VALUE {"value": 1.8446744073709552E+19} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -171,7 +171,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":6} 
+SELECT VALUE {"value": 6} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -182,7 +182,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-32768} 
+SELECT VALUE {"value": -32768} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -193,7 +193,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":32767} 
+SELECT VALUE {"value": 32767} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -204,7 +204,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":7} 
+SELECT VALUE {"value": 7} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -215,7 +215,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-2147483648} 
+SELECT VALUE {"value": -2147483648} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -226,7 +226,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":2147483647} 
+SELECT VALUE {"value": 2147483647} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -237,7 +237,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":8} 
+SELECT VALUE {"value": 8} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -248,7 +248,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-9223372036854775808} 
+SELECT VALUE {"value": -9223372036854775808} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -259,7 +259,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":9223372036854775807} 
+SELECT VALUE {"value": 9223372036854775807} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -270,7 +270,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":9} 
+SELECT VALUE {"value": 9} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -281,7 +281,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-79228162514264337593543950335.0} 
+SELECT VALUE {"value": -7.9228162514264338E+28} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -292,7 +292,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":79228162514264337593543950335.0} 
+SELECT VALUE {"value": 7.9228162514264338E+28} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -303,7 +303,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":10} 
+SELECT VALUE {"value": 10} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -314,7 +314,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-1.7976931348623157E+308} 
+SELECT VALUE {"value": -1.7976931348623157E+308} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -325,7 +325,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":1.7976931348623157E+308} 
+SELECT VALUE {"value": 1.7976931348623157E+308} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -336,7 +336,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":11} 
+SELECT VALUE {"value": 11} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -347,7 +347,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":-3.40282347E+38} 
+SELECT VALUE {"value": -3.4028234699999998E+38} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -358,7 +358,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":3.40282347E+38} 
+SELECT VALUE {"value": 3.4028234699999998E+38} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -369,7 +369,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":true} 
+SELECT VALUE {"value": true} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -380,7 +380,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":false} 
+SELECT VALUE {"value": false} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -391,7 +391,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":""} 
+SELECT VALUE {"value": ""} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -402,7 +402,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":"str1"} 
+SELECT VALUE {"value": "str1"} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -413,7 +413,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":"long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890"} 
+SELECT VALUE {"value": "long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890"} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -424,7 +424,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":"unicode 㐀㐁㨀㨁䶴䶵"} 
+SELECT VALUE {"value": "unicode 㐀㐁㨀㨁䶴䶵"} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
@@ -435,7 +435,7 @@ FROM root ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value":null} 
+SELECT VALUE {"value": null} 
 FROM root ]]></SqlQuery>
     </Output>
   </Result>
