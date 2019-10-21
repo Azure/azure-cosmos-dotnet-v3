@@ -5,7 +5,7 @@ namespace Microsoft.Azure.Cosmos.Sql
 {
     internal sealed class SqlUndefinedLiteral : SqlLiteral
     {
-        public static readonly SqlUndefinedLiteral Singleton = new SqlUndefinedLiteral();
+        private static readonly SqlUndefinedLiteral Singleton = new SqlUndefinedLiteral();
 
         private SqlUndefinedLiteral()
             : base(SqlObjectKind.UndefinedLiteral)
@@ -35,6 +35,11 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override TResult Accept<TResult>(SqlLiteralVisitor<TResult> visitor)
         {
             return visitor.Visit(this);
+        }
+
+        public static SqlUndefinedLiteral Create()
+        {
+            return SqlUndefinedLiteral.Singleton;
         }
     }
 }

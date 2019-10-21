@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+﻿namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

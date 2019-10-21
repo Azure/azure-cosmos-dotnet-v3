@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
@@ -67,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
             else
             {
-                jsonNavigator = JsonNavigator.Create(content);
+                jsonNavigator = JsonNavigator.Create(new ArraySegment<byte>(content));
             }
 
             string resourceName = CosmosElementSerializer.GetRootNodeName(resourceType);
@@ -96,12 +97,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
                 IJsonNavigatorNode resources = resourceProperty.ValueNode;
 
-                if (!jsonNavigator.TryGetBufferedBinaryValue(resources, out IReadOnlyList<byte> resourceBinary))
+                if (!jsonNavigator.TryGetBufferedBinaryValue(resources, out ReadOnlyMemory<byte> resourceBinary))
                 {
                     resourceBinary = jsonNavigator.GetBinaryValue(resources);
                 }
 
-                IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary.ToArray(), jsonStringDictionary);
+                IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary, jsonStringDictionary);
 
                 if (!(CosmosElement.Dispatch(
                     navigatorWithStringDictionary,
@@ -200,7 +201,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             jsonWriter.WriteObjectEnd();
 
-            return new MemoryStream(jsonWriter.GetResult());
+            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
+            if (!MemoryMarshal.TryGetArray(result, out ArraySegment<byte> resultAsArray))
+            {
+                resultAsArray = new ArraySegment<byte>(result.ToArray());
+            }
+
+            return new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count);
         }
 
         /// <summary>
