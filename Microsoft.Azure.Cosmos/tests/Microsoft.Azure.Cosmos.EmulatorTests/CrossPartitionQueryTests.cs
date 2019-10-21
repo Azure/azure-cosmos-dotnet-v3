@@ -2762,7 +2762,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string indexV2Api = HttpConstants.Versions.v2018_09_17;
             string indexV1Api = HttpConstants.Versions.v2017_11_15;
 
-            Func<bool, OrderByTypes[], Action<Exception>, Task> runWithAllowMixedTypeOrderByFlag = async (allowMixedTypeOrderByTestFlag, orderByTypes, expectedExcpetionHandler) =>
+            async Task runWithAllowMixedTypeOrderByFlag(bool allowMixedTypeOrderByTestFlag, OrderByTypes[] orderByTypes, Action<Exception> expectedExcpetionHandler)
             {
                 bool allowMixedTypeOrderByTestFlagOriginalValue = OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag;
                 string apiVersion = allowMixedTypeOrderByTestFlag ? indexV2Api : indexV1Api;
@@ -2788,7 +2788,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlagOriginalValue;
                 }
-            };
+            }
 
             bool dontAllowMixedTypes = false;
             bool doAllowMixedTypes = true;
