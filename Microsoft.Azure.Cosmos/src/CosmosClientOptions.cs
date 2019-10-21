@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            this.AddBulkExecutionToUserAgentContainer();
+            this.AddFeaturesToUserAgentContainer();
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -658,12 +658,15 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void AddBulkExecutionToUserAgentContainer()
+        private void AddFeaturesToUserAgentContainer()
         {
+            CosmosClientOptionsFeatures features = new CosmosClientOptionsFeatures();
             if (this.AllowBulkExecution)
             {
-                this.UserAgentContainer.Suffix += "|bulk";
+                features |= CosmosClientOptionsFeatures.AllowBulkExecution;
             }
+
+            this.UserAgentContainer.SetFeatures(features.ToString());
         }
 
         /// <summary>
