@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlNullLiteral), SqlNullLiteral.Singleton));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlBooleanLiteral) + "True", SqlBooleanLiteral.True));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlBooleanLiteral) + "False", SqlBooleanLiteral.False));
-            inputs.Add(new SqlObjectVisitorInput(nameof(SqlUndefinedLiteral), SqlUndefinedLiteral.Singleton));
+            inputs.Add(new SqlObjectVisitorInput(nameof(SqlUndefinedLiteral), SqlUndefinedLiteral.Create()));
 
 
             inputs.Add(new SqlObjectVisitorInput("Zero", SqlNumberLiteral.Create(0)));
@@ -94,13 +94,6 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             inputs.Add(new SqlObjectVisitorInput(
                 $"{nameof(long.MaxValue)} {long.MaxValue}",
                 SqlNumberLiteral.Create(long.MaxValue)));
-
-            inputs.Add(new SqlObjectVisitorInput("Decimal value", SqlNumberLiteral.Create(7.2m)));
-            inputs.Add(new SqlObjectVisitorInput("Decimal long.MinValue", SqlNumberLiteral.Create((decimal)long.MinValue)));
-            inputs.Add(new SqlObjectVisitorInput("Decimal long.MaxValue", SqlNumberLiteral.Create((decimal)long.MaxValue)));
-            inputs.Add(new SqlObjectVisitorInput("Decimal MinValue", SqlNumberLiteral.Create(decimal.MinValue)));
-            inputs.Add(new SqlObjectVisitorInput("Decimal MaxValue", SqlNumberLiteral.Create(decimal.MaxValue)));
-
             this.ExecuteTestSuite(inputs);
         }
 

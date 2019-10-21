@@ -125,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
                 batch,
-                typeof(RequestEntityTooLargeException));
+                typeof(CosmosException),
+                ClientResources.BatchTooLarge);
         }
 
         [TestMethod]
