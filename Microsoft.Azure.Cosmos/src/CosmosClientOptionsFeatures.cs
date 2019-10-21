@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     [Flags]
     internal enum CosmosClientOptionsFeatures
     {
-        AllowBulkExecution = 0x00000000001
+        NoFeatures = 0,
+        AllowBulkExecution = 1
     }
 }

@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
         internal void SetFeatures(string features)
         {
             this.features = features;
+            // Regenerate base user agent to account for features
+            this.cosmosBaseUserAgent = this.CreateBaseUserAgentString();
         }
 
         private string CreateBaseUserAgentString()
@@ -52,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.IsNullOrEmpty(this.features))
             {
-                baseUserAgent += $"features:{this.features}";
+                baseUserAgent += $"features {this.features}|";
             }
 
             return baseUserAgent;

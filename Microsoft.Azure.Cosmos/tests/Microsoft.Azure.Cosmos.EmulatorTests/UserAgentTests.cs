@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             const string suffix = " UserApplicationName/1.0";
 
-            CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.AllowBulkExecution;
+            string features = Convert.ToString((int)CosmosClientOptionsFeatures.AllowBulkExecution, 2).PadLeft(8, '0');
 
             using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix).WithBulkExecution(true)))
             {
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string userAgentString = userAgentContainer.UserAgent;
                 Assert.IsTrue(userAgentString.Contains(suffix));
-                Assert.IsFalse(userAgentString.Contains($"|features:{features.ToString()}"));
+                Assert.IsTrue(userAgentString.Contains($"|features {features}"));
                 if (useMacOs)
                 {
                     Assert.IsTrue(userAgentString.Contains("Darwin 18.0.0"));
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string userAgentString = userAgentContainer.UserAgent;
                 Assert.IsTrue(userAgentString.Contains(suffix));
-                Assert.IsFalse(userAgentString.Contains($"|features:{features.ToString()}"));
+                Assert.IsFalse(userAgentString.Contains($"|features {features}"));
             }
         }
 
