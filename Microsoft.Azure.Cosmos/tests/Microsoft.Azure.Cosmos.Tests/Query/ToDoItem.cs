@@ -48,13 +48,29 @@ namespace Microsoft.Azure.Cosmos.Tests
                 if(containerRid != null)
                 {
                     // id 0 returns null for resource id
-                    rid = ResourceId.NewDocumentId(containerRid, i+1);
+                    rid = ToDoItem.NewDocumentId(containerRid, i+1);
                 }
                 
                 items.Add(ToDoItem.Create(idPrefix, rid));
             }
 
             return items;
+        }
+
+        //Workaround
+        //This method was removed from Direct
+        private static ResourceId NewDocumentId(string collectionId, uint documentId)
+        {
+            ResourceId collectionResourceId = ResourceId.Parse(collectionId);
+
+            ResourceId documentResourceId = ResourceId.Empty;
+
+            //Properties have private setters
+            documentResourceId.GetType().GetProperty(nameof(documentResourceId.Database)).SetValue(documentResourceId, collectionResourceId.Database);
+            documentResourceId.GetType().GetProperty(nameof(documentResourceId.DocumentCollection)).SetValue(documentResourceId, collectionResourceId.DocumentCollection);
+            documentResourceId.GetType().GetProperty(nameof(documentResourceId.Document)).SetValue(documentResourceId, documentId);
+
+            return documentResourceId;
         }
     }
 
@@ -87,4 +103,5 @@ namespace Microsoft.Azure.Cosmos.Tests
             return 0;
         }
     }
+
 }
