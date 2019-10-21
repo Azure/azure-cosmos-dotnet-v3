@@ -361,10 +361,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
-            Query<object> queryWrapper = (container, inputDocuments, throwaway) =>
+            Task queryWrapper(Container container, IEnumerable<Document> inputDocuments, object throwaway)
             {
                 return query(container, inputDocuments);
-            };
+            }
 
             await this.CreateIngestQueryDelete<object>(
                 connectionModes,
@@ -1040,7 +1040,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
-            Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
+            object getPropertyValueFunction(SpecialPropertyDocument d) => d.GetType().GetProperty(args.Name).GetValue(d);
 
             ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument);
             dynamic returnedDoc = response.Resource;
@@ -2762,7 +2762,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string indexV2Api = HttpConstants.Versions.v2018_09_17;
             string indexV1Api = HttpConstants.Versions.v2017_11_15;
 
-            Func<bool, OrderByTypes[], Action<Exception>, Task> runWithAllowMixedTypeOrderByFlag = async (allowMixedTypeOrderByTestFlag, orderByTypes, expectedExcpetionHandler) =>
+            async Task runWithAllowMixedTypeOrderByFlag(bool allowMixedTypeOrderByTestFlag, OrderByTypes[] orderByTypes, Action<Exception> expectedExcpetionHandler)
             {
                 bool allowMixedTypeOrderByTestFlagOriginalValue = OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag;
                 string apiVersion = allowMixedTypeOrderByTestFlag ? indexV2Api : indexV1Api;
@@ -2788,7 +2788,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlagOriginalValue;
                 }
-            };
+            }
 
             bool dontAllowMixedTypes = false;
             bool doAllowMixedTypes = true;
@@ -3171,10 +3171,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     string orderByField = "field_" + rand.Next(10);
                                     IEnumerable<Document> filteredDocuments;
 
-                                    Func<string> getTop = () =>
+                                    string getTop() =>
                                         hasTop ? string.Format(CultureInfo.InvariantCulture, "TOP {0} ", isParametrized ? topValueName : top.ToString()) : string.Empty;
 
-                                    Func<string> getOrderBy = () =>
+                                    string getOrderBy() =>
                                         hasOrderBy ? string.Format(CultureInfo.InvariantCulture, " ORDER BY r.{0} {1}", orderByField, sortOrder) : string.Empty;
 
                                     if (fanOut)
