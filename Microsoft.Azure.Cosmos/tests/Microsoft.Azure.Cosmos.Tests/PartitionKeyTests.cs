@@ -104,12 +104,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (Cosmos.PartitionKey partitionKey in partitionKeys)
             {
-                string serializedPartitionKey = partitionKey.ToString();
-                Assert.IsTrue(Cosmos.PartitionKey.TryParse(serializedPartitionKey, out Cosmos.PartitionKey parsedPartitionKey));
-                Assert.AreEqual(parsedPartitionKey.ToString(), serializedPartitionKey);
+                string serializedPartitionKey = partitionKey.ToJsonString();
+                Assert.IsTrue(Cosmos.PartitionKey.TryParseJsonString(serializedPartitionKey, out Cosmos.PartitionKey parsedPartitionKey));
+                Assert.AreEqual(parsedPartitionKey.ToJsonString(), serializedPartitionKey);
             }
 
-            Assert.IsFalse(Cosmos.PartitionKey.TryParse("Ceci n'est pas une partition key.", out Cosmos.PartitionKey thisNotAPartitionKey));
+            Assert.IsFalse(Cosmos.PartitionKey.TryParseJsonString("Ceci n'est pas une partition key.", out Cosmos.PartitionKey thisNotAPartitionKey));
         }
     }
 }

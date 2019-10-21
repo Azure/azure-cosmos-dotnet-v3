@@ -115,7 +115,12 @@ namespace Microsoft.Azure.Cosmos
             return this.InternalKey.ToJsonString();
         }
 
-        internal static bool TryParse(string partitionKeyString, out PartitionKey partitionKey)
+        internal string ToJsonString()
+        {
+            return this.InternalKey.ToJsonString();
+        }
+
+        internal static bool TryParseJsonString(string partitionKeyString, out PartitionKey partitionKey)
         {
             if (partitionKeyString == null)
             {
