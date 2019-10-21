@@ -148,7 +148,7 @@ namespace Azure.Cosmos.EmulatorTests.ChangeFeed
 
             Scripts scripts = this.Container.Scripts;
 
-            StoredProcedureResponse storedProcedureResponse =
+            Response<StoredProcedureProperties> storedProcedureResponse =
                 await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties(sprocId, sprocBody));
 
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);

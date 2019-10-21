@@ -50,7 +50,7 @@ namespace Azure.Cosmos.EmulatorTests
                 Body = UserDefinedFunctionsTests.function,
             };
 
-            UserDefinedFunctionResponse response =
+            Response<UserDefinedFunctionProperties> response =
                 await this.scripts.CreateUserDefinedFunctionAsync(settings);
             double reqeustCharge = response.GetRawResponse().Headers.GetRequestCharge();
             Assert.IsTrue(reqeustCharge > 0);
@@ -74,7 +74,7 @@ namespace Azure.Cosmos.EmulatorTests
             UserDefinedFunctionProperties updatedSettings = response.Value;
             updatedSettings.Body = @"function(amt) { return amt * 0.42; }";
 
-            UserDefinedFunctionResponse replaceResponse = await this.scripts.ReplaceUserDefinedFunctionAsync(updatedSettings);
+            Response<UserDefinedFunctionProperties> replaceResponse = await this.scripts.ReplaceUserDefinedFunctionAsync(updatedSettings);
             UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(updatedSettings, replaceResponse);
             reqeustCharge = replaceResponse.GetRawResponse().Headers.GetRequestCharge(); 
             Assert.IsTrue(reqeustCharge > 0);
@@ -169,7 +169,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
-        private static void ValidateUserDefinedFunctionSettings(UserDefinedFunctionProperties udfSettings, UserDefinedFunctionResponse cosmosResponse)
+        private static void ValidateUserDefinedFunctionSettings(UserDefinedFunctionProperties udfSettings, Response<UserDefinedFunctionProperties> cosmosResponse)
         {
             UserDefinedFunctionProperties settings = cosmosResponse.Value;
             Assert.AreEqual(udfSettings.Body, settings.Body,
@@ -179,7 +179,7 @@ namespace Azure.Cosmos.EmulatorTests
             Assert.IsTrue(cosmosResponse.GetRawResponse().Headers.GetRequestCharge() > 0);
         }
 
-        private async Task<UserDefinedFunctionResponse> CreateRandomUdf()
+        private async Task<Response<UserDefinedFunctionProperties>> CreateRandomUdf()
         {
             string id = Guid.NewGuid().ToString();
             string function = UserDefinedFunctionsTests.function;
@@ -191,7 +191,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             //Create a user defined function 
-            UserDefinedFunctionResponse createResponse = await this.scripts.CreateUserDefinedFunctionAsync(
+            Response<UserDefinedFunctionProperties> createResponse = await this.scripts.CreateUserDefinedFunctionAsync(
                 userDefinedFunctionProperties: settings,
                 cancellationToken: this.cancellationToken);
 

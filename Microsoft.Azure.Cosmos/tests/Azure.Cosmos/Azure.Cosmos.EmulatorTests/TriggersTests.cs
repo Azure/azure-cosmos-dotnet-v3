@@ -52,7 +52,7 @@ namespace Azure.Cosmos.EmulatorTests
                 TriggerType = Cosmos.Scripts.TriggerType.Pre
             };
 
-            TriggerResponse triggerResponse =
+            Response<TriggerProperties> triggerResponse =
                 await this.scripts.CreateTriggerAsync(settings);
             double reqeustCharge = triggerResponse.GetRawResponse().Headers.GetRequestCharge();
             Assert.IsTrue(reqeustCharge > 0);
@@ -76,7 +76,7 @@ namespace Azure.Cosmos.EmulatorTests
             TriggerProperties updatedSettings = triggerResponse.Value;
             updatedSettings.Body = TriggersTests.GetTriggerFunction(".42");
 
-            TriggerResponse replaceResponse = await this.scripts.ReplaceTriggerAsync(updatedSettings);
+            Response<TriggerProperties> replaceResponse = await this.scripts.ReplaceTriggerAsync(updatedSettings);
             TriggersTests.ValidateTriggerSettings(updatedSettings, replaceResponse);
             reqeustCharge = replaceResponse.GetRawResponse().Headers.GetRequestCharge();
             Assert.IsTrue(reqeustCharge > 0);
@@ -282,7 +282,7 @@ namespace Azure.Cosmos.EmulatorTests
             }";
         }
 
-        private static void ValidateTriggerSettings(TriggerProperties triggerSettings, TriggerResponse cosmosResponse)
+        private static void ValidateTriggerSettings(TriggerProperties triggerSettings, Response<TriggerProperties> cosmosResponse)
         {
             TriggerProperties settings = cosmosResponse.Value;
             Assert.AreEqual(triggerSettings.Body, settings.Body,
@@ -302,7 +302,7 @@ namespace Azure.Cosmos.EmulatorTests
             public int JobNumber { get; set; }
         }
 
-        private async Task<TriggerResponse> CreateRandomTrigger()
+        private async Task<Response<TriggerProperties>> CreateRandomTrigger()
         {
             string id = Guid.NewGuid().ToString();
             string function = GetTriggerFunction(".05");
@@ -316,7 +316,7 @@ namespace Azure.Cosmos.EmulatorTests
             };
 
             //Create a user defined function 
-            TriggerResponse createResponse = await this.scripts.CreateTriggerAsync(
+            Response<TriggerProperties> createResponse = await this.scripts.CreateTriggerAsync(
                 triggerProperties: settings,
                 cancellationToken: this.cancellationToken);
 

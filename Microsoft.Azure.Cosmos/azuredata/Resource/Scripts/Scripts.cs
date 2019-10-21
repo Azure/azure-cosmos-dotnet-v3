@@ -82,7 +82,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(
+        public abstract Task<Response<StoredProcedureProperties>> CreateStoredProcedureAsync(
                     StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -223,7 +223,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<StoredProcedureResponse> ReadStoredProcedureAsync(
+        public abstract Task<Response<StoredProcedureProperties>> ReadStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -268,7 +268,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
+        public abstract Task<Response<StoredProcedureProperties>> ReplaceStoredProcedureAsync(
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -300,7 +300,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
+        public abstract Task<Response<StoredProcedureProperties>> DeleteStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -486,7 +486,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<TriggerResponse> CreateTriggerAsync(
+        public abstract Task<Response<TriggerProperties>> CreateTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -602,7 +602,7 @@ namespace Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="Response{T}"/> which wraps a <see cref="TriggerProperties"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -624,7 +624,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<TriggerResponse> ReadTriggerAsync(
+        public abstract Task<Response<TriggerProperties>> ReadTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -636,7 +636,7 @@ namespace Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> containing the updated resource record.
+        /// A <see cref="Task"/> containing a <see cref="Response{T}"/> which wraps a <see cref="TriggerProperties"/> containing the updated resource record.
         /// </returns>
         /// <exception cref="ArgumentNullException">If <paramref name="triggerProperties"/> is not set.</exception>
         /// <example>
@@ -664,7 +664,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<TriggerResponse> ReplaceTriggerAsync(
+        public abstract Task<Response<TriggerProperties>> ReplaceTriggerAsync(
                     TriggerProperties triggerProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken));
@@ -675,7 +675,7 @@ namespace Azure.Cosmos.Scripts
         /// <param name="id">The id of the trigger to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the trigger request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="TriggerResponse"/> which wraps a <see cref="TriggerProperties"/> which will contain information about the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="Response{T}"/> which wraps a <see cref="TriggerProperties"/> which will contain information about the request issued.</returns>
         /// /// <example>
         /// This examples gets a reference to an existing trigger and deletes it.
         /// <code language="c#">
@@ -685,7 +685,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<TriggerResponse> DeleteTriggerAsync(
+        public abstract Task<Response<TriggerProperties>> DeleteTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -749,7 +749,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
+        public abstract Task<Response<UserDefinedFunctionProperties>> CreateUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -865,7 +865,7 @@ namespace Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the read resource record.
+        /// A <see cref="Task"/> containing a <see cref="Response{T}"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the read resource record.
         /// </returns>
         /// <exception cref="CosmosException">This exception can encapsulate many different types of errors. To determine the specific error always look at the StatusCode property. Some common codes you may get when creating a Document are:
         /// <list type="table">
@@ -890,7 +890,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
+        public abstract Task<Response<UserDefinedFunctionProperties>> ReadUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -902,7 +902,7 @@ namespace Azure.Cosmos.Scripts
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the updated resource record.
+        /// A <see cref="Task"/> containing a <see cref="Response{T}"/> which wraps a <see cref="UserDefinedFunctionProperties"/> containing the updated resource record.
         /// </returns>
         /// <example>
         /// This examples replaces an existing user defined function.
@@ -920,7 +920,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
+        public abstract Task<Response<UserDefinedFunctionProperties>> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
@@ -931,7 +931,7 @@ namespace Azure.Cosmos.Scripts
         /// <param name="id">The id of the user defined function to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request <see cref="RequestOptions"/></param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="UserDefinedFunctionResponse"/> which wraps a <see cref="UserDefinedFunctionProperties"/> which will contain information about the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="Response{T}"/> which wraps a <see cref="UserDefinedFunctionProperties"/> which will contain information about the request issued.</returns>
         /// <example>
         /// This examples gets a reference to an existing user defined function and deletes it.
         /// <code language="c#">
@@ -941,7 +941,7 @@ namespace Azure.Cosmos.Scripts
         /// ]]>
         /// </code>
         /// </example>
-        public abstract Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
+        public abstract Task<Response<UserDefinedFunctionProperties>> DeleteUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));

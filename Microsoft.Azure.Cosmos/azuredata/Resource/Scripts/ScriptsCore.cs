@@ -25,7 +25,7 @@ namespace Azure.Cosmos.Scripts
             this.clientContext = clientContext;
         }
 
-        public override Task<StoredProcedureResponse> CreateStoredProcedureAsync(
+        public override Task<Response<StoredProcedureProperties>> CreateStoredProcedureAsync(
                     StoredProcedureProperties storedProcedureProperties,
                     RequestOptions requestOptions = null,
                     CancellationToken cancellationToken = default(CancellationToken))
@@ -107,7 +107,7 @@ namespace Azure.Cosmos.Scripts
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
 
-        public override Task<StoredProcedureResponse> ReadStoredProcedureAsync(
+        public override Task<Response<StoredProcedureProperties>> ReadStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -125,7 +125,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
+        public override Task<Response<StoredProcedureProperties>> ReplaceStoredProcedureAsync(
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -138,7 +138,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
+        public override Task<Response<StoredProcedureProperties>> DeleteStoredProcedureAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -208,7 +208,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<TriggerResponse> CreateTriggerAsync(
+        public override Task<Response<TriggerProperties>> CreateTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -308,7 +308,7 @@ namespace Azure.Cosmos.Scripts
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
 
-        public override Task<TriggerResponse> ReadTriggerAsync(
+        public override Task<Response<TriggerProperties>> ReadTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -326,7 +326,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<TriggerResponse> ReplaceTriggerAsync(
+        public override Task<Response<TriggerProperties>> ReplaceTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -354,7 +354,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<TriggerResponse> DeleteTriggerAsync(
+        public override Task<Response<TriggerProperties>> DeleteTriggerAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -372,7 +372,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
+        public override Task<Response<UserDefinedFunctionProperties>> CreateUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -475,7 +475,7 @@ namespace Azure.Cosmos.Scripts
             return PageResponseEnumerator.CreateAsyncPageable(continuation => pageIterator.GetPageAsync(continuation, cancellationToken));
         }
 
-        public override Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
+        public override Task<Response<UserDefinedFunctionProperties>> ReadUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -493,7 +493,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
+        public override Task<Response<UserDefinedFunctionProperties>> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -521,7 +521,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public override Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
+        public override Task<Response<UserDefinedFunctionProperties>> DeleteUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
@@ -539,7 +539,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<StoredProcedureResponse> ProcessStoredProcedureOperationAsync(
+        private Task<Response<StoredProcedureProperties>> ProcessStoredProcedureOperationAsync(
             string id,
             OperationType operationType,
             Stream streamPayload,
@@ -559,7 +559,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<StoredProcedureResponse> ProcessStoredProcedureOperationAsync(
+        private Task<Response<StoredProcedureProperties>> ProcessStoredProcedureOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,
@@ -578,7 +578,7 @@ namespace Azure.Cosmos.Scripts
             return this.clientContext.ResponseFactory.CreateStoredProcedureResponseAsync(response, cancellationToken);
         }
 
-        private Task<TriggerResponse> ProcessTriggerOperationAsync(
+        private Task<Response<TriggerProperties>> ProcessTriggerOperationAsync(
             string id,
             OperationType operationType,
             Stream streamPayload,
@@ -598,7 +598,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<TriggerResponse> ProcessTriggerOperationAsync(
+        private Task<Response<TriggerProperties>> ProcessTriggerOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,
@@ -638,7 +638,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
+        private Task<Response<UserDefinedFunctionProperties>> ProcessUserDefinedFunctionOperationAsync(
             string id,
             OperationType operationType,
             Stream streamPayload,
@@ -658,7 +658,7 @@ namespace Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        private Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
+        private Task<Response<UserDefinedFunctionProperties>> ProcessUserDefinedFunctionOperationAsync(
             Uri linkUri,
             OperationType operationType,
             Stream streamPayload,

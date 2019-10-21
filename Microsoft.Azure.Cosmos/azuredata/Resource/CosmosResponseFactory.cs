@@ -187,7 +187,7 @@ namespace Azure.Cosmos
             });
         }
 
-        internal Task<StoredProcedureResponse> CreateStoredProcedureResponseAsync(
+        internal Task<Response<StoredProcedureProperties>> CreateStoredProcedureResponseAsync(
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
@@ -196,13 +196,11 @@ namespace Azure.Cosmos
                 StoredProcedureProperties cosmosStoredProcedure = CosmosResponseFactory.ToObjectInternal<StoredProcedureProperties>(
                     cosmosResponseMessage,
                     this.propertiesSerializer);
-                return new StoredProcedureResponse(
-                    cosmosResponseMessage,
-                    cosmosStoredProcedure);
+                return Response.FromValue(cosmosStoredProcedure, cosmosResponseMessage);
             });
         }
 
-        internal Task<TriggerResponse> CreateTriggerResponseAsync(
+        internal Task<Response<TriggerProperties>> CreateTriggerResponseAsync(
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
@@ -211,24 +209,20 @@ namespace Azure.Cosmos
                 TriggerProperties triggerProperties = CosmosResponseFactory.ToObjectInternal<TriggerProperties>(
                     cosmosResponseMessage,
                     this.propertiesSerializer);
-                return new TriggerResponse(
-                    cosmosResponseMessage,
-                    triggerProperties);
+                return Response.FromValue(triggerProperties, cosmosResponseMessage);
             });
         }
 
-        internal Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionResponseAsync(
+        internal Task<Response<UserDefinedFunctionProperties>> CreateUserDefinedFunctionResponseAsync(
             Task<Response> cosmosResponseMessageTask,
             CancellationToken cancellationToken)
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                UserDefinedFunctionProperties settings = CosmosResponseFactory.ToObjectInternal<UserDefinedFunctionProperties>(
+                UserDefinedFunctionProperties settings = CosmosResponseFactory.ToObjectInternal<Response<UserDefinedFunctionProperties>>(
                     cosmosResponseMessage,
                     this.propertiesSerializer);
-                return new UserDefinedFunctionResponse(
-                    cosmosResponseMessage,
-                    settings);
+                return Response.FromValue(settings, cosmosResponseMessage);
             });
         }
 
