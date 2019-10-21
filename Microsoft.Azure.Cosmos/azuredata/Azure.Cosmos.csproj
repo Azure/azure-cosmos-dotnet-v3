@@ -56,7 +56,7 @@
     <Compile Include="..\src\Resource\Settings\Enums\*.cs">
       <Link>Resource\Settings\Enums\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;..\src\Handler\TransportHandler.cs;">
+    <Compile Include="..\src\Handler\*.cs" Exclude="..\src\Handler\RequestMessage.cs;..\src\Handler\ResponseMessage.cs;..\src\Handler\RequestInvokerHandler.cs;..\src\Handler\PartitionKeyRangeHandler.cs;">
       <Link>Handler\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Diagnostics\*.cs">
@@ -104,7 +104,7 @@
     <Compile Include="..\src\CosmosElements\**\*.cs">
       <Link>CosmosElements\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseContainerCosmos.cs">
+    <Compile Include="..\src\ChangeFeedProcessor\**\*.cs" Exclude="..\src\ChangeFeedProcessor\FeedManagement\RemainingWorkEstimatorCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\ChangeFeedObserverContextCore.cs;..\src\ChangeFeedProcessor\FeedProcessing\FeedProcessorCore.cs;..\src\ChangeFeedProcessor\Utils\CosmosContainerExtensions.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseContainerCosmos.cs;..\src\ChangeFeedProcessor\LeaseManagement\DocumentServiceLeaseUpdaterCosmos.cs">
       <Link>ChangeFeedProcessor\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\Headers\*.cs" Exclude="..\src\Headers\Headers.cs;..\src\Headers\CosmosMessageHeadersInternal.cs">

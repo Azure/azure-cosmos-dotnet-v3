@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed
+namespace Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Net;
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 {
                     ItemResponse<DocumentServiceLeaseCore> response = await this.container.ReadItemAsync<DocumentServiceLeaseCore>(
                     itemId, partitionKey).ConfigureAwait(false);
-                    DocumentServiceLeaseCore serverLease = response.Resource;
+                    DocumentServiceLeaseCore serverLease = response.Value;
 
                     DefaultTrace.TraceInformation(
                     "Lease with token {0} update failed because the lease with concurrency token '{1}' was updated by host '{2}' with concurrency token '{3}'. Will retry, {4} retry(s) left.",
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 partitionKey: partitionKey,
                 requestOptions: itemRequestOptions).ConfigureAwait(false);
 
-                return response.Resource;
+                return response.Value;
             }
             catch (CosmosException ex)
             {

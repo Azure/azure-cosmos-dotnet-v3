@@ -13,6 +13,7 @@ namespace Azure.Cosmos.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents;
 
     internal sealed class FeedProcessorCore<T> : FeedProcessor
     {
@@ -55,9 +56,13 @@ namespace Azure.Cosmos.ChangeFeed
                             DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.Status, subStatusCode);
                             this.HandleFailedRequest((HttpStatusCode)response.Status, (int)subStatusCode, lastContinuation);
 
-                            if (response.Headers.RetryAfter.HasValue)
+                            if (response.Headers.TryGetValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryHeader))
                             {
-                                delay = response.Headers.RetryAfter.Value;
+                                TimeSpan? retryAfter = Headers.GetRetryAfter(retryHeader);
+                                if (retryAfter.HasValue)
+                                {
+                                    delay = retryAfter.Value;
+                                }
                             }
 
                             // Out of the loop for a retry

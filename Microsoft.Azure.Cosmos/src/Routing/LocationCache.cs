@@ -10,6 +10,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 

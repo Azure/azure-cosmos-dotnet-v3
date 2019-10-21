@@ -2,17 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if AZURECORE
 namespace Azure.Cosmos.ChangeFeed
-#else
-namespace Microsoft.Azure.Cosmos.ChangeFeed
-#endif
 {
     using System.Globalization;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
 
     internal static class CosmosContainerExtensions
     {
@@ -32,8 +27,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             object partitionKey,
             T item)
         {
-            var response = await container.CreateItemAsync<T>(item).ConfigureAwait(false);
-            if (response.StatusCode == HttpStatusCode.Conflict)
+            ItemResponse<T> response = await container.CreateItemAsync<T>(item).ConfigureAwait(false);
+            if (response.GetRawResponse().Status == (int)HttpStatusCode.Conflict)
             {
                 // Ignore-- document already exists.
                 return null;
@@ -48,9 +43,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
-            var response = await container.DeleteItemAsync<T>(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false);
+            ItemResponse<T> response = await container.DeleteItemAsync<T>(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false);
 
-            return response.Resource;
+            return response.Value;
         }
 
         public static async Task<bool> ItemExistsAsync(
@@ -58,12 +53,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             PartitionKey partitionKey,
             string itemId)
         {
-            var response = await container.ReadItemStreamAsync(
+            Response response = await container.ReadItemStreamAsync(
                         itemId,
                         partitionKey)
                         .ConfigureAwait(false);
 
-            return response.IsSuccessStatusCode;
+            return response.IsSuccessStatusCode();
         }
 
         public static async Task<string> GetMonitoredContainerRidAsync(

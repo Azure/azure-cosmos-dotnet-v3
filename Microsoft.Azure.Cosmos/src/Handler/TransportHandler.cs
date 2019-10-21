@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler

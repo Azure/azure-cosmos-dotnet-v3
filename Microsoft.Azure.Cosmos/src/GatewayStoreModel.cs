@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            UserAgentContainer userAgent,
+            Microsoft.Azure.Cosmos.UserAgentContainer userAgent,
             ApiType apiType = ApiType.None,
             HttpMessageHandler messageHandler = null)
         {

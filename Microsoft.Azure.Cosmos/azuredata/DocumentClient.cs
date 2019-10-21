@@ -816,7 +816,7 @@ namespace Microsoft.Azure.Cosmos
                     this.globalEndpointManager,
                     this.sessionContainer,
                     this.connectionPolicy.RequestTimeout,
-                    this.accountServiceConfiguration.DefaultConsistencyLevel,
+                    (global::Azure.Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     null,
                     this.connectionPolicy.UserAgentContainer,
