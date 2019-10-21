@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             const int MinStringLength = 2;
             const int MaxStringLength = 128;
-            if (jsonStringDictionary != null && ((value.Length >= MinStringLength) && (value.Length <= MaxStringLength)))
+            if (jsonStringDictionary != null && (value.Length >= MinStringLength) && (value.Length <= MaxStringLength))
             {
                 const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
                 if (jsonStringDictionary.TryAddString(value, out int index))
