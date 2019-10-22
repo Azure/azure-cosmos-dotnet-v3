@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.IsNullOrEmpty(this.features))
             {
-                baseUserAgent += $"features {this.features}|";
+                baseUserAgent += $"F {this.features}|";
             }
 
             return baseUserAgent;

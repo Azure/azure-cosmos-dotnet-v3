@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string userAgentString = userAgentContainer.UserAgent;
                 Assert.IsTrue(userAgentString.Contains(suffix));
-                Assert.IsTrue(userAgentString.Contains($"|features {features}"));
+                Assert.IsTrue(userAgentString.Contains($"|F {features}"));
                 if (useMacOs)
                 {
                     Assert.IsTrue(userAgentString.Contains("Darwin 18.0.0"));
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string userAgentString = userAgentContainer.UserAgent;
                 Assert.IsTrue(userAgentString.Contains(suffix));
-                Assert.IsFalse(userAgentString.Contains($"|features {features}"));
+                Assert.IsFalse(userAgentString.Contains($"|F {features}"));
             }
         }
 
