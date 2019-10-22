@@ -59,6 +59,9 @@ namespace Microsoft.Azure.Cosmos
             return partitionedQueryExecutionInfo;
         }
 
+        /// <summary>
+        /// Used in the compute gateway to support legacy gateways query execution pattern.
+        /// </summary>
         public async Task<(PartitionedQueryExecutionInfo, bool)> GetQueryInfoAndIfSupportedAsync(
             QueryFeatures supportedQueryFeatures,
             SqlQuerySpec sqlQuerySpec,

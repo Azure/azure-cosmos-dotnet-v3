@@ -4334,6 +4334,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 crossPartitionQuery);
         }
 
+        [TestMethod]
+        public async Task TestTryExecuteQuery()
+        {
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition,
+                CrossPartitionQueryTests.NoDocuments,
+                this.TestTryExecuteQueryHelper);
+        }
+
+        private async Task TestTryExecuteQueryHelper(
+            Container container,
+            IEnumerable<Document> documents)
+        {
+            ContainerCore conatinerCore = (ContainerCore)container;
+            foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+            {
+                foreach (int maxItemCount in new int[] { 10, 100 })
+                {
+                    foreach ((string query, QueryFeatures queryFeatures, bool canSupportExpected) in new Tuple<string, QueryFeatures, bool>[]
+                    {
+                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c", QueryFeatures.None, true),
+                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c ORDER BY c._ts", QueryFeatures.None, false),
+                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c ORDER BY c._ts", QueryFeatures.OrderBy, true),
+                    })
+                    {
+                        string continuationToken = null;
+                        do
+                        {
+                            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
+                                supportedQueryFeatures: queryFeatures,
+                                queryDefinition: new QueryDefinition(query),
+                                requestOptions: new QueryRequestOptions()
+                                {
+                                    MaxConcurrency = maxDegreeOfParallelism,
+                                    MaxItemCount = maxItemCount,
+                                },
+                                continuationToken: continuationToken);
+
+                            Assert.AreEqual(canSupportExpected, canSupportActual);
+                            if (canSupportExpected)
+                            {
+                                ResponseMessage cosmosQueryResponse = await queryIterator.ReadNextAsync();
+                                continuationToken = cosmosQueryResponse.ContinuationToken;
+                            }
+
+                            Assert.IsNotNull(partitionedQueryExecutionInfo);
+                        } while (continuationToken != null);
+                    }
+                }
+            }
+        }
+
         private sealed class Headers
         {
             public double TotalRUs { get; set; }
