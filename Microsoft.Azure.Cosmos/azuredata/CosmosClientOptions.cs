@@ -76,6 +76,7 @@ namespace Azure.Cosmos
             this.ConnectionMode = CosmosClientOptions.DefaultConnectionMode;
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
+            this.CustomHandlers = new Collection<RequestHandler>();
         }
 
         /// <summary>
@@ -375,6 +376,8 @@ namespace Azure.Cosmos
         /// </summary>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         internal CosmosSerializer PropertiesSerializer => CosmosClientOptions.propertiesSerializer;
+
+        internal Collection<RequestHandler> CustomHandlers { get; }
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.

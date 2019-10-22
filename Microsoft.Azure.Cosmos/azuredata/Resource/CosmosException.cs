@@ -42,7 +42,9 @@ namespace Azure.Cosmos
                 this.RequestCharge = this.CosmosHeaders.RequestCharge;
                 this.RetryAfter = this.CosmosHeaders.RetryAfter;
                 this.SubStatusCode = (int)this.CosmosHeaders.SubStatusCode;
-                if (response.ContentStream != null && response.ContentStream.Length > 0)
+                if (response.ContentStream != null
+                    && response.ContentStream.CanRead
+                    && response.ContentStream.Length > 0)
                 {
                     using (StreamReader responseReader = new StreamReader(response.ContentStream))
                     {

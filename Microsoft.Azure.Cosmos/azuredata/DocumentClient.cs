@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Provides a client-side logical representation for the Azure Cosmos DB service.
@@ -275,39 +276,42 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
-        /// specified service endpoint, an authorization key (or resource token) and a connection policy
-        /// for the Azure Cosmos DB service.
-        /// </summary>
-        /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
-        /// <param name="authKeyOrResourceToken">The authorization key or resource token to use to create the client.</param>
-        /// <param name="sendingRequestEventArgs"> The event handler to be invoked before the request is sent.</param>
-        /// <param name="receivedResponseEventArgs"> The event handler to be invoked after a response has been received.</param>
-        /// <param name="connectionPolicy">(Optional) The connection policy for the client.</param>
-        /// <param name="desiredConsistencyLevel">(Optional) The default consistency policy for client operations.</param>
-        /// <param name="apitype">Api type for the account</param>
-        /// <param name="handler">The HTTP handler stack to use for sending requests (e.g., HttpClientHandler).</param>
-        /// <param name="sessionContainer">The default session container with which DocumentClient is created.</param>
-        /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
-        /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
-        /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
-        /// <remarks>
-        /// The service endpoint can be obtained from the Azure Management Portal.
-        /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
-        /// If however you are connecting as a specific Azure Cosmos DB User, the value passed to <paramref name="authKeyOrResourceToken"/> is the ResourceToken obtained from the permission feed for the user.
-        /// <para>
-        /// Using Direct connectivity, wherever possible, is recommended.
-        /// </para>
-        /// </remarks>
-        /// <seealso cref="Uri"/>
-        /// <seealso cref="ConnectionPolicy"/>
-        /// <seealso cref="ConsistencyLevel"/>
+        public DocumentClient(Uri serviceEndpoint,
+                              string authKeyOrResourceToken,
+                              JsonSerializerSettings serializerSettings,
+                              ConnectionPolicy connectionPolicy = null,
+                              Documents.ConsistencyLevel? desiredConsistencyLevel = null)
+            : this(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
+        {
+        }
+
+        public DocumentClient(
+            Uri serviceEndpoint,
+            IList<Documents.Permission> permissionFeed,
+            ConnectionPolicy connectionPolicy = null,
+            Documents.ConsistencyLevel? desiredConsistencyLevel = null)
+            : this(serviceEndpoint,
+                    GetResourceTokens(permissionFeed),
+                    connectionPolicy,
+                    desiredConsistencyLevel)
+        {
+        }
+
+        public DocumentClient(Uri serviceEndpoint,
+                              SecureString authKey,
+                              JsonSerializerSettings serializerSettings,
+                              ConnectionPolicy connectionPolicy = null,
+                              Documents.ConsistencyLevel? desiredConsistencyLevel = null)
+            : this(serviceEndpoint, authKey, connectionPolicy, desiredConsistencyLevel)
+        {            
+        }
+
         internal DocumentClient(Uri serviceEndpoint,
                               string authKeyOrResourceToken,
                               EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
                               ConnectionPolicy connectionPolicy = null,
                               Documents.ConsistencyLevel? desiredConsistencyLevel = null,
+                              JsonSerializerSettings serializerSettings = null,
                               ApiType apitype = ApiType.None,
                               EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
                               HttpMessageHandler handler = null,
@@ -1177,10 +1181,10 @@ namespace Microsoft.Azure.Cosmos
             return this.accountServiceConfiguration.QueryEngineConfiguration;
         }
 
-        internal virtual async Task<Documents.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
+        internal virtual async Task<global::Azure.Cosmos.ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
             await this.EnsureValidClientAsync();
-            return this.accountServiceConfiguration.DefaultConsistencyLevel;
+            return (global::Azure.Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
         }
 
         internal Task<Documents.ConsistencyLevel?> GetDesiredConsistencyLevelAsync()

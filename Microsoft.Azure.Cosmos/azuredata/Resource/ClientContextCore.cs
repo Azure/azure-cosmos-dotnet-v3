@@ -24,6 +24,7 @@ namespace Azure.Cosmos
         private const string DiagnosticScopeResourceType = "resourceType";
         private const string DiagnosticScopeContainer = "resourceType";
         private const string DiagnosticScopeDiagnostics = "diagnostics";
+        private const string DefaultDiagnosticsPrefix = "Azure.Cosmos";
 
         private readonly HttpPipeline pipeline;
         private readonly string diagnosticsPrefix;
@@ -37,7 +38,7 @@ namespace Azure.Cosmos
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
-            string diagnosticsPrefix)
+            string diagnosticsPrefix = ClientContextCore.DefaultDiagnosticsPrefix)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;

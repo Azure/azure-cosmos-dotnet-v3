@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azure.Cosmos", "Microsoft.A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azure.Cosmos.EmulatorTests", "Microsoft.Azure.Cosmos\tests\Azure.Cosmos\Azure.Cosmos.EmulatorTests\Azure.Cosmos.EmulatorTests.csproj", "{0C673EC9-9951-4A25-B0BB-AE16E256530B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azure.Cosmos.Tests", "Microsoft.Azure.Cosmos\tests\Azure.Cosmos\Azure.Cosmos.Tests\Azure.Cosmos.Tests.csproj", "{C5F516D3-344E-473A-AE48-AB35367B8757}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Cover|Any CPU = Cover|Any CPU
@@ -83,6 +85,18 @@ Global
 		{0C673EC9-9951-4A25-B0BB-AE16E256530B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0C673EC9-9951-4A25-B0BB-AE16E256530B}.Release|x64.ActiveCfg = Release|Any CPU
 		{0C673EC9-9951-4A25-B0BB-AE16E256530B}.Release|x64.Build.0 = Release|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Cover|x64.Build.0 = Debug|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Debug|x64.Build.0 = Debug|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Release|x64.ActiveCfg = Release|Any CPU
+		{C5F516D3-344E-473A-AE48-AB35367B8757}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

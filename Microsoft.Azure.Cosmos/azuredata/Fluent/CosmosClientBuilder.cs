@@ -400,6 +400,24 @@ namespace Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// For Unit testing
+        /// </summary>
+        internal CosmosClientBuilder AddCustomHandlers(params RequestHandler[] customHandlers)
+        {
+            foreach (RequestHandler handler in customHandlers)
+            {
+                if (handler.InnerHandler != null)
+                {
+                    throw new ArgumentException(nameof(customHandlers) + " requires all DelegatingHandler.InnerHandler to be null. The CosmosClient uses the inner handler in building the pipeline.");
+                }
+
+                this.clientOptions.CustomHandlers.Add(handler);
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Disables CPU monitoring for transport client which will inhibit troubleshooting of timeout exceptions.
         /// </summary>
         internal CosmosClientBuilder WithCpuMonitorDisabled()
