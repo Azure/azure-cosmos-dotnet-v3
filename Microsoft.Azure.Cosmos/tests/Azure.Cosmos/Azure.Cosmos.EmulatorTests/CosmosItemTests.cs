@@ -1117,10 +1117,10 @@ namespace Azure.Cosmos.EmulatorTests
                 Assert.AreEqual(128, firstByte);
                 Assert.AreEqual(JsonSerializationFormat.Binary, (JsonSerializationFormat)firstByte);
 
-                IJsonReader reader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(response.ContentStream);
+                IJsonReader reader = Microsoft.Azure.Cosmos.Json.JsonReader.Create(content);
                 IJsonWriter textWriter = Microsoft.Azure.Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text);
                 textWriter.WriteAll(reader);
-                string json = Encoding.UTF8.GetString(textWriter.GetResult());
+                string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
                 Assert.IsNotNull(json);
                 ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
                 Assert.IsTrue(responseActivities.Length <= 5);

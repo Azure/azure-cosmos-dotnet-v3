@@ -531,7 +531,7 @@ namespace Azure.Cosmos.EmulatorTests
         protected Random rand;
         public abstract IEnumerable<string> GetDocuments(uint numberOfDocuments);
         public abstract IEnumerable<Query> GetQueries(uint numberOfQueries, bool hasOrderBy = true);
-        internal abstract Task<int> QueryAndVerifyDocuments(CosmosClient client, string collectionLink, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0);
+        internal abstract Task<int> QueryAndVerifyDocuments(Container container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0);
 
         protected QueryOracleUtil(int seed)
         {
@@ -629,17 +629,15 @@ namespace Azure.Cosmos.EmulatorTests
             return valid;
         }
 
-        internal virtual async Task<int> QueryAndVerifyDocuments(CosmosClient client, string collectionLink, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0, bool allowScan = false)
+        internal virtual async Task<int> QueryAndVerifyDocuments(Container container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0, bool allowScan = false)
         {
             // First we make sure that all the queries are inserted
             {
                 List<dynamic> queriedDocuments = new List<dynamic>();
-                IDocumentQuery<Document> selectAllQuery = client.CreateDocumentQuery(collectionLink, feedOptions: new FeedOptions { MaxItemCount = pageSize, EnableScanInQuery = allowScan, EnableCrossPartitionQuery = true }).AsDocumentQuery();
-                while (selectAllQuery.HasMoreResults)
+                await foreach (Page<dynamic> queryResultsPage in container.GetItemQueryIterator<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = pageSize }).AsPages())
                 {
-                    DocumentFeedResponse<dynamic> queryResultsPage = await selectAllQuery.ExecuteNextAsync();
-                    System.Diagnostics.Trace.TraceInformation("ReadFeed continuation token: {0}, SessionToken: {1}", queryResultsPage.ResponseContinuation, queryResultsPage.SessionToken);
-                    queriedDocuments.AddRange(queryResultsPage);
+                    System.Diagnostics.Trace.TraceInformation("ReadFeed continuation token: {0}, SessionToken: {1}", queryResultsPage.ContinuationToken, queryResultsPage.GetRawResponse().Headers.GetSession());
+                    queriedDocuments.AddRange(queryResultsPage.Values);
                 }
 
                 List<dynamic> expected = new List<dynamic>(documents.Count());
@@ -683,14 +681,12 @@ namespace Azure.Cosmos.EmulatorTests
                                            totalQueryLatencyAllPages.TotalMilliseconds / numberOfQueries, numberOfQueries);
                 }
 
-                IDocumentQuery<dynamic> docQuery = client.CreateDocumentQuery(collectionLink, query.ToString(), feedOptions: new FeedOptions { MaxItemCount = pageSize, EnableScanInQuery = allowScan, EnableCrossPartitionQuery = true }).AsDocumentQuery();
-                while (docQuery.HasMoreResults)
+                await foreach (Page<dynamic> queryResultsPage in container.GetItemQueryIterator<dynamic>(requestOptions: new QueryRequestOptions() { MaxItemCount = pageSize, EnableScanInQuery = allowScan }).AsPages())
                 {
                     DateTime startTime = DateTime.Now;
-                    DocumentFeedResponse<dynamic> queryResultsPage = await QueryWithRetry(docQuery, query.ToString());
-                    activityIDsAllQueryPages.Add(queryResultsPage.ActivityId);
+                    activityIDsAllQueryPages.Add(queryResultsPage.GetRawResponse().Headers.GetActivityId());
                     totalQueryLatencyAllPages += (DateTime.Now - startTime);
-                    foreach (JObject result in queryResultsPage)
+                    foreach (JObject result in queryResultsPage.Values)
                     {
                         queriedDocuments.Add(result.ToString(Formatting.None));
                     }
@@ -736,43 +732,11 @@ namespace Azure.Cosmos.EmulatorTests
                 {
                     System.Diagnostics.Trace.TraceInformation(@"*** Retrying Failed queries, {0} retries left ***", --retries);
                     Task.Delay(120 * 1000).Wait();
-                    result = await QueryAndVerifyDocuments(client, collectionLink, failedQueries, pageSize, retries, allowScan);
+                    result = await QueryAndVerifyDocuments(container, failedQueries, pageSize, retries, allowScan);
                 }
 
                 return result;
             }
-        }
-
-        private static async Task<DocumentFeedResponse<dynamic>> QueryWithRetry(IDocumentQuery<dynamic> query, string queryString)
-        {
-            int nMaxRetry = 5;
-
-            do
-            {
-                try
-                {
-                    return await query.ExecuteNextAsync();
-                }
-                catch (DocumentClientException exc)
-                {
-                    System.Diagnostics.Trace.TraceInformation("Activity Id: {0}", exc.ActivityId);
-                    System.Diagnostics.Trace.TraceInformation("Query String: {0}", queryString);
-                    if ((int)exc.StatusCode != 429)
-                    {
-                        throw;
-                    }
-
-                    if (--nMaxRetry > 0)
-                    {
-                        System.Diagnostics.Trace.TraceInformation("Sleeping for {0} due to throttle", exc.RetryAfter.TotalSeconds);
-                        Task.Delay(exc.RetryAfter).Wait();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-            } while (true);
         }
     }
 
@@ -920,9 +884,9 @@ namespace Azure.Cosmos.EmulatorTests
             return (int)date.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
         }
 
-        internal override async Task<int> QueryAndVerifyDocuments(CosmosClient client, string collectionLink, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0)
+        internal override async Task<int> QueryAndVerifyDocuments(Container container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0)
         {
-            return await QueryAndVerifyDocuments(client, collectionLink, queries, pageSize, retries, false);
+            return await QueryAndVerifyDocuments(container, queries, pageSize, retries, false);
         }
     }
 
@@ -969,9 +933,9 @@ namespace Azure.Cosmos.EmulatorTests
             return GetQueries(fieldQueryBuilders, numberOfQueries, maxFilters, hasOrderBy ? fields : null);
         }
 
-        internal override async Task<int> QueryAndVerifyDocuments(CosmosClient client, string collectionLink, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0)
+        internal override async Task<int> QueryAndVerifyDocuments(Container container, IEnumerable<Query> queries, int pageSize = 1000, int retries = 0)
         {
-            return await QueryAndVerifyDocuments(client, collectionLink, queries, pageSize, retries, false);
+            return await QueryAndVerifyDocuments(container, queries, pageSize, retries, false);
         }
     }
 

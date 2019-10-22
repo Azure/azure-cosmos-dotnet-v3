@@ -71,8 +71,14 @@ namespace Azure.Cosmos
 
         internal static string GetActivityId(this ResponseHeaders httpHeaders)
         {
-            httpHeaders.TryGetValue(HttpConstants.HttpHeaders.ActivityId, out string continuationToken);
-            return continuationToken;
+            httpHeaders.TryGetValue(HttpConstants.HttpHeaders.ActivityId, out string activityId);
+            return activityId;
+        }
+
+        internal static string GetSession(this ResponseHeaders httpHeaders)
+        {
+            httpHeaders.TryGetValue(HttpConstants.HttpHeaders.SessionToken, out string session);
+            return session;
         }
 
         internal static double GetRequestCharge(this ResponseHeaders httpHeaders)
