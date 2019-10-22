@@ -29,6 +29,7 @@ jobs:
 
 - job: 
   displayName: ${{ parameters.BuildConfiguration }}-${{ parameters.VmImage }} Microsoft.Azure.Cosmos.EmulatorTests
+  timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     vmImage: ${{ parameters.VmImage }}
