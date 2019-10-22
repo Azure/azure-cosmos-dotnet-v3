@@ -862,10 +862,7 @@ namespace Azure.Cosmos.EmulatorTests
                     {
                         Assert.IsTrue(iter.IsSuccessStatusCode());
 
-                        if (iter.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.RequestCharge, out string requestChargeString))
-                        {
-                            totalRequstCharge += double.Parse(requestChargeString, cultureInfo);
-                        }
+                        totalRequstCharge += iter.Headers.GetRequestCharge();
 
                         ToDoActivity[] activities = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.ContentStream).Data.ToArray();
                         Assert.AreEqual(1, activities.Length);
@@ -911,10 +908,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 Assert.IsTrue(iter.IsSuccessStatusCode());
                 Assert.IsNull(iter.ReasonPhrase);
-                if (iter.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.RequestCharge, out string requestChargeString))
-                {
-                    totalRequstCharge += double.Parse(requestChargeString, CultureInfo.InvariantCulture);
-                }
+                totalRequstCharge += iter.Headers.GetRequestCharge();
 
                 ToDoActivity[] response = TestCommon.Serializer.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(iter.ContentStream).Data.ToArray();
                 Assert.IsTrue(response.Length <= 5);
@@ -1102,10 +1096,7 @@ namespace Azure.Cosmos.EmulatorTests
             {
                 Assert.IsTrue(response.IsSuccessStatusCode());
                 Assert.IsNull(response.ReasonPhrase);
-                if (response.Headers.TryGetValue(Microsoft.Azure.Documents.HttpConstants.HttpHeaders.RequestCharge, out string requestChargeString))
-                {
-                    totalRequstCharge += double.Parse(requestChargeString, CultureInfo.InvariantCulture);
-                }
+                totalRequstCharge += response.Headers.GetRequestCharge();
 
                 //Copy the stream and check that the first byte is the correct value
                 MemoryStream memoryStream = new MemoryStream();
