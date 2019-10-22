@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 this.FailureResponse = moveNextResponse.failureResponse;
             }
 
-            return !moveNextResponse.successfullyMovedNext;
+            return moveNextResponse.successfullyMovedNext;
         }
 
         /// <summary>
