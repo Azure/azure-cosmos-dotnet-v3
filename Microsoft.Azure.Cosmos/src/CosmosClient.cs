@@ -470,6 +470,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases.</returns>
+        /// <remarks>
+        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// <para>
+        /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
+        /// </para>
+        /// </remarks>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -493,6 +499,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases</returns>
+        /// <remarks>
+        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// <para>
+        /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
+        /// </para>
+        /// </remarks>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -515,6 +527,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases.</returns>
+        /// <remarks>
+        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// <para>
+        /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
+        /// </para>
+        /// </remarks>
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -540,6 +558,12 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases</returns>
+        /// <remarks>
+        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// <para>
+        /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
+        /// </para>
+        /// </remarks>
         public virtual FeedIterator GetDatabaseQueryStreamIterator(
             string queryText = null,
             string continuationToken = null,
