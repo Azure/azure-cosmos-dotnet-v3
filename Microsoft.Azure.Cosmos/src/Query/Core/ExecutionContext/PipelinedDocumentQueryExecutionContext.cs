@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents.Collections;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -137,12 +138,34 @@ namespace Microsoft.Azure.Cosmos.Query
             string requestContinuationToken,
             CancellationToken cancellationToken)
         {
-            DefaultTrace.TraceInformation(
-                string.Format(
-                    CultureInfo.InvariantCulture,
-                    "{0}, CorrelatedActivityId: {1} | Pipelined~Context.CreateAsync",
-                    DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
-                    queryContext.CorrelatedActivityId));
+            if (queryContext == null)
+            {
+                throw new ArgumentNullException(nameof(initParams));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            TryMonad<PipelinedDocumentQueryExecutionContext, Exception> tryCreateMonad = await PipelinedDocumentQueryExecutionContext.TryCreate(
+                queryContext,
+                initParams,
+                requestContinuationToken,
+                cancellationToken);
+
+            return tryCreateMonad.ThrowIfException;
+        }
+
+        public static async Task<TryMonad<PipelinedDocumentQueryExecutionContext, Exception>> TryCreate(
+            CosmosQueryContext queryContext,
+            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
+            string requestContinuationToken,
+            CancellationToken cancellationToken)
+        {
+            if (queryContext == null)
+            {
+                throw new ArgumentNullException(nameof(initParams));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
@@ -162,31 +185,33 @@ namespace Microsoft.Azure.Cosmos.Query
                     maxBufferedItemCount: initParams.MaxBufferedItemCount);
             }
 
-            Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByComponentFunc = async (continuationToken) =>
+            async Task<IDocumentQueryExecutionComponent> CreateOrderByComponent(string continuationToken)
             {
                 return await CosmosOrderByItemQueryExecutionContext.CreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
                     cancellationToken);
-            };
+            }
 
-            Func<string, Task<IDocumentQueryExecutionComponent>> createParallelComponentFunc = async (continuationToken) =>
+            async Task<IDocumentQueryExecutionComponent> CreateParallelComponent(string continuationToken)
             {
                 return await CosmosParallelItemQueryExecutionContext.CreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
                     cancellationToken);
-            };
+            }
 
-            return (CosmosQueryExecutionContext)await PipelinedDocumentQueryExecutionContext.CreateHelperAsync(
-                queryContext.QueryClient,
-                initParams.PartitionedQueryExecutionInfo.QueryInfo,
-                initialPageSize,
-                requestContinuationToken,
-                createOrderByComponentFunc,
-                createParallelComponentFunc);
+            Func<string, Task<IDocumentQueryExecutionComponent>> createComponent;
+            if (queryInfo.HasOrderBy)
+            {
+                createComponent = CreateOrderByComponent;
+            }
+            else
+            {
+                createComponent = CreateParallelComponent;
+            }
         }
 
         private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(

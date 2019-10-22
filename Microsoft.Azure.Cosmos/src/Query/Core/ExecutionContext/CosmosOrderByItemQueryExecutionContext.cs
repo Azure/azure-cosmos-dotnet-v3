@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -151,17 +152,6 @@ namespace Microsoft.Azure.Cosmos.Query
             string requestContinuationToken,
             CancellationToken token)
         {
-            Debug.Assert(
-                initParams.PartitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
-                "OrderBy~Context must have order by query info.");
-
-            CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
-                initPararms: queryContext,
-                maxConcurrency: initParams.MaxConcurrency,
-                maxItemCount: initParams.MaxItemCount,
-                maxBufferedItemCount: initParams.MaxBufferedItemCount,
-                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
-
             await context.InitializeAsync(
                 sqlQuerySpec: initParams.SqlQuerySpec,
                 requestContinuation: requestContinuationToken,
@@ -173,6 +163,33 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken: token);
 
             return context;
+        }
+
+        public static async Task<TryMonad<CosmosOrderByItemQueryExecutionContext, Exception>> TryCreateAsync(
+            CosmosQueryContext queryContext,
+            CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
+            string requestContinuationToken,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(
+                initParams.PartitionedQueryExecutionInfo.QueryInfo.HasOrderBy,
+                "OrderBy~Context must have order by query info.");
+
+            if (queryContext == null)
+            {
+                throw new ArgumentNullException(nameof(queryContext));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            CosmosOrderByItemQueryExecutionContext context = new CosmosOrderByItemQueryExecutionContext(
+                initPararms: queryContext,
+                maxConcurrency: initParams.MaxConcurrency,
+                maxItemCount: initParams.MaxItemCount,
+                maxBufferedItemCount: initParams.MaxBufferedItemCount,
+                consumeComparer: new OrderByConsumeComparer(initParams.PartitionedQueryExecutionInfo.QueryInfo.OrderBy));
+
+
         }
 
         /// <summary>
@@ -260,18 +277,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     StringComparison.Ordinal);
         }
 
-        /// <summary>
-        /// Initializes this execution context.
-        /// </summary>
-        /// <param name="sqlQuerySpec">sql query spec.</param>
-        /// <param name="requestContinuation">The continuation token to resume from (or null if none).</param>
-        /// <param name="collectionRid">The collection rid.</param>
-        /// <param name="partitionKeyRanges">The partition key ranges to drain from.</param>
-        /// <param name="initialPageSize">The initial page size.</param>
-        /// <param name="sortOrders">The sort orders.</param>
-        /// <param name="orderByExpressions">The order by expressions.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on.</returns>
+
         private async Task InitializeAsync(
             SqlQuerySpec sqlQuerySpec,
             string requestContinuation,
@@ -282,6 +288,46 @@ namespace Microsoft.Azure.Cosmos.Query
             string[] orderByExpressions,
             CancellationToken cancellationToken)
         {
+            
+        }
+
+        private async Task<TryMonad<object, Exception>> TryInitializeAsync(
+            SqlQuerySpec sqlQuerySpec,
+            string requestContinuation,
+            string collectionRid,
+            List<PartitionKeyRange> partitionKeyRanges,
+            int initialPageSize,
+            SortOrder[] sortOrders,
+            string[] orderByExpressions,
+            CancellationToken cancellationToken)
+        {
+            if (sqlQuerySpec == null)
+            {
+                throw new ArgumentNullException(nameof(sqlQuerySpec));
+            }
+
+            if (collectionRid == null)
+            {
+                throw new ArgumentNullException(nameof(collectionRid));
+            }
+
+            if (partitionKeyRanges == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyRanges));
+            }
+
+            if (sortOrders == null)
+            {
+                throw new ArgumentNullException(nameof(sortOrders));
+            }
+
+            if (orderByExpressions == null)
+            {
+                throw new ArgumentNullException(nameof(orderByExpressions));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (requestContinuation == null)
             {
                 SqlQuerySpec sqlQuerySpecForInit = new SqlQuerySpec(
@@ -301,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                OrderByContinuationToken[] suppliedContinuationTokens = this.ValidateAndExtractContinuationToken(
+                OrderByContinuationToken[] suppliedContinuationTokens = CosmosOrderByItemQueryExecutionContext.TryExtractContinuationTokens(
                     requestContinuation,
                     sortOrders,
                     orderByExpressions);
@@ -313,7 +359,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     orderByExpressions,
                     out Dictionary<string, OrderByContinuationToken> targetRangeToOrderByContinuationMap);
 
-                Debug.Assert(targetRangeToOrderByContinuationMap != null, "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
+                Debug.Assert(
+                    targetRangeToOrderByContinuationMap != null,
+                    "If targetRangeToOrderByContinuationMap can't be null is valid continuation is supplied");
 
                 // For ascending order-by, left of target partition has filter expression > value,
                 // right of target partition has filter expression >= value, 
@@ -356,14 +404,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        /// <summary>
-        /// Validates and extracts out the order by continuation tokens 
-        /// </summary>
-        /// <param name="requestContinuation">The string continuation token.</param>
-        /// <param name="sortOrders">The sort orders.</param>
-        /// <param name="orderByExpressions">The order by expressions.</param>
-        /// <returns>The continuation tokens.</returns>
-        private OrderByContinuationToken[] ValidateAndExtractContinuationToken(
+        private static TryMonad<OrderByContinuationToken[], Exception> TryExtractContinuationTokens(
             string requestContinuation,
             SortOrder[] sortOrders,
             string[] orderByExpressions)
@@ -383,29 +424,31 @@ namespace Microsoft.Azure.Cosmos.Query
 
             try
             {
-                OrderByContinuationToken[] suppliedOrderByContinuationTokens = JsonConvert.DeserializeObject<OrderByContinuationToken[]>(requestContinuation, DefaultJsonSerializationSettings.Value);
+                OrderByContinuationToken[] suppliedOrderByContinuationTokens = JsonConvert.DeserializeObject<OrderByContinuationToken[]>(
+                    requestContinuation,
+                    DefaultJsonSerializationSettings.Value);
 
                 if (suppliedOrderByContinuationTokens.Length == 0)
                 {
-                    throw this.queryClient.CreateBadRequestException(
-                        $"Order by continuation token can not be empty: {requestContinuation}.");
+                    return TryMonad<OrderByContinuationToken[], Exception>.FromException(
+                        new Exception($"Order by continuation token cannot be empty: {requestContinuation}."));
                 }
 
                 foreach (OrderByContinuationToken suppliedOrderByContinuationToken in suppliedOrderByContinuationTokens)
                 {
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
-                        throw this.queryClient.CreateBadRequestException(
-                            $"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context.");
+                        return TryMonad<OrderByContinuationToken[], Exception>.FromException(
+                            new Exception($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
                     }
                 }
 
-                return suppliedOrderByContinuationTokens;
+                return TryMonad<OrderByContinuationToken[], Exception>.FromResult(suppliedOrderByContinuationTokens);
             }
             catch (JsonException ex)
             {
-                throw this.queryClient.CreateBadRequestException(
-                    $"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}");
+                return TryMonad<OrderByContinuationToken[], Exception>.FromException(
+                    new Exception($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}"));
             }
         }
 
