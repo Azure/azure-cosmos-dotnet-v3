@@ -3,10 +3,9 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
-    using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
@@ -238,13 +237,12 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             NewtonsoftToCosmosDBReader newtonsoftToCosmosDBReader = NewtonsoftToCosmosDBReader.CreateFromString(json);
             NewtonsoftToCosmosDBWriter newtonsoftToCosmosDBWriter = NewtonsoftToCosmosDBWriter.CreateTextWriter();
             newtonsoftToCosmosDBWriter.WriteAll(newtonsoftToCosmosDBReader);
-            return Encoding.UTF8.GetString(newtonsoftToCosmosDBWriter.GetResult());
+            return Encoding.UTF8.GetString(newtonsoftToCosmosDBWriter.GetResult().ToArray());
         }
 
-        private static void VerifyReader<T>(byte[] payload, T expectedDeserializedValue)
+        private static void VerifyReader<T>(ReadOnlyMemory<byte> payload, T expectedDeserializedValue)
         {
-            MemoryStream memoryStream = new MemoryStream(payload);
-            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(memoryStream))
+            using (CosmosDBToNewtonsoftReader reader = new CosmosDBToNewtonsoftReader(payload))
             {
                 JsonSerializer serializer = new JsonSerializer();
                 T actualDeserializedValue = serializer.Deserialize<T>(reader);
@@ -257,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
         private static void VerifyBinaryReader<T>(T expectedDeserializedValue)
         {
             string stringValue = NewtonsoftInteropTests.NewtonsoftFormat(JsonConvert.SerializeObject(expectedDeserializedValue));
-            byte[] result = JsonPerfMeasurement.ConvertTextToBinary(stringValue);
+            ReadOnlyMemory<byte> result = JsonPerfMeasurement.ConvertTextToBinary(stringValue);
             NewtonsoftInteropTests.VerifyReader<T>(result, expectedDeserializedValue);
         }
 
@@ -275,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
                 JsonSerializer serializer = new JsonSerializer();
                 serializer.Serialize(writer, expectedDeserializedValue);
 
-                byte[] result = writer.GetResult();
+                byte[] result = writer.GetResult().ToArray();
                 string actualSerializedValue;
                 if (jsonSerializationFormat == JsonSerializationFormat.Binary)
                 {

@@ -136,11 +136,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.writer.Write(')');
         }
 
-        public override void Visit(SqlConversionScalarExpression sqlConversionScalarExpression)
-        {
-            sqlConversionScalarExpression.expression.Accept(this);
-        }
-
         public override void Visit(SqlExistsScalarExpression sqlExistsScalarExpression)
         {
             this.writer.Write("EXISTS");
@@ -190,33 +185,6 @@ namespace Microsoft.Azure.Cosmos.Sql
 
                 this.WriteEndContext(")");
             }
-        }
-
-        public override void Visit(SqlGeoNearCallScalarExpression sqlGeoNearCallScalarExpression)
-        {
-            this.writer.Write("(");
-            this.writer.Write("_ST_DISTANCE");
-            this.writer.Write("(");
-            sqlGeoNearCallScalarExpression.PropertyRef.Accept(this);
-            this.writer.Write(",");
-            sqlGeoNearCallScalarExpression.Geometry.Accept(this);
-            this.writer.Write(")");
-            this.writer.Write(" BETWEEN ");
-
-            if (sqlGeoNearCallScalarExpression.NumberOfPoints == null)
-            {
-                this.writer.Write(sqlGeoNearCallScalarExpression.MinimumDistance);
-                this.writer.Write(" AND ");
-                this.writer.Write(sqlGeoNearCallScalarExpression.MaximumDistance);
-            }
-            else
-            {
-                this.writer.Write(SqlGeoNearCallScalarExpression.NearMinimumDistanceName);
-                this.writer.Write(" AND ");
-                this.writer.Write(SqlGeoNearCallScalarExpression.NearMaximumDistanceName);
-            }
-
-            this.writer.Write(")");
         }
 
         public override void Visit(SqlGroupByClause sqlGroupByClause)
@@ -412,18 +380,6 @@ namespace Microsoft.Azure.Cosmos.Sql
                 }
 
                 this.WriteEndContext("}");
-            }
-        }
-
-        public override void Visit(SqlObjectLiteral sqlObjectLiteral)
-        {
-            if (sqlObjectLiteral.isValueSerialized)
-            {
-                this.writer.Write(sqlObjectLiteral.Value);
-            }
-            else
-            {
-                this.writer.Write(JsonConvert.SerializeObject(sqlObjectLiteral.Value));
             }
         }
 
