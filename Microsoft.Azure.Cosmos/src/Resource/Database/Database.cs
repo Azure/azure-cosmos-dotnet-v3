@@ -610,7 +610,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
         /// <see cref="Container.ReadContainerAsync(ContainerRequestOptions, CancellationToken)" /> is recommended for single container look-up.
         /// </para>
@@ -650,7 +650,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
         /// <see cref="Container.ReadContainerStreamAsync(ContainerRequestOptions, CancellationToken)" /> is recommended for single container look-up.
         /// </para>
@@ -696,7 +696,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
         /// <see cref="Container.ReadContainerAsync(ContainerRequestOptions, CancellationToken)" /> is recommended for single container look-up.
         /// </para>
@@ -742,7 +742,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
         /// <see cref="Container.ReadContainerStreamAsync(ContainerRequestOptions, CancellationToken)" /> is recommended for single container look-up.
         /// </para>

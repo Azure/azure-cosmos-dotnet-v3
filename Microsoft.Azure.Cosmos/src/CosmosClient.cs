@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases.</returns>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
         /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
@@ -500,7 +500,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases</returns>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
         /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
@@ -528,7 +528,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the item query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases.</returns>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
         /// <see cref="Database.ReadAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
@@ -559,7 +559,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the query request <see cref="QueryRequestOptions"/></param>
         /// <returns>An iterator to go through the databases</returns>
         /// <remarks>
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/ for syntax and examples.
+        /// Refer to https://docs.microsoft.com/en-us/azure/cosmos-db/sql-query-getting-started for syntax and examples.
         /// <para>
         /// <see cref="Database.ReadStreamAsync(RequestOptions, CancellationToken)" /> is recommended for single database look-up.
         /// </para>
