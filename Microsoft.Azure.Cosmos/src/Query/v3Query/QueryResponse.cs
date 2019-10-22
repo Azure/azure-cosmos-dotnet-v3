@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class QueryResponse : ResponseMessage
     {
+        private readonly Lazy<MemoryStream> memoryStream;
+
         /// <summary>
         /// Used for unit testing only
         /// </summary>
@@ -45,15 +47,22 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosElements = result;
             this.Count = count;
             this.ResponseLengthBytes = responseLengthBytes;
+            this.memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
+                        this.QueryHeaders.ContainerRid,
+                        this.CosmosElements,
+                        this.QueryHeaders.ResourceType,
+                        this.CosmosSerializationOptions));
         }
 
         public int Count { get; }
 
-        public override Stream Content => CosmosElementSerializer.ToStream(
-            this.QueryHeaders.ContainerRid,
-            this.CosmosElements,
-            this.QueryHeaders.ResourceType,
-            this.CosmosSerializationOptions);
+        public override Stream Content
+        {
+            get
+            {
+                return this.memoryStream.Value;
+            }
+        }
 
         internal virtual IEnumerable<CosmosElement> CosmosElements { get; }
 
