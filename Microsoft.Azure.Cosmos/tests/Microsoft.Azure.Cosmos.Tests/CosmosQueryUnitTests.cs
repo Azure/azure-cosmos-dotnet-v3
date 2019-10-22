@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
-                        queryMetrics: responseCore.QueryMetrics,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -44,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         {
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
-                        });
+                        },
+                        diagnostics: null);
 
             using (Stream stream = queryResponse.Content)
             {
