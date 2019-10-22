@@ -85,7 +85,7 @@ namespace Azure.Cosmos
         {
             if (httpHeaders.TryGetValue(HttpConstants.HttpHeaders.RequestCharge, out string requestChargeString))
             {
-                return double.Parse(requestChargeString, CultureInfo.InvariantCulture);
+                return string.IsNullOrEmpty(requestChargeString) ? 0 : double.Parse(requestChargeString, CultureInfo.InvariantCulture);
             }
 
             return 0;
