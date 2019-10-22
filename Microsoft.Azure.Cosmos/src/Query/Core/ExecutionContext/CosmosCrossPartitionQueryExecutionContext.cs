@@ -354,14 +354,9 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 this.Stop();
 
-                try
-                {
-                    return this.FailureResponse;
-                }
-                finally
-                {
-                    this.FailureResponse = null;
-                }
+                QueryResponseCore failure = this.FailureResponse.Value;
+                this.FailureResponse = null;
+                return failure;
             }
 
             // Drain the results. If there is no results and a failure then return the failure.
@@ -369,15 +364,10 @@ namespace Microsoft.Azure.Cosmos.Query
             if ((results == null || results.Count == 0) && this.FailureResponse != null)
             {
                 this.Stop();
-
-                try
-                {
-                    return this.FailureResponse;
-                }
-                finally
-                {
-                    this.FailureResponse = null;
-                }
+                QueryResponseCore failure = this.FailureResponse.Value;
+                this.FailureResponse = null;
+                return failure;
+                    
             }
 
             string continuation = this.ContinuationToken;

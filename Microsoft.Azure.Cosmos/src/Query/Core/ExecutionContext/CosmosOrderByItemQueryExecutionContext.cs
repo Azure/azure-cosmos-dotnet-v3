@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query
             // With this information we have captured the progress for all partitions in a single continuation token.
             get
             {
-                if (this.IsDone)
+                if (this.IsDone || this.FailureResponse != null)
                 {
                     return null;
                 }
