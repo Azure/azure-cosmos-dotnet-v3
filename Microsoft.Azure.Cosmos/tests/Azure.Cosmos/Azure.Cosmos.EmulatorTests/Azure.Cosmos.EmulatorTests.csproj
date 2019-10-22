@@ -17,6 +17,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="CrossPartitionQueryTests.AggregateMixedTypes_baseline.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />

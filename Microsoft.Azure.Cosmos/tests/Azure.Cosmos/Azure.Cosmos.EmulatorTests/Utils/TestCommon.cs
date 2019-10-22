@@ -65,6 +65,16 @@ namespace Azure.Cosmos.EmulatorTests
             return new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
         }
 
+        internal static CosmosClient CreateCosmosClient(bool gatewayMode)
+        {
+            if (!gatewayMode)
+            {
+                return TestCommon.CreateCosmosClient();
+            }
+
+            return TestCommon.CreateCosmosClient((builder) => builder.WithConnectionModeGateway());
+        }
+
         internal static CosmosClient CreateCosmosClient(CosmosClientOptions options, string resourceToken = null)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();

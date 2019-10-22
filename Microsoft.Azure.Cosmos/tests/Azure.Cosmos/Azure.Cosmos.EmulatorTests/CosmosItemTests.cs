@@ -705,11 +705,11 @@ namespace Azure.Cosmos.EmulatorTests
 
                         if (previousResult != null)
                         {
-                            Assert.AreEqual(previousResult, jsonString);
+                            Assert.AreEqual(previousResult, jObject.ToString());
                         }
                         else
                         {
-                            previousResult = jsonString;
+                            previousResult = jObject.ToString();
                         }
                     }
                 }
