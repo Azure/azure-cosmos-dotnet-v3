@@ -2,14 +2,18 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos.Spatial
+#else
 namespace Microsoft.Azure.Cosmos.Spatial
+#endif
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
-    using Microsoft.Azure.Cosmos.Spatial.Converters;
+    using Converters;
     using Newtonsoft.Json;
 
     /// <summary>

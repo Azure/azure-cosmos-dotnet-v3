@@ -2,7 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if AZURECORE
+namespace Azure.Cosmos.Spatial.Converters
+#else
 namespace Microsoft.Azure.Cosmos.Spatial.Converters
+#endif
 {
     using System;
     using System.Collections.Generic;
