@@ -99,18 +99,38 @@ namespace Microsoft.Azure.Cosmos.Tests
             return message;
         }
 
-        public static QueryResponseCore CreateSplitResponse(string collectionRid)
+        public static QueryResponseCore CreateFailureResponse(
+            HttpStatusCode httpStatusCode,
+            SubStatusCodes subStatusCodes,
+            string errorMessage)
         {
             QueryResponseCore splitResponse = QueryResponseCore.CreateFailure(
-               statusCode: HttpStatusCode.Gone,
-               subStatusCodes: SubStatusCodes.PartitionKeyRangeGone,
-               errorMessage: "Partition split error",
+               statusCode: httpStatusCode,
+               subStatusCodes: subStatusCodes,
+               errorMessage: errorMessage,
                requestCharge: 10.4,
                activityId: Guid.NewGuid().ToString(),
                queryMetricsText: null,
                queryMetrics: null);
 
             return splitResponse;
+        }
+
+        public static QueryResponseCore CreateFailureToManyRequestResponse()
+        {
+            // 429 do not have an error message
+            return CreateFailureResponse(
+                (HttpStatusCode)429,
+                SubStatusCodes.Unknown,
+                null);
+        }
+
+        public static QueryResponseCore CreateSplitResponse(string collectionRid)
+        {
+            return CreateFailureResponse(
+                HttpStatusCode.Gone,
+                SubStatusCodes.PartitionKeyRangeGone,
+                "Partition split error");
         }
 
         private static MemoryStream SerializeForOrderByQuery(IList<ToDoItem> items)

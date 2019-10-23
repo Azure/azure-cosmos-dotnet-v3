@@ -13,37 +13,29 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    struct ObjectProperty
+    readonly struct ObjectProperty
     {
-        /// <summary>
-        /// The IJsonNavigatorNode to the node that holds the object property name.
-        /// </summary>
-        public readonly IJsonNavigatorNode NameNode;
-
-        /// <summary>
-        /// The IJsonNavigatorNode to the node that holds the object property value.
-        /// </summary>
-        public readonly IJsonNavigatorNode ValueNode;
-
         /// <summary>
         /// Initializes a new instance of the ObjectProperty struct.
         /// </summary>
         /// <param name="nameNode">The IJsonNavigatorNode to the node that holds the object property name.</param>
         /// <param name="valueNode">The IJsonNavigatorNode to the node that holds the object property value.</param>
-        public ObjectProperty(IJsonNavigatorNode nameNode, IJsonNavigatorNode valueNode)
+        public ObjectProperty(
+            IJsonNavigatorNode nameNode,
+            IJsonNavigatorNode valueNode)
         {
-            if (nameNode == null)
-            {
-                throw new ArgumentNullException("nameNode");
-            }
-
-            if (valueNode == null)
-            {
-                throw new ArgumentNullException("valueNode");
-            }
-
             this.NameNode = nameNode;
             this.ValueNode = valueNode;
         }
+
+        /// <summary>
+        /// The node that holds the object property name.
+        /// </summary>
+        public IJsonNavigatorNode NameNode { get; }
+
+        /// <summary>
+        /// The node that holds the object property value.
+        /// </summary>
+        public IJsonNavigatorNode ValueNode { get; }
     }
 }

@@ -702,7 +702,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string orderByItemSerialized = @"{""item"" : 1337 }";
             byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
-            OrderByItem orderByItem = new OrderByItem(CosmosElement.Create(bytes));
+            OrderByItem orderByItem = new OrderByItem(CosmosElement.CreateFromBuffer(bytes));
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 new Mock<CosmosQueryClient>().Object,
                 compositeContinuationToken,
@@ -2903,7 +2903,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string json = JsonConvert.SerializeObject(obj != null ? JToken.FromObject(obj) : JValue.CreateNull());
                 byte[] bytes = Encoding.UTF8.GetBytes(json);
-                return CosmosElement.Create(bytes);
+                return CosmosElement.CreateFromBuffer(bytes);
             }
         }
 

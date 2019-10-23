@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
@@ -488,7 +488,10 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             this.VerifyNavigator(input, null, performExtraChecks);
         }
 
-        private void VerifyNavigator(string input, Exception expectedException, bool performExtraChecks = true)
+        private void VerifyNavigator(
+            string input,
+            Exception expectedException,
+            bool performExtraChecks = true)
         {
             CultureInfo defaultCultureInfo = System.Threading.Thread.CurrentThread.CurrentCulture;
 

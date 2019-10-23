@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
@@ -17,6 +18,42 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosQueryUnitTests
     {
+        [TestMethod]
+        public void VerifyCosmosQueryResponseStream()
+        {
+            string contianerRid = "mockContainerRid";
+            (QueryResponseCore response, IList<ToDoItem> items) factoryResponse = QueryResponseMessageFactory.Create(
+                       itemIdPrefix: $"TestPage",
+                       continuationToken: "SomeContinuationToken",
+                       collectionRid: contianerRid,
+                       itemCount: 100);
+
+            QueryResponseCore responseCore = factoryResponse.response;
+
+            QueryResponse queryResponse = QueryResponse.CreateSuccess(
+                        result: responseCore.CosmosElements,
+                        count: responseCore.CosmosElements.Count,
+                        responseLengthBytes: responseCore.ResponseLengthBytes,
+                        queryMetrics: responseCore.QueryMetrics,
+                        responseHeaders: new CosmosQueryResponseMessageHeaders(
+                            responseCore.ContinuationToken,
+                            responseCore.DisallowContinuationTokenMessage,
+                            ResourceType.Document,
+                            contianerRid)
+                        {
+                            RequestCharge = responseCore.RequestCharge,
+                            ActivityId = responseCore.ActivityId
+                        });
+
+            using (Stream stream = queryResponse.Content)
+            {
+                using(Stream innerStream = queryResponse.Content)
+                {
+                    Assert.IsTrue(object.ReferenceEquals(stream, innerStream), "Content should return the same stream");
+                }
+            }
+        }
+
         [TestMethod]
         public async Task TestCosmosQueryExecutionComponentOnFailure()
         {
