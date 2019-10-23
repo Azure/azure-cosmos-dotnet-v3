@@ -74,13 +74,6 @@ namespace Microsoft.Azure.Cosmos.Query
         protected CosmosQueryClient queryClient;
 
         /// <summary>
-        /// This stores all the query metrics which have been grouped by partition id.
-        /// When a feed response is returned (which includes multiple partitions and potentially multiple continuations)
-        /// we take a snapshot of partitionedQueryMetrics and store it in grouped query metrics.
-        /// </summary>
-        private IReadOnlyDictionary<string, QueryMetrics> groupedQueryMetrics;
-
-        /// <summary>
         /// This stores the running query metrics.
         /// When a feed response is returned he take a snapshot of this bag and store it in groupedQueryMetrics.
         /// The bag is then emptied and available to store the query metric for future continuations.
@@ -94,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// but we eventually used the whole page for the next continuation; which continuation reports the cost?
         /// Basically the only thing we can ensure is if you drain a query fully you should get back the same query metrics by the end.
         /// </remarks>
-        private ConcurrentBag<Tuple<string, QueryMetrics>> partitionedQueryMetrics;
+        private ConcurrentBag<QueryPageDiagnostics> diagnosticsPages;
 
         /// <summary>
         /// Total number of buffered items to determine if we can go for another prefetch while still honoring the MaxBufferedItemCount.
@@ -147,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.comparableTaskScheduler = new ComparableTaskScheduler(maxConcurrency.GetValueOrDefault(0));
             this.equalityComparer = equalityComparer;
             this.requestChargeTracker = new RequestChargeTracker();
-            this.partitionedQueryMetrics = new ConcurrentBag<Tuple<string, QueryMetrics>>();
+            this.diagnosticsPages = new ConcurrentBag<QueryPageDiagnostics>();
             this.actualMaxPageSize = maxItemCount.GetValueOrDefault(ParallelQueryConfig.GetConfig().ClientInternalMaxItemCount);
 
             if (this.actualMaxPageSize < 0)
@@ -224,15 +217,6 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Gets the number of documents we can still buffer.
         /// </summary>
         private long FreeItemSpace => this.actualMaxBufferedItemCount - Interlocked.Read(ref this.totalBufferedItems);
-
-        /// <summary>
-        /// Gets the query metrics that are set in SetQueryMetrics
-        /// </summary>
-        /// <returns>The grouped query metrics.</returns>
-        public override IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
-        {
-            return new PartitionedQueryMetrics(this.groupedQueryMetrics);
-        }
 
         /// <summary>
         /// After a split you need to maintain the continuation tokens for all the child document producers until a condition is met.
@@ -376,17 +360,15 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new InvalidOperationException("Somehow a document query execution context returned an empty array of continuations.");
             }
 
-            this.SetQueryMetrics();
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = this.GetAndResetDiagnostics();
 
             return QueryResponseCore.CreateSuccess(
                 result: results,
                 requestCharge: this.requestChargeTracker.GetAndResetCharge(),
                 activityId: null,
-                queryMetricsText: null,
+                diagnostics: diagnostics,
                 disallowContinuationTokenMessage: null,
                 continuationToken: continuation,
-                queryMetrics: this.GetQueryMetrics(),
-                requestStatistics: null,
                 responseLengthBytes: this.GetAndResetResponseLengthBytes());
         }
 
@@ -619,11 +601,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// Since query metrics are being aggregated asynchronously to the feed responses as explained in the member documentation,
         /// this function allows us to take a snapshot of the query metrics.
         /// </summary>
-        private void SetQueryMetrics()
+        private IReadOnlyCollection<QueryPageDiagnostics> GetAndResetDiagnostics()
         {
-            this.groupedQueryMetrics = Interlocked.Exchange(ref this.partitionedQueryMetrics, new ConcurrentBag<Tuple<string, QueryMetrics>>())
-                .GroupBy(tuple => tuple.Item1, tuple => tuple.Item2)
-                .ToDictionary(group => group.Key, group => QueryMetrics.CreateFromIEnumerable(group));
+            // Safely swap the current ConcurrentBag<QueryPageDiagnostics> for a new instance. 
+            ConcurrentBag<QueryPageDiagnostics> queryPageDiagnostics = Interlocked.Exchange(
+                ref this.diagnosticsPages,
+                new ConcurrentBag<QueryPageDiagnostics>());
+
+            return queryPageDiagnostics;
         }
 
         /// <summary>
@@ -647,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="producer">The document producer that just finished fetching.</param>
         /// <param name="itemsBuffered">The number of items that the producer just fetched.</param>
         /// <param name="resourceUnitUsage">The amount of RUs that the producer just consumed.</param>
-        /// <param name="queryMetrics">The query metrics that the producer just got back from the backend.</param>
+        /// <param name="diagnostics">The query metrics that the producer just got back from the backend.</param>
         /// <param name="responseLengthBytes">The length of the response the producer just got back in bytes.</param>
         /// <param name="token">The cancellation token.</param>
         /// <remarks>
@@ -658,7 +643,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ItemProducerTree producer,
             int itemsBuffered,
             double resourceUnitUsage,
-            QueryMetrics queryMetrics,
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics,
             long responseLengthBytes,
             CancellationToken token)
         {
@@ -666,8 +651,13 @@ namespace Microsoft.Azure.Cosmos.Query
             this.requestChargeTracker.AddCharge(resourceUnitUsage);
             Interlocked.Add(ref this.totalBufferedItems, itemsBuffered);
             this.IncrementResponseLengthBytes(responseLengthBytes);
-            this.partitionedQueryMetrics.Add(Tuple.Create(producer.PartitionKeyRange.Id, queryMetrics));
 
+            // Add the pages to the concurrent bag to safely merge all the list together.
+            foreach (QueryPageDiagnostics diagnosticPage in diagnostics)
+            {
+                this.diagnosticsPages.Add(diagnosticPage);
+            }
+            
             // Adjust the producer page size so that we reach the optimal page size.
             producer.PageSize = Math.Min((long)(producer.PageSize * DynamicPageSizeAdjustmentFactor), this.actualMaxPageSize);
 

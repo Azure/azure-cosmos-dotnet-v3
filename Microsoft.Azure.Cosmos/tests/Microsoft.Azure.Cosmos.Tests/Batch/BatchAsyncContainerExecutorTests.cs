@@ -296,7 +296,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
+            {
+                Content = responseContent,
+                Diagnostics = new PointOperationStatistics(
+                    Guid.NewGuid().ToString(),
+                    HttpStatusCode.Gone,
+                    SubStatusCodes.Unknown,
+                    0,
+                    string.Empty,
+                    HttpMethod.Get,
+                    new Uri("http://localhost"),
+                    new CosmosClientSideRequestStatistics())
+            };
             responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
             return responseMessage;
         }
@@ -324,7 +336,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
+            {
+                Content = responseContent,
+                Diagnostics = new PointOperationStatistics(
+                    Guid.NewGuid().ToString(),
+                    HttpStatusCode.Gone,
+                    SubStatusCodes.Unknown,
+                    0,
+                    string.Empty,
+                    HttpMethod.Get,
+                    new Uri("http://localhost"),
+                    new CosmosClientSideRequestStatistics())
+            };
             responseMessage.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
             return responseMessage;
         }
@@ -351,7 +375,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests)
+            {
+                Content = responseContent,
+                Diagnostics = new PointOperationStatistics(
+                    Guid.NewGuid().ToString(),
+                    (HttpStatusCode)StatusCodes.TooManyRequests,
+                    SubStatusCodes.Unknown,
+                    0,
+                    string.Empty,
+                    HttpMethod.Get,
+                    new Uri("http://localhost"),
+                    new CosmosClientSideRequestStatistics())
+            };
             return responseMessage;
         }
 
@@ -377,7 +413,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializer: new CosmosJsonDotNetSerializer(),
             cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = responseContent,
+                Diagnostics = new PointOperationStatistics(
+                     Guid.NewGuid().ToString(),
+                     HttpStatusCode.OK,
+                     SubStatusCodes.Unknown,
+                     0,
+                     string.Empty,
+                     HttpMethod.Get,
+                     new Uri("http://localhost"),
+                     new CosmosClientSideRequestStatistics())
+            };
             return responseMessage;
         }
 

@@ -134,9 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
                     activityId: sourceResponse.ActivityId,
                     requestCharge: sourceResponse.RequestCharge,
-                    queryMetricsText: sourceResponse.QueryMetricsText,
-                    queryMetrics: sourceResponse.QueryMetrics,
-                    requestStatistics: sourceResponse.RequestStatistics,
+                    diagnostics: sourceResponse.diagnostics,
                     responseLengthBytes: sourceResponse.ResponseLengthBytes);
 
                 this.isDone = false;
@@ -163,9 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                    disallowContinuationTokenMessage: GroupByDocumentQueryExecutionComponent.ContinuationTokenNotSupportedWithGroupBy,
                    activityId: null,
                    requestCharge: 0,
-                   queryMetricsText: null,
-                   queryMetrics: EmptyQueryMetrics,
-                   requestStatistics: null,
+                   diagnostics: QueryResponseCore.EmptyDiagnostics,
                    responseLengthBytes: 0);
 
                 this.numPagesDrainedFromGroupingTable++;
