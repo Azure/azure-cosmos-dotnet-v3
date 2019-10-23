@@ -695,7 +695,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string orderByItemSerialized = @"{""item"" : 1337 }";
             byte[] bytes = Encoding.UTF8.GetBytes(orderByItemSerialized);
-            OrderByItem orderByItem = new OrderByItem(CosmosElement.Create(bytes));
+            OrderByItem orderByItem = new OrderByItem(CosmosElement.CreateFromBuffer(bytes));
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 new Mock<CosmosQueryClient>().Object,
                 compositeContinuationToken,
@@ -2906,7 +2906,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 string json = JsonConvert.SerializeObject(obj != null ? JToken.FromObject(obj) : JValue.CreateNull());
                 byte[] bytes = Encoding.UTF8.GetBytes(json);
-                return CosmosElement.Create(bytes);
+                return CosmosElement.CreateFromBuffer(bytes);
             }
         }
 
@@ -4892,10 +4892,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return base.ExecuteQueryPlanRequestAsync(resourceUri, resourceType, operationType, sqlQuerySpec, supportedQueryFeatures, cancellationToken);
             }
 
-            internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(Uri resourceUri, ResourceType resourceType, OperationType operationType, RequestOptionType requestOptions, SqlQuerySpec sqlQuerySpec, string continuationToken, PartitionKeyRangeIdentity partitionKeyRange, bool isContinuationExpected, int pageSize, CancellationToken cancellationToken)
+            internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(
+                Uri resourceUri,
+                ResourceType resourceType,
+                OperationType operationType,
+                RequestOptionType requestOptions,
+                SqlQuerySpec sqlQuerySpec,
+                string continuationToken,
+                PartitionKeyRangeIdentity partitionKeyRange,
+                bool isContinuationExpected,
+                int pageSize,
+                SchedulingStopwatch schedulingStopwatch,
+                CancellationToken cancellationToken)
             {
                 Assert.IsFalse(this.forceQueryPlanGatewayElseServiceInterop && this.QueryPlanCalls == 0, "Query Plan is force gateway mode, but no ExecuteQueryPlanRequestAsync have been called");
-                return base.ExecuteItemQueryAsync(resourceUri, resourceType, operationType, requestOptions, sqlQuerySpec, continuationToken, partitionKeyRange, isContinuationExpected, pageSize, cancellationToken);
+                return base.ExecuteItemQueryAsync(
+                    resourceUri: resourceUri,
+                    resourceType: resourceType,
+                    operationType: operationType,
+                    requestOptions: requestOptions,
+                    sqlQuerySpec: sqlQuerySpec,
+                    continuationToken: continuationToken,
+                    partitionKeyRange: partitionKeyRange,
+                    isContinuationExpected: isContinuationExpected,
+                    pageSize: pageSize,
+                    schedulingStopwatch: schedulingStopwatch,
+                    cancellationToken: cancellationToken);
             }
         }
     }

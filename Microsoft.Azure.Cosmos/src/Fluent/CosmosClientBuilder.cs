@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="enabled">Whether <see cref="CosmosClientOptions.AllowBulkExecution"/> is enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="CosmosClientOptions.AllowBulkExecution"/>
-        public CosmosClientBuilder WithBulkexecution(bool enabled)
+        public CosmosClientBuilder WithBulkExecution(bool enabled)
         {
             this.clientOptions.AllowBulkExecution = enabled;
             return this;

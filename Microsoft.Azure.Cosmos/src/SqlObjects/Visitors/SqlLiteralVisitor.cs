@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract void Visit(SqlBooleanLiteral literal);
         public abstract void Visit(SqlNullLiteral literal);
         public abstract void Visit(SqlNumberLiteral literal);
-        public abstract void Visit(SqlObjectLiteral literal);
         public abstract void Visit(SqlStringLiteral literal);
         public abstract void Visit(SqlUndefinedLiteral literal);
     }
@@ -18,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Sql
         public abstract TResult Visit(SqlBooleanLiteral literal);
         public abstract TResult Visit(SqlNullLiteral literal);
         public abstract TResult Visit(SqlNumberLiteral literal);
-        public abstract TResult Visit(SqlObjectLiteral literal);
         public abstract TResult Visit(SqlStringLiteral literal);
         public abstract TResult Visit(SqlUndefinedLiteral literal);
     }

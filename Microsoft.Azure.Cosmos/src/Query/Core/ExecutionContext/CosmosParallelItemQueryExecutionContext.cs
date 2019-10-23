@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query
             for (int i = 0; i < Math.Min(itemsLeftInCurrentPage, maxElements); i++)
             {
                 results.Add(currentItemProducerTree.Current);
-                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
+                if (!await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
                 {
                     break;
                 }

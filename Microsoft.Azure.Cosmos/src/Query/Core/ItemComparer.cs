@@ -280,17 +280,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return -1;
             }
 
-            int minLength = Math.Min(left.Value.Count, right.Value.Count);
-            for (int i = 0; i < minLength; i++)
-            {
-                int cmp = left.Value[i].CompareTo(right.Value[i]);
-                if (cmp != 0)
-                {
-                    return cmp;
-                }
-            }
-
-            return left.Value.Count.CompareTo(right.Value.Count);
+            return left.Value.Span.SequenceCompareTo(right.Value.Span);
         }
 
         /// <summary>

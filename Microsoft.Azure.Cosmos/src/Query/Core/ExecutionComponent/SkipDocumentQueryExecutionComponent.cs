@@ -89,9 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     activityId: sourcePage.ActivityId,
                     requestCharge: sourcePage.RequestCharge,
-                    queryMetricsText: sourcePage.QueryMetricsText,
-                    queryMetrics: sourcePage.QueryMetrics,
-                    requestStatistics: sourcePage.RequestStatistics,
+                    diagnostics: sourcePage.diagnostics,
                     responseLengthBytes: sourcePage.ResponseLengthBytes);
         }
 

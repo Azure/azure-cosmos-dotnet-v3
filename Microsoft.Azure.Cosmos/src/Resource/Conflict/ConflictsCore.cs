@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new FeedIteratorCore<T>(
                 databaseStreamIterator,
-                this.clientContext.ResponseFactory.CreateQueryFeedResponse<T>);
+                this.clientContext.ResponseFactory.CreateQueryFeedResponseWithPropertySerializer<T>);
         }
 
         public override async Task<ItemResponse<T>> ReadCurrentAsync<T>(

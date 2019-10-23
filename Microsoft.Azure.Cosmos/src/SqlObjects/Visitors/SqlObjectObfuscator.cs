@@ -411,21 +411,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             return SqlWhereClause.Create(sqlWhereClause.FilterExpression.Accept(this) as SqlScalarExpression);
         }
 
-        public override SqlObject Visit(SqlConversionScalarExpression sqlConversionScalarExpression)
-        {
-            throw new NotImplementedException("This is not part of the actual grammar");
-        }
-
-        public override SqlObject Visit(SqlGeoNearCallScalarExpression sqlGeoNearCallScalarExpression)
-        {
-            throw new NotImplementedException("This is not part of the actual grammar");
-        }
-
-        public override SqlObject Visit(SqlObjectLiteral sqlObjectLiteral)
-        {
-            throw new NotImplementedException("This is not part of the actual grammar");
-        }
-
         private Number64 GetObfuscatedNumber(Number64 value)
         {
             Number64 obfuscatedNumber;

@@ -60,7 +60,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 cancellationToken: cancellationToken);
 
                 BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(
-                    new ResponseMessage(HttpStatusCode.OK) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) },
+                    new ResponseMessage(HttpStatusCode.OK)
+                    {
+                        Content = responseContent,
+                        Diagnostics = new PointOperationStatistics(
+                            Guid.NewGuid().ToString(),
+                            HttpStatusCode.OK,
+                            SubStatusCodes.Unknown,
+                            0,
+                            string.Empty,
+                            HttpMethod.Get,
+                            new Uri("http://localhost"),
+                            new CosmosClientSideRequestStatistics())
+                    },
                     batchRequest,
                     new CosmosJsonDotNetSerializer());
 
@@ -95,7 +107,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                     serializer: new CosmosJsonDotNetSerializer(),
                 cancellationToken: cancellationToken);
 
-                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone) { Content = responseContent, Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics()) };
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
+                {
+                    Content = responseContent,
+                    Diagnostics = new PointOperationStatistics(
+                        Guid.NewGuid().ToString(),
+                        HttpStatusCode.Gone,
+                        SubStatusCodes.NameCacheIsStale,
+                        0,
+                        string.Empty,
+                        HttpMethod.Get,
+                        new Uri("http://localhost"),
+                        new CosmosClientSideRequestStatistics())
+                };
                 responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
 
                 BatchResponse batchresponse = await BatchResponse.PopulateFromContentAsync(

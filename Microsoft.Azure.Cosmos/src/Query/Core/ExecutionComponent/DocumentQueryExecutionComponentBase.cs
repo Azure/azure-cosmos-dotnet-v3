@@ -71,14 +71,5 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         {
             this.Source.Stop();
         }
-
-        /// <summary>
-        /// Gets the query metrics from this component.
-        /// </summary>
-        /// <returns>The partitioned query metrics from this component.</returns>
-        public IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics()
-        {
-            return this.Source.GetQueryMetrics();
-        }
     }
 }
