@@ -3,7 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
-    using System.Collections.Generic;
+    using System;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
         }
 
-        public abstract IReadOnlyList<byte> Value
+        public abstract ReadOnlyMemory<byte> Value
         {
             get;
         }
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosBinary(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosBinary Create(IReadOnlyList<byte> value)
+        public static CosmosBinary Create(ReadOnlyMemory<byte> value)
         {
             return new EagerCosmosBinary(value);
         }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
@@ -320,9 +321,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 PartitionKey = partitionKeyDefinition,
                 IndexingPolicy = new Microsoft.Azure.Cosmos.IndexingPolicy()
                 {
-                    IncludedPaths = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.IncludedPath>()
+                    IncludedPaths = new Collection<Cosmos.IncludedPath>()
                     {
-                        new Microsoft.Azure.Cosmos.IncludedPath()
+                        new Cosmos.IncludedPath()
                         {
                             Path = "/*",
                             Indexes = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Index>()
@@ -330,6 +331,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                                 Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.Number, -1),
                                 Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.String, -1)
                             }
+                        }
+                    },
+                    CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
+                    {
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/FamilyId", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Ascending }
+                        },
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/FamilyId", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Descending }
+                        },
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/FamilyId", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/IsRegistered", Order = Cosmos.CompositePathSortOrder.Descending }
+                        },
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/IsRegistered", Order = Cosmos.CompositePathSortOrder.Descending }
+                        },
+                        new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath() { Path = "/IsRegistered", Order = Cosmos.CompositePathSortOrder.Ascending },
+                            new Cosmos.CompositePath() { Path = "/Int", Order = Cosmos.CompositePathSortOrder.Descending }
                         }
                     }
                 }
@@ -482,13 +512,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     LinqTestsCommon.ValidateResults(queryResults, dataResults);
                 }
 
-                string errorMsg = null;
-                if (input.errorMessage != null)
-                {
-                    errorMsg = $"Expecting error containing message [[{input.errorMessage}]]. Actual: <No error>";
-                }
-
-                return new LinqTestOutput(querySqlStr, errorMsg, errorMsg != null);
+                return new LinqTestOutput(querySqlStr);
             }
             catch (Exception e)
             {
@@ -498,34 +522,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
 
                 string message = null;
-                bool hasFailed = false;
-                if (input.errorMessage != null && !e.Message.Contains(input.errorMessage))
+                DocumentClientException dce = e as DocumentClientException;
+                if (dce != null)
                 {
-                    message = $"Expecting error containing message [[{input.errorMessage}]]. Actual: [[{e.Message}]]";
-                    hasFailed = true;
+                    message = dce.RawErrorMessage;
                 }
-                else if (input.errorMessage == null)
+                else
                 {
                     message = e.Message;
-                    hasFailed = true;
                 }
 
-                return new LinqTestOutput(querySqlStr, message, hasFailed);
+                return new LinqTestOutput(querySqlStr, message);
             }
         }
-    }
-
-    public static class ErrorMessages
-    {
-        public const string OrderByCorrelatedCollectionNotSupported = "Order-by over correlated collections is not supported.";
-        public const string TopInSubqueryNotSupported = "'TOP' is not supported in subqueries.";
-        public const string OrderByInSubqueryNotSuppported = "'ORDER BY' is not supported in subqueries.";
-        public const string OffsetLimitInSubqueryNotSupported = "'OFFSET LIMIT' clause is not supported in subqueries.";
-        public const string OrderbyItemExpressionCouldNotBeMapped = "ORDER BY item expression could not be mapped to a document path.";
-        public const string CrossPartitionQueriesOnlySupportValueAggregateFunc = "Cross partition query only supports 'VALUE <AggreateFunc>' for aggregates.";
-        public const string MemberIndexerNotSupported = "The specified query includes 'member indexer' which is currently not supported.";
-        public const string IncorrectNumberOfArguments = "Incorrect number of arguments";
-        public const string ExpressionMustBeNonNegativeInteger = "expression must be a non-negative integer";
     }
 
     /// <summary>
@@ -572,7 +581,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         internal int randomSeed = -1;
         internal Expression<Func<bool, IQueryable>> Expression { get; }
-        internal string errorMessage;
         internal string expressionStr;
 
         // We skip the verification between Cosmos DB and actual query restuls in the following cases
@@ -580,11 +588,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         //     - scenarios not supported in LINQ, e.g. sequence doesn't contain element.
         internal bool skipVerification;
 
-        internal LinqTestInput(string description, Expression<Func<bool, IQueryable>> expr, string errorMsg = null, bool skipVerification = false, string expressionStr = null)
+        internal LinqTestInput(string description, Expression<Func<bool, IQueryable>> expr, bool skipVerification = false, string expressionStr = null)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
-            this.errorMessage = errorMsg;
             this.skipVerification = skipVerification;
             this.expressionStr = expressionStr;
         }
@@ -635,12 +642,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             xmlWriter.WriteStartElement("Expression");
             xmlWriter.WriteCData(expressionStr);
             xmlWriter.WriteEndElement();
-            if (this.errorMessage != null)
-            {
-                xmlWriter.WriteStartElement("ErrorMessage");
-                xmlWriter.WriteCData(this.errorMessage);
-                xmlWriter.WriteEndElement();
-            }
         }
     }
 
@@ -652,7 +653,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
         internal string SqlQuery { get; }
         internal string ErrorMessage { get; private set; }
-        internal bool Failed { get; private set; }
 
         private static readonly Dictionary<string, string> newlineKeywords = new Dictionary<string, string>() {
             { "SELECT", "\nSELECT" },
@@ -678,11 +678,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return msg;
         }
 
-        internal LinqTestOutput(string sqlQuery, string errorMsg = null, bool hasFailed = false)
+        internal LinqTestOutput(string sqlQuery, string errorMsg = null)
         {
             this.SqlQuery = FormatSql(sqlQuery);
             this.ErrorMessage = errorMsg;
-            this.Failed = hasFailed;
         }
 
         public static String FormatSql(string sqlQuery)
@@ -734,11 +733,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 xmlWriter.WriteStartElement("ErrorMessage");
                 xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(ErrorMessage));
                 xmlWriter.WriteEndElement();
-            }
-
-            if (this.Failed)
-            {
-                xmlWriter.WriteElementString("Failed", this.Failed.ToString());
             }
         }
     }

@@ -705,11 +705,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         if (previousResult != null)
                         {
-                            Assert.AreEqual(previousResult, jsonString);
+                            Assert.AreEqual(previousResult, jObject.ToString());
                         }
                         else
                         {
-                            previousResult = jsonString;
+                            previousResult = jObject.ToString(); ;
                         }
                     }
                 }
@@ -1107,16 +1107,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 MemoryStream memoryStream = new MemoryStream();
                 response.Content.CopyTo(memoryStream);
                 byte[] content = memoryStream.ToArray();
+                response.Content.Position = 0;
 
                 // Examine the first buffer byte to determine the serialization format
                 byte firstByte = content[0];
                 Assert.AreEqual(128, firstByte);
                 Assert.AreEqual(JsonSerializationFormat.Binary, (JsonSerializationFormat)firstByte);
 
-                IJsonReader reader = JsonReader.Create(response.Content);
+                IJsonReader reader = JsonReader.Create(content);
                 IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
                 textWriter.WriteAll(reader);
-                string json = Encoding.UTF8.GetString(textWriter.GetResult());
+                string json = Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
                 Assert.IsNotNull(json);
                 ToDoActivity[] responseActivities = JsonConvert.DeserializeObject<CosmosFeedResponseUtil<ToDoActivity>>(json).Data.ToArray();
                 Assert.IsTrue(responseActivities.Length <= 5);
@@ -1587,7 +1588,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 catch (CosmosException cosmosException)
                 {
-                    Assert.IsTrue(cosmosException.Message.Contains("ContactedReplicas"), cosmosException.Message);
+                    Assert.IsTrue(cosmosException.Message.Contains("StorePhysicalAddress"), cosmosException.Message);
                 }
             }
             finally
