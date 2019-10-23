@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - [#923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/923) Bulk Support is now public
+- [#922](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/922) Included information of bulk support usage in user agent
 
 ### Fixed
 - [#901](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/901) Fix a bug causing query response to create a new stream for each content call
