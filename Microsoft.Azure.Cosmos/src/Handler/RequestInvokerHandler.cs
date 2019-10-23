@@ -114,9 +114,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 Content = streamPayload
             };
 
-            if (partitionKey != null)
+            if (partitionKey.HasValue)
             {
-                if (cosmosContainerCore == null && Object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
+                if (cosmosContainerCore == null && object.ReferenceEquals(partitionKey, Cosmos.PartitionKey.None))
                 {
                     throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
                 }
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 else
                 {
-                    request.Headers.PartitionKey = partitionKey.ToString();
+                    request.Headers.PartitionKey = partitionKey.Value.ToJsonString();
                 }
             }
 

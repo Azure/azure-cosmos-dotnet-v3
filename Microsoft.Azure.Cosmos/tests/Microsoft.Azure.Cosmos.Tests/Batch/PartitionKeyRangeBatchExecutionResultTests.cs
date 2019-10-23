@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ETag = "1234",
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
-                Diagnostics = new PointOperationStatistics(HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics())
+                Diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics())
             };
 
             ResponseMessage response = result.ToResponseMessage();

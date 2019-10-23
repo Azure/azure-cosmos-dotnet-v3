@@ -32,12 +32,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </summary>
         public abstract void Stop();
 
-        /// <summary>
-        /// Gets the QueryMetrics from this component.
-        /// </summary>
-        /// <returns>The QueryMetrics from this component.</returns>
-        public abstract IReadOnlyDictionary<string, QueryMetrics> GetQueryMetrics();
-
         public abstract void Dispose();
     }
 }

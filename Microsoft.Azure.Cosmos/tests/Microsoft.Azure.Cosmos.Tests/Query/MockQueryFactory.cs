@@ -152,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                           It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, containerRid)),
                           It.IsAny<bool>(),
                           maxPageSize,
+                          It.IsAny<SchedulingStopwatch>(),
                           cancellationTokenForMocks))
                           .Returns(Task.FromResult(queryResponse));
 
@@ -179,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                          It.Is<PartitionKeyRangeIdentity>(rangeId => string.Equals(rangeId.PartitionKeyRangeId, partitionKeyRange.Id) && string.Equals(rangeId.CollectionRid, containerRid)),
                          It.IsAny<bool>(),
                          maxPageSize,
+                         It.IsAny<SchedulingStopwatch>(),
                          cancellationTokenForMocks))
                          .Returns(Task.FromResult(querySplitResponse));
 

@@ -1,7 +1,7 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Query metrics in the Azure DocumentDB database service.
+    /// Query metrics in the Azure Cosmos database service.
     /// This metric represents a moving average for a set of queries whose metrics have been aggregated together.
     /// </summary>
     internal sealed class QueryMetrics
@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
             outputDocumentCount: 0,
             outputDocumentSize: 0,
             indexHitDocumentCount: 0,
+            indexUtilizationInfo: IndexUtilizationInfo.Empty,
             totalQueryExecutionTime: default(TimeSpan),
             queryPreparationTimes: QueryPreparationTimes.Zero,
             indexLookupTime: default(TimeSpan),
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly long outputDocumentCount;
         private readonly long outputDocumentSize;
         private readonly long indexHitDocumentCount;
+        private readonly IndexUtilizationInfo indexUtilizationInfo;
         private readonly TimeSpan totalQueryExecutionTime;
         private readonly QueryPreparationTimes queryPreparationTimes;
         private readonly TimeSpan indexLookupTime;
@@ -55,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="outputDocumentCount">Output Document Count</param>
         /// <param name="outputDocumentSize">Output Document Size</param>
         /// <param name="indexHitDocumentCount">Index Hit DocumentCount</param>
+        /// <param name="indexUtilizationInfo">Index Utilization count</param>
         /// <param name="totalQueryExecutionTime">Total Query Execution Time</param>
         /// <param name="queryPreparationTimes">Query Preparation Times</param>
         /// <param name="indexLookupTime">Time spent in physical index layer.</param>
@@ -70,6 +73,7 @@ namespace Microsoft.Azure.Cosmos
             long outputDocumentCount,
             long outputDocumentSize,
             long indexHitDocumentCount,
+            IndexUtilizationInfo indexUtilizationInfo,
             TimeSpan totalQueryExecutionTime,
             QueryPreparationTimes queryPreparationTimes,
             TimeSpan indexLookupTime,
@@ -99,6 +103,7 @@ namespace Microsoft.Azure.Cosmos
             this.outputDocumentCount = outputDocumentCount;
             this.outputDocumentSize = outputDocumentSize;
             this.indexHitDocumentCount = indexHitDocumentCount;
+            this.indexUtilizationInfo = indexUtilizationInfo;
             this.totalQueryExecutionTime = totalQueryExecutionTime;
             this.queryPreparationTimes = queryPreparationTimes;
             this.indexLookupTime = indexLookupTime;
@@ -111,221 +116,118 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the total query time in the Azure DocumentDB database service.
+        /// Gets the total query time in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan TotalTime
-        {
-            get
-            {
-                return this.totalQueryExecutionTime;
-            }
-        }
+        public TimeSpan TotalTime => this.totalQueryExecutionTime;
 
         /// <summary>
-        /// Gets the number of documents retrieved during query in the Azure DocumentDB database service.
+        /// Gets the number of documents retrieved during query in the Azure Cosmos database service.
         /// </summary>
-        public long RetrievedDocumentCount
-        {
-            get
-            {
-                return this.retrievedDocumentCount;
-            }
-        }
+        public long RetrievedDocumentCount => this.retrievedDocumentCount;
 
         /// <summary>
         /// Gets the size of documents retrieved in bytes during query in the Azure Cosmos DB service.
         /// </summary>
-        public long RetrievedDocumentSize
-        {
-            get
-            {
-                return this.retrievedDocumentSize;
-            }
-        }
+        public long RetrievedDocumentSize => this.retrievedDocumentSize;
 
         /// <summary>
         /// Gets the number of documents returned by query in the Azure Cosmos DB service.
         /// </summary>
-        public long OutputDocumentCount
-        {
-            get
-            {
-                return this.outputDocumentCount;
-            }
-        }
+        public long OutputDocumentCount => this.outputDocumentCount;
 
         /// <summary>
-        /// Gets the size of documents outputted in bytes during query in the Azure DocumentDB database service.
+        /// Gets the size of documents outputted in bytes during query in the Azure Cosmos database service.
         /// </summary>
-        public long OutputDocumentSize
-        {
-            get
-            {
-                return this.outputDocumentSize;
-            }
-        }
+        internal long OutputDocumentSize => this.outputDocumentSize;
 
         /// <summary>
-        /// Gets the total query time in the Azure DocumentDB database service.
+        /// Gets the total query time in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan TotalQueryExecutionTime
-        {
-            get
-            {
-                return this.totalQueryExecutionTime;
-            }
-        }
+        internal TimeSpan TotalQueryExecutionTime => this.totalQueryExecutionTime;
 
         /// <summary>
-        /// Gets the query QueryPreparationTimes in the Azure DocumentDB database service.
+        /// Gets the query QueryPreparationTimes in the Azure Cosmos database service.
         /// </summary>
-        public QueryPreparationTimes QueryPreparationTimes
-        {
-            get
-            {
-                return this.queryPreparationTimes;
-            }
-        }
+        public QueryPreparationTimes QueryPreparationTimes => this.queryPreparationTimes;
 
         /// <summary>
-        /// Gets the <see cref="QueryEngineTimes"/> instance in the Azure DocumentDB database service.
+        /// Gets the <see cref="Cosmos.Query.QueryEngineTimes"/> instance in the Azure Cosmos database service.
         /// </summary>
-        public QueryEngineTimes QueryEngineTimes
-        {
-            get
-            {
-                return this.queryEngineTimes;
-            }
-        }
+        public QueryEngineTimes QueryEngineTimes => this.queryEngineTimes;
 
         /// <summary>
-        /// Gets number of reties in the Azure DocumentDB database service.
+        /// Gets number of reties in the Azure Cosmos database service.
         /// </summary>
-        public long Retries
-        {
-            get
-            {
-                return this.clientSideMetrics.Retries;
-            }
-        }
+        public long Retries => this.clientSideMetrics.Retries;
 
         /// <summary>
-        /// Gets the query index lookup time in the Azure DocumentDB database service.
+        /// Gets the query index lookup time in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan IndexLookupTime
-        {
-            get
-            {
-                return this.indexLookupTime;
-            }
-        }
+        internal TimeSpan IndexLookupTime => this.indexLookupTime;
 
         /// <summary>
-        /// Gets the document loading time during query in the Azure DocumentDB database service.
+        /// Gets the document loading time during query in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan DocumentLoadTime
-        {
-            get
-            {
-                return this.documentLoadTime;
-            }
-        }
+        internal TimeSpan DocumentLoadTime => this.documentLoadTime;
 
         /// <summary>
-        /// Gets the query runtime execution times during query in the Azure DocumentDB database service.
+        /// Gets the query runtime execution times during query in the Azure Cosmos database service.
         /// </summary>
-        public RuntimeExecutionTimes RuntimeExecutionTimes
-        {
-            get
-            {
-                return this.runtimeExecutionTimes;
-            }
-        }
+        internal RuntimeExecutionTimes RuntimeExecutionTimes => this.runtimeExecutionTimes;
 
         /// <summary>
-        /// Gets the output writing/serializing time during query in the Azure DocumentDB database service.
+        /// Gets the output writing/serializing time during query in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan DocumentWriteTime
-        {
-            get
-            {
-                return this.documentWriteTime;
-            }
-        }
+        internal TimeSpan DocumentWriteTime => this.documentWriteTime;
 
         /// <summary>
-        /// Gets the <see cref="ClientSideMetrics"/> instance in the Azure DocumentDB database service.
+        /// Gets the <see cref="ClientSideMetrics"/> instance in the Azure Cosmos database service.
         /// </summary>
         [JsonProperty(PropertyName = "ClientSideMetrics")]
-        internal ClientSideMetrics ClientSideMetrics
-        {
-            get
-            {
-                return this.clientSideMetrics;
-            }
-        }
+        internal ClientSideMetrics ClientSideMetrics => this.clientSideMetrics;
 
         /// <summary>
-        /// Gets the index hit ratio by query in the Azure DocumentDB database service.
+        /// Gets the index hit ratio by query in the Azure Cosmos database service.
         /// </summary>
-        public double IndexHitRatio
-        {
-            get
-            {
-                return this.retrievedDocumentCount == 0
+        public double IndexHitRatio => this.retrievedDocumentCount == 0
                     ? 1
                     : (double)this.indexHitDocumentCount / this.retrievedDocumentCount;
-            }
-        }
 
         /// <summary>
         /// Gets the Index Hit Document Count.
         /// </summary>
-        public long IndexHitDocumentCount
-        {
-            get
-            {
-                return this.indexHitDocumentCount;
-            }
-        }
+        internal long IndexHitDocumentCount => this.indexHitDocumentCount;
+
+        /// <summary>
+        /// Gets the Index Utilization information.
+        /// </summary>
+        internal IndexUtilizationInfo IndexUtilizationInfo => this.indexUtilizationInfo;
 
         /// <summary>
         /// Gets the VMExecution Time.
         /// </summary>
-        public TimeSpan VMExecutionTime
-        {
-            get
-            {
-                return this.vmExecutionTime;
-            }
-        }
+        internal TimeSpan VMExecutionTime => this.vmExecutionTime;
 
         /// <summary>
         /// Gets the Index Utilization.
         /// </summary>
-        private double IndexUtilization
-        {
-            get
-            {
-                return this.IndexHitRatio * 100;
-            }
-        }
+        private double IndexUtilization => this.IndexHitRatio * 100;
 
         /// <summary>
-        /// Add two specified <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instances
+        /// Add two specified <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instances
         /// </summary>
-        /// <param name="queryMetrics1">The first <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instance</param>
-        /// <param name="queryMetrics2">The second <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instance</param>
-        /// <returns>A new <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instance that is the sum of two <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instances</returns>
+        /// <param name="queryMetrics1">The first <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instance</param>
+        /// <param name="queryMetrics2">The second <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instance</param>
+        /// <returns>A new <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instance that is the sum of two <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instances</returns>
         public static QueryMetrics operator +(QueryMetrics queryMetrics1, QueryMetrics queryMetrics2)
         {
             return queryMetrics1.Add(queryMetrics2);
         }
 
         /// <summary>
-        /// Gets the stringified <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instance in the Azure DocumentDB database service.
+        /// Gets the stringified <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instance in the Azure Cosmos database service.
         /// </summary>
-        /// <returns>The stringified <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instance in the Azure DocumentDB database service.</returns>
+        /// <returns>The stringified <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instance in the Azure Cosmos database service.</returns>
         public override string ToString()
         {
             return this.ToTextString();
@@ -340,9 +242,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the delimited stringified <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instance in the Azure DocumentDB database service as if from a backend response.
+        /// Gets the delimited stringified <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instance in the Azure Cosmos database service as if from a backend response.
         /// </summary>
-        /// <returns>The delimited stringified <see cref="Microsoft.Azure.Cosmos.QueryMetrics"/> instance in the Azure DocumentDB database service as if from a backend response.</returns>
+        /// <returns>The delimited stringified <see cref="Microsoft.Azure.Cosmos.Query.QueryMetrics"/> instance in the Azure Cosmos database service as if from a backend response.</returns>
         internal string ToDelimitedString()
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -368,6 +270,7 @@ namespace Microsoft.Azure.Cosmos
             long outputDocumentCount = 0;
             long outputDocumentSize = 0;
             long indexHitDocumentCount = 0;
+            List<IndexUtilizationInfo> indexUtilizationInfoList = new List<IndexUtilizationInfo>();
             TimeSpan totalQueryExecutionTime = new TimeSpan();
             List<QueryPreparationTimes> queryPreparationTimesList = new List<QueryPreparationTimes>();
             TimeSpan indexLookupTime = new TimeSpan();
@@ -389,6 +292,7 @@ namespace Microsoft.Azure.Cosmos
                 outputDocumentCount += queryMetrics.outputDocumentCount;
                 outputDocumentSize += queryMetrics.outputDocumentSize;
                 indexHitDocumentCount += queryMetrics.indexHitDocumentCount;
+                indexUtilizationInfoList.Add(queryMetrics.IndexUtilizationInfo);
                 totalQueryExecutionTime += queryMetrics.totalQueryExecutionTime;
                 queryPreparationTimesList.Add(queryMetrics.queryPreparationTimes);
                 indexLookupTime += queryMetrics.indexLookupTime;
@@ -405,6 +309,7 @@ namespace Microsoft.Azure.Cosmos
                 outputDocumentCount,
                 outputDocumentSize,
                 indexHitDocumentCount,
+                IndexUtilizationInfo.CreateFromIEnumerable(indexUtilizationInfoList),
                 totalQueryExecutionTime,
                 QueryPreparationTimes.CreateFromIEnumerable(queryPreparationTimesList),
                 indexLookupTime,
@@ -419,40 +324,39 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a new QueryMetrics from the backend delimited string.
         /// </summary>
         /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
+        /// <param name="indexUtilization">The index utilization from the backend</param>
         /// <returns>A new QueryMetrics from the backend delimited string.</returns>
-        internal static QueryMetrics CreateFromDelimitedString(string delimitedString)
+        internal static QueryMetrics CreateFromDelimitedString(string delimitedString, string indexUtilization)
         {
-            return QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(delimitedString, new ClientSideMetrics(0, 0, new List<FetchExecutionRange>(), new List<Tuple<string, SchedulingTimeSpan>>()));
+            return QueryMetrics.CreateFromDelimitedStringAndClientSideMetrics(delimitedString, indexUtilization, new ClientSideMetrics(0, 0, new List<FetchExecutionRange>()));
         }
 
         /// <summary>
         /// Creates a new QueryMetrics from the backend delimited string and ClientSideMetrics.
         /// </summary>
         /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
+        /// <param name="indexUtilization">The index utilization from the backend</param>
         /// <param name="clientSideMetrics">The additional client side metrics.</param>
         /// <returns>A new QueryMetrics.</returns>
-        internal static QueryMetrics CreateFromDelimitedStringAndClientSideMetrics(string delimitedString, ClientSideMetrics clientSideMetrics)
+        internal static QueryMetrics CreateFromDelimitedStringAndClientSideMetrics(string delimitedString, string indexUtilization, ClientSideMetrics clientSideMetrics)
         {
             Dictionary<string, double> metrics = QueryMetricsUtils.ParseDelimitedString(delimitedString);
-            double indexHitRatio;
-            double retrievedDocumentCount;
-            metrics.TryGetValue(QueryMetricsConstants.IndexHitRatio, out indexHitRatio);
-            metrics.TryGetValue(QueryMetricsConstants.RetrievedDocumentCount, out retrievedDocumentCount);
+            metrics.TryGetValue(QueryMetricsConstants.IndexHitRatio, out double indexHitRatio);
+            metrics.TryGetValue(QueryMetricsConstants.RetrievedDocumentCount, out double retrievedDocumentCount);
             long indexHitCount = (long)(indexHitRatio * retrievedDocumentCount);
-            double outputDocumentCount;
-            metrics.TryGetValue(QueryMetricsConstants.OutputDocumentCount, out outputDocumentCount);
-            double outputDocumentSize;
-            metrics.TryGetValue(QueryMetricsConstants.OutputDocumentSize, out outputDocumentSize);
-            double retrievedDocumentSize;
-            metrics.TryGetValue(QueryMetricsConstants.RetrievedDocumentSize, out retrievedDocumentSize);
+            metrics.TryGetValue(QueryMetricsConstants.OutputDocumentCount, out double outputDocumentCount);
+            metrics.TryGetValue(QueryMetricsConstants.OutputDocumentSize, out double outputDocumentSize);
+            metrics.TryGetValue(QueryMetricsConstants.RetrievedDocumentSize, out double retrievedDocumentSize);
             TimeSpan totalQueryExecutionTime = QueryMetricsUtils.TimeSpanFromMetrics(metrics, QueryMetricsConstants.TotalQueryExecutionTimeInMs);
 
+            IndexUtilizationInfo.TryCreateFromDelimitedString(indexUtilization, out IndexUtilizationInfo indexUtilizationInfo);
             return new QueryMetrics(
                 (long)retrievedDocumentCount,
                 (long)retrievedDocumentSize,
                 (long)outputDocumentCount,
                 (long)outputDocumentSize,
                 indexHitCount,
+                indexUtilizationInfo,
                 totalQueryExecutionTime,
                 QueryPreparationTimes.CreateFromDelimitedString(delimitedString),
                 QueryMetricsUtils.TimeSpanFromMetrics(metrics, QueryMetricsConstants.IndexLookupTimeInMs),
@@ -464,8 +368,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal static QueryMetrics CreateWithSchedulingMetrics(
-            QueryMetrics queryMetrics,
-            List<Tuple<string, SchedulingTimeSpan>> partitionSchedulingTimeSpans)
+            QueryMetrics queryMetrics)
         {
             return new QueryMetrics(
                 queryMetrics.RetrievedDocumentCount,
@@ -473,6 +376,7 @@ namespace Microsoft.Azure.Cosmos
                 queryMetrics.OutputDocumentCount,
                 queryMetrics.OutputDocumentSize,
                 queryMetrics.IndexHitDocumentCount,
+                queryMetrics.IndexUtilizationInfo,
                 queryMetrics.TotalQueryExecutionTime,
                 queryMetrics.QueryPreparationTimes,
                 queryMetrics.IndexLookupTime,
@@ -483,8 +387,7 @@ namespace Microsoft.Azure.Cosmos
                 new ClientSideMetrics(
                     queryMetrics.ClientSideMetrics.Retries,
                     queryMetrics.ClientSideMetrics.RequestCharge,
-                    queryMetrics.ClientSideMetrics.FetchExecutionRanges,
-                    partitionSchedulingTimeSpans));
+                    queryMetrics.ClientSideMetrics.FetchExecutionRanges));
         }
 
         /// <summary>
@@ -494,8 +397,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new QueryMetrics instance that is the sum of the current instance and the list.</returns>
         internal QueryMetrics Add(params QueryMetrics[] queryMetricsList)
         {
-            List<QueryMetrics> combinedQueryMetricsList = new List<QueryMetrics>(queryMetricsList.Length + 1);
-            combinedQueryMetricsList.Add(this);
+            List<QueryMetrics> combinedQueryMetricsList = new List<QueryMetrics>(queryMetricsList.Length + 1)
+            {
+                this
+            };
             combinedQueryMetricsList.AddRange(queryMetricsList);
             return QueryMetrics.CreateFromIEnumerable(combinedQueryMetricsList);
         }
@@ -504,7 +409,7 @@ namespace Microsoft.Azure.Cosmos
     #region QueryEngineTimes
 
     /// <summary>
-    /// Query engine time in the Azure DocumentDB database service.
+    /// Query engine time in the Azure Cosmos database service.
     /// (dummy class that will be deprecated).
     /// </summary>
     internal sealed class QueryEngineTimes
@@ -525,56 +430,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the query index lookup time in the Azure DocumentDB database service.
+        /// Gets the query index lookup time in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan IndexLookupTime
-        {
-            get
-            {
-                return this.indexLookupTime;
-            }
-        }
+        public TimeSpan IndexLookupTime => this.indexLookupTime;
 
         /// <summary>
-        /// Gets the document loading time during query in the Azure DocumentDB database service.
+        /// Gets the document loading time during query in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan DocumentLoadTime
-        {
-            get
-            {
-                return this.documentLoadTime;
-            }
-        }
+        public TimeSpan DocumentLoadTime => this.documentLoadTime;
 
         /// <summary>
-        /// Gets the output writing/serializing time during query in the Azure DocumentDB database service.
+        /// Gets the output writing/serializing time during query in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan WriteOutputTime
-        {
-            get
-            {
-                return this.writeOutputTime;
-            }
-        }
+        public TimeSpan WriteOutputTime => this.writeOutputTime;
 
         /// <summary>
-        /// Gets the query runtime execution times during query in the Azure DocumentDB database service.
+        /// Gets the query runtime execution times during query in the Azure Cosmos database service.
         /// </summary>
-        public RuntimeExecutionTimes RuntimeExecutionTimes
-        {
-            get
-            {
-                return this.runtimeExecutionTimes;
-            }
-        }
+        public RuntimeExecutionTimes RuntimeExecutionTimes => this.runtimeExecutionTimes;
 
-        internal TimeSpan VMExecutionTime
-        {
-            get
-            {
-                return this.vmExecutionTime;
-            }
-        }
+        internal TimeSpan VMExecutionTime => this.vmExecutionTime;
     }
     #endregion
 }

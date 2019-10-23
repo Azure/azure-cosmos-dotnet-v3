@@ -102,6 +102,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(envInfo.RuntimeFramework, values[5]);
         }
 
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task VerifyUserAgentWithFeatures(bool useMacOs)
+        {
+            this.SetEnvironmentInformation(useMacOs);
+
+            const string suffix = " UserApplicationName/1.0";
+
+            string features = Convert.ToString((int)CosmosClientOptionsFeatures.AllowBulkExecution, 2).PadLeft(8, '0');
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix).WithBulkExecution(true)))
+            {
+                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
+
+                string userAgentString = userAgentContainer.UserAgent;
+                Assert.IsTrue(userAgentString.Contains(suffix));
+                Assert.IsTrue(userAgentString.Contains($"|F {features}"));
+                if (useMacOs)
+                {
+                    Assert.IsTrue(userAgentString.Contains("Darwin 18.0.0"));
+                }
+
+                Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+                Assert.IsNotNull(db);
+                await db.DeleteAsync();
+            }
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix).WithBulkExecution(false)))
+            {
+                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
+
+                string userAgentString = userAgentContainer.UserAgent;
+                Assert.IsTrue(userAgentString.Contains(suffix));
+                Assert.IsFalse(userAgentString.Contains($"|F {features}"));
+            }
+        }
+
         private void SetEnvironmentInformation(bool useMacOs)
         {
             //This changes the runtime information to simulate a max os x response. Windows user agent are tested by every other emulator test.

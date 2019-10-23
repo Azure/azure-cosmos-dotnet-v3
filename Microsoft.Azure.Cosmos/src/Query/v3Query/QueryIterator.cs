@@ -66,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 QueryResponseCore responseCore = await this.cosmosQueryExecutionContext.ExecuteNextAsync(cancellationToken);
                 CosmosQueryContext cosmosQueryContext = this.cosmosQueryExecutionContext.CosmosQueryContext;
+                QueryAggregateDiagnostics diagnostics = new QueryAggregateDiagnostics(responseCore.diagnostics);
                 QueryResponse queryResponse;
                 if (responseCore.IsSuccess)
                 {
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
-                        queryMetrics: responseCore.QueryMetrics,
+                        diagnostics: diagnostics,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -91,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         error: null,
                         errorMessage: responseCore.ErrorMessage,
                         requestMessage: null,
+                        diagnostics: diagnostics,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -102,11 +104,6 @@ namespace Microsoft.Azure.Cosmos.Query
                         });
                 }
                 
-                if (responseCore.QueryMetrics != null && responseCore.QueryMetrics.Count > 0)
-                {
-                    queryResponse.Diagnostics = new QueryOperationStatistics(responseCore.QueryMetrics);
-                }
-
                 queryResponse.CosmosSerializationOptions = this.cosmosSerializationFormatOptions;
 
                 response = queryResponse;
