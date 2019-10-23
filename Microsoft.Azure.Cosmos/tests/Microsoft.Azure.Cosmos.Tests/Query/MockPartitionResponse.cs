@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     /// </summary>
     internal class MockPartitionResponse
     {
+        internal const int MessageWithToManyRequestFailure = -1;
+
         public PartitionKeyRange PartitionKeyRange { get; set; }
 
         /// <summary>
@@ -24,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         /// <remarks>
         /// Empty int[] represent an empty page
+        /// -1 represents a 429 failure
         /// </remarks>
         public List<int[]> MessagesWithItemIndex { get; set; } = new List<int[]>();
 
@@ -46,21 +49,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             int totalItemCount = 0;
             if(this.MessagesWithItemIndex != null)
             {
-                foreach (var message in this.MessagesWithItemIndex)
+                foreach (int[] message in this.MessagesWithItemIndex)
                 {
-                    totalItemCount += message.Length;
+                    if (!IsFailurePage(message))
+                    {
+                        totalItemCount += message.Length;
+                    }
                 }
             }
 
             if(this.Split != null)
             {
-                foreach(var partitionResponse in this.Split)
+                foreach(MockPartitionResponse partitionResponse in this.Split)
                 {
                     totalItemCount += partitionResponse.GetTotalItemCount();
                 }
             }
 
             return totalItemCount;
+        }
+
+        public static bool IsFailurePage(int[] page)
+        {
+            return page != null && page.Length == 1 && page[0] < 0;
         }
     }
 }
