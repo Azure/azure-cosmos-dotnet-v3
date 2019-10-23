@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int MaxOperatingSystemString = 30;
         private string cosmosBaseUserAgent;
-        private string features;
 
         public UserAgentContainer()
             : base()
@@ -34,12 +33,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal void SetFeatures(string features)
         {
-            this.features = features;
             // Regenerate base user agent to account for features
-            this.cosmosBaseUserAgent = this.CreateBaseUserAgentString();
+            this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(features);
         }
 
-        private string CreateBaseUserAgentString()
+        private string CreateBaseUserAgentString(string features = null)
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             string operatingSystem = environmentInformation.OperatingSystem;
@@ -52,9 +50,9 @@ namespace Microsoft.Azure.Cosmos
             // Do not change the cosmos-netstandard-sdk as it is required for reporting
             string baseUserAgent = $"cosmos-netstandard-sdk/{environmentInformation.ClientVersion}" + Regex.Replace($"|{environmentInformation.DirectVersion}|{environmentInformation.ClientId}|{environmentInformation.ProcessArchitecture}|{operatingSystem}|{environmentInformation.RuntimeFramework}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
 
-            if (!string.IsNullOrEmpty(this.features))
+            if (!string.IsNullOrEmpty(features))
             {
-                baseUserAgent += $"F {this.features}|";
+                baseUserAgent += $"F {features}|";
             }
 
             return baseUserAgent;
