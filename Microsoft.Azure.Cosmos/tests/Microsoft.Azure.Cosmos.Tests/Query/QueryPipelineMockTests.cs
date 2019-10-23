@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -152,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     fullConitnuationToken = JsonConvert.SerializeObject(new OrderByContinuationToken[] { orderByContinuationToken });
                 }
 
-               
+
                 IList<ToDoItem> allItems = MockQueryFactory.GenerateAndMockResponse(
                     mockQueryClient,
                     isOrderByQuery: true,
@@ -165,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 // Order by drains the partitions until it finds an item
                 // If there are no items then it's not possible to have a continuation token
-                if(allItems.Count == 0 && createInitialContinuationToken)
+                if (allItems.Count == 0 && createInitialContinuationToken)
                 {
                     continue;
                 }
@@ -225,6 +227,38 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 CollectionAssert.AreEqual(allItems.ToList(), itemsRead, new ToDoItemComparer());
             }
+        }
+
+        [TestMethod]
+        public async Task TestNegativeAggreateComponentCreation()
+        {
+            TryMonad<AggregateDocumentQueryExecutionComponent, Exception> tryCreateWhenSourceFails = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                new AggregateOperator[] { },
+                new Dictionary<string, AggregateOperator?>(),
+                false,
+                null,
+                FailToCreateSource);
+
+            Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
+
+            TryMonad<AggregateDocumentQueryExecutionComponent, Exception> tryCreateWhenInvalidContinuationToken = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+                new AggregateOperator[] { },
+                new Dictionary<string, AggregateOperator?>(),
+                false,
+                null,
+                FailToCreateSource);
+
+            Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
+        }
+
+        private static Task<TryMonad<IDocumentQueryExecutionComponent, Exception>> FailToCreateSource(string continuationToken)
+        {
+            return Task.FromResult(TryMonad<IDocumentQueryExecutionComponent, Exception>.FromException(new Exception()));
+        }
+
+        private static Task<TryMonad<IDocumentQueryExecutionComponent, Exception>> CreateSource(string continuationToken)
+        {
+            return Task.FromResult(TryMonad<IDocumentQueryExecutionComponent, Exception>.FromResult(new Mock<IDocumentQueryExecutionComponent>().Object));
         }
     }
 }
