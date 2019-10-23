@@ -209,7 +209,8 @@ namespace Microsoft.Azure.Cosmos.Query
             ////  2) <i, j> always come before <i, k> where j < k
 
             List<CosmosElement> results = new List<CosmosElement>();
-            while (!this.IsDone && results.Count < maxElements)
+            bool isSuccessToMoveNext = true;
+            while (!this.IsDone && results.Count < maxElements && isSuccessToMoveNext)
             {
                 // Only drain from the highest priority document producer 
                 // We need to pop and push back the document producer tree, since the priority changes according to the sort order.
@@ -234,10 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 this.previousRid = orderByQueryResult.Rid;
 
-                if (await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken))
-                {
-                    break;
-                }
+                isSuccessToMoveNext = await this.MoveNextHelperAsync(currentItemProducerTree, cancellationToken);
 
                 this.PushCurrentItemProducerTree(currentItemProducerTree);
             }

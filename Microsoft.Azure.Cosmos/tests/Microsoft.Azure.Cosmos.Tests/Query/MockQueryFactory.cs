@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     internal static class MockQueryFactory
     {
         public static readonly int[] EmptyPage = new int[] { };
+        public static readonly int[] FailureToManyRequests = new int[] { MockPartitionResponse.MessageWithToManyRequestFailure };
         public static readonly string DefaultDatabaseRid = ResourceId.NewDatabaseId(3810641).ToString();
         public static readonly string DefaultCollectionRid = ResourceId.NewDocumentCollectionId(DefaultDatabaseRid, 1376573569).ToString();
         public static readonly SqlQuerySpec DefaultQuerySpec = new SqlQuerySpec("SELECT * FROM C ");
@@ -92,37 +93,53 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string previousContinuationToken = initContinuationToken;
 
                 // Loop through each message inside the partition
-                List<int[]> messages = partitionAndMessages.MessagesWithItemIndex;
-                int messagesCount = messages == null ? 0 : messages.Count;
-                int lastMessageIndex = messagesCount - 1;
-                for (int i = 0; i < messagesCount; i++)
+                List<int[]> pages = partitionAndMessages.MessagesWithItemIndex;
+                int pagesCount = pages == null ? 0 : pages.Count;
+                int lastPageIndex = pagesCount - 1;
+                for (int i = 0; i < pagesCount; i++)
                 {
-                    int[] message = partitionAndMessages.MessagesWithItemIndex[i];
-
+                    int[] itemsInPage = partitionAndMessages.MessagesWithItemIndex[i];
                     string newContinuationToken = null;
+                    QueryResponseCore queryResponse;
 
-                    List<ToDoItem> currentPageItems = new List<ToDoItem>();
-                    // Null represents an empty page
-                    if (message != null)
+                    bool isFailureResponse = itemsInPage.Length == 1 && itemsInPage[0] < 0;
+                    if (isFailureResponse)
                     {
-                        foreach (int itemPosition in message)
+                        if(itemsInPage[0] == MockPartitionResponse.MessageWithToManyRequestFailure)
                         {
-                            currentPageItems.Add(allItemsOrdered[itemPosition]);
+                            queryResponse = QueryResponseMessageFactory.CreateFailureToManyRequestResponse();
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"Unknown mocked failure response {itemsInPage[0]}");
                         }
                     }
-
-                    // Last message should have null continuation token
-                    // Split means it's not the last message for this PK range
-                    if (i != lastMessageIndex || partitionAndMessages.HasSplit)
+                    else
                     {
-                        newContinuationToken = Guid.NewGuid().ToString();
-                    }
+                        List<ToDoItem> currentPageItems = new List<ToDoItem>();
 
-                    QueryResponseCore queryResponse = QueryResponseMessageFactory.CreateQueryResponse(
-                        currentPageItems,
-                        isOrderByQuery,
-                        newContinuationToken,
-                        containerRid);
+                        // Null represents an empty page. Page with a single negative value represents a failure response
+                        if (itemsInPage != null)
+                        {
+                            foreach (int itemPosition in itemsInPage)
+                            {
+                                currentPageItems.Add(allItemsOrdered[itemPosition]);
+                            }
+                        }
+
+                        // Last message should have null continuation token
+                        // Split means it's not the last message for this PK range
+                        if (i != lastPageIndex || partitionAndMessages.HasSplit)
+                        {
+                            newContinuationToken = Guid.NewGuid().ToString();
+                        }
+
+                        queryResponse = QueryResponseMessageFactory.CreateQueryResponse(
+                            currentPageItems,
+                            isOrderByQuery,
+                            newContinuationToken,
+                            containerRid);
+                    }
 
                     mockQueryClient.Setup(x =>
                       x.ExecuteItemQueryAsync(
@@ -257,6 +274,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                         }
                     }
                 }
+            };
+        }
+
+        public static List<MockPartitionResponse[]> GetFailureScenarios()
+        {
+            return new List<MockPartitionResponse[]>
+            {
+                CreateDefaultResponse(
+                    MockQueryFactory.FailureToManyRequests),
+                CreateDefaultResponse(
+                    new int[] { 0 },
+                    MockQueryFactory.FailureToManyRequests),
+                CreateDefaultResponse(
+                    new int[] { 0 },
+                    new int[] { 1 },
+                    MockQueryFactory.FailureToManyRequests),
             };
         }
 
