@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     if (queryResponse.ContinuationToken != null)
                     {
-                        updatedContinuationToken = new PipelineContinuationTokenV1(queryResponse.ContinuationToken).ToString();
+                        updatedContinuationToken = new PipelineContinuationTokenV0(queryResponse.ContinuationToken).ToString();
                     }
                     else
                     {
