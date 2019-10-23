@@ -123,7 +123,7 @@ ORDER BY v0 DESC, v1 ASC
 SELECT VALUE root 
 FROM root 
 ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["The order by query does not have a corresponding composite index that it can be served from."]}]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["The order by query does not have a corresponding composite index that it can be served from."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -136,7 +136,7 @@ ORDER BY root["FamilyId"] ASC, root["FamilyId"] ASC ]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 ORDER BY root["FamilyId"] ASC, root["FamilyId"] DESC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["The order by query does not have a corresponding composite index that it can be served from."]}]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["The order by query does not have a corresponding composite index that it can be served from."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -633,7 +633,7 @@ FROM root
 JOIN f0 IN root["Records"]["Transactions"] 
 WHERE (ARRAY_LENGTH(root["Children"]) > 0) 
 ORDER BY f0["Type"] ASC, f0["Amount"] ASC ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Microsoft.Azure.Documents.DocumentClientException: Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
