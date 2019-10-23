@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
@@ -34,7 +35,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: responseCore.CosmosElements,
                         count: responseCore.CosmosElements.Count,
                         responseLengthBytes: responseCore.ResponseLengthBytes,
-                        queryMetrics: responseCore.QueryMetrics,
                         responseHeaders: new CosmosQueryResponseMessageHeaders(
                             responseCore.ContinuationToken,
                             responseCore.DisallowContinuationTokenMessage,
@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         {
                             RequestCharge = responseCore.RequestCharge,
                             ActivityId = responseCore.ActivityId
-                        });
+                        },
+                        diagnostics: null);
 
             using (Stream stream = queryResponse.Content)
             {
@@ -199,14 +200,30 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private (Func<string, Task<IDocumentQueryExecutionComponent>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
+            IReadOnlyCollection<QueryPageDiagnostics> diagnostics = new List<QueryPageDiagnostics>()
+            {
+                new QueryPageDiagnostics("0",
+                "SomeQueryMetricText",
+                "SomeIndexUtilText",
+                new PointOperationStatistics(
+                    Guid.NewGuid().ToString(),
+                    System.Net.HttpStatusCode.Unauthorized,
+                    subStatusCode: SubStatusCodes.PartitionKeyMismatch,
+                    requestCharge: 4,
+                    errorMessage: null,
+                    method: HttpMethod.Post,
+                    requestUri: new Uri("http://localhost.com"),
+                    clientSideRequestStatistics: null),
+                new SchedulingStopwatch())
+            };
+
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
                 SubStatusCodes.PartitionKeyMismatch,
                 "Random error message",
                 42.89,
                 "TestActivityId",
-                null,
-                null);
+                diagnostics);
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
