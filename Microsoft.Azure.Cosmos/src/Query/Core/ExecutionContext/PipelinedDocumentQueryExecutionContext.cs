@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            TryMonad<PipelinedDocumentQueryExecutionContext, Exception> tryCreateMonad = await PipelinedDocumentQueryExecutionContext.TryCreate(
+            TryMonad<PipelinedDocumentQueryExecutionContext, Exception> tryCreateMonad = await PipelinedDocumentQueryExecutionContext.TryCreateAsync(
                 queryContext,
                 initParams,
                 requestContinuationToken,
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Query
             return tryCreateMonad.ThrowIfException;
         }
 
-        public static async Task<TryMonad<PipelinedDocumentQueryExecutionContext, Exception>> TryCreate(
+        public static async Task<TryMonad<PipelinedDocumentQueryExecutionContext, Exception>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -185,133 +185,111 @@ namespace Microsoft.Azure.Cosmos.Query
                     maxBufferedItemCount: initParams.MaxBufferedItemCount);
             }
 
-            async Task<IDocumentQueryExecutionComponent> CreateOrderByComponent(string continuationToken)
+            async Task<TryMonad<IDocumentQueryExecutionComponent, Exception>> tryCreateOrderByComponentAsync(string continuationToken)
             {
-                return await CosmosOrderByItemQueryExecutionContext.CreateAsync(
+                return (await CosmosOrderByItemQueryExecutionContext.TryCreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
-                    cancellationToken);
+                    cancellationToken)).Try<IDocumentQueryExecutionComponent>(component => component);
             }
 
-            async Task<IDocumentQueryExecutionComponent> CreateParallelComponent(string continuationToken)
+            async Task<TryMonad<IDocumentQueryExecutionComponent, Exception>> tryCreateParallelComponentAsync(string continuationToken)
             {
-                return await CosmosParallelItemQueryExecutionContext.CreateAsync(
+                return (await CosmosParallelItemQueryExecutionContext.TryCreateAsync(
                     queryContext,
                     initParams,
                     continuationToken,
-                    cancellationToken);
+                    cancellationToken)).Try<IDocumentQueryExecutionComponent>(component => component);
             }
 
-            Func<string, Task<IDocumentQueryExecutionComponent>> createComponent;
+            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreatePipelineAsync;
             if (queryInfo.HasOrderBy)
             {
-                createComponent = CreateOrderByComponent;
+                tryCreatePipelineAsync = tryCreateOrderByComponentAsync;
             }
             else
             {
-                createComponent = CreateParallelComponent;
-            }
-        }
-
-        private static async Task<PipelinedDocumentQueryExecutionContext> CreateHelperAsync(
-            CosmosQueryClient queryClient,
-            QueryInfo queryInfo,
-            int initialPageSize,
-            string requestContinuation,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createOrderByQueryExecutionContext,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createParallelQueryExecutionContext)
-        {
-            Func<string, Task<IDocumentQueryExecutionComponent>> createComponentFunc;
-            if (queryInfo.HasOrderBy)
-            {
-                createComponentFunc = createOrderByQueryExecutionContext;
-            }
-            else
-            {
-                createComponentFunc = createParallelQueryExecutionContext;
+                tryCreatePipelineAsync = tryCreateParallelComponentAsync;
             }
 
             if (queryInfo.HasAggregates && !queryInfo.HasGroupBy)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await AggregateDocumentQueryExecutionComponent.CreateAsync(
+                    return (await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
                         queryInfo.HasSelectValue,
                         continuationToken,
-                        createSourceCallback);
+                        tryCreateSourceAsync)).Try<IDocumentQueryExecutionComponent>(x => x);
                 };
             }
 
             if (queryInfo.HasDistinct)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await DistinctDocumentQueryExecutionComponent.CreateAsync(
-                        queryClient,
+                    return (await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                         continuationToken,
-                        createSourceCallback,
-                        queryInfo.DistinctType);
+                        tryCreateSourceAsync,
+                        queryInfo.DistinctType)).Try<IDocumentQueryExecutionComponent>(x => x);
                 };
             }
 
             if (queryInfo.HasGroupBy)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await GroupByDocumentQueryExecutionComponent.CreateAsync(
+                    return (await GroupByDocumentQueryExecutionComponent.TryCreateAsync(
                         continuationToken,
-                        createSourceCallback,
+                        tryCreateSourceAsync,
                         queryInfo.GroupByAliasToAggregateType,
-                        queryInfo.HasSelectValue);
+                        queryInfo.HasSelectValue)).Try<IDocumentQueryExecutionComponent>(x => x);
                 };
             }
 
             if (queryInfo.HasOffset)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await SkipDocumentQueryExecutionComponent.CreateAsync(
+                    return (await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                         queryInfo.Offset.Value,
                         continuationToken,
-                        createSourceCallback);
+                        tryCreateSourceAsync)).Try<IDocumentQueryExecutionComponent>(x => x);
                 };
             }
 
             if (queryInfo.HasLimit)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
-                        queryClient,
+                    return (await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                         queryInfo.Limit.Value,
                         continuationToken,
-                        createSourceCallback);
+                        tryCreateSourceAsync)).Try<IDocumentQueryExecutionComponent>(x => x);
                 };
             }
 
             if (queryInfo.HasTop)
             {
-                Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback = createComponentFunc;
-                createComponentFunc = async (continuationToken) =>
+                Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync = tryCreatePipelineAsync;
+                tryCreatePipelineAsync = async (continuationToken) =>
                 {
-                    return await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
-                        queryClient,
+                    return (await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                         queryInfo.Top.Value,
                         continuationToken,
-                        createSourceCallback);
+                        tryCreateSourceAsync)).Try<IDocumentQueryExecutionComponent>(x => x);
                 };
             }
 
-            return new PipelinedDocumentQueryExecutionContext(
-                await createComponentFunc(requestContinuation), initialPageSize);
+            return (await tryCreatePipelineAsync(requestContinuationToken))
+                .Try((source) => new PipelinedDocumentQueryExecutionContext(source, initialPageSize));
         }
 
         /// <summary>

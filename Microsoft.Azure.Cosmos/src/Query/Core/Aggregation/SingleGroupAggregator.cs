@@ -31,6 +31,16 @@ namespace Microsoft.Azure.Cosmos.Query
             IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
             bool hasSelectValue)
         {
+            if (aggregates == null)
+            {
+                throw new ArgumentNullException(nameof(aggregates));
+            }
+
+            if (aggregateAliasToAggregateType == null)
+            {
+                throw new ArgumentNullException(nameof(aggregates));
+            }
+
             SingleGroupAggregator aggregateValues;
             if (hasSelectValue)
             {

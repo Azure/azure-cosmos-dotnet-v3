@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using ClientSideRequestStatistics = Documents.ClientSideRequestStatistics;
 
     /// <summary>
@@ -61,26 +62,26 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.isValueAggregateQuery = isValueAggregateQuery;
         }
 
-        /// <summary>
-        /// Creates a AggregateDocumentQueryExecutionComponent.
-        /// </summary>
-        /// <param name="aggregates">The aggregates.</param>
-        /// <param name="aliasToAggregateType">The alias to aggregate type.</param>
-        /// <param name="hasSelectValue">Whether or not the query has the 'VALUE' keyword.</param>
-        /// <param name="requestContinuation">The continuation token to resume from.</param>
-        /// <param name="createSourceCallback">The callback to create the source component that supplies the local aggregates.</param>
-        /// <returns>The AggregateDocumentQueryExecutionComponent.</returns>
-        public static async Task<AggregateDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<TryMonad<AggregateDocumentQueryExecutionComponent, Exception>> TryCreateAsync(
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             bool hasSelectValue,
-            string requestContinuation,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
+            string continuationToken,
+            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync)
         {
-            return new AggregateDocumentQueryExecutionComponent(
-                await createSourceCallback(requestContinuation),
-                SingleGroupAggregator.Create(aggregates, aliasToAggregateType, hasSelectValue),
-                aggregates != null && aggregates.Count() == 1);
+            if (tryCreateSourceAsync == null)
+            {
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+            }
+
+            return (await tryCreateSourceAsync(continuationToken))
+                .Try<AggregateDocumentQueryExecutionComponent>((source) =>
+                {
+                    return new AggregateDocumentQueryExecutionComponent(
+                        source,
+                        SingleGroupAggregator.Create(aggregates, aliasToAggregateType, hasSelectValue),
+                        (aggregates != null) && (aggregates.Count() == 1));
+                });
         }
 
         /// <summary>

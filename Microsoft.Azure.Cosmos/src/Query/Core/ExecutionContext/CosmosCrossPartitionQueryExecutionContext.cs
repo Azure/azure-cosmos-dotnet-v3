@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using RequestChargeTracker = Documents.RequestChargeTracker;
@@ -488,16 +489,14 @@ namespace Microsoft.Azure.Cosmos.Query
         /// </summary>
         /// <param name="partitionKeyRanges">The partition key ranges to extract continuation tokens for.</param>
         /// <param name="suppliedContinuationTokens">The continuation token that the user supplied.</param>
-        /// <param name="targetRangeToContinuationTokenMap">The output dictionary of partition key range to continuation token.</param>
         /// <typeparam name="TContinuationToken">The type of continuation token to generate.</typeparam>
         /// <Remarks>
         /// The code assumes that merge doesn't happen and 
         /// </Remarks>
-        /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens</returns>
-        protected int FindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
+        /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
+        public static TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
             List<PartitionKeyRange> partitionKeyRanges,
-            IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens,
-            out Dictionary<string, TContinuationToken> targetRangeToContinuationTokenMap)
+            IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens)
         {
             if (partitionKeyRanges == null)
             {
@@ -532,7 +531,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentException($"{nameof(suppliedContinuationTokens)} can not have more elements than {nameof(partitionKeyRanges)}.");
             }
 
-            targetRangeToContinuationTokenMap = new Dictionary<string, TContinuationToken>();
+            Dictionary<string, TContinuationToken> targetRangeToContinuationTokenMap = new Dictionary<string, TContinuationToken>();
 
             // Find the minimum index.
             Tuple<TContinuationToken, Documents.Routing.Range<string>> firstContinuationTokenAndRange = suppliedContinuationTokens
@@ -550,7 +549,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
-                throw new ArgumentException($"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}");
+                return TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception>.FromException(
+                    new ArgumentException(
+                        $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
             }
 
             foreach (Tuple<TContinuationToken, Documents.Routing.Range<string>> suppledContinuationToken in suppliedContinuationTokens)
@@ -568,8 +569,9 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Could not find the child ranges
                 if (replacementRanges.Count() == 0)
                 {
-                   throw this.queryClient.CreateBadRequestException(
-                       $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}");
+                    return TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception>.FromException(
+                        new ArgumentException(
+                            $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}"));
                 }
 
                 // PMax = C2Max > C2Min > C1Max > C1Min = PMin.
@@ -586,8 +588,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    throw this.queryClient.CreateBadRequestException(
-                        $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}");
+                    return TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception>.FromException(
+                        new ArgumentException(
+                            $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}"));
                 }
 
                 foreach (PartitionKeyRange partitionKeyRange in replacementRanges)
@@ -596,7 +599,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return minIndex;
+            return TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception>.FromResult(
+                new Tuple<int, Dictionary<string, TContinuationToken>>(
+                    minIndex,
+                    targetRangeToContinuationTokenMap));
         }
 
         protected virtual long GetAndResetResponseLengthBytes()

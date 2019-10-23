@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Query execution component that groups groupings across continuations and pages.
@@ -73,17 +74,26 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         public override bool IsDone => this.isDone;
 
-        public static async Task<IDocumentQueryExecutionComponent> CreateAsync(
-            string requestContinuation,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback,
+        public static async Task<TryMonad<GroupByDocumentQueryExecutionComponent, Exception>> TryCreateAsync(
+            string continuationToken,
+            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             bool hasSelectValue)
         {
+            if (tryCreateSourceAsync == null)
+            {
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+            }
+
             // We do not support continuation tokens for GROUP BY.
-            return new GroupByDocumentQueryExecutionComponent(
-                groupByAliasToAggregateType,
-                hasSelectValue,
-                await createSourceCallback(requestContinuation));
+            return (await tryCreateSourceAsync(continuationToken))
+                .Try<GroupByDocumentQueryExecutionComponent>((source) =>
+                {
+                    return new GroupByDocumentQueryExecutionComponent(
+                        groupByAliasToAggregateType,
+                        hasSelectValue,
+                        source);
+                });
         }
 
         public override async Task<QueryResponseCore> DrainAsync(

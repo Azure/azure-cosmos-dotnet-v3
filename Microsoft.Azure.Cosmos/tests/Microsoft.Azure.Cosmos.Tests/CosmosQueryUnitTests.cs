@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -58,9 +59,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 Properties = new Dictionary<string, object>()
-            {
-                {"x-ms-query-partitionkey-definition", partitionKeyDefinition }
-            }
+                {
+                    {"x-ms-query-partitionkey-definition", partitionKeyDefinition }
+                }
             };
 
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(@"select * from t where t.something = 42 ");
@@ -112,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task<(IList<DocumentQueryExecutionComponentBase> components, QueryResponseCore response)> GetAllExecutionComponents()
         {
-            (Func<string, Task<IDocumentQueryExecutionComponent>> func, QueryResponseCore response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
+            (Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> func, QueryResponseCore response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
 
             List<DocumentQueryExecutionComponentBase> components = new List<DocumentQueryExecutionComponentBase>();
             List<AggregateOperator> operators = new List<AggregateOperator>()
@@ -124,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 AggregateOperator.Sum
             };
 
-            components.Add(await AggregateDocumentQueryExecutionComponent.CreateAsync(
+            components.Add((await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
                 operators.ToArray(),
                 new Dictionary<string, AggregateOperator?>()
                 {
@@ -132,35 +133,32 @@ namespace Microsoft.Azure.Cosmos.Tests
                 },
                 false,
                 null,
-                setupContext.func));
+                setupContext.func)).ThrowIfException);
 
-            components.Add(await DistinctDocumentQueryExecutionComponent.CreateAsync(
-                new Mock<CosmosQueryClient>().Object,
+            components.Add((await DistinctDocumentQueryExecutionComponent.TryCreateAsync(
                 null,
                 setupContext.func,
-                DistinctQueryType.Ordered));
+                DistinctQueryType.Ordered)).ThrowIfException);
 
-            components.Add(await SkipDocumentQueryExecutionComponent.CreateAsync(
+            components.Add((await SkipDocumentQueryExecutionComponent.TryCreateAsync(
                 5,
                 null,
-                setupContext.func));
+                setupContext.func)).ThrowIfException);
 
-            components.Add(await TakeDocumentQueryExecutionComponent.CreateLimitDocumentQueryExecutionComponentAsync(
-                new Mock<CosmosQueryClient>().Object,
+            components.Add((await TakeDocumentQueryExecutionComponent.TryCreateLimitDocumentQueryExecutionComponentAsync(
                 5,
                 null,
-                setupContext.func));
+                setupContext.func)).ThrowIfException);
 
-            components.Add(await TakeDocumentQueryExecutionComponent.CreateTopDocumentQueryExecutionComponentAsync(
-                new Mock<CosmosQueryClient>().Object,
+            components.Add((await TakeDocumentQueryExecutionComponent.TryCreateTopDocumentQueryExecutionComponentAsync(
                 5,
                 null,
-                setupContext.func));
+                setupContext.func)).ThrowIfException);
 
             return (components, setupContext.response);
         }
 
-        private (Func<string, Task<IDocumentQueryExecutionComponent>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
+        private (Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
@@ -173,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Func<string, Task<IDocumentQueryExecutionComponent>> callBack = x => Task.FromResult<IDocumentQueryExecutionComponent>(baseContext.Object);
+            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> callBack = x => Task.FromResult<TryMonad<IDocumentQueryExecutionComponent, Exception>>(TryMonad<IDocumentQueryExecutionComponent, Exception> .FromResult(baseContext.Object));
             return (callBack, failure);
         }
     }

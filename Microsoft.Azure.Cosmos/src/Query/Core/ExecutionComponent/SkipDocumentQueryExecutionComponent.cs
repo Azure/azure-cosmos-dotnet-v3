@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
     internal sealed class SkipDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
@@ -24,15 +24,24 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.skipCount = skipCount;
         }
 
-        public static async Task<SkipDocumentQueryExecutionComponent> CreateAsync(
+        public static async Task<TryMonad<SkipDocumentQueryExecutionComponent, Exception>> TryCreateAsync(
             int offsetCount,
             string continuationToken,
-            Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
+            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync)
         {
+            if (tryCreateSourceAsync == null)
+            {
+                throw new ArgumentNullException(nameof(tryCreateSourceAsync));
+            }
+
             OffsetContinuationToken offsetContinuationToken;
             if (continuationToken != null)
             {
-                offsetContinuationToken = OffsetContinuationToken.Parse(continuationToken);
+                if (!OffsetContinuationToken.TryParse(continuationToken, out offsetContinuationToken))
+                {
+                    return TryMonad<SkipDocumentQueryExecutionComponent, Exception>.FromException(
+                        new Exception($"Invalid {nameof(SkipDocumentQueryExecutionComponent)}: {continuationToken}."));
+                }
             }
             else
             {
@@ -41,12 +50,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (offsetContinuationToken.Offset > offsetCount)
             {
-                throw new ArgumentException("offset count in continuation token can not be greater than the offsetcount in the query.");
+                return TryMonad<SkipDocumentQueryExecutionComponent, Exception>.FromException(
+                        new Exception("offset count in continuation token can not be greater than the offsetcount in the query."));
             }
 
-            return new SkipDocumentQueryExecutionComponent(
-                await createSourceCallback(offsetContinuationToken.SourceToken),
-                offsetContinuationToken.Offset);
+            return (await tryCreateSourceAsync(offsetContinuationToken.SourceToken))
+                .Try((source) => new SkipDocumentQueryExecutionComponent(
+                source,
+                offsetContinuationToken.Offset));
         }
 
         public override bool IsDone
@@ -132,24 +143,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             public string SourceToken
             {
                 get;
-            }
-
-            /// <summary>
-            /// Parses the OffsetContinuationToken from it's string form.
-            /// </summary>
-            /// <param name="value">The string form to parse from.</param>
-            /// <returns>The parsed OffsetContinuationToken.</returns>
-            public static OffsetContinuationToken Parse(string value)
-            {
-                OffsetContinuationToken result;
-                if (!TryParse(value, out result))
-                {
-                    throw new ArgumentException($"Invalid OffsetContinuationToken: {value}");
-                }
-                else
-                {
-                    return result;
-                }
             }
 
             /// <summary>
