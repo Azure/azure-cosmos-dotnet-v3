@@ -52,7 +52,7 @@ namespace Azure.Cosmos.ChangeFeed
                         Response response = await this.resultSetIterator.ReadNextAsync(cancellationToken).ConfigureAwait(false);
                         if (response.Status != (int)HttpStatusCode.NotModified && !response.IsSuccessStatusCode())
                         {
-                            Microsoft.Azure.Documents.SubStatusCodes subStatusCode = response.Headers.GetSubStatusCode();
+                            SubStatusCodes subStatusCode = response.Headers.GetSubStatusCode();
                             DefaultTrace.TraceWarning("unsuccessful feed read: lease token '{0}' status code {1}. substatuscode {2}", this.options.LeaseToken, response.Status, subStatusCode);
                             this.HandleFailedRequest((HttpStatusCode)response.Status, (int)subStatusCode, lastContinuation);
 
