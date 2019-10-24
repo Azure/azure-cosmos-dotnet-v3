@@ -580,8 +580,8 @@ namespace Azure.Cosmos.Tests
                 JToken.Parse(Microsoft.Azure.Documents.Routing.PartitionKeyInternal.Undefined.ToString());
                 Assert.IsTrue(new JTokenEqualityComparer().Equals(
                         JToken.Parse(Microsoft.Azure.Documents.Routing.PartitionKeyInternal.Undefined.ToString()),
-                        JToken.Parse(request.CosmosHeaders.PartitionKey.ToString())),
-                        "Arguments {0} {1} ", Microsoft.Azure.Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.CosmosHeaders.PartitionKey.ToString());
+                        JToken.Parse(request.CosmosHeaders.PartitionKey)),
+                        "Arguments {0} {1} ", Microsoft.Azure.Documents.Routing.PartitionKeyInternal.Undefined.ToString(), request.CosmosHeaders.PartitionKey);
 
                 return Task.FromResult(new ResponseMessage(HttpStatusCode.OK));
             });

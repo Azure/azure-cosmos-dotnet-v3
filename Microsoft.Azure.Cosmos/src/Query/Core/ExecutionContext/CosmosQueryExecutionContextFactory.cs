@@ -10,6 +10,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Query.ParallelQuery;
 

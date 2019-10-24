@@ -219,7 +219,7 @@ namespace Azure.Cosmos
         {
             return this.ProcessMessageAsync(cosmosResponseMessageTask, (cosmosResponseMessage) =>
             {
-                UserDefinedFunctionProperties settings = CosmosResponseFactory.ToObjectInternal<Response<UserDefinedFunctionProperties>>(
+                UserDefinedFunctionProperties settings = CosmosResponseFactory.ToObjectInternal<UserDefinedFunctionProperties>(
                     cosmosResponseMessage,
                     this.propertiesSerializer);
                 return Response.FromValue(settings, cosmosResponseMessage);

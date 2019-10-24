@@ -45,6 +45,7 @@ namespace Azure.Cosmos.Query
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
             QueryRequestOptions requestOptions = null;
@@ -63,6 +64,7 @@ namespace Azure.Cosmos.Query
                            partitionKeyRange: partitionKeyRange,
                            isContinuationExpected: isContinuationExpected,
                            pageSize: pageSize,
+                           schedulingStopwatch: schedulingStopwatch,
                            cancellationToken: cancellationToken);
         }
     }

@@ -6,7 +6,6 @@ namespace Azure.Cosmos
     using System.Collections;
     using System.Collections.Generic;
     using Azure;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The user contract for the various feed responses that serialized the responses to a type.
@@ -21,7 +20,7 @@ namespace Azure.Cosmos
         {
         }
 
-        /////<inheritdoc/>
+        ///// <inheritdoc/>
         //public override double RequestCharge => this.Headers?.RequestCharge ?? 0;
 
         ///// <inheritdoc/>

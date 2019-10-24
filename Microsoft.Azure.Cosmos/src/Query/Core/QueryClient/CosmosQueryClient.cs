@@ -9,6 +9,9 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+#if AZURECORE
+    using global::Azure.Cosmos;
+#endif
 
     internal abstract class CosmosQueryClient
     {

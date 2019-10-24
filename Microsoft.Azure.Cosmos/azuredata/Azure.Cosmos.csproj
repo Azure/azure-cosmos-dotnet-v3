@@ -7,18 +7,19 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <NeutralLanguage>en-US</NeutralLanguage>
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
+    <AzureSDKClientVersion>1.0.0</AzureSDKClientVersion>
     <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">nightly-$(CurrentDate)</VersionSuffix>
     <VersionSuffix Condition=" '$(IsPreview)' == 'true' ">preview</VersionSuffix>
-    <Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
-    <Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
-    <FileVersion>$(ClientVersion)</FileVersion>
+    <Version Condition=" '$(VersionSuffix)' == '' ">$(AzureSDKClientVersion)</Version>
+    <Version Condition=" '$(VersionSuffix)' != '' ">$(AzureSDKClientVersion)-$(VersionSuffix)</Version>
+    <FileVersion>$(AzureSDKClientVersion)</FileVersion>
     <Authors>Microsoft</Authors>
     <TargetFramework>netstandard2.0</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
+    <AssemblyName>Azure.Cosmos</AssemblyName>
     <Title>Microsoft Azure Cosmos DB Client library</Title>
-    <PackageId>Microsoft.Azure.Cosmos</PackageId>
+    <PackageId>Azure.Cosmos</PackageId>
     <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard</PackageTags>
     <PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md at the time of release.</PackageReleaseNotes>
     <PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
@@ -110,7 +111,7 @@
     <Compile Include="..\src\Headers\*.cs" Exclude="..\src\Headers\Headers.cs;..\src\Headers\CosmosMessageHeadersInternal.cs">
       <Link>Headers\%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="..\src\Query\Core\**\*.cs" Exclude="..\src\Query\Core\ExecutionContext\CosmosQueryExecutionContextFactory.cs;..\src\Query\Core\QueryClient\CosmosQueryClient.cs">
+    <Compile Include="..\src\Query\Core\**\*.cs">
       <Link>Query\Core\%(RecursiveDir)\%(Filename)%(Extension)</Link>
     </Compile>
     <Compile Include="..\src\RetryPolicy.cs">

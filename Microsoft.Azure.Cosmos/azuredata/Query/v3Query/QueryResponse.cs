@@ -18,6 +18,8 @@ namespace Azure.Cosmos
     /// </summary>
     internal class QueryResponse : ResponseMessage
     {
+        private readonly Lazy<MemoryStream> memoryStream;
+
         /// <summary>
         /// Used for unit testing only
         /// </summary>
@@ -30,7 +32,6 @@ namespace Azure.Cosmos
             int count,
             long responseLengthBytes,
             CosmosQueryResponseMessageHeaders responseHeaders,
-            IReadOnlyDictionary<string, QueryMetrics> queryMetrics,
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             string errorMessage,
@@ -45,16 +46,22 @@ namespace Azure.Cosmos
             this.CosmosElements = result;
             this.Count = count;
             this.ResponseLengthBytes = responseLengthBytes;
-            this.queryMetrics = queryMetrics;
+            this.memoryStream = new Lazy<MemoryStream>(() => CosmosElementSerializer.ToStream(
+                        this.QueryHeaders.ContainerRid,
+                        this.CosmosElements,
+                        this.QueryHeaders.ResourceType,
+                        this.CosmosSerializationOptions));
         }
 
         public int Count { get; }
 
-        public override Stream ContentStream => CosmosElementSerializer.ToStream(
-            this.QueryHeaders.ContainerRid,
-            this.CosmosElements,
-            this.QueryHeaders.ResourceType,
-            this.CosmosSerializationOptions);
+        public override Stream ContentStream
+        {
+            get
+            {
+                return this.memoryStream.Value;
+            }
+        }
 
         internal virtual IEnumerable<CosmosElement> CosmosElements { get; }
 
@@ -68,16 +75,6 @@ namespace Azure.Cosmos
         /// </remarks>
         internal long ResponseLengthBytes { get; }
 
-        /// <summary>
-        /// Get the client side request statistics for the current request.
-        /// </summary>
-        /// <remarks>
-        /// This value is currently used for tracking replica Uris.
-        /// </remarks>
-        internal ClientSideRequestStatistics RequestStatistics { get; }
-
-        internal IReadOnlyDictionary<string, QueryMetrics> queryMetrics { get; set; }
-
         internal virtual CosmosSerializationFormatOptions CosmosSerializationOptions { get; set; }
 
         internal bool GetHasMoreResults()
@@ -89,8 +86,7 @@ namespace Azure.Cosmos
             IEnumerable<CosmosElement> result,
             int count,
             long responseLengthBytes,
-            CosmosQueryResponseMessageHeaders responseHeaders,
-            IReadOnlyDictionary<string, QueryMetrics> queryMetrics = null)
+            CosmosQueryResponseMessageHeaders responseHeaders)
         {
             if (count < 0)
             {
@@ -107,7 +103,6 @@ namespace Azure.Cosmos
                count: count,
                responseLengthBytes: responseLengthBytes,
                responseHeaders: responseHeaders,
-               queryMetrics: queryMetrics,
                statusCode: HttpStatusCode.OK,
                errorMessage: null,
                error: null,
@@ -128,7 +123,6 @@ namespace Azure.Cosmos
                 count: 0,
                 responseLengthBytes: 0,
                 responseHeaders: responseHeaders,
-                queryMetrics: null,
                 statusCode: statusCode,
                 errorMessage: errorMessage,
                 error: error,

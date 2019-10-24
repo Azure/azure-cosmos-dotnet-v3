@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
 
             CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics = response.RequestStats as CosmosClientSideRequestStatistics;
             cosmosResponse.Diagnostics = new PointOperationStatistics(
+                activityId: cosmosResponse.CosmosHeaders.ActivityId,
                 statusCode: response.StatusCode,
                 subStatusCode: response.SubStatusCode,
                 requestCharge: cosmosResponse.CosmosHeaders.RequestCharge,

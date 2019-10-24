@@ -6,7 +6,6 @@ namespace Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -122,6 +121,7 @@ namespace Azure.Cosmos.Query
             PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            SchedulingStopwatch schedulingStopwatch,
             CancellationToken cancellationToken)
         {
             QueryRequestOptions queryRequestOptions = requestOptions as QueryRequestOptions;
@@ -132,6 +132,7 @@ namespace Azure.Cosmos.Query
 
             queryRequestOptions.MaxItemCount = pageSize;
 
+            schedulingStopwatch.Start();
             Response message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
                 resourceType: resourceType,
@@ -154,10 +155,14 @@ namespace Azure.Cosmos.Query
                 },
                 cancellationToken: cancellationToken);
 
+            schedulingStopwatch.Stop();
+
             return this.GetCosmosElementResponse(
                 queryRequestOptions,
                 resourceType,
-                message);
+                message,
+                partitionKeyRange,
+                schedulingStopwatch);
         }
 
         internal override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -262,20 +267,30 @@ namespace Azure.Cosmos.Query
         private QueryResponseCore GetCosmosElementResponse(
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
-            Response cosmosResponseMessage)
+            Response cosmosResponse,
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
+            SchedulingStopwatch schedulingStopwatch)
         {
+            ResponseMessage cosmosResponseMessage = cosmosResponse as ResponseMessage;
             using (cosmosResponseMessage)
             {
-                if (!cosmosResponseMessage.IsSuccessStatusCode())
+                QueryPageDiagnostics diagnostics = new QueryPageDiagnostics(
+                    partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
+                    queryMetricText: cosmosResponseMessage.CosmosHeaders.QueryMetricsText,
+                    indexUtilizationText: cosmosResponseMessage.CosmosHeaders[HttpConstants.HttpHeaders.IndexUtilization],
+                    requestDiagnostics: cosmosResponseMessage.Diagnostics,
+                    schedulingStopwatch: schedulingStopwatch);
+
+                IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
+                if (!cosmosResponseMessage.IsSuccessStatusCode)
                 {
                     return QueryResponseCore.CreateFailure(
-                        statusCode: (HttpStatusCode)cosmosResponseMessage.Status,
-                        subStatusCodes: cosmosResponseMessage.Headers.GetSubStatusCode(),
+                        statusCode: cosmosResponseMessage.StatusCode,
+                        subStatusCodes: cosmosResponseMessage.CosmosHeaders.SubStatusCode,
                         errorMessage: cosmosResponseMessage.ReasonPhrase,
-                        requestCharge: cosmosResponseMessage.Headers.GetRequestCharge(),
-                        activityId: cosmosResponseMessage.Headers.GetActivityId(),
-                        queryMetricsText: null, //cosmosResponseMessage.CosmosHeaders.QueryMetricsText,
-                        queryMetrics: null);
+                        requestCharge: cosmosResponseMessage.CosmosHeaders.RequestCharge,
+                        activityId: cosmosResponseMessage.CosmosHeaders.ActivityId,
+                        diagnostics: pageDiagnostics);
                 }
 
                 MemoryStream memoryStream = cosmosResponseMessage.ContentStream as MemoryStream;
@@ -296,9 +311,7 @@ namespace Azure.Cosmos.Query
                     result: cosmosArray,
                     requestCharge: cosmosResponseMessage.Headers.GetRequestCharge(),
                     activityId: cosmosResponseMessage.Headers.GetActivityId(),
-                    queryMetricsText: null, //cosmosResponseMessage.CosmosHeaders.QueryMetricsText,
-                    queryMetrics: null,
-                    requestStatistics: null,
+                    diagnostics: pageDiagnostics,
                     responseLengthBytes: memoryStream.Length,
                     disallowContinuationTokenMessage: null,
                     continuationToken: cosmosResponseMessage.Headers.GetContinuationToken());

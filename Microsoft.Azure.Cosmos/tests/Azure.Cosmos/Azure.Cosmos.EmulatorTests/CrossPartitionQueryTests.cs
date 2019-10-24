@@ -284,19 +284,45 @@ namespace Azure.Cosmos.EmulatorTests
                 }
 
                 // Get partition key value.
-                object pkValue;
+                Cosmos.PartitionKey pkValue;
                 if (partitionKey != null)
                 {
                     string jObjectPartitionKey = partitionKey.Remove(0, 1);
                     JValue pkToken = (JValue)documentObject[jObjectPartitionKey];
-                    pkValue = pkToken != null ? pkToken.Value : Undefined.Value;
+                    if (pkToken == null)
+                    {
+                        pkValue = Cosmos.PartitionKey.None;
+                    }
+                    else
+                    {
+                        switch (pkToken.Type)
+                        {
+                            case JTokenType.Integer:
+                            case JTokenType.Float:
+                                pkValue = new Cosmos.PartitionKey(pkToken.Value<double>());
+                                break;
+                            case JTokenType.String:
+                                pkValue = new Cosmos.PartitionKey(pkToken.Value<string>());
+                                break;
+                            case JTokenType.Boolean:
+                                pkValue = new Cosmos.PartitionKey(pkToken.Value<bool>());
+                                break;
+                            case JTokenType.Null:
+                                pkValue = Cosmos.PartitionKey.Null;
+                                break;
+                            default:
+                                throw new ArgumentException("Unknown partition key type");
+                        }
+                    }
                 }
                 else
                 {
                     pkValue = Cosmos.PartitionKey.None;
                 }
 
-                insertedDocuments.Add((await container.CreateItemAsync<JObject>(documentObject)).Value.ToObject<Document>());
+                JObject createdDocument = await container.CreateItemAsync<JObject>(documentObject, pkValue);
+                Document insertedDocument = Document.FromObject(createdDocument);
+                insertedDocuments.Add(insertedDocument);
             }
 
             return new Tuple<Container, List<Document>>(container, insertedDocuments);
@@ -1143,7 +1169,7 @@ namespace Azure.Cosmos.EmulatorTests
                 return true;
             }
 
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
                 if (reader.TokenType == JsonToken.None || reader.TokenType == JsonToken.Null)
                 {
@@ -1164,7 +1190,7 @@ namespace Azure.Cosmos.EmulatorTests
                 return new DateTime(1970, 1, 1).AddSeconds(seconds);
             }
 
-            public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, JsonSerializer serializer)
             {
                 int seconds;
                 if (value is DateTime)
@@ -2682,7 +2708,14 @@ namespace Azure.Cosmos.EmulatorTests
                 MixedTypedDocument mixedTypeDocument = CrossPartitionQueryTests.GenerateMixedTypeDocument(random);
                 for (int j = 0; j < numberOfDuplicates; j++)
                 {
-                    documents.Add(JsonConvert.SerializeObject(mixedTypeDocument));
+                    if (mixedTypeDocument.MixedTypeField != null)
+                    {
+                        documents.Add(JsonConvert.SerializeObject(mixedTypeDocument));
+                    }
+                    else
+                    {
+                        documents.Add("{}");
+                    }
                 }
             }
 
@@ -2734,7 +2767,7 @@ namespace Azure.Cosmos.EmulatorTests
             string indexV2Api = HttpConstants.Versions.v2018_09_17;
             string indexV1Api = HttpConstants.Versions.v2017_11_15;
 
-            Func<bool, OrderByTypes[], Action<Exception>, Task> runWithAllowMixedTypeOrderByFlag = async (allowMixedTypeOrderByTestFlag, orderByTypes, expectedExcpetionHandler) =>
+            async Task runWithAllowMixedTypeOrderByFlag(bool allowMixedTypeOrderByTestFlag, OrderByTypes[] orderByTypes, Action<Exception> expectedExcpetionHandler)
             {
                 bool allowMixedTypeOrderByTestFlagOriginalValue = OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag;
                 string apiVersion = allowMixedTypeOrderByTestFlag ? indexV2Api : indexV1Api;
@@ -2760,7 +2793,7 @@ namespace Azure.Cosmos.EmulatorTests
                 {
                     OrderByConsumeComparer.AllowMixedTypeOrderByTestFlag = allowMixedTypeOrderByTestFlagOriginalValue;
                 }
-            };
+            }
 
             bool dontAllowMixedTypes = false;
             bool doAllowMixedTypes = true;
@@ -2821,7 +2854,7 @@ namespace Azure.Cosmos.EmulatorTests
 
         private sealed class MixedTypedDocument
         {
-            public object MixedTypeField { get; set; }
+            public CosmosElement MixedTypeField { get; set; }
         }
 
         private static MixedTypedDocument GenerateMixedTypeDocument(Random random)
@@ -2832,28 +2865,31 @@ namespace Azure.Cosmos.EmulatorTests
             };
         }
 
-        private static object GenerateRandomJsonValue(Random random)
+        private static CosmosElement GenerateRandomJsonValue(Random random)
         {
-            switch (random.Next(0, 6))
+            switch (random.Next(0, 7))
             {
                 // Number
                 case 0:
-                    return random.Next();
+                    return CosmosNumber64.Create(random.Next());
                 // String
                 case 1:
-                    return new string('a', random.Next(0, 100));
+                    return CosmosString.Create(new string('a', random.Next(0, 100)));
                 // Null
                 case 2:
-                    return null;
+                    return CosmosNull.Create();
                 // Bool
                 case 3:
-                    return (random.Next() % 2) == 0;
+                    return CosmosBoolean.Create((random.Next() % 2) == 0);
                 // Object
                 case 4:
-                    return new object();
+                    return CosmosObject.Create(new Dictionary<string, CosmosElement>());
                 // Array
                 case 5:
-                    return new List<object>();
+                    return CosmosArray.Create(new List<CosmosElement>());
+                // Undefined
+                case 6:
+                    return null;
                 default:
                     throw new ArgumentException();
             }
@@ -2956,8 +2992,8 @@ namespace Azure.Cosmos.EmulatorTests
                             MaxConcurrency = 10,
                         };
 
-                        List<JToken> actualFromQueryWithoutContinutionTokens;
-                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<JToken>(
+                        List<CosmosElement> actualFromQueryWithoutContinutionTokens;
+                        actualFromQueryWithoutContinutionTokens = await CrossPartitionQueryTests.QueryWithoutContinuationTokens<CosmosElement>(
                             container,
                             query,
                             queryRequestOptions: feedOptions);
@@ -2982,46 +3018,42 @@ namespace Azure.Cosmos.EmulatorTests
                         and that is because comparision across types is undefined so "aaaaaaaaaaa" > 303093052 never got emitted
 #endif
 
-                        IEnumerable<object> insertedDocs = documents
-                            .Select(document => document.GetPropertyValue<object>(nameof(MixedTypedDocument.MixedTypeField)));
+                        IEnumerable<CosmosElement> insertedDocs = documents
+                            .Select(document => (CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(document.ToString())) as CosmosObject)[nameof(MixedTypedDocument.MixedTypeField)])
+                            .Where(document => document != null);
 
                         // Build the expected results using LINQ
-                        IEnumerable<object> expected = new List<object>();
+                        IEnumerable<CosmosElement> expected = new List<CosmosElement>();
 
                         // Filter based on the mixedOrderByType enum
                         if (orderByTypes.HasFlag(OrderByTypes.Array))
                         {
-                            // no arrays should be served from the range index
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Array));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Bool))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x is bool));
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Boolean));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Null))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x == null));
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Null));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Number))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x is double || x is int || x is long));
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Number));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.Object))
                         {
-                            // no objects should be served from the range index
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.Object));
                         }
 
                         if (orderByTypes.HasFlag(OrderByTypes.String))
                         {
-                            expected = expected.Concat(insertedDocs.Where(x => x is string));
-                        }
-
-                        if (orderByTypes.HasFlag(OrderByTypes.Undefined))
-                        {
-                            // no undefined should be served from the range index
+                            expected = expected.Concat(insertedDocs.Where(x => x?.Type == CosmosElementType.String));
                         }
 
                         // Order using the mock order by comparer
@@ -3034,11 +3066,8 @@ namespace Azure.Cosmos.EmulatorTests
                             expected = expected.OrderBy(x => x, MockOrderByComparer.Value);
                         }
 
-                        // bind all the value to JTokens so they can be compared agaisnt the actual.
-                        List<JToken> expectedBinded = expected.Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
-
                         Assert.IsTrue(
-                            expectedBinded.SequenceEqual(actualFromQueryWithoutContinutionTokens, JsonTokenEqualityComparer.Value),
+                            expected.SequenceEqual(actualFromQueryWithoutContinutionTokens, CosmosElementEqualityComparer.Value),
                             $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
                             actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionTokens)}");
@@ -4318,6 +4347,59 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task TestTryExecuteQuery()
+        {
+            await this.CreateIngestQueryDelete(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition,
+                CrossPartitionQueryTests.NoDocuments,
+                this.TestTryExecuteQueryHelper);
+        }
+
+        private async Task TestTryExecuteQueryHelper(
+            Container container,
+            IEnumerable<Document> documents)
+        {
+            ContainerCore conatinerCore = (ContainerCore)container;
+            foreach (int maxDegreeOfParallelism in new int[] { 1, 100 })
+            {
+                foreach (int maxItemCount in new int[] { 10, 100 })
+                {
+                    foreach ((string query, QueryFeatures queryFeatures, bool canSupportExpected) in new Tuple<string, QueryFeatures, bool>[]
+                    {
+                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c", QueryFeatures.None, true),
+                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c ORDER BY c._ts", QueryFeatures.None, false),
+                        new Tuple<string, QueryFeatures, bool>("SELECT * FROM c ORDER BY c._ts", QueryFeatures.OrderBy, true),
+                    })
+                    {
+                        string continuationToken = null;
+                        do
+                        {
+                            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, (bool canSupportActual, FeedIterator queryIterator)) = await conatinerCore.TryExecuteQueryAsync(
+                                supportedQueryFeatures: queryFeatures,
+                                queryDefinition: new QueryDefinition(query),
+                                requestOptions: new QueryRequestOptions()
+                                {
+                                    MaxConcurrency = maxDegreeOfParallelism,
+                                    MaxItemCount = maxItemCount,
+                                },
+                                continuationToken: continuationToken);
+
+                            Assert.AreEqual(canSupportExpected, canSupportActual);
+                            if (canSupportExpected)
+                            {
+                                Response cosmosQueryResponse = await queryIterator.ReadNextAsync();
+                                continuationToken = cosmosQueryResponse.Headers.GetContinuationToken();
+                            }
+
+                            Assert.IsNotNull(partitionedQueryExecutionInfo);
+                        } while (continuationToken != null);
+                    }
+                }
+            }
+        }
+
         private sealed class Headers
         {
             public double TotalRUs { get; set; }
@@ -4888,10 +4970,10 @@ namespace Azure.Cosmos.EmulatorTests
                 return base.ExecuteQueryPlanRequestAsync(resourceUri, resourceType, operationType, sqlQuerySpec, supportedQueryFeatures, cancellationToken);
             }
 
-            internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(Uri resourceUri, ResourceType resourceType, OperationType operationType, RequestOptionType requestOptions, SqlQuerySpec sqlQuerySpec, string continuationToken, PartitionKeyRangeIdentity partitionKeyRange, bool isContinuationExpected, int pageSize, CancellationToken cancellationToken)
+            internal override Task<QueryResponseCore> ExecuteItemQueryAsync<RequestOptionType>(Uri resourceUri, ResourceType resourceType, OperationType operationType, RequestOptionType requestOptions, SqlQuerySpec sqlQuerySpec, string continuationToken, PartitionKeyRangeIdentity partitionKeyRange, bool isContinuationExpected, int pageSize, SchedulingStopwatch schedulingStopwatch, CancellationToken cancellationToken)
             {
                 Assert.IsFalse(this.forceQueryPlanGatewayElseServiceInterop && this.QueryPlanCalls == 0, "Query Plan is force gateway mode, but no ExecuteQueryPlanRequestAsync have been called");
-                return base.ExecuteItemQueryAsync(resourceUri, resourceType, operationType, requestOptions, sqlQuerySpec, continuationToken, partitionKeyRange, isContinuationExpected, pageSize, cancellationToken);
+                return base.ExecuteItemQueryAsync(resourceUri, resourceType, operationType, requestOptions, sqlQuerySpec, continuationToken, partitionKeyRange, isContinuationExpected, pageSize, schedulingStopwatch, cancellationToken);
             }
         }
     }

@@ -4,14 +4,17 @@
 namespace Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Net;
     using Microsoft.Azure.Cosmos;
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {
+        private readonly Response response;
         protected ReadFeedResponse(
             Response response,
             ICollection<T> resource)
         {
+            this.response = response;
             this.Count = resource.Count;
             this.Value = resource;
             this.ContinuationToken = response.Headers.GetContinuationToken();
@@ -22,8 +25,6 @@ namespace Azure.Cosmos
         public override string ContinuationToken { get; }
 
         public override IEnumerable<T> Value { get; }
-
-        //public override string ContinuationToken => this.Headers?.ContinuationToken;
 
         //public override Headers Headers { get; }
 
@@ -37,6 +38,8 @@ namespace Azure.Cosmos
         {
             return this.Value.GetEnumerator();
         }
+
+        public override Response GetRawResponse() => this.response;
 
         internal static ReadFeedResponse<TInput> CreateResponse<TInput>(
             Response responseMessage,
@@ -57,11 +60,6 @@ namespace Azure.Cosmos
 
                 return readFeedResponse;
             }
-        }
-
-        public override Response GetRawResponse()
-        {
-            throw new System.NotImplementedException();
         }
     }
 }
