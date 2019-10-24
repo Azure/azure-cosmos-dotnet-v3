@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
             this.SubStatusCode = other.SubStatusCode;
             this.ETag = other.ETag;
             this.ResourceStream = other.ResourceStream;
+            this.RequestCharge = other.RequestCharge;
             this.RetryAfter = other.RetryAfter;
         }
 
@@ -79,6 +80,11 @@ namespace Microsoft.Azure.Cosmos
         /// In case the operation is rate limited, indicates the time post which a retry can be attempted.
         /// </summary>
         public virtual TimeSpan RetryAfter { get; internal set; }
+
+        /// <summary>
+        /// Request charge in request units for the operation.
+        /// </summary>
+        internal virtual double RequestCharge { get; set; }
 
         /// <summary>
         /// Gets detail on the completion status of the operation.
@@ -167,6 +173,18 @@ namespace Microsoft.Azure.Cosmos
                             buffer: resourceBody, index: 0, count: resourceBody.Length, writable: false, publiclyVisible: true);
                         break;
 
+                    case "requestCharge":
+                        r = reader.ReadFloat64(out double requestCharge);
+                        if (r != Result.Success)
+                        {
+                            return r;
+                        }
+
+                        // Round request charge to 2 decimals on the operation results
+                        // similar to how we round them for the full response.
+                        batchOperationResult.RequestCharge = Math.Round(requestCharge, 2);
+                        break;
+
                     case "retryAfterMilliseconds":
                         r = reader.ReadUInt32(out uint retryAfterMilliseconds);
                         if (r != Result.Success)
@@ -188,6 +206,7 @@ namespace Microsoft.Azure.Cosmos
             responseMessage.Headers.SubStatusCode = this.SubStatusCode;
             responseMessage.Headers.ETag = this.ETag;
             responseMessage.Headers.RetryAfter = this.RetryAfter;
+            responseMessage.Headers.RequestCharge = this.RequestCharge;
             responseMessage.Content = this.ResourceStream;
             responseMessage.Diagnostics = this.Diagnostics;
             return responseMessage;

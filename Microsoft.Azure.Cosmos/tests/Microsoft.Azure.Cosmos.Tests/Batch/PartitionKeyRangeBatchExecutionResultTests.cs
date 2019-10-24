@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<BatchOperationResult> results = new List<BatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, "0");
 
             results.Add(
                     new BatchOperationResult(HttpStatusCode.OK)
@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ETag = "1234",
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
+                RequestCharge = 4.3,
                 Diagnostics = new PointOperationStatistics(Guid.NewGuid().ToString(), HttpStatusCode.OK, SubStatusCodes.Unknown, 0, string.Empty, HttpMethod.Get, new Uri("http://localhost"), new CosmosClientSideRequestStatistics())
             };
 
@@ -86,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(result.SubStatusCode, response.Headers.SubStatusCode);
             Assert.AreEqual(result.RetryAfter, response.Headers.RetryAfter);
             Assert.AreEqual(result.StatusCode, response.StatusCode);
+            Assert.AreEqual(result.RequestCharge, response.Headers.RequestCharge);
             Assert.AreEqual(result.Diagnostics, response.Diagnostics);
         }
 
@@ -94,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<BatchOperationResult> results = new List<BatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
 
-            ItemBatchOperation operation = new ItemBatchOperation(OperationType.AddComputeGatewayRequestCharges, 0, "0");
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Read, 0, "0");
 
             results.Add(
                     new BatchOperationResult(HttpStatusCode.OK)
