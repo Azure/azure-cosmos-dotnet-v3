@@ -244,281 +244,281 @@ namespace Azure.Cosmos.EmulatorTests
             //Assert.AreEqual("BasicQueryItem", linqResults.First().pk.ToString());
         }
 
-        //[TestMethod]
-        //[DataRow(false)]
-        //[DataRow(true)]
-        //public async Task ScriptsStoredProcedureTest(bool directMode)
-        //{
-        //    CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-        //    Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ScriptsStoredProcedureTest(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
-        //    List<string> createdIds = new List<string>()
-        //    {
-        //        "BasicQuerySp1",
-        //        "BasicQuerySp2",
-        //        "BasicQuerySp3"
-        //    };
+            List<string> createdIds = new List<string>()
+            {
+                "BasicQuerySp1",
+                "BasicQuerySp2",
+                "BasicQuerySp3"
+            };
 
-        //    //Basic query
-        //    List<StoredProcedureProperties> queryResults = await this.ToListAsync(
-        //        scripts.GetStoredProcedureQueryStreamIterator,
-        //        scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
-        //        "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")",
-        //        CosmosBasicQueryTests.RequestOptions);
+            //Basic query
+            List<StoredProcedureProperties> queryResults = await this.ToListAsync(
+                scripts.GetStoredProcedureQueryStreamIterator,
+                scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
+                "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")",
+                CosmosBasicQueryTests.RequestOptions);
 
-        //    if (queryResults.Count < 3)
-        //    {
-        //        foreach (string id in createdIds)
-        //        {
-        //            StoredProcedureProperties properties = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
-        //            {
-        //                Id = id,
-        //                Body = "function() {var x = 10;}"
-        //            });
-        //        }
+            if (queryResults.Count < 3)
+            {
+                foreach (string id in createdIds)
+                {
+                    StoredProcedureProperties properties = await scripts.CreateStoredProcedureAsync(new StoredProcedureProperties()
+                    {
+                        Id = id,
+                        Body = "function() {var x = 10;}"
+                    });
+                }
 
-        //        queryResults = await this.ToListAsync(
-        //            scripts.GetStoredProcedureQueryStreamIterator,
-        //            scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
-        //            "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")",
-        //            CosmosBasicQueryTests.RequestOptions);
-        //    }
+                queryResults = await this.ToListAsync(
+                    scripts.GetStoredProcedureQueryStreamIterator,
+                    scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
+                    "select * from T where STARTSWITH(T.id, \"BasicQuerySp\")",
+                    CosmosBasicQueryTests.RequestOptions);
+            }
 
-        //    CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
+            CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
 
-        //    //Read All
-        //    List<StoredProcedureProperties> results = await this.ToListAsync(
-        //        scripts.GetStoredProcedureQueryStreamIterator,
-        //        scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
-        //        null,
-        //        CosmosBasicQueryTests.RequestOptions);
+            //Read All
+            List<StoredProcedureProperties> results = await this.ToListAsync(
+                scripts.GetStoredProcedureQueryStreamIterator,
+                scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>,
+                null,
+                CosmosBasicQueryTests.RequestOptions);
 
-        //    CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
-        //}
+            CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
+        }
 
-        //[TestMethod]
-        //[DataRow(false)]
-        //[DataRow(true)]
-        //public async Task ScriptsUserDefinedFunctionTest(bool directMode)
-        //{
-        //    CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-        //    Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ScriptsUserDefinedFunctionTest(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
-        //    List<string> createdIds = new List<string>()
-        //    {
-        //        "BasicQueryUdf1",
-        //        "BasicQueryUdf2",
-        //        "BasicQueryUdf3"
-        //    };
+            List<string> createdIds = new List<string>()
+            {
+                "BasicQueryUdf1",
+                "BasicQueryUdf2",
+                "BasicQueryUdf3"
+            };
 
-        //    //Basic query
-        //    List<UserDefinedFunctionProperties> queryResults = await this.ToListAsync(
-        //        scripts.GetUserDefinedFunctionQueryStreamIterator,
-        //        scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
-        //        "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")",
-        //        CosmosBasicQueryTests.RequestOptions);
+            //Basic query
+            List<UserDefinedFunctionProperties> queryResults = await this.ToListAsync(
+                scripts.GetUserDefinedFunctionQueryStreamIterator,
+                scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
+                "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")",
+                CosmosBasicQueryTests.RequestOptions);
 
-        //    if (queryResults.Count < 3)
-        //    {
-        //        foreach (string id in createdIds)
-        //        {
-        //            UserDefinedFunctionProperties properties = await scripts.CreateUserDefinedFunctionAsync(new UserDefinedFunctionProperties()
-        //            {
-        //                Id = id,
-        //                Body = "function() {var x = 10;}"
-        //            });
-        //        }
+            if (queryResults.Count < 3)
+            {
+                foreach (string id in createdIds)
+                {
+                    UserDefinedFunctionProperties properties = await scripts.CreateUserDefinedFunctionAsync(new UserDefinedFunctionProperties()
+                    {
+                        Id = id,
+                        Body = "function() {var x = 10;}"
+                    });
+                }
 
-        //        queryResults = await this.ToListAsync(
-        //            scripts.GetUserDefinedFunctionQueryStreamIterator,
-        //            scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
-        //            "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")",
-        //            CosmosBasicQueryTests.RequestOptions);
-        //    }
+                queryResults = await this.ToListAsync(
+                    scripts.GetUserDefinedFunctionQueryStreamIterator,
+                    scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryUdf\")",
+                    CosmosBasicQueryTests.RequestOptions);
+            }
 
-        //    CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
+            CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
 
-        //    //Read All
-        //    List<UserDefinedFunctionProperties> results = await this.ToListAsync(
-        //        scripts.GetUserDefinedFunctionQueryStreamIterator,
-        //        scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
-        //        null,
-        //        CosmosBasicQueryTests.RequestOptions);
+            //Read All
+            List<UserDefinedFunctionProperties> results = await this.ToListAsync(
+                scripts.GetUserDefinedFunctionQueryStreamIterator,
+                scripts.GetUserDefinedFunctionQueryIterator<UserDefinedFunctionProperties>,
+                null,
+                CosmosBasicQueryTests.RequestOptions);
 
-        //    CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
-        //}
+            CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
+        }
 
-        //[TestMethod]
-        //[DataRow(false)]
-        //[DataRow(true)]
-        //public async Task ScriptsTriggerTest(bool directMode)
-        //{
-        //    CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-        //    Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task ScriptsTriggerTest(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            Scripts scripts = client.GetContainer(DatabaseId, ContainerId).Scripts;
 
-        //    List<string> createdIds = new List<string>()
-        //    {
-        //        "BasicQueryTrigger1",
-        //        "BasicQueryTrigger2",
-        //        "BasicQueryTrigger3"
-        //    };
+            List<string> createdIds = new List<string>()
+            {
+                "BasicQueryTrigger1",
+                "BasicQueryTrigger2",
+                "BasicQueryTrigger3"
+            };
 
-        //    //Basic query
-        //    List<TriggerProperties> queryResults = await this.ToListAsync(
-        //        scripts.GetTriggerQueryStreamIterator,
-        //        scripts.GetTriggerQueryIterator<TriggerProperties>,
-        //        "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")",
-        //        CosmosBasicQueryTests.RequestOptions);
+            //Basic query
+            List<TriggerProperties> queryResults = await this.ToListAsync(
+                scripts.GetTriggerQueryStreamIterator,
+                scripts.GetTriggerQueryIterator<TriggerProperties>,
+                "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")",
+                CosmosBasicQueryTests.RequestOptions);
 
-        //    if (queryResults.Count < 3)
-        //    {
-        //        foreach (string id in createdIds)
-        //        {
-        //            TriggerProperties properties = await scripts.CreateTriggerAsync(new TriggerProperties()
-        //            {
-        //                Id = id,
-        //                Body = "function() {var x = 10;}"
-        //            });
-        //        }
+            if (queryResults.Count < 3)
+            {
+                foreach (string id in createdIds)
+                {
+                    TriggerProperties properties = await scripts.CreateTriggerAsync(new TriggerProperties()
+                    {
+                        Id = id,
+                        Body = "function() {var x = 10;}"
+                    });
+                }
 
-        //        queryResults = await this.ToListAsync(
-        //            scripts.GetTriggerQueryStreamIterator,
-        //            scripts.GetTriggerQueryIterator<TriggerProperties>,
-        //            "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")",
-        //            CosmosBasicQueryTests.RequestOptions);
-        //    }
+                queryResults = await this.ToListAsync(
+                    scripts.GetTriggerQueryStreamIterator,
+                    scripts.GetTriggerQueryIterator<TriggerProperties>,
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryTrigger\")",
+                    CosmosBasicQueryTests.RequestOptions);
+            }
 
-        //    CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
+            CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
 
-        //    //Read All
-        //    List<TriggerProperties> results = await this.ToListAsync(
-        //        scripts.GetTriggerQueryStreamIterator,
-        //        scripts.GetTriggerQueryIterator<TriggerProperties>,
-        //        null,
-        //        CosmosBasicQueryTests.RequestOptions);
+            //Read All
+            List<TriggerProperties> results = await this.ToListAsync(
+                scripts.GetTriggerQueryStreamIterator,
+                scripts.GetTriggerQueryIterator<TriggerProperties>,
+                null,
+                CosmosBasicQueryTests.RequestOptions);
 
-        //    CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
-        //}
+            CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
+        }
 
-        //[TestMethod]
-        //[DataRow(false)]
-        //[DataRow(true)]
-        //public async Task UserTests(bool directMode)
-        //{
-        //    CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-        //    DatabaseCore database = (DatabaseCore)client.GetDatabase(DatabaseId);
-        //    List<string> createdIds = new List<string>();
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task UserTests(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            DatabaseCore database = (DatabaseCore)client.GetDatabase(DatabaseId);
+            List<string> createdIds = new List<string>();
 
-        //    try
-        //    {
-        //        UserResponse userResponse = await database.CreateUserAsync("BasicQueryUser1");
-        //        createdIds.Add(userResponse.User.Id);
+            try
+            {
+                UserResponse userResponse = await database.CreateUserAsync("BasicQueryUser1");
+                createdIds.Add(userResponse.User.Id);
 
-        //        userResponse = await database.CreateUserAsync("BasicQueryUser2");
-        //        createdIds.Add(userResponse.User.Id);
+                userResponse = await database.CreateUserAsync("BasicQueryUser2");
+                createdIds.Add(userResponse.User.Id);
 
-        //        userResponse = await database.CreateUserAsync("BasicQueryUser3");
-        //        createdIds.Add(userResponse.User.Id);
+                userResponse = await database.CreateUserAsync("BasicQueryUser3");
+                createdIds.Add(userResponse.User.Id);
 
-        //        //Read All
-        //        List<UserProperties> results = await this.ToListAsync(
-        //            database.GetUserQueryStreamIterator,
-        //            database.GetUserQueryIterator<UserProperties>,
-        //            null,
-        //            CosmosBasicQueryTests.RequestOptions
-        //        );
+                //Read All
+                List<UserProperties> results = await this.ToListAsync(
+                    database.GetUserQueryStreamIterator,
+                    database.GetUserQueryIterator<UserProperties>,
+                    null,
+                    CosmosBasicQueryTests.RequestOptions
+                );
 
-        //        CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
+                CollectionAssert.IsSubsetOf(createdIds, results.Select(x => x.Id).ToList());
 
-        //        //Basic query
-        //        List<UserProperties> queryResults = await this.ToListAsync(
-        //            database.GetUserQueryStreamIterator,
-        //            database.GetUserQueryIterator<UserProperties>,
-        //            "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")",
-        //            CosmosBasicQueryTests.RequestOptions
-        //        );
+                //Basic query
+                List<UserProperties> queryResults = await this.ToListAsync(
+                    database.GetUserQueryStreamIterator,
+                    database.GetUserQueryIterator<UserProperties>,
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryUser\")",
+                    CosmosBasicQueryTests.RequestOptions
+                );
 
-        //        CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
-        //    }
-        //    finally
-        //    {
-        //        foreach (string id in createdIds)
-        //        {
-        //            await database.GetUser(id).DeleteAsync();
-        //        }
-        //    }
-        //}
+                CollectionAssert.AreEquivalent(createdIds, queryResults.Select(x => x.Id).ToList());
+            }
+            finally
+            {
+                foreach (string id in createdIds)
+                {
+                    await database.GetUser(id).DeleteAsync();
+                }
+            }
+        }
 
-        //[TestMethod]
-        //[DataRow(false)]
-        //[DataRow(true)]
-        //public async Task PermissionTests(bool directMode)
-        //{
-        //    CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
-        //    Database database = client.GetDatabase(DatabaseId);
-        //    List<string> createdPermissionIds = new List<string>();
-        //    List<string> createdContainerIds = new List<string>();
-        //    string userId = Guid.NewGuid().ToString();
-        //    UserCore user = null;
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task PermissionTests(bool directMode)
+        {
+            CosmosClient client = directMode ? DirectCosmosClient : GatewayCosmosClient;
+            Database database = client.GetDatabase(DatabaseId);
+            List<string> createdPermissionIds = new List<string>();
+            List<string> createdContainerIds = new List<string>();
+            string userId = Guid.NewGuid().ToString();
+            UserCore user = null;
 
-        //    try
-        //    {
-        //        UserResponse createUserResponse = await database.CreateUserAsync(userId);
-        //        Assert.AreEqual(HttpStatusCode.Created, createUserResponse.StatusCode);
-        //        user = (UserCore)createUserResponse.User;
+            try
+            {
+                UserResponse createUserResponse = await database.CreateUserAsync(userId);
+                Assert.AreEqual((int)HttpStatusCode.Created, createUserResponse.GetRawResponse().Status);
+                user = (UserCore)createUserResponse.User;
 
-        //        ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
-        //        Container container = createContainerResponse.Container;
-        //        PermissionResponse permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission1", PermissionMode.All, container));
-        //        createdContainerIds.Add(createContainerResponse.Container.Id);
-        //        createdPermissionIds.Add(permissionResponse.Permission.Id);
+                ContainerResponse createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                Container container = createContainerResponse.Container;
+                PermissionResponse permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission1", PermissionMode.All, container));
+                createdContainerIds.Add(createContainerResponse.Container.Id);
+                createdPermissionIds.Add(permissionResponse.Permission.Id);
 
 
-        //        createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
-        //        container = createContainerResponse.Container;
-        //        permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission2", PermissionMode.All, container));
-        //        createdContainerIds.Add(createContainerResponse.Container.Id);
-        //        createdPermissionIds.Add(permissionResponse.Permission.Id);
+                createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                container = createContainerResponse.Container;
+                permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission2", PermissionMode.All, container));
+                createdContainerIds.Add(createContainerResponse.Container.Id);
+                createdPermissionIds.Add(permissionResponse.Permission.Id);
 
-        //        createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
-        //        container = createContainerResponse.Container;
-        //        permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission3", PermissionMode.All, container));
-        //        createdContainerIds.Add(createContainerResponse.Container.Id);
-        //        createdPermissionIds.Add(permissionResponse.Permission.Id);
+                createContainerResponse = await database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), partitionKeyPath: "/pk");
+                container = createContainerResponse.Container;
+                permissionResponse = await user.CreatePermissionAsync(new PermissionProperties("BasicQueryPermission3", PermissionMode.All, container));
+                createdContainerIds.Add(createContainerResponse.Container.Id);
+                createdPermissionIds.Add(permissionResponse.Permission.Id);
 
-        //        //Read All
-        //        List<PermissionProperties> results = await this.ToListAsync(
-        //            user.GetPermissionQueryStreamIterator,
-        //            user.GetPermissionQueryIterator<PermissionProperties>,
-        //            null,
-        //            CosmosBasicQueryTests.RequestOptions
-        //        );
+                //Read All
+                List<PermissionProperties> results = await this.ToListAsync(
+                    user.GetPermissionQueryStreamIterator,
+                    user.GetPermissionQueryIterator<PermissionProperties>,
+                    null,
+                    CosmosBasicQueryTests.RequestOptions
+                );
 
-        //        CollectionAssert.IsSubsetOf(createdPermissionIds, results.Select(x => x.Id).ToList());
+                CollectionAssert.IsSubsetOf(createdPermissionIds, results.Select(x => x.Id).ToList());
 
-        //        //Basic query
-        //        List<PermissionProperties> queryResults = await this.ToListAsync(
-        //            user.GetPermissionQueryStreamIterator,
-        //            user.GetPermissionQueryIterator<PermissionProperties>,
-        //            "select * from T where STARTSWITH(T.id, \"BasicQueryPermission\")",
-        //            CosmosBasicQueryTests.RequestOptions
-        //        );
+                //Basic query
+                List<PermissionProperties> queryResults = await this.ToListAsync(
+                    user.GetPermissionQueryStreamIterator,
+                    user.GetPermissionQueryIterator<PermissionProperties>,
+                    "select * from T where STARTSWITH(T.id, \"BasicQueryPermission\")",
+                    CosmosBasicQueryTests.RequestOptions
+                );
 
-        //        CollectionAssert.AreEquivalent(createdPermissionIds, queryResults.Select(x => x.Id).ToList());
-        //    }
-        //    finally
-        //    {
-        //        foreach (string id in createdPermissionIds)
-        //        {
-        //            await user.GetPermission(id).DeleteAsync();
-        //        }
-        //        foreach (string id in createdContainerIds)
-        //        {
-        //            await database.GetContainer(id).DeleteContainerAsync();
-        //        }
-        //        await user?.DeleteAsync();
-        //    }
-        //}
+                CollectionAssert.AreEquivalent(createdPermissionIds, queryResults.Select(x => x.Id).ToList());
+            }
+            finally
+            {
+                foreach (string id in createdPermissionIds)
+                {
+                    await user.GetPermission(id).DeleteAsync();
+                }
+                foreach (string id in createdContainerIds)
+                {
+                    await database.GetContainer(id).DeleteContainerAsync();
+                }
+                await user?.DeleteAsync();
+            }
+        }
 
         private delegate AsyncPageable<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options, CancellationToken cancellationToken = default(CancellationToken));
         private delegate IAsyncEnumerable<Response> QueryStream(string querytext, string continuationToken, QueryRequestOptions options, CancellationToken cancellationToken = default(CancellationToken));
