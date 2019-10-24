@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Text;
@@ -284,6 +284,23 @@ namespace Microsoft.Azure.Cosmos
         protected override void WriteAfterClientSideMetrics()
         {
             // Do Nothing
+        }
+        #endregion
+
+        #region IndexUtilizationInfo
+        protected override void WriteBeforeIndexUtilizationInfo()
+        {
+            // Do nothing
+        }
+
+        protected override void WriteIndexUtilizationInfo(IndexUtilizationInfo indexUtilizationInfo)
+        {
+            // Do nothing
+        }
+
+        protected override void WriteAfterIndexUtilizationInfo()
+        {
+            // Do nothing
         }
         #endregion
 

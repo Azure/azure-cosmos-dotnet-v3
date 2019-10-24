@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <param name="arguments">the arguments of the UserDefinedFunction</param>
         /// <remarks>
         /// This is a stub helper method for use within LINQ expressions. Cannot be called directly. 
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#linq-to-documentdb-sql for more details about the LINQ provider.
-        /// Refer to http://azure.microsoft.com/documentation/articles/documentdb-sql-query/#javascript-integration for more details about user defined functions.
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for more details about the LINQ provider.
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs for more details about user defined functions.
         /// </remarks>
         /// <example> 
         /// <code language="c#">
