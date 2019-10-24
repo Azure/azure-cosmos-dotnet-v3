@@ -32,12 +32,17 @@
             return this._handlerFunc(request, cancellationToken);
         }
 
-        public static Task<ResponseMessage> ReturnSuccess()
+        public static Task<ResponseMessage> ReturnSuccess(CosmosDiagnostics diagnostics = null)
         {
             return Task.Factory.StartNew(
                 () => {
                     ResponseMessage responseMessage =  new ResponseMessage(HttpStatusCode.OK);
                     responseMessage.Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Documents"": [{ ""id"": ""Test""}]}"));
+                    if (diagnostics != null)
+                    {
+                        responseMessage.Diagnostics = diagnostics;
+                    }
+
                     return responseMessage;
                 });
         }

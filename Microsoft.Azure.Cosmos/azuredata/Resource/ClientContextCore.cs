@@ -10,24 +10,16 @@ namespace Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core.Pipeline;
+    using Azure.Core.Pipeline;
+    using Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
 
     internal class ClientContextCore : CosmosClientContext
     {
-        private const string DiagnosticScopeResourceUri = "resourceUri";
-        private const string DiagnosticScopeOperationType = "operationType";
-        private const string DiagnosticScopeResourceType = "resourceType";
-        private const string DiagnosticScopeContainer = "resourceType";
-        private const string DiagnosticScopeDiagnostics = "diagnostics";
-        private const string DefaultDiagnosticsPrefix = "Azure.Cosmos";
-
         private readonly HttpPipeline pipeline;
-        private readonly string diagnosticsPrefix;
 
         internal ClientContextCore(
             CosmosClient client,
@@ -37,8 +29,7 @@ namespace Azure.Cosmos
             CosmosSerializer sqlQuerySpecSerializer,
             CosmosResponseFactory cosmosResponseFactory,
             RequestInvokerHandler requestHandler,
-            DocumentClient documentClient,
-            string diagnosticsPrefix = ClientContextCore.DefaultDiagnosticsPrefix)
+            DocumentClient documentClient)
         {
             this.Client = client;
             this.ClientOptions = clientOptions;
@@ -51,7 +42,6 @@ namespace Azure.Cosmos
 
             this.ClientOptions.Transport = new ClientPipelineTransport(requestHandler);
             this.pipeline = HttpPipelineBuilder.Build(this.ClientOptions);
-            this.diagnosticsPrefix = diagnosticsPrefix;
         }
 
         internal override CosmosClient Client { get; }
@@ -134,15 +124,15 @@ namespace Azure.Cosmos
             Action<RequestMessage> requestEnricher,
             CancellationToken cancellationToken)
         {
-            DiagnosticScope scope = this.pipeline.Diagnostics.CreateScope($"{this.diagnosticsPrefix}.{resourceType}-{operationType}");
+            DiagnosticScope scope = this.pipeline.Diagnostics.CreateScope(DiagnosticProperty.ResourceOperationActivityName(resourceType, operationType));
             try
             {
-                scope.AddAttribute(ClientContextCore.DiagnosticScopeResourceUri, resourceUri);
-                scope.AddAttribute(ClientContextCore.DiagnosticScopeResourceType, resourceType);
-                scope.AddAttribute(ClientContextCore.DiagnosticScopeOperationType, operationType);
+                scope.AddAttribute(DiagnosticProperty.ResourceUri, resourceUri);
+                scope.AddAttribute(DiagnosticProperty.ResourceType, resourceType);
+                scope.AddAttribute(DiagnosticProperty.OperationType, operationType);
                 if (cosmosContainerCore != null)
                 {
-                    scope.AddAttribute(ClientContextCore.DiagnosticScopeContainer, cosmosContainerCore.LinkUri);
+                    scope.AddAttribute(DiagnosticProperty.Container, cosmosContainerCore.LinkUri);
                 }
 
                 scope.Start();
@@ -161,7 +151,7 @@ namespace Azure.Cosmos
                     Debug.Assert(responseMessage != null, "Pipeline did not deliver a ResponseMessage");
                     if (scope.IsEnabled && responseMessage != null)
                     {
-                        scope.AddAttribute(ClientContextCore.DiagnosticScopeDiagnostics, responseMessage.Diagnostics);
+                        scope.AddAttribute(DiagnosticProperty.Diagnostics, responseMessage.Diagnostics);
                     }
 
                     return responseMessage;
