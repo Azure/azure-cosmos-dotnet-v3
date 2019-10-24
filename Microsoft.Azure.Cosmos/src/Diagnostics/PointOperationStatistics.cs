@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Text;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.CosmosClientSideRequestStatistics;
 
@@ -18,6 +19,8 @@ namespace Microsoft.Azure.Cosmos
             NullValueHandling = NullValueHandling.Ignore,
             Formatting = Formatting.None
         };
+
+        public string ActivityId { get; }
         public HttpStatusCode StatusCode { get; }
         public Documents.SubStatusCodes SubStatusCode { get; }
         public double RequestCharge { get; }
@@ -44,6 +47,7 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan requestLatency { get; private set; }
 
         internal PointOperationStatistics(
+            string activityId,
             HttpStatusCode statusCode,
             Documents.SubStatusCodes subStatusCode,
             double requestCharge,
@@ -52,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
             Uri requestUri,
             CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
+            this.ActivityId = activityId;
             this.StatusCode = statusCode;
             this.SubStatusCode = subStatusCode;
             this.RequestCharge = requestCharge;

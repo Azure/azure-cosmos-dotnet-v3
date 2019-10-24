@@ -7,6 +7,7 @@ namespace Azure.Cosmos
 namespace Microsoft.Azure.Cosmos
 #endif
 {
+    using System;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
@@ -116,6 +117,39 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             return this.InternalKey.ToJsonString();
+        }
+
+        internal string ToJsonString()
+        {
+            return this.InternalKey.ToJsonString();
+        }
+
+        internal static bool TryParseJsonString(string partitionKeyString, out PartitionKey partitionKey)
+        {
+            if (partitionKeyString == null)
+            {
+                throw new ArgumentNullException(partitionKeyString);
+            }
+
+            try
+            {
+                PartitionKeyInternal partitionKeyInternal = PartitionKeyInternal.FromJsonString(partitionKeyString);
+                if (partitionKeyInternal.Components == null)
+                {
+                    partitionKey = PartitionKey.None;
+                }
+                else
+                {
+                    partitionKey = new PartitionKey(partitionKeyInternal, isNone: false);
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                partitionKey = default(PartitionKey);
+                return false;
+            }
         }
     }
 }

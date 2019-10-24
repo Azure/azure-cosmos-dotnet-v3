@@ -310,8 +310,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 count: feedResponse.CosmosElements.Count,
                 responseHeaders: new DictionaryNameValueCollection(),
                 useETagAsContinuation: false,
-                queryMetrics: feedResponse.QueryMetrics,
-                requestStats: feedResponse.RequestStatistics,
+                queryMetrics: null,
+                requestStats: null,
                 disallowContinuationTokenMessage: feedResponse.DisallowContinuationTokenMessage,
                 responseLengthBytes: feedResponse.ResponseLengthBytes);
         }

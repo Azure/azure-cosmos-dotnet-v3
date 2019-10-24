@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -571,6 +572,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         batchResponse.ErrorMessage));
 
             Assert.AreEqual(numberOfOperations, batchResponse.Count);
+
+            Assert.IsTrue(batchResponse.RequestCharge > 0);
+
+            // Allow a delta since we round both the total charge and the individual operation
+            // charges to 2 decimal places.
+            Assert.AreEqual(
+                batchResponse.RequestCharge,
+                batchResponse.Sum(result => result.RequestCharge),
+                0.1);
         }
     }
 }
