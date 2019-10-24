@@ -21,14 +21,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             private readonly Dictionary<string, CosmosElement> dictionary;
 
-            public EagerCosmosObject(IDictionary<string, CosmosElement> dictionary)
+            public EagerCosmosObject(IReadOnlyDictionary<string, CosmosElement> dictionary)
             {
                 if (dictionary == null)
                 {
                     throw new ArgumentNullException($"{nameof(dictionary)}");
                 }
 
-                this.dictionary = new Dictionary<string, CosmosElement>(dictionary);
+                this.dictionary = new Dictionary<string, CosmosElement>();
+                foreach (KeyValuePair<string, CosmosElement> kvp in dictionary)
+                {
+                    this.dictionary[kvp.Key] = kvp.Value;
+                }
             }
 
             public override IEnumerable<string> Keys => this.dictionary.Keys;
@@ -37,7 +41,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override int Count => this.dictionary.Count;
 
-            public override CosmosElement this[string key] => this.dictionary[key];
+            public override CosmosElement this[string key]
+            {
+                get
+                {
+                    if (!this.TryGetValue(key, out CosmosElement value))
+                    {
+                        value = null;
+                    }
+
+                    return value;
+                }
+            }
 
             public override bool ContainsKey(string key) => this.dictionary.ContainsKey(key);
 

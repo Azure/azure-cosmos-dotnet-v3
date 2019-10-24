@@ -49,9 +49,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new LazyCosmosObject(jsonNavigator, jsonNavigatorNode);
         }
 
-        public static CosmosObject Create(IDictionary<string, CosmosElement> dictionary)
+        public static CosmosObject Create(IReadOnlyDictionary<string, CosmosElement> dictionary)
         {
             return new EagerCosmosObject(dictionary);
+        }
+
+        public static CosmosObject Create(IReadOnlyList<KeyValuePair<string, CosmosElement>> properties)
+        {
+            return new OrderedCosmosObject(properties);
         }
 
         public abstract bool ContainsKey(string key);
