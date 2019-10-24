@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Configuration;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -38,33 +37,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             new CosmosClientOptions() { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Documents.Client.Protocol.Tcp });
         private static readonly CosmosClient[] Clients = new CosmosClient[] { GatewayClient, DirectHttpsClient, RntbdClient };
         private static readonly CosmosClient Client = RntbdClient;
-        private static Database database;
-
-        [ClassInitialize]
-        public static void Initialize(TestContext textContext)
+        private static readonly AsyncLazy<Database> Database = new AsyncLazy<Database>(async () =>
         {
-            BinaryEncodingOverTheWireTests.CleanUp();
-        }
+            return await Client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+        });
 
-        [TestInitialize]
-        public void TestInitialize()
+        private static async Task<Container> CreateContainerAsync()
         {
-            BinaryEncodingOverTheWireTests.database = BinaryEncodingOverTheWireTests.CreateDatabase();
-        }
-
-        [TestCleanup]
-        public void Cleanup()
-        {
-        }
-
-        private static Database CreateDatabase()
-        {
-            return Client.CreateDatabaseAsync(Guid.NewGuid().ToString()).Result;
-        }
-
-        private static Container CreateContainer()
-        {
-            return BinaryEncodingOverTheWireTests.database.CreateContainerAsync(
+            return (await Database.Value).CreateContainerAsync(
                 Guid.NewGuid().ToString() + "collection",
                 "/id",
                 10000).Result;
@@ -72,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static async Task<Tuple<Container, List<JToken>>> CreateCollectionAndIngestDocuments(IEnumerable<string> documents)
         {
-            Container container = BinaryEncodingOverTheWireTests.CreateContainer();
+            Container container = await BinaryEncodingOverTheWireTests.CreateContainerAsync();
             List<JToken> insertedDocuments = new List<JToken>();
             Random rand = new Random(1234);
             foreach (string serializedItem in documents.OrderBy(x => rand.Next()).Take(100))
@@ -84,10 +64,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             return new Tuple<Container, List<JToken>>(container, insertedDocuments);
-        }
-
-        private static void CleanUp()
-        {
         }
 
         internal delegate Task Query(CosmosClient cosmosClient, Container container, List<JToken> items);
@@ -303,11 +279,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             catch (JsonSerializationException)
             {
-                documents = new List<object>();
-                documents.Add(JsonConvert.DeserializeObject<object>(json));
+                documents = new List<object>
+                {
+                    JsonConvert.DeserializeObject<object>(json)
+                };
             }
 
             return documents;
+        }
+
+        public sealed class AsyncLazy<T> : Lazy<Task<T>>
+        {
+            public AsyncLazy(Func<T> valueFactory) :
+                base(() => Task.Factory.StartNew(valueFactory))
+            { }
+
+            public AsyncLazy(Func<Task<T>> taskFactory) :
+                base(() => Task.Factory.StartNew(() => taskFactory()).Unwrap())
+            { }
         }
 
         public sealed class JsonTokenEqualityComparer : IEqualityComparer<JToken>
