@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ItemProducerTreeUnitTests
     {
-        private CancellationToken cancellationToken = new CancellationTokenSource().Token;
+        private readonly CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
         [DataRow(null)]

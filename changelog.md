@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#853](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/853) ORDER BY Arrays and Object support.
 - [#877](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/877) Query diagnostics now contains client side request diagnostics information
 - [#923](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/923) Bulk Support is now public
 - [#922](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/922) Included information of bulk support usage in user agent

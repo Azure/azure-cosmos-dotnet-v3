@@ -46,7 +46,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
         private readonly Dictionary<UInt192, SingleGroupAggregator> groupingTable;
-        private readonly DistinctMap distinctMap;
         private readonly bool hasSelectValue;
 
         private int numPagesDrainedFromGroupingTable;
@@ -64,9 +63,6 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
 
             this.groupingTable = new Dictionary<UInt192, SingleGroupAggregator>();
-
-            // Using an ordered distinct map to get hashes.
-            this.distinctMap = DistinctMap.Create(DistinctQueryType.Ordered, null);
             this.groupByAliasToAggregateType = groupByAliasToAggregateType;
             this.hasSelectValue = hasSelectValue;
         }
@@ -108,19 +104,15 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 {
                     // Aggregate the values for all groupings across all continuations.
                     RewrittenGroupByProjection groupByItem = new RewrittenGroupByProjection(result);
-                    this.distinctMap.Add(groupByItem.GroupByItems, out UInt192? groupByKeysHash);
-                    if (!groupByKeysHash.HasValue)
-                    {
-                        throw new InvalidOperationException("hash invariant was broken");
-                    }
+                    UInt192 groupByKeysHash = DistinctHash.GetHash(groupByItem.GroupByItems);
 
-                    if (!this.groupingTable.TryGetValue(groupByKeysHash.Value, out SingleGroupAggregator singleGroupAggregator))
+                    if (!this.groupingTable.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
                     {
                         singleGroupAggregator = SingleGroupAggregator.Create(
                             EmptyAggregateOperators,
                             this.groupByAliasToAggregateType,
                             this.hasSelectValue);
-                        this.groupingTable[groupByKeysHash.Value] = singleGroupAggregator;
+                        this.groupingTable[groupByKeysHash] = singleGroupAggregator;
                     }
 
                     CosmosElement payload = groupByItem.Payload;
