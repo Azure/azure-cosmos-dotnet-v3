@@ -90,5 +90,29 @@ namespace Azure.Cosmos.EmulatorTests
 
             Assert.Fail("Should had thrown");
         }
+
+        [Timeout(5000)]
+        [TestMethod]
+        [ExpectedException(typeof(OperationCanceledException))]
+        public async Task AsyncPageableAsPagesCancels()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await this.Container.CreateItemAsync<ToDoActivity>(item: testItem);
+            ToDoActivity testItem2 = ToDoActivity.CreateRandomToDoActivity();
+            await this.Container.CreateItemAsync<ToDoActivity>(item: testItem2);
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            IAsyncEnumerable<Page<ToDoActivity>> enumerable = this.Container.GetItemQueryIterator<ToDoActivity>(requestOptions: new QueryRequestOptions() { MaxItemCount = 1 }, cancellationToken: cancellationTokenSource.Token).AsPages();
+            int iterations = 0;
+            await foreach (Page<ToDoActivity> item in enumerable)
+            {
+                if (iterations++ == 0)
+                {
+                    cancellationTokenSource.Cancel();
+                }
+            }
+
+            Assert.Fail("Should had thrown");
+        }
     }
 }
