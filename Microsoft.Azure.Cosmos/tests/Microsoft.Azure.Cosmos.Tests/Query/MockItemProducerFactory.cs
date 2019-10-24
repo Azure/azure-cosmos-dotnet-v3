@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static readonly PartitionKeyRange DefaultPartitionKeyRange = new PartitionKeyRange() { MinInclusive = "A", MaxExclusive = "B", Id = "0" };
         public static readonly int[] DefaultResponseSizes = { 3, 0, 3 };
         public static readonly CancellationToken DefaultCancellationToken = new CancellationTokenSource().Token;
-        
+
         /// <summary>
         /// Create a item producer with a list of responses mocked
         /// </summary>
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         maxPageSize,
                         It.IsAny<SchedulingStopwatch>(),
                         cancellationToken))
-                        .Callback(() =>executeCallback?.Invoke())
+                        .Callback(() => executeCallback?.Invoke())
                         .Returns(Task.FromResult(queryResponse.response));
                 previousContinuationToken = newContinuationToken;
             }

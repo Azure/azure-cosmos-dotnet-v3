@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ItemProducerTreeUnitTests
     {
-        private CancellationToken cancellationToken = new CancellationTokenSource().Token;
+        private readonly CancellationToken cancellationToken = new CancellationTokenSource().Token;
 
         [TestMethod]
         [DataRow(null)]
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         method: HttpMethod.Post,
                         requestUri: new Uri("http://localhost.com"),
                         clientSideRequestStatistics: null),
-                   new SchedulingStopwatch());
+                   schedulingStopwatch: new SchedulingStopwatch());
             IReadOnlyCollection<QueryPageDiagnostics> pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
             mockQueryContext.Setup(x => x.ContainerResourceId).Returns("MockCollectionRid");
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         method: HttpMethod.Post,
                         requestUri: new Uri("http://localhost.com"),
                         clientSideRequestStatistics: null),
-                   new SchedulingStopwatch());
+                   schedulingStopwatch: new SchedulingStopwatch());
             pageDiagnostics = new List<QueryPageDiagnostics>() { diagnostics };
 
             // Buffer a failure

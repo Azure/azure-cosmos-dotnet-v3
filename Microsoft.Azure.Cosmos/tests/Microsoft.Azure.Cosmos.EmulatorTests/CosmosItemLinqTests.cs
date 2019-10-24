@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -212,8 +213,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemLINQQueryWithContinuationTokenTest()
         {
-            //Creating items for query.
-            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
+            // Creating items for query.
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(
+                container: this.Container,
+                pkCount: 10,
+                perPKItemCount: 1,
+                randomPartitionKey: true);
+
+            IList<ToDoActivity> filteredList = itemList.Where(item => item.taskNum < 100).ToList();
+            int filteredDocumentCount = filteredList.Count();
+
+            Console.WriteLine($"Filtered List: {JsonConvert.SerializeObject(filteredList)}.");
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
             queryRequestOptions.MaxConcurrency = 1;
@@ -229,30 +239,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync();
                 firstItemSet = feedResponse.Count();
                 continuationToken = feedResponse.ContinuationToken;
+                Console.WriteLine($"First page: {JsonConvert.SerializeObject(feedResponse.Resource)}.");
                 if (firstItemSet > 0)
                 {
                     break;
                 }
             }
 
-            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(continuationToken: continuationToken, requestOptions: queryRequestOptions);
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
+                continuationToken: continuationToken,
+                requestOptions: queryRequestOptions);
             queriable = linqQueryable.Where(item => item.taskNum < 100);
             feedIterator = queriable.ToFeedIterator();
 
-            //Test continuationToken with LINQ query generation and asynchronous feedIterator execution.
+            // Test continuationToken with LINQ query generation and asynchronous feedIterator execution.
             int secondItemSet = 0;
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync();
                 secondItemSet += feedResponse.Count();
+                Console.WriteLine($"Second Async page: {JsonConvert.SerializeObject(feedResponse.Resource)}.");
             }
 
-            Assert.AreEqual(10 - firstItemSet, secondItemSet);
+            Assert.AreEqual(
+                filteredDocumentCount - firstItemSet,
+                secondItemSet,
+                "Failed to resume execution for async iterator.");
 
-            //Test continuationToken with blocking LINQ execution
-            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, continuationToken: continuationToken, requestOptions: queryRequestOptions);
-            int linqExecutionItemCount = linqQueryable.Where(item => item.taskNum < 100).Count();
-            Assert.AreEqual(10 - firstItemSet, linqExecutionItemCount);
+            // Test continuationToken with blocking LINQ execution
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
+                allowSynchronousQueryExecution: true,
+                continuationToken: continuationToken,
+                requestOptions: queryRequestOptions);
+            List<ToDoActivity> secondSyncPage = linqQueryable.Where(item => item.taskNum < 100).ToList();
+            Console.WriteLine($"Second Sync page: {JsonConvert.SerializeObject(secondSyncPage)}.");
+            int linqExecutionItemCount = secondSyncPage.Count();
+            Assert.AreEqual(
+                filteredDocumentCount - firstItemSet,
+                linqExecutionItemCount,
+                "Failed to resume execution for sync iterator");
         }
 
         [TestMethod]
