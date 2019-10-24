@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -85,6 +86,11 @@ namespace Microsoft.Azure.Cosmos
         public string ApplicationName { get; set; }
 
         /// <summary>
+        /// Get or set session container for the client
+        /// </summary>
+        internal ISessionContainer SessionContainer { get; set; }
+
+        /// <summary>
         /// Get or set the preferred geo-replicated region to be used for Azure Cosmos DB service interaction.
         /// </summary>
         /// <remarks>
@@ -98,14 +104,14 @@ namespace Microsoft.Azure.Cosmos
         public string ApplicationRegion { get; set; }
 
         /// <summary>
-        /// Get or set the maximum number of concurrent connections allowed for the target
-        /// service endpoint in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// This setting is only applicable in Gateway mode.
-        /// </remarks>
-        /// <value>Default value is 50.</value>
-        /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
+         /// Get or set the maximum number of concurrent connections allowed for the target
+         /// service endpoint in the Azure Cosmos DB service.
+         /// </summary>
+         /// <remarks>
+         /// This setting is only applicable in Gateway mode.
+         /// </remarks>
+         /// <value>Default value is 50.</value>
+         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
         public int GatewayModeMaxConnectionLimit
         {
             get => this.gatewayModeMaxConnectionLimit;
@@ -491,6 +497,14 @@ namespace Microsoft.Azure.Cosmos
                 return this.Serializer == null ? this.PropertiesSerializer : new CosmosJsonSerializerWrapper(this.Serializer);
             }
         }
+
+        /// <summary>
+        /// Get or set user-agent suffix to include with every Azure Cosmos DB service interaction.
+        /// </summary>
+        /// <remarks>
+        /// Setting this property after sending any request won't have any effect.
+        /// </remarks>
+        public string SessionCon { get; set; }
 
         internal CosmosClientOptions Clone()
         {

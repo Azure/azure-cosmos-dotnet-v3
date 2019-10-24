@@ -231,6 +231,11 @@ namespace Microsoft.Azure.Cosmos
                 desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
                 handler: this.CreateHttpClientHandler(clientOptions));
 
+            if (clientOptionsClone.SessionContainer != null)
+            {
+                documentClient.sessionContainer = clientOptionsClone.SessionContainer;
+            }
+
             this.Init(
                 clientOptionsClone,
                 documentClient);
