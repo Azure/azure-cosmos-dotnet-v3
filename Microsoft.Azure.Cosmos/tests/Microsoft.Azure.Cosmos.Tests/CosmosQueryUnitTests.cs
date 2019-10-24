@@ -168,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     { "test", AggregateOperator.Count }
                 },
+                new List<string>() { "test" },
                 false,
                 null,
                 setupContext.func));

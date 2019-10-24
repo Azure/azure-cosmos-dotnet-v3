@@ -215,6 +215,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     return await AggregateDocumentQueryExecutionComponent.CreateAsync(
                         queryInfo.Aggregates,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue,
                         continuationToken,
                         createSourceCallback);
@@ -243,6 +244,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         continuationToken,
                         createSourceCallback,
                         queryInfo.GroupByAliasToAggregateType,
+                        queryInfo.GroupByAliases,
                         queryInfo.HasSelectValue);
                 };
             }

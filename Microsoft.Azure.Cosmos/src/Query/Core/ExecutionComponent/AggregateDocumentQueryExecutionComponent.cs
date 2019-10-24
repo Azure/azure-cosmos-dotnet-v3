@@ -66,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// </summary>
         /// <param name="aggregates">The aggregates.</param>
         /// <param name="aliasToAggregateType">The alias to aggregate type.</param>
+        /// <param name="orderedAliases">The ordering of the aliases.</param>
         /// <param name="hasSelectValue">Whether or not the query has the 'VALUE' keyword.</param>
         /// <param name="requestContinuation">The continuation token to resume from.</param>
         /// <param name="createSourceCallback">The callback to create the source component that supplies the local aggregates.</param>
@@ -73,13 +74,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         public static async Task<AggregateDocumentQueryExecutionComponent> CreateAsync(
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
+            IReadOnlyList<string> orderedAliases,
             bool hasSelectValue,
             string requestContinuation,
             Func<string, Task<IDocumentQueryExecutionComponent>> createSourceCallback)
         {
             return new AggregateDocumentQueryExecutionComponent(
                 await createSourceCallback(requestContinuation),
-                SingleGroupAggregator.Create(aggregates, aliasToAggregateType, hasSelectValue),
+                SingleGroupAggregator.Create(aggregates, aliasToAggregateType, orderedAliases, hasSelectValue),
                 aggregates != null && aggregates.Count() == 1);
         }
 

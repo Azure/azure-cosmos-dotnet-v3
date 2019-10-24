@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public static SingleGroupAggregator Create(
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
+            IReadOnlyList<string> orderedAliases,
             bool hasSelectValue)
         {
             SingleGroupAggregator aggregateValues;
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                aggregateValues = SelectListAggregateValues.Create(aggregateAliasToAggregateType);
+                aggregateValues = SelectListAggregateValues.Create(aggregateAliasToAggregateType, orderedAliases);
             }
 
             return aggregateValues;
@@ -101,29 +102,45 @@ namespace Microsoft.Azure.Cosmos.Query
         private sealed class SelectListAggregateValues : SingleGroupAggregator
         {
             private readonly IReadOnlyDictionary<string, AggregateValue> aliasToValue;
+            private readonly IReadOnlyList<string> orderedAliases;
 
-            private SelectListAggregateValues(IReadOnlyDictionary<string, AggregateValue> aliasToValue)
+            private SelectListAggregateValues(
+                IReadOnlyDictionary<string, AggregateValue> aliasToValue,
+                IReadOnlyList<string> orderedAliases)
             {
+                if (aliasToValue == null)
+                {
+                    throw new ArgumentNullException(nameof(aliasToValue));
+                }
+
+                if (orderedAliases == null)
+                {
+                    throw new ArgumentNullException(nameof(orderedAliases));
+                }
+
                 this.aliasToValue = aliasToValue;
+                this.orderedAliases = orderedAliases;
             }
 
             public override CosmosElement GetResult()
             {
-                Dictionary<string, CosmosElement> aliasToElement = new Dictionary<string, CosmosElement>();
-                foreach (KeyValuePair<string, AggregateValue> aliasAndValue in this.aliasToValue)
+                List<KeyValuePair<string, CosmosElement>> aliasToElement = new List<KeyValuePair<string, CosmosElement>>();
+                foreach (string alias in this.orderedAliases)
                 {
-                    string alias = aliasAndValue.Key;
-                    AggregateValue aggregateValue = aliasAndValue.Value;
+                    AggregateValue aggregateValue = this.aliasToValue[alias];
                     if (aggregateValue.Result != null)
                     {
-                        aliasToElement[alias] = aggregateValue.Result;
+                        KeyValuePair<string, CosmosElement> kvp = new KeyValuePair<string, CosmosElement>(alias, aggregateValue.Result);
+                        aliasToElement.Add(kvp);
                     }
                 }
 
                 return CosmosObject.Create(aliasToElement);
             }
 
-            public static SelectListAggregateValues Create(IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType)
+            public static SelectListAggregateValues Create(
+                IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
+                IReadOnlyList<string> orderedAliases)
             {
                 Dictionary<string, AggregateValue> groupingTable = new Dictionary<string, AggregateValue>();
                 foreach (KeyValuePair<string, AggregateOperator?> aliasToAggregate in aggregateAliasToAggregateType)
@@ -133,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     groupingTable[alias] = AggregateValue.Create(aggregateOperator);
                 }
 
-                return new SelectListAggregateValues(groupingTable);
+                return new SelectListAggregateValues(groupingTable, orderedAliases);
             }
 
             public override void AddValues(CosmosElement values)
