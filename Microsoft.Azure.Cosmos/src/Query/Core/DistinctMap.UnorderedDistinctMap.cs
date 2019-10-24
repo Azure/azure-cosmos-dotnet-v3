@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 else
                 {
                     // Else the string is too large and we will just store the hash.
-                    UInt192 uint192Value = DistinctMap.GetHash(CosmosString.Create(value));
+                    UInt192 uint192Value = DistinctHash.GetHash(CosmosString.Create(value));
                     added = this.stringLength24Plus.Add(uint192Value);
                 }
 
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>Whether or not the value was successfully added.</returns>
             private bool AddArrayValue(CosmosArray array)
             {
-                UInt192 hash = DistinctMap.GetHash(array);
+                UInt192 hash = DistinctHash.GetHash(array);
                 return this.arrays.Add(hash);
             }
 
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>Whether or not the value was successfully added.</returns>
             private bool AddObjectValue(CosmosObject cosmosObject)
             {
-                UInt192 hash = DistinctMap.GetHash(cosmosObject);
+                UInt192 hash = DistinctHash.GetHash(cosmosObject);
                 return this.objects.Add(hash);
             }
         }

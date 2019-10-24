@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return new EagerCosmosNumber64(number);
         }
 
-        protected abstract Number64 GetValue();
+        public abstract Number64 GetValue();
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

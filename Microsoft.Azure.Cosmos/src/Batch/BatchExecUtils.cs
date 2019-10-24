@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="maximumLength">Desired maximum length of the Memory{byte}.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> to cancel the operation.</param>
         /// <returns>A Memory{byte} with length at most maximumLength.</returns>
-        /// <remarks>Throws RequestEntityTooLargeException if the input stream has more bytes than maximumLength.</remarks>
+        /// <remarks>Throws CosmosException if the input stream has more bytes than maximumLength.</remarks>
         public static async Task<Memory<byte>> StreamToMemoryAsync(
             Stream stream,
             int maximumLength,
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (stream.Length > maximumLength)
                 {
-                    throw new RequestEntityTooLargeException(RMResources.RequestTooLarge);
+                    throw new CosmosException(HttpStatusCode.RequestEntityTooLarge, RMResources.RequestTooLarge);
                 }
 
                 // Some derived implementations of MemoryStream (such as versions of RecyclableMemoryStream prior to 1.2.2 that we may be using)
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                         sum += count;
                         if (sum > maximumLength)
                         {
-                            throw new RequestEntityTooLargeException(RMResources.RequestTooLarge);
+                            throw new CosmosException(HttpStatusCode.RequestEntityTooLarge, RMResources.RequestTooLarge);
                         }
 
 #pragma warning disable VSTHRD103 // Call async methods when in an async method

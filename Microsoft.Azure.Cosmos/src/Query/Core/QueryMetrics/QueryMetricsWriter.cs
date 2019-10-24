@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Linq;
@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
             this.WriteOutputDocumentCount(queryMetrics.OutputDocumentCount);
             this.WriteOutputDocumentSize(queryMetrics.OutputDocumentSize);
             this.WriteIndexHitRatio(queryMetrics.IndexHitRatio);
+
             this.WriteTotalQueryExecutionTime(queryMetrics.TotalQueryExecutionTime);
 
             // QueryPreparationTimes
@@ -34,6 +35,11 @@ namespace Microsoft.Azure.Cosmos
 
             // ClientSideMetrics
             this.WriteClientSideMetrics(queryMetrics.ClientSideMetrics);
+
+            // IndexUtilizationInfo
+            this.WriteBeforeIndexUtilizationInfo();
+
+            this.WriteIndexUtilizationInfo(queryMetrics.IndexUtilizationInfo);
 
             this.WriteAfterQueryMetrics();
         }
@@ -224,6 +230,15 @@ namespace Microsoft.Azure.Cosmos
         protected abstract void WriteAfterSchedulingMetrics();
 
         protected abstract void WriteAfterClientSideMetrics();
+        #endregion
+
+        #region IndexUtilizationInfo
+
+        protected abstract void WriteBeforeIndexUtilizationInfo();
+
+        protected abstract void WriteIndexUtilizationInfo(IndexUtilizationInfo indexUtilizationInfo);
+
+        protected abstract void WriteAfterIndexUtilizationInfo();
         #endregion
 
         protected abstract void WriteAfterQueryMetrics();

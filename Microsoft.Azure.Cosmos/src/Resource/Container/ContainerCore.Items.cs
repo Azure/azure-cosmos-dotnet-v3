@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.Contracts;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -247,6 +248,82 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions);
         }
 
+        /// <summary>
+        /// Used in the compute gateway to support legacy gateway interface.
+        /// </summary>
+        internal async Task<(PartitionedQueryExecutionInfo, (bool, QueryIterator))> TryExecuteQueryAsync(
+            QueryFeatures supportedQueryFeatures,
+            QueryDefinition queryDefinition,
+            string continuationToken,
+            QueryRequestOptions requestOptions,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (queryDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(queryDefinition));
+            }
+
+            if (requestOptions == null)
+            {
+                throw new ArgumentNullException(nameof(requestOptions));
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Documents.PartitionKeyDefinition partitionKeyDefinition;
+            if (requestOptions.Properties != null
+                && requestOptions.Properties.TryGetValue("x-ms-query-partitionkey-definition", out object partitionKeyDefinitionObject))
+            {
+                if (partitionKeyDefinitionObject is Documents.PartitionKeyDefinition definition)
+                {
+                    partitionKeyDefinition = definition;
+                }
+                else
+                {
+                    throw new ArgumentException(
+                        "partitionkeydefinition has invalid type",
+                        nameof(partitionKeyDefinitionObject));
+                }
+            }
+            else
+            {
+                ContainerQueryProperties containerQueryProperties = await this.queryClient.GetCachedContainerQueryPropertiesAsync(
+                    this.LinkUri,
+                    requestOptions.PartitionKey,
+                    cancellationToken);
+                partitionKeyDefinition = containerQueryProperties.PartitionKeyDefinition;
+            }
+
+            QueryPlanHandler queryPlanHandler = new QueryPlanHandler(this.queryClient);
+
+            (PartitionedQueryExecutionInfo partitionedQueryExecutionInfo, bool supported) = await queryPlanHandler.GetQueryInfoAndIfSupportedAsync(
+                supportedQueryFeatures,
+                queryDefinition.ToSqlQuerySpec(),
+                partitionKeyDefinition,
+                requestOptions.PartitionKey.HasValue,
+                cancellationToken);
+
+            QueryIterator queryIterator;
+            if (supported)
+            {
+                queryIterator = QueryIterator.Create(
+                    client: this.queryClient,
+                    sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
+                    continuationToken: continuationToken,
+                    queryRequestOptions: requestOptions,
+                    resourceLink: this.LinkUri,
+                    isContinuationExpected: false,
+                    allowNonValueAggregateQuery: true,
+                    partitionedQueryExecutionInfo: partitionedQueryExecutionInfo);
+            }
+            else
+            {
+                queryIterator = null;
+            }
+
+            return (partitionedQueryExecutionInfo, (supported, queryIterator));
+        }
+
         public override FeedIterator<T> GetItemQueryIterator<T>(
            string queryText = null,
            string continuationToken = null,
@@ -417,14 +494,15 @@ namespace Microsoft.Azure.Cosmos
                     options: requestOptions);
             }
 
-            return new QueryIterator(
+            return QueryIterator.Create(
                 client: this.queryClient,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 queryRequestOptions: requestOptions,
                 resourceLink: this.LinkUri,
                 isContinuationExpected: isContinuationExcpected,
-                allowNonValueAggregateQuery: true);
+                allowNonValueAggregateQuery: true,
+                partitionedQueryExecutionInfo: null);
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.

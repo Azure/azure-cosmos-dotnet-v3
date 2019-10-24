@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 JToken jToken = JToken.Load(reader);
                 // TODO: In the future we can go from jToken to CosmosElement if we have the eager implemenation.
-                CosmosElement cosmosElement = CosmosElement.Create(Encoding.UTF8.GetBytes(jToken.ToString()));
+                CosmosElement cosmosElement = CosmosElement.CreateFromBuffer(Encoding.UTF8.GetBytes(jToken.ToString()));
                 return new OrderByItem(cosmosElement);
             }
 

@@ -134,11 +134,11 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             // Serialize the edge object into a document using the specified serialization format
             IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
             edgeEagerObject.WriteTo(jsonWriter);
-            byte[] jsonResult = jsonWriter.GetResult();
+            ReadOnlyMemory<byte> jsonResult = jsonWriter.GetResult();
             Assert.IsTrue(jsonResult.Length > 0, "IJsonWriter result data is empty.");
 
             // Navigate into the serialized edge document using lazy CosmosElements
-            CosmosElement rootLazyElement = CosmosElement.Create(jsonResult);
+            CosmosElement rootLazyElement = CosmosElement.CreateFromBuffer(jsonResult);
 
             // Validate the expected edge document structure/values
 
@@ -292,11 +292,11 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             // Serialize the vertex object into a document using the specified serialization format
             IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
             vertexEagerObject.WriteTo(jsonWriter);
-            byte[] jsonResult = jsonWriter.GetResult();
+            ReadOnlyMemory<byte> jsonResult = jsonWriter.GetResult();
             Assert.IsTrue(jsonResult.Length > 0, "IJsonWriter result data is empty.");
 
             // Navigate into the serialized vertex document using lazy CosmosElements
-            CosmosElement rootLazyElement = CosmosElement.Create(jsonResult);
+            CosmosElement rootLazyElement = CosmosElement.CreateFromBuffer(jsonResult);
 
             // Validate the expected vertex document structure/values
 
@@ -453,11 +453,11 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             // Serialize the initial vertex object into a document using the specified serialization format
             IJsonWriter jsonWriter = JsonWriter.Create(jsonSerializationFormat);
             initialVertexEagerObject.WriteTo(jsonWriter);
-            byte[] initialJsonWriterResult = jsonWriter.GetResult();
+            ReadOnlyMemory<byte> initialJsonWriterResult = jsonWriter.GetResult();
             Assert.IsTrue(initialJsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
 
             // Navigate into the serialized vertex document using lazy CosmosElements
-            CosmosElement rootLazyElement = CosmosElement.Create(initialJsonWriterResult);
+            CosmosElement rootLazyElement = CosmosElement.CreateFromBuffer(initialJsonWriterResult);
 
             // Root vertex document object
             CosmosObject vertexLazyObject = rootLazyElement as CosmosObject;
@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             // Serialize the modified vertex object into a document using the specified serialization format
             jsonWriter = JsonWriter.Create(jsonSerializationFormat);
             modifiedVertexEagerObject.WriteTo(jsonWriter);
-            byte[] modifiedJsonWriterResult = jsonWriter.GetResult();
+            ReadOnlyMemory<byte> modifiedJsonWriterResult = jsonWriter.GetResult();
             Assert.IsTrue(modifiedJsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
 
             // Compose an expected vertex document using eager CosmosElements
@@ -552,11 +552,11 @@ namespace Microsoft.Azure.Cosmos.Scenarios
             // Serialize the initial vertex object into a document using the specified serialization format
             jsonWriter = JsonWriter.Create(jsonSerializationFormat);
             expectedVertexEagerObject.WriteTo(jsonWriter);
-            byte[] expectedJsonWriterResult = jsonWriter.GetResult();
+            ReadOnlyMemory<byte> expectedJsonWriterResult = jsonWriter.GetResult();
             Assert.IsTrue(expectedJsonWriterResult.Length > 0, "IJsonWriter result data is empty.");
 
             // Verify that the modified serialized document matches the expected serialized document
-            Assert.IsTrue(modifiedJsonWriterResult.SequenceEqual(expectedJsonWriterResult));
+            Assert.IsTrue(modifiedJsonWriterResult.Span.SequenceEqual(expectedJsonWriterResult.Span));
         }
 
         private CosmosElement CreateVertexPropertySingleComplexValue(

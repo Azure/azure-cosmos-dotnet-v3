@@ -696,20 +696,5 @@ namespace Microsoft.Azure.Cosmos.Sql
 
             return (int)hash;
         }
-
-        public override int Visit(SqlConversionScalarExpression sqlConversionScalarExpression)
-        {
-            throw new NotImplementedException("This DOM element is being removed.");
-        }
-
-        public override int Visit(SqlGeoNearCallScalarExpression sqlGeoNearCallScalarExpression)
-        {
-            throw new NotImplementedException("This DOM element is being removed.");
-        }
-
-        public override int Visit(SqlObjectLiteral sqlObjectLiteral)
-        {
-            throw new NotImplementedException("This DOM element is being removed.");
-        }
     }
 }
