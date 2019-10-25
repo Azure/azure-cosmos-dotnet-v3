@@ -136,11 +136,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             this.writer.Write(')');
         }
 
-        public override void Visit(SqlConversionScalarExpression sqlConversionScalarExpression)
-        {
-            sqlConversionScalarExpression.expression.Accept(this);
-        }
-
         public override void Visit(SqlExistsScalarExpression sqlExistsScalarExpression)
         {
             this.writer.Write("EXISTS");
@@ -190,33 +185,6 @@ namespace Microsoft.Azure.Cosmos.Sql
 
                 this.WriteEndContext(")");
             }
-        }
-
-        public override void Visit(SqlGeoNearCallScalarExpression sqlGeoNearCallScalarExpression)
-        {
-            this.writer.Write("(");
-            this.writer.Write("_ST_DISTANCE");
-            this.writer.Write("(");
-            sqlGeoNearCallScalarExpression.PropertyRef.Accept(this);
-            this.writer.Write(",");
-            sqlGeoNearCallScalarExpression.Geometry.Accept(this);
-            this.writer.Write(")");
-            this.writer.Write(" BETWEEN ");
-
-            if (sqlGeoNearCallScalarExpression.NumberOfPoints == null)
-            {
-                this.writer.Write(sqlGeoNearCallScalarExpression.MinimumDistance);
-                this.writer.Write(" AND ");
-                this.writer.Write(sqlGeoNearCallScalarExpression.MaximumDistance);
-            }
-            else
-            {
-                this.writer.Write(SqlGeoNearCallScalarExpression.NearMinimumDistanceName);
-                this.writer.Write(" AND ");
-                this.writer.Write(SqlGeoNearCallScalarExpression.NearMaximumDistanceName);
-            }
-
-            this.writer.Write(")");
         }
 
         public override void Visit(SqlGroupByClause sqlGroupByClause)
@@ -308,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlLimitSpec sqlObject)
         {
             this.writer.Write("LIMIT ");
-            this.writer.Write(sqlObject.Limit);
+            sqlObject.LimitExpression.Accept(this);
         }
 
         public override void Visit(SqlLiteralArrayCollection sqlLiteralArrayCollection)
@@ -415,18 +383,6 @@ namespace Microsoft.Azure.Cosmos.Sql
             }
         }
 
-        public override void Visit(SqlObjectLiteral sqlObjectLiteral)
-        {
-            if (sqlObjectLiteral.isValueSerialized)
-            {
-                this.writer.Write(sqlObjectLiteral.Value);
-            }
-            else
-            {
-                this.writer.Write(JsonConvert.SerializeObject(sqlObjectLiteral.Value));
-            }
-        }
-
         public override void Visit(SqlObjectProperty sqlObjectProperty)
         {
             sqlObjectProperty.Name.Accept(this);
@@ -444,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlOffsetSpec sqlObject)
         {
             this.writer.Write("OFFSET ");
-            this.writer.Write(sqlObject.Offset);
+            sqlObject.OffsetExpression.Accept(this);
         }
 
         public override void Visit(SqlOrderbyClause sqlOrderByClause)
@@ -470,6 +426,16 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 this.writer.Write(" ASC");
             }
+        }
+
+        public override void Visit(SqlParameter sqlParameter)
+        {
+            this.writer.Write(sqlParameter.Name);
+        }
+
+        public override void Visit(SqlParameterRefScalarExpression sqlParameterRefScalarExpression)
+        {
+            sqlParameterRefScalarExpression.Parameter.Accept(this);
         }
 
         public override void Visit(SqlProgram sqlProgram)
@@ -643,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public override void Visit(SqlTopSpec sqlTopSpec)
         {
             this.writer.Write("TOP ");
-            this.writer.Write(sqlTopSpec.Count);
+            sqlTopSpec.TopExpresion.Accept(this);
         }
 
         public override void Visit(SqlUnaryScalarExpression sqlUnaryScalarExpression)
@@ -707,7 +673,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         {
             if (this.prettyPrint)
             {
-                for (int i = 0; i < indentLevel; i++)
+                for (int i = 0; i < this.indentLevel; i++)
                 {
                     this.writer.Write(Tab);
                 }

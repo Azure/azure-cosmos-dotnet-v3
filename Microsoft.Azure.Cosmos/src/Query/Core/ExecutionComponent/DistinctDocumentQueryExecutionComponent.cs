@@ -115,9 +115,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             string updatedContinuationToken;
             if (!this.IsDone)
             {
-                updatedContinuationToken = new DistinctContinuationToken(
-                    sourceResponse.ContinuationToken,
-                    this.distinctMap.GetContinuationToken()).ToString();
+                if (!this.TryGetContinuationToken(out updatedContinuationToken))
+                {
+                    throw new ArgumentException("Failed to get DISTINCT continuation token.");
+                }
             }
             else
             {
@@ -131,10 +132,32 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 disallowContinuationTokenMessage: null,
                 activityId: sourceResponse.ActivityId,
                 requestCharge: sourceResponse.RequestCharge,
-                queryMetricsText: sourceResponse.QueryMetricsText,
-                queryMetrics: sourceResponse.QueryMetrics,
-                requestStatistics: sourceResponse.RequestStatistics,
+                diagnostics: sourceResponse.diagnostics,
                 responseLengthBytes: sourceResponse.ResponseLengthBytes);
+        }
+
+        public override bool TryGetContinuationToken(out string continuationToken)
+        {
+            if (!this.IsDone)
+            {
+                if (this.Source.TryGetContinuationToken(out string sourceContinuationToken))
+                {
+                    continuationToken = new DistinctContinuationToken(
+                        sourceContinuationToken,
+                        this.distinctMap.GetContinuationToken()).ToString();
+                    return true;
+                }
+                else
+                {
+                    continuationToken = default;
+                    return false;
+                }
+            }
+            else
+            {
+                continuationToken = default;
+                return true;
+            }
         }
 
         /// <summary>

@@ -1,0 +1,98 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>BitwiseNot</Description>
+      <SqlObject><![CDATA[{
+  "OperatorKind": "BitwiseNot",
+  "Expression": {
+    "Literal": {
+      "Value": 3735928559,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "UnaryScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[(~ 3735928559)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(~ 3735928559)
+]]></PrettyPrint>
+      <HashCode>-466775932</HashCode>
+      <ObfusctedQuery><![CDATA[(~ 3736028559)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Not</Description>
+      <SqlObject><![CDATA[{
+  "OperatorKind": "Not",
+  "Expression": {
+    "Literal": {
+      "Value": 3735928559,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "UnaryScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[(NOT 3735928559)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(NOT 3735928559)
+]]></PrettyPrint>
+      <HashCode>1668144413</HashCode>
+      <ObfusctedQuery><![CDATA[(NOT 3736028559)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Minus</Description>
+      <SqlObject><![CDATA[{
+  "OperatorKind": "Minus",
+  "Expression": {
+    "Literal": {
+      "Value": 3735928559,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "UnaryScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[(- 3735928559)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(- 3735928559)
+]]></PrettyPrint>
+      <HashCode>-758100055</HashCode>
+      <ObfusctedQuery><![CDATA[(- 3736028559)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Plus</Description>
+      <SqlObject><![CDATA[{
+  "OperatorKind": "Plus",
+  "Expression": {
+    "Literal": {
+      "Value": 3735928559,
+      "Kind": "NumberLiteral"
+    },
+    "Kind": "LiteralScalarExpression"
+  },
+  "Kind": "UnaryScalarExpression"
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[(+ 3735928559)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+(+ 3735928559)
+]]></PrettyPrint>
+      <HashCode>-2067956314</HashCode>
+      <ObfusctedQuery><![CDATA[(+ 3736028559)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+</Results>

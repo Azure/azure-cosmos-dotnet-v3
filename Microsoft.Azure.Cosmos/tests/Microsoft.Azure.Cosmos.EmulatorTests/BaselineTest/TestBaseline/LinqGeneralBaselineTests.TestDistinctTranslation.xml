@@ -139,7 +139,6 @@ FROM root ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Take -> Distinct]]></Description>
       <Expression><![CDATA[query.Select(f => f.Int).Take(10).Distinct()]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -149,6 +148,7 @@ FROM (
     FROM root
 ) AS r0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -179,7 +179,6 @@ ORDER BY root["Int"] ASC ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Distinct -> Take -> OrderBy]]></Description>
       <Expression><![CDATA[query.Select(f => f.Int).Distinct().Take(10).OrderBy(x => x)]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -190,13 +189,13 @@ FROM (
 ) AS r1 
 ORDER BY r1 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[OrderBy -> Take -> Distinct]]></Description>
       <Expression><![CDATA[query.Select(f => f.Int).OrderBy(x => x).Take(10).Distinct()]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -207,6 +206,7 @@ FROM (
     ORDER BY root["Int"] ASC
 ) AS r1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":73,"end":97},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":38,"end":44},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -401,7 +401,6 @@ WHERE (LENGTH(v2["FamilyName"]) > 10)
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -415,13 +414,13 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Where(f => (f.FamilyName.Count() < 20))]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -435,13 +434,13 @@ JOIN (
 WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where -> Take]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Where(f => (f.FamilyName.Count() < 20)).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -455,13 +454,13 @@ JOIN (
 WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20)) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Where -> Take -> Distinct]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Where(f => (f.FamilyName.Count() < 20)).Take(5).Distinct()]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -478,13 +477,13 @@ FROM (
     ORDER BY v2 ASC
 ) AS r0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":224,"end":239},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Take]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -498,13 +497,13 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> OrderBy -> Take -> Distinct]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().OrderBy(f => f).Take(5).Distinct()]]></Expression>
-      <ErrorMessage><![CDATA['ORDER BY' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -521,6 +520,7 @@ FROM (
     ORDER BY v2 ASC
 ) AS r0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":186,"end":201},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -545,7 +545,6 @@ WHERE (LENGTH(v2["FamilyName"]) > 10)
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> Distinct -> Take -> Distinct]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).Distinct().Take(5).Distinct()]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -561,13 +560,13 @@ FROM (
     WHERE (LENGTH(v2["FamilyName"]) > 10)
 ) AS r0 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":47,"end":52},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -581,13 +580,13 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Distinct]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Distinct()]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -601,13 +600,13 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> OrderBy]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Distinct().OrderBy(f => f.GivenName.Length)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -621,13 +620,13 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2["GivenName"]["Length"] ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> OrderBy -> Take]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Distinct().OrderBy(f => f.GivenName.Length).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -641,13 +640,13 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2["GivenName"]["Length"] ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Distinct -> Take]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -661,13 +660,13 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> Where -> OrderBy -> Take]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).Where(f => (f.FamilyName.Count() > 10)).OrderBy(f => f).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -681,6 +680,7 @@ JOIN (
 WHERE (LENGTH(v2["FamilyName"]) > 10) 
 ORDER BY v2 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -705,7 +705,6 @@ WHERE ((LENGTH(v2["FamilyName"]) > 10) AND (LENGTH(v2["FamilyName"]) < 20))
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> OrderBy]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -718,13 +717,13 @@ JOIN (
 ) AS v2 
 ORDER BY v2["FamilyName"] ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Distinct) -> OrderBy -> Take]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Distinct()).OrderBy(f => f.FamilyName).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -737,6 +736,7 @@ JOIN (
 ) AS v2 
 ORDER BY v2["FamilyName"] ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -794,7 +794,6 @@ JOIN (
     <Input>
       <Description><![CDATA[SelectMany(Select -> Distinct) -> OrderBy -> Take]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).OrderBy(n => n).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -807,13 +806,13 @@ JOIN (
 ) AS v1 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(Select -> Distinct) -> Where -> OrderBy -> Take]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Parents.Select(p => p.GivenName).Distinct()).Where(n => (n.Count() > 10)).OrderBy(n => n).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[Order-by over correlated collections is not supported.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -827,6 +826,7 @@ JOIN (
 WHERE (LENGTH(v1) > 10) 
 ORDER BY v1 ASC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"Errors":["Order-by over correlated collections is not supported."]}]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

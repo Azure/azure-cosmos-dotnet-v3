@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Net.Http;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -20,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
             //Setting null supplementalResponseStatisticsList
             cosmosClientSideRequestStatistics.supplementalResponseStatisticsList = null;
             PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
                 subStatusCode: Documents.SubStatusCodes.Unknown,
                 requestCharge: 42,
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
             };
 
             pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
                 subStatusCode: Documents.SubStatusCodes.Unknown,
                 requestCharge: 42,
@@ -63,6 +66,7 @@ namespace Microsoft.Azure.Cosmos
             });
 
             pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
                 subStatusCode: Documents.SubStatusCodes.Unknown,
                 requestCharge: 42,
@@ -81,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
             });
 
             pointOperationStatistics = new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
                 statusCode: System.Net.HttpStatusCode.OK,
                 subStatusCode: Documents.SubStatusCodes.Unknown,
                 requestCharge: 42,

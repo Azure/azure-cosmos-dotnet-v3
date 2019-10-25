@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
@@ -353,7 +354,13 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 jsonWriter.WriteObjectEnd();
 
-                return Convert.ToBase64String(jsonWriter.GetResult());
+                ReadOnlyMemory<byte> memory = jsonWriter.GetResult();
+                if (!MemoryMarshal.TryGetArray(memory, out ArraySegment<byte> buffer))
+                {
+                    buffer = new ArraySegment<byte>(memory.ToArray());
+                }
+
+                return Convert.ToBase64String(buffer.Array, buffer.Offset, buffer.Count);
             }
 
             /// <summary>
@@ -427,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 else
                 {
                     // Else the string is too large and we will just store the hash.
-                    UInt192 uint192Value = DistinctMap.GetHash(CosmosString.Create(value));
+                    UInt192 uint192Value = DistinctHash.GetHash(CosmosString.Create(value));
                     added = this.stringsLength24Plus.Add(uint192Value);
                 }
 
@@ -441,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>Whether or not the value was successfully added.</returns>
             private bool AddArrayValue(CosmosArray array)
             {
-                UInt192 hash = DistinctMap.GetHash(array);
+                UInt192 hash = DistinctHash.GetHash(array);
                 return this.arrays.Add(hash);
             }
 
@@ -452,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.Query
             /// <returns>Whether or not the value was successfully added.</returns>
             private bool AddObjectValue(CosmosObject cosmosObject)
             {
-                UInt192 hash = DistinctMap.GetHash(cosmosObject);
+                UInt192 hash = DistinctHash.GetHash(cosmosObject);
                 return this.objects.Add(hash);
             }
 
@@ -471,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 if (continuationToken != null)
                 {
                     byte[] binaryBuffer = Convert.FromBase64String(continuationToken);
-                    CosmosElement cosmosElement = CosmosElement.Create(binaryBuffer);
+                    CosmosElement cosmosElement = CosmosElement.CreateFromBuffer(binaryBuffer);
                     if (!(cosmosElement is CosmosObject hashDictionary))
                     {
                         throw new ArgumentException($"{nameof(UnorderdDistinctMap)} continuation token was malformed.");

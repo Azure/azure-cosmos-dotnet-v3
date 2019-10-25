@@ -99,6 +99,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
+            r = writer.WriteFloat64("requestCharge", result.RequestCharge);
+            if (r != Result.Success)
+            {
+                return r;
+            }
+
             return Result.Success;
         }
 

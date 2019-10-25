@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Sql
         public static readonly SqlLiteralScalarExpression SqlNullLiteralScalarExpression = new SqlLiteralScalarExpression(SqlNullLiteral.Create());
         public static readonly SqlLiteralScalarExpression SqlTrueLiteralScalarExpression = new SqlLiteralScalarExpression(SqlBooleanLiteral.True);
         public static readonly SqlLiteralScalarExpression SqlFalseLiteralScalarExpression = new SqlLiteralScalarExpression(SqlBooleanLiteral.False);
-        public static readonly SqlLiteralScalarExpression SqlUndefinedLiteralScalarExpression = new SqlLiteralScalarExpression(SqlUndefinedLiteral.Singleton);
+        public static readonly SqlLiteralScalarExpression SqlUndefinedLiteralScalarExpression = new SqlLiteralScalarExpression(SqlUndefinedLiteral.Create());
 
         private SqlLiteralScalarExpression(SqlLiteral literal)
             : base(SqlObjectKind.LiteralScalarExpression)
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Sql
             {
                 sqlLiteralScalarExpression = SqlLiteralScalarExpression.SqlNullLiteralScalarExpression;
             }
-            else if (sqlLiteral == SqlUndefinedLiteral.Singleton)
+            else if (sqlLiteral == SqlUndefinedLiteral.Create())
             {
                 sqlLiteralScalarExpression = SqlLiteralScalarExpression.SqlUndefinedLiteralScalarExpression;
             }

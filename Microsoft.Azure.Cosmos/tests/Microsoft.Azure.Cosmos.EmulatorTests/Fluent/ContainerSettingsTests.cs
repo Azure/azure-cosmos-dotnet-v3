@@ -117,8 +117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, responseProperties.IndexingPolicy.SpatialIndexes.Count);
             SpatialPath spatialPath = responseProperties.IndexingPolicy.SpatialIndexes.First();
             Assert.AreEqual("/address/spatial/*", spatialPath.Path);
-            Assert.AreEqual(1, spatialPath.SpatialTypes.Count);
-            Assert.AreEqual(SpatialType.LineString, spatialPath.SpatialTypes.First());
+            Assert.AreEqual(4, spatialPath.SpatialTypes.Count); // All SpatialTypes are returned
         }
 
         [TestMethod]

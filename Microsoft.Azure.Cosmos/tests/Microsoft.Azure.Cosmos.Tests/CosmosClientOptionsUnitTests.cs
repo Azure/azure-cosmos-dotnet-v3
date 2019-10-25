@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .AddCustomHandlers(preProcessHandler)
                 .WithApiType(apiType)
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
-                .WithBulkexecution(true)
+                .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -175,14 +175,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void UserAgentContainsEnvironmentInformation()
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
-            string expectedValue = environmentInformation.ToString();
+            string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             string userAgentSuffix = "testSuffix";
             cosmosClientOptions.ApplicationName = userAgentSuffix;
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-            Assert.AreEqual(userAgentSuffix, cosmosClientOptions.UserAgentContainer.Suffix);
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.UserAgent.StartsWith(expectedValue));
-            Assert.IsTrue(cosmosClientOptions.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+            UserAgentContainer userAgentContainer = cosmosClientOptions.BuildUserAgentContainer();
+            Assert.AreEqual(userAgentSuffix, userAgentContainer.Suffix);
+            Assert.IsTrue(userAgentContainer.UserAgent.StartsWith(expectedValue));
+            Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(userAgentSuffix));
 
             ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
             Assert.AreEqual(userAgentSuffix, connectionPolicy.UserAgentSuffix);

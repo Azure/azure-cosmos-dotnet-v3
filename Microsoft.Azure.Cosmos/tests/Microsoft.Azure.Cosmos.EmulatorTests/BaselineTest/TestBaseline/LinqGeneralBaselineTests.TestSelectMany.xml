@@ -221,7 +221,6 @@ WHERE (LENGTH(p0["FamilyName"]) > 10) ]]></SqlQuery>
     <Input>
       <Description><![CDATA[SelectMany(Take -> Where)]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Children.Take(2).Where(c => (c.FamilyName.Count() > 10)))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -237,13 +236,13 @@ JOIN (
     WHERE (LENGTH(r0["FamilyName"]) > 10)
 ) AS v2 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":61,"end":66},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[SelectMany(OrderBy -> Take -> Where)]]></Description>
       <Expression><![CDATA[query.SelectMany(f => f.Children.OrderBy(c => c.Grade).Take(2).Where(c => (c.FamilyName.Count() > 10)))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -260,6 +259,7 @@ JOIN (
     WHERE (LENGTH(r0["FamilyName"]) > 10)
 ) AS v1 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":114,"end":138},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."},{"severity":"Error","location":{"start":61,"end":66},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

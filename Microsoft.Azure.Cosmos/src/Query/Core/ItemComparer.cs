@@ -166,6 +166,14 @@ namespace Microsoft.Azure.Cosmos.Query
                         cmp = ItemComparer.CompareTo(binary1, binary2);
                         break;
 
+                    case CosmosElementType.Array:
+                    case CosmosElementType.Object:
+                        {
+                            UInt192 hash1 = DistinctHash.GetHash(element1);
+                            UInt192 hash2 = DistinctHash.GetHash(element2);
+                            return hash1.CompareTo(hash2);
+                        }
+
                     default:
                         throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {type1}");
                 }
@@ -207,25 +215,25 @@ namespace Microsoft.Azure.Cosmos.Query
                                 order = 2;
                                 break;
                             case CosmosNumberType.Float32:
-                                order = 6;
-                                break;
-                            case CosmosNumberType.Float64:
-                                order = 7;
-                                break;
-                            case CosmosNumberType.Int16:
                                 order = 8;
                                 break;
-                            case CosmosNumberType.Int32:
+                            case CosmosNumberType.Float64:
                                 order = 9;
                                 break;
-                            case CosmosNumberType.Int64:
+                            case CosmosNumberType.Int16:
                                 order = 10;
                                 break;
-                            case CosmosNumberType.Int8:
+                            case CosmosNumberType.Int32:
                                 order = 11;
                                 break;
-                            case CosmosNumberType.UInt32:
+                            case CosmosNumberType.Int64:
                                 order = 12;
+                                break;
+                            case CosmosNumberType.Int8:
+                                order = 13;
+                                break;
+                            case CosmosNumberType.UInt32:
+                                order = 14;
                                 break;
                             default:
                                 throw new ArgumentException($"Unknown number type. Number {(int)number.NumberType}; Typeof:{ typeof(CosmosNumberType)}");
@@ -236,11 +244,17 @@ namespace Microsoft.Azure.Cosmos.Query
                 case CosmosElementType.String:
                     order = 3;
                     break;
-                case CosmosElementType.Guid:
+                case CosmosElementType.Array:
+                    order = 4;
+                    break;
+                case CosmosElementType.Object:
                     order = 5;
                     break;
+                case CosmosElementType.Guid:
+                    order = 6;
+                    break;
                 case CosmosElementType.Binary:
-                    order = 4;
+                    order = 7;
                     break;
                 default:
                     throw new ArgumentException($"Unknown: {nameof(CosmosElementType)}: {cosmosElement.Type}");
@@ -266,17 +280,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 return -1;
             }
 
-            int minLength = Math.Min(left.Value.Count, right.Value.Count);
-            for (int i = 0; i < minLength; i++)
-            {
-                int cmp = left.Value[i].CompareTo(right.Value[i]);
-                if (cmp != 0)
-                {
-                    return cmp;
-                }
-            }
-
-            return left.Value.Count.CompareTo(right.Value.Count);
+            return left.Value.Span.SequenceCompareTo(right.Value.Span);
         }
 
         /// <summary>
