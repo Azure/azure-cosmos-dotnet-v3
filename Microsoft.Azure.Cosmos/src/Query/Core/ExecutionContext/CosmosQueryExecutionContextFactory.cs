@@ -336,6 +336,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cosmosQueryContext,
                 initParams,
                 inputParameters.InitialUserContinuationToken,
+                inputParameters.IsComputeQuery,
                 cancellationToken);
         }
 
@@ -441,6 +442,7 @@ namespace Microsoft.Azure.Cosmos.Query
             internal PartitionKey? PartitionKey { get; set; }
             internal IDictionary<string, object> Properties { get; set; }
             internal PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; set; }
+            internal bool IsComputeQuery { get; set; }
         }
     }
 }

@@ -62,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 MaxItemCount = queryRequestOptions.MaxItemCount,
                 PartitionKey = queryRequestOptions.PartitionKey,
                 Properties = queryRequestOptions.Properties,
-                PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo
+                PartitionedQueryExecutionInfo = partitionedQueryExecutionInfo,
+                IsComputeQuery = queryRequestOptions.IsComputeQuery,
             };
 
             return new QueryIterator(

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -169,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     { "test", AggregateOperator.Count }
                 },
+                false,
                 false,
                 null,
                 setupContext.func));
