@@ -166,6 +166,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             return response;
         }
 
+        public override bool TryGetContinuationToken(out string state)
+        {
+            state = default(string);
+            return false;
+        }
+
         /// <summary>
         /// When a group by query gets rewritten the projection looks like:
         /// 

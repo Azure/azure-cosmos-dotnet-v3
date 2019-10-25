@@ -31,5 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         /// Stops this document query execution component.
         /// </summary>
         void Stop();
+
+        bool TryGetContinuationToken(out string state);
     }
 }
