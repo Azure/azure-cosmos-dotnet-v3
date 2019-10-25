@@ -21,22 +21,6 @@ namespace Azure.Cosmos
         public string Endpoint { get; }
         public string Name { get; }
     }
-    public abstract class ChangeFeedProcessor
-    {
-        protected ChangeFeedProcessor();
-        public abstract Task StartAsync();
-        public abstract Task StopAsync();
-    }
-    public class ChangeFeedProcessorBuilder
-    {
-        public ChangeFeedProcessor Build();
-        public ChangeFeedProcessorBuilder WithInstanceName(string instanceName);
-        public ChangeFeedProcessorBuilder WithLeaseConfiguration(Nullable<TimeSpan> acquireInterval=default(Nullable<TimeSpan>), Nullable<TimeSpan> expirationInterval=default(Nullable<TimeSpan>), Nullable<TimeSpan> renewInterval=default(Nullable<TimeSpan>));
-        public ChangeFeedProcessorBuilder WithLeaseContainer(Container leaseContainer);
-        public ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount);
-        public ChangeFeedProcessorBuilder WithPollInterval(TimeSpan pollInterval);
-        public ChangeFeedProcessorBuilder WithStartTime(DateTime startTime);
-    }
     public sealed class CompositePath
     {
         public CompositePath();
@@ -102,8 +86,6 @@ namespace Azure.Cosmos
         public abstract Task<Response> DeleteContainerStreamAsync(ContainerRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ItemResponse<T>> DeleteItemAsync<T>(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<Response> DeleteItemStreamAsync(string id, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName, Container.ChangesEstimationHandler estimationDelegate, Nullable<TimeSpan> estimationPeriod=default(Nullable<TimeSpan>));
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(string processorName, Container.ChangesHandler<T> onChangesDelegate);
         public abstract AsyncPageable<T> GetItemQueryIterator<T>(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract AsyncPageable<T> GetItemQueryIterator<T>(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract IAsyncEnumerable<Response> GetItemQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
