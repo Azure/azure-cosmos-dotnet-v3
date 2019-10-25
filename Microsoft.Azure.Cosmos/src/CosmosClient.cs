@@ -219,37 +219,18 @@ namespace Microsoft.Azure.Cosmos
             this.AccountKey = authKeyOrResourceToken;
             CosmosClientOptions clientOptionsClone = clientOptions.Clone();
 
-            DocumentClient documentClient = null;
-
-            if (clientOptionsClone.SessionContainer != null)
-            {
-                documentClient = new DocumentClient(
-                    this.Endpoint,
-                    this.AccountKey,
-                    apitype: clientOptionsClone.ApiType,
-                    sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
-                    transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
-                    connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
-                    enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
-                    storeClientFactory: clientOptionsClone.StoreClientFactory,
-                    desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
-                    handler: this.CreateHttpClientHandler(clientOptions),
-                    sessionContainer: clientOptionsClone.SessionContainer);
-            }
-            else
-            {
-                documentClient = new DocumentClient(
-                    this.Endpoint,
-                    this.AccountKey,
-                    apitype: clientOptionsClone.ApiType,
-                    sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
-                    transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
-                    connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
-                    enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
-                    storeClientFactory: clientOptionsClone.StoreClientFactory,
-                    desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
-                    handler: this.CreateHttpClientHandler(clientOptions));
-            }
+            DocumentClient documentClient = new DocumentClient(
+                this.Endpoint,
+                this.AccountKey,
+                apitype: clientOptionsClone.ApiType,
+                sendingRequestEventArgs: clientOptionsClone.SendingRequestEventArgs,
+                transportClientHandlerFactory: clientOptionsClone.TransportClientHandlerFactory,
+                connectionPolicy: clientOptionsClone.GetConnectionPolicy(),
+                enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
+                storeClientFactory: clientOptionsClone.StoreClientFactory,
+                desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
+                handler: this.CreateHttpClientHandler(clientOptions),
+                sessionContainer: clientOptionsClone.SessionContainer);
 
             this.Init(
                 clientOptionsClone,
