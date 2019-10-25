@@ -2276,6 +2276,7 @@ namespace Azure.Cosmos.EmulatorTests
             }
         }
 
+        // This test will fail until Page<T> is abstract on the newwer Core SDK package
         [TestMethod]
         [TestCategory("Functional")]
         public async Task TestQueryDistinct()
