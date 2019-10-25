@@ -1044,7 +1044,7 @@ namespace Azure.Cosmos
         /// <param name="changes">The changes that happened.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
-        public delegate Task ChangesHandler<T>(
+        internal delegate Task ChangesHandler<T>(
             IReadOnlyCollection<T> changes,
             CancellationToken cancellationToken);
 
@@ -1054,7 +1054,7 @@ namespace Azure.Cosmos
         /// <param name="estimatedPendingChanges">An estimation in number of items.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the estimation.</returns>
-        public delegate Task ChangesEstimationHandler(
+        internal delegate Task ChangesEstimationHandler(
             long estimatedPendingChanges,
             CancellationToken cancellationToken);
 
@@ -1064,7 +1064,7 @@ namespace Azure.Cosmos
         /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
         /// <param name="onChangesDelegate">Delegate to receive changes.</param>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+        internal abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate);
 
@@ -1078,7 +1078,7 @@ namespace Azure.Cosmos
         /// The goal of the Estimator is to measure progress of a particular processor. In order to do that, the <paramref name="processorName"/> and other parameters, like the leases container, need to match that of the Processor to measure.
         /// </remarks>
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
+        internal abstract ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);

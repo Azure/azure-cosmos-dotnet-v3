@@ -396,7 +396,7 @@ namespace Azure.Cosmos
         //        this.ClientContext.ClientOptions.SerializerOptions);
         //}
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+        internal override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
         {
@@ -419,7 +419,7 @@ namespace Azure.Cosmos
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
+        internal override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null)

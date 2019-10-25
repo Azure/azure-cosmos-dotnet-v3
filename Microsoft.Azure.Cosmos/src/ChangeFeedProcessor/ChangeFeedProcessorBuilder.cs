@@ -14,7 +14,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Provides a flexible way to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
     /// </summary>
-    public class ChangeFeedProcessorBuilder
+#if AZURECORE
+    internal
+#else
+    public
+#endif
+    class ChangeFeedProcessorBuilder
     {
         private const string InMemoryDefaultHostName = "InMemory";
 
