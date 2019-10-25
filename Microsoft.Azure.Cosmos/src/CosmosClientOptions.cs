@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Data.Common;
     using System.Linq;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -83,6 +84,11 @@ namespace Microsoft.Azure.Cosmos
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
         public string ApplicationName { get; set; }
+
+        /// <summary>
+        /// Get or set session container for the client
+        /// </summary>
+        internal ISessionContainer SessionContainer { get; set; }
 
         /// <summary>
         /// Get or set the preferred geo-replicated region to be used for Azure Cosmos DB service interaction.
