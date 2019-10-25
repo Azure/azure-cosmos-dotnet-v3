@@ -149,22 +149,18 @@ namespace Microsoft.Azure.Cosmos.Query
                 IReadOnlyDictionary<string, AggregateOperator?> aggregateAliasToAggregateType,
                 string continuationToken)
             {
-                if (!CosmosElement.TryParse(continuationToken, out CosmosElement parsedContinuationToken))
+                CosmosObject aliasToContinuationToken;
+                if (continuationToken != null)
                 {
-                    throw cosmosQueryClient.CreateBadRequestException(
-                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}.");
+                    if (!CosmosElement.TryParse<CosmosObject>(continuationToken, out aliasToContinuationToken))
+                    {
+                        throw cosmosQueryClient.CreateBadRequestException(
+                            $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}.");
+                    }
                 }
-
-                if (parsedContinuationToken == null)
+                else
                 {
-                    throw cosmosQueryClient.CreateBadRequestException(
-                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}.");
-                }
-
-                if (!(parsedContinuationToken is CosmosObject aliasContinuationTokens))
-                {
-                    throw cosmosQueryClient.CreateBadRequestException(
-                        $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}. Expected an object instead.");
+                    aliasToContinuationToken = null;
                 }
 
                 Dictionary<string, AggregateValue> groupingTable = new Dictionary<string, AggregateValue>();
@@ -172,14 +168,23 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     string alias = aliasToAggregate.Key;
                     AggregateOperator? aggregateOperator = aliasToAggregate.Value;
-                    CosmosElement aliasContinuationToken = aliasContinuationTokens[alias];
-                    if (aliasContinuationToken == null)
+                    string aliasContinuationToken;
+                    if (aliasToContinuationToken != null)
                     {
-                        throw cosmosQueryClient.CreateBadRequestException(
-                            $"{nameof(SelectListAggregateValues)} is malformed: {continuationToken}. Expected key: {alias}.");
+                        if (!(aliasToContinuationToken[alias] is CosmosString parsedAliasContinuationToken))
+                        {
+                            throw cosmosQueryClient.CreateBadRequestException(
+                            $"{nameof(SelectListAggregateValues)} continuation token is malformed: {continuationToken}.");
+                        }
+
+                        aliasContinuationToken = parsedAliasContinuationToken.Value;
+                    }
+                    else
+                    {
+                        aliasContinuationToken = null;
                     }
 
-                    groupingTable[alias] = AggregateValue.Create(aggregateOperator, aliasContinuationToken.ToString());
+                    groupingTable[alias] = AggregateValue.Create(aggregateOperator, aliasContinuationToken);
                 }
 
                 return new SelectListAggregateValues(groupingTable);

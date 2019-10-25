@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
@@ -131,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.operations.Count == 0)
             {
-                throw new RequestEntityTooLargeException(RMResources.RequestTooLarge);
+                throw new CosmosException(HttpStatusCode.RequestEntityTooLarge, RMResources.RequestTooLarge);
             }
 
             int overflowOperations = operations.Count - this.operations.Count;

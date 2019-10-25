@@ -138,12 +138,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new BatchOperationResult(HttpStatusCode.OK)
                 {
                     ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
+                    RequestCharge = 2.5,
                     ETag = "1234"
                 });
 
             results.Add(
                 new BatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests)
                 {
+                    RequestCharge = 0.38,
                     RetryAfter = TimeSpan.FromMilliseconds(360)
                 });
 
@@ -233,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return x.StatusCode == y.StatusCode
                     && x.SubStatusCode == y.SubStatusCode
                     && x.ETag == y.ETag
+                    && x.RequestCharge == y.RequestCharge
                     && x.RetryAfter == y.RetryAfter
                     && this.Equals(x.ResourceStream, y.ResourceStream);
             }
@@ -261,6 +264,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 int hashCode = 1176625765;
                 hashCode = (hashCode * -1521134295) + obj.StatusCode.GetHashCode();
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(obj.ETag);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<double>.Default.GetHashCode(obj.RequestCharge);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<TimeSpan>.Default.GetHashCode(obj.RetryAfter);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<SubStatusCodes>.Default.GetHashCode(obj.SubStatusCode);
                 return hashCode;

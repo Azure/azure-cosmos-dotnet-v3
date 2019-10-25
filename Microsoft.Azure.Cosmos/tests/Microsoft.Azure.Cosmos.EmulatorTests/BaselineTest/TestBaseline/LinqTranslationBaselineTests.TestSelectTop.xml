@@ -74,7 +74,6 @@ ORDER BY root["NumericField"] ASC ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Take -> Filter]]></Description>
       <Expression><![CDATA[query.Take(3).Where(doc => (doc.NumericField > 100))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -85,13 +84,13 @@ FROM (
 ) AS r0 
 WHERE (r0["NumericField"] > 100) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Take -> Filter -> Select]]></Description>
       <Expression><![CDATA[query.Take(4).Where(doc => (doc.NumericField > 100)).Select(doc => doc.NumericField)]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -102,13 +101,13 @@ FROM (
 ) AS r0 
 WHERE (r0["NumericField"] > 100) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":45,"end":50},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Take -> Select -> Filter]]></Description>
       <Expression><![CDATA[query.Take(5).Select(doc => doc.NumericField).Where(number => (number > 100))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -119,13 +118,13 @@ FROM (
 ) AS r0 
 WHERE (r0 > 100) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Select -> Take -> Filter]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.NumericField).Take(6).Where(number => (number > 100))]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -136,13 +135,13 @@ FROM (
 ) AS r0 
 WHERE (r0 > 100) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Take -> Filter -> OrderBy -> Select]]></Description>
       <Expression><![CDATA[query.Take(10).Where(doc => (doc.NumericField > 100)).OrderByDescending(doc => doc.NumericField).Select(doc => doc.NumericField)]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -154,6 +153,7 @@ FROM (
 WHERE (r0["NumericField"] > 100) 
 ORDER BY r0["NumericField"] DESC 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":45,"end":51},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -193,7 +193,6 @@ FROM root ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Take 10 -> Filter -> Take 2]]></Description>
       <Expression><![CDATA[query.Take(10).Where(doc => (doc.NumericField > 100)).Take(2)]]></Expression>
-      <ErrorMessage><![CDATA['TOP' is not supported in subqueries.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -204,36 +203,37 @@ FROM (
 ) AS r0 
 WHERE (r0["NumericField"] > 100) 
 ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Response status code does not indicate success: 400 Substatus: 0 Reason: (Message: {"errors":[{"severity":"Error","location":{"start":35,"end":41},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]}).]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Take -1 -> Take 5]]></Description>
       <Expression><![CDATA[query.Take(-1).Take(5)]]></Expression>
-      <ErrorMessage><![CDATA[expression must be a non-negative integer]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The count value provided for a Take expression must be a non-negative integer.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Take -2 -> Select]]></Description>
       <Expression><![CDATA[query.Take(-2).Select(doc => doc.NumericField)]]></Expression>
-      <ErrorMessage><![CDATA[expression must be a non-negative integer]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The count value provided for a Take expression must be a non-negative integer.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Filter -> Take -3]]></Description>
       <Expression><![CDATA[query.Where(doc => (doc.NumericField > 100)).Take(-3)]]></Expression>
-      <ErrorMessage><![CDATA[expression must be a non-negative integer]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The count value provided for a Take expression must be a non-negative integer.]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

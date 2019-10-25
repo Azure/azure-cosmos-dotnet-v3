@@ -1192,7 +1192,7 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__37))]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.DatabaseResponse] CreateDatabaseIfNotExistsAsync(System.String, System.Nullable`1[System.Int32], Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateDatabaseIfNotExistsAsync>d__41))]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute"
@@ -1237,6 +1237,18 @@
     "CosmosClientOptions": {
       "Subclasses": {},
       "Members": {
+        "Boolean AllowBulkExecution": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Boolean get_AllowBulkExecution()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Boolean get_AllowBulkExecution()"
+        },
         "Boolean get_LimitToEndpoint()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -1403,9 +1415,11 @@
           "Attributes": [],
           "MethodInfo": null
         },
-        "System.String get_ApplicationName()": {
+        "System.String get_ApplicationName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
-          "Attributes": [],
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
           "MethodInfo": "System.String get_ApplicationName()"
         },
         "System.String get_ApplicationRegion()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -1432,9 +1446,18 @@
           "Attributes": [],
           "MethodInfo": "Void .ctor()"
         },
-        "Void set_ApplicationName(System.String)": {
+        "Void set_AllowBulkExecution(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
-          "Attributes": [],
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AllowBulkExecution(Boolean)"
+        },
+        "Void set_ApplicationName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
           "MethodInfo": "Void set_ApplicationName(System.String)"
         },
         "Void set_ApplicationRegion(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2330,6 +2353,11 @@
           "Attributes": [],
           "MethodInfo": "T WithDefaultTimeToLive(System.TimeSpan)"
         },
+        "T WithPartitionKeyDefinitionVersion(Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "T WithPartitionKeyDefinitionVersion(Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion)"
+        },
         "T WithTimeToLivePropertyPath(System.String)": {
           "Type": "Method",
           "Attributes": [],
@@ -2365,6 +2393,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String)"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean)"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect()": {
           "Type": "Method",

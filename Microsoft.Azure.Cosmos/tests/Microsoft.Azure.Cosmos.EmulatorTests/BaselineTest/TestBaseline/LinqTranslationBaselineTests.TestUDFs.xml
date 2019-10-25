@@ -173,20 +173,20 @@ WHERE udf.MultiParamterUDF2(root["Point"], "str", 1) ]]></SqlQuery>
     <Input>
       <Description><![CDATA[Null udf name]]></Description>
       <Expression><![CDATA[query.Select(doc => Invoke(null, new [] {}))]]></Expression>
-      <ErrorMessage><![CDATA[User-defined function name can not be null or empty.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[User-defined function name can not be null or empty.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Empty udf name]]></Description>
       <Expression><![CDATA[query.Select(doc => Invoke("", new [] {}))]]></Expression>
-      <ErrorMessage><![CDATA[User-defined function name can not be null or empty.]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[User-defined function name can not be null or empty.]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

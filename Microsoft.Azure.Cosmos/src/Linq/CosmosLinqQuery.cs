@@ -139,9 +139,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             return this.container.LinkUri.ToString();
         }
 
-        public QueryDefinition ToQueryDefinition()
+        public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions, parameters);
             return new QueryDefinition(querySpec);
         }
 

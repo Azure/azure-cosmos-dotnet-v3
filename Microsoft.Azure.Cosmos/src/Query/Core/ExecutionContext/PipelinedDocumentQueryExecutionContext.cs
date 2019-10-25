@@ -123,6 +123,11 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
+        public override bool TryGetContinuationToken(out string state)
+        {
+            return this.component.TryGetContinuationToken(out state);
+        }
+
         /// <summary>
         /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>
@@ -146,18 +151,17 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryInfo queryInfo = initParams.PartitionedQueryExecutionInfo.QueryInfo;
 
-            int actualPageSize = initParams.InitialPageSize;
             int initialPageSize = initParams.InitialPageSize;
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams parameters = initParams;
             if (queryInfo.HasGroupBy)
             {
-                initialPageSize = int.MaxValue;
+                // The query will block until all groupings are gathered so we might as well speed up the process.
                 initParams = new CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams(
                     sqlQuerySpec: initParams.SqlQuerySpec,
                     collectionRid: initParams.CollectionRid,
                     partitionedQueryExecutionInfo: initParams.PartitionedQueryExecutionInfo,
                     partitionKeyRanges: initParams.PartitionKeyRanges,
-                    initialPageSize: initialPageSize,
+                    initialPageSize: int.MaxValue,
                     maxConcurrency: initParams.MaxConcurrency,
                     maxItemCount: int.MaxValue,
                     maxBufferedItemCount: initParams.MaxBufferedItemCount);
@@ -313,8 +317,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 count: feedResponse.CosmosElements.Count,
                 responseHeaders: new DictionaryNameValueCollection(),
                 useETagAsContinuation: false,
-                queryMetrics: feedResponse.QueryMetrics,
-                requestStats: feedResponse.RequestStatistics,
+                queryMetrics: null,
+                requestStats: null,
                 disallowContinuationTokenMessage: feedResponse.DisallowContinuationTokenMessage,
                 responseLengthBytes: feedResponse.ResponseLengthBytes);
         }

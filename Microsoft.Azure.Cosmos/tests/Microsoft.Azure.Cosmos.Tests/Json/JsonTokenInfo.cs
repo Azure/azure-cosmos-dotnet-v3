@@ -3,10 +3,9 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
@@ -107,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
             return new JsonGuidToken(value);
         }
 
-        public static JsonToken Binary(IReadOnlyList<byte> value)
+        public static JsonToken Binary(ReadOnlyMemory<byte> value)
         {
             return new JsonBinaryToken(value);
         }
@@ -533,19 +532,19 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.Json
 
     internal sealed class JsonBinaryToken : JsonToken
     {
-        public JsonBinaryToken(IReadOnlyList<byte> value)
+        public JsonBinaryToken(ReadOnlyMemory<byte> value)
             : base(JsonTokenType.Binary)
         {
             this.Value = value;
         }
 
-        public IReadOnlyList<byte> Value { get; }
+        public ReadOnlyMemory<byte> Value { get; }
 
         public override bool Equals(object obj)
         {
             if (obj is JsonBinaryToken other)
             {
-                return this.Value.SequenceEqual(other.Value);
+                return this.Value.Span.SequenceEqual(other.Value.Span);
             }
 
             return false;

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
@@ -30,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
         internal ContainerCore(
             CosmosClientContext clientContext,
             DatabaseCore database,
-            string containerId)
+            string containerId,
+            CosmosQueryClient cosmosQueryClient = null)
         {
             this.Id = containerId;
             this.ClientContext = clientContext;
@@ -43,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Conflicts = new ConflictsCore(this.ClientContext, this);
             this.Scripts = new ScriptsCore(this, this.ClientContext);
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
-            this.queryClient = queryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
+            this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
             this.BatchExecutor = this.InitializeBatchExecutorForContainer();
         }
 
@@ -294,11 +296,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            return new BatchAsyncContainerExecutor(
-                this,
-                this.ClientContext,
-                Constants.MaxOperationsInDirectModeBatchRequest,
-                Constants.MaxDirectModeBatchRequestBodySizeInBytes);
+            return this.ClientContext.Client.BatchExecutorCache.GetExecutorForContainer(this, this.ClientContext);
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
@@ -319,7 +317,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            return ProcessResourceOperationStreamAsync(
+            return this.ProcessResourceOperationStreamAsync(
                 streamPayload: streamPayload,
                 operationType: operationType,
                 linkUri: this.LinkUri,

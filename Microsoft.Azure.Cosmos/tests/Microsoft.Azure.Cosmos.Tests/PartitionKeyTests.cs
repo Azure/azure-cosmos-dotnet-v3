@@ -87,5 +87,29 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsTrue(PartitionKeyDefinition.AreEquivalent(definition1, definition2));
         }
+
+        [TestMethod]
+        public void RoundTripTests()
+        {
+            Cosmos.PartitionKey[] partitionKeys = new Cosmos.PartitionKey[]
+            {
+                // None partition key is not serializable.
+                // Cosmos.PartitionKey.None,
+                Cosmos.PartitionKey.Null,
+                new Cosmos.PartitionKey(true),
+                new Cosmos.PartitionKey(false),
+                new Cosmos.PartitionKey(42),
+                new Cosmos.PartitionKey("asdf"),
+            };
+
+            foreach (Cosmos.PartitionKey partitionKey in partitionKeys)
+            {
+                string serializedPartitionKey = partitionKey.ToJsonString();
+                Assert.IsTrue(Cosmos.PartitionKey.TryParseJsonString(serializedPartitionKey, out Cosmos.PartitionKey parsedPartitionKey));
+                Assert.AreEqual(parsedPartitionKey.ToJsonString(), serializedPartitionKey);
+            }
+
+            Assert.IsFalse(Cosmos.PartitionKey.TryParseJsonString("Ceci n'est pas une partition key.", out Cosmos.PartitionKey thisNotAPartitionKey));
+        }
     }
 }

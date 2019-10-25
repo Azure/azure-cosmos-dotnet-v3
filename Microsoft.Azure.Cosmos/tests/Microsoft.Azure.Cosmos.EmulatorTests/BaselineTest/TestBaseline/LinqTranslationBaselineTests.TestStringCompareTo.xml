@@ -168,60 +168,60 @@ FROM root ]]></SqlQuery>
     <Input>
       <Description><![CDATA[CompareTo > 1]]></Description>
       <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") > 1))]]></Expression>
-      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[CompareTo == 1]]></Description>
       <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") == 1))]]></Expression>
-      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[CompareTo == -1]]></Description>
       <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") == -1))]]></Expression>
-      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right hand side of string.CompareTo() comparison must be constant '0']]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[CompareTo | 0]]></Description>
       <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") | 0))]]></Expression>
-      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[CompareTo & 0]]></Description>
       <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") & 0))]]></Expression>
-      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[CompareTo ^ 0]]></Description>
       <Expression><![CDATA[query.Select(doc => (doc.StringField.CompareTo("str") ^ 0))]]></Expression>
-      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.CompareTo(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

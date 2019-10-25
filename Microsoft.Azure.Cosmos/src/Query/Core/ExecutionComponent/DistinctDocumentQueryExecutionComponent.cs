@@ -143,10 +143,14 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 disallowContinuationTokenMessage: disallowContinuationTokenMessage,
                 activityId: cosmosQueryResponse.ActivityId,
                 requestCharge: cosmosQueryResponse.RequestCharge,
-                queryMetricsText: cosmosQueryResponse.QueryMetricsText,
-                queryMetrics: cosmosQueryResponse.QueryMetrics,
-                requestStatistics: cosmosQueryResponse.RequestStatistics,
+                diagnostics: cosmosQueryResponse.Diagnostics,
                 responseLengthBytes: cosmosQueryResponse.ResponseLengthBytes);
+        }
+
+        public override bool TryGetContinuationToken(out string state)
+        {
+            state = null;
+            return false;
         }
 
         /// <summary>

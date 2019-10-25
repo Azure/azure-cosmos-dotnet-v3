@@ -134,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 // Stage 1:
                 // Drain the aggregates fully from all continuations and all partitions
+                // And return empty pages in the meantime.
                 QueryResponseCore sourceResponse = await base.DrainAsync(int.MaxValue, cancellationToken);
                 if (!sourceResponse.IsSuccess)
                 {
@@ -159,6 +160,8 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             }
             else
             {
+                // Stage 2:
+                // Return the final page after draining.
                 response = this.GetFinalResponse();
             }
 
@@ -176,14 +179,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             QueryResponseCore response = QueryResponseCore.CreateSuccess(
                 result: finalResult,
-                continuationToken: null,
-                activityId: null,
-                disallowContinuationTokenMessage: null,
                 requestCharge: 0,
-                queryMetricsText: null,
-                queryMetrics: this.GetQueryMetrics(),
-                requestStatistics: null,
-                responseLengthBytes: 0);
+                activityId: null,
+                responseLengthBytes: 0,
+                disallowContinuationTokenMessage: null,
+                continuationToken: null,
+                diagnostics: QueryResponseCore.EmptyDiagnostics);
             this.isDone = true;
 
             return response;
@@ -191,25 +192,49 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         private QueryResponseCore GetEmptyPage(QueryResponseCore sourceResponse)
         {
-            AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
-                    this.singleGroupAggregator.GetContinuationToken(),
-                    sourceResponse.ContinuationToken);
+            if (!this.TryGetContinuationToken(out string updatedContinuationToken))
+            {
+                throw new InvalidOperationException("Failed to get source continuation token.");
+            }
 
             // We need to give empty pages until the results are fully drained.
             QueryResponseCore response = QueryResponseCore.CreateSuccess(
                 result: EmptyResults,
-                continuationToken: aggregateContinuationToken.ToString(),
-                disallowContinuationTokenMessage: null,
-                activityId: sourceResponse.ActivityId,
                 requestCharge: sourceResponse.RequestCharge,
-                queryMetricsText: sourceResponse.QueryMetricsText,
-                queryMetrics: sourceResponse.QueryMetrics,
-                requestStatistics: sourceResponse.RequestStatistics,
-                responseLengthBytes: sourceResponse.ResponseLengthBytes);
+                activityId: sourceResponse.ActivityId,
+                responseLengthBytes: sourceResponse.ResponseLengthBytes,
+                disallowContinuationTokenMessage: null,
+                continuationToken: updatedContinuationToken,
+                diagnostics: sourceResponse.Diagnostics);
 
             this.isDone = false;
 
             return response;
+        }
+
+        public override bool TryGetContinuationToken(out string state)
+        {
+            if (!this.IsDone)
+            {
+                if (this.Source.TryGetContinuationToken(out string sourceState))
+                {
+                    AggregateContinuationToken aggregateContinuationToken = AggregateContinuationToken.Create(
+                        this.singleGroupAggregator.GetContinuationToken(),
+                        sourceState);
+                    state = aggregateContinuationToken.ToString();
+                    return true;
+                }
+                else
+                {
+                    state = null;
+                    return false;
+                }
+            }
+            else
+            {
+                state = null;
+                return true;
+            }
         }
 
         /// <summary>
