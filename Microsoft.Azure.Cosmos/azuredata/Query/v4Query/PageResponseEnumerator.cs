@@ -10,65 +10,67 @@ namespace Azure.Cosmos
 
     internal static class PageResponseEnumerator
     {
-        public static FuncPageable<T> CreateEnumerable<T>(Func<string, Page<T>> pageFunc)
+        public static FuncPageable<T> CreateEnumerable<T>(Func<string, (Page<T>, bool)> pageFunc)
         {
             return new FuncPageable<T>((continuationToken, pageSizeHint) => pageFunc(continuationToken));
         }
 
-        public static FuncPageable<T> CreateEnumerable<T>(Func<string, int?, Page<T>> pageFunc)
+        public static FuncPageable<T> CreateEnumerable<T>(Func<string, int?, (Page<T>, bool)> pageFunc)
         {
             return new FuncPageable<T>(pageFunc);
         }
 
-        public static AsyncPageable<T> CreateAsyncPageable<T>(Func<string, Task<Page<T>>> pageCreator)
+        public static AsyncPageable<T> CreateAsyncPageable<T>(Func<string, Task<(Page<T>, bool)>> pageCreator)
         {
             return new FuncAsyncPageable<T>((continuationToken, pageSizeHint) => pageCreator(continuationToken));
         }
 
-        public static AsyncPageable<T> CreateAsyncPageable<T>(Func<string, int?, Task<Page<T>>> pageCreator)
+        public static AsyncPageable<T> CreateAsyncPageable<T>(Func<string, int?, Task<(Page<T>, bool)>> pageCreator)
         {
             return new FuncAsyncPageable<T>(pageCreator);
         }
 
         internal class FuncAsyncPageable<T> : AsyncPageable<T>
         {
-            private readonly Func<string, int?, Task<Page<T>>> pageFunc;
+            private readonly Func<string, int?, Task<(Page<T>, bool)>> pageFunc;
 
-            public FuncAsyncPageable(Func<string, int?, Task<Page<T>>> pageFunc)
+            public FuncAsyncPageable(Func<string, int?, Task<(Page<T>, bool)>> pageFunc)
             {
                 this.pageFunc = pageFunc;
             }
 
             public override async IAsyncEnumerable<Page<T>> AsPages(string continuationToken = default, int? pageSizeHint = default)
             {
+                bool hasMoreResults = true;
                 do
                 {
-                    Page<T> pageResponse = await this.pageFunc(continuationToken, pageSizeHint).ConfigureAwait(false);
+                    (Page<T> pageResponse, bool pageHasMoreResults) = await this.pageFunc(continuationToken, pageSizeHint).ConfigureAwait(false);
                     yield return pageResponse;
-                    continuationToken = pageResponse.ContinuationToken;
+                    hasMoreResults = pageHasMoreResults;
                 }
-                while (continuationToken != null);
+                while (hasMoreResults);
             }
         }
 
         internal class FuncPageable<T> : Pageable<T>
         {
-            private readonly Func<string, int?, Page<T>> pageFunc;
+            private readonly Func<string, int?, (Page<T>, bool)> pageFunc;
 
-            public FuncPageable(Func<string, int?, Page<T>> pageFunc)
+            public FuncPageable(Func<string, int?, (Page<T>, bool)> pageFunc)
             {
                 this.pageFunc = pageFunc;
             }
 
             public override IEnumerable<Page<T>> AsPages(string continuationToken = default, int? pageSizeHint = default)
             {
+                bool hasMoreResults = true;
                 do
                 {
-                    Page<T> pageResponse = this.pageFunc(continuationToken, pageSizeHint);
+                    (Page<T> pageResponse, bool pageHasMoreResults) = this.pageFunc(continuationToken, pageSizeHint);
                     yield return pageResponse;
-                    continuationToken = pageResponse.ContinuationToken;
+                    hasMoreResults = pageHasMoreResults;
                 }
-                while (continuationToken != null);
+                while (hasMoreResults);
             }
         }
     }

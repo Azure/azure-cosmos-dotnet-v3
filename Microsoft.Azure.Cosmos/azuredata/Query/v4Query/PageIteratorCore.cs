@@ -22,14 +22,16 @@ namespace Azure.Cosmos
             this.feedIterator = feedIterator;
         }
 
-        public async Task<Page<T>> GetPageAsync(string continuation = null, CancellationToken cancellationToken = default)
+        public async Task<(Page<T>, bool)> GetPageAsync(
+            string continuation = null,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             Response response = await this.feedIterator.ReadNextAsync(cancellationToken);
-
+            
             // TODO: Once Page<T> is abstract, we need to override so the ContinuationToken is Lazy to avoid requesting it when its not needed or for DISTINCT queries
-            return new Page<T>(this.responseCreator(response), response.Headers.GetContinuationToken(), response);
+            return (new Page<T>(this.responseCreator(response), response.Headers.GetContinuationToken(), response), this.feedIterator.HasMoreResults);
         }
     }
 }
