@@ -103,8 +103,6 @@ namespace Azure.Cosmos
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(int throughput, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(T item, Nullable<PartitionKey> partitionKey=default(Nullable<PartitionKey>), ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<Response> UpsertItemStreamAsync(Stream streamPayload, PartitionKey partitionKey, ItemRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
-        public delegate Task ChangesEstimationHandler(long estimatedPendingChanges, CancellationToken cancellationToken);
-        public delegate Task ChangesHandler<T>(IReadOnlyCollection<T> changes, CancellationToken cancellationToken);
     }
     public class ContainerProperties
     {
