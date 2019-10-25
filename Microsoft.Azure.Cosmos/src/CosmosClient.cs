@@ -229,7 +229,8 @@ namespace Microsoft.Azure.Cosmos
                 enableCpuMonitor: clientOptionsClone.EnableCpuMonitor,
                 storeClientFactory: clientOptionsClone.StoreClientFactory,
                 desiredConsistencyLevel: clientOptionsClone.GetDocumentsConsistencyLevel(),
-                handler: this.CreateHttpClientHandler(clientOptions));
+                handler: this.CreateHttpClientHandler(clientOptions),
+                sessionContainer: clientOptionsClone.SessionContainer);
 
             this.Init(
                 clientOptionsClone,
