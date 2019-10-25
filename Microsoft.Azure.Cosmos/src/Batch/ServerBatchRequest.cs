@@ -7,13 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
-    using Microsoft.Azure.Documents;
 
 #pragma warning disable CA1001 // Types that own disposable fields should be disposable
     internal abstract class ServerBatchRequest
@@ -128,11 +126,6 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 this.operations = new ArraySegment<ItemBatchOperation>(operations.Array, operations.Offset, this.lastWrittenOperationIndex + 1);
-            }
-
-            if (this.operations.Count == 0)
-            {
-                throw new CosmosException(HttpStatusCode.RequestEntityTooLarge, RMResources.RequestTooLarge);
             }
 
             int overflowOperations = operations.Count - this.operations.Count;

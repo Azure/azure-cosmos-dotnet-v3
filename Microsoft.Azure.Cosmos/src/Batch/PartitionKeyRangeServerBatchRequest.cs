@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents;
 
     internal sealed class PartitionKeyRangeServerBatchRequest : ServerBatchRequest
     {
@@ -56,6 +58,13 @@ namespace Microsoft.Azure.Cosmos
         {
             PartitionKeyRangeServerBatchRequest request = new PartitionKeyRangeServerBatchRequest(partitionKeyRangeId, maxBodyLength, maxOperationCount, serializer);
             ArraySegment<ItemBatchOperation> pendingOperations = await request.CreateBodyStreamAsync(operations, cancellationToken, ensureContinuousOperationIndexes);
+
+            if (pendingOperations.Count == operations.Count)
+            {
+                // A single operation was larger than the allowed size for the server request
+                throw new CosmosException(HttpStatusCode.RequestEntityTooLarge, RMResources.RequestTooLarge);
+            }
+
             return new Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>(request, pendingOperations);
         }
     }
