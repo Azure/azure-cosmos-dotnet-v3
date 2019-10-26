@@ -30,8 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                cancellationToken.ThrowIfCancellationRequested();
-
                 // Draining aggregates is broken down into two stages
                 QueryResponseCore response;
                 if (!this.Source.IsDone)

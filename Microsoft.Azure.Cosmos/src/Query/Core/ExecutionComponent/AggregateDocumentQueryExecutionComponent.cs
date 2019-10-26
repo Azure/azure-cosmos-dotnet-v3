@@ -128,12 +128,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionComponent
             return aggregateDocumentQueryExecutionComponent;
         }
 
-        public override bool TryGetContinuationToken(out string state)
-        {
-            state = null;
-            return true;
-        }
-
         /// <summary>
         /// Struct for getting the payload out of the rewritten projection.
         /// </summary>
