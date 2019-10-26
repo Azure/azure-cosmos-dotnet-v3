@@ -71,5 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
         {
             this.Source.Stop();
         }
+
+        public abstract bool TryGetContinuationToken(out string state);
     }
 }

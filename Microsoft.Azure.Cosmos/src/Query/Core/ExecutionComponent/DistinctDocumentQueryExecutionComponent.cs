@@ -147,6 +147,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 responseLengthBytes: cosmosQueryResponse.ResponseLengthBytes);
         }
 
+        public override bool TryGetContinuationToken(out string state)
+        {
+            state = null;
+            return false;
+        }
+
         /// <summary>
         /// Efficiently casts a object to a JToken.
         /// </summary>

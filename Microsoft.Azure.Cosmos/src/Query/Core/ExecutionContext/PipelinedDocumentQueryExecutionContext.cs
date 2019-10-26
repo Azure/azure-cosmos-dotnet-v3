@@ -123,6 +123,11 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
+        public override bool TryGetContinuationToken(out string state)
+        {
+            return this.component.TryGetContinuationToken(out state);
+        }
+
         /// <summary>
         /// Creates a CosmosPipelinedItemQueryExecutionContext.
         /// </summary>

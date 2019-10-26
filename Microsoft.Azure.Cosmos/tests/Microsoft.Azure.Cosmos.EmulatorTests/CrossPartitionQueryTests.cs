@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -386,10 +385,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Cosmos.IndexingPolicy indexingPolicy = null,
             CosmosClientFactory cosmosClientFactory = null)
         {
-            Query<object> queryWrapper = (container, inputDocuments, throwaway) =>
+            Task queryWrapper(Container container, IEnumerable<Document> inputDocuments, object throwaway)
             {
                 return query(container, inputDocuments);
-            };
+            }
 
             await this.CreateIngestQueryDelete<object>(
                 connectionModes,
@@ -607,7 +606,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 queryRequestOptions = new QueryRequestOptions();
             }
 
-            List<T> results = new List<T>();
+            List<T> resultsFromContinuationToken = new List<T>();
             string continuationToken = null;
             do
             {
@@ -624,11 +623,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         "Max Item Count is not being honored");
                 }
 
-                results.AddRange(cosmosQueryResponse);
+                resultsFromContinuationToken.AddRange(cosmosQueryResponse);
                 continuationToken = cosmosQueryResponse.ContinuationToken;
             } while (continuationToken != null);
 
-            return results;
+            List<T> resultsFromState = new List<T>();
+            string state = null;
+            do
+            {
+                FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
+                   queryText: query,
+                   requestOptions: queryRequestOptions,
+                   continuationToken: state);
+
+                FeedResponse<T> cosmosQueryResponse = await itemQuery.ReadNextAsync();
+                if (queryRequestOptions.MaxItemCount.HasValue)
+                {
+                    Assert.IsTrue(
+                        cosmosQueryResponse.Count <= queryRequestOptions.MaxItemCount.Value,
+                        "Max Item Count is not being honored");
+                }
+
+                resultsFromState.AddRange(cosmosQueryResponse);
+                Assert.IsTrue(
+                    itemQuery.TryGetContinuationToken(out state),
+                    "Failed to get state for query");
+            } while (state != null);
+
+            List<JToken> resultsFromContinuationTokenAsJTokens = resultsFromContinuationToken
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+
+            List<JToken> resultsFromStateAsJTokens = resultsFromState
+                .Select(x => x == null ? JValue.CreateNull() : JToken.FromObject(x)).ToList();
+
+            Assert.IsTrue(
+                resultsFromContinuationTokenAsJTokens
+                    .SequenceEqual(resultsFromStateAsJTokens, JsonTokenEqualityComparer.Value),
+                $"{query} returned different results with continuation tokens vs state.");
+
+            return resultsFromContinuationToken;
         }
 
         private static async Task<List<T>> QueryWithoutContinuationTokens<T>(
@@ -1033,7 +1066,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             specialPropertyDocument.GetType().GetProperty(args.Name).SetValue(specialPropertyDocument, args.Value);
-            Func<SpecialPropertyDocument, object> getPropertyValueFunction = d => d.GetType().GetProperty(args.Name).GetValue(d);
+            object getPropertyValueFunction(SpecialPropertyDocument d) => d.GetType().GetProperty(args.Name).GetValue(d);
 
             ItemResponse<SpecialPropertyDocument> response = await container.CreateItemAsync<SpecialPropertyDocument>(specialPropertyDocument);
             dynamic returnedDoc = response.Resource;
@@ -3167,10 +3200,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     string orderByField = "field_" + rand.Next(10);
                                     IEnumerable<Document> filteredDocuments;
 
-                                    Func<string> getTop = () =>
+                                    string getTop() =>
                                         hasTop ? string.Format(CultureInfo.InvariantCulture, "TOP {0} ", isParametrized ? topValueName : top.ToString()) : string.Empty;
 
-                                    Func<string> getOrderBy = () =>
+                                    string getOrderBy() =>
                                         hasOrderBy ? string.Format(CultureInfo.InvariantCulture, " ORDER BY r.{0} {1}", orderByField, sortOrder) : string.Empty;
 
                                     if (fanOut)
@@ -3532,7 +3565,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "/" + partitionKey);
         }
 
-        private async Task TestQueryCrossPartitionWithContinuationsHelper(Container container, IEnumerable<Document> documents, CrossPartitionWithContinuationsArgs args)
+        private async Task TestQueryCrossPartitionWithContinuationsHelper(
+            Container container,
+            IEnumerable<Document> documents,
+            CrossPartitionWithContinuationsArgs args)
         {
             int documentCount = args.NumberOfDocuments;
             string partitionKey = args.PartitionKey;
