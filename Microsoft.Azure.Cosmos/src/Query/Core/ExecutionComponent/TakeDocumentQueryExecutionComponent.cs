@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
     internal sealed class TakeDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
@@ -29,10 +29,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.takeEnum = takeEnum;
         }
 
-        public static async Task<TryMonad<TakeDocumentQueryExecutionComponent, Exception>> TryCreateLimitDocumentQueryExecutionComponentAsync(
+        public static async Task<TryCatch<TakeDocumentQueryExecutionComponent>> TryCreateLimitDocumentQueryExecutionComponentAsync(
             int limitCount,
             string continuationToken,
-            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync)
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             if (tryCreateSourceAsync == null)
             {
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 if (!LimitContinuationToken.TryParse(continuationToken, out limitContinuationToken))
                 {
-                    return TryMonad<TakeDocumentQueryExecutionComponent, Exception>.FromException(
+                    return TryCatch<TakeDocumentQueryExecutionComponent>.FromException(
                         new ArgumentException($"Malformed {nameof(LimitContinuationToken)}: {continuationToken}."));
                 }
             }
@@ -55,13 +55,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (limitContinuationToken.Limit > limitCount)
             {
-                return TryMonad<TakeDocumentQueryExecutionComponent, Exception>.FromException(
+                return TryCatch<TakeDocumentQueryExecutionComponent>.FromException(
                     new ArgumentOutOfRangeException($"{nameof(LimitContinuationToken.Limit)} in {nameof(LimitContinuationToken)}: {continuationToken}: {limitContinuationToken.Limit} can not be greater than the limit count in the query: {limitCount}."));
             }
 
             if (limitCount < 0)
             {
-                return TryMonad<TakeDocumentQueryExecutionComponent, Exception>.FromException(
+                return TryCatch<TakeDocumentQueryExecutionComponent>.FromException(
                         new ArgumentException($"{nameof(limitCount)}: {limitCount} must be a non negative number."));
             }
 
@@ -72,10 +72,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 TakeEnum.Limit));
         }
 
-        public static async Task<TryMonad<TakeDocumentQueryExecutionComponent, Exception>> TryCreateTopDocumentQueryExecutionComponentAsync(
+        public static async Task<TryCatch<TakeDocumentQueryExecutionComponent>> TryCreateTopDocumentQueryExecutionComponentAsync(
             int topCount,
             string continuationToken,
-            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync)
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             if (tryCreateSourceAsync == null)
             {
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 if (!TopContinuationToken.TryParse(continuationToken, out topContinuationToken))
                 {
-                    return TryMonad<TakeDocumentQueryExecutionComponent, Exception>.FromException(
+                    return TryCatch<TakeDocumentQueryExecutionComponent>.FromException(
                         new ArgumentException($"Malformed {nameof(LimitContinuationToken)}: {continuationToken}."));
                 }
             }
@@ -98,13 +98,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (topContinuationToken.Top > topCount)
             {
-                return TryMonad<TakeDocumentQueryExecutionComponent, Exception>.FromException(
+                return TryCatch<TakeDocumentQueryExecutionComponent>.FromException(
                     new ArgumentOutOfRangeException($"{nameof(TopContinuationToken.Top)} in {nameof(TopContinuationToken)}: {continuationToken}: {topContinuationToken.Top} can not be greater than the top count in the query: {topCount}."));
             }
 
             if (topCount < 0)
             {
-                return TryMonad<TakeDocumentQueryExecutionComponent, Exception>.FromException(
+                return TryCatch<TakeDocumentQueryExecutionComponent>.FromException(
                         new ArgumentException($"{nameof(topCount)}: {topCount} must be a non negative number."));
             }
 
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 {
                     DefaultTrace.TraceWarning(string.Format(
                         CultureInfo.InvariantCulture,
-                        "{0} Invalid continuation token {1} for Top~Component, exception: {2}",
+                        "{0} Invalid continuation token {1} for Top~Component: {2}",
                         DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
                         value,
                         ex.Message));

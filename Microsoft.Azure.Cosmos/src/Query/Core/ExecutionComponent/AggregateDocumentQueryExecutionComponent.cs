@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using ClientSideRequestStatistics = Documents.ClientSideRequestStatistics;
 
     /// <summary>
@@ -62,12 +62,12 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.isValueAggregateQuery = isValueAggregateQuery;
         }
 
-        public static async Task<TryMonad<AggregateDocumentQueryExecutionComponent, Exception>> TryCreateAsync(
+        public static async Task<TryCatch<AggregateDocumentQueryExecutionComponent>> TryCreateAsync(
             AggregateOperator[] aggregates,
             IReadOnlyDictionary<string, AggregateOperator?> aliasToAggregateType,
             bool hasSelectValue,
             string continuationToken,
-            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync)
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             if (tryCreateSourceAsync == null)
             {

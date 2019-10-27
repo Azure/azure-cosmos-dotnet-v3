@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
     using PartitionKeyRange = Documents.PartitionKeyRange;
 
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken)).ThrowIfException;
         }
 
-        public static async Task<TryMonad<CosmosParallelItemQueryExecutionContext, Exception>> TryCreateAsync(
+        public static async Task<TryCatch<CosmosParallelItemQueryExecutionContext>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="requestContinuation">The continuation token to resume from.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A task to await on.</returns>
-        private async Task<TryMonad<CosmosParallelItemQueryExecutionContext, Exception>> TryInitializeAsync(
+        private async Task<TryCatch<CosmosParallelItemQueryExecutionContext>> TryInitializeAsync(
             SqlQuerySpec sqlQuerySpec,
             string collectionRid,
             List<PartitionKeyRange> partitionKeyRanges,
@@ -227,13 +227,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <param name="partitionKeyRanges">The partition key ranges.</param>
         /// <param name="continuationToken">The continuation tokens that the user has supplied.</param>
         /// <returns>The subset of partition to actually target and continuation tokens.</returns>
-        private static TryMonad<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>, Exception> TryGetInitializationInfoFromContinuationToken(
+        private static TryCatch<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>> TryGetInitializationInfoFromContinuationToken(
             List<PartitionKeyRange> partitionKeyRanges,
             string continuationToken)
         {
             if (continuationToken == null)
             {
-                return TryMonad<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>, Exception>.FromResult(
+                return TryCatch<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>>.FromResult(
                     new Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>(
                         partitionKeyRanges,
                         null));
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 if (!TryParseContinuationToken(continuationToken, out CompositeContinuationToken[] tokens))
                 {
-                    return TryMonad<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>, Exception>.FromException(
+                    return TryCatch<Tuple<IReadOnlyList<PartitionKeyRange>, Dictionary<string, CompositeContinuationToken>>>.FromException(
                         new Exception($"Invalid format for continuation token {continuationToken} for {nameof(CosmosParallelItemQueryExecutionContext)}"));
                 }
 

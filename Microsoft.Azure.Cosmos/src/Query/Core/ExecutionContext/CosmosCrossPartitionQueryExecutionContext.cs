@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Collections.Generic;
     using ExecutionComponent;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
     using RequestChargeTracker = Documents.RequestChargeTracker;
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Query
         /// The code assumes that merge doesn't happen and 
         /// </Remarks>
         /// <returns>The index of the partition whose MinInclusive is equal to the suppliedContinuationTokens along with the continuation tokens.</returns>
-        public static TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
+        public static TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>> TryFindTargetRangeAndExtractContinuationTokens<TContinuationToken>(
             List<PartitionKeyRange> partitionKeyRanges,
             IEnumerable<Tuple<TContinuationToken, Documents.Routing.Range<string>>> suppliedContinuationTokens)
         {
@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 Comparer<PartitionKeyRange>.Create((range1, range2) => string.CompareOrdinal(range1.MinInclusive, range2.MinInclusive)));
             if (minIndex < 0)
             {
-                return TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception>.FromException(
+                return TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>>.FromException(
                     new ArgumentException(
                         $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {firstContinuationToken}"));
             }
@@ -569,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 // Could not find the child ranges
                 if (replacementRanges.Count() == 0)
                 {
-                    return TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception>.FromException(
+                    return TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>>.FromException(
                         new ArgumentException(
                             $"{RMResources.InvalidContinuationToken} - Could not find continuation token: {continuationToken}"));
                 }
@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     string.CompareOrdinal(child1Max, child1Min) >= 0 &&
                     child1Min == parentMin))
                 {
-                    return TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception>.FromException(
+                    return TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>>.FromException(
                         new ArgumentException(
                             $"{RMResources.InvalidContinuationToken} - PMax = C2Max > C2Min > C1Max > C1Min = PMin: {continuationToken}"));
                 }
@@ -599,7 +599,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 }
             }
 
-            return TryMonad<Tuple<int, Dictionary<string, TContinuationToken>>, Exception>.FromResult(
+            return TryCatch<Tuple<int, Dictionary<string, TContinuationToken>>>.FromResult(
                 new Tuple<int, Dictionary<string, TContinuationToken>>(
                     minIndex,
                     targetRangeToContinuationTokenMap));

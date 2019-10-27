@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using QueryResult = Documents.QueryResult;
@@ -65,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.distinctMap = DistinctMap.Create(distinctQueryType, previousHash);
         }
 
-        public static async Task<TryMonad<DistinctDocumentQueryExecutionComponent, Exception>> TryCreateAsync(
+        public static async Task<TryCatch<DistinctDocumentQueryExecutionComponent>> TryCreateAsync(
             string continuationToken,
-            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync,
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             DistinctQueryType distinctQueryType)
         {
             if (tryCreateSourceAsync == null)
@@ -84,13 +84,13 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 if (!DistinctContinuationToken.TryParse(continuationToken, out distinctContinuationToken))
                 {
-                    return TryMonad<DistinctDocumentQueryExecutionComponent, Exception>.FromException(
+                    return TryCatch<DistinctDocumentQueryExecutionComponent>.FromException(
                         new Exception($"Invalid {nameof(DistinctContinuationToken)}: {continuationToken}"));
                 }
 
                 if ((distinctQueryType != DistinctQueryType.Ordered) && (distinctContinuationToken.LastHash != null))
                 {
-                    return TryMonad<DistinctDocumentQueryExecutionComponent, Exception>.FromException(
+                    return TryCatch<DistinctDocumentQueryExecutionComponent>.FromException(
                         new Exception(
                             $"{nameof(DistinctContinuationToken)} is malformed: {distinctContinuationToken}. " +
                             $"{nameof(DistinctContinuationToken)} can not have a '{nameof(DistinctContinuationToken.LastHash)}', when the query type is not ordered (ex SELECT DISTINCT VALUE c.blah FROM c ORDER BY c.blah)."));
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
                 catch (JsonException ex)
                 {
-                    DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for Distinct~Component, exception: {ex.Message}");
+                    DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for Distinct~Component: {ex.Message}");
                     return false;
                 }
             }

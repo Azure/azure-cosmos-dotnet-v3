@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task<(IList<DocumentQueryExecutionComponentBase> components, QueryResponseCore response)> GetAllExecutionComponents()
         {
-            (Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> func, QueryResponseCore response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
+            (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> func, QueryResponseCore response) setupContext = this.SetupBaseContextToVerifyFailureScenario();
 
             List<DocumentQueryExecutionComponentBase> components = new List<DocumentQueryExecutionComponentBase>();
             List<AggregateOperator> operators = new List<AggregateOperator>()
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             return (components, setupContext.response);
         }
 
-        private (Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
+        private (Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>>, QueryResponseCore) SetupBaseContextToVerifyFailureScenario()
         {
             QueryResponseCore failure = QueryResponseCore.CreateFailure(
                 System.Net.HttpStatusCode.Unauthorized,
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<IDocumentQueryExecutionComponent> baseContext = new Mock<IDocumentQueryExecutionComponent>();
             baseContext.Setup(x => x.DrainAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).Returns(Task.FromResult<QueryResponseCore>(failure));
-            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> callBack = x => Task.FromResult<TryMonad<IDocumentQueryExecutionComponent, Exception>>(TryMonad<IDocumentQueryExecutionComponent, Exception> .FromResult(baseContext.Object));
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> callBack = x => Task.FromResult<TryCatch<IDocumentQueryExecutionComponent>>(TryCatch<IDocumentQueryExecutionComponent> .FromResult(baseContext.Object));
             return (callBack, failure);
         }
     }

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading.Tasks;
     using Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
     using ParallelQuery;
     using PartitionKeyRange = Documents.PartitionKeyRange;
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 cancellationToken)).ThrowIfException;
         }
 
-        public static async Task<TryMonad<CosmosOrderByItemQueryExecutionContext, Exception>> TryCreateAsync(
+        public static async Task<TryCatch<CosmosOrderByItemQueryExecutionContext>> TryCreateAsync(
             CosmosQueryContext queryContext,
             CosmosCrossPartitionQueryExecutionContext.CrossPartitionInitParams initParams,
             string requestContinuationToken,
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     StringComparison.Ordinal);
         }
 
-        private async Task<TryMonad<object, Exception>> TryInitializeAsync(
+        private async Task<TryCatch<object>> TryInitializeAsync(
             SqlQuerySpec sqlQuerySpec,
             string requestContinuation,
             string collectionRid,
@@ -334,11 +334,11 @@ namespace Microsoft.Azure.Cosmos.Query
                     filter: null,
                     filterCallback: null);
 
-                return TryMonad<object, Exception>.FromResult(null);
+                return TryCatch<object>.FromResult(null);
             }
             else
             {
-                TryMonad<OrderByContinuationToken[], Exception> extractContinuationTokensMonad = CosmosOrderByItemQueryExecutionContext.TryExtractContinuationTokens(
+                TryCatch<OrderByContinuationToken[]> extractContinuationTokensMonad = CosmosOrderByItemQueryExecutionContext.TryExtractContinuationTokens(
                     requestContinuation,
                     sortOrders,
                     orderByExpressions);
@@ -403,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        private static TryMonad<OrderByContinuationToken[], Exception> TryExtractContinuationTokens(
+        private static TryCatch<OrderByContinuationToken[]> TryExtractContinuationTokens(
         string requestContinuation,
         SortOrder[] sortOrders,
         string[] orderByExpressions)
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
                 if (suppliedOrderByContinuationTokens.Length == 0)
                 {
-                    return TryMonad<OrderByContinuationToken[], Exception>.FromException(
+                    return TryCatch<OrderByContinuationToken[]>.FromException(
                         new Exception($"Order by continuation token cannot be empty: {requestContinuation}."));
                 }
 
@@ -437,17 +437,17 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     if (suppliedOrderByContinuationToken.OrderByItems.Count != sortOrders.Length)
                     {
-                        return TryMonad<OrderByContinuationToken[], Exception>.FromException(
+                        return TryCatch<OrderByContinuationToken[]>.FromException(
                             new Exception($"Invalid order-by items in continuation token {requestContinuation} for OrderBy~Context."));
                     }
                 }
 
-                return TryMonad<OrderByContinuationToken[], Exception>.FromResult(suppliedOrderByContinuationTokens);
+                return TryCatch<OrderByContinuationToken[]>.FromResult(suppliedOrderByContinuationTokens);
             }
             catch (JsonException ex)
             {
-                return TryMonad<OrderByContinuationToken[], Exception>.FromException(
-                    new Exception($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context, exception: {ex.Message}"));
+                return TryCatch<OrderByContinuationToken[]>.FromException(
+                    new Exception($"Invalid JSON in continuation token {requestContinuation} for OrderBy~Context: {ex.Message}"));
             }
         }
 
@@ -568,13 +568,13 @@ namespace Microsoft.Azure.Cosmos.Query
         /// <summary>
         /// Gets the filters for every partition.
         /// </summary>
-        private static TryMonad<Tuple<RangeFilterInitializationInfo[], Dictionary<string, OrderByContinuationToken>>, Exception> TryGetOrderByPartitionKeyRangesInitializationInfo(
+        private static TryCatch<Tuple<RangeFilterInitializationInfo[], Dictionary<string, OrderByContinuationToken>>> TryGetOrderByPartitionKeyRangesInitializationInfo(
             OrderByContinuationToken[] suppliedContinuationTokens,
             List<PartitionKeyRange> partitionKeyRanges,
             SortOrder[] sortOrders,
             string[] orderByExpressions)
         {
-            TryMonad<Tuple<int, Dictionary<string, OrderByContinuationToken>>, Exception> tryFindRangeAndContinuationTokensMonad = CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(
+            TryCatch<Tuple<int, Dictionary<string, OrderByContinuationToken>>> tryFindRangeAndContinuationTokensMonad = CosmosCrossPartitionQueryExecutionContext.TryFindTargetRangeAndExtractContinuationTokens(
                 partitionKeyRanges,
                 suppliedContinuationTokens
                     .Select(token => Tuple.Create(token, token.CompositeContinuationToken.Range)));

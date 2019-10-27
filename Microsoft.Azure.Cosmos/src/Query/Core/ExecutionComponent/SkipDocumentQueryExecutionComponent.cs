@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
     internal sealed class SkipDocumentQueryExecutionComponent : DocumentQueryExecutionComponentBase
@@ -24,10 +24,10 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             this.skipCount = skipCount;
         }
 
-        public static async Task<TryMonad<SkipDocumentQueryExecutionComponent, Exception>> TryCreateAsync(
+        public static async Task<TryCatch<SkipDocumentQueryExecutionComponent>> TryCreateAsync(
             int offsetCount,
             string continuationToken,
-            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync)
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync)
         {
             if (tryCreateSourceAsync == null)
             {
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
             {
                 if (!OffsetContinuationToken.TryParse(continuationToken, out offsetContinuationToken))
                 {
-                    return TryMonad<SkipDocumentQueryExecutionComponent, Exception>.FromException(
+                    return TryCatch<SkipDocumentQueryExecutionComponent>.FromException(
                         new Exception($"Invalid {nameof(SkipDocumentQueryExecutionComponent)}: {continuationToken}."));
                 }
             }
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
             if (offsetContinuationToken.Offset > offsetCount)
             {
-                return TryMonad<SkipDocumentQueryExecutionComponent, Exception>.FromException(
+                return TryCatch<SkipDocumentQueryExecutionComponent>.FromException(
                         new Exception("offset count in continuation token can not be greater than the offsetcount in the query."));
             }
 
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
                 }
                 catch (JsonException ex)
                 {
-                    DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for offset~Component, exception: {ex}");
+                    DefaultTrace.TraceWarning($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)} Invalid continuation token {value} for offset~Component: {ex}");
                     return false;
                 }
             }

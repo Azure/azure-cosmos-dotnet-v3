@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.ExecutionComponent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestNegativeAggreateComponentCreation()
         {
-            TryMonad<AggregateDocumentQueryExecutionComponent, Exception> tryCreateWhenSourceFails = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+            TryCatch<AggregateDocumentQueryExecutionComponent> tryCreateWhenSourceFails = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
                 new AggregateOperator[] { },
                 new Dictionary<string, AggregateOperator?>(),
                 false,
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
 
-            TryMonad<AggregateDocumentQueryExecutionComponent, Exception> tryCreateWhenInvalidContinuationToken = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
+            TryCatch<AggregateDocumentQueryExecutionComponent> tryCreateWhenInvalidContinuationToken = await AggregateDocumentQueryExecutionComponent.TryCreateAsync(
                 new AggregateOperator[] { },
                 new Dictionary<string, AggregateOperator?>(),
                 false,
@@ -251,14 +251,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(tryCreateWhenSourceFails.Succeeded);
         }
 
-        private static Task<TryMonad<IDocumentQueryExecutionComponent, Exception>> FailToCreateSource(string continuationToken)
+        private static Task<TryCatch<IDocumentQueryExecutionComponent>> FailToCreateSource(string continuationToken)
         {
-            return Task.FromResult(TryMonad<IDocumentQueryExecutionComponent, Exception>.FromException(new Exception()));
+            return Task.FromResult(TryCatch<IDocumentQueryExecutionComponent>.FromException(new Exception()));
         }
 
-        private static Task<TryMonad<IDocumentQueryExecutionComponent, Exception>> CreateSource(string continuationToken)
+        private static Task<TryCatch<IDocumentQueryExecutionComponent>> CreateSource(string continuationToken)
         {
-            return Task.FromResult(TryMonad<IDocumentQueryExecutionComponent, Exception>.FromResult(new Mock<IDocumentQueryExecutionComponent>().Object));
+            return Task.FromResult(TryCatch<IDocumentQueryExecutionComponent>.FromResult(new Mock<IDocumentQueryExecutionComponent>().Object));
         }
     }
 }

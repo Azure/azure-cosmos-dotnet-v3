@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Query execution component that groups groupings across continuations and pages.
@@ -74,9 +74,9 @@ namespace Microsoft.Azure.Cosmos.Query.ExecutionComponent
 
         public override bool IsDone => this.isDone;
 
-        public static async Task<TryMonad<GroupByDocumentQueryExecutionComponent, Exception>> TryCreateAsync(
+        public static async Task<TryCatch<GroupByDocumentQueryExecutionComponent>> TryCreateAsync(
             string continuationToken,
-            Func<string, Task<TryMonad<IDocumentQueryExecutionComponent, Exception>>> tryCreateSourceAsync,
+            Func<string, Task<TryCatch<IDocumentQueryExecutionComponent>>> tryCreateSourceAsync,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             bool hasSelectValue)
         {
