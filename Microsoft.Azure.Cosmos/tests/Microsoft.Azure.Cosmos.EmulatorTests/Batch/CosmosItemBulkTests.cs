@@ -324,6 +324,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task CreateItemStreamSlightlyTooLarge_WithBulk()
+        {
+            // The item is such that it is just over the limit for an item
+            // but the batch request created with it and other operations should still
+            // be small enough to be valid.
+            await this.CreateLargeItemStreamWithBulk(Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
+        }
+
+        [TestMethod]
+        public async Task CreateItemStreamExtremelyLarge_WithBulk()
+        {
+            await this.CreateLargeItemStreamWithBulk(Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes * 2);
+        }
+
+        private async Task CreateLargeItemStreamWithBulk(int appxItemSize)
+        {
+            List<Task<ResponseMessage>> tasks = new List<Task<ResponseMessage>>();
+            for (int i = 0; i < 3; i++)
+            {
+                MyDocument item = CreateItem(i.ToString());
+
+                if (i == 1) { item.Description = new string('x', appxItemSize); }
+                tasks.Add(ExecuteCreateStreamAsync(this.container, item));
+            }
+
+            await Task.WhenAll(tasks);
+
+            for (int i = 0; i < 3; i++)
+            {
+                Task<ResponseMessage> task = tasks[i];
+                ResponseMessage result = await task;
+                if (i == 0 || i == 2)
+                {
+                    Assert.IsTrue(result.Headers.RequestCharge > 0);
+                    Assert.IsFalse(string.IsNullOrEmpty(result.Diagnostics.ToString()));
+                    Assert.AreEqual(HttpStatusCode.Created, result.StatusCode);
+                }
+                else
+                {
+                    Assert.AreEqual(HttpStatusCode.RequestEntityTooLarge, result.StatusCode);
+                }
+            }
+        }
+
         private static Task<ItemResponse<MyDocument>> ExecuteCreateAsync(Container container, MyDocument item)
         {
             return container.CreateItemAsync<MyDocument>(item, new PartitionKey(item.Status));
@@ -381,6 +426,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string id { get; set; }
 
             public string Status { get; set; }
+
+            public string Description { get; set; }
 
             public bool Updated { get; set; }
         }

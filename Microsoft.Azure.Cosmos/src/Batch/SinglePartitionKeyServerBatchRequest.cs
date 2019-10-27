@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         private SinglePartitionKeyServerBatchRequest(
             PartitionKey? partitionKey,
             CosmosSerializer serializer)
-            : base(maxBodyLength: int.MaxValue, maxOperationCount: int.MaxValue, serializer)
+            : base(maxBodyLength: int.MaxValue, maxOperationCount: int.MaxValue, serializer: serializer)
         {
             this.PartitionKey = partitionKey;
         }

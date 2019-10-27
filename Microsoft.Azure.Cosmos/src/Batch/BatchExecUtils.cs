@@ -20,12 +20,11 @@ namespace Microsoft.Azure.Cosmos
         private const int BufferSize = 81920;
 
         /// <summary>
-        /// Converts a Stream to a Memory{byte} wrapping a byte array honoring a provided maximum length for the returned Memory.
+        /// Converts a Stream to a Memory{byte} wrapping a byte array.
         /// </summary>
         /// <param name="stream">Stream to be converted to bytes.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> to cancel the operation.</param>
-        /// <returns>A Memory{byte} with length at most maximumLength.</returns>
-        /// <remarks>Throws CosmosException if the input stream has more bytes than maximumLength.</remarks>
+        /// <returns>A Memory{byte}.</returns>
         public static async Task<Memory<byte>> StreamToMemoryAsync(
             Stream stream,
             CancellationToken cancellationToken)

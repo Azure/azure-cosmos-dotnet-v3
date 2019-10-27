@@ -77,18 +77,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), new ItemRequestOptions() { SessionToken = "something" }));
         }
 
-        [TestMethod]
-        [Owner("maquaran")]
-        public async Task ValidateInvalidDocumentSizeAsync()
-        {
-            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(this.cosmosContainer, this.cosmosContainer.ClientContext, 50, 2);
-
-            string id = Guid.NewGuid().ToString();
-            MyDocument myDocument = new MyDocument() { id = id, Status = id };
-
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument))));
-        }
-
         private static ItemBatchOperation CreateItem(string id)
         {
             MyDocument myDocument = new MyDocument() { id = id, Status = id };

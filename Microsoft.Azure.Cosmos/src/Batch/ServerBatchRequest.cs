@@ -136,7 +136,13 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.bodyStream.Length > this.maxBodyLength)
             {
-                this.shouldDeleteLastWrittenRecord = true;
+                // If there is only one operation within the request, we will keep it even if it
+                // exceeds the maximum size allowed for the body.
+                if (index > 1)
+                {
+                    this.shouldDeleteLastWrittenRecord = true;
+                }
+
                 buffer = default(ReadOnlyMemory<byte>);
                 return Result.Success;
             }

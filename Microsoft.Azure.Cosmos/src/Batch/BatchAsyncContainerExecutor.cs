@@ -135,13 +135,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             await operation.MaterializeResourceAsync(this.cosmosClientContext.CosmosSerializer, cancellationToken);
-
-            int itemByteSize = operation.GetApproximateSerializedLength();
-
-            if (itemByteSize > this.maxServerRequestBodyLength)
-            {
-                throw new ArgumentException(RMResources.RequestTooLarge);
-            }
         }
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(RetryOptions retryOptions)
